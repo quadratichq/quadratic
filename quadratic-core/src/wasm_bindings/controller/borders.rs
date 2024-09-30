@@ -5,30 +5,30 @@ impl GridController {
     /// Sets border style for the selection within a rectangle.
     ///
     /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "setRegionBorders")]
-    pub fn js_set_region_borders(
+    #[wasm_bindgen(js_name = "setBorders")]
+    pub fn js_set_borders(
         &mut self,
-        sheet_id: String,
-        rect: String,
         selection: String,
+        border_selection: String,
         style: Option<String>,
         cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        let rect: Rect = serde_json::from_str(&rect).map_err(|_| JsValue::UNDEFINED)?;
-        let Ok(selection) = serde_json::from_str(&selection) else {
-            return Result::Err("Invalid selection".into());
-        };
-        let style = match &style {
-            Some(style) => {
-                let Ok(style) = serde_json::from_str(style) else {
-                    return Result::Err("Invalid style".into());
-                };
-                style
+    ) -> Result<(), String> {
+        let selection =
+            serde_json::from_str(&selection).map_err(|_| "Invalid selection".to_string())?;
+
+        let border_selection = serde_json::from_str(&border_selection)
+            .map_err(|_| "Invalid border selection".to_string())?;
+
+        let style = match style {
+            Some(style_str) => {
+                let style =
+                    serde_json::from_str(&style_str).map_err(|_| "Invalid style".to_string())?;
+                Some(style)
             }
             None => None,
         };
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
-        self.set_borders(rect.to_sheet_rect(sheet_id), vec![selection], style, cursor);
+
+        self.set_borders_selection(selection, border_selection, style, cursor);
         Ok(())
     }
 }

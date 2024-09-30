@@ -1,6 +1,9 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { getAuth0AvatarSrc } from '@/app/helpers/links';
+import { colors } from '@/app/theme/colors';
+import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import {
@@ -11,14 +14,11 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
-import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
 import { useSubmit } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { colors } from '../../../theme/colors';
-import { useMultiplayerUsers } from './useMultiplayerUsers';
 
 const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
 
@@ -171,29 +171,27 @@ function UserAvatar({
     });
   };
   return (
-    <div className="relative hidden lg:block">
+    <div className="hidden lg:relative lg:flex lg:items-center">
       <Tooltip>
         <TooltipTrigger asChild>
           <button onClick={handleFollow}>
-            <div>
-              <Avatar
-                sx={{
-                  bgcolor: bgColor ?? colors.quadraticSecondary,
-                  ...sharedAvatarSxProps,
-                  pointerEvents: 'auto',
-                  cursor: 'pointer',
-                  position: 'relative',
-                }}
-                alt={displayName}
-                src={getAuth0AvatarSrc(picture)}
-                imgProps={{ crossOrigin: 'anonymous' }}
-                style={{
-                  border: `2px solid ${border}`,
-                }}
-              >
-                {initial}
-              </Avatar>
-            </div>
+            <Avatar
+              sx={{
+                bgcolor: bgColor ?? colors.quadraticSecondary,
+                ...sharedAvatarSxProps,
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                position: 'relative',
+              }}
+              alt={displayName}
+              src={getAuth0AvatarSrc(picture)}
+              imgProps={{ crossOrigin: 'anonymous' }}
+              style={{
+                border: `2px solid ${border}`,
+              }}
+            >
+              {initial}
+            </Avatar>
           </button>
         </TooltipTrigger>
         <TooltipPortal>

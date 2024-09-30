@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-core"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2021"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
@@ -27,13 +27,7 @@ path = "src/bin/generate_blank_current_file.rs"
 [features]
 default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
-js = [
-    "js-sys",
-    "serde-wasm-bindgen",
-    "ts-rs",
-    "wasm-bindgen",
-    "wasm-bindgen-futures",
-]
+js = ["js-sys", "serde-wasm-bindgen", "ts-rs", "wasm-bindgen", "wasm-bindgen-futures"]
 show-operations = []
 multiplayer = []
 files = []
@@ -44,14 +38,14 @@ async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.10.5"
 rand = "0.8.5"
-getrandom = { version = "*", features = ["js"] }
+getrandom = { version = "0.2.15", features = ["js"] }
 regex = "1.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_repr = "0.1"
 smallvec = { version = "1.11.0", features = ["serde", "union"] }
-strum = "0.24.1"
-strum_macros = "0.24.3"
+strum = { version = "0.26.3", features = ["derive"] }
+strum_macros = "0.26.3"
 tabled = { version = "0.14.0", features = ["color"] }
 pollster = "0.2.5"
 unicode-case-mapping = "0.5.0"
@@ -68,8 +62,8 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 js-sys = { version = "0.3.60", optional = true }
 serde-wasm-bindgen = { version = "0.6.0", optional = true }
 ts-rs = { git = "https://github.com/quadratichq/ts-rs/", rev = "812c1a8", optional = true, features = [
-    "uuid-impl",
-    "smallvec-impl",
+  "uuid-impl",
+  "smallvec-impl",
 ] }
 wasm-bindgen = { version = "0.2.87", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
@@ -80,12 +74,7 @@ csv = "1.2.2"
 indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
 lazy_static = "1.4.0"
-parquet = { version = "51.0.0", default-features = false, features = [
-    "arrow",
-    "arrow-array",
-    "flate2",
-    "snap",
-] }
+parquet = { version = "51.0.0", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"] }
 bytes = "1.5.0"
 arrow-array = "51.0.0"
 arrow-schema = "51.0.0"

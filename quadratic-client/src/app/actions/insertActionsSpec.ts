@@ -37,6 +37,7 @@ export const insertActionsSpec: InsertActionSpec = {
         mode: 'Python',
         selectedCell: { x: cursor.x, y: cursor.y },
         selectedCellSheet: sheets.sheet.id,
+        initialCode: '',
       }));
     },
   },
@@ -52,6 +53,7 @@ export const insertActionsSpec: InsertActionSpec = {
         mode: 'Javascript',
         selectedCell: { x: cursor.x, y: cursor.y },
         selectedCellSheet: sheets.sheet.id,
+        initialCode: '',
       }));
     },
   },
@@ -67,6 +69,7 @@ export const insertActionsSpec: InsertActionSpec = {
         mode: 'Formula',
         selectedCell: { x: cursor.x, y: cursor.y },
         selectedCellSheet: sheets.sheet.id,
+        initialCode: '',
       }));
     },
   },

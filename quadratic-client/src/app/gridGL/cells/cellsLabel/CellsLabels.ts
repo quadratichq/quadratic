@@ -11,17 +11,18 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
+import { Link } from '@/app/gridGL/types/links';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 import { CellsSheet, ErrorMarker, ErrorValidation } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
+import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -78,6 +79,8 @@ export class CellsLabels extends Container {
       this.cellsTextHash.set(key, cellsTextHash);
     }
     cellsTextHash.content.import(message.content);
+    cellsTextHash.links = message.links;
+    cellsTextHash.newDrawRects = message.drawRects;
   }
 
   // Returns whether the cell has content by checking CellsTextHashContent.
@@ -241,5 +244,13 @@ export class CellsLabels extends Container {
     if (hash) {
       return hash.intersectsErrorMarkerValidation(world);
     }
+  }
+
+  intersectsLink(world: Point): Link | undefined {
+    const sheet = sheets.getById(this.sheetId);
+    if (!sheet) throw new Error('Expected sheet to be defined in CellsLabels');
+    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
+    const hash = this.getHash(column, row);
+    return hash?.intersectsLink(world);
   }
 }

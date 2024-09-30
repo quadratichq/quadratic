@@ -1,6 +1,6 @@
 /**
  * This is where we map all the icons we use to the ones from [Google's Material Symbols](https://fonts.google.com/icons)
- * We use Google’s recommended implementation stragegy, which is loading the font
+ * We use Google’s recommended implementation strategy, which is loading the font
  * FWIW: the font is loaded via the root `index.html`
  * We import 20 dp icons, as those are the only ones we use at the moment.
  */
@@ -89,7 +89,7 @@ export const BorderRightIcon: IconComponent = (props) => {
 };
 
 export const BorderTopIcon: IconComponent = (props) => {
-  return <Icon {...props}>border_bottom</Icon>;
+  return <Icon {...props}>border_top</Icon>;
 };
 
 export const BorderBottomIcon: IconComponent = (props) => {
@@ -250,6 +250,14 @@ export const FormatBoldIcon: IconComponent = (props) => {
 
 export const FormatItalicIcon: IconComponent = (props) => {
   return <Icon {...props}>format_italic</Icon>;
+};
+
+export const FormatUnderlinedIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_underlined</Icon>;
+};
+
+export const FormatStrikethroughIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_strikethrough</Icon>;
 };
 
 export const FormatNumberAutomaticIcon: IconComponent = (props) => {

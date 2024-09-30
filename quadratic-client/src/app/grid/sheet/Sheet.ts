@@ -119,6 +119,16 @@ export class Sheet {
     return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
   }
 
+  // @returns the x position of the column
+  getColumnX(x: number): number {
+    return this.offsets.getColumnPlacement(x).position;
+  }
+
+  // @returns the y position of the row
+  getRowY(y: number): number {
+    return this.offsets.getRowPlacement(y).position;
+  }
+
   // todo: change this to a JsValue instead of a Rust struct
   getColumnRow(x: number, y: number): Coordinate {
     const columnRowStringified = this.offsets.getColumnRowFromScreen(x, y);

@@ -27,7 +27,7 @@ export const FormatMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Format</MenubarTrigger>
-      <MenubarContent>
+      <MenubarContent className="pointer-move-ignore">
         <MenubarSub>
           <MenubarSubTrigger>
             <Number123Icon /> Number
@@ -76,6 +76,8 @@ export const FormatMenubarMenu = () => {
           <MenubarSubContent>
             <MenubarItemAction action={Action.ToggleBold} actionArgs={undefined} />
             <MenubarItemAction action={Action.ToggleItalic} actionArgs={undefined} />
+            <MenubarItemAction action={Action.ToggleUnderline} actionArgs={undefined} />
+            <MenubarItemAction action={Action.ToggleStrikeThrough} actionArgs={undefined} />
           </MenubarSubContent>
         </MenubarSub>
 

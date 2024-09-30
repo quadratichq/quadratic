@@ -1,12 +1,9 @@
 use std::collections::HashSet;
 
-use crate::{
-    grid::{
-        formats::{format::Format, format_update::FormatUpdate},
-        Sheet,
-    },
-    Pos,
-};
+use crate::grid::formats::format::Format;
+use crate::grid::formats::format_update::FormatUpdate;
+use crate::grid::Sheet;
+use crate::Pos;
 
 impl Sheet {
     // gets decimal_places for a cell, including checking sheet format
@@ -44,6 +41,8 @@ impl Sheet {
             fill_color: column.fill_color.get(y),
             render_size: column.render_size.get(y),
             date_time: column.date_time.get(y),
+            underline: column.underline.get(y),
+            strike_through: column.strike_through.get(y),
         });
         if include_sheet {
             let column = self.try_format_column(x);
@@ -53,6 +52,28 @@ impl Sheet {
         } else {
             format.unwrap_or_default()
         }
+    }
+
+    /// Gets a format for a cell, returning Format::default if not set.
+    pub fn try_format_cell(&self, x: i64, y: i64) -> Option<Format> {
+        self.get_column(x)
+            .map(|column| Format {
+                align: column.align.get(y),
+                vertical_align: column.vertical_align.get(y),
+                wrap: column.wrap.get(y),
+                numeric_format: column.numeric_format.get(y),
+                numeric_decimals: column.numeric_decimals.get(y),
+                numeric_commas: column.numeric_commas.get(y),
+                bold: column.bold.get(y),
+                italic: column.italic.get(y),
+                text_color: column.text_color.get(y),
+                fill_color: column.fill_color.get(y),
+                render_size: column.render_size.get(y),
+                date_time: column.date_time.get(y),
+                underline: column.underline.get(y),
+                strike_through: column.strike_through.get(y),
+            })
+            .filter(|format| !format.is_default())
     }
 
     /// Sets a cell's format based on a FormatUpdate. Returns FormatUpdate, which is
@@ -113,9 +134,20 @@ impl Sheet {
             old_format.render_size = Some(column.render_size.get(y));
             column.render_size.set(y, render_size.clone());
         }
+
         if let Some(dt) = update.date_time.as_ref() {
             old_format.date_time = Some(column.date_time.get(y));
             column.date_time.set(y, dt.clone());
+        }
+
+        if let Some(underline) = update.underline {
+            old_format.underline = Some(column.underline.get(y));
+            column.underline.set(y, underline);
+        }
+
+        if let Some(strike_through) = update.strike_through {
+            old_format.strike_through = Some(column.strike_through.get(y));
+            column.strike_through.set(y, strike_through);
         }
 
         if send_client {
@@ -140,16 +172,11 @@ impl Sheet {
 mod tests {
     use serial_test::{parallel, serial};
 
-    use crate::{
-        grid::{
-            formats::Formats,
-            js_types::{JsNumber, JsRenderCell},
-            CellAlign,
-        },
-        wasm_bindings::js::{expect_js_call, hash_test},
-    };
-
     use super::*;
+    use crate::grid::formats::Formats;
+    use crate::grid::js_types::{JsNumber, JsRenderCell};
+    use crate::grid::CellAlign;
+    use crate::wasm_bindings::js::{expect_js_call, hash_test};
 
     #[test]
     #[parallel]

@@ -4,67 +4,42 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { CloseIcon } from '@/shared/components/Icons';
+import { ShowAfter } from '@/shared/components/ShowAfter';
 import { DOCUMENTATION_OFFLINE } from '@/shared/constants/urls';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/shadcn/ui/dropdown-menu';
+import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { CircularProgress } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import BottomBarItem from './BottomBarItem';
 
-const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
+// const TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE = 1000;
 
 export default function SyncState() {
   const [syncState, setSyncState] = useState<MultiplayerState>(multiplayer.state);
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [showOfflineMsg, setShowOfflineMsg] = useState(false);
 
-  const [disconnectMessage, setDisconnectMessage] = useState(false);
-  const timeout = useRef<number | null>(null);
   useEffect(() => {
     const updateState = (state: MultiplayerState) => {
-      if (state === 'waiting to reconnect' || state === 'no internet') {
-        if (!timeout.current && !disconnectMessage) {
-          timeout.current = window.setTimeout(() => {
-            const message = (
-              <div>
-                Connection to the Quadratic server was lost. Your changes are only saved locally.{' '}
-                <a className="underline" href={DOCUMENTATION_OFFLINE}>
-                  Learn more
-                </a>
-                .
-              </div>
-            );
-            addGlobalSnackbar(message, {
-              severity: 'warning',
-              button: { title: 'Refresh', callback: () => window.location.reload() },
-            });
-            timeout.current = null;
-            setDisconnectMessage(true);
-          }, TIMEOUT_TO_SHOW_DISCONNECT_MESSAGE);
+      setSyncState((prevState) => {
+        // If they dismissed it, don't show it again if they've gone from offline -> online
+        if ((prevState === 'connected' || prevState === 'syncing') && !(state === 'connected' || state === 'syncing')) {
+          setShowOfflineMsg(true);
         }
-      }
-      if (state === 'connected' && timeout.current) {
-        window.clearTimeout(timeout.current);
-        timeout.current = null;
-      }
-      if (state === 'connected' && disconnectMessage) {
-        setDisconnectMessage(false);
-        addGlobalSnackbar('Connection to the Quadratic server was reestablished.', { severity: 'success' });
-      }
-      setSyncState(state);
+        // If they didn't dismiss it, make sure it hides if they go from offline -> online
+        if (!(prevState === 'connected' || prevState === 'syncing') && (state === 'connected' || state === 'syncing')) {
+          setShowOfflineMsg(false);
+        }
+        return state;
+      });
     };
     events.on('multiplayerState', updateState);
     return () => {
       events.off('multiplayerState', updateState);
     };
-  }, [addGlobalSnackbar, disconnectMessage]);
+  }, []);
 
   const [unsavedTransactions, setUnsavedTransactions] = useState(0);
   useEffect(() => {
@@ -79,7 +54,7 @@ export default function SyncState() {
       const message = (
         <div>
           We applied {timestamps.length} unsynced changes from {to}. You can undo these changes.{' '}
-          <a className="underline" href={DOCUMENTATION_OFFLINE}>
+          <a className="underline" href={DOCUMENTATION_OFFLINE} target="_blank" rel="noopener noreferrer">
             Learn More
           </a>
           .
@@ -105,59 +80,57 @@ export default function SyncState() {
     };
   }, [addGlobalSnackbar]);
 
-  const [open, setOpen] = useState(false);
-
   let tooltip: string;
   let message: string;
   let icon = null;
   let className = '';
 
   const loadingIcon = <CircularProgress size="0.5rem" />;
-  const errorClassName = 'bg-destructive text-background';
 
-  if (['waiting to reconnect', 'connecting'].includes(syncState) && multiplayer.brokenConnection) {
-    className = 'bg-warning text-background';
-    message = 'Reconnecting…';
-    tooltip = 'Your changes may only be saved locally…';
-  } else if (['not connected', 'connecting', 'waiting to reconnect', 'startup'].includes(syncState)) {
-    message = 'Connecting…';
-    tooltip = 'Attempting to connect…';
-    icon = loadingIcon;
-  } else if (syncState === 'syncing') {
-    message = 'Syncing...';
-    tooltip = 'Your recent changes are saved locally.';
-    icon = loadingIcon;
-  } else if (syncState === 'connected') {
+  if (syncState === 'connected') {
     message = 'Connected';
-    tooltip = 'Your changes are saved.';
-  } else if (syncState === 'no internet') {
-    className = errorClassName;
-    message = 'Offline';
-    tooltip = 'Connection down. Your changes are only saved locally.';
+    tooltip = 'All changes saved';
+  } else if (syncState === 'syncing') {
+    message = 'Syncing…';
+    tooltip = 'Recent changes saved locally';
+    icon = loadingIcon;
   } else {
-    className = errorClassName;
-    message = 'Offline';
-    tooltip = 'Connection lost. Your changes are only saved locally.';
+    className = 'text-destructive';
+    icon = loadingIcon;
+    message = 'Offline, reconnecting…';
+    tooltip = 'Recent changes only saved locally';
+  }
+
+  if (unsavedTransactions > 0) {
+    tooltip += ` (syncing ${unsavedTransactions} ${pluralize('item', unsavedTransactions)}…)`;
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <BottomBarItem className={className} icon={icon} onClick={() => {}}>
-          <TooltipPopover label={tooltip}>
-            <div>{message}</div>
-          </TooltipPopover>
-        </BottomBarItem>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuLabel>Status</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          {unsavedTransactions === 0
-            ? 'Nothing waiting to sync'
-            : `Syncing ${unsavedTransactions} ${pluralize('item', unsavedTransactions)}.`}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <BottomBarItem className={className} icon={icon}>
+        <TooltipPopover label={tooltip}>
+          <div>{message}</div>
+        </TooltipPopover>
+      </BottomBarItem>
+      {showOfflineMsg && (
+        <ShowAfter delay={5000}>
+          <div className="fixed bottom-16 right-2 z-10 w-96 rounded bg-destructive p-4 pr-8 text-sm text-background">
+            Connection lost. Your changes are only saved locally.{' '}
+            <a className="underline" href={DOCUMENTATION_OFFLINE} target="_blank" rel="noopener noreferrer">
+              Learn more
+            </a>
+            .
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="absolute right-1 top-1 !bg-transparent opacity-80 hover:text-background hover:opacity-100"
+              onClick={() => setShowOfflineMsg(false)}
+            >
+              <CloseIcon />
+            </Button>
+          </div>
+        </ShowAfter>
+      )}
+    </>
   );
 }

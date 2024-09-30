@@ -5,10 +5,12 @@ import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { useBorders } from '@/app/ui/hooks/useBorders';
 import { CheckSmallIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useRecoilValue } from 'recoil';
 import './borderMenuStyles.scss';
+import { sheets } from '@/app/grid/controller/Sheets';
 
 const borderActionKeys = [
   Action.FormatBorderAll,
@@ -37,26 +39,38 @@ export const BorderMenu = () => {
   const borderColorSpec = defaultActionSpec[Action.FormatBorderColor];
   const borderMenuState = useRecoilValue(borderMenuAtom);
 
+  // this doesn't need to be an effect since the menu is closed when the cursor
+  // changes
+  const singleSelection = sheets.sheet.cursor.onlySingleSelection();
+
   return (
     <div>
       <ToggleGroup.Root type="single" className="flex flex-row border-b border-border pb-1">
-        {borderActionKeys.map((actionKey, i) => {
+        {borderActionKeys.map((actionKey) => {
+          const label = defaultActionSpec[actionKey].label;
           const Icon = 'Icon' in defaultActionSpec[actionKey] ? defaultActionSpec[actionKey].Icon : undefined;
           const run = defaultActionSpec[actionKey].run;
+          const disabled =
+            (actionKey === Action.FormatBorderHorizontal || actionKey === Action.FormatBorderVertical) &&
+            singleSelection;
           return (
-            <ToggleGroup.Item autoFocus={i === 0} asChild value={actionKey} key={actionKey}>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="focus-visible:bg-accent"
-                key={actionKey}
-                onClick={() => {
-                  run(borders);
-                }}
-              >
-                {Icon && <Icon />}
-              </Button>
-            </ToggleGroup.Item>
+            <Tooltip key={actionKey}>
+              <TooltipTrigger asChild>
+                <ToggleGroup.Item asChild value={actionKey} key={actionKey}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="focus-visible:bg-accent"
+                    key={actionKey}
+                    disabled={disabled}
+                    onClick={() => run(borders)}
+                  >
+                    {Icon && <Icon />}
+                  </Button>
+                </ToggleGroup.Item>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{label}</TooltipContent>
+            </Tooltip>
           );
         })}
       </ToggleGroup.Root>

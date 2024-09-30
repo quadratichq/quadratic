@@ -386,17 +386,17 @@ function SelectAIModelDropdownMenu({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" alignOffset={-4}>
-        <DropdownMenuCheckboxItem checked={isAnthropic} onCheckedChange={() => setModel('claude-3-5-sonnet-20240620')}>
-          <div className="flex w-full items-center justify-between text-xs">
-            <span className="pr-4">Anthropic: claude-3.5-sonnet</span>
-            <Anthropic fontSize="inherit" />
-          </div>
-        </DropdownMenuCheckboxItem>
-
         <DropdownMenuCheckboxItem checked={!isAnthropic} onCheckedChange={() => setModel('gpt-4o')}>
           <div className="flex w-full items-center justify-between text-xs">
             <span className="pr-4">OpenAI: gpt-4o</span>
             <OpenAI fontSize="inherit" />
+          </div>
+        </DropdownMenuCheckboxItem>
+
+        <DropdownMenuCheckboxItem checked={isAnthropic} onCheckedChange={() => setModel('claude-3-5-sonnet-20240620')}>
+          <div className="flex w-full items-center justify-between text-xs">
+            <span className="pr-4">Anthropic: claude-3.5-sonnet</span>
+            <Anthropic fontSize="inherit" />
           </div>
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>

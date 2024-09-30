@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -39,6 +39,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-switch": "^1.0.3",
     "@radix-ui/react-tabs": "^1.0.4",
+    "@radix-ui/react-toggle": "^1.1.0",
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@sentry/react": "^7.108.0",
@@ -156,7 +157,7 @@
     "serve": "^14.2.0",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.4.5",
-    "vite": "^5.1.7",
+    "vite": "^5.2.14",
     "vite-plugin-checker": "^0.6.2",
     "vite-plugin-svgr": "^4.2.0",
     "vite-plugin-top-level-await": "^1.4.1",

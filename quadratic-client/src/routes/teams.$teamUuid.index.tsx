@@ -1,3 +1,4 @@
+import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { Empty } from '@/dashboard/components/Empty';
 import { FilesList } from '@/dashboard/components/FilesList';
@@ -6,7 +7,6 @@ import NewFileButton from '@/dashboard/components/NewFileButton';
 import { OnboardingBanner } from '@/dashboard/components/OnboardingBanner';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
-import { getAuth0AvatarSrc } from '@/shared/utils/auth0UserImageSrc';
 import { Add } from '@mui/icons-material';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { FileIcon } from '@radix-ui/react-icons';

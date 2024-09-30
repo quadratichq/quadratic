@@ -1,15 +1,11 @@
-use crate::{
-    cell_values::CellValues,
-    color::Rgba,
-    controller::operations::clipboard::{Clipboard, ClipboardOrigin},
-    formulas::replace_a1_notation,
-    grid::{
-        formats::Formats, get_cell_borders_in_rect, CellAlign, CellVerticalAlign, CellWrap,
-        CodeCellLanguage, Sheet,
-    },
-    selection::Selection,
-    CellValue, Pos, Rect,
-};
+use crate::cell_values::CellValues;
+use crate::color::Rgba;
+use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
+use crate::formulas::replace_a1_notation;
+use crate::grid::formats::Formats;
+use crate::grid::{CodeCellLanguage, Sheet};
+use crate::selection::Selection;
+use crate::{CellValue, Pos, Rect};
 
 impl Sheet {
     /// Copies the selection to the clipboard.
@@ -90,20 +86,21 @@ impl Sheet {
                     let italic = summary.italic.unwrap_or(false);
                     let text_color = summary.text_color;
                     let fill_color = summary.fill_color;
-
-                    let cell_border = self.borders().per_cell.to_owned().get_cell_border(pos);
-                    let cell_align = self.get_formatting_value::<CellAlign>(pos);
-                    let cell_vertical_align = self.get_formatting_value::<CellVerticalAlign>(pos);
-                    let cell_wrap = self.get_formatting_value::<CellWrap>(pos);
+                    let cell_align = summary.align;
+                    let cell_vertical_align = summary.vertical_align;
+                    let cell_wrap = summary.wrap;
+                    let underline = summary.underline.unwrap_or(false);
+                    let strike_through = summary.strike_through.unwrap_or(false);
 
                     if bold
                         || italic
                         || text_color.is_some()
                         || fill_color.is_some()
-                        || cell_border.is_some()
                         || cell_align.is_some()
                         || cell_vertical_align.is_some()
                         || cell_wrap.is_some()
+                        || underline
+                        || strike_through
                     {
                         style.push_str("style=\"");
 
@@ -128,28 +125,6 @@ impl Sheet {
                                 );
                             }
                         }
-                        if let Some(cell_border) = cell_border {
-                            for (side, border) in cell_border.borders.iter().enumerate() {
-                                let side = match side {
-                                    0 => "-left",
-                                    1 => "-top",
-                                    2 => "-right",
-                                    3 => "-bottom",
-                                    _ => "",
-                                };
-                                if let Some(border) = border {
-                                    style.push_str(
-                                        format!(
-                                            "border{}: {} {};",
-                                            side,
-                                            border.line.as_css_string(),
-                                            border.color.as_rgb_hex()
-                                        )
-                                        .as_str(),
-                                    );
-                                }
-                            }
-                        }
                         if let Some(cell_align) = cell_align {
                             style.push_str(cell_align.as_css_string());
                         }
@@ -159,6 +134,37 @@ impl Sheet {
                         if let Some(cell_wrap) = cell_wrap {
                             style.push_str(cell_wrap.as_css_string());
                         }
+                        if underline && !strike_through {
+                            style.push_str("text-decoration:underline;");
+                        } else if !underline && strike_through {
+                            style.push_str("text-decoration:line-through;");
+                        } else if underline && strike_through {
+                            style.push_str("text-decoration:underline line-through;");
+                        }
+
+                        // todo...
+                        // if let Some(cell_border) = cell_border {
+                        //     for (side, border) in cell_border.borders.iter().enumerate() {
+                        //         let side = match side {
+                        //             0 => "-left",
+                        //             1 => "-top",
+                        //             2 => "-right",
+                        //             3 => "-bottom",
+                        //             _ => "",
+                        //         };
+                        //         if let Some(border) = border {
+                        //             style.push_str(
+                        //                 format!(
+                        //                     "border{}: {} {};",
+                        //                     side,
+                        //                     border.line.as_css_string(),
+                        //                     border.color.as_rgb_hex()
+                        //                 )
+                        //                 .as_str(),
+                        //             );
+                        //         }
+                        //     }
+                        // }
 
                         style.push('"');
                     }
@@ -227,13 +233,10 @@ impl Sheet {
                 });
         }
 
-        let (formats, borders) = if let Some(bounds) = sheet_bounds {
-            (
-                self.override_cell_formats(bounds, Some(selection)),
-                get_cell_borders_in_rect(self, bounds, Some(selection)),
-            )
+        let formats = if let Some(bounds) = sheet_bounds {
+            self.override_cell_formats(bounds, Some(selection))
         } else {
-            (Formats::default(), vec![])
+            Formats::default()
         };
 
         if selection.all {
@@ -251,12 +254,18 @@ impl Sheet {
         }
         let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
+        let borders = self.borders.to_clipboard(selection);
 
         let clipboard = Clipboard {
             cells,
             formats,
             sheet_formats,
-            borders,
+            borders: borders.map(|borders| {
+                (
+                    selection.translate(-clipboard_origin.x, -clipboard_origin.y),
+                    borders,
+                )
+            }),
             values,
             w: sheet_bounds.map_or(0, |b| b.width()),
             h: sheet_bounds.map_or(0, |b| b.height()),
@@ -278,12 +287,13 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{
-        controller::{operations::clipboard::PasteSpecial, GridController},
-        Rect,
-    };
     use serial_test::parallel;
+
+    use super::*;
+    use crate::controller::operations::clipboard::PasteSpecial;
+    use crate::controller::GridController;
+    use crate::grid::{BorderSelection, BorderStyle, CellBorderLine};
+    use crate::{Rect, SheetRect};
 
     #[test]
     #[parallel]
@@ -314,5 +324,38 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.cell_value(Pos { x: 1, y: 5 }).is_none());
+    }
+
+    #[test]
+    #[parallel]
+    fn clipboard_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let selection = Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+        gc.set_borders_selection(
+            selection.clone(),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let (_, html) = sheet.copy_to_clipboard(&selection).unwrap();
+
+        gc.paste_from_clipboard(
+            Selection::pos(2, 2, sheet_id),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let border = sheet.borders.get(2, 2);
+        assert_eq!(border.top.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.bottom.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.left.unwrap().line, CellBorderLine::default());
+        assert_eq!(border.right.unwrap().line, CellBorderLine::default());
     }
 }

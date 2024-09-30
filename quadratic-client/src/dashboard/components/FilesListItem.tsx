@@ -221,7 +221,7 @@ export function FilesListItemUserFile({
                     <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={handleDuplicate}>Dupcliate</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDuplicate}>Duplicate</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem onClick={() => setOpen(true)}>Rename</DropdownMenuItem>

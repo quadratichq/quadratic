@@ -6,7 +6,13 @@ import { sheets } from '@/app/grid/controller/Sheets.js';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
-import { clearFormattingAndBorders, setBold, setItalic } from '@/app/ui/helpers/formatCells';
+import {
+  clearFormattingAndBorders,
+  setBold,
+  setItalic,
+  setStrikeThrough,
+  setUnderline,
+} from '@/app/ui/helpers/formatCells';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker.js';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore.js';
@@ -148,6 +154,18 @@ export function keyboardViewport(options: {
   // Toggle italic
   if (matchShortcut(Action.ToggleItalic, event)) {
     setItalic();
+    return true;
+  }
+
+  // Toggle underline
+  if (matchShortcut(Action.ToggleUnderline, event)) {
+    setUnderline();
+    return true;
+  }
+
+  // Toggle strike-through
+  if (matchShortcut(Action.ToggleStrikeThrough, event)) {
+    setStrikeThrough();
     return true;
   }
 

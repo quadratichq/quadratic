@@ -35,6 +35,7 @@ impl GridController {
         sheet.validations.validations()
     }
 
+    /// Creates or updates a validation.
     pub fn update_validation(&mut self, validation: Validation, cursor: Option<String>) {
         let ops = vec![Operation::SetValidation { validation }];
         self.start_user_transaction(ops, cursor, TransactionName::Validation);
@@ -92,7 +93,7 @@ impl GridController {
         if validation.error.style != ValidationStyle::Stop {
             return None;
         }
-        let cell_value = CellValue::to_cell_value(input);
+        let cell_value = CellValue::parse_from_str(input);
         if validation.rule.validate(sheet, Some(&cell_value)) {
             None
         } else {

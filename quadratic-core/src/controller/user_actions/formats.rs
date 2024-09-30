@@ -4,17 +4,13 @@
 
 use wasm_bindgen::JsValue;
 
-use crate::{
-    controller::{
-        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
-        GridController,
-    },
-    grid::{
-        formats::{format_update::FormatUpdate, Formats},
-        CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind,
-    },
-    selection::Selection,
-};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::operations::operation::Operation;
+use crate::controller::GridController;
+use crate::grid::formats::format_update::FormatUpdate;
+use crate::grid::formats::Formats;
+use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
+use crate::selection::Selection;
 
 impl GridController {
     pub(crate) fn clear_format(
@@ -273,12 +269,52 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
+
+    pub(crate) fn set_underline_selection(
+        &mut self,
+        selection: Selection,
+        underline: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                underline: Some(Some(underline)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_strike_through_selection(
+        &mut self,
+        selection: Selection,
+        strike_through: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                strike_through: Some(Some(strike_through)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, grid::CellWrap, selection::Selection, Rect};
     use serial_test::parallel;
+
+    use crate::controller::GridController;
+    use crate::grid::{CellWrap, StrikeThrough, Underline};
+    use crate::selection::Selection;
+    use crate::{Pos, Rect};
 
     #[test]
     #[parallel]
@@ -627,6 +663,60 @@ mod test {
         assert_eq!(
             sheet.columns.get(&0).unwrap().numeric_decimals.get(0),
             Some(2)
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn set_underline_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_underline_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            true,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_formatting_value::<Underline>(Pos { x: 0, y: 0 }),
+            Some(true)
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn set_strike_through_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_strike_through_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            true,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_formatting_value::<StrikeThrough>(Pos { x: 0, y: 0 }),
+            Some(true)
         );
     }
 

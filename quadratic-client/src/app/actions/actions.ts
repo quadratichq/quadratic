@@ -1,4 +1,5 @@
 export enum Action {
+  CmdClick = 'cmd_click',
   FileDownload = 'file_download',
   FileShare = 'file_share',
   FileRename = 'file_rename',
@@ -77,6 +78,8 @@ export enum Action {
   ClearFormattingBorders = 'clear_formatting_borders',
   ToggleBold = 'toggle_bold',
   ToggleItalic = 'toggle_italic',
+  ToggleUnderline = 'toggle_underline',
+  ToggleStrikeThrough = 'toggle_strike_through',
   FillRight = 'fill_right',
   FillDown = 'fill_down',
   CancelExecution = 'cancel_execution',
@@ -125,4 +128,10 @@ export enum Action {
   SaveInlineEditorMoveLeft = 'save_inline_editor_move_left',
   RemoveInsertedCells = 'remove_inserted_cells',
   TriggerCell = 'trigger_cell',
+  InsertColumnLeft = 'insert_column_left',
+  InsertColumnRight = 'insert_column_right',
+  InsertRowAbove = 'insert_row_above',
+  InsertRowBelow = 'insert_row_below',
+  DeleteRow = 'delete_row',
+  DeleteColumn = 'delete_column',
 }

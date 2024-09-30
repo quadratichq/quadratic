@@ -2,19 +2,16 @@ use std::collections::HashSet;
 
 use crate::{
     grid::{js_types::JsRenderFill, RenderSize, SheetId},
+    renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
-use super::{
-    active_transactions::pending_transaction::PendingTransaction,
-    transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    GridController,
-};
+use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
 
 impl GridController {
-    fn send_render_cells_from_hash(&self, sheet_id: SheetId, modified: HashSet<Pos>) {
+    pub fn send_render_cells_from_hash(&self, sheet_id: SheetId, modified: &HashSet<Pos>) {
         // send the modified cells to the render web worker
         modified.iter().for_each(|modified| {
             if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -56,7 +53,7 @@ impl GridController {
                 });
             }
         }
-        self.send_render_cells_from_hash(sheet_rect.sheet_id, modified);
+        self.send_render_cells_from_hash(sheet_rect.sheet_id, &modified);
     }
 
     /// Sends the modified cell sheets to the render web worker based on a
@@ -84,20 +81,7 @@ impl GridController {
                 }
             }
         }
-        self.send_render_cells_from_hash(selection.sheet_id, modified);
-    }
-
-    pub fn send_render_borders(&self, sheet_id: SheetId) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) {
-            return;
-        }
-
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            let borders = sheet.render_borders();
-            if let Ok(borders) = serde_json::to_string(&borders) {
-                crate::wasm_bindings::js::jsSheetBorders(sheet_id.to_string(), borders);
-            }
-        }
+        self.send_render_cells_from_hash(selection.sheet_id, &modified);
     }
 
     /// Sends the modified fills to the client
@@ -228,6 +212,24 @@ impl GridController {
                     crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
                 }
             }
+        }
+    }
+
+    /// Sends individual offsets that have been modified to the client
+    pub fn send_offsets_modified(
+        &self,
+        sheet_id: SheetId,
+        column: Option<i64>,
+        row: Option<i64>,
+        new_size: f64,
+    ) {
+        if cfg!(target_family = "wasm") || cfg!(test) {
+            crate::wasm_bindings::js::jsOffsetsModified(
+                sheet_id.to_string(),
+                column,
+                row,
+                new_size,
+            );
         }
     }
 
