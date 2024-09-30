@@ -27,7 +27,8 @@ interface Props {
 
   onEnter?: () => void;
 
-  requireSheetId?: string;
+  onlyCurrentSheet?: string;
+  onlyCurrentSheetError?: string;
 }
 
 export const SheetRange = (props: Props) => {
@@ -38,7 +39,8 @@ export const SheetRange = (props: Props) => {
     triggerError,
     changeCursor,
     readOnly,
-    requireSheetId,
+    onlyCurrentSheet,
+    onlyCurrentSheetError,
   } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const ref = useRef<HTMLInputElement>(null);
@@ -56,22 +58,26 @@ export const SheetRange = (props: Props) => {
   const updateValue = useCallback(
     (value: string) => {
       try {
-        const selectionString = a1StringToSelection(value, sheets.sheet.id, '{}');
+        const selectionString = a1StringToSelection(
+          value,
+          onlyCurrentSheet ?? (changeCursor === true ? sheets.sheet.id : changeCursor ?? sheets.sheet.id),
+          onlyCurrentSheet ? '{}' : sheets.getRustSheetMap()
+        );
         const selection = JSON.parse(selectionString);
-        if (selection) {
-          onChangeRange(selection);
-          setRangeError(undefined);
-        } else if (selection.error) {
-          onChangeRange(undefined);
-          setRangeError(selection.error.error);
-        } else {
-          throw new Error('Invalid selection from parseSelectionRange');
+        onChangeRange(selection);
+        setRangeError(undefined);
+      } catch (e: any) {
+        try {
+          const parsed = JSON.parse(e);
+          if (parsed.InvalidSheetName) {
+            setRangeError(onlyCurrentSheetError ?? 'Invalid sheet name');
+          }
+        } catch (_) {
+          // ignore
         }
-      } catch (_) {
-        // there was an error parsing the range, so nothing more to do
       }
     },
-    [onChangeRange]
+    [changeCursor, onChangeRange, onlyCurrentSheet, onlyCurrentSheetError]
   );
 
   const onBlur = useCallback(
@@ -115,7 +121,7 @@ export const SheetRange = (props: Props) => {
       events.off('changeSheet', updateSheet);
     };
   }, []);
-  const disableButton = requireSheetId ? requireSheetId !== sheetId : false;
+  const disableButton = onlyCurrentSheet ? onlyCurrentSheet !== sheetId : false;
 
   return (
     <div>
