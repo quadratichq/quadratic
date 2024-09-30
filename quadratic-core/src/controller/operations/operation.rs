@@ -13,6 +13,15 @@ use crate::{
     SheetPos, SheetRect,
 };
 
+/// Determine whether to copy the formats during an Insert operation from the
+/// column/row before or after (or none).
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+pub enum CopyFormats {
+    Before,
+    After,
+    None,
+}
+
 /// It might be better to Box the SheetSchema to avoid the large enum variant.
 /// But that requires versioning, which isn't worth the change in serialization.
 /// The difference in bytes per operation is around 500 bytes, so not the end of
@@ -141,6 +150,25 @@ pub enum Operation {
         sheet_pos: SheetPos,
         validation_id: Option<Uuid>,
     },
+
+    DeleteColumn {
+        sheet_id: SheetId,
+        column: i64,
+    },
+    DeleteRow {
+        sheet_id: SheetId,
+        row: i64,
+    },
+    InsertColumn {
+        sheet_id: SheetId,
+        column: i64,
+        copy_formats: CopyFormats,
+    },
+    InsertRow {
+        sheet_id: SheetId,
+        row: i64,
+        copy_formats: CopyFormats,
+    },
 }
 
 impl fmt::Display for Operation {
@@ -267,6 +295,36 @@ impl fmt::Display for Operation {
                     fmt,
                     "SetValidationWarning {{ sheet_pos: {:?}, validation_id: {:?} }}",
                     sheet_pos, validation_id
+                )
+            }
+            Operation::DeleteColumn { sheet_id, column } => {
+                write!(
+                    fmt,
+                    "DeleteColumn {{ sheet_id: {}, column: {} }}",
+                    sheet_id, column
+                )
+            }
+            Operation::DeleteRow { sheet_id, row } => {
+                write!(fmt, "DeleteRow {{ sheet_id: {}, row: {} }}", sheet_id, row)
+            }
+            Operation::InsertColumn {
+                sheet_id,
+                column,
+                copy_formats,
+            } => {
+                write!(
+                    fmt,
+                    "InsertColumn {{ sheet_id: {sheet_id}, column: {column}, copy_formats: {copy_formats:?} }}"
+                )
+            }
+            Operation::InsertRow {
+                sheet_id,
+                row,
+                copy_formats,
+            } => {
+                write!(
+                    fmt,
+                    "InsertRow {{ sheet_id: {sheet_id}, row: {row}, copy_formats: {copy_formats:?} }}"
                 )
             }
         }
