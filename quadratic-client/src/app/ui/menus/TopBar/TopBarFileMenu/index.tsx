@@ -21,7 +21,7 @@ export const TopBarMenus = () => {
 
   return (
     <div className="flex items-center">
-      <Menubar className="p-0 pr-[1px]">
+      <Menubar className="p-0 pr-1">
         <FileMenubarMenu />
         <EditMenubarMenu />
         <ViewMenubarMenu />
@@ -30,8 +30,8 @@ export const TopBarMenus = () => {
         <HelpMenubarMenu />
       </Menubar>
       <Button
-        variant="ghost"
-        className="h-auto px-2 py-1 text-primary hover:text-primary"
+        variant="secondary"
+        className="h-auto px-2 py-1"
         onClick={() => {
           feedbackAction.run();
         }}
