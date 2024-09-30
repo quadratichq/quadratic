@@ -4,4 +4,4 @@
 
 &fps=1 - turns on the FPS counter
 
-&cell-boxes - turns on cell boxes (ie, the hash boxes that render text)
+&boxes - turns on cell boxes (ie, the hash boxes that render text)

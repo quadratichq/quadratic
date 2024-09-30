@@ -3,6 +3,10 @@ import { Keys, MacModifiers, WindowsModifiers } from '@/app/keyboard/keys';
 import { ActionShortcut } from '@/app/keyboard/shortcut';
 
 export const defaultShortcuts: ActionShortcut = {
+  [Action.CmdClick]: {
+    mac: [[MacModifiers.Cmd]],
+    windows: [[WindowsModifiers.Ctrl]],
+  },
   [Action.Copy]: {
     mac: [[MacModifiers.Cmd, Keys.C]],
     windows: [[WindowsModifiers.Ctrl, Keys.C]],
@@ -128,6 +132,14 @@ export const defaultShortcuts: ActionShortcut = {
   [Action.ToggleItalic]: {
     mac: [[MacModifiers.Cmd, Keys.I]],
     windows: [[WindowsModifiers.Ctrl, Keys.I]],
+  },
+  [Action.ToggleUnderline]: {
+    mac: [[MacModifiers.Cmd, Keys.U]],
+    windows: [[WindowsModifiers.Ctrl, Keys.U]],
+  },
+  [Action.ToggleStrikeThrough]: {
+    mac: [[MacModifiers.Cmd, Keys.Five]],
+    windows: [[WindowsModifiers.Ctrl, Keys.Five]],
   },
   [Action.FillRight]: {
     mac: [[MacModifiers.Cmd, Keys.R]],

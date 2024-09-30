@@ -1,9 +1,11 @@
+//! Stores column data, including formatting. This file is a bit confusing and
+//! should be refactored.
+
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Range;
 
-use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
@@ -11,6 +13,7 @@ use smallvec::{smallvec, SmallVec};
 use super::formats::format::Format;
 use super::formatting::*;
 use super::{Block, BlockContent, SameValue};
+use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 use crate::{CellValue, IsBlank};
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
@@ -28,10 +31,12 @@ pub struct Column {
     pub text_color: ColumnData<SameValue<String>>,
     pub fill_color: ColumnData<SameValue<String>>,
     pub render_size: ColumnData<SameValue<RenderSize>>,
-
     #[serde(default)]
     pub date_time: ColumnData<SameValue<String>>,
+    pub underline: ColumnData<SameValue<bool>>,
+    pub strike_through: ColumnData<SameValue<bool>>,
 }
+
 impl Column {
     pub fn new(x: i64) -> Self {
         Self {
@@ -66,6 +71,8 @@ impl Column {
                 self.text_color.range(),
                 self.fill_color.range(),
                 self.date_time.range(),
+                self.underline.range(),
+                self.strike_through.range(),
             ])
         }
     }
@@ -83,6 +90,8 @@ impl Column {
             self.text_color.range(),
             self.fill_color.range(),
             self.date_time.range(),
+            self.underline.range(),
+            self.strike_through.range(),
         ])
     }
 
@@ -101,6 +110,8 @@ impl Column {
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
             || self.date_time.get(y).is_some()
+            || self.underline.get(y).is_some()
+            || self.strike_through.get(y).is_some()
     }
 
     /// Gets the Format for a column (which will eventually replace the data structure)
@@ -118,6 +129,8 @@ impl Column {
             fill_color: self.fill_color.get(y),
             render_size: self.render_size.get(y),
             date_time: self.date_time.get(y),
+            underline: self.underline.get(y),
+            strike_through: self.strike_through.get(y),
         };
         if format.is_default() {
             None
@@ -164,7 +177,6 @@ impl<B: BlockContent> ColumnData<B> {
     }
 
     /// Adds blocks w/o regard to whether they overlap with existing blocks.
-    /// This is temporary and for use with column.values only!
     pub fn add_blocks(&mut self, blocks: impl IntoIterator<Item = Block<B>>) {
         for block in blocks {
             self.add_block(block);
@@ -249,6 +261,10 @@ impl<B: BlockContent> ColumnData<B> {
 
     pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
         self.0.values()
+    }
+
+    pub fn into_blocks(self) -> impl Iterator<Item = Block<B>> {
+        self.0.into_values()
     }
 
     pub fn has_blocks_in_range(&self, y_range: Range<i64>) -> bool {
@@ -338,6 +354,15 @@ impl<B: BlockContent> ColumnData<B> {
                 (start..end).filter_map(|y| Some((y, block.get(y)?)))
             })
     }
+
+    pub fn min(&self) -> Option<i64> {
+        self.0.first_key_value().map(|(y, _)| *y)
+    }
+    pub fn max(&self) -> Option<i64> {
+        self.0
+            .last_key_value()
+            .map(|(y, block)| *y + block.len() as i64 - 1)
+    }
 }
 
 impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
@@ -372,12 +397,19 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
         }
         replaced
     }
+
+    /// Sets a block at a specific y value without merging. This is used by serialize functions.
+    pub fn insert_block(&mut self, y: i64, len: usize, value: T) {
+        debug_assert!(!self.0.contains_key(&y));
+        self.set_range(y..y + len as i64, value);
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use serial_test::parallel;
+
+    use super::*;
 
     #[test]
     #[parallel]
@@ -460,6 +492,9 @@ mod test {
                 h: "2".to_string(),
             },
         );
+        cd.underline.set_range(Range { start: 0, end: 10 }, true);
+        cd.strike_through
+            .set_range(Range { start: 0, end: 10 }, true);
 
         let format = cd.format(0).unwrap();
         assert_eq!(format.align, Some(CellAlign::Center));
@@ -485,6 +520,8 @@ mod test {
                 h: "2".to_string()
             })
         );
+        assert_eq!(format.underline, Some(true));
+        assert_eq!(format.strike_through, Some(true));
     }
 
     #[test]
@@ -522,9 +559,36 @@ mod test {
                 h: "2".to_string(),
             },
         );
+        cd.underline.set_range(Range { start: 0, end: 10 }, true);
+        cd.strike_through
+            .set_range(Range { start: 0, end: 10 }, true);
 
         let range = cd.format_range().unwrap();
         assert_eq!(range.start, 0);
         assert_eq!(range.end, 10);
+    }
+
+    #[test]
+    #[parallel]
+    fn min_max() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+        cd.set(1, Some(true));
+        cd.set(2, Some(true));
+        cd.set(3, Some(true));
+
+        assert_eq!(cd.min(), Some(1));
+        assert_eq!(cd.max(), Some(3));
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_block() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+        cd.insert_block(3, 2, true);
+        assert_eq!(cd.get(3), Some(true));
+        assert_eq!(cd.get(4), Some(true));
+        assert_eq!(cd.get(5), None);
     }
 }

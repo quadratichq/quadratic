@@ -7,6 +7,8 @@
 
 import { debugWebWorkers } from '@/app/debugFlags';
 import {
+  BorderSelection,
+  BorderStyle,
   CellAlign,
   CellFormatSummary,
   CellVerticalAlign,
@@ -385,6 +387,26 @@ class Core {
     });
   }
 
+  setCellUnderline(selection: Selection, underline: boolean, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellUnderline(JSON.stringify(selection, bigIntReplacer), underline, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellStrikeThrough(selection: Selection, strikeThrough: boolean, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellStrikeThrough(JSON.stringify(selection, bigIntReplacer), strikeThrough, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
   setCellFillColor(selection: Selection, fillColor?: string, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
@@ -734,24 +756,14 @@ class Core {
 
   //#endregion
 
-  setRegionBorders(
-    sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    selection: string,
-    style: string | undefined,
-    cursor: string
-  ) {
+  setBorders(selection: Selection, borderSelection: BorderSelection, style: BorderStyle | undefined, cursor: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setRegionBorders(
-          sheetId,
-          numbersToRectStringified(x, y, width, height),
-          selection,
-          style,
+        this.gridController.setBorders(
+          JSON.stringify(selection, bigIntReplacer),
+          JSON.stringify(borderSelection),
+          JSON.stringify(style),
           cursor
         );
         resolve(undefined);

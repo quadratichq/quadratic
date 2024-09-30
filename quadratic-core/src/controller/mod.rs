@@ -12,7 +12,6 @@ pub mod sheet_offsets;
 pub mod sheets;
 pub mod thumbnail;
 pub mod transaction;
-pub mod transaction_summary;
 pub mod transaction_types;
 pub mod user_actions;
 pub mod viewport;

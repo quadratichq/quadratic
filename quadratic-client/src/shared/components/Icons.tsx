@@ -77,7 +77,7 @@ export const BorderRightIcon: IconComponent = (props) => {
 };
 
 export const BorderTopIcon: IconComponent = (props) => {
-  return <Icon {...props}>border_bottom</Icon>;
+  return <Icon {...props}>border_top</Icon>;
 };
 
 export const BorderBottomIcon: IconComponent = (props) => {
@@ -238,6 +238,14 @@ export const FormatBoldIcon: IconComponent = (props) => {
 
 export const FormatItalicIcon: IconComponent = (props) => {
   return <Icon {...props}>format_italic</Icon>;
+};
+
+export const FormatUnderlinedIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_underlined</Icon>;
+};
+
+export const FormatStrikethroughIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_strikethrough</Icon>;
 };
 
 export const FormatNumberAutomaticIcon: IconComponent = (props) => {

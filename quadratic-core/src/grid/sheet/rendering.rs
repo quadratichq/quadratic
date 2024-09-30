@@ -1,22 +1,14 @@
 use code_run::CodeRunResult;
 
-use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    grid::{
-        borders::{get_render_horizontal_borders, get_render_vertical_borders},
-        code_run,
-        formats::format::Format,
-        js_types::{
-            JsHtmlOutput, JsNumber, JsRenderBorders, JsRenderCell, JsRenderCellSpecial,
-            JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsSheetFill,
-            JsValidationWarning,
-        },
-        CellAlign, CodeCellLanguage, CodeRun, Column,
-    },
-    CellValue, Pos, Rect, RunError, RunErrorMsg, Value,
-};
-
 use super::Sheet;
+use crate::grid::formats::format::Format;
+use crate::grid::js_types::{
+    JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+    JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
+};
+use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun, Column};
+use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
+use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
 impl Sheet {
     /// checks columns for any column that has data that might render
@@ -114,6 +106,8 @@ impl Sheet {
                     text_color: format.text_color,
                     special,
                     number,
+                    underline: format.underline,
+                    strike_through: format.strike_through,
                 }
             }
             Some(column) => {
@@ -151,6 +145,8 @@ impl Sheet {
                     vertical_align: format.vertical_align,
                     special,
                     number,
+                    underline: format.underline,
+                    strike_through: format.strike_through,
                 }
             }
         }
@@ -466,14 +462,6 @@ impl Sheet {
             .collect()
     }
 
-    /// Returns borders to render in a sheet.
-    pub fn render_borders(&self) -> JsRenderBorders {
-        JsRenderBorders {
-            horizontal: get_render_horizontal_borders(self),
-            vertical: get_render_vertical_borders(self),
-        }
-    }
-
     /// Send images in this sheet to the client. Note: we only have images
     /// inside CodeRuns. We may open this up in the future to allow images to be
     /// placed directly on the grid without a CodeRun. In that case, we'll need
@@ -573,6 +561,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use std::collections::HashSet;
 
     use chrono::Utc;
@@ -591,8 +581,7 @@ mod tests {
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
-            Italic, RenderSize, Sheet,
+            Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
         },
         selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},

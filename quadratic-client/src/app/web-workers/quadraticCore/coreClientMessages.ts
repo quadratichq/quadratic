@@ -1,15 +1,17 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import {
+  BorderSelection,
+  BorderStyle,
   CellAlign,
   CellFormatSummary,
   CellVerticalAlign,
   CellWrap,
   CodeCellLanguage,
   Format,
+  JsBordersSheet,
   JsCellValue,
   JsCodeCell,
   JsHtmlOutput,
-  JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -339,6 +341,20 @@ export interface ClientCoreSetCellTextColor {
   cursor?: string;
 }
 
+export interface ClientCoreSetCellUnderline {
+  type: 'clientCoreSetCellUnderline';
+  selection: Selection;
+  underline: boolean;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellStrikeThrough {
+  type: 'clientCoreSetCellStrikeThrough';
+  selection: Selection;
+  strikeThrough: boolean;
+  cursor?: string;
+}
+
 export interface ClientCoreSetCellAlign {
   type: 'clientCoreSetCellAlign';
   selection: Selection;
@@ -475,15 +491,11 @@ export interface ClientCoreRerunCodeCells {
   cursor: string;
 }
 
-export interface ClientCoreSetRegionBorders {
-  type: 'clientCoreSetRegionBorders';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  selection: string;
-  style?: string;
+export interface ClientCoreSetBorders {
+  type: 'clientCoreSetBorders';
+  selection: Selection;
+  borderSelection: BorderSelection;
+  style?: BorderStyle;
   cursor: string;
 }
 
@@ -618,17 +630,16 @@ export interface CoreClientSheetOffsets {
   column?: number;
   row?: number;
   size: number;
-  borders: JsRenderBorders;
 }
 
 export interface CoreClientGenerateThumbnail {
   type: 'coreClientGenerateThumbnail';
 }
 
-export interface CoreClientSheetBorders {
-  type: 'coreClientSheetBorders';
+export interface CoreClientBordersSheet {
+  type: 'coreClientBordersSheet';
   sheetId: string;
-  borders: JsRenderBorders;
+  borders: JsBordersSheet;
 }
 
 export interface CoreClientSheetRenderCells {
@@ -982,6 +993,8 @@ export type ClientCoreMessage =
   | ClientCoreSetCellItalic
   | ClientCoreSetCellFillColor
   | ClientCoreSetCellTextColor
+  | ClientCoreSetCellUnderline
+  | ClientCoreSetCellStrikeThrough
   | ClientCoreSetCellAlign
   | ClientCoreSetCellVerticalAlign
   | ClientCoreSetCellWrap
@@ -1012,7 +1025,7 @@ export type ClientCoreMessage =
   | ClientCoreCopyToClipboard
   | ClientCoreCutToClipboard
   | ClientCorePasteFromClipboard
-  | ClientCoreSetRegionBorders
+  | ClientCoreSetBorders
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
   | ClientCoreExportCsvSelection
@@ -1073,7 +1086,6 @@ export type CoreClientMessage =
   | CoreClientFindNextRow
   | CoreClientGenerateThumbnail
   | CoreClientLoad
-  | CoreClientSheetBorders
   | CoreClientSheetRenderCells
   | CoreClientSheetCodeCellRender
   | CoreClientSheetBoundsUpdate
@@ -1104,4 +1116,5 @@ export type CoreClientMessage =
   | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
+  | CoreClientBordersSheet
   | CoreClientGetCellValue;

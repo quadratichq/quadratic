@@ -153,14 +153,14 @@ impl super::PubSub for RedisConnection {
     /// Insert or update a key within an active channel
     async fn upsert_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()> {
         let score = Utc::now().timestamp_millis();
-        self.multiplex.zadd(set_key, channel, score).await?;
+        let () = self.multiplex.zadd(set_key, channel, score).await?;
 
         Ok(())
     }
 
     /// Remove an a key within an active channel
     async fn remove_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()> {
-        self.multiplex.zrem(set_key, channel).await?;
+        let () = self.multiplex.zrem(set_key, channel).await?;
         Ok(())
     }
 
@@ -195,7 +195,7 @@ impl super::PubSub for RedisConnection {
         active_channel: Option<&str>,
     ) -> Result<()> {
         // add the message to the stream
-        self.multiplex.xadd(channel, key, &[(key, value)]).await?;
+        let () = self.multiplex.xadd(channel, key, &[(key, value)]).await?;
 
         // add the channel to the active channels set
         if let Some(active_channel) = active_channel {

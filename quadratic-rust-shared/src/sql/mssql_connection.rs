@@ -150,25 +150,27 @@ impl Connection for MsSqlConnection {
 
     async fn schema(&self, client: &mut Self::Conn) -> Result<DatabaseSchema> {
         let database = self.database.as_ref().ok_or_else(|| {
-            SharedError::Sql(Sql::Schema("Database name is required for MsSQL".into()))
+            SharedError::Sql(Sql::Schema(
+                "Database name is required for MS SQL Server".into(),
+            ))
         })?;
 
         let sql = format!(
             "
-SELECT 
+SELECT
     DB_NAME() AS 'database',
     s.name AS 'schema',
     t.name AS 'table',
     c.name AS 'column_name',
     TYPE_NAME(c.user_type_id) AS 'column_type',
     CASE WHEN c.is_nullable = 1 THEN 'YES' ELSE 'NO' END AS 'is_nullable'
-FROM 
+FROM
     {database}.sys.columns c
-INNER JOIN 
+INNER JOIN
     {database}.sys.tables t ON c.object_id = t.object_id
-INNER JOIN 
+INNER JOIN
     {database}.sys.schemas s ON t.schema_id = s.schema_id
-ORDER BY 
+ORDER BY
     t.name, c.column_id, c.name"
         );
 
@@ -291,7 +293,7 @@ where
         .unwrap_or(ArrowType::Void)
 }
 
-fn convert_mssql_type_owned<'a, T, F>(
+fn convert_mssql_type_owned<T, F>(
     column_data: ColumnData<'static>,
     map_to_arrow_type: F,
 ) -> ArrowType

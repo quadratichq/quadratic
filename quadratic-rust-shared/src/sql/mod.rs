@@ -76,7 +76,7 @@ pub trait Connection {
 
         for row in &data {
             for (col_index, col) in Self::row_columns(row).enumerate() {
-                let value = Self::to_arrow(row, &col, col_index);
+                let value = Self::to_arrow(row, col, col_index);
                 transposed[col_index].push(value);
             }
         }
@@ -92,7 +92,7 @@ pub trait Connection {
             .enumerate()
             .map(|(index, col)| {
                 Field::new(
-                    Self::column_name(&col).to_string(),
+                    Self::column_name(col).to_string(),
                     cols[index].data_type().to_owned(),
                     true,
                 )

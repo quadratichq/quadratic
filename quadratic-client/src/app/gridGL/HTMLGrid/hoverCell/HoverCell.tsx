@@ -1,5 +1,8 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
+import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
@@ -8,9 +11,6 @@ import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { ErrorValidation } from '../../cells/CellsSheet';
-import { usePositionCellMessage } from '../usePositionCellMessage';
-import { HtmlValidationMessage } from '../validations/HtmlValidationMessage';
 import './HoverCell.css';
 
 export interface EditingCell {
@@ -162,7 +162,7 @@ export const HoverCell = () => {
     asyncFunction();
   }, [cell]);
 
-  const { top, left } = usePositionCellMessage({ div: ref.current, offsets, forceLeft: false });
+  const { top, left } = usePositionCellMessage({ div: ref.current, offsets });
 
   return (
     <div
