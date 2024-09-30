@@ -1166,11 +1166,11 @@ export type ClientCoreMessage =
   | ClientCoreGetValidationList
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
-  | ClientCoreGetCellValue
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
+  | ClientCoreGetCellValue
   | ClientCoreGetCellValueSelection
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
