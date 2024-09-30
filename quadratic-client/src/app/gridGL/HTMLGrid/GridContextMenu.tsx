@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 //! This shows the grid heading context menu.
 
 import { Action } from '@/app/actions/actions';
@@ -9,11 +8,12 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { IconComponent } from '@/shared/components/Icons';
-import { ControlledMenu, MenuItem } from '@szhsin/react-menu';
+import { ControlledMenu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { Point } from 'pixi.js';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { sheets } from '@/app/grid/controller/Sheets';
 
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
@@ -34,7 +34,7 @@ export const GridContextMenu = () => {
   }, [onClose]);
 
   useEffect(() => {
-    const updateGridMenu = (world: Point, column: number, row: number) => {
+    const updateGridMenu = (world: Point, column?: number, row?: number) => {
       setShow({ world, column, row });
     };
     events.on('gridContextMenu', updateGridMenu);
@@ -45,6 +45,8 @@ export const GridContextMenu = () => {
   }, [setShow]);
 
   const ref = useRef<HTMLDivElement>(null);
+
+  const isColumnRowAvailable = sheets.sheet.cursor.hasOneColumnRowSelection(true);
 
   return (
     <div
@@ -71,6 +73,14 @@ export const GridContextMenu = () => {
         <MenuItemAction action={Action.PasteFormattingOnly} />
         <MenuItemAction action={Action.CopyAsPng} />
         <MenuItemAction action={Action.DownloadAsCsv} />
+        <MenuDivider />
+        {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnLeft} />}
+        {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnRight} />}
+        <MenuItemAction action={Action.DeleteColumn} />
+        {isColumnRowAvailable && <MenuDivider />}
+        {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowAbove} />}
+        {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowBelow} />}
+        <MenuItemAction action={Action.DeleteRow} />
       </ControlledMenu>
     </div>
   );
