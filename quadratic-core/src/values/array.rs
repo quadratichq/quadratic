@@ -10,7 +10,7 @@ use smallvec::{smallvec, SmallVec};
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
 use crate::{
     controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunError,
-    RunErrorMsg,
+    RunErrorMsg, Span,
 };
 
 #[macro_export]
@@ -181,6 +181,13 @@ impl Array {
     /// else the result is undefined. Returns `None` if `slices` is empty or if
     /// each slice is empty.
     pub fn from_slices<'a>(
+        span: Span,
+        axis: Axis,
+        slices: impl IntoIterator<Item = Vec<&'a CellValue>>,
+    ) -> CodeResult<Self> {
+        Self::try_from_slices(axis, slices).ok_or(RunErrorMsg::EmptyArray.with_span(span))
+    }
+    fn try_from_slices<'a>(
         axis: Axis,
         slices: impl IntoIterator<Item = Vec<&'a CellValue>>,
     ) -> Option<Self> {

@@ -69,24 +69,84 @@ fn get_functions() -> Vec<FormulaFunction> {
                             .zip(include)
                             .filter(|(_, include)| *include)
                             .map(|(slice, _)| slice);
-                        match Array::from_slices(axis, new_slices) {
-                            Some(a) => Value::from(a),
-                            None => empty_result?,
+                        match Array::from_slices(span, axis, new_slices) {
+                            Ok(a) => Value::from(a),
+                            Err(_) => empty_result?,
                         }
                     }
                 }
             }
         ),
         formula_fn!(
-            /// TODO: documentation
-            #[examples("SORT()")]
+            /// Sorts an array of values.
+            ///
+            /// `sort_index` specifies the entry within each row or column to
+            /// sort by. For example, if `sort_index` is `3` when sorting by row
+            /// then each row will be sorted based on its value in the third
+            /// column. If `sort_index` is omitted, then the first entry is
+            /// used.
+            ///
+            /// `sort_order` specifies whether to sort in reverse order. If
+            /// `sort_order` is `1` or omitted, then the array is sorted in
+            /// ascending order. If it is `-1`, then the array is sorted in
+            /// descending order.
+            ///
+            /// If `by_column` is `true`, then the function operations on
+            /// columns. If `by_column` is `false` or omitted, then the function
+            /// operates on rows.
+            ///
+            /// The sort is [stable].
+            ///
+            /// [stable]:
+            ///     https://en.wikipedia.org/wiki/Sorting_algorithm#Stability
+            #[examples(
+                "SORT(A1:A100)",
+                "SORT(A1:C50)",
+                "SORT(A1:C50, 3)",
+                "SORT(A1:C50, , -1)",
+                "SORT(A1:C50, 2, -1)",
+                "SORT(A1:F3,,, TRUE)"
+            )]
             fn SORT(
+                span: Span,
                 array: Array,
-                sort_index: (Option<f64>),
-                sort_order: (Option<f64>),
+                sort_index: (Option<Spanned<i64>>),
+                sort_order: (Option<Spanned<i64>>),
                 by_column: (Option<bool>),
             ) {
-                array // TODO
+                let axis = by_column_to_axis(by_column);
+
+                let index = match sort_index {
+                    None => 0, // default to first column
+                    Some(value) => {
+                        let max_index = array.size()[axis.other_axis()].get() as i64;
+                        if (1..=max_index).contains(&value.inner) {
+                            value.inner as usize - 1 // convert to zero-indexed
+                        } else {
+                            return Err(RunErrorMsg::InvalidArgument.with_span(value.span));
+                        }
+                    }
+                };
+
+                let compare_fn = match sort_order {
+                    None => |a, b| CellValue::total_cmp(a, b),
+                    Some(value) => match value.inner {
+                        1 => |a, b| CellValue::total_cmp(a, b),
+                        -1 => |a, b| CellValue::total_cmp(b, a),
+                        _ => return Err(RunErrorMsg::InvalidArgument.with_span(value.span)),
+                    },
+                };
+
+                Array::from_slices(
+                    span,
+                    axis,
+                    array.slices(axis).sorted_by(|slice1, slice2| {
+                        compare_fn(
+                            *slice1.get(index).expect("already checked bounds"),
+                            *slice2.get(index).expect("already checked bounds"),
+                        )
+                    }),
+                )?
             }
         ),
         formula_fn!(
@@ -148,8 +208,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                         None | Some(false) => true,
                     })
                     .map(|(slice, _)| slice);
-                Array::from_slices(axis, new_slices)
-                    .ok_or(RunErrorMsg::EmptyArray.with_span(span))?
+                Array::from_slices(span, axis, new_slices)?
             }
         ),
     ]
@@ -276,7 +335,110 @@ mod tests {
     }
 
     #[test]
-    fn test_formula_sort() {}
+    fn test_formula_sort() {
+        let source_data = array![
+            "decisive",   "accept",     9, -4;
+            "history",    "elaborate",  2, -3;
+            "scream",     "shiver",     10, 6;
+            "wine",       "insistence", -2, -5;
+            "conscience", "waste",      3, -8;
+            "undertake",  "teacher",    1, 4;
+            "classify",   "onion",      0, 5;
+            "dynamic",    "activity",   -7, -9;
+        ];
+
+        let g = Grid::from_array(pos![A1], &source_data);
+
+        let expected = array![
+            "classify",   "onion",      0,  5;
+            "conscience", "waste",      3,  -8;
+            "decisive",   "accept",     9,  -4;
+            "dynamic",    "activity",   -7, -9;
+            "history",    "elaborate",  2,  -3;
+            "scream",     "shiver",     10, 6;
+            "undertake",  "teacher",    1,  4;
+            "wine",       "insistence", -2, -5;
+        ];
+        assert_eq!(eval_to_string(&g, "=SORT(A1:D8)"), expected.to_string());
+
+        let expected = array![
+            "decisive",   "accept",     9,  -4;
+            "dynamic",    "activity",   -7, -9;
+            "history",    "elaborate",  2,  -3;
+            "wine",       "insistence", -2, -5;
+            "classify",   "onion",      0,  5;
+            "scream",     "shiver",     10, 6;
+            "undertake",  "teacher",    1,  4;
+            "conscience", "waste",      3,  -8;
+        ];
+        assert_eq!(eval_to_string(&g, "=SORT(A1:D8, 2)"), expected.to_string());
+
+        let expected = array![
+            "dynamic",    "activity",   -7, -9;
+            "wine",       "insistence", -2, -5;
+            "classify",   "onion",      0,  5;
+            "undertake",  "teacher",    1,  4;
+            "history",    "elaborate",  2,  -3;
+            "conscience", "waste",      3,  -8;
+            "decisive",   "accept",     9,  -4;
+            "scream",     "shiver",     10, 6;
+        ];
+        assert_eq!(eval_to_string(&g, "=SORT(A1:D8, 3)"), expected.to_string());
+
+        let expected = array![
+            "dynamic",    "activity",   -7, -9;
+            "conscience", "waste",      3,  -8;
+            "wine",       "insistence", -2, -5;
+            "decisive",   "accept",     9,  -4;
+            "history",    "elaborate",  2,  -3;
+            "undertake",  "teacher",    1,  4;
+            "classify",   "onion",      0,  5;
+            "scream",     "shiver",     10, 6;
+        ];
+        assert_eq!(eval_to_string(&g, "=SORT(A1:D8, 4)"), expected.to_string());
+
+        // Sort index out of range
+        assert_eq!(
+            eval_to_err(&g, "=SORT(A1:D8, 0)").msg,
+            RunErrorMsg::InvalidArgument,
+        );
+        assert_eq!(
+            eval_to_err(&g, "=SORT(A1:D8, 5)").msg,
+            RunErrorMsg::InvalidArgument,
+        );
+
+        // Reverse
+        let expected = array![
+            "conscience", "waste",      3,  -8;
+            "undertake",  "teacher",    1,  4;
+            "scream",     "shiver",     10, 6;
+            "classify",   "onion",      0,  5;
+            "wine",       "insistence", -2, -5;
+            "history",    "elaborate",  2,  -3;
+            "dynamic",    "activity",   -7, -9;
+            "decisive",   "accept",     9,  -4;
+        ];
+        assert_eq!(
+            eval_to_string(&g, "=SORT(A1:D8, 2, -1)"),
+            expected.to_string(),
+        );
+
+        // By row
+        let expected = array![
+            -4, 9,  "decisive",   "accept";
+            -3, 2,  "history",    "elaborate";
+            6,  10, "scream",     "shiver";
+            -5, -2, "wine",       "insistence";
+            -8, 3,  "conscience", "waste";
+            4,  1,  "undertake",  "teacher";
+            5,  0,  "classify",   "onion";
+            -9, -7, "dynamic",    "activity";
+        ];
+        assert_eq!(
+            eval_to_string(&g, "=SORT(A1:D8, 5,, TRUE)"),
+            expected.to_string(),
+        );
+    }
 
     #[test]
     fn test_formula_unique() {
