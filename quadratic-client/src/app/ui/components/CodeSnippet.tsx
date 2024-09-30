@@ -148,8 +148,8 @@ function CodeSnippetDiffEditor({ language, text }: { language: CodeSnippetProps[
       waitingForEditorClose: {
         codeCell,
         showCellTypeMenu: false,
+        initialCode: '',
         inlineEditor: false,
-        initialCode: undefined,
       },
     }));
   }, [getCodeCell, setCodeEditorState, text]);

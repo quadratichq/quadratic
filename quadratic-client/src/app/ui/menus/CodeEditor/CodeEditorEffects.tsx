@@ -59,7 +59,7 @@ export const CodeEditorEffects = () => {
   }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, showCodeEditor, updateCodeEditor]);
 
   useEffect(() => {
-    if (codeCell.sheetId) {
+    if (codeCell.sheetId && initialCode !== undefined) {
       setLoading(true);
       quadraticCore.getCodeCell(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y).then((codeCellCore) => {
         updateCodeEditor(codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, codeCellCore, initialCode);

@@ -228,7 +228,7 @@ export class PointerCellMoving {
           ) {
             pixiAppSettings.setCodeEditorState?.({
               ...pixiAppSettings.codeEditorState,
-              initialCode: pixiAppSettings.unsavedEditorChanges,
+              initialCode: pixiAppSettings.unsavedEditorChanges ?? '',
               codeCell: {
                 ...codeCell,
                 pos: {

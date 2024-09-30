@@ -25,6 +25,7 @@ export const openCodeEditor = async () => {
           language: cell.language,
         },
         showCellTypeMenu: false,
+        initialCode: '',
       },
     });
   } else if (codeEditorState.showCodeEditor) {
@@ -39,6 +40,7 @@ export const openCodeEditor = async () => {
           language: 'Python',
         },
         showCellTypeMenu: true,
+        initialCode: '',
       },
     });
   } else {

@@ -6,7 +6,7 @@ import { useRecoilCallback } from 'recoil';
 export const useUpdateCodeEditor = () => {
   const updateCodeEditor = useRecoilCallback(
     ({ set }) =>
-      async (sheetId: string, x: number, y: number, codeCell?: JsCodeCell, initialCode?: string) => {
+      (sheetId: string, x: number, y: number, codeCell?: JsCodeCell, initialCode?: string) => {
         if (!sheetId) return;
 
         if (codeCell) {
@@ -21,11 +21,12 @@ export const useUpdateCodeEditor = () => {
               language: codeCell.language,
             },
             codeString: codeCell.code_string,
-            editorContent: initialCode ?? codeCell.code_string,
+            editorContent: initialCode ? initialCode : codeCell.code_string,
             evaluationResult: { ...newEvaluationResult, ...codeCell.return_info },
             cellsAccessed: codeCell.cells_accessed,
             consoleOutput: { stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined },
             spillError: codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)),
+            initialCode: undefined,
           }));
         } else {
           set(codeEditorAtom, (prev) => ({
@@ -42,6 +43,7 @@ export const useUpdateCodeEditor = () => {
             cellsAccessed: undefined,
             consoleOutput: undefined,
             spillError: undefined,
+            initialCode: undefined,
           }));
         }
       },
