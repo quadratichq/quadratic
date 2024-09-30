@@ -54,6 +54,7 @@ export class UrlParamsUser {
         pixiAppSettings.setCodeEditorState?.((prev) => ({
           ...prev,
           showCodeEditor: true,
+          initialCode: '',
           codeCell: {
             sheetId: sheets.current,
             pos: { x, y },
