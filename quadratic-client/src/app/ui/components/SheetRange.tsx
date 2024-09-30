@@ -4,11 +4,12 @@ import { TooltipHint } from './TooltipHint';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import { Button } from '@/shared/shadcn/ui/button';
 import { FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { getSelectionString, parseSelectionString } from '@/app/grid/sheet/selection';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { cn } from '@/shared/shadcn/utils';
 import { Selection } from '@/app/quadratic-core-types';
 import { events } from '@/app/events/events';
+import { a1StringToSelection, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 
 interface Props {
   label?: string;
@@ -46,7 +47,7 @@ export const SheetRange = (props: Props) => {
   const onInsert = useCallback(() => {
     if (ref.current) {
       const selection = sheets.getRustSelection();
-      ref.current.value = getSelectionString(selection);
+      ref.current.value = selectionToA1String(JSON.stringify(selection, bigIntReplacer));
       onChangeRange(selection);
       setRangeError(undefined);
     }
@@ -54,15 +55,20 @@ export const SheetRange = (props: Props) => {
 
   const updateValue = useCallback(
     (value: string) => {
-      const selection = parseSelectionString(value, sheets.sheet.id);
-      if (selection.selection) {
-        onChangeRange(selection.selection);
-        setRangeError(undefined);
-      } else if (selection.error) {
-        onChangeRange(undefined);
-        setRangeError(selection.error.error);
-      } else {
-        throw new Error('Invalid selection from parseSelectionRange');
+      try {
+        const selectionString = a1StringToSelection(value, sheets.sheet.id, '{}');
+        const selection = JSON.parse(selectionString);
+        if (selection) {
+          onChangeRange(selection);
+          setRangeError(undefined);
+        } else if (selection.error) {
+          onChangeRange(undefined);
+          setRangeError(selection.error.error);
+        } else {
+          throw new Error('Invalid selection from parseSelectionRange');
+        }
+      } catch (_) {
+        // there was an error parsing the range, so nothing more to do
       }
     },
     [onChangeRange]
@@ -78,21 +84,24 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial ? getSelectionString(initial) : '';
+      ref.current.value = initial ? selectionToA1String(JSON.stringify(initial, bigIntReplacer)) : '';
     }
   }, [initial]);
 
   const onFocus = () => {
     if (!ref.current || !changeCursor) return;
-    const selection = parseSelectionString(ref.current.value, changeCursor === true ? sheets.sheet.id : changeCursor);
-    if (selection.selection) {
-      // we need to hack the cursorPosition :(
-      const rects = selection.selection.rects;
-      if (rects?.length) {
-        selection.selection.x = rects[0].min.x;
-        selection.selection.y = rects[0].min.y;
+    try {
+      const selectionString = a1StringToSelection(
+        ref.current.value,
+        changeCursor === true ? sheets.sheet.id : changeCursor,
+        '{}'
+      );
+      const selection = JSON.parse(selectionString);
+      if (selection) {
+        sheets.sheet.cursor.loadFromSelection(selection, true);
       }
-      sheets.sheet.cursor.loadFromSelection(selection.selection, true);
+    } catch (_) {
+      // there was an error parsing the range, so nothing more to do
     }
   };
 

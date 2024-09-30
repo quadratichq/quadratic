@@ -1,4 +1,3 @@
-import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Validation } from '@/app/quadratic-core-types';
 import { Button } from '@/shared/shadcn/ui/button';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -9,6 +8,8 @@ import { cn } from '@/shared/shadcn/utils';
 import { useSetRecoilState } from 'recoil';
 import { ValidationsData } from './useValidationsData';
 import { validationRuleSimple } from '../Validation/validationType';
+import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
+import { selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 interface Props {
   validation: Validation;
@@ -47,7 +48,10 @@ export const ValidationEntry = (props: Props) => {
 
   const title = useMemo(() => validationText(validation), [validation]);
 
-  const selection = useMemo(() => getSelectionString(validation.selection), [validation.selection]);
+  const selection = useMemo(
+    () => selectionToA1String(JSON.stringify(validation.selection, bigIntReplacer)),
+    [validation.selection]
+  );
 
   const selectValidation = useCallback(() => {
     setEditorInteractionState((old) => ({

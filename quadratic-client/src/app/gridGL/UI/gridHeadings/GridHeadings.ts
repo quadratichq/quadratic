@@ -359,10 +359,8 @@ export class GridHeadings extends Container {
 
     const start = offsets.getYPlacement(bounds.top);
     const end = offsets.getYPlacement(bounds.bottom);
-    // const topOffset = start.position;
-    // const bottomOffset = end.position + end.size;
-
-    return;
+    const topOffset = start.position;
+    const bottomOffset = end.position + end.size;
 
     // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     let mod = 0;

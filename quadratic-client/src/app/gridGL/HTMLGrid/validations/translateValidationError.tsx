@@ -1,6 +1,6 @@
-import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Validation } from '@/app/quadratic-core-types';
-import { numberToDate, numberToTime } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { numberToDate, numberToTime, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 import { joinWithOr } from '@/shared/utils/text';
 
 export const translateValidationError = (validation: Validation): JSX.Element | null => {
@@ -157,7 +157,10 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
       return (
         <div className="whitespace-normal">
           Value {verb} be one of the values in the selected range{' '}
-          <span className={listClassName}>{getSelectionString(validation.rule.List.source.Selection)}</span>.
+          <span className={listClassName}>
+            {selectionToA1String(JSON.stringify(validation.rule.List.source.Selection, bigIntReplacer))}
+          </span>
+          .
         </div>
       );
     }
