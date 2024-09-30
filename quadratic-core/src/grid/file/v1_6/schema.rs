@@ -106,7 +106,9 @@ pub struct Format {
 
     #[serde(default)]
     pub date_time: Option<String>,
+    #[serde(default)]
     pub underline: Option<bool>,
+    #[serde(default)]
     pub strike_through: Option<bool>,
 }
 

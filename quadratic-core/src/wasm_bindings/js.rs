@@ -74,7 +74,7 @@ extern "C" {
     pub fn jsClearHtml(sheet_id: String, x: i64, y: i64);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
     pub fn jsGenerateThumbnail();
-    pub fn jsSheetBorders(sheet_id: String, borders: String);
+    pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */);
     pub fn jsSheetCodeCell(sheet_id: String, code_cells: String);
     pub fn jsSheetBoundsUpdate(bounds: String);
 
@@ -430,9 +430,9 @@ pub fn jsGenerateThumbnail() {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetBorders(sheet_id: String, borders: String) {
+pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSheetBorders",
+        "jsBordersSheet",
         format!("{},{}", sheet_id, borders),
     ));
 }

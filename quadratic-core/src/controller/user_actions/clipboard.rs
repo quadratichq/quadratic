@@ -49,30 +49,17 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use crate::{
+        controller::GridController,
+        grid::{
+            formats::format_update::FormatUpdate, js_types::CellFormatSummary, BorderSelection,
+            BorderStyle, CellBorderLine, CodeCellLanguage, SheetId,
+        },
+        CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
+    };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
-
-    use super::*;
-    use crate::color::Rgba;
-    use crate::controller::GridController;
-    use crate::grid::formats::format_update::FormatUpdate;
-    use crate::grid::js_types::CellFormatSummary;
-    use crate::grid::{
-        generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine,
-        CodeCellLanguage, Sheet, SheetId,
-    };
-    use crate::{CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect};
-
-    fn set_borders(sheet: &mut Sheet) {
-        let selection = vec![BorderSelection::All];
-        let style = BorderStyle {
-            color: Rgba::color_from_str("#000000").unwrap(),
-            line: CellBorderLine::Line1,
-        };
-        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let borders = generate_borders(sheet, &rect, selection, Some(style));
-        set_rect_borders(sheet, &rect, borders);
-    }
 
     fn set_cell_value(gc: &mut GridController, sheet_id: SheetId, value: &str, x: i64, y: i64) {
         gc.set_cell_value(SheetPos { x, y, sheet_id }, value.into(), None);
@@ -106,25 +93,28 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
-        gc.set_cell_bold(
-            SheetRect {
+        gc.set_bold_selection(
+            Selection::sheet_rect(SheetRect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 1, y: 1 },
                 sheet_id,
-            },
-            Some(true),
+            }),
+            true,
             None,
-        );
+        )
+        .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
-        gc.set_cell_italic(
-            SheetRect {
+        gc.set_italic_selection(
+            Selection::sheet_rect(SheetRect {
                 min: Pos { x: 3, y: 2 },
                 max: Pos { x: 3, y: 2 },
                 sheet_id,
-            },
-            Some(true),
+            }),
+            true,
             None,
-        );
+        )
+        .unwrap();
+
         set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
         gc.set_cell_underline(
             SheetRect {
@@ -440,14 +430,20 @@ mod test {
     fn test_copy_borders_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-
-        set_borders(sheet);
 
         let selection = Selection::rect(
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }),
             sheet_id,
         );
+
+        gc.set_borders_selection(
+            selection.clone(),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
         let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
@@ -458,18 +454,10 @@ mod test {
             None,
         );
 
-        let borders = gc
-            .sheet(sheet_id)
-            .borders()
-            .per_cell
-            .borders
-            .iter()
-            .collect::<Vec<_>>();
-
-        // compare the border info stored in the block's content
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            borders[0].1.blocks().next().unwrap().content,
-            borders[1].1.blocks().next().unwrap().content
+            sheet.borders.get(3, 3).top.unwrap().line,
+            CellBorderLine::default()
         );
     }
 
@@ -478,47 +466,40 @@ mod test {
     fn test_copy_borders_inside() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
 
-        let selection = vec![BorderSelection::Outer];
-        let style = BorderStyle {
-            color: Rgba::color_from_str("#000000").unwrap(),
-            line: CellBorderLine::Line1,
-        };
-        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
-        let borders = generate_borders(sheet, &rect, selection, Some(style));
-        set_rect_borders(sheet, &rect, borders);
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(0, 0, 4, 4, sheet_id)),
+            BorderSelection::Outer,
+            Some(BorderStyle::default()),
+            None,
+        );
 
-        // weird: can't test them by comparing arrays since the order is seemingly random
-        let borders = sheet.render_borders();
-        assert!(borders.horizontal.iter().any(|border| {
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
             border.x == 0
                 && border.y == 0
-                && border.w == Some(5)
-                && border.h.is_none()
-                && border.style == style
+                && border.width == 5
+                && border.line == CellBorderLine::default()
         }));
-        assert!(borders.horizontal.iter().any(|border| {
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
             border.x == 0
                 && border.y == 5
-                && border.w == Some(5)
-                && border.h.is_none()
-                && border.style == style
+                && border.width == 5
+                && border.line == CellBorderLine::default()
         }));
-        assert!(borders.vertical.iter().any(|border| {
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
             border.x == 0
                 && border.y == 0
-                && border.w.is_none()
-                && border.h == Some(5)
-                && border.style == style
+                && border.height == 5
+                && border.line == CellBorderLine::default()
         }));
 
-        assert!(borders.vertical.iter().any(|border| {
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
             border.x == 5
                 && border.y == 0
-                && border.w.is_none()
-                && border.h == Some(5)
-                && border.style == style
+                && border.height == 5
+                && border.line == CellBorderLine::default()
         }));
 
         let (_, html) = sheet
@@ -535,35 +516,32 @@ mod test {
             None,
         );
 
-        let sheet = gc.sheet_mut(sheet_id);
-        let borders = sheet.render_borders();
-        assert!(borders.horizontal.iter().any(|border| {
+        let sheet = gc.sheet(sheet_id);
+        let borders = sheet.borders.borders_in_sheet().unwrap();
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
             border.x == 0
                 && border.y == 10
-                && border.w == Some(5)
-                && border.h.is_none()
-                && border.style == style
+                && border.width == 5
+                && border.line == CellBorderLine::default()
         }));
-        assert!(borders.horizontal.iter().any(|border| {
+        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
             border.x == 0
                 && border.y == 15
-                && border.w == Some(5)
-                && border.h.is_none()
-                && border.style == style
+                && border.width == 5
+                && border.line == CellBorderLine::default()
         }));
-        assert!(borders.vertical.iter().any(|border| {
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
             border.x == 0
                 && border.y == 10
-                && border.w.is_none()
-                && border.h == Some(5)
-                && border.style == style
+                && border.height == 5
+                && border.line == CellBorderLine::default()
         }));
-        assert!(borders.vertical.iter().any(|border| {
+
+        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
             border.x == 5
                 && border.y == 10
-                && border.w.is_none()
-                && border.h == Some(5)
-                && border.style == style
+                && border.height == 5
+                && border.line == CellBorderLine::default()
         }));
     }
 
@@ -574,25 +552,27 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
-        gc.set_cell_bold(
-            SheetRect {
+        gc.set_bold_selection(
+            Selection::sheet_rect(SheetRect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 1, y: 1 },
                 sheet_id,
-            },
-            Some(true),
+            }),
+            true,
             None,
-        );
+        )
+        .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
-        gc.set_cell_italic(
-            SheetRect {
+        gc.set_italic_selection(
+            Selection::sheet_rect(SheetRect {
                 min: Pos { x: 3, y: 2 },
                 max: Pos { x: 3, y: 2 },
                 sheet_id,
-            },
-            Some(true),
+            }),
+            true,
             None,
-        );
+        )
+        .unwrap();
 
         let rect = Rect {
             min: Pos { x: 1, y: 1 },
@@ -744,26 +724,28 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1", 1, 1);
-        gc.set_cell_bold(
-            SheetRect {
+        gc.set_bold_selection(
+            Selection::sheet_rect(SheetRect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 1, y: 1 },
                 sheet_id,
-            },
-            Some(true),
+            }),
+            true,
             None,
-        );
+        )
+        .unwrap();
 
         set_cell_value(&mut gc, sheet_id, "12", 2, 2);
-        gc.set_cell_italic(
-            SheetRect {
+        gc.set_italic_selection(
+            Selection::sheet_rect(SheetRect {
                 min: Pos { x: 2, y: 2 },
                 max: Pos { x: 2, y: 2 },
                 sheet_id,
-            },
-            Some(true),
+            }),
+            true,
             None,
-        );
+        )
+        .unwrap();
 
         let selection = Selection::rect(
             Rect {

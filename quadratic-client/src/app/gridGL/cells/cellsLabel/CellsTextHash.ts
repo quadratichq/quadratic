@@ -39,6 +39,8 @@ export class CellsTextHash extends Container {
 
   warnings: CellsTextHashValidations;
 
+  sheetId: string;
+
   hashX: number;
   hashY: number;
 
@@ -61,6 +63,7 @@ export class CellsTextHash extends Container {
 
   constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
+    this.sheetId = sheetId;
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
     this.textBounds = viewRectangle || this.AABB;
     this.hashX = hashX;
