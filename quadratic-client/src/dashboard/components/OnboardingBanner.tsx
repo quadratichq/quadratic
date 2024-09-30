@@ -148,6 +148,11 @@ export function OnboardingBanner() {
                 <LanguageIcon language="MSSQL" /> MS SQL Server
               </Link>
             </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'SNOWFLAKE')} onClick={trackCreateConnection}>
+                <LanguageIcon language="SNOWFLAKE" /> Snowflake
+              </Link>
+            </Button>
           </div>
         </>
       ),
