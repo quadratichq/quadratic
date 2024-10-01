@@ -207,7 +207,7 @@ pub struct FormulaFunctionCategory {
     pub include_in_docs: bool,
     pub include_in_completions: bool,
     pub name: &'static str,
-    pub docs: &'static str,
+    pub docs: Option<&'static str>,
     pub get_functions: fn() -> Vec<FormulaFunction>,
 }
 
