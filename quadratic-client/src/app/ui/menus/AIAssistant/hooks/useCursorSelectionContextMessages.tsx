@@ -22,17 +22,23 @@ Each cell value is a JSON object having the following properties:\n
   - value: The value of the cell. This is a string representation of the value in the cell.\n
   - kind: The kind of the value. This can be blank, text, number, logical, time instant, duration, error, html, code, image, date, time, date time, null or undefined.\n
   - pos: This is a JSON object having x and y properties. x is the column index and y is the row index of the cell.\n\n
-Data from cells can be referenced by Formulas, Python, JavaScript or SQL code using \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions. Use this data in the context of following messages. Refer to cells if required in code.\n\n
-Current selection JSON is:\n ${JSON.stringify(cursorSelectionValues)}
 
-Note: This selection JSON is only for your reference to data on the sheet. This JSON cannot be used directly in code. Use the cell reference functions, like the \`c(x, y)\` function, to reference cells in code.`,
+Data from cells can be referenced by Formulas, Python, JavaScript or SQL code using \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions.\n
+When referencing cells in Python, to create a pandas DataFrame, if the first row of cells is a header, you should set first_row_header as an argument i.e. \`cells((2, 2), (7, 52), first_row_header=True)\`. This makes the first row of your DataFrame the column names, otherwise will default to integer column names as 0, 1, 2, 3, etc.\n
+Use this selection data in the context of following messages. Refer to cells if required in code.\n\n
+
+Current selection JSON is:\n ${JSON.stringify(cursorSelectionValues)}\n\n
+
+Note: This selection JSON is only for your reference to data on the sheet. This JSON cannot be used directly in code. Use the cell reference functions, like \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions, to reference cells in code.`,
           internalContext: true,
+          contextType: 'cursorSelection',
         },
         {
           role: 'assistant',
           content: `I understand the cursor selection data, I will reference it to answer following messages. How can I help you?`,
           model: model,
           internalContext: true,
+          contextType: 'cursorSelection',
         },
       ];
     },

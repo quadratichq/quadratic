@@ -53,7 +53,6 @@ export function AIAssistantContextModelMenu() {
           key={'visible data'}
           checked={context.visibleData}
           onCheckedChange={() => setContext((prev) => ({ ...prev, visibleData: !prev.visibleData }))}
-          disabled={true} // TODO: enable after implementing visible data
         >
           <span>Visible data</span>
         </DropdownMenuCheckboxItem>
@@ -68,6 +67,7 @@ export function AIAssistantContextModelMenu() {
           key={'code cell'}
           checked={!!context.codeCell}
           onCheckedChange={() => setContext((prev) => ({ ...prev, codeCell: undefined }))}
+          disabled={!context.codeCell}
         >
           <span>Code cell</span>
         </DropdownMenuCheckboxItem>

@@ -332,6 +332,27 @@ class Sheets {
   getRustSelection(): Selection {
     return this.sheet.cursor.getRustSelection();
   }
+
+  getRustVisibleSelection(): Selection {
+    const { x: left, y: top } = pixiApp.getStartingViewport();
+    const { right, bottom } = pixiApp.viewport;
+    const top_left_cell = this.sheet.getColumnRow(left, top);
+    const bottom_right_cell = this.sheet.getColumnRow(right, bottom);
+    return {
+      sheet_id: { id: this.sheet.id },
+      x: BigInt(this.sheet.cursor.cursorPosition.x),
+      y: BigInt(this.sheet.cursor.cursorPosition.y),
+      rects: [
+        {
+          min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
+          max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
+        },
+      ],
+      columns: null,
+      rows: null,
+      all: false,
+    };
+  }
 }
 
 export const sheets = new Sheets();

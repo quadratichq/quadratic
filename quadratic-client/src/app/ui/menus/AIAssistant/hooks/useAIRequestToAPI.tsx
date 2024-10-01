@@ -115,7 +115,13 @@ export function useAIRequestToAPI() {
       setMessages,
       signal,
     }: HandleAIPromptProps): Promise<{ error?: boolean; content: string }> => {
-      const responseMessage: AIMessage = { role: 'assistant', content: '', model, internalContext: false };
+      const responseMessage: AIMessage = {
+        role: 'assistant',
+        content: '',
+        model,
+        internalContext: false,
+        contextType: 'userPrompt',
+      };
       setMessages((prev) => [...prev, { ...responseMessage, content: 'Loading...' }]);
 
       try {
@@ -137,7 +143,7 @@ export function useAIRequestToAPI() {
               : `Looks like there was a problem. Status Code: ${response.status}`;
           setMessages((prev) => [
             ...prev.slice(0, -1),
-            { role: 'assistant', content: error, model, internalContext: false },
+            { role: 'assistant', content: error, model, internalContext: false, contextType: 'userPrompt' },
           ]);
           if (response.status !== 429) {
             console.error(`Error retrieving data from AI API: ${response.status}`);

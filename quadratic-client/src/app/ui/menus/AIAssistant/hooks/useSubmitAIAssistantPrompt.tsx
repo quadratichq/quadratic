@@ -8,17 +8,19 @@ import {
   showAIAssistantAtom,
 } from '@/app/atoms/aiAssistantAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
-import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
-import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/useCodeCellContextMessages';
-import { useCursorSelectionContextMessages } from '@/app/ui/menus/AIAssistant/useCursorSelectionContextMessages';
-import { useQuadraticContextMessages } from '@/app/ui/menus/AIAssistant/useQuadraticContextMessages';
+import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantModel';
+import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
+import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useCodeCellContextMessages';
+import { useCursorSelectionContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useCursorSelectionContextMessages';
+import { useQuadraticContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useQuadraticContextMessages';
+import { useVisibleContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useVisibleContextMessages';
 import { AIMessage, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { quadraticContext } = useQuadraticContextMessages();
+  const { getVisibleContext } = useVisibleContextMessages();
   const { getCursorSelectionContext } = useCursorSelectionContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
   const [model] = useAIAssistantModel();
@@ -52,21 +54,42 @@ export function useSubmitAIAssistantPrompt() {
           return aiContext;
         });
 
-        const contextMessages: (UserMessage | AIMessage)[] = [];
-        if (aiContext.cursorSelection) {
-          const cursorContext = await getCursorSelectionContext({ model });
-          contextMessages.push(...cursorContext);
-        }
-        if (aiContext.codeCell) {
-          const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
-          contextMessages.push(...codeContext);
-        }
-
+        const visibleContext = aiContext.visibleData ? await getVisibleContext({ model }) : [];
+        const cursorSelectionContext = aiContext.cursorSelection ? await getCursorSelectionContext({ model }) : [];
+        const codeContext = aiContext.codeCell ? await getCodeCellContext({ codeCell: aiContext.codeCell, model }) : [];
         let updatedMessages: (UserMessage | AIMessage)[] = [];
         set(aiAssistantMessagesAtom, (prevMessages) => {
+          const lastVisibleContext = prevMessages
+            .filter((message) => message.role === 'user' && message.contextType === 'visibleData')
+            .at(-1);
+
+          const lastCursorSelectionContext = prevMessages
+            .filter((message) => message.role === 'user' && message.contextType === 'cursorSelection')
+            .at(-1);
+
+          const lastCodeContext = prevMessages
+            .filter((message) => message.role === 'user' && message.contextType === 'codeCell')
+            .at(-1);
+
+          const newContextMessages: (UserMessage | AIMessage)[] = [
+            ...(!clearMessages && lastVisibleContext?.content === visibleContext?.[0]?.content ? [] : visibleContext),
+            ...(!clearMessages && lastCursorSelectionContext?.content === cursorSelectionContext?.[0]?.content
+              ? []
+              : cursorSelectionContext),
+            ...(!clearMessages && lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
+          ];
+
           updatedMessages = clearMessages
-            ? [...contextMessages, { role: 'user', content: userPrompt, internalContext: false }]
-            : [...prevMessages, ...contextMessages, { role: 'user', content: userPrompt, internalContext: false }];
+            ? [
+                ...newContextMessages,
+                { role: 'user', content: userPrompt, internalContext: false, contextType: 'userPrompt' },
+              ]
+            : [
+                ...prevMessages,
+                ...newContextMessages,
+                { role: 'user', content: userPrompt, internalContext: false, contextType: 'userPrompt' },
+              ];
+
           return updatedMessages;
         });
 
@@ -93,7 +116,7 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
       },
-    [handleAIRequestToAPI, quadraticContext, getCursorSelectionContext, getCodeCellContext, model]
+    [handleAIRequestToAPI, quadraticContext, getVisibleContext, getCursorSelectionContext, getCodeCellContext, model]
   );
 
   return { submitPrompt };

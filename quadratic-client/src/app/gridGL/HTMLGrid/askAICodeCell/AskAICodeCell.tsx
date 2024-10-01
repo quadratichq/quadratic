@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/useSubmitAIAssistantPrompt';
+import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/hooks/useSubmitAIAssistantPrompt';
 import { AIIcon } from '@/shared/components/Icons';
 import { useCallback, useEffect, useState } from 'react';
 

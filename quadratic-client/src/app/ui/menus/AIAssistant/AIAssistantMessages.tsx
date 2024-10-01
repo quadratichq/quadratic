@@ -2,7 +2,7 @@ import { aiAssistantMessagesAtom } from '@/app/atoms/aiAssistantAtom';
 import { colors } from '@/app/theme/colors';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
 import { AICodeBlockParser } from '@/app/ui/menus/AIAssistant/AICodeBlockParser';
-import { isAnthropicModel } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
+import { isAnthropicModel } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { useCallback, useEffect, useState } from 'react';

@@ -1,7 +1,7 @@
 import { codeEditorAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
-import { useGetCodeCell } from '@/app/ui/menus/AIAssistant/useGetCodeCell';
+import { useGetCodeCell } from '@/app/ui/menus/AIAssistant/hooks/useGetCodeCell';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import Editor from '@monaco-editor/react';

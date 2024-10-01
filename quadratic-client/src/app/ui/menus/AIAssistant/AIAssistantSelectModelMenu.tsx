@@ -1,8 +1,8 @@
 import { aiAssistantLoadingAtom } from '@/app/atoms/aiAssistantAtom';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
 import { MODEL_OPTIONS } from '@/app/ui/menus/AIAssistant/MODELS';
-import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/useAIAssistantModel';
-import { isAnthropicModel } from '@/app/ui/menus/AIAssistant/useAIRequestToAPI';
+import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantModel';
+import { isAnthropicModel } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,

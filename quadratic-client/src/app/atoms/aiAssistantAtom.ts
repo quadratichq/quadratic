@@ -1,8 +1,7 @@
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIMessage, ContextType, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
-
 export interface AIAssistantState {
   showAIAssistant: boolean;
   abortController?: AbortController;
@@ -10,14 +9,8 @@ export interface AIAssistantState {
   messages: (UserMessage | AIMessage)[];
   prompt: string;
   context: {
-    quadraticDocs: boolean;
-    connections: boolean;
-    allSheets: boolean;
-    currentSheet: boolean;
-    visibleData: boolean;
-    cursorSelection: boolean;
-    codeCell?: CodeCell;
-  };
+    [key in Exclude<ContextType, 'codeCell' | 'userPrompt'>]: boolean;
+  } & { codeCell?: CodeCell };
 }
 
 export const defaultAIAssistantState: AIAssistantState = {
@@ -32,7 +25,7 @@ export const defaultAIAssistantState: AIAssistantState = {
     allSheets: false,
     currentSheet: false,
     visibleData: false,
-    cursorSelection: true,
+    cursorSelection: false,
     codeCell: undefined,
   },
 };

@@ -63,12 +63,14 @@ ${
     : ``
 }`,
           internalContext: true,
+          contextType: 'codeCell',
         },
         {
           role: 'assistant',
           content: `How can I help you?`,
           model: model,
           internalContext: true,
+          contextType: 'userPrompt',
         },
       ];
     },

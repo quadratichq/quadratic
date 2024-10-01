@@ -4,7 +4,7 @@ import { AIAssistantContext } from '@/app/ui/menus/AIAssistant/AIAssistantContex
 import { AIAssistantHeader } from '@/app/ui/menus/AIAssistant/AIAssistantHeader';
 import { AIAssistantMessages } from '@/app/ui/menus/AIAssistant/AIAssistantMessages';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/AIAssistant/AIAssistantUserMessageForm';
-import { useAIAssistantPanelWidth } from '@/app/ui/menus/AIAssistant/useAIAssistantPanelWidth';
+import { useAIAssistantPanelWidth } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantPanelWidth';
 import { useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 

@@ -6,7 +6,7 @@ import {
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAssistantSelectModelMenu } from '@/app/ui/menus/AIAssistant/AIAssistantSelectModelMenu';
-import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/useSubmitAIAssistantPrompt';
+import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/hooks/useSubmitAIAssistantPrompt';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';

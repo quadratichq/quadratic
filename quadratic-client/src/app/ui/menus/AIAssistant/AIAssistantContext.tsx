@@ -23,6 +23,7 @@ export const AIAssistantContext = () => {
           {']'}
         </span>
       )}
+      {!!context.visibleData && <span>{'[Visible data]'}</span>}
       {!!context.currentSheet && <span>{'[Current sheet]'}</span>}
       {!!context.allSheets && <span>{'[All sheets]'}</span>}
       {!!context.connections && <span>{'[Connections]'}</span>}
