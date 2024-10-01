@@ -116,7 +116,7 @@ export const codeEditorShowDiffEditorAtom = selector<boolean>({
     return (
       waitingForEditorClose === undefined &&
       modifiedEditorContent !== undefined &&
-      editorContent !== undefined &&
+      !!editorContent &&
       modifiedEditorContent !== editorContent
     );
   },
