@@ -4,7 +4,7 @@ import { TransientResize } from '@/app/quadratic-core-types/index.js';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -16,9 +16,6 @@ import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
-
-// minimum cell when resizing in 1 character
-const MIN_CELL_WIDTH = 10;
 
 // Returns an array with all numbers inclusive of start to end
 function fillArray(start: number, end: number): number[] {

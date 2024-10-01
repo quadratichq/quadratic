@@ -314,17 +314,18 @@ export class CellsLabels {
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
+      const dirty = hash.dirty || hash.dirtyText || hash.dirtyBuffers;
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
-        if (!hash.loaded || !hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (!hash.loaded || !hash.clientLoaded || dirty) {
           visibleDirtyHashes.push(hash);
         }
       } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
-        if (!hash.loaded || !hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
-          if (hash.clientLoaded) hash.unloadClient();
+        if (!hash.loaded || !hash.clientLoaded || dirty) {
+          if (hash.clientLoaded && dirty) hash.unloadClient();
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
-        if (hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (dirty) {
           if (hash.clientLoaded) hash.unloadClient();
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         } else if (hash.loaded) {

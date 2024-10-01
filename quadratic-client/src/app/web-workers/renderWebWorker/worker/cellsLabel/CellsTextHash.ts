@@ -170,6 +170,7 @@ export class CellsTextHash {
   };
 
   update = async (): Promise<boolean> => {
+    console.log('[CellsTextHash] update', this.hashX, this.hashY);
     const neighborRect = this.cellsLabels.getViewportNeighborBounds();
     if (!neighborRect) return false;
 
