@@ -91,13 +91,15 @@ impl Sheet {
     }
 
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
+        dbgjs!("iter_code_output_in_rect()");
+        dbgjs!(&self.data_tables);
         self.data_tables
             .iter()
-            .filter_map(move |(pos, code_cell_value)| {
-                let output_rect = code_cell_value.output_rect(*pos, false);
+            .filter_map(move |(pos, data_table)| {
+                let output_rect = data_table.output_rect(*pos, false);
                 output_rect
                     .intersects(rect)
-                    .then_some((output_rect, code_cell_value))
+                    .then_some((output_rect, data_table))
             })
     }
 
@@ -126,15 +128,15 @@ impl Sheet {
     /// Used for double clicking a cell on the grid.
     pub fn edit_code_value(&self, pos: Pos) -> Option<JsCodeCell> {
         let mut code_pos = pos;
-        let code_cell = if let Some(cell_value) = self.cell_value(pos) {
+        let cell_value = if let Some(cell_value) = self.cell_value(pos) {
             Some(cell_value)
         } else {
             self.data_tables
                 .iter()
-                .find_map(|(code_cell_pos, data_table)| {
-                    if data_table.output_rect(*code_cell_pos, false).contains(pos) {
-                        if let Some(code_value) = self.cell_value(*code_cell_pos) {
-                            code_pos = *code_cell_pos;
+                .find_map(|(data_table_pos, data_table)| {
+                    if data_table.output_rect(*data_table_pos, false).contains(pos) {
+                        if let Some(code_value) = self.cell_value(*data_table_pos) {
+                            code_pos = *data_table_pos;
                             Some(code_value)
                         } else {
                             None
@@ -145,14 +147,16 @@ impl Sheet {
                 })
         };
 
-        let code_cell = code_cell?;
+        let cell_value = cell_value?;
+        dbgjs!("edit_code_value()");
+        dbgjs!(&cell_value);
 
-        match code_cell {
-            CellValue::Code(mut code_cell) => {
+        match cell_value {
+            CellValue::Code(mut cell_value) => {
                 // replace internal cell references with a1 notation
-                if matches!(code_cell.language, CodeCellLanguage::Formula) {
-                    let replaced = replace_internal_cell_references(&code_cell.code, code_pos);
-                    code_cell.code = replaced;
+                if matches!(cell_value.language, CodeCellLanguage::Formula) {
+                    let replaced = replace_internal_cell_references(&cell_value.code, code_pos);
+                    cell_value.code = replaced;
                 }
 
                 if let Some(data_table) = self.data_table(code_pos) {
@@ -176,8 +180,8 @@ impl Sheet {
                     Some(JsCodeCell {
                         x: code_pos.x,
                         y: code_pos.y,
-                        code_string: code_cell.code,
-                        language: code_cell.language,
+                        code_string: cell_value.code,
+                        language: cell_value.language,
                         std_err: code_run.std_err.clone(),
                         std_out: code_run.std_out.clone(),
                         evaluation_result: Some(evaluation_result),
@@ -192,8 +196,50 @@ impl Sheet {
                     Some(JsCodeCell {
                         x: code_pos.x,
                         y: code_pos.y,
-                        code_string: code_cell.code,
-                        language: code_cell.language,
+                        code_string: cell_value.code,
+                        language: cell_value.language,
+                        std_err: None,
+                        std_out: None,
+                        evaluation_result: None,
+                        spill_error: None,
+                        return_info: None,
+                        cells_accessed: None,
+                    })
+                }
+            }
+            CellValue::Import(_) => {
+                dbgjs!("CellValue::Import");
+                dbgjs!(self.data_table(code_pos));
+                if let Some(data_table) = self.data_table(code_pos) {
+                    let evaluation_result =
+                        serde_json::to_string(&data_table.value).unwrap_or("".into());
+                    let spill_error = if data_table.spill_error {
+                        Some(self.find_spill_error_reasons(
+                            &data_table.output_rect(code_pos, true),
+                            code_pos,
+                        ))
+                    } else {
+                        None
+                    };
+
+                    Some(JsCodeCell {
+                        x: code_pos.x,
+                        y: code_pos.y,
+                        code_string: "".into(),
+                        language: CodeCellLanguage::Formula,
+                        std_err: None,
+                        std_out: None,
+                        evaluation_result: Some(evaluation_result),
+                        spill_error,
+                        return_info: None,
+                        cells_accessed: None,
+                    })
+                } else {
+                    Some(JsCodeCell {
+                        x: code_pos.x,
+                        y: code_pos.y,
+                        code_string: "".into(),
+                        language: CodeCellLanguage::Formula,
                         std_err: None,
                         std_out: None,
                         evaluation_result: None,

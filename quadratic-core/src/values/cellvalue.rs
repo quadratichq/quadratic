@@ -326,10 +326,10 @@ impl CellValue {
             CellValue::DateTime(t) => t.format("%Y-%m-%dT%H:%M:%S%.3f").to_string(),
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
-            CellValue::Import(import) => import.to_string(),
 
             // these should not return a value
             CellValue::Code(_) => String::new(),
+            CellValue::Import(_) => String::new(),
             CellValue::Image(_) => String::new(),
         }
     }

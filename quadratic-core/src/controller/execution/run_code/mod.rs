@@ -274,7 +274,6 @@ impl GridController {
         };
 
         let value = if js_code_result.success {
-            
             if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.extend(ops);

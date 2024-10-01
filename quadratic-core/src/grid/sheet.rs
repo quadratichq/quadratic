@@ -205,13 +205,14 @@ impl Sheet {
         self.columns.iter()
     }
 
-    pub fn iter_code_runs(&self) -> impl Iterator<Item = (&Pos, &CodeRun)> {
-        let result = self
-            .data_tables
-            .iter()
-            .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (pos, code_run)));
+    pub fn iter_data_tables(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
+        self.data_tables.iter()
+    }
 
-        result
+    pub fn iter_code_runs(&self) -> impl Iterator<Item = (&Pos, &CodeRun)> {
+        self.data_tables
+            .iter()
+            .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (pos, code_run)))
     }
 
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked

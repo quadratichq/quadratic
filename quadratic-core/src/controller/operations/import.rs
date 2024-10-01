@@ -62,7 +62,9 @@ impl GridController {
 
         // then create operations using MAXIMUM_IMPORT_LINES to break up the SetCellValues operations
         let mut ops = vec![] as Vec<Operation>;
-        let mut cell_values = Array::new_empty(ArraySize::new(width, height).unwrap());
+        let mut cell_values = Array::new_empty(
+            ArraySize::new(width, height.min(IMPORT_LINES_PER_OPERATION)).unwrap(),
+        );
         let mut current_y = 0;
         let mut y: u32 = 0;
 
@@ -135,6 +137,17 @@ impl GridController {
             },
             code_run: Some(data_table),
             index: y as usize,
+        });
+
+        let sheet_pos = SheetPos {
+            x: insert_at.x,
+            y: insert_at.y,
+            sheet_id,
+        };
+
+        ops.push(Operation::SetCellValues {
+            sheet_pos,
+            values: CellValues::from(CellValue::Import(Import::new(file_name.into()))),
         });
 
         Ok(ops)

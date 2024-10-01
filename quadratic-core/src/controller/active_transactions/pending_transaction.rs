@@ -212,13 +212,20 @@ impl PendingTransaction {
     }
 
     /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
-    pub fn add_from_code_run(&mut self, sheet_id: SheetId, pos: Pos, code_run: &Option<DataTable>) {
-        if let Some(code_run) = &code_run {
+    pub fn add_from_code_run(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        data_table: &Option<DataTable>,
+    ) {
+        if let Some(data_table) = &data_table {
             self.add_code_cell(sheet_id, pos);
-            if code_run.is_html() {
+
+            if data_table.is_html() {
                 self.add_html_cell(sheet_id, pos);
             }
-            if code_run.is_image() {
+
+            if data_table.is_image() {
                 self.add_image_cell(sheet_id, pos);
             }
         }

@@ -438,6 +438,7 @@ impl Sheet {
         row: i64,
         copy_formats: CopyFormats,
     ) {
+        dbgjs!("insert_row()");
         // create undo operations for the inserted column
         if transaction.is_user_undo_redo() {
             // reverse operation to delete the row (this will also shift all impacted rows)
