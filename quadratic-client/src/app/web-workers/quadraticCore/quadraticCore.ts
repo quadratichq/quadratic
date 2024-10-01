@@ -1114,6 +1114,47 @@ class QuadraticCore {
   }
 
   //#endregion
+  //#region manipulate columns and rows
+
+  deleteColumns(sheetId: string, columns: number[], cursor: string) {
+    this.send({
+      type: 'clientCoreDeleteColumns',
+      sheetId,
+      columns,
+      cursor,
+    });
+  }
+
+  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
+    this.send({
+      type: 'clientCoreInsertColumn',
+      sheetId,
+      column,
+      right,
+      cursor,
+    });
+  }
+
+  deleteRows(sheetId: string, rows: number[], cursor: string) {
+    this.send({
+      type: 'clientCoreDeleteRows',
+      sheetId,
+      rows,
+      cursor,
+    });
+  }
+
+  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
+    this.send({
+      type: 'clientCoreInsertRow',
+      sheetId,
+      row,
+      below,
+      cursor,
+    });
+  }
+
+  //#endregion
 }
 
 export const quadraticCore = new QuadraticCore();

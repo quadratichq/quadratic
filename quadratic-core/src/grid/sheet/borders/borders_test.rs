@@ -20,7 +20,7 @@ impl Borders {
             .any(|v| x == v.x && y >= v.y && y < v.y + v.height)
     }
 
-    pub(crate) fn print_borders(&self) {
+    pub(crate) fn print(&self) {
         if let Some(mut rect) = self.bounds() {
             // extend the borders to include the last column and row
             rect.max.x += 1;
@@ -98,6 +98,6 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        sheet.borders.print_borders();
+        sheet.borders.print();
     }
 }

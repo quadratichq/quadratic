@@ -497,6 +497,35 @@ impl Sheet {
         }
     }
 
+    // Sends an update to a code cell. Sends a message regardless of whether the
+    // code cell is still present.
+    pub fn send_code_cell(&self, pos: Pos) {
+        if let (Some(code_cell), Some(render_code_cell)) =
+            (self.edit_code_value(pos), self.get_render_code_cell(pos))
+        {
+            if let (Ok(code_cell), Ok(render_code_cell)) = (
+                serde_json::to_string(&code_cell),
+                serde_json::to_string(&render_code_cell),
+            ) {
+                crate::wasm_bindings::js::jsUpdateCodeCell(
+                    self.id.to_string(),
+                    pos.x,
+                    pos.y,
+                    Some(code_cell),
+                    Some(render_code_cell),
+                );
+            }
+        } else {
+            crate::wasm_bindings::js::jsUpdateCodeCell(
+                self.id.to_string(),
+                pos.x,
+                pos.y,
+                None,
+                None,
+            );
+        }
+    }
+
     /// Sends all validation warnings for this sheet to the client.
     pub fn send_all_validation_warnings(&self) {
         let warnings = self
