@@ -1,38 +1,38 @@
+import { editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import {
+  copyToClipboardEvent,
+  cutToClipboardEvent,
+  pasteFromClipboardEvent,
+} from '@/app/grid/actions/clipboard/clipboard';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { AxesLines } from '@/app/gridGL/UI/AxesLines';
+import { Cursor } from '@/app/gridGL/UI/Cursor';
+import { GridLines } from '@/app/gridGL/UI/GridLines';
+import { HtmlPlaceholders } from '@/app/gridGL/UI/HtmlPlaceholders';
 import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
+import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
+import { UIValidations } from '@/app/gridGL/UI/UIValidations';
+import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
+import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
+import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
+import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { Update } from '@/app/gridGL/pixiApp/Update';
+import { Viewport } from '@/app/gridGL/pixiApp/Viewport';
+import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { HEADING_SIZE } from '@/shared/constants/gridConstants';
 import { Container, Graphics, Rectangle, Renderer, utils } from 'pixi.js';
-import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import {
-  copyToClipboardEvent,
-  cutToClipboardEvent,
-  pasteFromClipboardEvent,
-} from '../../grid/actions/clipboard/clipboard';
-import { sheets } from '../../grid/controller/Sheets';
-import { htmlCellsHandler } from '../HTMLGrid/htmlCells/htmlCellsHandler';
-import { AxesLines } from '../UI/AxesLines';
-import { Cursor } from '../UI/Cursor';
-import { GridLines } from '../UI/GridLines';
-import { HtmlPlaceholders } from '../UI/HtmlPlaceholders';
-import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
-import { UIValidations } from '../UI/UIValidations';
-import { BoxCells } from '../UI/boxCells';
-import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
-import { CellsSheets } from '../cells/CellsSheets';
-import { Pointer } from '../interaction/pointer/Pointer';
-import { pixiAppSettings } from './PixiAppSettings';
-import { Update } from './Update';
-import { Viewport } from './Viewport';
 import './pixiApp.css';
-import { urlParams } from './urlParams/urlParams';
 
 utils.skipHello();
 

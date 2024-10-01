@@ -24,8 +24,8 @@ export const codeActionsSpec: CodeActionSpec = {
     run: () => {
       quadraticCore.rerunCodeCells(
         sheets.sheet.id,
-        pixiAppSettings.editorInteractionState.selectedCell.x,
-        pixiAppSettings.editorInteractionState.selectedCell.y,
+        pixiAppSettings.codeEditorState.codeCell.pos.x,
+        pixiAppSettings.codeEditorState.codeCell.pos.y,
         sheets.getCursorPosition()
       );
     },

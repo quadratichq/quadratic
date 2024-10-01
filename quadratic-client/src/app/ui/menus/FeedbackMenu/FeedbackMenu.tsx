@@ -1,3 +1,4 @@
+import { editorInteractionStateShowFeedbackMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -12,12 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
-import { useRef, useState } from 'react';
-import { useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { useCallback, useRef, useState } from 'react';
+import { useRecoilState } from 'recoil';
 
 export const FeedbackMenu = () => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const [showFeedbackMenu, setShowFeedbackMenu] = useRecoilState(editorInteractionStateShowFeedbackMenuAtom);
   // We'll keep the user's state around unless they explicitly cancel or things submitted successfully
   const [value, setValue] = useLocalStorage('feedback-message', '');
   const formRef = useRef<HTMLFormElement>(null);
@@ -25,14 +25,11 @@ export const FeedbackMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { loggedInUser: user } = useRootRouteLoaderData();
 
-  const closeMenu = () => {
-    setEditorInteractionState((state) => ({
-      ...state,
-      showFeedbackMenu: false,
-    }));
-  };
+  const closeMenu = useCallback(() => {
+    setShowFeedbackMenu(false);
+  }, [setShowFeedbackMenu]);
 
-  const onSubmit = async () => {
+  const onSubmit = useCallback(async () => {
     const formData = new FormData(formRef.current as HTMLFormElement);
     const name = String(formData.get('name'));
     const feedback = String(formData.get('feedback'));
@@ -58,7 +55,11 @@ export const FeedbackMenu = () => {
     } catch (error) {
       addGlobalSnackbar('Failed to submit feedback. Please try again.', { severity: 'error' });
     }
-  };
+  }, [addGlobalSnackbar, closeMenu, setValue, user?.email]);
+
+  if (!showFeedbackMenu) {
+    return null;
+  }
 
   return (
     <Dialog open={true} onOpenChange={closeMenu}>

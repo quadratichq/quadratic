@@ -1,32 +1,34 @@
-import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import {
+  codeEditorConsoleOutputAtom,
+  codeEditorPanelBottomActiveTabAtom,
+  codeEditorSpillErrorAtom,
+} from '@/app/atoms/codeEditorAtom';
+import { AIAssistant } from '@/app/ui/menus/AIAssistant/AIAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { ReactNode } from 'react';
-import { CodeEditorPanelData } from './useCodeEditorPanelData';
+import { ReactNode, useMemo } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
 
-interface Props {
-  codeEditorPanelData: CodeEditorPanelData;
+interface CodeEditorPanelBottomProps {
   schemaBrowser: ReactNode | undefined;
-  showAiAssistant: boolean;
+  showAIAssistant: boolean;
 }
 
-export function CodeEditorPanelBottom({
-  codeEditorPanelData: { bottomHidden, setBottomHidden },
-  schemaBrowser,
-  showAiAssistant,
-}: Props) {
-  const {
-    consoleOutput: [consoleOutput],
-    panelBottomActiveTab: [tab, setTab],
-    spillError: [spillError],
-  } = useCodeEditor();
-  const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
+export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEditorPanelBottomProps) {
+  const { bottomHidden, setBottomHidden } = useCodeEditorPanelData();
+  const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
+  const spillError = useRecoilValue(codeEditorSpillErrorAtom);
+  const [tab, setTab] = useRecoilState(codeEditorPanelBottomActiveTabAtom);
+  const hasOutput = useMemo(
+    () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),
+    [consoleOutput?.stdErr?.length, consoleOutput?.stdOut?.length, spillError]
+  );
 
   return (
     <Tabs
@@ -50,7 +52,7 @@ export function CodeEditorPanelBottom({
         </Button>
         <TabsList>
           {schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
-          {showAiAssistant && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
+          {showAIAssistant && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
           <TabsTrigger
             value="console"
             className={cn(
@@ -73,9 +75,9 @@ export function CodeEditorPanelBottom({
         )}
       </TabsContent>
 
-      {showAiAssistant && (
+      {showAIAssistant && (
         <TabsContent value="ai-assistant" className="m-0 grow overflow-hidden">
-          {!bottomHidden && <AiAssistant autoFocus={true} />}
+          {!bottomHidden && <AIAssistant autoFocus={true} />}
         </TabsContent>
       )}
 

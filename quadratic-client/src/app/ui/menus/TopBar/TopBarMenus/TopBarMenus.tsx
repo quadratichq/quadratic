@@ -1,23 +1,23 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { EditMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/EditMenubarMenu';
-import { FileMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/FileMenubarMenu';
-import { FormatMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/FormatMenubarMenu';
-import { HelpMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/HelpMenubarMenu';
-import { InsertMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/InsertMenubarMenu';
-import { ViewMenubarMenu } from '@/app/ui/menus/TopBar/TopBarFileMenu/ViewMenubarMenu';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { EditMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/EditMenubarMenu';
+import { FileMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/FileMenubarMenu';
+import { FormatMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/FormatMenubarMenu';
+import { HelpMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/HelpMenubarMenu';
+import { InsertMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/InsertMenubarMenu';
+import { ViewMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/ViewMenubarMenu';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Menubar } from '@/shared/shadcn/ui/menubar';
+import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 import './styles.css';
 
 const feedbackAction = defaultActionSpec[Action.HelpFeedback];
 
 export const TopBarMenus = () => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { permissions } = editorInteractionState;
-  const canEdit = permissions.includes('FILE_EDIT');
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const canEdit = useMemo(() => permissions.includes('FILE_EDIT'), [permissions]);
 
   return (
     <div className="flex items-center">
@@ -41,5 +41,3 @@ export const TopBarMenus = () => {
     </div>
   );
 };
-
-export default TopBarMenus;
