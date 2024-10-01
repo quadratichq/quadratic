@@ -170,11 +170,11 @@ class RenderText {
     uint8Array.set(sheetIdBytes, writerStart * 4 + 20);
 
     // Set writer flag to 1 when done writing to the slice, marking this slice as ready to be read
-    Atomics.store(int32Array, writerStart, 1);
+    Atomics.compareExchange(int32Array, writerStart, 0, 1);
 
     // Set the other slice as dirty by setting the flag to 0
     const otherSliceStart = (writerStart + 14) % 28;
-    Atomics.store(int32Array, otherSliceStart, 0);
+    Atomics.compareExchange(int32Array, otherSliceStart, 1, 0);
   };
 
   // Called before first render when all text visible in the viewport has been rendered and sent to the client
