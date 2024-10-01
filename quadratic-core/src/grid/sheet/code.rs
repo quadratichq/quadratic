@@ -91,8 +91,6 @@ impl Sheet {
     }
 
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
-        dbgjs!("iter_code_output_in_rect()");
-        dbgjs!(&self.data_tables);
         self.data_tables
             .iter()
             .filter_map(move |(pos, data_table)| {
@@ -147,16 +145,13 @@ impl Sheet {
                 })
         };
 
-        let cell_value = cell_value?;
-        dbgjs!("edit_code_value()");
-        dbgjs!(&cell_value);
-
-        match cell_value {
-            CellValue::Code(mut cell_value) => {
+        match cell_value?.code_cell_value() {
+            Some(mut code_cell_value) => {
                 // replace internal cell references with a1 notation
-                if matches!(cell_value.language, CodeCellLanguage::Formula) {
-                    let replaced = replace_internal_cell_references(&cell_value.code, code_pos);
-                    cell_value.code = replaced;
+                if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
+                    let replaced =
+                        replace_internal_cell_references(&code_cell_value.code, code_pos);
+                    code_cell_value.code = replaced;
                 }
 
                 if let Some(data_table) = self.data_table(code_pos) {
@@ -171,75 +166,41 @@ impl Sheet {
                         None
                     };
 
-                    #[allow(unreachable_patterns)]
-                    let code_run = match &data_table.kind {
-                        DataTableKind::CodeRun(code_run) => code_run,
-                        _ => unreachable!(),
-                    };
-
-                    Some(JsCodeCell {
-                        x: code_pos.x,
-                        y: code_pos.y,
-                        code_string: cell_value.code,
-                        language: cell_value.language,
-                        std_err: code_run.std_err.clone(),
-                        std_out: code_run.std_out.clone(),
-                        evaluation_result: Some(evaluation_result),
-                        spill_error,
-                        return_info: Some(JsReturnInfo {
-                            line_number: code_run.line_number,
-                            output_type: code_run.output_type.clone(),
+                    match &data_table.kind {
+                        DataTableKind::CodeRun(code_run) => Some(JsCodeCell {
+                            x: code_pos.x,
+                            y: code_pos.y,
+                            code_string: code_cell_value.code,
+                            language: code_cell_value.language,
+                            std_err: code_run.std_err.clone(),
+                            std_out: code_run.std_out.clone(),
+                            evaluation_result: Some(evaluation_result),
+                            spill_error,
+                            return_info: Some(JsReturnInfo {
+                                line_number: code_run.line_number,
+                                output_type: code_run.output_type.clone(),
+                            }),
+                            cells_accessed: Some(code_run.cells_accessed.iter().copied().collect()),
                         }),
-                        cells_accessed: Some(code_run.cells_accessed.iter().copied().collect()),
-                    })
+                        DataTableKind::Import(_) => Some(JsCodeCell {
+                            x: code_pos.x,
+                            y: code_pos.y,
+                            code_string: code_cell_value.code,
+                            language: code_cell_value.language,
+                            std_err: None,
+                            std_out: None,
+                            evaluation_result: Some(evaluation_result),
+                            spill_error,
+                            return_info: None,
+                            cells_accessed: None,
+                        }),
+                    }
                 } else {
                     Some(JsCodeCell {
                         x: code_pos.x,
                         y: code_pos.y,
-                        code_string: cell_value.code,
-                        language: cell_value.language,
-                        std_err: None,
-                        std_out: None,
-                        evaluation_result: None,
-                        spill_error: None,
-                        return_info: None,
-                        cells_accessed: None,
-                    })
-                }
-            }
-            CellValue::Import(_) => {
-                dbgjs!("CellValue::Import");
-                dbgjs!(self.data_table(code_pos));
-                if let Some(data_table) = self.data_table(code_pos) {
-                    let evaluation_result =
-                        serde_json::to_string(&data_table.value).unwrap_or("".into());
-                    let spill_error = if data_table.spill_error {
-                        Some(self.find_spill_error_reasons(
-                            &data_table.output_rect(code_pos, true),
-                            code_pos,
-                        ))
-                    } else {
-                        None
-                    };
-
-                    Some(JsCodeCell {
-                        x: code_pos.x,
-                        y: code_pos.y,
-                        code_string: "".into(),
-                        language: CodeCellLanguage::Formula,
-                        std_err: None,
-                        std_out: None,
-                        evaluation_result: Some(evaluation_result),
-                        spill_error,
-                        return_info: None,
-                        cells_accessed: None,
-                    })
-                } else {
-                    Some(JsCodeCell {
-                        x: code_pos.x,
-                        y: code_pos.y,
-                        code_string: "".into(),
-                        language: CodeCellLanguage::Formula,
+                        code_string: code_cell_value.code,
+                        language: code_cell_value.language,
                         std_err: None,
                         std_out: None,
                         evaluation_result: None,

@@ -212,7 +212,9 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
                     CodeCellLanguage::Python => code_cell.code.to_string(),
                     CodeCellLanguage::Connection { .. } => code_cell.code.to_string(),
                     CodeCellLanguage::Javascript => code_cell.code.to_string(),
+                    CodeCellLanguage::Import => "import".to_string(),
                 },
+                Some(CellValue::Import(import)) => import.to_string(),
                 _ => sheet
                     .display_value(pos)
                     .unwrap_or(CellValue::Blank)

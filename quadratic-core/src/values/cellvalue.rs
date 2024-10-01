@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
+use calamine::Cell;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +24,12 @@ const PERCENTAGE_SYMBOL: char = '%';
 pub struct CodeCellValue {
     pub language: CodeCellLanguage,
     pub code: String,
+}
+
+impl CodeCellValue {
+    pub fn new(language: CodeCellLanguage, code: String) -> Self {
+        Self { language, code }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -874,6 +881,14 @@ impl CellValue {
             count += 1;
         }
         crate::formulas::util::checked_div(span, sum, count as f64)
+    }
+
+    pub fn code_cell_value(&self) -> Option<CodeCellValue> {
+        match self {
+            CellValue::Code(code) => Some(code.to_owned()),
+            CellValue::Import(_) => Some(CodeCellValue::new(CodeCellLanguage::Import, "".into())),
+            _ => None,
+        }
     }
 }
 

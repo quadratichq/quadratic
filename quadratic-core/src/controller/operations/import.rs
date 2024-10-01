@@ -129,16 +129,6 @@ impl GridController {
         let import = Import::new(file_name.into());
         let data_table = DataTable::from((import, cell_values));
 
-        ops.push(Operation::SetCodeRun {
-            sheet_pos: SheetPos {
-                x: insert_at.x,
-                y: insert_at.y + current_y as i64,
-                sheet_id,
-            },
-            code_run: Some(data_table),
-            index: y as usize,
-        });
-
         let sheet_pos = SheetPos {
             x: insert_at.x,
             y: insert_at.y,
@@ -148,6 +138,16 @@ impl GridController {
         ops.push(Operation::SetCellValues {
             sheet_pos,
             values: CellValues::from(CellValue::Import(Import::new(file_name.into()))),
+        });
+
+        ops.push(Operation::SetCodeRun {
+            sheet_pos: SheetPos {
+                x: insert_at.x,
+                y: insert_at.y + current_y as i64,
+                sheet_id,
+            },
+            code_run: Some(data_table),
+            index: y as usize,
         });
 
         Ok(ops)

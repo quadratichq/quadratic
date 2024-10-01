@@ -270,6 +270,7 @@ pub enum CodeCellLanguage {
     Formula,
     Javascript,
     Connection { kind: ConnectionKind, id: String },
+    Import,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

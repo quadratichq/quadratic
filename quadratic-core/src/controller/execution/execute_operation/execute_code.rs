@@ -129,6 +129,7 @@ impl GridController {
                 CodeCellLanguage::Javascript => {
                     self.run_javascript(transaction, sheet_pos, code);
                 }
+                CodeCellLanguage::Import => {} // no-op
             }
         }
     }

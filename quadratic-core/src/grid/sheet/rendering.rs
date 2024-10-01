@@ -160,10 +160,7 @@ impl Sheet {
     ) -> Vec<JsRenderCell> {
         let mut cells = vec![];
 
-        dbgjs!("get_code_cells()");
-        dbgjs!(&data_table);
-
-        if let CellValue::Code(code) = code {
+        if let Some(code_cell_value) = code.code_cell_value() {
             if data_table.spill_error {
                 cells.push(self.get_render_cell(
                     code_rect.min.x,
@@ -173,7 +170,7 @@ impl Sheet {
                         span: None,
                         msg: RunErrorMsg::Spill,
                     })),
-                    Some(code.language.to_owned()),
+                    Some(code_cell_value.language),
                 ));
             } else if let Some(error) = data_table.get_error() {
                 cells.push(self.get_render_cell(
@@ -181,7 +178,7 @@ impl Sheet {
                     code_rect.min.y,
                     None,
                     &CellValue::Error(Box::new(error)),
-                    Some(code.language.to_owned()),
+                    Some(code_cell_value.language),
                 ));
             } else {
                 // find overlap of code_rect into rect
@@ -214,7 +211,7 @@ impl Sheet {
                         );
                         if let Some(value) = value {
                             let language = if x == code_rect.min.x && y == code_rect.min.y {
-                                Some(code.language.to_owned())
+                                Some(code_cell_value.language.to_owned())
                             } else {
                                 None
                             };
@@ -225,62 +222,6 @@ impl Sheet {
             }
         }
 
-        if let CellValue::Import(import) = code {
-            if data_table.spill_error {
-                cells.push(self.get_render_cell(
-                    code_rect.min.x,
-                    code_rect.min.y,
-                    None,
-                    &CellValue::Error(Box::new(RunError {
-                        span: None,
-                        msg: RunErrorMsg::Spill,
-                    })),
-                    None,
-                ));
-            } else if let Some(error) = data_table.get_error() {
-                cells.push(self.get_render_cell(
-                    code_rect.min.x,
-                    code_rect.min.y,
-                    None,
-                    &CellValue::Error(Box::new(error)),
-                    None,
-                ));
-            } else {
-                // find overlap of code_rect into rect
-                let x_start = if code_rect.min.x > output_rect.min.x {
-                    code_rect.min.x
-                } else {
-                    output_rect.min.x
-                };
-                let x_end = if code_rect.max.x > output_rect.max.x {
-                    output_rect.max.x
-                } else {
-                    code_rect.max.x
-                };
-                let y_start = if code_rect.min.y > output_rect.min.y {
-                    code_rect.min.y
-                } else {
-                    output_rect.min.y
-                };
-                let y_end = if code_rect.max.y > output_rect.max.y {
-                    output_rect.max.y
-                } else {
-                    code_rect.max.y
-                };
-                for x in x_start..=x_end {
-                    let column = self.get_column(x);
-                    for y in y_start..=y_end {
-                        let value = data_table.cell_value_at(
-                            (x - code_rect.min.x) as u32,
-                            (y - code_rect.min.y) as u32,
-                        );
-                        if let Some(value) = value {
-                            cells.push(self.get_render_cell(x, y, column, &value, None));
-                        }
-                    }
-                }
-            }
-        }
         cells
     }
 
@@ -306,15 +247,11 @@ impl Sheet {
         // Fetch values from code cells
         self.iter_code_output_in_rect(rect)
             .for_each(|(data_table_rect, data_table)| {
-                dbgjs!("get_render_cells() 1");
-                dbgjs!(&data_table);
                 // sanity check that there is a CellValue::Code for this CodeRun
                 if let Some(cell_value) = self.cell_value(Pos {
                     x: data_table_rect.min.x,
                     y: data_table_rect.min.y,
                 }) {
-                    dbgjs!("get_render_cells() 2");
-                    dbgjs!(&data_table);
                     render_cells.extend(self.get_code_cells(
                         &cell_value,
                         data_table,
@@ -445,11 +382,8 @@ impl Sheet {
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
         let data_table = self.data_tables.get(&pos)?;
-        dbgjs!("get_render_code_cell()");
-        dbgjs!(&data_table);
         let code = self.cell_value(pos)?;
         let output_size = data_table.output_size();
-        dbgjs!(&output_size);
         let (state, w, h, spill_error) = if data_table.spill_error {
             let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
             (
@@ -477,6 +411,7 @@ impl Sheet {
             h,
             language: match code {
                 CellValue::Code(code) => code.language,
+                CellValue::Import(_) => CodeCellLanguage::Import,
                 _ => return None,
             },
             state,
@@ -490,8 +425,8 @@ impl Sheet {
             .iter()
             .filter_map(|(pos, data_table)| {
                 if let Some(code) = self.cell_value(*pos) {
-                    match &code {
-                        CellValue::Code(code) => {
+                    match code.code_cell_value() {
+                        Some(code_cell_value) => {
                             let output_size = data_table.output_size();
                             let (state, w, h, spill_error) = if data_table.spill_error {
                                 let reasons = self.find_spill_error_reasons(
@@ -514,12 +449,13 @@ impl Sheet {
                                     None,
                                 )
                             };
+
                             Some(JsRenderCodeCell {
                                 x: pos.x as i32,
                                 y: pos.y as i32,
                                 w,
                                 h,
-                                language: code.language.to_owned(),
+                                language: code_cell_value.language,
                                 state,
                                 spill_error,
                             })
