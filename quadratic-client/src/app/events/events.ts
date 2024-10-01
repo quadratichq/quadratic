@@ -46,7 +46,7 @@ interface EventTypes {
   deleteSheet: (sheetId: string, user: boolean) => void;
   sheetInfo: (sheetInfo: SheetInfo[]) => void;
   sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
-  changeSheet: () => void;
+  changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
   setCursor: (cursor?: string, selection?: Selection) => void;

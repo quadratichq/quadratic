@@ -1,5 +1,6 @@
 import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCountAtom';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetBounds } from '@/app/quadratic-core-types';
@@ -60,7 +61,8 @@ export const showCodeHintState = selector({
   get: ({ get }) => {
     const cellTypeMenuOpenedCount = get(cellTypeMenuOpenedCountAtom);
     const { sheetEmpty, multipleSelection } = get(codeHintAtom);
-    const { showCodeEditor, permissions } = get(editorInteractionStateAtom);
+    const showCodeEditor = get(codeEditorShowSnippetsPopoverAtom);
+    const permissions = get(editorInteractionStatePermissionsAtom);
     return (
       cellTypeMenuOpenedCount < 4 &&
       sheetEmpty &&

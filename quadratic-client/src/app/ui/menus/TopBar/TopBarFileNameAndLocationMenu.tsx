@@ -1,3 +1,7 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -5,16 +9,11 @@ import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { useFileContext } from '../../components/FileProvider';
 
 export const TopBarFileNameAndLocationMenu = () => {
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const { name } = useFileContext();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { permissions } = editorInteractionState;
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
 
   return (
     <div className={`flex flex-grow items-center justify-center`}>
