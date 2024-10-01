@@ -419,7 +419,7 @@ export class CellsLabels {
       cellsHash = new CellsTextHash(this, hashX, hashY);
       this.cellsTextHash.set(key, cellsHash);
     }
-    cellsHash.renderCellsReceivedTime = Date.now();
+    cellsHash.renderCellsReceivedTime = performance.now();
     cellsHash.dirty = renderCells;
   }
 
@@ -443,7 +443,7 @@ export class CellsLabels {
   }
 
   setOffsetsDelta = (column: number | null, row: number | null, delta: number) => {
-    this.offsetsModifiedReceivedTime = Date.now();
+    this.offsetsModifiedReceivedTime = performance.now();
     if (column !== null) {
       const size = this.sheetOffsets.getColumnWidth(column) - delta;
       this.sheetOffsets.setColumnWidth(column, size);
@@ -459,7 +459,7 @@ export class CellsLabels {
   };
 
   setOffsetsSize = (offsets: JsOffset[]) => {
-    this.offsetsModifiedReceivedTime = Date.now();
+    this.offsetsModifiedReceivedTime = performance.now();
     offsets.forEach(({ column, row, size }) => {
       let delta = 0;
       if (column !== null) {

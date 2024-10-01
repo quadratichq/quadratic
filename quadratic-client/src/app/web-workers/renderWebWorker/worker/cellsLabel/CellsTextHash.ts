@@ -202,7 +202,7 @@ export class CellsTextHash {
             this.AABB.width + 1,
             this.AABB.height + 1
           );
-          this.renderCellsReceivedTime = Date.now();
+          this.renderCellsReceivedTime = performance.now();
         } catch (e) {
           this.dirty = true;
           console.warn(`[CellsTextHash] update: Error getting render cells: ${e}`);
