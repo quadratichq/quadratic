@@ -110,16 +110,30 @@ export const codeEditorWaitingForEditorClose = createSelector('waitingForEditorC
 
 export const codeEditorShowDiffEditorAtom = selector<boolean>({
   key: 'codeEditorShowDiffEditorAtom',
-  get: ({ get }) =>
-    get(codeEditorAtom).modifiedEditorContent !== undefined &&
-    get(codeEditorAtom).modifiedEditorContent !== get(codeEditorAtom).editorContent,
+  get: ({ get }) => {
+    const { waitingForEditorClose, modifiedEditorContent, editorContent } = get(codeEditorAtom);
+
+    return (
+      waitingForEditorClose === undefined &&
+      modifiedEditorContent !== undefined &&
+      editorContent !== undefined &&
+      modifiedEditorContent !== editorContent
+    );
+  },
 });
 
 export const codeEditorUnsavedChangesAtom = selector<boolean>({
   key: 'codeEditorUnsavedChangesAtom',
   get: ({ get }) => {
-    const unsavedChanges = get(codeEditorAtom).editorContent !== get(codeEditorAtom).codeString;
-    pixiAppSettings.unsavedEditorChanges = unsavedChanges ? get(codeEditorAtom).editorContent : undefined;
+    const { editorContent, codeString } = get(codeEditorAtom);
+    const unsavedChanges = editorContent !== codeString;
+
+    if (unsavedChanges) {
+      pixiAppSettings.unsavedEditorChanges = editorContent;
+    } else {
+      pixiAppSettings.unsavedEditorChanges = undefined;
+    }
+
     return unsavedChanges;
   },
 });

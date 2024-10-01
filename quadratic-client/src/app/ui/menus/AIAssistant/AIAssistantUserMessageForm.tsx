@@ -24,7 +24,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
   const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
   const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
 
-  const submitPrompt = useSubmitAIAssistantPrompt();
+  const { submitPrompt } = useSubmitAIAssistantPrompt();
 
   const abortPrompt = useCallback(() => {
     abortController?.abort();

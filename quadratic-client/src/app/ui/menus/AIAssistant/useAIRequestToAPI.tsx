@@ -186,5 +186,5 @@ export function useAIRequestToAPI() {
     [parseAnthropicStream, parseOpenAIStream]
   );
 
-  return handleAIRequestToAPI;
+  return { handleAIRequestToAPI };
 }

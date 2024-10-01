@@ -84,9 +84,9 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
   const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
   const { getCodeCell } = useGetCodeCell();
 
-  const handleSaveAndRun = useCallback(() => {
+  const handleSaveAndRun = useCallback(async () => {
     mixpanel.track('[AI].code.run', { language });
-    const codeCell = getCodeCell();
+    const codeCell = await getCodeCell();
     quadraticCore.setCodeCellValue({
       sheetId: codeCell.sheetId,
       x: codeCell.pos.x,
@@ -111,9 +111,9 @@ function CodeSnippetReplaceButton({ language, text }: { language: CodeSnippetPro
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const { getCodeCell } = useGetCodeCell();
 
-  const handleReplace = useCallback(() => {
+  const handleReplace = useCallback(async () => {
     mixpanel.track('[AI].code.replace', { language });
-    const codeCell = getCodeCell();
+    const codeCell = await getCodeCell();
     setCodeEditorState((prev) => ({
       ...prev,
       modifiedEditorContent: undefined,
@@ -139,9 +139,9 @@ function CodeSnippetDiffEditor({ language, text }: { language: CodeSnippetProps[
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const { getCodeCell } = useGetCodeCell();
 
-  const handleEditorDiff = useCallback(() => {
+  const handleEditorDiff = useCallback(async () => {
     mixpanel.track('[AI].code.diff');
-    const codeCell = getCodeCell();
+    const codeCell = await getCodeCell();
     setCodeEditorState((prev) => ({
       ...prev,
       modifiedEditorContent: text,

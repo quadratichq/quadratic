@@ -14,7 +14,7 @@ export function AskAICodeCell() {
   const [sheetId, setSheetId] = useState('');
   const [displayPos, setDisplayPos] = useState<Coordinate | undefined>();
 
-  const submitPrompt = useSubmitAIAssistantPrompt();
+  const { submitPrompt } = useSubmitAIAssistantPrompt();
 
   const askAI = useCallback(
     (codeCell: CodeCell) => {
