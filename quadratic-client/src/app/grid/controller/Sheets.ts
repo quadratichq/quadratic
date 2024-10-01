@@ -346,11 +346,6 @@ class Sheets {
     return JSON.stringify(sheetMap);
   }
 
-  /// Gets a stringified sheet id for Rust
-  getRustSheetId(sheetId = sheets.sheet.id): string {
-    return JSON.stringify({ id: sheetId });
-  }
-
   // Changes the cursor to the incoming selection
   changeSelection(selection: Selection, ensureVisible = true) {
     // change the sheet id if needed

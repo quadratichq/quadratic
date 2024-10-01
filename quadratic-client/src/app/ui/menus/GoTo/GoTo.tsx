@@ -28,37 +28,21 @@ export const GoTo = () => {
     if (!value) {
       return (
         <span>
-          Go to <span className="font-bold">A1</span>
+          <span className="font-bold">A1</span>
         </span>
       );
     }
     try {
       const selection = a1StringToSelection(value, sheets.sheet.id, sheets.getRustSheetMap());
-      const selectionObject: Selection = JSON.parse(selection);
-      let sheetName = <></>;
-      if (selectionObject.sheet_id.id !== sheets.sheet.id) {
-        const name = sheets.getById(selectionObject.sheet_id.id)?.name;
-        sheetName = (
-          <span>
-            <span className="font-bold">{name}</span> at{' '}
-          </span>
-        );
-      }
-
       if (selection) {
-        const a1String = selectionToA1String(
-          selection,
-          JSON.stringify({ id: sheets.sheet.id }),
-          sheets.getRustSheetMap()
-        );
+        const a1String = selectionToA1String(selection, sheets.sheet.id, sheets.getRustSheetMap());
         return (
           <span>
-            Go to {sheetName}
             <span className="font-bold">{a1String}</span>
           </span>
         );
       } else {
-        return <span>Go to A1</span>;
+        return <span>A1</span>;
       }
     } catch (e: any) {
       if (e) {
@@ -108,21 +92,24 @@ export const GoTo = () => {
         onValueChange={(value) => {
           setValue(value);
         }}
-        placeholder="Enter a cell “A1” or selection"
+        placeholder="Enter a cell “A1” or range “A1:B2”"
         omitIcon={true}
       />
       <CommandList className="p-2">
         <CommandItem
           onSelect={onSelect}
-          className="flex items-center justify-between"
+          className="flex cursor-pointer items-center justify-between"
           onPointerDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
         >
-          {convertedInput}
+          {convertedInput ? <div>Go to {convertedInput}</div> : null}
           <GoToIcon className="text-muted-foreground" />
         </CommandItem>
+        {/* <CommandItem className="flex cursor-pointer items-center justify-between">
+          <div>Rename range {convertedInput}</div>
+        </CommandItem> */}
       </CommandList>
     </Command>
   );

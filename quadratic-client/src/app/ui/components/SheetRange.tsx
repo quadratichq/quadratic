@@ -46,7 +46,7 @@ export const SheetRange = (props: Props) => {
   const ref = useRef<HTMLInputElement>(null);
 
   const stringifiedSheetId = useMemo((): string => {
-    return sheets.getRustSheetId(changeCursor === true ? sheets.sheet.id : changeCursor);
+    return changeCursor === true ? sheets.sheet.id : changeCursor ?? '';
   }, [changeCursor]);
 
   // insert the range of the current selection

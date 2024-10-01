@@ -15,7 +15,7 @@ pub fn a1_to_pos(selection: &str, sheet_id: &str, sheets: &str) -> Result<String
     let Ok(selection) = Selection::from_str(selection) else {
         return Err(format!("Invalid selection: {}", selection));
     };
-    let Ok(sheet_id) = serde_json::from_str::<SheetId>(sheet_id) else {
+    let Ok(sheet_id) = SheetId::from_str(sheet_id) else {
         return Err(A1Error::InvalidSheetId(sheet_id.to_string()).into());
     };
     let Ok(sheets) = serde_json::from_str::<SheetNameIdMap>(sheets) else {

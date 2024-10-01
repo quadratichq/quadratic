@@ -16,7 +16,7 @@ export const CursorPosition = () => {
     const updateCursor = () => {
       try {
         setCursorPositionString(
-          selectionToA1(sheets.getRustSelectionStringified(), sheets.getRustSheetId(), sheets.getRustSheetMap())
+          selectionToA1(sheets.getRustSelectionStringified(), sheets.sheet.id, sheets.getRustSheetMap())
         );
       } catch (e) {
         console.log(e);
