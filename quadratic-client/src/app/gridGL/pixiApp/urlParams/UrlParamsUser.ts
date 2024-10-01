@@ -50,13 +50,17 @@ export class UrlParamsUser {
         if (!pixiAppSettings.setEditorInteractionState) {
           throw new Error('Expected setEditorInteractionState to be set in urlParams.loadCode');
         }
-        pixiAppSettings.setEditorInteractionState?.({
-          ...pixiAppSettings.editorInteractionState,
+        const { x, y } = sheets.sheet.cursor.cursorPosition;
+        pixiAppSettings.setCodeEditorState?.((prev) => ({
+          ...prev,
           showCodeEditor: true,
-          mode: language,
-          selectedCellSheet: sheets.sheet.id,
-          selectedCell: { x: sheets.sheet.cursor.cursorPosition.x, y: sheets.sheet.cursor.cursorPosition.y },
-        });
+          initialCode: '',
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x, y },
+            language,
+          },
+        }));
       }
     }
   }
@@ -75,15 +79,15 @@ export class UrlParamsUser {
     if (this.dirty) {
       this.dirty = false;
       const url = new URLSearchParams(window.location.search);
-      const state = pixiAppSettings.editorInteractionState;
+      const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
 
       // if code editor is open, we use its x, y, and sheet name
-      if (state.showCodeEditor && state.mode) {
-        url.set('code', getLanguage(state.mode).toLowerCase());
-        url.set('x', state.selectedCell.x.toString());
-        url.set('y', state.selectedCell.y.toString());
-        if (state.selectedCellSheet !== sheets.getFirst().id) {
-          const sheetName = sheets.getById(state.selectedCellSheet)?.name;
+      if (showCodeEditor) {
+        url.set('code', getLanguage(codeCell.language).toLowerCase());
+        url.set('x', codeCell.pos.x.toString());
+        url.set('y', codeCell.pos.y.toString());
+        if (codeCell.sheetId !== sheets.getFirst().id) {
+          const sheetName = sheets.getById(codeCell.sheetId)?.name;
           if (!sheetName) {
             throw new Error('Expected to find sheet in urlParams.updateParams');
           }
