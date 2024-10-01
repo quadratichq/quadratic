@@ -10,6 +10,7 @@ import { ValidationsData } from './useValidationsData';
 import { validationRuleSimple } from '../Validation/validationType';
 import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 import { selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { sheets } from '@/app/grid/controller/Sheets';
 
 interface Props {
   validation: Validation;
@@ -49,7 +50,12 @@ export const ValidationEntry = (props: Props) => {
   const title = useMemo(() => validationText(validation), [validation]);
 
   const selection = useMemo(
-    () => selectionToA1String(JSON.stringify(validation.selection, bigIntReplacer)),
+    () =>
+      selectionToA1String(
+        JSON.stringify(validation.selection, bigIntReplacer),
+        JSON.stringify(sheets.sheet.id),
+        sheets.getRustSheetMap()
+      ),
     [validation.selection]
   );
 

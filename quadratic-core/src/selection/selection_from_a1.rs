@@ -1,6 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
-
-use crate::{grid::SheetId, A1Error, Rect, A1};
+use crate::{grid::SheetId, A1Error, Rect, SheetNameIdMap, A1};
 
 use super::Selection;
 
@@ -10,7 +8,7 @@ impl Selection {
     pub fn from_a1(
         mut a1: &str,
         sheet_id: SheetId,
-        sheets: HashMap<String, String>,
+        sheets: SheetNameIdMap,
     ) -> Result<Selection, A1Error> {
         let mut selection = Selection::new(sheet_id);
         // Count the number of exclamation marks in the A1 string
@@ -27,15 +25,13 @@ impl Selection {
             // Remove single quotes around sheet name if present
             let sheet_name = sheet_name.trim_matches('\'');
 
-            let sheet_id_string = sheets
+            let different_sheet_id = sheets
                 .iter()
-                .find(|(k, _)| k.to_lowercase() == sheet_name.to_lowercase())
-                .map(|(_, v)| v)
+                .find(|(name, _)| name.to_lowercase() == sheet_name.to_lowercase())
+                .map(|(_, sheet_id)| sheet_id)
                 .ok_or(A1Error::InvalidSheetName(sheet_name.to_string()))?;
 
-            let sheet_id = SheetId::from_str(sheet_id_string)
-                .map_err(|_| A1Error::InvalidSheetName(sheet_name.to_string()))?;
-            selection.sheet_id = sheet_id;
+            selection.sheet_id = different_sheet_id.to_owned();
             a1 = remaining;
         }
         let entries = a1.split(',');
@@ -92,6 +88,8 @@ impl Selection {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use serial_test::parallel;
 
     use super::*;
@@ -203,7 +201,7 @@ mod tests {
     #[parallel]
     fn test_from_a1_sheets() {
         let sheet_id = SheetId::test();
-        let sheets = HashMap::from([("Sheet1".to_string(), sheet_id.to_string())]);
+        let sheets = HashMap::from([("Sheet1".to_string(), sheet_id)]);
         assert_eq!(
             Selection::from_a1("'Sheet1'!A1", sheet_id, sheets.clone()),
             Ok(Selection::new_sheet_pos(1, 1, sheet_id))
@@ -211,6 +209,16 @@ mod tests {
         assert_eq!(
             Selection::from_a1("'sheet1'!A1", sheet_id, sheets),
             Ok(Selection::new_sheet_pos(1, 1, sheet_id))
+        );
+
+        let second_sheet_id = SheetId::new();
+        let sheets = HashMap::from([
+            ("First".to_string(), sheet_id),
+            ("Second".to_string(), second_sheet_id),
+        ]);
+        assert_eq!(
+            Selection::from_a1("'Second'!A1", sheet_id, sheets),
+            Ok(Selection::new_sheet_pos(1, 1, second_sheet_id))
         );
     }
 }

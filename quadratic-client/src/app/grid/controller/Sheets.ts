@@ -6,6 +6,7 @@ import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Sheet } from '../sheet/Sheet';
 import { ColumnRowCursor, SheetCursorSave } from '../sheet/SheetCursor';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
+import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 
 class Sheets {
   sheets: Sheet[];
@@ -329,15 +330,25 @@ class Sheets {
     return this.sheet.cursor.getMultiplayerSelection();
   }
 
+  /// Gets a Selection for Rust
   getRustSelection(): Selection {
     return this.sheet.cursor.getRustSelection();
   }
 
+  getRustSelectionStringified(): string {
+    return JSON.stringify(this.getRustSelection(), bigIntReplacer);
+  }
+
   // Gets a stringified sheet name to id map for Rust's A1 functions
   getRustSheetMap(): string {
-    const sheetMap: Record<string, string> = {};
-    sheets.forEach((sheet) => (sheetMap[sheet.name] = sheet.id));
+    const sheetMap: Record<string, { id: string }> = {};
+    sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
     return JSON.stringify(sheetMap);
+  }
+
+  /// Gets a stringified sheet id for Rust
+  getRustSheetId(sheetId = sheets.sheet.id): string {
+    return JSON.stringify({ id: sheetId });
   }
 
   // Changes the cursor to the incoming selection

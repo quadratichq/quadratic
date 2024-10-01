@@ -3,7 +3,6 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { selectionToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import GoTo from '@/app/ui/menus/GoTo';
-import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { useEffect, useState } from 'react';
@@ -15,8 +14,13 @@ export const CursorPosition = () => {
 
   useEffect(() => {
     const updateCursor = () => {
-      const rustSelection = sheets.sheet.cursor.getRustSelection(false);
-      setCursorPositionString(selectionToA1(JSON.stringify(rustSelection, bigIntReplacer)));
+      try {
+        setCursorPositionString(
+          selectionToA1(sheets.getRustSelectionStringified(), sheets.getRustSheetId(), sheets.getRustSheetMap())
+        );
+      } catch (e) {
+        console.log(e);
+      }
     };
     updateCursor();
     events.on('cursorPosition', updateCursor);

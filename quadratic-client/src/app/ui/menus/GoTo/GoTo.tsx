@@ -46,7 +46,11 @@ export const GoTo = () => {
       }
 
       if (selection) {
-        const a1String = selectionToA1String(selection);
+        const a1String = selectionToA1String(
+          selection,
+          JSON.stringify({ id: sheets.sheet.id }),
+          sheets.getRustSheetMap()
+        );
         return (
           <span>
             Go to {sheetName}

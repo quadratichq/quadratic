@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::{Rect, A1};
+use crate::{Rect, SheetNameIdMap, A1};
 
 use super::*;
 
@@ -93,10 +93,26 @@ impl Selection {
         results
     }
 
-    /// Converts a selection to an A1-style string.
-    pub fn to_a1(&self) -> String {
+    /// Converts a selection to an A1-style string. Where SheetId is the current
+    /// sheet. sheet_id is the current displayed sheet, and sheet_map is a map of
+    /// sheet ids to their names.
+    pub fn to_a1(&self, sheet_id: SheetId, sheet_map: SheetNameIdMap) -> String {
+        let mut sheet_name: Option<String> = None;
+        if self.sheet_id != sheet_id {
+            sheet_name = Some(
+                sheet_map
+                    .iter()
+                    .find(|(_, id)| **id == self.sheet_id)
+                    .map_or(&"Sheet not found".to_string(), |(name, _)| name)
+                    .to_owned(),
+            );
+        }
         if self.all {
-            return "*".to_string();
+            if let Some(sheet_name) = sheet_name {
+                return format!("{sheet_name}!*");
+            } else {
+                return "*".to_string();
+            }
         }
 
         let mut results = vec![];
@@ -117,7 +133,11 @@ impl Selection {
             results.push(A1::pos_to_a1(self.x as u64, self.y as u64));
         }
 
-        results.join(",")
+        if let Some(sheet_name) = sheet_name {
+            format!("{}!{}", sheet_name, results.join(","))
+        } else {
+            results.join(",")
+        }
     }
 }
 
@@ -135,21 +155,27 @@ mod tests {
     #[parallel]
     fn test_to_a1_all() {
         let selection = Selection::all(SheetId::test());
-        assert_eq!(selection.to_a1(), "*");
+        assert_eq!(selection.to_a1(SheetId::test(), HashMap::new()), "*");
     }
 
     #[test]
     #[parallel]
     fn test_to_a1_columns() {
         let selection = Selection::columns(&[1, 2, 3, 4, 5, 10, 11, 12, 15], SheetId::test());
-        assert_eq!(selection.to_a1(), "A:E,J:L,O");
+        assert_eq!(
+            selection.to_a1(SheetId::test(), HashMap::new()),
+            "A:E,J:L,O"
+        );
     }
 
     #[test]
     #[parallel]
     fn test_to_a1_rows() {
         let selection = Selection::rows(&[1, 2, 3, 4, 5, 10, 11, 12, 15], SheetId::test());
-        assert_eq!(selection.to_a1(), "1:5,10:12,15");
+        assert_eq!(
+            selection.to_a1(SheetId::test(), HashMap::new()),
+            "1:5,10:12,15"
+        );
     }
 
     #[test]
@@ -159,7 +185,10 @@ mod tests {
             &[Rect::new(1, 1, 2, 2), Rect::new(3, 3, 4, 4)],
             SheetId::test(),
         );
-        assert_eq!(selection.to_a1(), "A1:B2,C3:D4");
+        assert_eq!(
+            selection.to_a1(SheetId::test(), HashMap::new()),
+            "A1:B2,C3:D4"
+        );
     }
 
     #[test]
@@ -171,7 +200,7 @@ mod tests {
             sheet_id: SheetId::test(),
             ..Default::default()
         };
-        assert_eq!(selection.to_a1(), "A1");
+        assert_eq!(selection.to_a1(SheetId::test(), HashMap::new()), "A1");
     }
 
     #[test]
@@ -186,7 +215,10 @@ mod tests {
             columns: Some(vec![1, 2, 3, 4, 5, 10, 11, 12, 15]),
             rows: Some(vec![1, 2, 3, 4, 5, 10, 11, 12, 15]),
         };
-        assert_eq!(selection.to_a1(), "A:E,J:L,O,1:5,10:12,15,A1:B2,C3:D4");
+        assert_eq!(
+            selection.to_a1(SheetId::test(), HashMap::new()),
+            "A:E,J:L,O,1:5,10:12,15,A1:B2,C3:D4"
+        );
     }
 
     #[test]
@@ -201,7 +233,7 @@ mod tests {
             columns: None,
             rows: None,
         };
-        assert_eq!(selection.to_a1(), "A1");
+        assert_eq!(selection.to_a1(SheetId::test(), HashMap::new()), "A1");
     }
 
     #[test]
@@ -209,7 +241,7 @@ mod tests {
     fn test_extra_comma() {
         let sheet_id = SheetId::test();
         let selection = Selection::from_a1("1,", sheet_id, HashMap::new()).unwrap();
-        assert_eq!(selection.to_a1(), "1");
+        assert_eq!(selection.to_a1(sheet_id, HashMap::new()), "1");
     }
 
     #[test]
@@ -217,6 +249,20 @@ mod tests {
     fn test_multiple_one_sized_rects() {
         let sheet_id = SheetId::test();
         let selection = Selection::from_a1("A1,B1,C1", sheet_id, HashMap::new()).unwrap();
-        assert_eq!(selection.to_a1(), "A1,B1,C1");
+        assert_eq!(selection.to_a1(sheet_id, HashMap::new()), "A1,B1,C1");
+    }
+
+    #[test]
+    #[parallel]
+    fn test_different_sheet() {
+        let sheet_id = SheetId::test();
+        let sheet_second = SheetId::new();
+        let map = HashMap::from([
+            ("First".to_string(), sheet_id),
+            ("Second".to_string(), sheet_second),
+        ]);
+        let selection = Selection::from_a1("second!A1,B1,C1", sheet_id, map.clone()).unwrap();
+        assert_eq!(selection.to_a1(sheet_second, map.clone()), "A1,B1,C1");
+        assert_eq!(selection.to_a1(sheet_id, map.clone()), "Second!A1,B1,C1");
     }
 }

@@ -1,3 +1,4 @@
+import { sheets } from '@/app/grid/controller/Sheets';
 import { Validation } from '@/app/quadratic-core-types';
 import { numberToDate, numberToTime, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
@@ -158,7 +159,11 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
         <div className="whitespace-normal">
           Value {verb} be one of the values in the selected range{' '}
           <span className={listClassName}>
-            {selectionToA1String(JSON.stringify(validation.rule.List.source.Selection, bigIntReplacer))}
+            {selectionToA1String(
+              JSON.stringify(validation.rule.List.source.Selection, bigIntReplacer),
+              JSON.stringify({ id: sheets.sheet.id }),
+              sheets.getRustSheetMap()
+            )}
           </span>
           .
         </div>

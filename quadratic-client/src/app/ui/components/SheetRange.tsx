@@ -3,7 +3,7 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipHint } from './TooltipHint';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import { Button } from '@/shared/shadcn/ui/button';
-import { FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FocusEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { cn } from '@/shared/shadcn/utils';
 import { Selection } from '@/app/quadratic-core-types';
@@ -45,15 +45,23 @@ export const SheetRange = (props: Props) => {
   const [rangeError, setRangeError] = useState<string | undefined>();
   const ref = useRef<HTMLInputElement>(null);
 
+  const stringifiedSheetId = useMemo((): string => {
+    return sheets.getRustSheetId(changeCursor === true ? sheets.sheet.id : changeCursor);
+  }, [changeCursor]);
+
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     if (ref.current) {
-      const selection = sheets.getRustSelection();
-      ref.current.value = selectionToA1String(JSON.stringify(selection, bigIntReplacer));
+      ref.current.value = selectionToA1String(
+        sheets.getRustSelectionStringified(),
+        stringifiedSheetId,
+        sheets.getRustSheetMap()
+      );
+      const selection = sheets.sheet.cursor.getRustSelection();
       onChangeRange(selection);
       setRangeError(undefined);
     }
-  }, [onChangeRange]);
+  }, [stringifiedSheetId, onChangeRange]);
 
   const updateValue = useCallback(
     (value: string) => {
@@ -65,6 +73,7 @@ export const SheetRange = (props: Props) => {
         );
         const selection = JSON.parse(selectionString);
         onChangeRange(selection);
+        console.log(selection);
         setRangeError(undefined);
       } catch (e: any) {
         try {
@@ -90,9 +99,11 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial ? selectionToA1String(JSON.stringify(initial, bigIntReplacer)) : '';
+      ref.current.value = initial
+        ? selectionToA1String(JSON.stringify(initial, bigIntReplacer), stringifiedSheetId, sheets.getRustSheetMap())
+        : '';
     }
-  }, [initial]);
+  }, [changeCursor, stringifiedSheetId, initial]);
 
   const onFocus = () => {
     if (!ref.current || !changeCursor) return;

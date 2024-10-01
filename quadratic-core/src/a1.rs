@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 use ts_rs::TS;
 
-use crate::{Pos, Rect};
+use crate::{grid::SheetId, Pos, Rect};
+
+pub type SheetNameIdMap = HashMap<String, SheetId>;
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum A1Error {
