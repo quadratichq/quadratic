@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect};
 use serde::{Deserialize, Serialize};
@@ -333,7 +333,14 @@ impl Selection {
 
     /// Determines whether the Selection is empty.
     pub fn is_empty(&self) -> bool {
-        !self.all && self.columns.is_none() && self.rows.is_none() && self.rects.is_none()
+        !self.all
+            && (self.columns.is_none()
+                || self
+                    .columns
+                    .as_ref()
+                    .is_some_and(|columns| columns.is_empty()))
+            && (self.rows.is_none() || self.rows.as_ref().is_some_and(|rows| rows.is_empty()))
+            && (self.rects.is_none() || self.rects.as_ref().is_some_and(|rects| rects.is_empty()))
     }
 
     /// Finds intersection of two Selections. Note: x,y of the resulting
@@ -396,6 +403,184 @@ impl Selection {
         } else {
             Some(selection)
         }
+    }
+
+    /// Potentially grows the selection to include a new column.
+    pub fn inserted_column(&mut self, column: i64) -> bool {
+        let mut changed = false;
+        // increment any columns greater than the inserted column
+        self.columns = self.columns.as_mut().map(|column_in_vec| {
+            column_in_vec
+                .iter()
+                .map(|c| {
+                    if *c >= column {
+                        changed = true;
+                        *c + 1
+                    } else {
+                        *c
+                    }
+                })
+                .collect()
+        });
+
+        // insert the new column into any selection rects
+        if let Some(rects) = self.rects.as_mut() {
+            for rect in rects.iter_mut() {
+                if rect.min.x >= column {
+                    rect.min.x += 1;
+                    changed = true;
+                }
+                if rect.max.x >= column {
+                    rect.max.x += 1;
+                    changed = true;
+                }
+            }
+        }
+
+        changed
+    }
+
+    /// Potentially grows the selection to include a new row.
+    pub fn inserted_row(&mut self, row: i64) -> bool {
+        let mut changed = false;
+
+        // increment any rows greater than the inserted row
+        self.rows = self.rows.as_mut().map(|row_in_vec| {
+            row_in_vec
+                .iter()
+                .map(|r| {
+                    if *r >= row {
+                        changed = true;
+                        *r + 1
+                    } else {
+                        *r
+                    }
+                })
+                .collect()
+        });
+
+        // insert the new row into any selection rects
+        if let Some(rects) = self.rects.as_mut() {
+            for rect in rects.iter_mut() {
+                if rect.min.y >= row {
+                    rect.min.y += 1;
+                    changed = true;
+                }
+                if rect.max.y >= row {
+                    rect.max.y += 1;
+                    changed = true;
+                }
+            }
+        }
+
+        changed
+    }
+
+    /// Potentially shrinks a selection after the removal of a column.
+    pub fn removed_column(&mut self, column: i64) -> bool {
+        let mut changed = false;
+
+        // decrement any columns greater than the removed column
+        self.columns = self.columns.as_mut().map(|column_in_vec| {
+            column_in_vec
+                .iter()
+                .filter_map(|c| match c.cmp(&column) {
+                    std::cmp::Ordering::Equal => {
+                        changed = true;
+                        None
+                    }
+                    std::cmp::Ordering::Greater => {
+                        changed = true;
+                        Some(*c - 1)
+                    }
+                    std::cmp::Ordering::Less => Some(*c),
+                })
+                .collect()
+        });
+        if self
+            .columns
+            .as_ref()
+            .is_some_and(|columns| columns.is_empty())
+        {
+            self.columns = None;
+        }
+
+        // remove the column from any selection rects
+        if let Some(rects) = self.rects.as_mut() {
+            rects.retain_mut(|rect| {
+                if rect.min.x >= column {
+                    rect.min.x -= 1;
+                    changed = true;
+                }
+                if rect.max.x >= column {
+                    rect.max.x -= 1;
+                    changed = true;
+                }
+                rect.width() > 0 && rect.height() > 0
+            });
+        }
+
+        changed
+    }
+
+    /// Potentially shrinks a selection after the removal of a row.
+    pub fn removed_row(&mut self, row: i64) -> bool {
+        let mut changed = false;
+
+        // decrement any rows greater than the removed row
+        self.rows = self.rows.as_mut().map(|row_in_vec| {
+            row_in_vec
+                .iter()
+                .filter_map(|r| match r.cmp(&row) {
+                    std::cmp::Ordering::Equal => {
+                        changed = true;
+                        None
+                    }
+                    std::cmp::Ordering::Greater => {
+                        changed = true;
+                        Some(*r - 1)
+                    }
+                    std::cmp::Ordering::Less => Some(*r),
+                })
+                .collect()
+        });
+        if self.rows.as_ref().is_some_and(|rows| rows.is_empty()) {
+            self.rows = None;
+        }
+
+        // remove the row from any selection rects
+        if let Some(rects) = self.rects.as_mut() {
+            rects.retain_mut(|rect| {
+                if rect.min.y >= row {
+                    rect.min.y -= 1;
+                    changed = true;
+                }
+                if rect.max.y >= row {
+                    rect.max.y -= 1;
+                    changed = true;
+                }
+                rect.width() > 0 && rect.height() > 0
+            });
+        }
+
+        changed
+    }
+
+    /// Converts the rects in a selection to a set of quadrant positions.
+    pub fn rects_to_hashes(&self) -> HashSet<Pos> {
+        let mut hashes = HashSet::new();
+        if let Some(rects) = self.rects.as_ref() {
+            for rect in rects {
+                for x in rect.min.x..=rect.max.x {
+                    for y in rect.min.y..=rect.max.y {
+                        let mut pos = Pos { x, y };
+                        pos.to_quadrant();
+                        hashes.insert(pos);
+                    }
+                }
+            }
+        }
+        hashes
     }
 }
 
@@ -978,6 +1163,125 @@ mod test {
                 sheet_id: SheetId::test(),
                 ..Default::default()
             }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn inserted_column() {
+        let sheet_id = SheetId::test();
+        let mut selection = Selection {
+            sheet_id,
+            columns: Some(vec![1, 2, 3]),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
+            ..Default::default()
+        };
+        assert!(selection.inserted_column(2));
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                columns: Some(vec![1, 3, 4]),
+                rects: Some(vec![Rect::new(1, 1, 4, 3), Rect::new(-10, -10, 1, 1)]),
+                ..Default::default()
+            }
+        );
+        assert!(!selection.inserted_column(10));
+    }
+
+    #[test]
+    #[parallel]
+    fn inserted_row() {
+        let sheet_id = SheetId::test();
+        let mut selection = Selection {
+            sheet_id,
+            rows: Some(vec![1, 2, 3]),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
+            ..Default::default()
+        };
+        selection.inserted_row(2);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                rows: Some(vec![1, 3, 4]),
+                rects: Some(vec![Rect::new(1, 1, 3, 4), Rect::new(-10, -10, 1, 1)]),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn removed_column() {
+        let sheet_id = SheetId::test();
+        let mut selection = Selection {
+            sheet_id,
+            columns: Some(vec![1, 2, 3]),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
+            ..Default::default()
+        };
+        selection.removed_column(2);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                columns: Some(vec![1, 2]),
+                rects: Some(vec![Rect::new(1, 1, 2, 3), Rect::new(-10, -10, 1, 1)]),
+                ..Default::default()
+            }
+        );
+
+        let mut selection = Selection {
+            sheet_id,
+            columns: Some(vec![1]),
+            ..Default::default()
+        };
+        selection.removed_column(1);
+        assert!(selection.columns.is_none());
+    }
+
+    #[test]
+    #[parallel]
+    fn removed_row() {
+        let sheet_id = SheetId::test();
+        let mut selection = Selection {
+            sheet_id,
+            rows: Some(vec![1, 2, 3]),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
+            ..Default::default()
+        };
+        selection.removed_row(2);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                rows: Some(vec![1, 2]),
+                rects: Some(vec![Rect::new(1, 1, 3, 2), Rect::new(-10, -10, 1, 1)]),
+                ..Default::default()
+            }
+        );
+
+        let mut selection = Selection {
+            sheet_id,
+            rows: Some(vec![1]),
+            ..Default::default()
+        };
+        selection.removed_row(1);
+        assert!(selection.rows.is_none());
+    }
+
+    #[test]
+    #[parallel]
+    fn rects_to_hashes() {
+        let selection = Selection {
+            sheet_id: SheetId::test(),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-3, -3, -1, -1)]),
+            ..Default::default()
+        };
+        assert_eq!(
+            selection.rects_to_hashes(),
+            HashSet::from([Pos { x: -1, y: -1 }, Pos { x: 0, y: 0 }])
         );
     }
 }

@@ -572,6 +572,22 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreDeleteColumns':
+        core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        return;
+
+      case 'clientCoreDeleteRows':
+        core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        return;
+
+      case 'clientCoreInsertColumn':
+        core.insertColumn(e.data.sheetId, e.data.column, e.data.right, e.data.cursor);
+        return;
+
+      case 'clientCoreInsertRow':
+        core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

@@ -994,6 +994,36 @@ export interface CoreClientNeighborText {
   text: string[];
 }
 
+export interface ClientCoreDeleteColumns {
+  type: 'clientCoreDeleteColumns';
+  sheetId: string;
+  columns: number[];
+  cursor: string;
+}
+
+export interface ClientCoreDeleteRows {
+  type: 'clientCoreDeleteRows';
+  sheetId: string;
+  rows: number[];
+  cursor: string;
+}
+
+export interface ClientCoreInsertColumn {
+  type: 'clientCoreInsertColumn';
+  sheetId: string;
+  column: number;
+  right: boolean;
+  cursor: string;
+}
+
+export interface ClientCoreInsertRow {
+  type: 'clientCoreInsertRow';
+  sheetId: string;
+  row: number;
+  below: boolean;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1069,7 +1099,11 @@ export type ClientCoreMessage =
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
-  | ClientCoreNeighborText;
+  | ClientCoreNeighborText
+  | ClientCoreDeleteColumns
+  | ClientCoreDeleteRows
+  | ClientCoreInsertColumn
+  | ClientCoreInsertRow;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

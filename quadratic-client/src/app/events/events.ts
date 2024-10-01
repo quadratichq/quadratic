@@ -125,8 +125,9 @@ interface EventTypes {
 
   // when validation changes state
   validation: (validation: string | boolean) => void;
+
   // context menu opens on a grid heading
-  gridContextMenu: (world: Point, column: number, row: number) => void;
+  gridContextMenu: (world: Point, column?: number, row?: number) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 }
