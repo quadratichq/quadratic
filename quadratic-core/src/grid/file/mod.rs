@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::str;
-use v1_7::schema::GridSchema as current;
+use v1_7_1::GridSchema as current;
 
 pub mod serialize;
 pub mod sheet_schema;
@@ -17,8 +17,9 @@ mod v1_4;
 mod v1_5;
 mod v1_6;
 mod v1_7;
+pub mod v1_7_1;
 
-pub static CURRENT_VERSION: &str = "1.7";
+pub static CURRENT_VERSION: &str = "1.7.1";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
 pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
@@ -31,6 +32,11 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.7.1")]
+    V1_7_1 {
+        #[serde(flatten)]
+        grid: v1_7_1::GridSchema,
+    },
     #[serde(rename = "1.7")]
     V1_7 {
         #[serde(flatten)]
@@ -61,15 +67,18 @@ enum GridFile {
 impl GridFile {
     fn into_latest(self) -> Result<v1_7::schema::GridSchema> {
         match self {
-            GridFile::V1_7 { grid } => Ok(grid),
-            GridFile::V1_6 { grid } => v1_6::file::upgrade(grid),
-            GridFile::V1_5 { grid } => v1_6::file::upgrade(v1_5::file::upgrade(grid)?),
-            GridFile::V1_4 { grid } => {
-                v1_6::file::upgrade(v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?)
+            GridFile::V1_7_1 { grid } => Ok(grid),
+            GridFile::V1_7 { grid } => v1_7::upgrade(grid),
+            GridFile::V1_6 { grid } => v1_7::upgrade(v1_6::file::upgrade(grid)?),
+            GridFile::V1_5 { grid } => {
+                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(grid)?)?)
             }
-            GridFile::V1_3 { grid } => v1_6::file::upgrade(v1_5::file::upgrade(
+            GridFile::V1_4 { grid } => v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
+                v1_4::file::upgrade(grid)?,
+            )?)?),
+            GridFile::V1_3 { grid } => v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
                 v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?,
-            )?),
+            )?)?),
         }
     }
 }
@@ -103,6 +112,15 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             Ok(serialize::import(schema)?)
         }
         "1.7" => {
+            let schema = decompress_and_deserialize::<v1_7::schema::GridSchema>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            )?;
+            drop(file_contents);
+            Ok(serialize::import(schema)?)
+        }
+        "1.7.1" => {
             let schema = decompress_and_deserialize::<current>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,

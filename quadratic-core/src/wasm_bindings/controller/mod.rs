@@ -90,11 +90,6 @@ impl GridController {
                             sheet.borders.send_sheet_borders(*sheet_id);
                         }
                     });
-
-                    crate::wasm_bindings::js::jsClientMessage(
-                        "grid initialized".to_string(),
-                        false,
-                    );
                 }
                 Ok(grid)
             }
