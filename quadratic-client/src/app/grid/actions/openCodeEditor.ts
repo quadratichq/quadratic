@@ -52,6 +52,7 @@ export const openCodeEditor = async () => {
     setCodeEditorState({
       ...codeEditorState,
       modifiedEditorContent: undefined,
+      initialCode: '',
       codeCell: {
         sheetId: sheets.current,
         pos: { x, y },

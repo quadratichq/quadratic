@@ -86,6 +86,7 @@ export class UrlParamsDev {
         pixiAppSettings.setCodeEditorState((prev) => ({
           ...prev,
           showCodeEditor: true,
+          initialCode: '',
           codeCell: {
             sheetId,
             pos: { x, y },
@@ -133,6 +134,7 @@ export class UrlParamsDev {
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
         showCodeEditor: true,
+        initialCode: '',
         codeCell: {
           sheetId,
           pos: { x, y },

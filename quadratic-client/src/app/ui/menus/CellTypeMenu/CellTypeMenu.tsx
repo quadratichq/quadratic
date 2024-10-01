@@ -106,6 +106,7 @@ export default function CellTypeMenu() {
       setCodeEditorState((prev) => ({
         ...prev,
         showCodeEditor: true,
+        initialCode: '',
         codeCell: {
           ...prev.codeCell,
           language,
