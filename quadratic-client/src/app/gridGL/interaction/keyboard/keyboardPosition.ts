@@ -32,8 +32,10 @@ function setCursorPosition(x: number, y: number) {
 // - if there are no more cells then select the next cell over (excel selects to the end of the sheet; we don’t have an end (yet) so right now I select one cell over)
 //   the above checks are always made relative to the original cursor position (the highlighted cell)
 async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
-  const cursor = sheets.sheet.cursor;
-  const sheetId = sheets.sheet.id;
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
+  const sheetId = sheet.id;
+  const clamp = sheet.clamp;
 
   // holds either the existing multiCursor or creates a new one based on cursor position
   const multiCursor = cursor.multiCursor ?? [new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1)];
@@ -84,12 +86,9 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
       });
     }
     if (nextCol === undefined) {
-      nextCol = x < 0 ? 0 : x + 1;
+      nextCol = x + 1 < clamp.left ? clamp.left : x + 1;
     }
     x = nextCol;
-    if (keyboardX < -1) {
-      x = Math.min(x, -1);
-    }
     if (x === keyboardX) x++;
     if (select) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);

@@ -92,6 +92,7 @@ declare var self: WorkerGlobalScope &
       validationWarnings: JsValidationWarning[]
     ) => void;
     sendMultiplayerSynced: () => void;
+    sendClientMessage: (message: string, error: boolean) => void;
   };
 
 class CoreClient {
@@ -127,6 +128,7 @@ class CoreClient {
     self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
     self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
+    self.sendClientMessage = coreClient.sendClientMessage;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -756,6 +758,10 @@ class CoreClient {
 
   sendMultiplayerSynced = () => {
     this.send({ type: 'coreClientMultiplayerSynced' });
+  };
+
+  sendClientMessage = (message: string, error: boolean) => {
+    this.send({ type: 'coreClientClientMessage', message, error });
   };
 }
 

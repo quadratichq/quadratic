@@ -45,7 +45,7 @@ export const SheetRange = (props: Props) => {
   const [rangeError, setRangeError] = useState<string | undefined>();
   const ref = useRef<HTMLInputElement>(null);
 
-  const stringifiedSheetId = useMemo((): string => {
+  const a1SheetId = useMemo((): string => {
     return changeCursor === true ? sheets.sheet.id : changeCursor ?? '';
   }, [changeCursor]);
 
@@ -54,14 +54,14 @@ export const SheetRange = (props: Props) => {
     if (ref.current) {
       ref.current.value = selectionToA1String(
         sheets.getRustSelectionStringified(),
-        stringifiedSheetId,
+        a1SheetId,
         sheets.getRustSheetMap()
       );
       const selection = sheets.sheet.cursor.getRustSelection();
       onChangeRange(selection);
       setRangeError(undefined);
     }
-  }, [stringifiedSheetId, onChangeRange]);
+  }, [a1SheetId, onChangeRange]);
 
   const updateValue = useCallback(
     (value: string) => {
@@ -73,7 +73,6 @@ export const SheetRange = (props: Props) => {
         );
         const selection = JSON.parse(selectionString);
         onChangeRange(selection);
-        console.log(selection);
         setRangeError(undefined);
       } catch (e: any) {
         try {
@@ -100,10 +99,10 @@ export const SheetRange = (props: Props) => {
   useEffect(() => {
     if (ref.current) {
       ref.current.value = initial
-        ? selectionToA1String(JSON.stringify(initial, bigIntReplacer), stringifiedSheetId, sheets.getRustSheetMap())
+        ? selectionToA1String(JSON.stringify(initial, bigIntReplacer), a1SheetId, sheets.getRustSheetMap())
         : '';
     }
-  }, [changeCursor, stringifiedSheetId, initial]);
+  }, [changeCursor, a1SheetId, initial]);
 
   const onFocus = () => {
     if (!ref.current || !changeCursor) return;

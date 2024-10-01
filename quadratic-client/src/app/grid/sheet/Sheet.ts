@@ -25,6 +25,9 @@ export class Sheet {
 
   validations: Validation[] = [];
 
+  // clamp is the area that the cursor can move around in
+  clamp: Rectangle;
+
   constructor(info: SheetInfo, testSkipOffsetsLoad = false) {
     this.id = info.sheet_id;
     this.name = info.name;
@@ -35,6 +38,10 @@ export class Sheet {
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
     this.gridOverflowLines = new GridOverflowLines();
+
+    // this will be imported via SheetInfo in the future
+    this.clamp = new Rectangle(1, 1, Infinity, Infinity);
+
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
   }

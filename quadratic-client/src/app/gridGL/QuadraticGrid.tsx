@@ -47,7 +47,7 @@ export default function QuadraticGrid() {
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
   useEffect(() => {
-    pixiAppSettings.addGlobalSnackbar = addGlobalSnackbar;
+    pixiAppSettings.setGlobalSnackbar(addGlobalSnackbar);
   }, [addGlobalSnackbar]);
 
   const [gridSettings, setGridSettings] = useRecoilState(gridSettingsAtom);

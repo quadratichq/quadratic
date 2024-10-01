@@ -53,7 +53,7 @@ export const ValidationEntry = (props: Props) => {
     () =>
       selectionToA1String(
         JSON.stringify(validation.selection, bigIntReplacer),
-        JSON.stringify(sheets.sheet.id),
+        sheets.sheet.id,
         sheets.getRustSheetMap()
       ),
     [validation.selection]

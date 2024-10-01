@@ -31,6 +31,7 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: Input;
+  private waitingForSnackbar: { message: string; severity: 'error' | 'success' }[] = [];
 
   // Keeps track of code editor content. This is used when moving code cells to
   // keep track of any unsaved changes, and keyboardCell.
@@ -209,6 +210,22 @@ class PixiAppSettings {
 
   get panMode() {
     return this._panMode;
+  }
+
+  setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) {
+    this.addGlobalSnackbar = addGlobalSnackbar;
+    for (const snackbar of this.waitingForSnackbar) {
+      this.addGlobalSnackbar(snackbar.message, { severity: snackbar.severity });
+    }
+    this.waitingForSnackbar = [];
+  }
+
+  snackbar(message: string, severity: 'error' | 'success') {
+    if (this.addGlobalSnackbar) {
+      this.addGlobalSnackbar(message, { severity });
+    } else {
+      this.waitingForSnackbar.push({ message, severity });
+    }
   }
 }
 

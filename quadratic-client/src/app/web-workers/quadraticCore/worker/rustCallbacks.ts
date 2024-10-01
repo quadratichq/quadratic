@@ -100,6 +100,7 @@ declare var self: WorkerGlobalScope &
     sendHashesDirty: (sheetId: string, hashes: string) => void;
     sendSetViewportBuffer: (transactionId: string, buffer: SharedArrayBuffer) => void;
     sendClearViewportBuffer: (transactionId: string) => void;
+    sendClientMessage: (message: string, error: boolean) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -312,4 +313,8 @@ export const jsSendViewportBuffer = (transactionId: string, buffer: SharedArrayB
 
 export const jsClearViewportBuffer = (transactionId: string) => {
   self.sendClearViewportBuffer(transactionId);
+};
+
+export const jsClientMessage = (message: string, error: boolean) => {
+  self.sendClientMessage(message, error);
 };

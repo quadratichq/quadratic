@@ -59,6 +59,7 @@ import {
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
 } from './coreClientMessages';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 
 class QuadraticCore {
   private worker?: Worker;
@@ -179,6 +180,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientBordersSheet') {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
+      return;
+    } else if (e.data.type === 'coreClientClientMessage') {
+      pixiAppSettings.snackbar(e.data.message, e.data.error ? 'error' : 'success');
       return;
     }
 
