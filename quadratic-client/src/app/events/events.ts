@@ -127,7 +127,9 @@ interface EventTypes {
   validation: (validation: string | boolean) => void;
 
   // context menu opens on a grid heading
-  gridContextMenu: (world: Point, row?: number, column?: number) => void;
+  gridContextMenu: (world: Point, column?: number, row?: number) => void;
+
+  suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
