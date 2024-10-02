@@ -1,17 +1,17 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
+import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
+import { SheetBarTabContextMenu } from '@/app/ui/menus/SheetBar/SheetBarTabContextMenu';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
 import mixpanel from 'mixpanel-browser';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { SheetBarButton } from './SheetBarButton';
-import { SheetBarTab } from './SheetBarTab';
-import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
 
 const ARROW_SCROLL_AMOUNT = 10;
 const HOVER_SCROLL_AMOUNT = 5;
@@ -23,7 +23,7 @@ export const SheetBar = (): JSX.Element => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
 
-  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
 
   // activate sheet
@@ -170,6 +170,7 @@ export const SheetBar = (): JSX.Element => {
       const tab = event.currentTarget;
       if (tab) {
         const rect = tab.getBoundingClientRect();
+        rect.x -= sheetTabs.offsetLeft;
         const originalOrderIndex = getOrderIndex(sheet.order);
         down.current = {
           tab,

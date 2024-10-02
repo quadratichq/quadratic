@@ -1,9 +1,9 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { MultiplayerCursor } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MultiplayerCursor';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useEffect, useState } from 'react';
-import { multiplayer } from '../../../web-workers/multiplayerWebWorker/multiplayer';
-import { MultiplayerCursor } from './MultiplayerCursor';
 import './MultiplayerCursors.css';
 
 const OFFSCREEN_SIZE = 10;

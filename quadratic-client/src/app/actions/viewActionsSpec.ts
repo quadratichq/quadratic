@@ -118,7 +118,6 @@ export const viewActionsSpec: ViewActionSpec = {
         pixiAppSettings.setEditorInteractionState((prev) => ({
           ...prev,
           showCellTypeMenu: false,
-          showCodeEditor: false,
           showCommandPalette: false,
           showConnectionsMenu: false,
           showGoToMenu: false,
@@ -128,7 +127,6 @@ export const viewActionsSpec: ViewActionSpec = {
           showShareFileMenu: false,
           showSearch: false,
           showValidation: false,
-          showAI: false,
         }));
       }
     },
