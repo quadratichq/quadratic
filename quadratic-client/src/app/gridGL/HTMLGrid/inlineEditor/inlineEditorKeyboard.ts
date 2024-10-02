@@ -55,7 +55,7 @@ class InlineEditorKeyboard {
   private handleArrowVertical = async (isDown: boolean, e: KeyboardEvent) => {
     // if dropdown is showing, then we let dropdown handle the vertical arrow keys
     if (pixiAppSettings.editorInteractionState.annotationState === 'dropdown') {
-      keyboardDropdown(e, pixiAppSettings.editorInteractionState);
+      keyboardDropdown(e);
       e.stopPropagation();
       return;
     }
@@ -297,8 +297,15 @@ class InlineEditorKeyboard {
       pixiAppSettings.setEditorInteractionState?.({
         ...pixiAppSettings.editorInteractionState,
         showCellTypeMenu: true,
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
+      });
+      pixiAppSettings.setCodeEditorState?.({
+        ...pixiAppSettings.codeEditorState,
+        initialCode: '',
+        codeCell: {
+          sheetId: sheets.current,
+          pos: { x: cursor.x, y: cursor.y },
+          language: pixiAppSettings.codeEditorState.codeCell.language,
+        },
       });
     } else if (matchShortcut(Action.InsertToday, e)) {
       const today = new Date();

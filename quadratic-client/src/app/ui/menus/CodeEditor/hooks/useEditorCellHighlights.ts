@@ -1,15 +1,16 @@
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
+import { ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
+import { getKey, StringId } from '@/app/helpers/getKey';
 import { parsePython as parseCellsAccessed } from '@/app/helpers/parseEditorPythonCell';
-import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import monaco, { editor } from 'monaco-editor';
+import { colors } from '@/app/theme/colors';
+import { Monaco } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
-import { StringId, getKey } from '../../../helpers/getKey';
-import { colors } from '../../../theme/colors';
 
 export function extractCellsFromParseFormula(
   parsedFormula: ParseFormulaReturnType,
@@ -59,28 +60,24 @@ export const createFormulaStyleHighlights = () => {
 
 export const useEditorCellHighlights = (
   isValidRef: boolean,
-  editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>,
-  language?: CodeCellLanguage,
+  editorInst: monaco.editor.IStandaloneCodeEditor | null,
+  monacoInst: Monaco | null,
   cellsAccessed?: SheetRect[] | null
 ) => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  let decorations = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+  const decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
   // the colors from the same colors used in pixi and stick them in the DOM
   useEffect(() => {
-    if (language !== 'Formula') return;
+    if (codeCell.language !== 'Formula') return;
     createFormulaStyleHighlights();
-  }, [language]);
+  }, [codeCell.language]);
 
   useEffect(() => {
-    const editor = editorRef.current;
-    const monacoInst = monacoRef.current;
-    if (!isValidRef || !editor || !monacoInst) return;
+    if (!isValidRef || !editorInst || !monacoInst) return;
 
-    const model = editor.getModel();
-
+    const model = editorInst.getModel();
     if (!model) return;
 
     const onChangeModel = async () => {
@@ -89,36 +86,19 @@ export const useEditorCellHighlights = (
       const cellColorReferences = new Map<string, number>();
       let newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
 
-      const modelValue = editor.getValue();
+      const modelValue = editorInst.getValue();
       let parsed;
-
-      if (language === 'Python' || language === 'Javascript') {
+      if (codeCell.language === 'Python' || codeCell.language === 'Javascript') {
         parsed = parseCellsAccessed(cellsAccessed) as ParseFormulaReturnType;
-      }
-
-      if (language === 'Formula') {
-        parsed = (await parseFormula(
-          modelValue,
-          editorInteractionState.selectedCell.x,
-          editorInteractionState.selectedCell.y
-        )) as ParseFormulaReturnType;
+      } else if (codeCell.language === 'Formula') {
+        parsed = (await parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
       }
 
       if (parsed) {
-        pixiApp.cellHighlights.fromFormula(
-          parsed,
-          editorInteractionState.selectedCell,
-          editorInteractionState.selectedCellSheet
-        );
+        pixiApp.cellHighlights.fromFormula(parsed, codeCell.pos, codeCell.sheetId);
+        if (codeCell.language !== 'Formula') return;
 
-        if (language !== 'Formula') return;
-
-        const extractedCells = extractCellsFromParseFormula(
-          parsed,
-          editorInteractionState.selectedCell,
-          editorInteractionState.selectedCellSheet
-        );
-
+        const extractedCells = extractCellsFromParseFormula(parsed, codeCell.pos, codeCell.sheetId);
         extractedCells.forEach((value, index) => {
           const { cellId, span } = value;
           const startPosition = model.getPositionAt(span.start);
@@ -143,7 +123,7 @@ export const useEditorCellHighlights = (
             },
           });
 
-          const editorCursorPosition = editor.getPosition();
+          const editorCursorPosition = editorInst.getPosition();
 
           if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
             pixiApp.cellHighlights.setHighlightedCell(index);
@@ -151,19 +131,11 @@ export const useEditorCellHighlights = (
         });
 
         // update the cell references in the editor
-        decorations.current = editorRef.current?.createDecorationsCollection(newDecorations);
+        decorations.current = editorInst.createDecorationsCollection(newDecorations);
       }
     };
 
     onChangeModel();
-    editor.onDidChangeModelContent(() => onChangeModel());
-  }, [
-    isValidRef,
-    editorRef,
-    monacoRef,
-    editorInteractionState.selectedCell,
-    editorInteractionState.selectedCellSheet,
-    language,
-    cellsAccessed,
-  ]);
+    editorInst.onDidChangeModelContent(() => onChangeModel());
+  }, [cellsAccessed, codeCell.language, codeCell.pos, codeCell.sheetId, editorInst, isValidRef, monacoInst]);
 };

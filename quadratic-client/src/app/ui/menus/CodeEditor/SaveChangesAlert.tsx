@@ -1,15 +1,42 @@
+import { codeEditorShowSaveChangesAlertAtom } from '@/app/atoms/codeEditorAtom';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { useAfterDialogCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useAfterDialogCodeEditor';
+import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import { useEffect, useRef } from 'react';
-import { focusGrid } from '../../../helpers/focusGrid';
+import * as monaco from 'monaco-editor';
+import { useCallback, useEffect, useRef } from 'react';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
-interface Props {
-  onCancel: (e: React.SyntheticEvent) => void;
-  onSave: (e: React.SyntheticEvent) => void;
-  onDiscard: (e: React.SyntheticEvent) => void;
+interface SaveChangesAlertProps {
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
 }
 
-export const SaveChangesAlert = (props: Props) => {
-  const { onCancel, onSave, onDiscard } = props;
+export const SaveChangesAlert = ({ editorInst }: SaveChangesAlertProps) => {
+  const { saveAndRunCell } = useSaveAndRunCell();
+  const { afterDialog } = useAfterDialogCodeEditor({
+    editorInst,
+  });
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const [showSaveChangesAlert, setShowSaveChangesAlert] = useRecoilState(codeEditorShowSaveChangesAlertAtom);
+
+  const onDiscard = useCallback(() => {
+    afterDialog();
+  }, [afterDialog]);
+
+  const onSave = useCallback(() => {
+    saveAndRunCell();
+    afterDialog();
+  }, [afterDialog, saveAndRunCell]);
+
+  const onCancel = useCallback(() => {
+    setShowSaveChangesAlert(false);
+    setEditorInteractionState((prev) => ({
+      ...prev,
+      editorEscapePressed: false,
+      waitingForEditorClose: undefined,
+    }));
+  }, [setEditorInteractionState, setShowSaveChangesAlert]);
 
   const DialogRef = useRef<HTMLDivElement>(null);
 
@@ -22,6 +49,10 @@ export const SaveChangesAlert = (props: Props) => {
     // focus on grid when dialog closes
     return () => focusGrid();
   }, []);
+
+  if (!showSaveChangesAlert) {
+    return null;
+  }
 
   return (
     <Dialog

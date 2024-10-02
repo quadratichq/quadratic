@@ -15,9 +15,7 @@ import { keyboardViewport } from '@/app/gridGL/interaction/keyboard/keyboardView
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
-import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 
 export interface IProps {
   editorInteractionState: EditorInteractionState;
@@ -26,36 +24,21 @@ export interface IProps {
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
-export const useKeyboard = (
-  props: IProps
-): {
+export const useKeyboard = (): {
   onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
   onKeyUp: (event: React.KeyboardEvent<HTMLElement>) => void;
 } => {
-  const { editorInteractionState, setEditorInteractionState } = props;
-  const { presentationMode, setPresentationMode } = useGridSettings();
-  const { addGlobalSnackbar } = useGlobalSnackbar();
-
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
       keyboardLink(event) ||
-      keyboardViewport({
-        event,
-        editorInteractionState,
-        setEditorInteractionState,
-        presentationMode,
-        setPresentationMode,
-      }) ||
-      keyboardSearch(event, editorInteractionState, setEditorInteractionState) ||
-      keyboardClipboard({
-        event,
-        addGlobalSnackbar,
-      }) ||
-      keyboardDropdown(event.nativeEvent, editorInteractionState) ||
+      keyboardViewport(event) ||
+      keyboardSearch(event) ||
+      keyboardClipboard(event) ||
+      keyboardDropdown(event.nativeEvent) ||
       keyboardUndoRedo(event) ||
       keyboardSelect(event) ||
-      keyboardCode(event, editorInteractionState) ||
+      keyboardCode(event) ||
       keyboardPosition(event.nativeEvent)
     ) {
       event.preventDefault();
@@ -78,13 +61,7 @@ export const useKeyboard = (
       return;
     }
 
-    if (
-      keyboardCell({
-        event,
-        editorInteractionState,
-        setEditorInteractionState,
-      })
-    ) {
+    if (keyboardCell(event)) {
       event.preventDefault();
       event.stopPropagation();
       return;
