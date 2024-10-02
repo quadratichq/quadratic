@@ -1,30 +1,31 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateRedoAtom,
+  editorInteractionStateShowValidationAtom,
+  editorInteractionStateUndoAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { useEffect } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 // Handles passing between events and editorInteractionStateAtom
 export const useEvents = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const showValidation = useRecoilValue(editorInteractionStateShowValidationAtom);
+  const setUndo = useSetRecoilState(editorInteractionStateUndoAtom);
+  const setRedo = useSetRecoilState(editorInteractionStateRedoAtom);
 
   useEffect(() => {
     const handleUndoRedo = (undo: boolean, redo: boolean) => {
-      setEditorInteractionState((editorInteractionState) => {
-        return {
-          ...editorInteractionState,
-          undo,
-          redo,
-        };
-      });
+      setUndo(undo);
+      setRedo(redo);
     };
 
     events.on('undoRedo', handleUndoRedo);
     return () => {
       events.off('undoRedo', handleUndoRedo);
     };
-  }, [setEditorInteractionState]);
+  }, [setRedo, setUndo]);
 
   useEffect(() => {
-    events.emit('validation', editorInteractionState.showValidation);
-  }, [editorInteractionState]);
+    events.emit('validation', showValidation);
+  }, [showValidation]);
 };

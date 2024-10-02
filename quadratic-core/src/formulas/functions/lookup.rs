@@ -461,21 +461,24 @@ fn lookup<V: ToString + AsRef<CellValue>>(
         LookupMatchMode::Exact => std::cmp::Ordering::Equal,
         LookupMatchMode::NextSmaller => std::cmp::Ordering::Less,
         LookupMatchMode::NextLarger => std::cmp::Ordering::Greater,
-        LookupMatchMode::Wildcard => {
-            let regex = crate::formulas::wildcard_pattern_to_regex(&needle.to_string())?;
-            return Ok(match search_mode {
-                LookupSearchMode::LinearForward => lookup_regex(regex, haystack),
-                LookupSearchMode::LinearReverse => {
-                    lookup_regex(regex, haystack.iter().rev()).map(fix_rev_index)
-                }
-                LookupSearchMode::BinaryAscending | LookupSearchMode::BinaryDescending => {
-                    internal_error!(
-                        "invalid match_mode+search_mode combination \
-                         should have been caught earlier in XLOOKUP",
-                    );
-                }
-            });
-        }
+        LookupMatchMode::Wildcard => match needle {
+            CellValue::Text(needle_string) => {
+                let regex = crate::formulas::wildcard_pattern_to_regex(needle_string)?;
+                return Ok(match search_mode {
+                    LookupSearchMode::LinearForward => lookup_regex(regex, haystack),
+                    LookupSearchMode::LinearReverse => {
+                        lookup_regex(regex, haystack.iter().rev()).map(fix_rev_index)
+                    }
+                    LookupSearchMode::BinaryAscending | LookupSearchMode::BinaryDescending => {
+                        internal_error!(
+                            "invalid match_mode+search_mode combination \
+                             should have been caught earlier in XLOOKUP",
+                        );
+                    }
+                });
+            }
+            _ => std::cmp::Ordering::Equal,
+        },
     };
 
     Ok(match search_mode {
@@ -1298,6 +1301,15 @@ mod tests {
         );
         assert_eq!("1", eval_to_string(&g, &make_match_formula_str("*U")));
         assert_eq!("2", eval_to_string(&g, &make_match_formula_str("Na?pa")));
+
+        // with `MAX` (horizontal)
+        let source_array =
+            array![65373.84, 41042.03, 29910.73, 31197.02, 67365.77, 31496.82, 78505.27, 38149.34];
+        let g = Grid::from_array(pos![C1], &source_array);
+        assert_eq!(eval_to_string(&g, "=MATCH(MAX(C1:J1), C1:J1, 0)"), "7");
+        // with `MAX` (vertical)
+        let g = Grid::from_array(pos![C1], &source_array.transpose());
+        assert_eq!(eval_to_string(&g, "=MATCH(MAX(C1:C8), C1:C8, 0)"), "7");
     }
 
     #[test]

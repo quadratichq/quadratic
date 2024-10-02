@@ -1,4 +1,4 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { Connections } from '@/shared/components/connections/Connections';
 import { ROUTES } from '@/shared/constants/routes';
@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 
 export function ConnectionsMenu() {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const {
     team: { uuid: teamUuid },
     userMakingRequest: { teamPermissions },
@@ -24,12 +24,7 @@ export function ConnectionsMenu() {
   }, []);
 
   return (
-    <Dialog
-      open={editorInteractionState.showConnectionsMenu}
-      onOpenChange={() => {
-        setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: false }));
-      }}
-    >
+    <Dialog open={showConnectionsMenu} onOpenChange={() => setShowConnectionsMenu(false)}>
       <DialogContent
         className="max-w-4xl"
         onPointerDownOutside={(event) => {
@@ -40,7 +35,7 @@ export function ConnectionsMenu() {
           <DialogTitle>Team connections</DialogTitle>
         </DialogHeader>
         {/* Unmount it so we reset the state */}
-        {editorInteractionState.showConnectionsMenu && (
+        {showConnectionsMenu && (
           <Connections
             connections={fetcher.data && fetcher.data.connections ? fetcher.data.connections : []}
             connectionsAreLoading={fetcher.data === undefined}

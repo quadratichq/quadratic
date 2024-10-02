@@ -15,7 +15,7 @@ import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { CellFormatSummary } from '@/app/quadratic-core-types';
-import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
+import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -481,19 +481,24 @@ class InlineEditorHandler {
   // Handler for the click for the expand code editor button.
   openCodeEditor = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.stopPropagation();
-    if (!pixiAppSettings.setEditorInteractionState) {
-      throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
+    if (!pixiAppSettings.setCodeEditorState) {
+      throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
     }
     if (!this.location) {
       throw new Error('Expected location to be defined in openCodeEditor');
     }
-    pixiAppSettings.setEditorInteractionState({
-      ...pixiAppSettings.editorInteractionState,
-      mode: 'Formula',
-      selectedCell: { x: this.location.x, y: this.location.y },
-      selectedCellSheet: this.location.sheetId,
-      initialCode: inlineEditorMonaco.get().slice(1),
-      showCodeEditor: true,
+    const { sheetId, x, y } = this.location;
+    pixiAppSettings.setCodeEditorState({
+      ...pixiAppSettings.codeEditorState,
+      waitingForEditorClose: {
+        codeCell: {
+          sheetId,
+          pos: { x, y },
+          language: 'Formula',
+        },
+        showCellTypeMenu: false,
+        initialCode: inlineEditorMonaco.get().slice(1),
+      },
     });
     this.close(0, 0, true);
   };

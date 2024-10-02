@@ -6,7 +6,7 @@ use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
 
-const F64_DECIMAL_PRECISION: u64 = 16; // just enough to not lose information
+const F64_DECIMAL_PRECISION: u64 = 14; // just enough to not lose information
 
 /*
  * CONVERSIONS (specific type -> Value)

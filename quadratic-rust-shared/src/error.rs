@@ -54,6 +54,9 @@ pub enum SharedError {
     #[error("Error communicating with AWS: {0}")]
     Aws(Aws),
 
+    #[error("{0}")]
+    Generic(String),
+
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),
 
