@@ -114,8 +114,8 @@ impl GridController {
     }
 
     /// gets values, types with position for all cells in selection
-    /// returns a stringified array of JsCellValueSelection
-    #[wasm_bindgen(js_name = "getCellValueSelection")]
+    /// returns a stringified array of JsCellValuesInSelection
+    #[wasm_bindgen(js_name = "getCellValuesInSelection")]
     pub fn js_get_cell_value_selection(&self, selection: String) -> Result<String, JsValue> {
         let selection =
             Selection::from_str(&selection).map_err(|_| JsValue::from_str("Invalid selection"))?;

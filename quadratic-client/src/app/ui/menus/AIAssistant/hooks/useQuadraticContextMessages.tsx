@@ -7,7 +7,8 @@ export function useQuadraticContextMessages() {
     () => [
       {
         role: 'user',
-        content: `You are a helpful assistant inside of a spreadsheet application called Quadratic.\n
+        content: `Note: Treat this message as an internal message for context. Don't quote it in your response.\n\n
+You are a helpful assistant inside of a spreadsheet application called Quadratic.\n
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}`,
       },

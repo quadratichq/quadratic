@@ -596,11 +596,11 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreGetCellValueSelection':
+      case 'clientCoreGetCellValuesInSelection':
         this.send({
-          type: 'coreClientGetCellValueSelection',
+          type: 'coreClientGetCellValuesInSelection',
           id: e.data.id,
-          value: core.getCellValueSelection(e.data.selection),
+          value: core.getCellValuesInSelection(e.data.selection),
         });
         return;
 

@@ -24,7 +24,8 @@ export function useCodeCellContextMessages() {
       return [
         {
           role: 'user',
-          content: `Currently, you are in a code cell that is being edited.\n
+          content: `Note: Treat this message as an internal message for context. Don't quote it in your response.\n\n
+Currently, you are in a code cell that is being edited.\n
 The cell type is ${language}. The cell is located at ${x}, ${y}.\n
 ${
   schemaJsonForAi

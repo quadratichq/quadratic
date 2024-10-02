@@ -10,7 +10,7 @@ import {
   Format,
   JsBordersSheet,
   JsCellValue,
-  JsCellValueSelection,
+  JsCellValuesInSelection,
   JsCodeCell,
   JsHtmlOutput,
   JsPos,
@@ -1050,16 +1050,16 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
-export interface ClientCoreGetCellValueSelection {
-  type: 'clientCoreGetCellValueSelection';
+export interface ClientCoreGetCellValuesInSelection {
+  type: 'clientCoreGetCellValuesInSelection';
   id: number;
   selection: Selection;
 }
 
-export interface CoreClientGetCellValueSelection {
-  type: 'coreClientGetCellValueSelection';
+export interface CoreClientGetCellValuesInSelection {
+  type: 'coreClientGetCellValuesInSelection';
   id: number;
-  value: JsCellValueSelection | undefined;
+  value: JsCellValuesInSelection | undefined;
 }
 
 export interface ClientCoreDeleteColumns {
@@ -1171,7 +1171,7 @@ export type ClientCoreMessage =
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
   | ClientCoreGetCellValue
-  | ClientCoreGetCellValueSelection
+  | ClientCoreGetCellValuesInSelection
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
@@ -1239,7 +1239,7 @@ export type CoreClientMessage =
   | CoreClientValidateInput
   | CoreClientBordersSheet
   | CoreClientGetCellValue
-  | CoreClientGetCellValueSelection
+  | CoreClientGetCellValuesInSelection
   | CoreClientFindNextColumnForRect
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically

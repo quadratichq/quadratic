@@ -16,7 +16,7 @@ import {
   CodeCellLanguage,
   Format,
   JsCellValue,
-  JsCellValueSelection,
+  JsCellValuesInSelection,
   JsCodeCell,
   JsCodeResult,
   JsPos,
@@ -1116,9 +1116,9 @@ class Core {
     }
   }
 
-  getCellValueSelection(selection: Selection): JsCellValueSelection | undefined {
+  getCellValuesInSelection(selection: Selection): JsCellValuesInSelection | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const cellValueSelection = this.gridController.getCellValueSelection(JSON.stringify(selection, bigIntReplacer));
+    const cellValueSelection = this.gridController.getCellValuesInSelection(JSON.stringify(selection, bigIntReplacer));
     if (cellValueSelection) {
       return JSON.parse(cellValueSelection);
     }

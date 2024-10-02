@@ -1,16 +1,20 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsCellValueSelection } from '@/app/quadratic-core-types';
+import { JsCellValuesInSelection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useCursorSelectionContextMessages() {
   const getCursorSelectionContextMessages = useCallback(
-    (cursorSelectionValues: JsCellValueSelection, model: AnthropicModel | OpenAIModel): (UserMessage | AIMessage)[] => {
+    (
+      cursorSelectionValues: JsCellValuesInSelection,
+      model: AnthropicModel | OpenAIModel
+    ): (UserMessage | AIMessage)[] => {
       return [
         {
           role: 'user',
-          content: `Quadratic, like most spreadsheets, allows the user to select cells on the sheet.\n
+          content: `Note: Treat this message as an internal message for context. Don't quote it in your response.\n\n
+Quadratic, like most spreadsheets, allows the user to select cells on the sheet.\n
 This cursor selection data is being shared with you, for you to refer to in following queries.\n
 Cursor selection data being shared is represented as a JSON object, having the following properties:\n
   - cursor: A single cell, which is the cell that the user has last clicked on. This is a single cell value.\n
@@ -47,7 +51,7 @@ Note: This selection JSON is only for your reference to data on the sheet. This 
 
   const getCursorSelectionContext = useCallback(
     async ({ model }: { model: AnthropicModel | OpenAIModel }) => {
-      const cursorSelectionValues = await quadraticCore.getCellValueSelection(sheets.getRustSelection());
+      const cursorSelectionValues = await quadraticCore.getCellValuesInSelection(sheets.getRustSelection());
       if (cursorSelectionValues) {
         return getCursorSelectionContextMessages(cursorSelectionValues, model);
       }

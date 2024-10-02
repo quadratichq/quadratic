@@ -17,7 +17,7 @@ import {
   CodeCellLanguage,
   Format,
   JsCellValue,
-  JsCellValueSelection,
+  JsCellValuesInSelection,
   JsCodeCell,
   JsPos,
   JsRenderCell,
@@ -363,14 +363,14 @@ class QuadraticCore {
     });
   }
 
-  getCellValueSelection(selection: Selection): Promise<JsCellValueSelection | undefined> {
+  getCellValuesInSelection(selection: Selection): Promise<JsCellValuesInSelection | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { value: JsCellValueSelection | undefined }) => {
+      this.waitingForResponse[id] = (message: { value: JsCellValuesInSelection | undefined }) => {
         resolve(message.value);
       };
       this.send({
-        type: 'clientCoreGetCellValueSelection',
+        type: 'clientCoreGetCellValuesInSelection',
         selection,
         id,
       });

@@ -66,11 +66,11 @@ pub struct JsCellValuePos {
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct JsCellValueSelection {
-    pub all: Vec<Vec<Option<JsCellValuePos>>>,
-    pub columns: Vec<Vec<Option<JsCellValuePos>>>,
-    pub rows: Vec<Vec<Option<JsCellValuePos>>>,
-    pub rects: Vec<Vec<Vec<Option<JsCellValuePos>>>>,
+pub struct JsCellValuesInSelection {
+    pub all: Vec<Vec<JsCellValuePos>>,
+    pub columns: Vec<Vec<JsCellValuePos>>,
+    pub rows: Vec<Vec<JsCellValuePos>>,
+    pub rects: Vec<Vec<Vec<JsCellValuePos>>>,
     pub cursor: Option<JsCellValuePos>,
 }
 

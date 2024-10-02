@@ -1,8 +1,9 @@
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsRowHeight, Selection, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRowHeight, Rect, Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 
@@ -333,25 +334,45 @@ class Sheets {
     return this.sheet.cursor.getRustSelection();
   }
 
-  getRustVisibleSelection(): Selection {
-    const { x: left, y: top } = pixiApp.getStartingViewport();
-    const { right, bottom } = pixiApp.viewport;
-    const top_left_cell = this.sheet.getColumnRow(left, top);
+  getVisibleRect(): Rect {
+    const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
+    const scale = pixiApp.viewport.scale.x;
+    let { width: leftHeadingWidth, height: topHeadingHeight } = pixiApp.headings.headingSize;
+    leftHeadingWidth /= scale;
+    topHeadingHeight /= scale;
+    const top_left_cell = this.sheet.getColumnRow(left + 1 + leftHeadingWidth, top + 1 + topHeadingHeight);
     const bottom_right_cell = this.sheet.getColumnRow(right, bottom);
     return {
+      min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
+      max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
+    };
+  }
+
+  getRustVisibleSelection(): Selection {
+    const selection: Selection = {
       sheet_id: { id: this.sheet.id },
       x: BigInt(this.sheet.cursor.cursorPosition.x),
       y: BigInt(this.sheet.cursor.cursorPosition.y),
-      rects: [
-        {
-          min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
-          max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
-        },
-      ],
+      rects: [],
       columns: null,
       rows: null,
       all: false,
     };
+    const sheetBounds = this.sheet.boundsWithoutFormatting;
+    if (sheetBounds.type === 'empty') {
+      return selection;
+    }
+
+    const visibleCellRect = this.getVisibleRect();
+    const sheetRect: Rect = {
+      min: sheetBounds.min,
+      max: sheetBounds.max,
+    };
+    if (intersects.rectRect(sheetRect, visibleCellRect)) {
+      selection.rects = [visibleCellRect];
+    }
+
+    return selection;
   }
 }
 
