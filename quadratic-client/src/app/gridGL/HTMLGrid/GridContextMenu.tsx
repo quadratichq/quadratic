@@ -24,12 +24,10 @@ export const GridContextMenu = () => {
   }, [setShow]);
 
   useEffect(() => {
-    pixiApp.viewport.on('moved', onClose);
-    pixiApp.viewport.on('zoomed', onClose);
+    events.on('viewportChanged', onClose);
 
     return () => {
-      pixiApp.viewport.off('moved', onClose);
-      pixiApp.viewport.off('zoomed', onClose);
+      events.off('viewportChanged', onClose);
     };
   }, [onClose]);
 

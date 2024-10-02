@@ -3,7 +3,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -166,8 +165,7 @@ export class UrlParamsDev {
     events.on('changeSheet', this.updateSheet);
     events.on('codeEditor', this.updateCode);
     events.on('validation', this.updateValidation);
-    pixiApp.viewport.on('moved', this.updateCursorViewport);
-    pixiApp.viewport.on('zoomed', this.updateCursorViewport);
+    events.on('viewportChangedReady', this.updateCursorViewport);
   }
 
   private updateCursorViewport = () => {

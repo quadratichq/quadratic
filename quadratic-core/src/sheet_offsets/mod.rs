@@ -114,7 +114,13 @@ impl SheetOffsets {
     }
 
     /// gets a column's position and size
-    pub fn column_position_size(&self, column: i64) -> (f64, f64) {
+    pub fn column_position_size(&self, mut column: i64) -> (f64, f64) {
+        // we need to handle invalid positions (since we no longer have negative
+        // or 0-based column)
+        if column <= 0 {
+            dbgjs!(format!("column_position_size: row <= 0: {}", column));
+            column = 1;
+        }
         let xs: Vec<f64> = self
             .column_widths
             .iter_offsets(Range {
@@ -128,7 +134,13 @@ impl SheetOffsets {
     }
 
     /// gets a row's position and size
-    pub fn row_position_size(&self, row: i64) -> (f64, f64) {
+    pub fn row_position_size(&self, mut row: i64) -> (f64, f64) {
+        // we need to handle invalid positions (since we no longer have negative
+        // or 0-based row)
+        if row <= 0 {
+            dbgjs!(format!("row_position_size: row <= 0: {}", row));
+            row = 1;
+        }
         let ys: Vec<f64> = self
             .row_heights
             .iter_offsets(Range {
@@ -150,7 +162,15 @@ impl SheetOffsets {
 
     /// Gets the start and end screen position for a range of columns (where the
     /// end is the final position + size).
-    pub fn column_range(&self, x0: i64, x1: i64) -> (f64, f64) {
+    pub fn column_range(&self, mut x0: i64, mut x1: i64) -> (f64, f64) {
+        if x0 <= 0 {
+            dbgjs!(format!("column_range: x0 <= 0: {}", x0));
+            x0 = 1;
+        }
+        if x1 <= 0 {
+            dbgjs!(format!("column_range: x1 <= 0: {}", x1));
+            x1 = 1;
+        }
         let xs: Vec<f64> = self
             .column_widths
             .iter_offsets(Range {
@@ -165,7 +185,15 @@ impl SheetOffsets {
 
     // Gets the start and end screen position for a range of rows (where the end
     // is the final position + size).
-    pub fn row_range(&self, y0: i64, y1: i64) -> (f64, f64) {
+    pub fn row_range(&self, mut y0: i64, mut y1: i64) -> (f64, f64) {
+        if y0 <= 0 {
+            dbgjs!(format!("row_range: y0 <= 0: {}", y0));
+            y0 = 1;
+        }
+        if y1 <= 0 {
+            dbgjs!(format!("row_range: y1 <= 0: {}", y1));
+            y1 = 1;
+        }
         let ys: Vec<f64> = self
             .row_heights
             .iter_offsets(Range {

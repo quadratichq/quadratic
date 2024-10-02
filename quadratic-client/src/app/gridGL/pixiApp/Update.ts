@@ -83,6 +83,7 @@ export class Update {
       pixiApp.viewportChanged();
       this.clampViewport();
       this.sendRenderViewport();
+      events.emit('viewportChangedReady');
     }
   }
 

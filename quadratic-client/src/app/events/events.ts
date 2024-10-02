@@ -128,6 +128,12 @@ interface EventTypes {
 
   // context menu opens on a grid heading
   gridContextMenu: (world: Point, row?: number, column?: number) => void;
+
+  // use this to set a drawing element to dirty
+  viewportChanged: () => void;
+
+  // use this only if you need to immediately get the viewport's value (ie, from React)
+  viewportChangedReady: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

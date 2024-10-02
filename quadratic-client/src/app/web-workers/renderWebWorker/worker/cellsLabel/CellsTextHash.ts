@@ -77,8 +77,15 @@ export class CellsTextHash {
     this.cellsLabels = cellsLabels;
     this.labels = new Map();
     this.labelMeshes = new LabelMeshes(this.cellsLabels.sheetId, hashX, hashY);
-    console.log(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
+    if (this.AABB.x <= 0) {
+      this.AABB.width += this.AABB.x - 1;
+      this.AABB.x = 1;
+    }
+    if (this.AABB.y <= 0) {
+      this.AABB.height += this.AABB.y - 1;
+      this.AABB.y = 1;
+    }
     const screenRectStringified = this.cellsLabels.sheetOffsets.getRectCellOffsets(
       this.AABB.left,
       this.AABB.top,

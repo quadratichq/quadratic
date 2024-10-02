@@ -66,13 +66,11 @@ export const HoverCell = () => {
         div.classList.remove('hover-cell-fade-in-no-delay');
       }
     };
-    pixiApp.viewport.on('moved', remove);
-    pixiApp.viewport.on('zoomed', remove);
     events.on('cursorPosition', remove);
+    events.on('viewportChanged', remove);
     return () => {
-      pixiApp.viewport.off('moved', remove);
-      pixiApp.viewport.off('zoomed', remove);
       events.off('cursorPosition', remove);
+      events.off('viewportChanged', remove);
     };
   }, []);
 

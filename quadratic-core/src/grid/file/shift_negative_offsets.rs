@@ -14,15 +14,16 @@ use crate::{
 
 /// Shifts all negative offsets in the grid and signals client.
 pub fn shift_negative_offsets(grid: &mut Grid) {
+    // This is a dummy transaction because it happens before the initial
+    // render of the grid file, so there's no info to share with the
+    // client. Also, we do not send any information to multiplayer, as
+    // quadratic-files will automatically upgrade using this function
+    // before applying any changes.
+    let mut _transaction = PendingTransaction::default();
     let mut changed = false;
     for sheet in grid.sheets.iter_mut() {
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
-            // this is a dummy transaction because it happens before the initial
-            // render of the grid file, so there's no info to share with the
-            // client. Also, we do not send any information to multiplayer, as
-            // quadratic-files will automatically upgrade using this function
-            // before applying any changes.
-            let mut _transaction = PendingTransaction::default();
+            dbgjs!(bounds);
             if bounds.min.x <= 0 {
                 changed = true;
                 let insert = bounds.min.x - 1;
@@ -41,6 +42,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) {
             }
         }
     }
+    // if changed && cfg!(target_family = "wasm") || cfg!(test) {
     if changed {
         crate::wasm_bindings::js::jsClientMessage("negative_offsets".to_string(), false);
     }

@@ -3,6 +3,7 @@ import { Drag, Viewport as PixiViewport } from 'pixi-viewport';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
+import { events } from '@/app/events/events';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;
@@ -45,6 +46,9 @@ export class Viewport extends PixiViewport {
 
     // hack to ensure pointermove works outside of canvas
     this.off('pointerout');
+
+    this.on('moved', () => events.emit('viewportChanged'));
+    this.on('zoomed', () => events.emit('viewportChanged'));
   }
 
   loadViewport() {
