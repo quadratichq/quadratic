@@ -1,15 +1,10 @@
-import {
-  isAvailableBecauseCanEditFile,
-  isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  provideFeedbackAction,
-} from '@/app/actions';
+import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCommandPaletteAtom,
   editorInteractionStateShowConnectionsMenuAtom,
-  editorInteractionStateShowFeedbackMenuAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { showCellTypeOutlinesAtom } from '@/app/atoms/gridSettingsAtom';
@@ -21,32 +16,28 @@ import {
   CodeCellOutlineOff,
   CodeCellOutlineOn,
   DatabaseIcon,
-  DocumentationIcon,
-  FeedbackIcon,
   ManageSearch,
   MemoryIcon,
 } from '@/shared/components/Icons';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
-import { DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
+
+const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
 
 export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const toggleCodeEditor = useMemo(() => defaultActionSpec[Action.ShowCellTypeMenu], []);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
-  const [showFeedbackMenu, setShowFeedbackMenu] = useRecoilState(editorInteractionStateShowFeedbackMenuAtom);
-
   const isAvailableArgs = useIsAvailableArgs();
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
@@ -109,22 +100,6 @@ export const QuadraticSidebar = () => {
         <SidebarTooltip label="Command palette" shortcut={KeyboardSymbols.Command + 'P'}>
           <SidebarToggle pressed={showCommandPalette} onPressedChange={() => setShowCommandPalette((prev) => !prev)}>
             <ManageSearch />
-          </SidebarToggle>
-        </SidebarTooltip>
-      </div>
-      <div className="mb-2 mt-auto flex flex-col items-center gap-1">
-        {provideFeedbackAction.isAvailable(isAvailableArgs) && (
-          <SidebarTooltip label={provideFeedbackAction.label}>
-            <SidebarToggle pressed={showFeedbackMenu} onPressedChange={() => setShowFeedbackMenu(true)}>
-              <FeedbackIcon />
-            </SidebarToggle>
-          </SidebarTooltip>
-        )}
-        <SidebarTooltip label="Documentation">
-          <SidebarToggle asChild>
-            <Link to={DOCUMENTATION_URL} target="_blank" rel="noreferrer" className="flex">
-              <DocumentationIcon />
-            </Link>
           </SidebarToggle>
         </SidebarTooltip>
       </div>
