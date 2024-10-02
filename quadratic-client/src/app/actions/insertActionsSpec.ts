@@ -5,7 +5,14 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { ArrowDropDownCircleIcon, CheckBoxIcon, DataValidationsIcon, SheetIcon } from '@/shared/components/Icons';
+import {
+  ArrowDropDownCircleIcon,
+  CheckBoxIcon,
+  DataValidationsIcon,
+  SheetIcon,
+  FormatDateTimeIcon,
+} from '@/shared/components/Icons';
+import { quadraticCore } from '../web-workers/quadraticCore/quadraticCore';
 
 type InsertActionSpec = Pick<
   ActionSpecRecord,
@@ -22,6 +29,7 @@ type InsertActionSpec = Pick<
   | Action.ToggleDataValidation
   | Action.InsertCellReference
   | Action.RemoveInsertedCells
+  | Action.InsertToday
 >;
 
 export const insertActionsSpec: InsertActionSpec = {
@@ -230,6 +238,17 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'Remove inserted cells',
     run: () => {
       // TODO(ayush): add this when refactoring shortcuts to use action specs
+    },
+  },
+  [Action.InsertToday]: {
+    label: "Insert today's date",
+    Icon: FormatDateTimeIcon,
+    run: () => {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      const today = new Date();
+      const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedDate);
     },
   },
 };
