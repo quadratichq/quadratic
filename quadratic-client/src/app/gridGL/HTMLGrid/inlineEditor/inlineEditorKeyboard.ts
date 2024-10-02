@@ -57,6 +57,7 @@ class InlineEditorKeyboard {
     if (pixiAppSettings.editorInteractionState.annotationState === 'dropdown') {
       keyboardDropdown(e);
       e.stopPropagation();
+      e.preventDefault();
       return;
     }
 
@@ -117,6 +118,16 @@ class InlineEditorKeyboard {
   // when on a different sheet, via window's keyDown listener).
   keyDown = async (e: KeyboardEvent) => {
     events.emit('hoverCell');
+
+    if (
+      inlineEditorMonaco.autocompleteShowingList &&
+      ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(e.key)
+    ) {
+      events.emit('suggestionDropdownKeyboard', e.key as 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab');
+      e.preventDefault();
+      return;
+    }
+
     if (inlineEditorHandler.cursorIsMoving) {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {
@@ -154,10 +165,14 @@ class InlineEditorKeyboard {
 
     // Tab key
     else if (matchShortcut(Action.SaveInlineEditorMoveRight, e)) {
-      e.stopPropagation();
-      e.preventDefault();
-      if (!(await this.handleValidationError())) {
-        inlineEditorHandler.close(1, 0, false);
+      if (inlineEditorMonaco.autocompleteSuggestionShowing) {
+        inlineEditorMonaco.autocompleteSuggestionShowing = false;
+      } else {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close(1, 0, false);
+        }
       }
     }
 
