@@ -16,8 +16,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 const CURSOR_SELECTION_PROMPTS: { label: string; prompt: string }[] = [
-  { label: 'Summarize data', prompt: 'Summarize my selected data' },
-  { label: 'Create a chart', prompt: 'Create a chart from my selected data' },
+  { label: 'Create a chart', prompt: 'Create a chart from my data using Plotly in Python' },
+  { label: 'Summarize data', prompt: 'Generate insights on my selected data using python code' },
+  { label: 'Tell me about the data', prompt: 'What kind of data is this, do not use code' },
+  { label: 'Add a column', prompt: 'Add a column to my selected data, use python' },
+  { label: 'Add a row', prompt: 'Add a row to my selected data, use Python' },
+  { label: 'Perform EDA', prompt: 'Use Python to perform EDA on my data, do not create any charts in the process' },
+  { label: 'Clean data', prompt: 'Clean my selected data using Python' },
 ];
 
 const ASK_AI_CURSOR_SELECTION_DELAY = 500;
@@ -125,7 +130,11 @@ export function AskAICursorSelection() {
         transform: 'translate(-50%, -50%)',
       }}
     >
-      <DropdownMenu onOpenChange={() => focusGrid()}>
+      <DropdownMenu
+        onOpenChange={(open) => {
+          if (!open) setTimeout(focusGrid, 100);
+        }}
+      >
         <DropdownMenuTrigger asChild disabled={loading}>
           <div className="flex items-center px-2 py-1">
             <AIIcon />
