@@ -13,6 +13,7 @@ import {
 } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
 import { thumbnail } from './thumbnail';
+import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 
 export class Update {
   private raf?: number;
@@ -83,19 +84,22 @@ export class Update {
       pixiApp.viewportChanged();
       this.clampViewport();
       this.sendRenderViewport();
+
+      // signals to react that the viewport has changed (so it can update any
+      // related positioning)
       events.emit('viewportChangedReady');
     }
   }
 
   private clampViewport() {
     const { viewport } = pixiApp;
-    // const bounds = viewport.getVisibleBounds();
+    const bounds = viewport.getVisibleBounds();
     const headingSize = pixiApp.headings.headingSize;
-    const maxX = headingSize.width; // + bounds.width - CELL_WIDTH;
+    const maxX = headingSize.width + bounds.width - CELL_WIDTH;
     if (viewport.x > maxX) {
       viewport.x = maxX;
     }
-    const maxY = headingSize.height; // + bounds.height - CELL_HEIGHT;
+    const maxY = headingSize.height + bounds.height - CELL_HEIGHT;
     if (viewport.y > maxY) {
       viewport.y = maxY;
     }
