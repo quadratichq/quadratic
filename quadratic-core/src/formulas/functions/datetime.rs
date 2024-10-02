@@ -10,6 +10,7 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
+        // Current date/time
         formula_fn!(
             /// Returns the current local date and time.
             ///
@@ -30,10 +31,12 @@ fn get_functions() -> Vec<FormulaFunction> {
                 CellValue::Date(chrono::Local::now().date_naive())
             }
         ),
+        // Constructors
         formula_fn!(
             /// Returns a specific date from a `year`, `month`, and `day`.
             ///
-            /// `year`, `month`, and `day` must be integers.
+            /// `year`, `month`, and `day` must be numbers, and are rounded to
+            /// the nearest integer.
             ///
             /// If `day` is outside the range of days in the given month, then
             /// it overflows and offsets the `month`. For example, `DATE(2024,
@@ -82,8 +85,9 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns a specific time from an `hour`, `minute`, and `second`.
             ///
-            /// `hour` and `minute` must be integers. `second` must be a number
-            /// (but does not need to be an integer).
+            /// `hour`, `minute`, and `second` must be numbers. `hour` and
+            /// `minute` are rounded to the nearest integer, but `second` may
+            /// have a fractional component.
             ///
             /// If `second` is outside the range from `0` to `59` inclusive,
             /// then it is divided by 60. The remainder is used for `second` and
@@ -123,6 +127,66 @@ fn get_functions() -> Vec<FormulaFunction> {
                     chrono::NaiveTime::from_hms_nano_opt(hour, minute, second, nanoseconds)
                 })()
                 .ok_or(RunErrorMsg::Overflow.with_span(span))?
+            }
+        ),
+        formula_fn!(
+            /// Returns a duration of `years`, `months`, and `days`.
+            ///
+            /// `years`, `months`, and `days` must be numbers. `years` and
+            /// `months` are rounded to the nearest integer, but `days` may have
+            /// a fractional component.
+            ///
+            /// Months and years are combined, but days are not. For example,
+            /// `DURATION.YMD(5, -3, 50)` returns `4y 9mo 50d`.
+            ///
+            /// To construct a duration longer than one day, simply construct
+            /// another duration using `DURATION.YMD` and add it to this one.
+            /// For example, `DURATION.YMD(1, 2, 3) + DURATION.HMS(4, 5, 6)`
+            /// returns `1y 2mo 3d 4h 5m 6s`.
+            #[name = "DURATION.YMD"]
+            #[examples(
+                "DURATION.YMD(0, 0, 60)",
+                "DURATION.YMD(-5, 0, 0)",
+                "DURATION.YMD(1, 6, 0)"
+            )]
+            #[zip_map]
+            fn DURATION_YMD(span: Span, [years]: i64, [months]: i64, [days]: i64) {
+                // IIFE to mimic try_block
+                (|| {
+                    Some(
+                        Duration::from_years(years.try_into().ok()?)
+                            + Duration::from_months(months.try_into().ok()?)
+                            + Duration::from_days(days as f64),
+                    )
+                })()
+                .ok_or(RunErrorMsg::Overflow.with_span(span))?
+            }
+        ),
+        formula_fn!(
+            /// Returns a duration of `hours`, `minutes`, and `seconds`.
+            ///
+            /// `hours`, `minutes`, and `seconds` must be numbers. `hours` and
+            /// `minutes` are rounded to the nearest integer, but `seconds` may
+            /// have a fractional component.
+            ///
+            /// Seconds, minutes, and hours are combined. For example,
+            /// `DURATION.YMD(1, 72, 72)` returns `2h 13m 12s`.
+            ///
+            /// To construct a duration longer than one day, simply construct
+            /// another duration using `DURATION.YMD` and add it to this one.
+            /// For example, `DURATION.YMD(1, 2, 3) + DURATION.HMS(4, 5, 6)`
+            /// returns `1y 2mo 3d 4h 5m 6s`.
+            #[name = "DURATION.HMS"]
+            #[examples(
+                "DURATION.HMS(0, 2, 30)",
+                "DURATION.HMS(6, 0, 0)",
+                "DURATION.HMS(24, 0, 0)"
+            )]
+            #[zip_map]
+            fn DURATION_HMS([hours]: i64, [minutes]: i64, [seconds]: f64) {
+                Duration::from_hours(hours as f64)
+                    + Duration::from_minutes(minutes as f64)
+                    + Duration::from_seconds(seconds)
             }
         ),
     ]
@@ -173,5 +237,32 @@ mod tests {
         assert_eq!(eval_to_string(&g, "TIME(2, -30, -45)"), "01:29:15");
         assert_eq!(eval_to_string(&g, "TIME(-1, 0, 0)"), "23:00:00");
         assert_eq!(eval_to_string(&g, "TIME(999, 72, 235)"), "16:15:55");
+    }
+
+    #[test]
+    fn test_formula_duration_ymd() {
+        let g = Grid::new();
+        assert_eq!(eval_to_string(&g, "DURATION.YMD(5, -3, 50)"), "4y 9mo 50d");
+        assert_eq!(eval_to_string(&g, "DURATION.YMD(0, 0, 60)"), "60d");
+        assert_eq!(eval_to_string(&g, "DURATION.YMD(-5, 0, 999)"), "-5y 999d");
+        assert_eq!(eval_to_string(&g, "DURATION.YMD(5, 0, -999)"), "5y -999d");
+        assert_eq!(eval_to_string(&g, "DURATION.YMD(1, 18, 0)"), "2y 6mo");
+    }
+
+    #[test]
+    fn test_formula_duration_hms() {
+        let g = Grid::new();
+        assert_eq!(eval_to_string(&g, "DURATION.HMS(6, 30, 0)"), "6h 30m");
+        assert_eq!(eval_to_string(&g, "DURATION.HMS(0, 6, 30)"), "6m 30s");
+        assert_eq!(eval_to_string(&g, "DURATION.HMS(0, 6, 30.2)"), "6m 30.2s");
+        assert_eq!(eval_to_string(&g, "DURATION.HMS(0, 0, 0.123)"), "123ms");
+        assert_eq!(
+            eval_to_string(&g, "DURATION.HMS(999, -3, 50)"),
+            "41d 14h 57m 50s",
+        );
+        assert_eq!(
+            eval_to_string(&g, "DURATION.HMS(-5, 62, 30)"),
+            "-3h -57m -30s",
+        );
     }
 }

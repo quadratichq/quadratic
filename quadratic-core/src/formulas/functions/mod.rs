@@ -20,8 +20,8 @@ mod trigonometry;
 
 use super::{util, CellRef, Criterion, Ctx, Param, ParamKind};
 use crate::{
-    Array, Axis, CellValue, CodeResult, CoerceInto, IsBlank, RunError, RunErrorMsg, Span, Spanned,
-    SpannedIterExt, Value,
+    Array, Axis, CellValue, CodeResult, CoerceInto, Duration, IsBlank, RunError, RunErrorMsg, Span,
+    Spanned, SpannedIterExt, Value,
 };
 
 pub use lookup::IndexFunctionArgs;
