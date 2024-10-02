@@ -1,7 +1,9 @@
 use crate::{
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+    A1,
 };
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
@@ -33,6 +35,7 @@ pub struct Pos {
     // We use a small range for proptest because most tests want to see what
     // happens when values are nearby.
 }
+
 impl Pos {
     pub const ORIGIN: Self = Self { x: 0, y: 0 };
 
@@ -71,7 +74,12 @@ impl Pos {
             format!("{col}{}", self.y)
         }
     }
+
+    pub fn try_a1_string(a1: &str) -> Option<Self> {
+        A1::try_from_pos(a1)
+    }
 }
+
 impl From<(i64, i64)> for Pos {
     fn from(pos: (i64, i64)) -> Self {
         Pos { x: pos.0, y: pos.1 }
@@ -88,6 +96,13 @@ impl From<SheetPos> for Pos {
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
+    }
+}
+
+#[cfg(test)]
+impl From<&str> for Pos {
+    fn from(s: &str) -> Self {
+        crate::A1::try_from_pos(s).unwrap()
     }
 }
 
@@ -282,5 +297,21 @@ mod test {
     fn pos_new() {
         let pos = Pos::new(1, 2);
         assert_eq!(pos, Pos { x: 1, y: 2 });
+    }
+
+    #[test]
+    #[parallel]
+    fn pos_from_str() {
+        assert_eq!(Pos::from("A1"), Pos { x: 1, y: 1 });
+        assert_eq!(Pos::from("d5"), Pos { x: 4, y: 5 });
+    }
+
+    #[test]
+    #[parallel]
+    fn try_a1_string() {
+        assert_eq!(Pos::try_a1_string("A1"), Some(Pos { x: 1, y: 1 }));
+        assert_eq!(Pos::try_a1_string("d5"), Some(Pos { x: 4, y: 5 }));
+        assert_eq!(Pos::try_a1_string("A"), None);
+        assert_eq!(Pos::try_a1_string("1"), None);
     }
 }

@@ -54,7 +54,22 @@ impl Sheet {
         }
     }
 
-    /// Gets a format for a cell, returning Format::default if not set.
+    /// Tries to get a format for a cell, returning None if no formatting is set, or the A1 is invalid.
+    pub fn format_cell_a1(&self, a1: &str, include_sheet: bool) -> Option<Format> {
+        if let Some(pos) = Pos::try_a1_string(a1) {
+            let format = self.format_cell(pos.x, pos.y, include_sheet);
+            if format.is_default() {
+                None
+            } else {
+                Some(format)
+            }
+        } else {
+            dbgjs!(format!("Invalid A1 string: {}", a1));
+            None
+        }
+    }
+
+    /// Gets a format for a cell, returning None if not set.
     pub fn try_format_cell(&self, x: i64, y: i64) -> Option<Format> {
         self.get_column(x)
             .map(|column| Format {

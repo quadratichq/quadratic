@@ -72,6 +72,13 @@ impl A1 {
         row.parse::<u64>().ok()
     }
 
+    /// Get a column from an A1 string and automatically unwrap it (only used
+    /// for tests).
+    #[cfg(test)]
+    pub fn column(a1_column: &str) -> i64 {
+        A1::try_from_column(a1_column).unwrap() as i64
+    }
+
     /// Tries to create a Pos from an A1 string.
     pub fn try_from_pos(a1: &str) -> Option<Pos> {
         // Find the index where the digits start

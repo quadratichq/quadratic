@@ -182,6 +182,7 @@ class QuadraticCore {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientClientMessage') {
+      console.log('**** here...');
       pixiAppSettings.snackbar(e.data.message, e.data.error ? 'error' : 'success');
       return;
     }
