@@ -88,6 +88,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     if (nextCol === undefined) {
       nextCol = x + 1 < clamp.left ? clamp.left : x + 1;
     }
+    nextCol = Math.min(nextCol, clamp.right);
     x = nextCol;
     if (x === keyboardX) x++;
     if (select) {
@@ -149,6 +150,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
       x = Math.max(x, 0);
     }
     if (x === keyboardX) x--;
+    x = Math.max(x, clamp.left);
     if (select) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
       lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
@@ -204,10 +206,8 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
       nextRow = y < 0 ? 0 : y + 1;
     }
     y = nextRow;
-    if (keyboardY < -1) {
-      y = Math.min(y, -1);
-    }
     if (y === keyboardY) y++;
+    y = Math.max(y, clamp.top);
     if (select) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
       lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
@@ -267,6 +267,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
       y = Math.max(y, 0);
     }
     if (y === keyboardY) y--;
+    y = Math.max(y, clamp.top);
     if (select) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
       lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
@@ -283,6 +284,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
 
 // use arrow to select when shift key is pressed
 function expandSelection(deltaX: number, deltaY: number) {
+  const clamp = sheets.sheet.clamp;
   const cursor = sheets.sheet.cursor;
 
   const downPosition = cursor.cursorPosition;
@@ -299,6 +301,20 @@ function expandSelection(deltaX: number, deltaY: number) {
   lastMultiCursor.y = downPosition.y < newMovePosition.y ? downPosition.y : newMovePosition.y;
   lastMultiCursor.width = Math.abs(newMovePosition.x - downPosition.x) + 1;
   lastMultiCursor.height = Math.abs(newMovePosition.y - downPosition.y) + 1;
+  if (lastMultiCursor.x < clamp.left) {
+    lastMultiCursor.width -= clamp.left - lastMultiCursor.x;
+    lastMultiCursor.x = clamp.left;
+  }
+  if (lastMultiCursor.y < clamp.top) {
+    lastMultiCursor.height -= clamp.top - lastMultiCursor.y;
+    lastMultiCursor.y = clamp.top;
+  }
+  if (lastMultiCursor.right > clamp.right) {
+    lastMultiCursor.width -= lastMultiCursor.right - clamp.right;
+  }
+  if (lastMultiCursor.bottom > clamp.bottom) {
+    lastMultiCursor.height -= lastMultiCursor.bottom - clamp.bottom;
+  }
   cursor.changePosition({
     columnRow: null,
     multiCursor,
@@ -311,8 +327,18 @@ function expandSelection(deltaX: number, deltaY: number) {
 }
 
 function moveCursor(deltaX: number, deltaY: number) {
+  const clamp = sheets.sheet.clamp;
   const cursor = sheets.sheet.cursor;
-  const newPos = { x: Math.max(1, cursor.cursorPosition.x + deltaX), y: Math.max(1, cursor.cursorPosition.y + deltaY) };
+  const newPos = {
+    x: Math.max(clamp.left, cursor.cursorPosition.x + deltaX),
+    y: Math.max(clamp.left, cursor.cursorPosition.y + deltaY),
+  };
+  if (newPos.x > clamp.right) {
+    newPos.x = clamp.right;
+  }
+  if (newPos.y > clamp.bottom) {
+    newPos.y = clamp.bottom;
+  }
   cursor.changePosition({
     columnRow: null,
     multiCursor: null,
