@@ -9,6 +9,7 @@ import { EditorInteractionState, editorInteractionStateDefault } from '../../ato
 import { sheets } from '../../grid/controller/Sheets';
 import { defaultGridSettings, GridSettings } from '../../ui/hooks/useGridSettings';
 import { pixiApp } from './PixiApp';
+import { messages } from './messages';
 
 export enum PanMode {
   Disabled = 'DISABLED',
@@ -221,8 +222,12 @@ class PixiAppSettings {
   }
 
   snackbar(message: string, severity: 'error' | 'success') {
+    let display: JSX.Element | string = message;
+    if (messages[message]) {
+      display = messages[message];
+    }
     if (this.addGlobalSnackbar) {
-      this.addGlobalSnackbar(message, { severity });
+      this.addGlobalSnackbar(display, { severity });
     } else {
       this.waitingForSnackbar.push({ message, severity });
     }

@@ -42,7 +42,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) {
         }
     }
     if changed {
-        crate::wasm_bindings::js::jsClientMessage("Quadratic no longer supports zero or negative rows and columns. The data in your file was shifted. You may need to update Python or Javascript code to reflect this change.".to_string(), false);
+        crate::wasm_bindings::js::jsClientMessage("negative_offsets".to_string(), false);
     }
 }
 

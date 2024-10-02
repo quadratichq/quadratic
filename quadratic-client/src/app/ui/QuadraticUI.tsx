@@ -31,6 +31,7 @@ import FeedbackMenu from './menus/FeedbackMenu';
 import SheetBar from './menus/SheetBar';
 import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
 import { ValidationPanel } from './menus/Validations/ValidationPanel';
+import { pixiAppSettings } from '../gridGL/pixiApp/PixiAppSettings';
 
 export default function QuadraticUI() {
   const {
@@ -59,7 +60,19 @@ export default function QuadraticUI() {
       gridSettings.setShowHeadings(false);
       pixiApp.viewportChanged();
     }
+
     // eslint-disable-next-line
+  }, []);
+
+  // Show negative_offsets warning if present in URL (the result of an imported
+  // file)
+  useEffect(() => {
+    const url = new URLSearchParams(window.location.search);
+    // if (url.has('negative_offsets')) {
+    pixiAppSettings.snackbar('negative_offsets', 'error');
+    url.delete('negative_offsets');
+    window.history.replaceState({}, '', `${window.location.pathname}?${url}`);
+    // }
   }, []);
 
   return (

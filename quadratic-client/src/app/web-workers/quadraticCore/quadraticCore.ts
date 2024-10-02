@@ -66,6 +66,10 @@ class QuadraticCore {
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
 
+  // This is a hack to get import files to properly show negative offsets dialog
+  // after importing from dashboard. This can be removed in the future.
+  receivedClientMessage = false;
+
   initWorker() {
     if (!this.worker) {
       this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
@@ -182,8 +186,12 @@ class QuadraticCore {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientClientMessage') {
-      console.log('**** here...');
       pixiAppSettings.snackbar(e.data.message, e.data.error ? 'error' : 'success');
+
+      // This is a hack to get import files to properly show negative offsets dialog
+      // after importing from dashboard. This can be removed in the future.
+      this.receivedClientMessage = true;
+
       return;
     }
 
