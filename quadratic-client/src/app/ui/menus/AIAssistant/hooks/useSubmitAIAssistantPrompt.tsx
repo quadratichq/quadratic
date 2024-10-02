@@ -5,9 +5,11 @@ import {
   aiAssistantMessagesAtom,
   aiAssistantPromptAtom,
   AIAssistantState,
+  defaultAIAssistantState,
   showAIAssistantAtom,
 } from '@/app/atoms/aiAssistantAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
+import { Selection } from '@/app/quadratic-core-types';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantModel';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useCodeCellContextMessages';
@@ -31,10 +33,12 @@ export function useSubmitAIAssistantPrompt() {
         userPrompt,
         clearMessages,
         codeCell,
+        selection,
       }: {
         userPrompt: string;
         clearMessages?: boolean;
         codeCell?: CodeCell;
+        selection?: Selection;
       }) => {
         set(showAIAssistantAtom, true);
 
@@ -47,10 +51,17 @@ export function useSubmitAIAssistantPrompt() {
 
         let aiContext: AIAssistantState['context'] = await snapshot.getPromise(aiAssistantContextAtom);
         set(aiAssistantContextAtom, (prev) => {
-          aiContext = {
-            ...prev,
-            codeCell: codeCell ?? prev.codeCell,
-          };
+          aiContext = !!codeCell
+            ? {
+                ...defaultAIAssistantState['context'],
+                codeCell: codeCell,
+              }
+            : !!selection
+            ? {
+                ...defaultAIAssistantState['context'],
+                cursorSelection: selection,
+              }
+            : prev;
           return aiContext;
         });
 
