@@ -2,6 +2,7 @@ import { CheckIcon, ChevronRightIcon, DotFilledIcon } from '@radix-ui/react-icon
 import * as MenubarPrimitive from '@radix-ui/react-menubar';
 import * as React from 'react';
 
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { cn } from '@/shared/shadcn/utils';
 
 const MenubarMenu = MenubarPrimitive.Menu;
@@ -87,6 +88,11 @@ const MenubarContent = React.forwardRef<
       align={align}
       alignOffset={alignOffset}
       sideOffset={sideOffset}
+      // When the user closes the menu via ESC, rather than return focus to the
+      // trigger, optimize the experience for mouse GUI users and refocus the grid
+      onEscapeKeyDown={(e) => {
+        focusGrid();
+      }}
       className={cn(
         'z-50 min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
         className
