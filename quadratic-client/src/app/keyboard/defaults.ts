@@ -346,7 +346,10 @@ export const defaultShortcuts: ActionShortcut = {
     windows: [[Keys.Space]],
   },
   [Action.InsertToday]: {
-    mac: [[MacModifiers.Ctrl, Keys.Semicolon]],
+    mac: [
+      [MacModifiers.Ctrl, Keys.Semicolon],
+      [MacModifiers.Cmd, Keys.Semicolon],
+    ],
     windows: [[WindowsModifiers.Ctrl, Keys.Semicolon]],
   },
 };
