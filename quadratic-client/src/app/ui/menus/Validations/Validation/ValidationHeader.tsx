@@ -1,32 +1,27 @@
-import { IconButton } from '@mui/material';
-import { TooltipHint } from '../../../components/TooltipHint';
-import { useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { Close } from '@mui/icons-material';
-import { useCallback, useState } from 'react';
-import { cn } from '@/shared/shadcn/utils';
-import { ValidationData } from './useValidationData';
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import { cn } from '@/shared/shadcn/utils';
+import { Close } from '@mui/icons-material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { IconButton } from '@mui/material';
+import { useCallback, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 export const ValidationHeader = (props: { validationData: ValidationData }) => {
   const { unsaved, sheetId } = props.validationData;
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
+
   const [sheetName] = useState(` - ${sheets.getById(sheetId)?.name}`);
 
   const close = useCallback(() => {
-    setEditorInteractionState((prev) => ({
-      ...prev,
-      showValidation: false,
-    }));
-  }, [setEditorInteractionState]);
+    setShowValidation(false);
+  }, [setShowValidation]);
 
   const back = useCallback(() => {
-    setEditorInteractionState((prev) => ({
-      ...prev,
-      showValidation: true,
-    }));
-  }, [setEditorInteractionState]);
+    setShowValidation(true);
+  }, [setShowValidation]);
 
   return (
     <div className="mb-2 flex items-center justify-between border-b border-b-gray-100 pb-2">

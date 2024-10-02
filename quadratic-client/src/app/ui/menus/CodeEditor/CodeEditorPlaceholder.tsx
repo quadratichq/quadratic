@@ -1,18 +1,16 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import mixpanel from 'mixpanel-browser';
+import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
-import { useCodeEditor } from './CodeEditorContext';
-import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 export function CodeEditorPlaceholder() {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const codeCell = getCodeCell(editorInteractionState.mode);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
+  const codeCell = useMemo(() => getCodeCell(language), [language]);
   const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
-  const {
-    editorContent: [editorContent],
-  } = useCodeEditor();
+  const editorContent = useRecoilValue(codeEditorEditorContentAtom);
 
   if (editorContent) {
     return null;

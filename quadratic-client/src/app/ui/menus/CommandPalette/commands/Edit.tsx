@@ -1,9 +1,9 @@
 import { Action } from '@/app/actions/actions';
 import { copySelectionToPNG, fullClipboardSupport } from '@/app/grid/actions/clipboard/clipboard';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CopyAsPng } from '@/shared/components/Icons';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const data: CommandGroup = {
   heading: 'Edit',

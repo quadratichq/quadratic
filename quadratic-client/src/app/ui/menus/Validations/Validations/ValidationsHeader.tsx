@@ -1,21 +1,18 @@
-import { IconButton } from '@mui/material';
-import { TooltipHint } from '../../../components/TooltipHint';
-import { useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { Close } from '@mui/icons-material';
-import { useCallback, useEffect, useState } from 'react';
-import { sheets } from '@/app/grid/controller/Sheets';
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { Close } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
+import { useCallback, useEffect, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 export const ValidationsHeader = () => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
 
   const close = useCallback(() => {
-    setEditorInteractionState((prev) => ({
-      ...prev,
-      showValidation: false,
-    }));
-  }, [setEditorInteractionState]);
+    setShowValidation(false);
+  }, [setShowValidation]);
 
   const [sheetName, setSheetName] = useState(` - ${sheets.sheet.name}`);
   useEffect(() => {

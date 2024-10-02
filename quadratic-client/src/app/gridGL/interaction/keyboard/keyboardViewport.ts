@@ -1,10 +1,10 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { debug } from '@/app/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets.js';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import {
   clearFormattingAndBorders,
@@ -17,15 +17,28 @@ import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javas
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore.js';
 
-export function keyboardViewport(options: {
-  event: React.KeyboardEvent<HTMLElement>;
-  editorInteractionState: EditorInteractionState;
-  setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  presentationMode: boolean;
-  setPresentationMode: Function;
-}): boolean {
-  const { event, editorInteractionState, setEditorInteractionState, presentationMode, setPresentationMode } = options;
+export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boolean {
   const { pointer } = pixiApp;
+  const {
+    editorInteractionState,
+    setEditorInteractionState,
+    codeEditorState,
+    setCodeEditorState,
+    gridSettings,
+    setGridSettings,
+  } = pixiAppSettings;
+
+  if (!setEditorInteractionState) {
+    throw new Error('Expected setEditorInteractionState to be defined in keyboardViewport');
+  }
+
+  if (!setCodeEditorState) {
+    throw new Error('Expected setCodeEditorState to be defined in keyboardViewport');
+  }
+
+  if (!setGridSettings) {
+    throw new Error('Expected d to be defined in keyboardViewport');
+  }
 
   // Show command palette
   if (matchShortcut(Action.ShowCommandPalette, event)) {
@@ -42,19 +55,19 @@ export function keyboardViewport(options: {
 
   // Toggle presentation mode
   if (matchShortcut(Action.TogglePresentationMode, event)) {
-    setPresentationMode(!presentationMode);
+    setGridSettings({ ...gridSettings, presentationMode: !gridSettings.presentationMode });
     return true;
   }
 
   // Close overlay
   if (matchShortcut(Action.CloseOverlay, event)) {
-    if (presentationMode) {
-      setPresentationMode(false);
+    if (gridSettings.presentationMode) {
+      setGridSettings({ ...gridSettings, presentationMode: false });
       return true;
-    } else if (editorInteractionState.showCodeEditor) {
-      setEditorInteractionState({
-        ...editorInteractionState,
-        editorEscapePressed: true,
+    } else if (codeEditorState.showCodeEditor) {
+      setCodeEditorState({
+        ...codeEditorState,
+        escapePressed: true,
       });
       return true;
     } else if (editorInteractionState.showValidation) {

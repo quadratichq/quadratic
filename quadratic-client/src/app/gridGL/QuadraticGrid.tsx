@@ -1,6 +1,4 @@
 import { Action } from '@/app/actions/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
 import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
@@ -9,10 +7,7 @@ import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
-import { gridSettingsAtom } from '@/app/ui/hooks/useGridSettings';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
-import { useRecoilState } from 'recoil';
 
 // Keep track of state of mouse/space for panning mode
 let mouseIsDown = false;
@@ -37,23 +32,6 @@ export default function QuadraticGrid() {
       events.off('panMode', updatePanMode);
     };
   }, []);
-
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const [inlineEditorState, setInlineEditorState] = useRecoilState(inlineEditorAtom);
-  useEffect(() => {
-    pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
-    pixiAppSettings.updateInlineEditorState(inlineEditorState, setInlineEditorState);
-  }, [editorInteractionState, inlineEditorState, setEditorInteractionState, setInlineEditorState]);
-
-  const { addGlobalSnackbar } = useGlobalSnackbar();
-  useEffect(() => {
-    pixiAppSettings.addGlobalSnackbar = addGlobalSnackbar;
-  }, [addGlobalSnackbar]);
-
-  const [gridSettings, setGridSettings] = useRecoilState(gridSettingsAtom);
-  useEffect(() => {
-    pixiAppSettings.updateGridSettings(gridSettings, setGridSettings);
-  }, [gridSettings, setGridSettings]);
 
   // Pan mode
   const onMouseUp = () => {
@@ -95,10 +73,7 @@ export default function QuadraticGrid() {
     return false;
   };
 
-  const { onKeyDown: onKeyDownFromUseKeyboard, onKeyUp: onKeyUpFromUseKeyboard } = useKeyboard({
-    editorInteractionState,
-    setEditorInteractionState,
-  });
+  const { onKeyDown: onKeyDownFromUseKeyboard, onKeyUp: onKeyUpFromUseKeyboard } = useKeyboard();
 
   return (
     <div

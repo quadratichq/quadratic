@@ -1,14 +1,15 @@
+import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
+import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
 import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { SetterOrUpdater } from 'recoil';
-import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../grid/controller/Sheets';
-import { defaultGridSettings, GridSettings } from '../../ui/hooks/useGridSettings';
-import { pixiApp } from './PixiApp';
 
 export enum PanMode {
   Disabled = 'DISABLED',
@@ -44,6 +45,8 @@ class PixiAppSettings {
   addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
   inlineEditorState = defaultInlineEditor;
   setInlineEditorState?: (fn: (prev: InlineEditorState) => InlineEditorState) => void;
+  codeEditorState = defaultCodeEditorState;
+  setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -124,6 +127,11 @@ class PixiAppSettings {
     }
   }
 
+  updateCodeEditorState(codeEditorState: CodeEditorState, setCodeEditorState: SetterOrUpdater<CodeEditorState>): void {
+    this.codeEditorState = codeEditorState;
+    this.setCodeEditorState = setCodeEditorState;
+  }
+
   get showGridLines(): boolean {
     return !this.settings.presentationMode && this.settings.showGridLines;
   }
@@ -144,7 +152,7 @@ class PixiAppSettings {
 
   get showA1Notation(): boolean {
     if (
-      (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'Formula') ||
+      (this.codeEditorState.showCodeEditor && this.codeEditorState.codeCell.language === 'Formula') ||
       inlineEditorHandler.isEditingFormula()
     ) {
       return true;
@@ -153,7 +161,7 @@ class PixiAppSettings {
   }
 
   get showCodePeek(): boolean {
-    return !this.settings.presentationMode && this.editorInteractionState.showCodeEditor;
+    return !this.settings.presentationMode && this.codeEditorState.showCodeEditor;
   }
 
   setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {
