@@ -398,13 +398,13 @@ function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRe
         <div>
           To fix this, remove content in {pluralize('cell', spillError.length)}{' '}
           {spillError.map((pos, index) => (
-            <div key={`${pos.x},${pos.y}`}>
+            <span key={`${pos.x},${pos.y}`}>
               <code className="hover-cell-code">
                 ({String(pos.x)}, {String(pos.y)})
               </code>
 
               {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
-            </div>
+            </span>
           ))}
         </div>
       </div>
