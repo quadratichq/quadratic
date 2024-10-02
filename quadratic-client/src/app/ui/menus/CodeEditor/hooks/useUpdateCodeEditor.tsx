@@ -11,6 +11,7 @@ export const useUpdateCodeEditor = () => {
 
         if (codeCell) {
           const newEvaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
+          const editorContent = initialCode ? initialCode : codeCell.code_string;
           set(codeEditorAtom, (prev) => ({
             ...prev,
             showCodeEditor: true,
@@ -21,7 +22,9 @@ export const useUpdateCodeEditor = () => {
               language: codeCell.language,
             },
             codeString: codeCell.code_string,
-            editorContent: initialCode ? initialCode : codeCell.code_string,
+            editorContent,
+            modifiedEditorContent:
+              editorContent === prev.modifiedEditorContent ? undefined : prev.modifiedEditorContent,
             evaluationResult: { ...newEvaluationResult, ...codeCell.return_info },
             cellsAccessed: codeCell.cells_accessed,
             consoleOutput: { stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined },
@@ -38,7 +41,8 @@ export const useUpdateCodeEditor = () => {
               language: prev.codeCell.language,
             },
             codeString: '',
-            editorContent: initialCode ?? '',
+            editorContent: initialCode ? initialCode : prev.modifiedEditorContent ?? '',
+            modifiedEditorContent: initialCode ? prev.modifiedEditorContent : undefined,
             evaluationResult: undefined,
             cellsAccessed: undefined,
             consoleOutput: undefined,

@@ -5,12 +5,7 @@ import { useGetCodeCell } from '@/app/ui/menus/AIAssistant/hooks/useGetCodeCell'
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import Editor from '@monaco-editor/react';
-import {
-  ContentCopyOutlined,
-  ContentPasteGoOutlined,
-  DifferenceOutlined,
-  PlayArrowOutlined,
-} from '@mui/icons-material';
+import { ContentCopyOutlined, ContentPasteGoOutlined, PlayArrowOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useState } from 'react';
@@ -40,11 +35,11 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
 
         <div className="flex items-center gap-1">
           <CodeSnippetRunButton text={code} language={language} />
-          <CodeSnippetReplaceButton text={code} language={language} />
-          <CodeSnippetDiffEditor text={code} language={language} />
+          <CodeSnippetInsertButton text={code} language={language} />
           <CodeSnippetCopyButton text={code} language={language} />
         </div>
       </div>
+
       <div
         className="relative pt-2"
         style={{
@@ -107,40 +102,12 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
   );
 }
 
-function CodeSnippetReplaceButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+function CodeSnippetInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const { getCodeCell } = useGetCodeCell();
 
   const handleReplace = useCallback(async () => {
-    mixpanel.track('[AI].code.replace', { language });
-    const codeCell = await getCodeCell();
-    setCodeEditorState((prev) => ({
-      ...prev,
-      modifiedEditorContent: undefined,
-      waitingForEditorClose: {
-        codeCell,
-        showCellTypeMenu: false,
-        inlineEditor: false,
-        initialCode: text,
-      },
-    }));
-  }, [getCodeCell, language, setCodeEditorState, text]);
-
-  return (
-    <TooltipHint title={'Open in code editor'}>
-      <IconButton size="small" onClick={handleReplace} disabled={!language}>
-        <ContentPasteGoOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
-      </IconButton>
-    </TooltipHint>
-  );
-}
-
-function CodeSnippetDiffEditor({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const { getCodeCell } = useGetCodeCell();
-
-  const handleEditorDiff = useCallback(async () => {
-    mixpanel.track('[AI].code.diff');
+    mixpanel.track('[AI].code.insert', { language });
     const codeCell = await getCodeCell();
     setCodeEditorState((prev) => ({
       ...prev,
@@ -152,12 +119,12 @@ function CodeSnippetDiffEditor({ language, text }: { language: CodeSnippetProps[
         inlineEditor: false,
       },
     }));
-  }, [getCodeCell, setCodeEditorState, text]);
+  }, [getCodeCell, language, setCodeEditorState, text]);
 
   return (
-    <TooltipHint title={'Show diff in code editor'}>
-      <IconButton onClick={handleEditorDiff} size="small">
-        <DifferenceOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
+    <TooltipHint title={'Open in code editor'}>
+      <IconButton size="small" onClick={handleReplace} disabled={!language}>
+        <ContentPasteGoOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
       </IconButton>
     </TooltipHint>
   );
