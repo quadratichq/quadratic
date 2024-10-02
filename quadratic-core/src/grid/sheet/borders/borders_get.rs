@@ -264,7 +264,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let cell = sheet.borders.try_from_a1("B2").unwrap();
+        let cell = sheet.borders.try_from_a1("A1").unwrap();
         assert_eq!(cell.top.unwrap().line, CellBorderLine::default());
         assert_eq!(cell.bottom.unwrap().line, CellBorderLine::default());
         assert_eq!(cell.left.unwrap().line, CellBorderLine::default());

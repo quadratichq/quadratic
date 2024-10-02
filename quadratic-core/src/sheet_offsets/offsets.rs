@@ -69,18 +69,17 @@ impl Offsets {
 
     /// Sets the width/height of a column/row.
     pub fn set_size(&mut self, index: i64, value: f64) -> f64 {
-        let old_value = if value == self.default {
+        if value == self.default {
             self.sizes.remove(&index)
         } else {
             self.sizes.insert(index, value)
         }
-        .unwrap_or(self.default);
-        old_value
+        .unwrap_or(self.default)
     }
+
     /// Resets the width/height of a column/row to the default value.
     pub fn reset(&mut self, index: i64) -> f64 {
-        let old_value = self.sizes.remove(&index).unwrap_or(self.default);
-        old_value
+        self.sizes.remove(&index).unwrap_or(self.default)
     }
 
     /// Iterates over the pixel positions of a range of columns/rows.
