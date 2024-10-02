@@ -12,8 +12,6 @@ use crate::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use super::CodeCellLanguage;
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 struct DataTableColumn {
     name: String,

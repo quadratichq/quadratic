@@ -120,6 +120,16 @@ impl From<(i64, i64, SheetId)> for SheetPos {
     }
 }
 
+impl From<(Pos, SheetId)> for SheetPos {
+    fn from((pos, sheet_id): (Pos, SheetId)) -> Self {
+        Self {
+            x: pos.x,
+            y: pos.y,
+            sheet_id,
+        }
+    }
+}
+
 impl FromStr for SheetPos {
     type Err = String;
 

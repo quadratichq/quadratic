@@ -5,7 +5,6 @@ use std::{
 
 use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
-use calamine::Cell;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 

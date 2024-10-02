@@ -152,6 +152,7 @@ lazy_static! {
     static ref TEST_ARRAY: Mutex<Vec<TestFunction>> = Mutex::new(vec![]);
 }
 
+#[track_caller]
 #[cfg(test)]
 pub fn expect_js_call(name: &str, args: String, clear: bool) {
     let result = TestFunction {
@@ -173,6 +174,7 @@ pub fn expect_js_call(name: &str, args: String, clear: bool) {
     }
 }
 
+#[track_caller]
 #[cfg(test)]
 pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
     let mut found = 0;
