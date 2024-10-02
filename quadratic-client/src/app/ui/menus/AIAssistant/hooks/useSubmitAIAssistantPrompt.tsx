@@ -55,8 +55,8 @@ export function useSubmitAIAssistantPrompt() {
         });
 
         const visibleContext = aiContext.visibleData ? await getVisibleContext({ model }) : [];
-        const cursorSelectionContext = aiContext.cursorSelection ? await getCursorSelectionContext({ model }) : [];
-        const codeContext = aiContext.codeCell ? await getCodeCellContext({ codeCell: aiContext.codeCell, model }) : [];
+        const cursorSelectionContext = await getCursorSelectionContext({ selection: aiContext.cursorSelection, model });
+        const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
         let updatedMessages: (UserMessage | AIMessage)[] = [];
         set(aiAssistantMessagesAtom, (prevMessages) => {
           const lastVisibleContext = prevMessages

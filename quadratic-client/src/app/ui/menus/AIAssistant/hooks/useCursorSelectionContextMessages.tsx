@@ -1,5 +1,4 @@
-import { sheets } from '@/app/grid/controller/Sheets';
-import { JsCellValuesInSelection } from '@/app/quadratic-core-types';
+import { JsCellValuesInSelection, Selection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -50,8 +49,9 @@ Note: This selection JSON is only for your reference to data on the sheet. This 
   );
 
   const getCursorSelectionContext = useCallback(
-    async ({ model }: { model: AnthropicModel | OpenAIModel }) => {
-      const cursorSelectionValues = await quadraticCore.getCellValuesInSelection(sheets.getRustSelection());
+    async ({ selection, model }: { selection: Selection | undefined; model: AnthropicModel | OpenAIModel }) => {
+      if (!selection) return [];
+      const cursorSelectionValues = await quadraticCore.getCellValuesInSelection(selection);
       if (cursorSelectionValues) {
         return getCursorSelectionContextMessages(cursorSelectionValues, model);
       }

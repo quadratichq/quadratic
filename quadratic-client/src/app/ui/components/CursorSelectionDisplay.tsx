@@ -20,6 +20,7 @@ export const CursorSelectionDisplay = () => {
       }
     };
     updateCursor();
+
     events.on('cursorPosition', updateCursor);
     events.on('changeSheet', updateCursor);
     return () => {

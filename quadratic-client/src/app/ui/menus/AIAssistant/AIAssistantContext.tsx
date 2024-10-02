@@ -1,8 +1,9 @@
 import { aiAssistantContextAtom, aiAssistantLoadingAtom } from '@/app/atoms/aiAssistantAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { CursorSelectionDisplay } from '@/app/ui/components/CursorSelectionDisplay';
+import { Selection } from '@/app/quadratic-core-types';
 import { AIAssistantContextModelMenu } from '@/app/ui/menus/AIAssistant/AIAssistantSelectContextMenu';
+import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const AIAssistantContext = () => {
@@ -14,15 +15,8 @@ export const AIAssistantContext = () => {
       className={`z-10 mx-3 mt-2 flex select-none flex-wrap items-center gap-2 text-xs ${loading ? 'opacity-60' : ''} `}
     >
       <span>{'Context: '}</span>
-
-      {!!context.codeCell && <CodeCellContext codeCell={context.codeCell} />}
-      {!!context.cursorSelection && (
-        <span>
-          {'[Cursor selection: '}
-          <CursorSelectionDisplay />
-          {']'}
-        </span>
-      )}
+      <CodeCellContext codeCell={context.codeCell} />
+      <CursorSelectionContext selection={context.cursorSelection} />
       {!!context.visibleData && <span>{'[Visible data]'}</span>}
       {!!context.currentSheet && <span>{'[Current sheet]'}</span>}
       {!!context.allSheets && <span>{'[All sheets]'}</span>}
@@ -34,11 +28,28 @@ export const AIAssistantContext = () => {
 };
 
 interface CodeCellContextProps {
-  codeCell: CodeCell;
+  codeCell?: CodeCell;
 }
 
 const CodeCellContext = ({ codeCell }: CodeCellContextProps) => {
+  if (!codeCell) return null;
   const { sheetId, pos } = codeCell;
   const sheetName = sheets.getById(sheetId)?.name ?? '';
   return <span>{`[CodeCell: ${sheetName} (${pos.x}, ${pos.y})]`}</span>;
+};
+
+interface CursorSelectionContextProps {
+  selection?: Selection;
+}
+
+const CursorSelectionContext = ({ selection }: CursorSelectionContextProps) => {
+  const selectionString = useMemo(
+    () =>
+      selection?.rects?.map((rect) => `((${rect.min.x}, ${rect.min.y}), (${rect.max.x}, ${rect.max.y}))`).join(', '),
+    [selection]
+  );
+
+  if (!selection || !selection.rects || selection.rects.length === 0) return null;
+
+  return <span>{`[Cursor selection: ${selectionString}]`}</span>;
 };

@@ -58,8 +58,9 @@ export function AIAssistantContextModelMenu() {
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
           key={'cursor selection'}
-          checked={context.cursorSelection}
-          onCheckedChange={() => setContext((prev) => ({ ...prev, cursorSelection: !prev.cursorSelection }))}
+          checked={!!context.cursorSelection}
+          onCheckedChange={() => setContext((prev) => ({ ...prev, cursorSelection: undefined }))}
+          disabled={!context.cursorSelection}
         >
           <span>Cursor selection</span>
         </DropdownMenuCheckboxItem>
