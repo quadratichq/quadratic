@@ -35,7 +35,7 @@ const CodeCellContext = ({ codeCell }: CodeCellContextProps) => {
   if (!codeCell) return null;
   const { sheetId, pos } = codeCell;
   const sheetName = sheets.getById(sheetId)?.name ?? '';
-  return <span>{`[CodeCell: ${sheetName} (${pos.x}, ${pos.y})]`}</span>;
+  return <span>{`[CodeCell (${codeCell.language}): ${sheetName} (${pos.x}, ${pos.y})]`}</span>;
 };
 
 interface CursorSelectionContextProps {

@@ -96,7 +96,7 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
           set(codeEditorModifiedEditorContentAtom, undefined);
         }
       },
-    []
+    [language, text, getCodeCell]
   );
 
   return (

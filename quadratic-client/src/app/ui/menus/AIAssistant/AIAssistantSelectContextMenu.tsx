@@ -1,4 +1,8 @@
-import { aiAssistantContextAtom, aiAssistantLoadingAtom } from '@/app/atoms/aiAssistantAtom';
+import {
+  aiAssistantContextAtom,
+  aiAssistantLoadingAtom,
+  aiAssistantShowInternalContextAtom,
+} from '@/app/atoms/aiAssistantAtom';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -8,6 +12,7 @@ import {
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export function AIAssistantContextModelMenu() {
+  const [showInternalContext, setShowInternalContext] = useRecoilState(aiAssistantShowInternalContextAtom);
   const [context, setContext] = useRecoilState(aiAssistantContextAtom);
   const loading = useRecoilValue(aiAssistantLoadingAtom);
 
@@ -18,6 +23,13 @@ export function AIAssistantContextModelMenu() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" alignOffset={-4}>
+        <DropdownMenuCheckboxItem
+          key={'internal context'}
+          checked={showInternalContext}
+          onCheckedChange={() => setShowInternalContext((prev) => !prev)}
+        >
+          <span>Show internal context</span>
+        </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
           key={'quadratic docs'}
           checked={context.quadraticDocs}

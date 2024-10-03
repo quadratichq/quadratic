@@ -5,6 +5,7 @@ import { AIMessage, ContextType, UserMessage } from 'quadratic-shared/typesAndSc
 import { atom, DefaultValue, selector } from 'recoil';
 export interface AIAssistantState {
   showAIAssistant: boolean;
+  showInternalContext: boolean;
   abortController?: AbortController;
   loading: boolean;
   messages: (UserMessage | AIMessage)[];
@@ -16,6 +17,7 @@ export interface AIAssistantState {
 
 export const defaultAIAssistantState: AIAssistantState = {
   showAIAssistant: true,
+  showInternalContext: false,
   abortController: undefined,
   loading: false,
   messages: [],
@@ -34,22 +36,21 @@ export const defaultAIAssistantState: AIAssistantState = {
 export const aiAssistantAtom = atom<AIAssistantState>({
   key: 'aiAssistantAtom',
   default: defaultAIAssistantState,
+  effects: [
+    ({ onSet }) => {
+      onSet((newValue, oldValue) => {
+        if (oldValue instanceof DefaultValue) {
+          return;
+        }
+
+        if (oldValue.showAIAssistant && !newValue.showAIAssistant) {
+          focusGrid();
+        }
+      });
+    },
+  ],
 });
 
-export const showAIAssistantAtom = selector<AIAssistantState['showAIAssistant']>({
-  key: 'showAIAssistantAtom',
-  get: ({ get }) => get(aiAssistantAtom)['showAIAssistant'],
-  set: ({ set }, newValue) =>
-    set(aiAssistantAtom, (prev) => {
-      if (prev.showAIAssistant && !newValue) {
-        focusGrid();
-      }
-      return {
-        ...prev,
-        showAIAssistant: newValue instanceof DefaultValue ? prev['showAIAssistant'] : newValue,
-      };
-    }),
-});
 const createSelector = <T extends keyof AIAssistantState>(key: T) =>
   selector<AIAssistantState[T]>({
     key: `aiAssistant${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
@@ -60,6 +61,8 @@ const createSelector = <T extends keyof AIAssistantState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
+export const showAIAssistantAtom = createSelector('showAIAssistant');
+export const aiAssistantShowInternalContextAtom = createSelector('showInternalContext');
 export const aiAssistantAbortControllerAtom = createSelector('abortController');
 export const aiAssistantLoadingAtom = createSelector('loading');
 export const aiAssistantMessagesAtom = createSelector('messages');

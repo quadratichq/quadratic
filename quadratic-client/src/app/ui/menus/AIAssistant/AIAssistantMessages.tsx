@@ -1,4 +1,4 @@
-import { aiAssistantMessagesAtom } from '@/app/atoms/aiAssistantAtom';
+import { aiAssistantMessagesAtom, aiAssistantShowInternalContextAtom } from '@/app/atoms/aiAssistantAtom';
 import { colors } from '@/app/theme/colors';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
 import { AICodeBlockParser } from '@/app/ui/menus/AIAssistant/AICodeBlockParser';
@@ -10,6 +10,7 @@ import { useRecoilValue } from 'recoil';
 import './AIAssistantMessages.css';
 
 export function AIAssistantMessages() {
+  const showInternalContext = useRecoilValue(aiAssistantShowInternalContextAtom);
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const { loggedInUser: user } = useRootRouteLoaderData();
 
@@ -60,7 +61,7 @@ export function AIAssistantMessages() {
     >
       <div id="ai-streaming-output" className="pb-2">
         {messages
-          // .filter((message) => debug || !message.internalContext) TODO: Uncomment this before merging
+          .filter((message) => showInternalContext || !message.internalContext)
           .map((message, index) => (
             <div
               key={index}
