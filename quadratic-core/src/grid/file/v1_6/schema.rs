@@ -1,13 +1,14 @@
-use std::collections::HashMap;
-use std::fmt::{self, Display};
-
-use crate::grid::file::v1_5::schema as v1_5;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fmt::{self, Display};
 use uuid::Uuid;
-pub use v1_5::RunErrorMsg;
 
 use super::schema_validation::Validations;
+pub use crate::grid::file::v1_5::run_error::Axis;
+use crate::grid::file::v1_5::schema as v1_5;
+pub use v1_5::RunErrorMsg;
+pub use v1_5::Span;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GridSchema {
@@ -218,6 +219,11 @@ pub struct Column {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Import {
+    pub file_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CellValue {
     Blank,
     Text(String),
@@ -232,6 +238,7 @@ pub enum CellValue {
     Duration(String),
     Error(RunError),
     Image(String),
+    Import(Import),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -263,6 +270,7 @@ pub enum CodeCellLanguage {
     Formula,
     Javascript,
     Connection { kind: ConnectionKind, id: String },
+    Import,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -19,7 +19,7 @@ impl GridController {
         delta: i64,
     ) {
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_runs.iter().for_each(|(pos, code_run)| {
+            sheet.iter_code_runs().for_each(|(pos, code_run)| {
                 if let Some(column) = column {
                     if code_run.cells_accessed.iter().any(|sheet_rect| {
                         // if the cells accessed is beyond the column that was deleted
@@ -146,7 +146,7 @@ impl GridController {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                         let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                         sheet_rect.min.x = column;
-                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
                         self.check_all_spills(transaction, sheet_rect.sheet_id, true);
                     }
@@ -183,7 +183,7 @@ impl GridController {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                         let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                         sheet_rect.min.y = row;
-                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
                         self.check_all_spills(transaction, sheet_rect.sheet_id, true);
                     }
@@ -225,7 +225,7 @@ impl GridController {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                         let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                         sheet_rect.min.x = column + 1;
-                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
                         self.check_all_spills(transaction, sheet_rect.sheet_id, true);
                     }
@@ -267,7 +267,7 @@ impl GridController {
                     if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                         let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                         sheet_rect.min.y = row + 1;
-                        self.check_deleted_code_runs(transaction, &sheet_rect);
+                        self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
                         self.check_all_spills(transaction, sheet_rect.sheet_id, true);
                     }

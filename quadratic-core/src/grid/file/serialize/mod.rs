@@ -8,8 +8,8 @@ use super::CURRENT_VERSION;
 
 pub(crate) mod borders;
 pub(crate) mod cell_value;
-pub(crate) mod code_cell;
 pub(crate) mod column;
+pub(crate) mod data_table;
 pub(crate) mod format;
 pub(crate) mod selection;
 pub mod sheets;

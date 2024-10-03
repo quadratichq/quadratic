@@ -1138,7 +1138,7 @@ mod tests {
         );
         let find_index = |sheet: &Sheet, x: i64, y: i64| {
             sheet
-                .code_runs
+                .data_tables
                 .iter()
                 .position(|(code_pos, _)| *code_pos == Pos { x, y })
                 .unwrap()

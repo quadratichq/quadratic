@@ -79,7 +79,7 @@ mod tests {
             }
             _ => panic!("expected code cell"),
         }
-        let code_run = sheet.code_runs.get(&pos).unwrap();
+        let code_run = sheet.data_tables.get(&pos).unwrap();
         assert_eq!(code_run.output_size(), ArraySize::_1X1);
         assert_eq!(
             code_run.cell_value_at(0, 0),

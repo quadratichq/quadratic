@@ -70,7 +70,7 @@ impl GridController {
                         // RenderSize is always sent as a 1,1 rect. TODO: we need to refactor formats to make it less generic.
                         if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
                             if let Some(code_run) =
-                                sheet.code_run((sheet_rect.min.x, sheet_rect.min.y).into())
+                                sheet.data_table((sheet_rect.min.x, sheet_rect.min.y).into())
                             {
                                 if code_run.is_html() {
                                     self.send_html_output_rect(&sheet_rect);
@@ -179,7 +179,6 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use chrono::Utc;
     use serial_test::serial;
 
     use super::*;
@@ -201,20 +200,24 @@ mod test {
                 code: "code".to_string(),
             }),
         );
-        sheet.set_code_run(
+        let code_run = CodeRun {
+            formatted_code_string: None,
+            output_type: None,
+            std_err: None,
+            std_out: None,
+            error: None,
+            cells_accessed: HashSet::new(),
+            return_type: None,
+            line_number: None,
+        };
+        sheet.set_data_table(
             Pos { x: 0, y: 0 },
-            Some(CodeRun {
-                formatted_code_string: None,
-                spill_error: false,
-                output_type: None,
-                std_err: None,
-                std_out: None,
-                result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
-                cells_accessed: HashSet::new(),
-                return_type: None,
-                line_number: None,
-                last_modified: Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Single(CellValue::Image("image".to_string())),
+                false,
+                false,
+            )),
         );
 
         gc.set_cell_render_size(
