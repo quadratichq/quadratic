@@ -1,6 +1,7 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Validation } from '@/app/quadratic-core-types';
+import { selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { ValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
 import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';

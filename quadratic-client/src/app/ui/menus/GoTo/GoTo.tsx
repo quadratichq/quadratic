@@ -1,5 +1,7 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { Selection } from '@/app/quadratic-core-types';
+import { a1StringToSelection, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
 import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
