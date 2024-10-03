@@ -167,6 +167,42 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
       monaco.editor.setTheme('quadratic');
 
       addCommands(editor, monaco);
+      // this adds a cursor when the editor is not focused (useful when using insertCellRef button)
+      const decorationCollection = editor.createDecorationsCollection();
+
+      let position: monaco.Position | null = null;
+
+      const updateCursorIndicator = () => {
+        position = editor.getPosition();
+      };
+
+      const hideCursorIndicator = () => decorationCollection.set([]);
+
+      const showCursorIndicator = () => {
+        if (!position) return;
+
+        // Define the decoration that represents the visual indicator
+        const decoration = {
+          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column + 1),
+          options: {
+            isWholeLine: false,
+            className: 'w-0',
+            before: {
+              content: ' ',
+              backgroundColor: 'transparent',
+              inlineClassName: 'inline-block w-cursor bg-black h-full',
+              inlineClassNameAffectsLetterSpacing: false,
+            },
+          },
+        };
+
+        // Update the decoration collection
+        decorationCollection.set([decoration]);
+      };
+
+      editor.onDidChangeCursorPosition(updateCursorIndicator);
+      editor.onDidFocusEditorText(hideCursorIndicator);
+      editor.onDidBlurEditorText(showCursorIndicator);
 
       // Only register language once
       if (monacoLanguage === 'formula' && !registered.Formula) {

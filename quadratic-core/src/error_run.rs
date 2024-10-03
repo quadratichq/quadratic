@@ -4,6 +4,7 @@
 
 use std::borrow::Cow;
 use std::fmt;
+use ts_rs::TS;
 
 use serde::{Deserialize, Serialize};
 
@@ -41,12 +42,10 @@ impl RunError {
 }
 
 /// Information about the type of error that occurred.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum RunErrorMsg {
     // TODO(ayush): rename to CodeRunError in next file version
     PythonError(Cow<'static, str>),
-
     Spill,
 
     // Miscellaneous errors

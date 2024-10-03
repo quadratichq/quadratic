@@ -15,20 +15,19 @@ import { IconButton } from '@mui/material';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 
 export const CodeEditorRefButton = () => {
+  const codeEditor = useRecoilValue(codeEditorCodeCellAtom);
   const [relative, setRelative] = useLocalStorage('insertCellRefRelative', false);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
 
   const [disabled, setDisabled] = useState(true);
   useEffect(() => {
     const checkDisabled = () => {
-      // we do not yet support multiple multiCursors for inserting cell references
-      if (
-        (sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) ||
-        sheets.sheet.cursor.columnRow !== undefined
-      ) {
-        setDisabled(true);
+      // for connections, we only support one cursor position
+      if (codeCellIsAConnection(codeEditor.language)) {
+        setDisabled(!sheets.sheet.cursor.onlySingleSelection());
       } else {
         setDisabled(
           !sheets.sheet.cursor.multiCursor &&
@@ -44,7 +43,7 @@ export const CodeEditorRefButton = () => {
       events.off('cursorPosition', checkDisabled);
       events.off('changeSheet', checkDisabled);
     };
-  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId]);
+  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, codeEditor.language]);
 
   const tooltip = useMemo(
     () =>
