@@ -110,8 +110,8 @@ export class UrlParamsDev {
 
   private loadCodeAndRun() {
     if (this.state.insertAndRunCodeInNewSheet) {
-      const x = 0;
-      const y = 0;
+      const x = 1;
+      const y = 1;
       const sheetId = sheets.current;
       const { language, codeString } = this.state.insertAndRunCodeInNewSheet;
 
