@@ -475,27 +475,10 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move cursor to the start of the row content
   if (matchShortcut(Action.GotoRowStart, event)) {
-    const sheet = sheets.sheet;
-    const bounds = sheet.getBounds(true);
-    if (bounds) {
-      const y = sheet.cursor.cursorPosition.y;
-      quadraticCore
-        .findNextColumn({
-          sheetId: sheet.id,
-          columnStart: bounds.left,
-          row: y,
-          reverse: false,
-          withContent: true,
-        })
-        .then((x) => {
-          x = x ?? bounds.left;
-          quadraticCore.cellHasContent(sheet.id, x, y).then((hasContent) => {
-            if (hasContent) {
-              setCursorPosition(x, y);
-            }
-          });
-        });
-    }
+    sheets.sheet.cursor.changePosition({
+      columnRow: null,
+      cursorPosition: { x: 1, y: sheets.sheet.cursor.cursorPosition.y },
+    });
     return true;
   }
 

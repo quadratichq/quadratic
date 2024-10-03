@@ -148,6 +148,8 @@ export class SheetCursor {
     }
 
     if (options.cursorPosition) {
+      options.cursorPosition.x = Math.max(1, options.cursorPosition.x);
+      options.cursorPosition.y = Math.max(1, options.cursorPosition.y);
       this.cursorPosition = options.cursorPosition;
       this.keyboardMovePosition = options.keyboardMovePosition ?? this.cursorPosition;
     } else if (options.keyboardMovePosition) {
