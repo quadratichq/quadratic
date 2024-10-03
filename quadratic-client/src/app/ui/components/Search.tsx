@@ -1,6 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowSearchAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -23,7 +23,7 @@ const findInSheetActionSpec = defaultActionSpec[Action.FindInCurrentSheet];
 const findInSheetsActionSpec = defaultActionSpec[Action.FindInAllSheets];
 
 export function Search() {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [showSearch, setShowSearch] = useRecoilState(editorInteractionStateShowSearchAtom);
 
   const [searchOptions, setSearchOptions] = useState<SearchOptions>({
     case_sensitive: false,
@@ -111,7 +111,7 @@ export function Search() {
 
   useEffect(() => {
     const changeSheet = () => {
-      if (!editorInteractionState.showSearch) {
+      if (!showSearch) {
         return;
       }
       setSearchOptions((prev) => {
@@ -126,10 +126,10 @@ export function Search() {
     return () => {
       events.off('changeSheet', changeSheet);
     };
-  }, [editorInteractionState.showSearch]);
+  }, [showSearch]);
 
   useEffect(() => {
-    if (!editorInteractionState.showSearch) {
+    if (!showSearch) {
       closeSearch();
     } else {
       setResults([]);
@@ -141,14 +141,14 @@ export function Search() {
       });
 
       // if it's not true then it's of type SearchOptions
-      if (editorInteractionState.showSearch !== true) {
-        setSearchOptions(editorInteractionState.showSearch);
+      if (showSearch !== true) {
+        setSearchOptions(showSearch);
       }
     }
-  }, [editorInteractionState.showSearch]);
+  }, [showSearch]);
 
   return (
-    <Popover open={!!editorInteractionState.showSearch}>
+    <Popover open={!!showSearch}>
       <PopoverAnchor />
       <PopoverContent
         align="end"
@@ -158,7 +158,7 @@ export function Search() {
 
           // close search
           if (e.key === 'Escape') {
-            setEditorInteractionState((prev) => ({ ...prev, showSearch: false }));
+            setShowSearch(false);
           }
           if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
@@ -183,7 +183,7 @@ export function Search() {
             if (results.length > 1) {
               navigate(e.shiftKey ? -1 : 1);
             } else if (results.length === 1) {
-              setEditorInteractionState((prev) => ({ ...prev, showSearch: false }));
+              setShowSearch(false);
             }
           }
         }}
@@ -247,11 +247,7 @@ export function Search() {
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="ghost"
-            className="px-2"
-            onClick={() => setEditorInteractionState((prev) => ({ ...prev, showSearch: false }))}
-          >
+          <Button variant="ghost" className="px-2" onClick={() => setShowSearch(false)}>
             <Cross2Icon />
           </Button>
         </div>

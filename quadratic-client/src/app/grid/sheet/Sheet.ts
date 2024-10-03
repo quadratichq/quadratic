@@ -7,6 +7,7 @@ import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
 import { sheets } from '../controller/Sheets';
 import { RectangleLike, SheetCursor } from './SheetCursor';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 
 export class Sheet {
   id: string;
@@ -51,6 +52,19 @@ export class Sheet {
       this.validations = validations;
     }
   };
+
+  // Returns all validations that intersect with the given point.
+  getValidation(x: number, y: number): Validation[] | undefined {
+    return this.validations.filter((v) => {
+      const selection = v.selection;
+      return (
+        selection.all ||
+        selection.columns?.find((c) => Number(c) === x) ||
+        selection.rows?.find((r) => Number(r) === y) ||
+        selection.rects?.find((r) => intersects.rectPoint(r, { x, y }))
+      );
+    });
+  }
 
   static testSheet(): Sheet {
     return new Sheet(

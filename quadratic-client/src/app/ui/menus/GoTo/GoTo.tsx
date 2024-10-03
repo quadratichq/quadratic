@@ -1,28 +1,19 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable react-hooks/exhaustive-deps */
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { focusGrid } from '@/app/helpers/focusGrid';
-import { Selection } from '@/app/quadratic-core-types';
-import { a1StringToSelection, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
 import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import React, { useCallback, useMemo } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilState } from 'recoil';
 
 export const GoTo = () => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const [showGoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
 
   const [value, setValue] = React.useState<string>('');
 
   const closeMenu = useCallback(() => {
-    setEditorInteractionState((state) => ({
-      ...state,
-      showGoToMenu: false,
-    }));
-    focusGrid();
-  }, [setEditorInteractionState]);
+    setShowGoToMenu(false);
+  }, [setShowGoToMenu]);
 
   const convertedInput = useMemo(() => {
     if (!value) {
@@ -84,6 +75,10 @@ export const GoTo = () => {
     }
     closeMenu();
   }, [closeMenu, value]);
+
+  if (!showGoToMenu) {
+    return null;
+  }
 
   return (
     <Command shouldFilter={false}>

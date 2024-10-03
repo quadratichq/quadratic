@@ -1,16 +1,14 @@
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { Validation } from '@/app/quadratic-core-types';
+import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
+import { ValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
+import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCallback, useMemo } from 'react';
-
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { cn } from '@/shared/shadcn/utils';
 import { useSetRecoilState } from 'recoil';
-import { ValidationsData } from './useValidationsData';
-import { validationRuleSimple } from '../Validation/validationType';
-import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
-import { selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { sheets } from '@/app/grid/controller/Sheets';
 
 interface Props {
   validation: Validation;
@@ -43,7 +41,7 @@ export const validationText = (validation: Validation) => {
 };
 
 export const ValidationEntry = (props: Props) => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
   const { validation, validationsData, highlight, active } = props;
   const { deleteValidation, readOnly } = validationsData;
 
@@ -60,11 +58,8 @@ export const ValidationEntry = (props: Props) => {
   );
 
   const selectValidation = useCallback(() => {
-    setEditorInteractionState((old) => ({
-      ...old,
-      showValidation: validation.id,
-    }));
-  }, [setEditorInteractionState, validation.id]);
+    setShowValidation(validation.id);
+  }, [setShowValidation, validation.id]);
 
   const ref = useCallback(
     (node: HTMLButtonElement) => {

@@ -1,12 +1,12 @@
 import { events } from '@/app/events/events';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import { ColumnRowCursor, SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { JsRowHeight, Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Rectangle } from 'pixi.js';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { Sheet } from '../sheet/Sheet';
-import { ColumnRowCursor, SheetCursorSave } from '../sheet/SheetCursor';
-import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
+import { Rectangle } from 'pixi.js';
 
 class Sheets {
   sheets: Sheet[];
@@ -146,7 +146,7 @@ class Sheets {
   private updateSheetBar() {
     this.sort();
     // this avoids React complaints about rendering one component while another one is rendering
-    setTimeout(() => events.emit('changeSheet'), 0);
+    setTimeout(() => events.emit('changeSheet', this.current), 0);
   }
 
   private sort(): void {

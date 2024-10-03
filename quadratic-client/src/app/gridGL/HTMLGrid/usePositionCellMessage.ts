@@ -1,4 +1,4 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateAnnotationStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
@@ -28,7 +28,7 @@ interface PositionCellMessage {
 }
 
 export const usePositionCellMessage = (props: Props): PositionCellMessage => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const annotationState = useRecoilValue(editorInteractionStateAnnotationStateAtom);
   const { div, offsets, forceLeft, forceTop, direction: side, centerHorizontal } = props;
   const [top, setTop] = useState(0);
   const [left, setLeft] = useState(0);
@@ -44,9 +44,8 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       const scale = pixiApp.viewport.scale.x;
       const offsetWidth = div.offsetWidth / scale;
       const offsetHeight = div.offsetHeight / scale;
-
-      const leftHeadingScaled = leftHeading / scale;
       const topHeadingScaled = topHeading / scale;
+      const leftHeadingScaled = leftHeading / scale;
 
       if (side === 'vertical') {
         let left = offsets.left - (centerHorizontal ? offsetWidth / 2 : 0);
@@ -67,7 +66,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
         // show to the left to avoid overlapping the content
         let triggerLeft = false;
         if (forceLeft) {
-          triggerLeft = inlineEditorHandler.isOpen() || editorInteractionState.annotationState === 'dropdown';
+          triggerLeft = inlineEditorHandler.isOpen() || annotationState === 'dropdown';
         }
         // only box to the left if it doesn't fit.
         if (triggerLeft || offsets.right + offsetWidth > bounds.right) {
@@ -101,17 +100,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       events.off('viewportChangedReady', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [
-    centerHorizontal,
-    div,
-    editorInteractionState.annotationState,
-    forceLeft,
-    forceTop,
-    leftHeading,
-    offsets,
-    side,
-    topHeading,
-  ]);
+  }, [centerHorizontal, div, annotationState, forceLeft, forceTop, leftHeading, offsets, side, topHeading]);
 
   return { top, left };
 };

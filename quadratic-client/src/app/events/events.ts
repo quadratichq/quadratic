@@ -46,7 +46,7 @@ interface EventTypes {
   deleteSheet: (sheetId: string, user: boolean) => void;
   sheetInfo: (sheetInfo: SheetInfo[]) => void;
   sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
-  changeSheet: () => void;
+  changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
   setCursor: (cursor?: string, selection?: Selection) => void;
@@ -127,7 +127,9 @@ interface EventTypes {
   validation: (validation: string | boolean) => void;
 
   // context menu opens on a grid heading
-  gridContextMenu: (world: Point, row?: number, column?: number) => void;
+  gridContextMenu: (world: Point, column?: number, row?: number) => void;
+
+  suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
   // use this to set a drawing element to dirty
   viewportChanged: () => void;

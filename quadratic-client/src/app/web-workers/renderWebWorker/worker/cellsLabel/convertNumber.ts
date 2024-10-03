@@ -23,7 +23,7 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   if (currentFractionDigits === undefined) {
     if (format.decimals !== null) {
       currentFractionDigits = format.decimals;
-    } else if (isCurrency || isScientific) {
+    } else if (isCurrency || isScientific || isPercent) {
       currentFractionDigits = 2;
     }
   }
@@ -71,7 +71,14 @@ export const getFractionDigits = (number: string, current: string, format: JsNum
   // this only works if there is a fractional part
   if (format.format?.type === 'EXPONENTIAL') {
     return number.length - (number[0] === '-' ? 2 : 1);
-  } else if (current.includes('.')) {
+  }
+
+  // remove the % suffix for percentage
+  if (format.format?.type === 'PERCENTAGE') {
+    current = current.slice(0, -1);
+  }
+
+  if (current.includes('.')) {
     return current.split('.')[1].length;
   }
   return 0;

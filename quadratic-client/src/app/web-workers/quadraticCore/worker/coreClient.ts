@@ -344,6 +344,14 @@ class CoreClient {
         this.send({ type: 'coreClientSearch', id: e.data.id, results });
         return;
 
+      case 'clientCoreNeighborText':
+        this.send({
+          type: 'coreClientNeighborText',
+          id: e.data.id,
+          text: core.neighborText(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
       case 'clientCoreHasRenderCells':
         const hasRenderCells = await core.hasRenderCells(
           e.data.sheetId,

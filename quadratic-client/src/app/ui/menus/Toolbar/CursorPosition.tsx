@@ -1,4 +1,4 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { selectionToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const CursorPosition = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const [showGoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
   const [cursorPositionString, setCursorPositionString] = useState('');
 
   useEffect(() => {
@@ -32,10 +32,7 @@ export const CursorPosition = () => {
   }, []);
 
   return (
-    <Popover
-      open={editorInteractionState.showGoToMenu}
-      onOpenChange={(open) => setEditorInteractionState((prev) => ({ ...prev, showGoToMenu: open }))}
-    >
+    <Popover open={showGoToMenu} onOpenChange={(open) => setShowGoToMenu(open)}>
       <PopoverTrigger className="group flex h-full w-full items-center justify-between pl-2 pr-1 text-sm hover:bg-accent focus:bg-accent focus:outline-none data-[state=open]:bg-accent">
         <span className="truncate">{cursorPositionString}</span>
         <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />

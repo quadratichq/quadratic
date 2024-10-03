@@ -2,7 +2,10 @@
 //! This is a passed-version of context for the Validation component.
 
 import { hasPermissionToEditFile } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStatePermissionsAtom,
+  editorInteractionStateShowValidationAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
 import {
@@ -13,7 +16,7 @@ import {
 } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { v4 as uuid } from 'uuid';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
@@ -39,8 +42,8 @@ export interface ValidationData {
 }
 
 export const useValidationData = (): ValidationData => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const { showValidation, permissions } = useRecoilValue(editorInteractionStateAtom);
+  const [showValidation, setShowValidation] = useRecoilState(editorInteractionStateShowValidationAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const readOnly = !hasPermissionToEditFile(permissions);
 
   const [validation, setValidation] = useState<ValidationUndefined>();
@@ -121,11 +124,8 @@ export const useValidationData = (): ValidationData => {
         }
       }
     }
-    setEditorInteractionState((old) => ({
-      ...old,
-      showValidation: true,
-    }));
-  }, [readOnly, setEditorInteractionState, unsaved, validate, validation]);
+    setShowValidation(true);
+  }, [readOnly, setShowValidation, unsaved, validate, validation]);
 
   // change the rule using the simple rule type; creates a default value for that rule
   const changeRule = useCallback(
