@@ -132,6 +132,7 @@ export enum Action {
   RemoveInsertedCells = 'remove_inserted_cells',
   TriggerCell = 'trigger_cell',
   InsertToday = 'insert_today',
+  InsertTodayTime = 'insert_today_time',
   InsertColumnLeft = 'insert_column_left',
   InsertColumnRight = 'insert_column_right',
   InsertRowAbove = 'insert_row_above',
