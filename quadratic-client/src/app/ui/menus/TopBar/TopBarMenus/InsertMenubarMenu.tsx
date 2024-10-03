@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CodeIcon, DataObjectIcon, InsertChartIcon } from '@/shared/components/Icons';
@@ -22,7 +23,13 @@ export const InsertMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Insert</MenubarTrigger>
-      <MenubarContent onCloseAutoFocus={(e) => e.preventDefault()} className="pointer-move-ignore">
+      <MenubarContent
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          focusGrid();
+        }}
+        className="pointer-move-ignore"
+      >
         <MenubarSub>
           <MenubarSubTrigger>
             <CodeIcon /> Code

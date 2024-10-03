@@ -7,6 +7,7 @@ import {
   showGridLinesAtom,
   showHeadingsAtom,
 } from '@/app/atoms/gridSettingsAtom';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { CheckSmallIcon, CropFreeIcon, ZoomInIcon } from '@/shared/components/Icons';
@@ -40,7 +41,13 @@ export const ViewMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>View</MenubarTrigger>
-      <MenubarContent className="pointer-move-ignore">
+      <MenubarContent
+        className="pointer-move-ignore"
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          focusGrid();
+        }}
+      >
         <MenubarItem onClick={() => setShowHeadings((prev) => !prev)}>
           <MenubarItemCheckbox checked={showHeadings} /> Show row and column headings
         </MenubarItem>

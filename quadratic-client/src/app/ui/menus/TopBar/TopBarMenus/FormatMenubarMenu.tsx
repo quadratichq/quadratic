@@ -27,7 +27,13 @@ export const FormatMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Format</MenubarTrigger>
-      <MenubarContent className="pointer-move-ignore">
+      <MenubarContent
+        className="pointer-move-ignore"
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          focusGrid();
+        }}
+      >
         <MenubarSub>
           <MenubarSubTrigger>
             <Number123Icon /> Number
