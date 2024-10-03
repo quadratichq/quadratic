@@ -131,6 +131,7 @@ export enum Action {
   SaveInlineEditorMoveLeft = 'save_inline_editor_move_left',
   RemoveInsertedCells = 'remove_inserted_cells',
   TriggerCell = 'trigger_cell',
+  InsertToday = 'insert_today',
   InsertColumnLeft = 'insert_column_left',
   InsertColumnRight = 'insert_column_right',
   InsertRowAbove = 'insert_row_above',
