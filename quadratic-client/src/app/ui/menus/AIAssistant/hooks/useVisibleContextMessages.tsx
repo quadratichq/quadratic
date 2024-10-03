@@ -70,7 +70,7 @@ ${JSON.stringify(cursorData)}
         {
           role: 'assistant',
           content: `I understand the visible data, I will reference it to answer following messages. How can I help you?`,
-          model: model,
+          model,
           internalContext: true,
           contextType: 'visibleData',
         },

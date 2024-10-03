@@ -66,12 +66,16 @@ export function useSubmitAIAssistantPrompt() {
           return aiContext;
         });
 
-        const quadraticContext = getQuadraticContext(getLanguage(aiContext.codeCell?.language));
+        const quadraticContext = getQuadraticContext(getLanguage(aiContext.codeCell?.language), model);
         const visibleContext = aiContext.visibleData ? await getVisibleContext({ model }) : [];
         const cursorSelectionContext = await getCursorSelectionContext({ selection: aiContext.cursorSelection, model });
         const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
         let updatedMessages: (UserMessage | AIMessage)[] = [];
         set(aiAssistantMessagesAtom, (prevMessages) => {
+          const lastQuadraticContext = prevMessages
+            .filter((message) => message.role === 'user' && message.contextType === 'quadraticDocs')
+            .at(-1);
+
           const lastVisibleContext = prevMessages
             .filter((message) => message.role === 'user' && message.contextType === 'visibleData')
             .at(-1);
@@ -85,6 +89,9 @@ export function useSubmitAIAssistantPrompt() {
             .at(-1);
 
           const newContextMessages: (UserMessage | AIMessage)[] = [
+            ...(!clearMessages && lastQuadraticContext?.content === quadraticContext?.[0]?.content
+              ? []
+              : quadraticContext),
             ...(!clearMessages && lastVisibleContext?.content === visibleContext?.[0]?.content ? [] : visibleContext),
             ...(!clearMessages && lastCursorSelectionContext?.content === cursorSelectionContext?.[0]?.content
               ? []
@@ -109,7 +116,6 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantPromptAtom, '');
 
         const messagesToSend: PromptMessage[] = [
-          ...(aiContext.quadraticDocs ? quadraticContext : []),
           ...updatedMessages.map((message) => ({
             role: message.role,
             content: message.content,

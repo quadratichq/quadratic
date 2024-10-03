@@ -69,7 +69,7 @@ ${
         {
           role: 'assistant',
           content: `How can I help you?`,
-          model: model,
+          model,
           internalContext: true,
           contextType: 'userPrompt',
         },

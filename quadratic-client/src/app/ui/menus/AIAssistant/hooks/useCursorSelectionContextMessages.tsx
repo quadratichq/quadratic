@@ -42,7 +42,7 @@ Note: This selection JSON is only for your reference to data on the sheet. This 
         {
           role: 'assistant',
           content: `I understand the cursor selection data, I will reference it to answer following messages. How can I help you?`,
-          model: model,
+          model,
           internalContext: true,
           contextType: 'cursorSelection',
         },
