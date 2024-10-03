@@ -150,7 +150,6 @@ export class Sheet {
     return this.offsets.getRowPlacement(y).position;
   }
 
-  // todo: change this to a JsValue instead of a Rust struct
   getColumnRow(x: number, y: number): Coordinate {
     const columnRowStringified = this.offsets.getColumnRowFromScreen(x, y);
     const columnRow: ColumnRow = JSON.parse(columnRowStringified);

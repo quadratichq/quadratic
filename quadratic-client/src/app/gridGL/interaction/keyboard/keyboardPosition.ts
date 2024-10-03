@@ -4,7 +4,7 @@
 import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
+import { moveViewport, pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -527,13 +527,13 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move viewport up
   if (matchShortcut(Action.PageUp, event)) {
-    moveViewport({ pageUp: true });
+    pageUpDown(true);
     return true;
   }
 
   // Move viewport down
   if (matchShortcut(Action.PageDown, event)) {
-    moveViewport({ pageDown: true });
+    pageUpDown(false);
     return true;
   }
 

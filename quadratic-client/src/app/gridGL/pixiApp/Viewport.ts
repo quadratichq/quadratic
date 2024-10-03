@@ -4,6 +4,7 @@ import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { events } from '@/app/events/events';
+import { pixiApp } from './PixiApp';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;
@@ -96,5 +97,12 @@ export class Viewport extends PixiViewport {
     if (this.y > maxY) {
       this.y = maxY;
     }
+  }
+
+  // resets the viewport to start
+  reset() {
+    const headings = pixiApp.headings.headingSize;
+    this.position.set(headings.width, headings.height);
+    this.dirty = true;
   }
 }

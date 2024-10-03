@@ -1,5 +1,6 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Selection } from '@/app/quadratic-core-types';
 import { a1StringToSelection, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
@@ -66,6 +67,7 @@ export const GoTo = () => {
         columnRow: null,
         ensureVisible: true,
       });
+      pixiApp.viewport.reset();
     } else {
       try {
         const selection = a1StringToSelection(value, sheets.sheet.id, sheets.getRustSheetMap());

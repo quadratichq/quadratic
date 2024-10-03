@@ -112,15 +112,9 @@ export function ensureVisible(visible: Coordinate | undefined) {
  * @param [options.pageDown] move viewport down one page
  * @param [options.force] force viewport to move even if cell is already visible
  */
-export function moveViewport(options: {
-  center?: Coordinate;
-  topLeft?: Coordinate;
-  pageUp?: boolean;
-  pageDown?: boolean;
-  force?: boolean;
-}): void {
-  const { center, topLeft, pageUp, pageDown, force } = options;
-  if (!center && !topLeft && !pageUp && !pageDown) return;
+export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinate; force?: boolean }): void {
+  const { center, topLeft, force } = options;
+  if (!center && !topLeft) return;
 
   const sheet = sheets.sheet;
   const bounds = pixiApp.viewport.getVisibleBounds();
@@ -137,10 +131,6 @@ export function moveViewport(options: {
     const cell = sheet.getCellOffsets(topLeft.x, topLeft.y);
     if (!force && intersects.rectanglePoint(bounds, new Point(cell.x - adjustX, cell.y - adjustY))) return;
     pixiApp.viewport.moveCorner(cell.x - adjustX, cell.y - adjustY);
-  } else if (pageUp) {
-    pixiApp.viewport.moveCorner(bounds.x, bounds.y - (bounds.height - adjustY));
-  } else if (pageDown) {
-    pixiApp.viewport.moveCorner(bounds.x, bounds.y + (bounds.height - adjustY));
   }
 
   pixiApp.viewportChanged();
@@ -159,4 +149,27 @@ export function getShareUrlParams(): string {
     }
   }
   return url;
+}
+
+// Moves the cursor up or down one page
+export function pageUpDown(up: boolean) {
+  const cursorRect = pixiApp.cursor.cursorRectangle;
+  const { viewport } = pixiApp;
+  if (cursorRect) {
+    const distanceTopToCursorTop = cursorRect.top - viewport.top;
+    const newY = cursorRect.y + pixiApp.viewport.screenHeightInWorldPixels * (up ? -1 : 1);
+    const newRow = Math.max(1, sheets.sheet.getColumnRowFromScreen(0, newY).row);
+    const cursor = sheets.sheet.cursor;
+    cursor.changePosition({
+      columnRow: null,
+      multiCursor: null,
+      cursorPosition: { x: cursor.cursorPosition.x, y: newRow },
+      keyboardMovePosition: { x: cursor.cursorPosition.x, y: newRow },
+      ensureVisible: false,
+    });
+    const newCursorY = sheets.sheet.getRowY(newRow);
+    const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+    pixiApp.viewport.y = Math.min(gridHeadings, -newCursorY + distanceTopToCursorTop);
+    pixiApp.viewportChanged();
+  }
 }

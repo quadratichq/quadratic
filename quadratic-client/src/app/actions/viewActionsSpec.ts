@@ -3,7 +3,7 @@ import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomIn, zoomInOut, zoomOut, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
-import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
+import { pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { CodeIcon, GoToIcon } from '@/shared/components/Icons';
@@ -151,15 +151,11 @@ export const viewActionsSpec: ViewActionSpec = {
   },
   [Action.PageUp]: {
     label: 'Page up',
-    run: () => {
-      moveViewport({ pageUp: true });
-    },
+    run: () => pageUpDown(true),
   },
   [Action.PageDown]: {
     label: 'Page down',
-    run: () => {
-      moveViewport({ pageDown: true });
-    },
+    run: () => pageUpDown(false),
   },
   [Action.ShowGoToMenu]: {
     label: 'Go to',
