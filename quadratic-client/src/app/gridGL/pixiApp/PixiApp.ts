@@ -31,6 +31,7 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Graphics, Rectangle, Renderer, utils } from 'pixi.js';
 import './pixiApp.css';
+import { Background } from '../UI/Background';
 
 utils.skipHello();
 
@@ -47,6 +48,7 @@ export class PixiApp {
 
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
+  background: Background;
   gridLines!: GridLines;
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
@@ -82,6 +84,7 @@ export class PixiApp {
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
     this.viewport = new Viewport();
+    this.background = new Background();
   }
 
   init() {
@@ -136,6 +139,8 @@ export class PixiApp {
 
     // this holds the viewport's contents
     this.viewportContents = this.viewport.addChild(new Container());
+
+    this.background = this.viewportContents.addChild(this.background);
 
     // useful for debugging at viewport locations
     this.debug = this.viewportContents.addChild(new Graphics());

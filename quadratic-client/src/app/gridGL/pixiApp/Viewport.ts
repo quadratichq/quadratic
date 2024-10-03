@@ -85,4 +85,16 @@ export class Viewport extends PixiViewport {
     }
     this.dirty = true;
   }
+
+  // Clamps viewport to half the screen size
+  clampViewport() {
+    const maxX = this.screenWidth / 2;
+    if (this.x > maxX) {
+      this.x = maxX;
+    }
+    const maxY = this.screenHeight / 2;
+    if (this.y > maxY) {
+      this.y = maxY;
+    }
+  }
 }

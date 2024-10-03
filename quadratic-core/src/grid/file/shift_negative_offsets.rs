@@ -23,7 +23,6 @@ pub fn shift_negative_offsets(grid: &mut Grid) {
     let mut changed = false;
     for sheet in grid.sheets.iter_mut() {
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
-            dbgjs!(bounds);
             if bounds.min.x <= 0 {
                 changed = true;
                 let insert = bounds.min.x - 1;
