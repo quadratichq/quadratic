@@ -12,9 +12,7 @@ To open the multi-line editor either use / and select it in the cell type select
 
 The multi-line editor becomes useful when Formulas become more difficult to read than the space afforded by the in-line editor. Example:
 
-Copy
-
-\`\`\`
+\`\`\`formula
 IF( Z0 > 10, 
     IF( Z1 > 10, 
         IF (Z2 > 10, 

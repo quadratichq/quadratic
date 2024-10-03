@@ -110,8 +110,6 @@ return data;
 
 2-d array 
 
-Copy
-
 \`\`\`javascript
 let data = [[1,2,3,4,5],[1,2,3,4,5]];
 
@@ -342,8 +340,6 @@ Below are some common examples of libraries, imported using esm.run. Many more l
 Charting 
 
 Chart.js is the only charting library in JavaScript supported in Quadratic. 
-
-Copy
 
 \`\`\`javascript
 import Chart from 'https://esm.run/chart.js/auto';
