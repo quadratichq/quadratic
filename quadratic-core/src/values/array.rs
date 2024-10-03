@@ -1,6 +1,6 @@
 use std::{fmt, num::NonZeroU32};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
@@ -206,6 +206,20 @@ impl Array {
     /// Returns an iterator over the rows of the array.
     pub fn rows(&self) -> std::slice::Chunks<'_, CellValue> {
         self.values.chunks(self.width() as usize)
+    }
+    /// Remove the first row of the array and return it.
+    pub fn shift(&mut self) -> Result<Vec<CellValue>> {
+        let width = (self.width() as usize).min(self.values.len());
+        let height = NonZeroU32::new(self.height() - 1);
+
+        match height {
+            Some(h) => {
+                let first_row = self.values.drain(0..width).collect();
+                self.size.h = h;
+                Ok(first_row)
+            }
+            None => bail!("Cannot shift a single row array"),
+        }
     }
 
     /// Returns the only cell value in a 1x1 array, or an error if this is not a

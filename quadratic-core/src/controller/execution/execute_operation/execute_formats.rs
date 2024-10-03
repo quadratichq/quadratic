@@ -216,6 +216,7 @@ mod test {
                 DataTableKind::CodeRun(code_run),
                 Value::Single(CellValue::Image("image".to_string())),
                 false,
+                false,
             )),
         );
 

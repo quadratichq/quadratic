@@ -81,6 +81,7 @@ mod test {
                 DataTableKind::CodeRun(code_run),
                 Value::Single(CellValue::Text("test".to_string())),
                 false,
+                false,
             )),
         );
         let sheet_pos_02 = SheetPos {

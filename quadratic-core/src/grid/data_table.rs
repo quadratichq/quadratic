@@ -61,7 +61,7 @@ impl DataTable {
         };
 
         if header {
-            data_table.apply_header();
+            data_table = data_table.apply_header();
         }
 
         data_table
@@ -72,18 +72,16 @@ impl DataTable {
         self
     }
 
-    pub fn apply_header(&mut self) -> &mut Self {
-        self.columns = match &self.value {
-            Value::Array(array) => array.rows().next().map(|row| {
-                row.iter()
+    pub fn apply_header(mut self) -> Self {
+        self.columns = match self.value {
+            Value::Array(ref mut array) => array.shift().ok().map(|array| {
+                array
+                    .iter()
                     .map(|value| DataTableColumn::new(value.to_string(), true))
                     .collect::<Vec<DataTableColumn>>()
             }),
-            Value::Single(value) => Some(vec![DataTableColumn::new(value.to_string(), true)]),
             _ => None,
         };
-
-        // TODO(ddimaria): remove first row from array if it's a header
 
         self
     }

@@ -376,6 +376,7 @@ mod tests {
             DataTableKind::CodeRun(code_run),
             Value::Single(CellValue::Html("html".to_string())),
             false,
+            false,
         );
         transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
         assert_eq!(transaction.code_cells.len(), 1);
@@ -396,6 +397,7 @@ mod tests {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             Value::Single(CellValue::Image("image".to_string())),
+            false,
             false,
         );
         transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
