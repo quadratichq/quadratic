@@ -35,8 +35,13 @@ window.MonacoEnvironment = {
 const PADDING_FOR_GROWING_HORIZONTALLY = 20;
 
 class InlineEditorMonaco {
-  private editor?: editor.IStandaloneCodeEditor;
+  editor?: editor.IStandaloneCodeEditor;
   private suggestionWidgetShowing: boolean = false;
+
+  // used to populate autocomplete suggestion (dropdown is handled in autocompleteDropDown.tsx)
+  autocompleteList?: string[];
+  autocompleteShowingList = false;
+  autocompleteSuggestionShowing = false;
 
   // Helper function to get the model without having to check if editor or model
   // is defined.
@@ -60,17 +65,17 @@ class InlineEditorMonaco {
   }
 
   // Sets the value of the inline editor and moves the cursor to the end.
-  set(s: string, selectAll?: boolean) {
+  set(s: string, select?: boolean | number) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setValue');
     }
     this.editor.setValue(s);
     this.setColumn(s.length + 1);
-    if (selectAll) {
+    if (select !== undefined && select !== false) {
       const model = this.getModel();
       const lineCount = model.getLineCount();
       const maxColumns = model.getLineMaxColumn(lineCount);
-      const range = new monaco.Range(1, 1, lineCount, maxColumns);
+      const range = new monaco.Range(1, select !== true ? select : 1, lineCount, maxColumns);
       this.editor.setSelection(range);
     }
   }
@@ -335,10 +340,16 @@ class InlineEditorMonaco {
     return this.editor.createDecorationsCollection(newDecorations);
   }
 
-  setLanguage(language: 'Formula' | 'plaintext') {
+  setLanguage(language: 'Formula' | 'inline-editor') {
     const model = this.getModel();
     editor.setModelLanguage(model, language);
     this.setBracketConfig(language === 'Formula');
+    if (this.editor) {
+      this.editor.updateOptions({
+        quickSuggestions: language === 'Formula' ? true : { other: 'inline' },
+        quickSuggestionsDelay: language === 'Formula' ? 10 : 0,
+      });
+    }
   }
 
   // Creates the Monaco editor and attaches it to the given div (this should
@@ -357,7 +368,6 @@ class InlineEditorMonaco {
       readOnly: false,
       renderLineHighlight: 'none',
       renderWhitespace: 'all',
-      // quickSuggestions: false,
       glyphMargin: false,
       lineDecorationsWidth: 0,
       folding: false,
@@ -398,7 +408,7 @@ class InlineEditorMonaco {
         verticalScrollbarSize: 0,
       },
       stickyScroll: { enabled: false },
-      language: inlineEditorHandler.formula ? 'formula' : undefined,
+      language: inlineEditorHandler.formula ? 'formula' : 'inline-editor',
     });
 
     interface SuggestController {
@@ -415,6 +425,28 @@ class InlineEditorMonaco {
         this.suggestionWidgetShowing = false;
       });
     }
+
+    monaco.languages.register({ id: 'inline-editor' });
+    monaco.languages.registerCompletionItemProvider('inline-editor', {
+      provideCompletionItems: (model, position) => {
+        const lowerCase = this.get().toLowerCase();
+        if (!this.autocompleteList?.find((t) => t.toLowerCase().startsWith(lowerCase))) {
+          this.autocompleteSuggestionShowing = false;
+          return;
+        }
+        this.autocompleteSuggestionShowing = true;
+        const word = model.getWordUntilPosition(position);
+        const range = new monaco.Range(position.lineNumber, 1, position.lineNumber, word.endColumn);
+        return {
+          suggestions: this.autocompleteList.map((text) => ({
+            label: text,
+            kind: monaco.languages.CompletionItemKind.Text,
+            insertText: text,
+            range,
+          })),
+        };
+      },
+    });
 
     this.editor.onKeyDown((e) => {
       if (this.suggestionWidgetShowing) return;
@@ -440,6 +472,14 @@ class InlineEditorMonaco {
     }
     const selection = this.editor.getSelection();
     return selection ? !selection.isEmpty() : false;
+  }
+
+  // triggers the inline suggestion for the current text (used when manually entering text)
+  triggerSuggestion() {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in triggerSelection');
+    }
+    this.editor.trigger(null, 'editor.action.inlineSuggest.trigger', null);
   }
 }
 

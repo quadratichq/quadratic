@@ -204,6 +204,7 @@ class InlineEditorHandler {
       this.temporaryUnderline = this.formatSummary?.underline || undefined;
       this.temporaryStrikeThrough = this.formatSummary?.strikeThrough || undefined;
       inlineEditorMonaco.set(value);
+      inlineEditorMonaco.triggerSuggestion();
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
@@ -363,7 +364,7 @@ class InlineEditorHandler {
       // need to show the change to A1 notation
       pixiApp.headings.dirty = true;
     } else {
-      inlineEditorMonaco.setLanguage('plaintext');
+      inlineEditorMonaco.setLanguage('inline-editor');
     }
 
     pixiAppSettings.setInlineEditorState((prev) => ({
@@ -586,7 +587,7 @@ class InlineEditorHandler {
     return true;
   }
 
-  private replaceText = (text: string, highlight: boolean) => {
+  private replaceText = (text: string, highlight: boolean | number) => {
     if (!this.open) return;
     inlineEditorMonaco.set(text, highlight);
   };

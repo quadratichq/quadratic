@@ -1124,6 +1124,15 @@ class Core {
     }
   }
 
+  neighborText(sheetId: string, x: number, y: number): string[] {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const text = this.gridController.neighborText(sheetId, BigInt(x), BigInt(y));
+    if (text) {
+      return JSON.parse(text);
+    }
+    return [];
+  }
+
   deleteColumns(sheetId: string, columns: number[], cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.deleteColumn(sheetId, JSON.stringify(columns), cursor);

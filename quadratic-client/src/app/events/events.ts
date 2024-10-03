@@ -135,6 +135,8 @@ interface EventTypes {
 
   // ask AI to fix error in code cell
   askAICodeCell: (codeCell: CodeCell) => void;
+
+  suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
