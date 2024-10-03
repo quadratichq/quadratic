@@ -152,7 +152,7 @@ class InlineEditorHandler {
       }
       inlineEditorFormula.cursorMoved();
     } else {
-      this.close(0, 0, true);
+      this.close(0, 0, false, true);
     }
   };
 
@@ -401,7 +401,7 @@ class InlineEditorHandler {
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   // @returns whether the editor closed successfully
-  close = async (deltaX = 0, deltaY = 0, cancel: boolean): Promise<boolean> => {
+  close = async (deltaX = 0, deltaY = 0, cancel: boolean, skipChangeSheet = false): Promise<boolean> => {
     if (!this.open) return true;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
@@ -414,7 +414,9 @@ class InlineEditorHandler {
 
     if (!cancel) {
       // Ensure we're on the right sheet so we can show the change
-      sheets.current = this.location.sheetId;
+      if (!skipChangeSheet) {
+        sheets.current = this.location.sheetId;
+      }
 
       if (this.formula) {
         const updatedValue = inlineEditorFormula.closeParentheses();
@@ -443,6 +445,10 @@ class InlineEditorHandler {
         const validationError = await this.validateInput();
         if (validationError) {
           events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
+          // need to change the sheet back to the original sheet if there's a validation error
+          if (skipChangeSheet) {
+            sheets.current = location.sheetId;
+          }
           return false;
         } else {
           quadraticCore.setCellValue(
@@ -452,7 +458,9 @@ class InlineEditorHandler {
             value.trim(),
             sheets.getCursorPosition()
           );
-          events.emit('hoverCell');
+          if (!skipChangeSheet) {
+            events.emit('hoverCell');
+          }
         }
       }
     }
