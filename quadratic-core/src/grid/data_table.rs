@@ -61,7 +61,7 @@ impl DataTable {
         };
 
         if header {
-            data_table = data_table.apply_header();
+            data_table.apply_header();
         }
 
         data_table
@@ -72,7 +72,7 @@ impl DataTable {
         self
     }
 
-    pub fn apply_header(mut self) -> Self {
+    pub fn apply_header(&mut self) {
         self.columns = match self.value {
             Value::Array(ref mut array) => array.shift().ok().map(|array| {
                 array
@@ -82,8 +82,6 @@ impl DataTable {
             }),
             _ => None,
         };
-
-        self
     }
 
     pub fn code_run(&self) -> Option<&CodeRun> {
