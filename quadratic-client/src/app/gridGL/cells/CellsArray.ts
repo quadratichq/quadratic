@@ -142,7 +142,7 @@ export class CellsArray extends Container {
   private draw(codeCell: JsRenderCodeCell, cursor: Coordinate, editingCell?: boolean): void {
     const start = this.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y));
 
-    const overlapTest = new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w, codeCell.h);
+    const overlapTest = new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w - 1, codeCell.h - 1);
     if (codeCell.spill_error) {
       overlapTest.width = 1;
       overlapTest.height = 1;
