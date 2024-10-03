@@ -6,10 +6,9 @@ import { Sheet } from '@/app/grid/sheet/Sheet';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
 import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
-import { SheetBarTabContextMenu } from '@/app/ui/menus/SheetBar/SheetBarTabContextMenu';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
 import mixpanel from 'mixpanel-browser';
-import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 
@@ -385,24 +384,7 @@ export const SheetBar = (): JSX.Element => {
     };
   }, [handlePointerMove, handlePointerUp]);
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string; name: string } | undefined>();
-  const handleContextEvent = useCallback(
-    (event: MouseEvent, sheet: Sheet) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (hasPermission) {
-        setContextMenu({ x: event.clientX, y: event.clientY, name: sheet.name, id: sheet.id });
-      }
-    },
-    [hasPermission]
-  );
-
   const [forceRename, setForceRename] = useState<string | undefined>();
-  const handleRename = useCallback(() => {
-    if (!contextMenu || !sheetTabs) return;
-    setForceRename(contextMenu.id);
-    setContextMenu(undefined);
-  }, [contextMenu, sheetTabs]);
   const clearRename = useCallback(() => setForceRename(undefined), []);
 
   return (
@@ -435,7 +417,6 @@ export const SheetBar = (): JSX.Element => {
           <SheetBarTab
             key={sheet.id}
             order={getOrderIndex(sheet.order).toString()}
-            onContextMenu={handleContextEvent}
             onPointerDown={handlePointerDown}
             active={activeSheet === sheet.id}
             sheet={sheet}
@@ -464,11 +445,6 @@ export const SheetBar = (): JSX.Element => {
           <ChevronRightIcon />
         </SheetBarButton>
       </div>
-      <SheetBarTabContextMenu
-        contextMenu={contextMenu}
-        handleClose={() => setContextMenu(undefined)}
-        handleRename={handleRename}
-      />
     </div>
   );
 };
