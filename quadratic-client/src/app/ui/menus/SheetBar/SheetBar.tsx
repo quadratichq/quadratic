@@ -170,6 +170,7 @@ export const SheetBar = (): JSX.Element => {
       const tab = event.currentTarget;
       if (tab) {
         const rect = tab.getBoundingClientRect();
+        rect.x -= sheetTabs.offsetLeft;
         const originalOrderIndex = getOrderIndex(sheet.order);
         down.current = {
           tab,

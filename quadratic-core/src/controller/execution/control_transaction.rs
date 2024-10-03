@@ -262,7 +262,7 @@ impl GridController {
             }
 
             let result = if let Some(error_msg) = &std_err {
-                let msg = RunErrorMsg::PythonError(error_msg.clone().into());
+                let msg = RunErrorMsg::CodeRunError(error_msg.clone().into());
                 CodeRunResult::Err(RunError { span: None, msg })
             } else {
                 CodeRunResult::Ok(Value::Array(array.into()))
