@@ -30,7 +30,10 @@ Data from cells can be referenced by Formulas, Python, JavaScript or SQL code us
 When referencing cells in Python, to create a pandas DataFrame, if the first row of cells is a header, you should set first_row_header as an argument i.e. \`cells((2, 2), (7, 52), first_row_header=True)\`. This makes the first row of your DataFrame the column names, otherwise will default to integer column names as 0, 1, 2, 3, etc.\n
 Use this selection data in the context of following messages. Refer to cells if required in code.\n\n
 
-Current selection JSON is:\n ${JSON.stringify(cursorSelectionValues)}\n\n
+Current selection JSON is:\n
+\`\`\`json
+${JSON.stringify(cursorSelectionValues)}
+\`\`\`
 
 Note: This selection JSON is only for your reference to data on the sheet. This JSON cannot be used directly in code. Use the cell reference functions, like \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions, to reference cells in code.`,
           internalContext: true,

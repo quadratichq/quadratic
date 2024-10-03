@@ -46,7 +46,9 @@ When referencing cells in Python, to create a pandas DataFrame, if the first row
 Use this visible data in the context of following messages. Refer to cells if required in code.\n\n
 
 Current visible data is:\n
-${JSON.stringify(visibleData)}\n\n
+\`\`\`json
+${JSON.stringify(visibleData)}
+\`\`\`
 
 Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference functions, like \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions, to reference cells in code.`
     : 'This visible part of the sheet is empty.'
@@ -56,7 +58,10 @@ ${
   cursorData
     ? `My cursor is on cell x:${cursorData.pos.x} and y:${cursorData.pos.y}.\n 
 Data in this cell is:\n
-${JSON.stringify(cursorData)}\n\n`
+\`\`\`json
+${JSON.stringify(cursorData)}
+\`\`\`
+`
     : ''
 }`,
           internalContext: true,

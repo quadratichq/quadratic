@@ -9,6 +9,7 @@ import {
   showAIAssistantAtom,
 } from '@/app/atoms/aiAssistantAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { Selection } from '@/app/quadratic-core-types';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantModel';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
@@ -21,7 +22,7 @@ import { useRecoilCallback } from 'recoil';
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { quadraticContext } = useQuadraticContextMessages();
+  const { getQuadraticContext } = useQuadraticContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getCursorSelectionContext } = useCursorSelectionContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
@@ -65,6 +66,7 @@ export function useSubmitAIAssistantPrompt() {
           return aiContext;
         });
 
+        const quadraticContext = getQuadraticContext(getLanguage(aiContext.codeCell?.language));
         const visibleContext = aiContext.visibleData ? await getVisibleContext({ model }) : [];
         const cursorSelectionContext = await getCursorSelectionContext({ selection: aiContext.cursorSelection, model });
         const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
@@ -127,7 +129,7 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
       },
-    [handleAIRequestToAPI, quadraticContext, getVisibleContext, getCursorSelectionContext, getCodeCellContext, model]
+    [handleAIRequestToAPI, getQuadraticContext, getVisibleContext, getCursorSelectionContext, getCodeCellContext, model]
   );
 
   return { submitPrompt };
