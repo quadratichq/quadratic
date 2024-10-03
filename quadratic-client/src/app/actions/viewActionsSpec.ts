@@ -2,7 +2,7 @@ import { Action } from '@/app/actions/actions';
 import { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { zoomIn, zoomInOut, zoomOut, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
+import { zoomIn, zoomInOut, zoomOut, zoomReset, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
@@ -18,6 +18,7 @@ type ViewActionSpec = Pick<
   | Action.ZoomTo50
   | Action.ZoomTo100
   | Action.ZoomTo200
+  | Action.ZoomReset
   | Action.GridPanMode
   | Action.ShowCommandPalette
   | Action.TogglePresentationMode
@@ -76,6 +77,10 @@ export const viewActionsSpec: ViewActionSpec = {
     run: () => {
       zoomInOut(2);
     },
+  },
+  [Action.ZoomReset]: {
+    label: 'Reset location',
+    run: () => zoomReset(),
   },
   [Action.GridPanMode]: {
     label: 'Grid pan mode',

@@ -1,10 +1,11 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Drag, Viewport as PixiViewport } from 'pixi-viewport';
+import { Viewport as PixiViewport } from 'pixi-viewport';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
+import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from './Wheel';
 import { events } from '@/app/events/events';
-import { pixiApp } from './PixiApp';
+import { pixiApp } from '../PixiApp';
+import { Drag } from './Drag';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;
@@ -14,17 +15,18 @@ const WHEEL_ZOOM_PERCENT = 1.5;
 export class Viewport extends PixiViewport {
   constructor() {
     super();
-    this.drag({
-      pressDrag: true,
-      wheel: false, // handled by Wheel plugin below
-      ...(isMobile ? {} : { keyToPress: ['Space'] }),
-    })
-      .decelerate()
-      .pinch()
-      .clampZoom({
-        minScale: MINIMUM_VIEWPORT_SCALE,
-        maxScale: MAXIMUM_VIEWPORT_SCALE,
-      });
+    this.plugins.add(
+      'drag',
+      new Drag(this, {
+        pressDrag: true,
+        wheel: false, // handled by Wheel plugin below
+        keyToPress: ['Space'],
+      })
+    );
+    this.decelerate().pinch().clampZoom({
+      minScale: MINIMUM_VIEWPORT_SCALE,
+      maxScale: MAXIMUM_VIEWPORT_SCALE,
+    });
     this.plugins.add(
       'wheel',
       new Wheel(this, {
@@ -87,17 +89,17 @@ export class Viewport extends PixiViewport {
     this.dirty = true;
   }
 
-  // Clamps viewport to half the screen size
-  clampViewport() {
-    const maxX = this.screenWidth / 2;
-    if (this.x > maxX) {
-      this.x = maxX;
-    }
-    const maxY = this.screenHeight / 2;
-    if (this.y > maxY) {
-      this.y = maxY;
-    }
-  }
+  // // Clamps viewport to half the screen size
+  // clampViewport() {
+  //   const maxX = this.screenWidth / 2;
+  //   if (this.x > maxX) {
+  //     this.x = maxX;
+  //   }
+  //   const maxY = this.screenHeight / 2;
+  //   if (this.y > maxY) {
+  //     this.y = maxY;
+  //   }
+  // }
 
   // resets the viewport to start
   reset() {

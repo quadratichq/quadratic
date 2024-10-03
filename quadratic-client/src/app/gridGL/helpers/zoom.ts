@@ -4,6 +4,10 @@ import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { intersects } from './intersects';
 
+export function zoomReset() {
+  pixiApp.viewport.reset();
+}
+
 export async function zoomToFit() {
   const viewport = pixiApp.viewport;
   const sheet = sheets.sheet;

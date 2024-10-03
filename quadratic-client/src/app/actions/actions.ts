@@ -75,6 +75,7 @@ export enum Action {
   ZoomTo50 = 'zoom_to_50',
   ZoomTo100 = 'zoom_to_100',
   ZoomTo200 = 'zoom_to_200',
+  ZoomReset = 'zoom_reset',
   Save = 'save',
   SwitchSheetNext = 'switch_sheet_next',
   SwitchSheetPrevious = 'switch_sheet_previous',

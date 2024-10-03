@@ -446,7 +446,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move cursor to A0, reset viewport position with A0 at top left
   if (matchShortcut(Action.GotoA0, event)) {
-    setCursorPosition(0, 0);
+    setCursorPosition(1, 1);
     moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
     return true;
   }

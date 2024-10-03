@@ -23,7 +23,7 @@ import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
-import { Viewport } from '@/app/gridGL/pixiApp/Viewport';
+import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { isEmbed } from '@/app/helpers/isEmbed';
