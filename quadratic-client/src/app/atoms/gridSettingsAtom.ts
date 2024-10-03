@@ -6,7 +6,6 @@ import { AtomEffect, DefaultValue, atom, selector } from 'recoil';
 const SETTINGS_KEY = 'viewSettings';
 
 export type GridSettings = {
-  showGridAxes: boolean;
   showHeadings: boolean;
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
@@ -16,7 +15,6 @@ export type GridSettings = {
 };
 
 export const defaultGridSettings: GridSettings = {
-  showGridAxes: true,
   showHeadings: true,
   showGridLines: true,
   showCellTypeOutlines: true,
@@ -72,7 +70,6 @@ const createSelector = <T extends keyof GridSettings>(key: T) =>
     },
   });
 
-export const showGridAxesAtom = createSelector('showGridAxes');
 export const showHeadingsAtom = createSelector('showHeadings');
 export const showGridLinesAtom = createSelector('showGridLines');
 export const showCellTypeOutlinesAtom = createSelector('showCellTypeOutlines');
