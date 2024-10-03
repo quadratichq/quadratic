@@ -9,6 +9,7 @@ use crate::grid::CodeRun;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
+use anyhow::anyhow;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -16,11 +17,16 @@ use serde::{Deserialize, Serialize};
 pub struct DataTableColumn {
     pub name: String,
     pub display: bool,
+    pub value_index: u32,
 }
 
 impl DataTableColumn {
-    pub fn new(name: String, display: bool) -> Self {
-        DataTableColumn { name, display }
+    pub fn new(name: String, display: bool, value_index: u32) -> Self {
+        DataTableColumn {
+            name,
+            display,
+            value_index,
+        }
     }
 }
 
@@ -51,6 +57,9 @@ impl From<(Import, Array)> for DataTable {
 }
 
 impl DataTable {
+    /// Creates a new DataTable with the given kind, value, and spill_error,
+    /// with the ability to lift the first row as column headings.
+    /// This handles the most common use cases.  Use `new_raw` for more control.
     pub fn new(kind: DataTableKind, value: Value, spill_error: bool, header: bool) -> Self {
         let mut data_table = DataTable {
             kind,
@@ -61,29 +70,114 @@ impl DataTable {
         };
 
         if header {
-            data_table.apply_header();
+            data_table.apply_header_from_first_row();
         }
 
         data_table
     }
 
+    /// Direcly creates a new DataTable with the given kind, value, spill_error, and columns.
+    pub fn new_raw(
+        kind: DataTableKind,
+        value: Value,
+        spill_error: bool,
+        columns: Option<Vec<DataTableColumn>>,
+    ) -> Self {
+        DataTable {
+            kind,
+            columns,
+            value,
+            spill_error,
+            last_modified: Utc::now(),
+        }
+    }
+
+    /// Apply a new last modified date to the DataTable.
     pub fn with_last_modified(mut self, last_modified: DateTime<Utc>) -> Self {
         self.last_modified = last_modified;
         self
     }
 
-    pub fn apply_header(&mut self) {
+    /// Takes the first row of the array and sets it as the column headings.
+    /// The source array is shifted up one in place.
+    pub fn apply_header_from_first_row(&mut self) {
         self.columns = match self.value {
             Value::Array(ref mut array) => array.shift().ok().map(|array| {
                 array
                     .iter()
-                    .map(|value| DataTableColumn::new(value.to_string(), true))
+                    .enumerate()
+                    .map(|(i, value)| DataTableColumn::new(value.to_string(), true, i as u32))
                     .collect::<Vec<DataTableColumn>>()
             }),
             _ => None,
         };
     }
 
+    /// Apply default column headings to the DataTable.
+    /// For example, the column headings will be "Column 1", "Column 2", etc.
+    pub fn apply_default_header(&mut self) {
+        self.columns = match self.value {
+            Value::Array(ref mut array) => Some(
+                (1..=array.width())
+                    .map(|i| DataTableColumn::new(format!("Column {i}"), true, i - 1))
+                    .collect::<Vec<DataTableColumn>>(),
+            ),
+            _ => None,
+        };
+    }
+
+    fn check_index(&mut self, index: usize, apply_default_header: bool) -> anyhow::Result<()> {
+        match self.columns {
+            Some(ref mut columns) => {
+                let column_len = columns.len();
+
+                if index >= column_len {
+                    return Err(anyhow!("Column {index} out of bounds: {column_len}"));
+                }
+            }
+            // there are no columns, so we need to apply default headers first
+            None => {
+                apply_default_header.then(|| self.apply_default_header());
+            }
+        };
+
+        Ok(())
+    }
+
+    pub fn set_header_at(
+        &mut self,
+        index: usize,
+        name: String,
+        display: bool,
+    ) -> anyhow::Result<()> {
+        self.check_index(index, true)?;
+
+        self.columns
+            .as_mut()
+            .and_then(|columns| columns.get_mut(index))
+            .map(|column| {
+                column.name = name;
+                column.display = display;
+            });
+
+        Ok(())
+    }
+
+    pub fn set_header_display_at(&mut self, index: usize, display: bool) -> anyhow::Result<()> {
+        self.check_index(index, true)?;
+
+        self.columns
+            .as_mut()
+            .and_then(|columns| columns.get_mut(index))
+            .map(|column| {
+                column.display = display;
+            });
+
+        Ok(())
+    }
+
+    /// Helper functtion to get the CodeRun from the DataTable.
+    /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run(&self) -> Option<&CodeRun> {
         match self.kind {
             DataTableKind::CodeRun(ref code_run) => Some(code_run),
@@ -91,6 +185,8 @@ impl DataTable {
         }
     }
 
+    /// Helper functtion to deterime if the DataTable's CodeRun has an error.
+    /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
     pub fn has_error(&self) -> bool {
         match self.kind {
             DataTableKind::CodeRun(ref code_run) => code_run.error.is_some(),
@@ -98,6 +194,8 @@ impl DataTable {
         }
     }
 
+    /// Helper functtion to get the error in the CodeRun from the DataTable.
+    /// Returns `None` if the DataTableKind is not CodeRun or if there is no error.
     pub fn get_error(&self) -> Option<RunError> {
         self.code_run()
             .and_then(|code_run| code_run.error.to_owned())
@@ -192,6 +290,74 @@ mod test {
     use super::*;
     use crate::{grid::SheetId, Array};
     use serial_test::parallel;
+
+    #[test]
+    #[parallel]
+    fn test_import_data_table_and_headers() {
+        let file_name = "test.csv";
+        let values = vec![
+            vec!["city", "region", "country", "population"],
+            vec!["Southborough", "MA", "United States", "1000"],
+            vec!["Denver", "CO", "United States", "10000"],
+            vec!["Seattle", "WA", "United States", "100"],
+        ];
+        let import = Import::new(file_name.into());
+        let kind = DataTableKind::Import(import.clone());
+
+        // test data table without column headings
+        let mut data_table = DataTable::from((import.clone(), values.clone().into()));
+        let expected_values = Value::Array(values.clone().into());
+        let expected_data_table = DataTable::new(kind.clone(), expected_values, false, false)
+            .with_last_modified(data_table.last_modified);
+        let expected_array_size = ArraySize::new(4, 4).unwrap();
+        assert_eq!(data_table, expected_data_table);
+        assert_eq!(data_table.output_size(), expected_array_size);
+
+        // test default column headings
+        data_table.apply_default_header();
+        let expected_columns = vec![
+            DataTableColumn::new("Column 1".into(), true, 0),
+            DataTableColumn::new("Column 2".into(), true, 1),
+            DataTableColumn::new("Column 3".into(), true, 2),
+            DataTableColumn::new("Column 4".into(), true, 3),
+        ];
+        assert_eq!(data_table.columns, Some(expected_columns));
+
+        // test column headings taken from first row
+        let value = Value::Array(values.clone().into());
+        let mut data_table = DataTable::new(kind.clone(), value, false, true)
+            .with_last_modified(data_table.last_modified);
+
+        // array height should be 3 since we lift the first row as column headings
+        let expected_array_size = ArraySize::new(4, 3).unwrap();
+        assert_eq!(data_table.output_size(), expected_array_size);
+
+        let expected_columns = vec![
+            DataTableColumn::new("city".into(), true, 0),
+            DataTableColumn::new("region".into(), true, 1),
+            DataTableColumn::new("country".into(), true, 2),
+            DataTableColumn::new("population".into(), true, 3),
+        ];
+        assert_eq!(data_table.columns, Some(expected_columns));
+
+        let expected_values = values
+            .clone()
+            .into_iter()
+            .skip(1)
+            .collect::<Vec<Vec<&str>>>();
+        assert_eq!(
+            data_table.value.clone().into_array().unwrap(),
+            expected_values.into()
+        );
+
+        // test setting header at index
+        data_table.set_header_at(0, "new".into(), true).unwrap();
+        assert_eq!(data_table.columns.as_ref().unwrap()[0].name, "new");
+
+        // test setting header display at index
+        data_table.set_header_display_at(0, false).unwrap();
+        assert_eq!(data_table.columns.as_ref().unwrap()[0].display, false);
+    }
 
     #[test]
     #[parallel]

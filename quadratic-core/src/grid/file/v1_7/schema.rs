@@ -141,6 +141,7 @@ pub struct CodeRunSchema {
 pub struct DataTableColumnSchema {
     pub name: String,
     pub display: bool,
+    pub value_index: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
