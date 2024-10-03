@@ -1,5 +1,4 @@
 import { Action } from '@/app/actions/actions';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { MenubarContent, MenubarMenu, MenubarSeparator, MenubarTrigger } from '@/shared/shadcn/ui/menubar';
 
@@ -7,13 +6,7 @@ export const EditMenubarMenu = () => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Edit</MenubarTrigger>
-      <MenubarContent
-        className="pointer-move-ignore"
-        onCloseAutoFocus={(e) => {
-          e.preventDefault();
-          focusGrid();
-        }}
-      >
+      <MenubarContent className="pointer-move-ignore">
         <MenubarItemAction action={Action.Undo} actionArgs={undefined} />
         <MenubarItemAction action={Action.Redo} actionArgs={undefined} />
 
