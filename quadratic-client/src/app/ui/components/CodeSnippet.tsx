@@ -9,7 +9,7 @@ import { ContentCopyOutlined, ContentPasteGoOutlined, PlayArrowOutlined } from '
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useState } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilCallback, useSetRecoilState } from 'recoil';
 
 interface CodeSnippetProps {
   code: string;
@@ -76,22 +76,28 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
 }
 
 function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
   const { getCodeCell } = useGetCodeCell();
 
-  const handleSaveAndRun = useCallback(async () => {
-    mixpanel.track('[AI].code.run', { language });
-    const codeCell = await getCodeCell();
-    quadraticCore.setCodeCellValue({
-      sheetId: codeCell.sheetId,
-      x: codeCell.pos.x,
-      y: codeCell.pos.y,
-      codeString: text ?? '',
-      language: codeCell.language,
-      cursor: sheets.getCursorPosition(),
-    });
-    setModifiedEditorContent(undefined);
-  }, [getCodeCell, language, setModifiedEditorContent, text]);
+  const handleSaveAndRun = useRecoilCallback(
+    ({ snapshot, set }) =>
+      async () => {
+        mixpanel.track('[AI].code.run', { language });
+        const codeCell = await getCodeCell();
+        quadraticCore.setCodeCellValue({
+          sheetId: codeCell.sheetId,
+          x: codeCell.pos.x,
+          y: codeCell.pos.y,
+          codeString: text ?? '',
+          language: codeCell.language,
+          cursor: sheets.getCursorPosition(),
+        });
+        const modifiedEditorContent = await snapshot.getPromise(codeEditorModifiedEditorContentAtom);
+        if (modifiedEditorContent) {
+          set(codeEditorModifiedEditorContentAtom, undefined);
+        }
+      },
+    []
+  );
 
   return (
     <TooltipHint title={'Save and run code'}>

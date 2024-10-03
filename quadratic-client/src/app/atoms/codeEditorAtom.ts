@@ -1,3 +1,4 @@
+import { aiAssistantContextAtom } from '@/app/atoms/aiAssistantAtom';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { Coordinate } from '@/app/gridGL/types/size';
@@ -5,7 +6,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { atom, DefaultValue, selector } from 'recoil';
+import { atom, DefaultValue, selector, useSetRecoilState } from 'recoil';
 
 export interface ConsoleOutput {
   stdOut?: string;
@@ -62,24 +63,33 @@ export const defaultCodeEditorState: CodeEditorState = {
 export const codeEditorAtom = atom<CodeEditorState>({
   key: 'codeEditorAtom',
   default: defaultCodeEditorState,
-});
+  effects: [
+    ({ onSet, resetSelf }) => {
+      const setAIAssistantContext = useSetRecoilState(aiAssistantContextAtom);
+      onSet((newValue, oldValue) => {
+        if (oldValue instanceof DefaultValue) {
+          return;
+        }
 
-export const codeEditorShowCodeEditorAtom = selector<CodeEditorState['showCodeEditor']>({
-  key: 'codeEditorShowCodeEditorAtom',
-  get: ({ get }) => get(codeEditorAtom)['showCodeEditor'],
-  set: ({ set }, newValue) =>
-    set(codeEditorAtom, (prev) => {
-      if (prev.showCodeEditor && !newValue) {
-        focusGrid();
-      }
-      if (!newValue) {
-        return defaultCodeEditorState;
-      }
-      return {
-        ...prev,
-        showCodeEditor: newValue instanceof DefaultValue ? prev['showCodeEditor'] : newValue,
-      };
-    }),
+        if (newValue.showCodeEditor && newValue.codeCell.sheetId) {
+          setAIAssistantContext((prev) => ({
+            ...prev,
+            codeCell: newValue.codeCell,
+          }));
+        } else {
+          setAIAssistantContext((prev) => ({
+            ...prev,
+            codeCell: undefined,
+          }));
+        }
+
+        if (oldValue.showCodeEditor && !newValue.showCodeEditor) {
+          resetSelf();
+          focusGrid();
+        }
+      });
+    },
+  ],
 });
 
 const createSelector = <T extends keyof CodeEditorState>(key: T) =>
@@ -92,6 +102,7 @@ const createSelector = <T extends keyof CodeEditorState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
+export const codeEditorShowCodeEditorAtom = createSelector('showCodeEditor');
 export const codeEditorEscapePressedAtom = createSelector('escapePressed');
 export const codeEditorLoadingAtom = createSelector('loading');
 export const codeEditorCodeCellAtom = createSelector('codeCell');

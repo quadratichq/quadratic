@@ -25,7 +25,7 @@ export const defaultAIAssistantState: AIAssistantState = {
     connections: false,
     allSheets: false,
     currentSheet: false,
-    visibleData: false,
+    visibleData: true,
     cursorSelection: undefined,
     codeCell: undefined,
   },

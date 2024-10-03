@@ -1,4 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { showAIAssistantAtom } from '@/app/atoms/aiAssistantAtom';
 import {
   codeEditorCodeCellAtom,
   codeEditorShowDiffEditorAtom,
@@ -21,13 +22,14 @@ import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRun
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { AIIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useEffect, useMemo, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface CodeEditorHeaderProps {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
@@ -50,6 +52,8 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
     [permissions, teamPermissions, isConnection]
   );
+
+  const setShowAIAssistant = useSetRecoilState(showAIAssistantAtom);
 
   const connectionsFetcher = useConnectionsFetcher();
 
@@ -201,6 +205,17 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
               <CodeEditorDiffButtons />
             ) : (
               <>
+                <TooltipHint title="Show AI Assistant" placement="bottom">
+                  <IconButton
+                    id="QuadraticCodeEditorShowAIAssistantButtonID"
+                    size="small"
+                    color="primary"
+                    onClick={() => setShowAIAssistant((prev) => !prev)}
+                  >
+                    <AIIcon />
+                  </IconButton>
+                </TooltipHint>
+
                 {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
 
                 {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
