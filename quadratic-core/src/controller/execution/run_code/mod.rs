@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
@@ -228,12 +226,12 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             },
         };
-        let new_data_table = DataTable {
-            kind: DataTableKind::CodeRun(new_code_run),
-            value: Value::Single(CellValue::Blank),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let new_data_table = DataTable::new(
+            DataTableKind::CodeRun(new_code_run),
+            Value::Single(CellValue::Blank),
+            false,
+            false,
+        );
         transaction.waiting_for_async = None;
         self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
 
@@ -265,12 +263,12 @@ impl GridController {
                 std_err: None,
                 cells_accessed: transaction.cells_accessed.clone(),
             };
-            return DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value: Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
-                spill_error: false,
-                last_modified: Utc::now(),
-            };
+            return DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
+                false,
+                false,
+            );
         };
 
         let value = if js_code_result.success {
@@ -330,12 +328,7 @@ impl GridController {
             cells_accessed: transaction.cells_accessed.clone(),
         };
 
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value,
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(DataTableKind::CodeRun(code_run), value, false, false);
         transaction.cells_accessed.clear();
         data_table
     }
@@ -387,12 +380,12 @@ mod test {
             output_type: None,
             cells_accessed: HashSet::new(),
         };
-        let new_data_table = DataTable {
-            kind: DataTableKind::CodeRun(new_code_run),
-            value: Value::Single(CellValue::Text("delete me".to_string())),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let new_data_table = DataTable::new(
+            DataTableKind::CodeRun(new_code_run),
+            Value::Single(CellValue::Text("delete me".to_string())),
+            false,
+            false,
+        );
         gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
@@ -420,12 +413,12 @@ mod test {
             output_type: None,
             cells_accessed: HashSet::new(),
         };
-        let new_data_table = DataTable {
-            kind: DataTableKind::CodeRun(new_code_run),
-            value: Value::Single(CellValue::Text("replace me".to_string())),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let new_data_table = DataTable::new(
+            DataTableKind::CodeRun(new_code_run),
+            Value::Single(CellValue::Text("replace me".to_string())),
+            false,
+            false,
+        );
         gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);

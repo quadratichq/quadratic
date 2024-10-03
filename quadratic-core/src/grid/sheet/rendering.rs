@@ -601,7 +601,6 @@ mod tests {
 
     use std::collections::HashSet;
 
-    use chrono::Utc;
     use serial_test::{parallel, serial};
     use uuid::Uuid;
 
@@ -662,12 +661,12 @@ mod tests {
         };
         sheet.set_data_table(
             Pos { x: 2, y: 3 },
-            Some(DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value: Value::Single(CellValue::Text("hello".to_string())),
-                spill_error: false,
-                last_modified: Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Single(CellValue::Text("hello".to_string())),
+                false,
+                false,
+            )),
         );
         assert!(sheet.has_render_cells(rect));
 
@@ -879,12 +878,12 @@ mod tests {
         };
 
         // data_table is always 3x2
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
+            false,
+            false,
+        );
 
         // render rect is larger than code rect
         let code_cells = sheet.get_code_cells(
@@ -933,12 +932,12 @@ mod tests {
             output_type: None,
         };
 
-        let code_run = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Single(CellValue::Number(1.into())),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let code_run = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Single(CellValue::Number(1.into())),
+            false,
+            false,
+        );
         let code_cells = sheet.get_code_cells(
             &code_cell,
             &code_run,
@@ -1057,12 +1056,12 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Single(CellValue::Number(2.into())),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Single(CellValue::Number(2.into())),
+            false,
+            false,
+        );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
         let rendering = sheet.get_render_code_cell(pos);
@@ -1106,12 +1105,12 @@ mod tests {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Single(CellValue::Image(image.clone())),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Single(CellValue::Image(image.clone())),
+            false,
+            false,
+        );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
         sheet.send_all_images();

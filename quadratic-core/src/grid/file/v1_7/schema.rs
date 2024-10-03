@@ -138,6 +138,12 @@ pub struct CodeRunSchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DataTableColumnSchema {
+    pub name: String,
+    pub display: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DataTableKindSchema {
     CodeRun(CodeRunSchema),
     Import(ImportSchema),
@@ -146,6 +152,7 @@ pub enum DataTableKindSchema {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataTableSchema {
     pub kind: DataTableKindSchema,
+    pub columns: Option<Vec<DataTableColumnSchema>>,
     pub value: OutputValueSchema,
     pub spill_error: bool,
     pub last_modified: Option<DateTime<Utc>>,

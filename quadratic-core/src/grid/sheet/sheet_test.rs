@@ -7,7 +7,6 @@ use crate::{
     Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
 };
 use bigdecimal::BigDecimal;
-use chrono::Utc;
 use std::{collections::HashSet, str::FromStr};
 
 impl Sheet {
@@ -70,12 +69,12 @@ impl Sheet {
 
         self.set_data_table(
             crate::Pos { x, y },
-            Some(DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value: Value::Single(value),
-                spill_error: false,
-                last_modified: chrono::Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Single(value),
+                false,
+                false,
+            )),
         );
     }
 
@@ -127,12 +126,12 @@ impl Sheet {
 
         self.set_data_table(
             Pos { x, y },
-            Some(DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value: Value::Array(array),
-                spill_error: false,
-                last_modified: Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Array(array),
+                false,
+                false,
+            )),
         );
     }
 
@@ -171,12 +170,12 @@ impl Sheet {
 
         self.set_data_table(
             Pos { x, y },
-            Some(DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value: Value::Array(array),
-                spill_error: false,
-                last_modified: Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Array(array),
+                false,
+                false,
+            )),
         );
     }
 }

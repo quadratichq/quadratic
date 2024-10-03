@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 
 use crate::{
-    grid::{CodeRun, DataTable, DataTableKind},
+    grid::{CodeRun, DataTable, DataTableColumn, DataTableKind},
     ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
 };
 
@@ -166,6 +166,12 @@ pub(crate) fn import_data_table_builder(
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             spill_error: data_table.spill_error,
             value,
+            columns: data_table.columns.map(|columns| {
+                columns
+                    .into_iter()
+                    .map(|column| DataTableColumn::new(column.name, column.display))
+                    .collect()
+            }),
         };
 
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
@@ -313,12 +319,23 @@ pub(crate) fn export_data_table_runs(
                 }
             };
 
+            let columns = data_table.columns.map(|columns| {
+                columns
+                    .into_iter()
+                    .map(|column| current::DataTableColumnSchema {
+                        name: column.name,
+                        display: column.display,
+                    })
+                    .collect()
+            });
+
             let data_table = match data_table.kind {
                 DataTableKind::CodeRun(code_run) => {
                     let code_run = export_code_run(code_run);
 
                     current::DataTableSchema {
                         kind: current::DataTableKindSchema::CodeRun(code_run),
+                        columns,
                         last_modified: Some(data_table.last_modified),
                         spill_error: data_table.spill_error,
                         value,
@@ -328,6 +345,7 @@ pub(crate) fn export_data_table_runs(
                     kind: current::DataTableKindSchema::Import(current::ImportSchema {
                         file_name: import.file_name,
                     }),
+                    columns,
                     last_modified: Some(data_table.last_modified),
                     spill_error: data_table.spill_error,
                     value,

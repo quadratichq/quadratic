@@ -283,7 +283,6 @@ mod tests {
     };
 
     use super::*;
-    use chrono::Utc;
     use serial_test::parallel;
 
     #[test]
@@ -373,12 +372,11 @@ mod tests {
             output_type: None,
         };
 
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Single(CellValue::Html("html".to_string())),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Single(CellValue::Html("html".to_string())),
+            false,
+        );
         transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
@@ -395,12 +393,11 @@ mod tests {
             output_type: None,
         };
 
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Single(CellValue::Image("image".to_string())),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Single(CellValue::Image("image".to_string())),
+            false,
+        );
         transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);

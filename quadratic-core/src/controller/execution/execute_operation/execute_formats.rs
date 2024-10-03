@@ -179,7 +179,6 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use chrono::Utc;
     use serial_test::serial;
 
     use super::*;
@@ -213,12 +212,11 @@ mod test {
         };
         sheet.set_data_table(
             Pos { x: 0, y: 0 },
-            Some(DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value: Value::Single(CellValue::Image("image".to_string())),
-                spill_error: false,
-                last_modified: Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Single(CellValue::Image("image".to_string())),
+                false,
+            )),
         );
 
         gc.set_cell_render_size(

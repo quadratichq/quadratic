@@ -189,15 +189,12 @@ impl Sheet {
 mod test {
     use std::collections::HashSet;
 
-    use chrono::Utc;
-
+    use super::*;
     use crate::{
         controller::GridController,
         grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         Array, CodeCellValue,
     };
-
-    use super::*;
     use serial_test::parallel;
 
     #[test]
@@ -468,12 +465,12 @@ mod test {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Single("world".into()),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Single("world".into()),
+            false,
+            false,
+        );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
 
         let results = sheet.search(
@@ -511,15 +508,15 @@ mod test {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Array(Array::from(vec![
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Array(Array::from(vec![
                 vec!["abc", "def", "ghi"],
                 vec!["jkl", "mno", "pqr"],
             ])),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+            false,
+            false,
+        );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
 
         let results = sheet.search(

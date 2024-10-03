@@ -13,9 +13,15 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-struct DataTableColumn {
-    name: String,
-    display: bool,
+pub struct DataTableColumn {
+    pub name: String,
+    pub display: bool,
+}
+
+impl DataTableColumn {
+    pub fn new(name: String, display: bool) -> Self {
+        DataTableColumn { name, display }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -27,6 +33,7 @@ pub enum DataTableKind {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DataTable {
     pub kind: DataTableKind,
+    pub columns: Option<Vec<DataTableColumn>>,
     pub value: Value,
     pub spill_error: bool,
     pub last_modified: DateTime<Utc>,
@@ -34,16 +41,53 @@ pub struct DataTable {
 
 impl From<(Import, Array)> for DataTable {
     fn from((import, cell_values): (Import, Array)) -> Self {
-        DataTable {
-            kind: DataTableKind::Import(import),
-            value: Value::Array(cell_values),
-            spill_error: false,
-            last_modified: Utc::now(),
-        }
+        DataTable::new(
+            DataTableKind::Import(import),
+            Value::Array(cell_values),
+            false,
+            false,
+        )
     }
 }
 
 impl DataTable {
+    pub fn new(kind: DataTableKind, value: Value, spill_error: bool, header: bool) -> Self {
+        let mut data_table = DataTable {
+            kind,
+            columns: None,
+            value,
+            spill_error,
+            last_modified: Utc::now(),
+        };
+
+        if header {
+            data_table.apply_header();
+        }
+
+        data_table
+    }
+
+    pub fn with_last_modified(mut self, last_modified: DateTime<Utc>) -> Self {
+        self.last_modified = last_modified;
+        self
+    }
+
+    pub fn apply_header(&mut self) -> &mut Self {
+        self.columns = match &self.value {
+            Value::Array(array) => array.rows().next().map(|row| {
+                row.iter()
+                    .map(|value| DataTableColumn::new(value.to_string(), true))
+                    .collect::<Vec<DataTableColumn>>()
+            }),
+            Value::Single(value) => Some(vec![DataTableColumn::new(value.to_string(), true)]),
+            _ => None,
+        };
+
+        // TODO(ddimaria): remove first row from array if it's a header
+
+        self
+    }
+
     pub fn code_run(&self) -> Option<&CodeRun> {
         match self.kind {
             DataTableKind::CodeRun(ref code_run) => Some(code_run),
@@ -111,18 +155,16 @@ impl DataTable {
     }
 
     pub fn is_html(&self) -> bool {
-        if let Some(code_cell_value) = self.cell_value_at(0, 0) {
-            code_cell_value.is_html()
-        } else {
-            false
+        match self.cell_value_at(0, 0) {
+            Some(code_cell_value) => code_cell_value.is_html(),
+            None => false,
         }
     }
 
     pub fn is_image(&self) -> bool {
-        if let Some(code_cell_value) = self.cell_value_at(0, 0) {
-            code_cell_value.is_image()
-        } else {
-            false
+        match self.cell_value_at(0, 0) {
+            Some(code_cell_value) => code_cell_value.is_image(),
+            None => false,
         }
     }
 
@@ -169,15 +211,16 @@ mod test {
             line_number: None,
             output_type: None,
         };
-        let code_run = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Single(CellValue::Number(1.into())),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
-        assert_eq!(code_run.output_size(), ArraySize::_1X1);
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Single(CellValue::Number(1.into())),
+            false,
+            false,
+        );
+
+        assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
-            code_run.output_sheet_rect(
+            data_table.output_sheet_rect(
                 SheetPos {
                     x: -1,
                     y: -2,
@@ -199,12 +242,13 @@ mod test {
             output_type: None,
         };
 
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
+            false,
+            false,
+        );
+
         assert_eq!(data_table.output_size().w.get(), 10);
         assert_eq!(data_table.output_size().h.get(), 11);
         assert_eq!(
@@ -234,34 +278,22 @@ mod test {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
-            spill_error: true,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
+            true,
+            false,
+        );
+        let sheet_pos = SheetPos::from((1, 2, sheet_id));
+
         assert_eq!(data_table.output_size().w.get(), 10);
         assert_eq!(data_table.output_size().h.get(), 11);
         assert_eq!(
-            data_table.output_sheet_rect(
-                SheetPos {
-                    x: 1,
-                    y: 2,
-                    sheet_id
-                },
-                false
-            ),
+            data_table.output_sheet_rect(sheet_pos, false),
             SheetRect::from_numbers(1, 2, 1, 1, sheet_id)
         );
         assert_eq!(
-            data_table.output_sheet_rect(
-                SheetPos {
-                    x: 1,
-                    y: 2,
-                    sheet_id
-                },
-                true
-            ),
+            data_table.output_sheet_rect(sheet_pos, true),
             SheetRect::from_numbers(1, 2, 10, 11, sheet_id)
         );
     }

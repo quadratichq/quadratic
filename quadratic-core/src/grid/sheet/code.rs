@@ -224,7 +224,6 @@ mod test {
         Array, CodeCellValue, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
-    use chrono::Utc;
     use serial_test::parallel;
     use std::{collections::HashSet, vec};
 
@@ -276,12 +275,12 @@ mod test {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Single(CellValue::Number(BigDecimal::from(2))),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Single(CellValue::Number(BigDecimal::from(2))),
+            false,
+            false,
+        );
         let old = sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(old, None);
         assert_eq!(sheet.data_table(Pos { x: 0, y: 0 }), Some(&data_table));
@@ -305,12 +304,12 @@ mod test {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Single(CellValue::Number(BigDecimal::from(2))),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Single(CellValue::Number(BigDecimal::from(2))),
+            false,
+            false,
+        );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(
             sheet.get_code_cell_value(Pos { x: 0, y: 0 }),
@@ -343,12 +342,12 @@ mod test {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
+            false,
+            false,
+        );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(
             sheet.edit_code_value(Pos { x: 0, y: 0 }),
@@ -434,12 +433,12 @@ mod test {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Array(Array::from(vec![vec!["1"], vec!["2"], vec!["3"]])),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Array(Array::from(vec![vec!["1"], vec!["2"], vec!["3"]])),
+            false,
+            false,
+        );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 2, y: 3 }, Some(data_table.clone()));
@@ -469,12 +468,12 @@ mod test {
             line_number: None,
             output_type: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Array(Array::from(vec![vec!["1", "2", "3'"]])),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Array(Array::from(vec![vec!["1", "2", "3'"]])),
+            false,
+            false,
+        );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 3, y: 2 }, Some(data_table.clone()));

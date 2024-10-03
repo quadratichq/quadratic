@@ -1,4 +1,3 @@
-use chrono::Utc;
 use itertools::Itertools;
 
 use crate::{
@@ -33,12 +32,12 @@ impl GridController {
                     line_number: None,
                     output_type: None,
                 };
-                let new_data_table = DataTable {
-                    kind: DataTableKind::CodeRun(new_code_run),
-                    value: output.inner,
-                    spill_error: false,
-                    last_modified: Utc::now(),
-                };
+                let new_data_table = DataTable::new(
+                    DataTableKind::CodeRun(new_code_run),
+                    output.inner,
+                    false,
+                    false,
+                );
                 self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
             }
             Err(error) => {
@@ -262,12 +261,13 @@ mod test {
         };
         assert_eq!(
             result,
-            DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value: Value::Single(CellValue::Number(12.into())),
-                spill_error: false,
-                last_modified: result.last_modified,
-            },
+            DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Single(CellValue::Number(12.into())),
+                false,
+                false
+            )
+            .with_last_modified(result.last_modified),
         );
     }
 
@@ -331,12 +331,13 @@ mod test {
         };
         assert_eq!(
             result,
-            DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value: Value::Array(array),
-                spill_error: false,
-                last_modified: result.last_modified,
-            }
+            DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Array(array),
+                false,
+                false
+            )
+            .with_last_modified(result.last_modified),
         );
     }
 

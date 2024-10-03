@@ -206,6 +206,7 @@ fn upgrade_code_runs(
             };
             let new_data_table = v1_7::DataTableSchema {
                 kind: v1_7::DataTableKindSchema::CodeRun(new_code_run),
+                columns: None,
                 value,
                 spill_error: code_run.spill_error,
                 last_modified: code_run.last_modified,

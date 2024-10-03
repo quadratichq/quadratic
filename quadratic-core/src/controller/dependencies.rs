@@ -33,8 +33,6 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use chrono::Utc;
-
     use crate::{
         controller::GridController,
         grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
@@ -79,12 +77,11 @@ mod test {
         };
         sheet.set_data_table(
             Pos { x: 0, y: 2 },
-            Some(DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value: Value::Single(CellValue::Text("test".to_string())),
-                spill_error: false,
-                last_modified: Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                Value::Single(CellValue::Text("test".to_string())),
+                false,
+            )),
         );
         let sheet_pos_02 = SheetPos {
             x: 0,

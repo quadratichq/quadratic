@@ -1,4 +1,3 @@
-use chrono::Utc;
 use uuid::Uuid;
 
 use super::{GridController, TransactionType};
@@ -283,12 +282,7 @@ impl GridController {
             } else {
                 Value::Array(array.into())
             };
-            let data_table = DataTable {
-                kind: DataTableKind::CodeRun(code_run),
-                value,
-                spill_error: false,
-                last_modified: Utc::now(),
-            };
+            let data_table = DataTable::new(DataTableKind::CodeRun(code_run), value, false, false);
 
             self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);
             transaction.waiting_for_async = None;

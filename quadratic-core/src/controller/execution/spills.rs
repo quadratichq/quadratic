@@ -109,7 +109,6 @@ impl GridController {
 mod tests {
     use std::collections::HashSet;
 
-    use chrono::Utc;
     use serial_test::{parallel, serial};
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
@@ -436,12 +435,12 @@ mod tests {
             cells_accessed: HashSet::new(),
             formatted_code_string: None,
         };
-        let data_table = DataTable {
-            kind: DataTableKind::CodeRun(code_run),
-            value: Value::Array(Array::from(vec![vec!["1"]])),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            Value::Array(Array::from(vec![vec!["1"]])),
+            false,
+            false,
+        );
         let pos = Pos { x: 0, y: 0 };
         let sheet = gc.sheet_mut(sheet_id);
         sheet.set_data_table(pos, Some(data_table.clone()));
