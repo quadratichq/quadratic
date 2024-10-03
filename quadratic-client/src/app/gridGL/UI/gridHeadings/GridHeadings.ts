@@ -452,6 +452,10 @@ export class GridHeadings extends Container {
     this.cornerRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, cellHeight);
     this.corner.drawShape(this.cornerRect);
     this.corner.endFill();
+    this.corner.lineStyle(1, colors.gridLines, colors.headerSelectedRowColumnBackgroundColorAlpha, 0, true);
+    this.corner.moveTo(bounds.left + this.rowWidth, bounds.top);
+    this.corner.lineTo(bounds.left + this.rowWidth, bounds.top + cellHeight);
+    this.corner.lineTo(bounds.left, bounds.top + cellHeight);
   }
 
   // draws the lines under and to the right of the headings

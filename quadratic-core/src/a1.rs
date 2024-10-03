@@ -69,7 +69,9 @@ impl A1 {
 
     /// Try to create a row from an A1 string.
     pub fn try_from_row(row: &str) -> Option<u64> {
-        row.parse::<u64>().ok()
+        row.parse::<u64>()
+            .ok()
+            .and_then(|n| if n > 0 { Some(n) } else { None })
     }
 
     /// Get a column from an A1 string and automatically unwrap it (only used
@@ -286,5 +288,13 @@ mod tests {
     #[parallel]
     fn test_try_from_column_empty() {
         assert_eq!(A1::try_from_column(""), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_row_zero_and_negative() {
+        assert_eq!(A1::try_from_row("0"), None);
+        assert_eq!(A1::try_from_row("-1"), None);
+        assert_eq!(A1::try_from_row("-100"), None);
     }
 }
