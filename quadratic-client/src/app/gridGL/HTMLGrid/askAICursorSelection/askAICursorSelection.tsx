@@ -1,6 +1,7 @@
 import { aiAssistantContextAtom } from '@/app/atoms/aiAssistantAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Selection } from '@/app/quadratic-core-types';
@@ -17,9 +18,9 @@ import { useSetRecoilState } from 'recoil';
 
 const CURSOR_SELECTION_PROMPTS: { label: string; prompt: string }[] = [
   { label: 'Create a chart', prompt: 'Create a chart from my data using Plotly in Python' },
-  { label: 'Summarize data', prompt: 'Generate insights on my selected data using python code' },
+  { label: 'Summarize data', prompt: 'Generate insights on my selected data using Python code' },
   { label: 'Tell me about the data', prompt: 'What kind of data is this, do not use code' },
-  { label: 'Add a column', prompt: 'Add a column to my selected data, use python' },
+  { label: 'Add a column', prompt: 'Add a column to my selected data, use Python' },
   { label: 'Add a row', prompt: 'Add a row to my selected data, use Python' },
   { label: 'Perform EDA', prompt: 'Use Python to perform EDA on my data, do not create any charts in the process' },
   { label: 'Clean data', prompt: 'Clean my selected data using Python' },
@@ -45,10 +46,11 @@ export function AskAICursorSelection() {
       !(selection.rects[0].min.x === selection.rects[0].max.x && selection.rects[0].min.y === selection.rects[0].max.y)
     ) {
       const rect = selection.rects[0];
+      const hasContent = pixiApp.cellsSheets.getById(selection.sheet_id.id)?.cellsLabels.hasCellInRect(rect);
       const column = Math.max(Number(rect.min.x), Number(rect.max.x));
       const row = Math.min(Number(rect.min.y), Number(rect.max.y));
       const rectangle = sheets.getById(selection.sheet_id.id)?.getCellOffsets(column, row);
-      if (rectangle) {
+      if (hasContent && rectangle) {
         setSelection(selection);
         setDisplayPos({
           x: rectangle.x + rectangle.width,

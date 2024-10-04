@@ -79,7 +79,7 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current.show(bounds);
   }
 
-  private getById(id: string): CellsSheet | undefined {
+  getById(id: string): CellsSheet | undefined {
     return this.children.find((search) => search.sheetId === id);
   }
 
