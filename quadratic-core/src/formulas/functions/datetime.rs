@@ -122,7 +122,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                     let nanoseconds = ((second - second.floor()) * NANO_SECONDS_PER_SECOND) as u32;
                     let second = second.rem_euclid(60.0).floor() as u32;
 
-                    let hour = hour.checked_add(minute.div_euclid(60) as i64)?;
+                    let hour = hour.checked_add(minute.div_euclid(60))?;
                     let minute = minute.rem_euclid(60) as u32;
 
                     let hour = hour.rem_euclid(24) as u32;
@@ -260,8 +260,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn MONTH([date]: (Spanned<CellValue>)) {
                 match &date.inner {
                     CellValue::Blank => 0,
-                    CellValue::DateTime(dt) => dt.month() as u32,
-                    CellValue::Date(d) => d.month() as u32,
+                    CellValue::DateTime(dt) => dt.month(),
+                    CellValue::Date(d) => d.month(),
                     CellValue::Time(_t) => 0,
                     CellValue::Duration(d) => dbg!(d).subyear_months() as u32,
                     _ => {
@@ -352,7 +352,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                         .to_i64()
                         .ok_or(RunErrorMsg::Overflow.with_span(time.span))?
                         .rem_euclid(24) as u32,
-                    CellValue::DateTime(dt) => dt.hour() as u32,
+                    CellValue::DateTime(dt) => dt.hour(),
                     CellValue::Date(_d) => 0,
                     CellValue::Time(t) => dbg!(t).hour() as u32,
                     CellValue::Duration(d) => d.subday_hours() as u32,
@@ -401,9 +401,9 @@ fn get_functions() -> Vec<FormulaFunction> {
                         .to_i64()
                         .ok_or(RunErrorMsg::Overflow.with_span(time.span))?
                         .rem_euclid(60) as u32,
-                    CellValue::DateTime(dt) => dt.minute() as u32,
+                    CellValue::DateTime(dt) => dt.minute(),
                     CellValue::Date(_d) => 0,
-                    CellValue::Time(t) => t.minute() as u32,
+                    CellValue::Time(t) => t.minute(),
                     CellValue::Duration(d) => d.subhour_minutes() as u32,
                     _ => {
                         return Err(RunErrorMsg::Expected {
@@ -450,9 +450,9 @@ fn get_functions() -> Vec<FormulaFunction> {
                         .to_i64()
                         .ok_or(RunErrorMsg::Overflow.with_span(time.span))?
                         .rem_euclid(60) as u32,
-                    CellValue::DateTime(dt) => dt.second() as u32,
+                    CellValue::DateTime(dt) => dt.second(),
                     CellValue::Date(_d) => 0,
-                    CellValue::Time(t) => t.second() as u32,
+                    CellValue::Time(t) => t.second(),
                     CellValue::Duration(d) => d.subminute_seconds() as u32,
                     _ => {
                         return Err(RunErrorMsg::Expected {
