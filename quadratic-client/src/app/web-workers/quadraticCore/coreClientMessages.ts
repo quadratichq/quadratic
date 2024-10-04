@@ -980,6 +980,20 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
+export interface ClientCoreNeighborText {
+  type: 'clientCoreNeighborText';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientNeighborText {
+  type: 'coreClientNeighborText';
+  id: number;
+  text: string[];
+}
+
 export interface ClientCoreDeleteColumns {
   type: 'clientCoreDeleteColumns';
   sheetId: string;
@@ -1085,6 +1099,7 @@ export type ClientCoreMessage =
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
+  | ClientCoreNeighborText
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
@@ -1150,5 +1165,7 @@ export type CoreClientMessage =
   | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
+  | CoreClientGetCellValue
+  | CoreClientNeighborText
   | CoreClientBordersSheet
   | CoreClientGetCellValue;

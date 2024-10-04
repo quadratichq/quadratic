@@ -44,8 +44,7 @@ impl RunError {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum RunErrorMsg {
-    // TODO(ayush): rename to CodeRunError in next file version
-    PythonError(Cow<'static, str>),
+    CodeRunError(Cow<'static, str>),
 
     Spill,
 
@@ -116,7 +115,7 @@ pub enum RunErrorMsg {
 impl fmt::Display for RunErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::PythonError(s) => {
+            Self::CodeRunError(s) => {
                 write!(f, "{s}")
             }
             Self::Spill => {

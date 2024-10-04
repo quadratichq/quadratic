@@ -92,6 +92,10 @@ export function rectRect(r1: Rect, r2: Rect): boolean {
   return rectangleRectangle(rectToRectangle(r1), rectToRectangle(r2));
 }
 
+export function rectPoint(r: Rect, p: { x: number; y: number }): boolean {
+  return rectanglePoint(rectToRectangle(r), new Point(p.x, p.y));
+}
+
 export const intersects = {
   rectanglePoint,
   circlePoint,
@@ -101,4 +105,5 @@ export const intersects = {
   rectangleClip,
   rectangleIntersection,
   rectRect,
+  rectPoint,
 };
