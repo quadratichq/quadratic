@@ -8,7 +8,7 @@ import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
 import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 
@@ -18,12 +18,8 @@ const SCROLLING_INTERVAL = 17;
 const ARROW_REPEAT_INTERVAL = 17;
 
 export const SheetBar = (): JSX.Element => {
-  // used to trigger state change (eg, when sheets change)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, setTrigger] = useState(0);
-
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
-  const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
+  const hasPermission = useMemo(() => hasPermissionToEditFile(permissions) && !isMobile, [permissions]);
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);
@@ -33,8 +29,8 @@ export const SheetBar = (): JSX.Element => {
   useEffect(() => {
     const updateSheet = () => {
       setActiveSheet(sheets.current);
-      setTrigger((trigger) => trigger + 1);
     };
+
     events.on('changeSheet', updateSheet);
     return () => {
       events.off('changeSheet', updateSheet);

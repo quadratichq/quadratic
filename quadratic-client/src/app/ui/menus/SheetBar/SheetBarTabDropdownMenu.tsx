@@ -1,3 +1,7 @@
+import { sheets } from '@/app/grid/controller/Sheets';
+import { convertReactColorToString } from '@/app/helpers/convertColor';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -14,10 +18,6 @@ import {
 import '@szhsin/react-menu/dist/index.css';
 import mixpanel from 'mixpanel-browser';
 import { ColorResult } from 'react-color';
-import { sheets } from '../../../grid/controller/Sheets';
-import { convertReactColorToString } from '../../../helpers/convertColor';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { QColorPicker } from '../../components/qColorPicker';
 
 interface Props {
   handleClose: () => void;
@@ -45,7 +45,13 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
           <ArrowDropDownIcon />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()}>
+      <DropdownMenuContent
+        onPointerDown={(e) => e.stopPropagation()}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          focusGrid();
+        }}
+      >
         {numberOfSheets > 1 && (
           <DropdownMenuItem
             onClick={() => {
@@ -53,7 +59,6 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
                 mixpanel.track('[Sheets].delete');
                 sheets.userDeleteSheet(sheets.sheet.id);
               }
-              setTimeout(focusGrid);
             }}
           >
             Delete
@@ -63,7 +68,6 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
           onClick={() => {
             mixpanel.track('[Sheets].duplicate');
             sheets.duplicate();
-            focusGrid();
           }}
         >
           Duplicate
@@ -77,13 +81,11 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
                 sheets.sheet.color = color;
                 quadraticCore.setSheetColor(sheets.sheet.id, color, sheets.getCursorPosition());
                 handleClose();
-                focusGrid();
               }}
               onClear={() => {
                 sheets.sheet.color = undefined;
                 quadraticCore.setSheetColor(sheets.sheet.id, undefined, sheets.getCursorPosition());
                 handleClose();
-                focusGrid();
               }}
             />
           </DropdownMenuSubContent>
@@ -102,7 +104,6 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
           disabled={sheets.getFirst().id === sheets.sheet.id}
           onClick={() => {
             sheets.moveSheet({ id: sheets.sheet.id, delta: -1 });
-            focusGrid();
           }}
         >
           Move left
@@ -111,7 +112,6 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
           disabled={sheets.getLast().id === sheets.sheet.id}
           onClick={() => {
             sheets.moveSheet({ id: sheets.sheet.id, delta: 1 });
-            focusGrid();
           }}
         >
           Move right
