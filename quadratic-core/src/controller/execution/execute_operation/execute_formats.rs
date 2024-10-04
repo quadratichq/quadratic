@@ -214,6 +214,7 @@ mod test {
             Pos { x: 0, y: 0 },
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
+                "Table 1",
                 Value::Single(CellValue::Image("image".to_string())),
                 false,
                 false,

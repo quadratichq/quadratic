@@ -374,6 +374,7 @@ mod tests {
 
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1",
             Value::Single(CellValue::Html("html".to_string())),
             false,
             false,
@@ -396,6 +397,7 @@ mod tests {
 
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1",
             Value::Single(CellValue::Image("image".to_string())),
             false,
             false,

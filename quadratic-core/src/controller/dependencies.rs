@@ -79,6 +79,7 @@ mod test {
             Pos { x: 0, y: 2 },
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
+                "Table 1",
                 Value::Single(CellValue::Text("test".to_string())),
                 false,
                 false,

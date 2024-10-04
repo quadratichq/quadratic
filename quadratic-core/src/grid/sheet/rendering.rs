@@ -663,6 +663,7 @@ mod tests {
             Pos { x: 2, y: 3 },
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
+                "Table 1".into(),
                 Value::Single(CellValue::Text("hello".to_string())),
                 false,
                 false,
@@ -880,6 +881,7 @@ mod tests {
         // data_table is always 3x2
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
             Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
             false,
             false,
@@ -934,6 +936,7 @@ mod tests {
 
         let code_run = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
@@ -1058,6 +1061,7 @@ mod tests {
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
             Value::Single(CellValue::Number(2.into())),
             false,
             false,
@@ -1107,6 +1111,7 @@ mod tests {
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
             Value::Single(CellValue::Image(image.clone())),
             false,
             false,

@@ -467,6 +467,7 @@ mod test {
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
             Value::Single("world".into()),
             false,
             false,
@@ -510,6 +511,7 @@ mod test {
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
             Value::Array(Array::from(vec![
                 vec!["abc", "def", "ghi"],
                 vec!["jkl", "mno", "pqr"],

@@ -437,6 +437,7 @@ mod tests {
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1",
             Value::Array(Array::from(vec![vec!["1"]])),
             false,
             false,

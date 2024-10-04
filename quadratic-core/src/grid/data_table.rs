@@ -13,6 +13,8 @@ use anyhow::anyhow;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::Sheet;
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DataTableColumn {
     pub name: String,
@@ -39,16 +41,21 @@ pub enum DataTableKind {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DataTable {
     pub kind: DataTableKind,
+    pub name: String,
     pub columns: Option<Vec<DataTableColumn>>,
     pub value: Value,
+    pub readonly: bool,
     pub spill_error: bool,
     pub last_modified: DateTime<Utc>,
 }
 
-impl From<(Import, Array)> for DataTable {
-    fn from((import, cell_values): (Import, Array)) -> Self {
+impl From<(Import, Array, &Sheet)> for DataTable {
+    fn from((import, cell_values, sheet): (Import, Array, &Sheet)) -> Self {
+        let name = sheet.next_data_table_name();
+
         DataTable::new(
             DataTableKind::Import(import),
+            &name,
             Value::Array(cell_values),
             false,
             false,
@@ -60,11 +67,24 @@ impl DataTable {
     /// Creates a new DataTable with the given kind, value, and spill_error,
     /// with the ability to lift the first row as column headings.
     /// This handles the most common use cases.  Use `new_raw` for more control.
-    pub fn new(kind: DataTableKind, value: Value, spill_error: bool, header: bool) -> Self {
+    pub fn new(
+        kind: DataTableKind,
+        name: &str,
+        value: Value,
+        spill_error: bool,
+        header: bool,
+    ) -> Self {
+        let readonly = match kind {
+            DataTableKind::CodeRun(_) => true,
+            DataTableKind::Import(_) => false,
+        };
+
         let mut data_table = DataTable {
             kind,
+            name: name.into(),
             columns: None,
             value,
+            readonly,
             spill_error,
             last_modified: Utc::now(),
         };
@@ -79,14 +99,18 @@ impl DataTable {
     /// Direcly creates a new DataTable with the given kind, value, spill_error, and columns.
     pub fn new_raw(
         kind: DataTableKind,
-        value: Value,
-        spill_error: bool,
+        name: &str,
         columns: Option<Vec<DataTableColumn>>,
+        value: Value,
+        readonly: bool,
+        spill_error: bool,
     ) -> Self {
         DataTable {
             kind,
+            name: name.into(),
             columns,
             value,
+            readonly,
             spill_error,
             last_modified: Utc::now(),
         }
@@ -288,12 +312,13 @@ mod test {
     use std::collections::HashSet;
 
     use super::*;
-    use crate::{grid::SheetId, Array};
+    use crate::{controller::GridController, grid::SheetId, Array};
     use serial_test::parallel;
 
     #[test]
     #[parallel]
     fn test_import_data_table_and_headers() {
+        let sheet = GridController::test().grid().sheets()[0].clone();
         let file_name = "test.csv";
         let values = vec![
             vec!["city", "region", "country", "population"],
@@ -305,10 +330,11 @@ mod test {
         let kind = DataTableKind::Import(import.clone());
 
         // test data table without column headings
-        let mut data_table = DataTable::from((import.clone(), values.clone().into()));
+        let mut data_table = DataTable::from((import.clone(), values.clone().into(), &sheet));
         let expected_values = Value::Array(values.clone().into());
-        let expected_data_table = DataTable::new(kind.clone(), expected_values, false, false)
-            .with_last_modified(data_table.last_modified);
+        let expected_data_table =
+            DataTable::new(kind.clone(), "Table 1", expected_values, false, false)
+                .with_last_modified(data_table.last_modified);
         let expected_array_size = ArraySize::new(4, 4).unwrap();
         assert_eq!(data_table, expected_data_table);
         assert_eq!(data_table.output_size(), expected_array_size);
@@ -325,7 +351,7 @@ mod test {
 
         // test column headings taken from first row
         let value = Value::Array(values.clone().into());
-        let mut data_table = DataTable::new(kind.clone(), value, false, true)
+        let mut data_table = DataTable::new(kind.clone(), "Table 1", value, false, true)
             .with_last_modified(data_table.last_modified);
 
         // array height should be 3 since we lift the first row as column headings
@@ -375,6 +401,7 @@ mod test {
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1",
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
@@ -406,6 +433,7 @@ mod test {
 
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1",
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             false,
             false,
@@ -442,6 +470,7 @@ mod test {
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
+            "Table 1",
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             true,
             false,

@@ -163,6 +163,8 @@ pub(crate) fn import_data_table_builder(
                     })
                 }
             },
+            name: data_table.name,
+            readonly: data_table.readonly,
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             spill_error: data_table.spill_error,
             value,
@@ -332,27 +334,26 @@ pub(crate) fn export_data_table_runs(
                     .collect()
             });
 
-            let data_table = match data_table.kind {
+            let kind = match data_table.kind {
                 DataTableKind::CodeRun(code_run) => {
                     let code_run = export_code_run(code_run);
-
-                    current::DataTableSchema {
-                        kind: current::DataTableKindSchema::CodeRun(code_run),
-                        columns,
-                        last_modified: Some(data_table.last_modified),
-                        spill_error: data_table.spill_error,
-                        value,
-                    }
+                    current::DataTableKindSchema::CodeRun(code_run)
                 }
-                DataTableKind::Import(import) => current::DataTableSchema {
-                    kind: current::DataTableKindSchema::Import(current::ImportSchema {
+                DataTableKind::Import(import) => {
+                    current::DataTableKindSchema::Import(current::ImportSchema {
                         file_name: import.file_name,
-                    }),
-                    columns,
-                    last_modified: Some(data_table.last_modified),
-                    spill_error: data_table.spill_error,
-                    value,
-                },
+                    })
+                }
+            };
+
+            let data_table = current::DataTableSchema {
+                kind,
+                name: data_table.name,
+                columns,
+                readonly: data_table.readonly,
+                last_modified: Some(data_table.last_modified),
+                spill_error: data_table.spill_error,
+                value,
             };
 
             (current::PosSchema::from(pos), data_table)

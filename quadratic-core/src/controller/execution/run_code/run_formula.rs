@@ -34,6 +34,7 @@ impl GridController {
                 };
                 let new_data_table = DataTable::new(
                     DataTableKind::CodeRun(new_code_run),
+                    "Table 1",
                     output.inner,
                     false,
                     false,
@@ -263,6 +264,7 @@ mod test {
             result,
             DataTable::new(
                 DataTableKind::CodeRun(code_run),
+                "Table 1",
                 Value::Single(CellValue::Number(12.into())),
                 false,
                 false
@@ -333,6 +335,7 @@ mod test {
             result,
             DataTable::new(
                 DataTableKind::CodeRun(code_run),
+                "Table 1",
                 Value::Array(array),
                 false,
                 false

@@ -153,8 +153,10 @@ pub enum DataTableKindSchema {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataTableSchema {
     pub kind: DataTableKindSchema,
+    pub name: String,
     pub columns: Option<Vec<DataTableColumnSchema>>,
     pub value: OutputValueSchema,
+    pub readonly: bool,
     pub spill_error: bool,
     pub last_modified: Option<DateTime<Utc>>,
 }

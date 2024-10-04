@@ -228,6 +228,7 @@ impl GridController {
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
+            "Table 1",
             Value::Single(CellValue::Blank),
             false,
             false,
@@ -265,6 +266,7 @@ impl GridController {
             };
             return DataTable::new(
                 DataTableKind::CodeRun(code_run),
+                "Table 1",
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
                 false,
                 false,
@@ -328,7 +330,13 @@ impl GridController {
             cells_accessed: transaction.cells_accessed.clone(),
         };
 
-        let data_table = DataTable::new(DataTableKind::CodeRun(code_run), value, false, false);
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            value,
+            false,
+            false,
+        );
         transaction.cells_accessed.clear();
         data_table
     }
@@ -382,6 +390,7 @@ mod test {
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
+            "Table 1",
             Value::Single(CellValue::Text("delete me".to_string())),
             false,
             false,
@@ -415,6 +424,7 @@ mod test {
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
+            "Table 1",
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
             false,

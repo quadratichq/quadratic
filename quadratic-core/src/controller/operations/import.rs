@@ -105,7 +105,10 @@ impl GridController {
         }
 
         // finally add the final operation
-        let data_table = DataTable::from((import.to_owned(), cell_values));
+        let sheet = self
+            .try_sheet(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet {sheet_id} not found"))?;
+        let data_table = DataTable::from((import.to_owned(), cell_values, sheet));
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
         // this operation must be before the SetCodeRun operations
@@ -370,9 +373,11 @@ impl GridController {
                 }
             }
         }
-
+        let sheet = self
+            .try_sheet(sheet_id)
+            .ok_or_else(|| anyhow!("Sheet {sheet_id} not found"))?;
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
-        let data_table = DataTable::from((import.to_owned(), cell_values));
+        let data_table = DataTable::from((import.to_owned(), cell_values, sheet));
 
         // this operation must be before the SetCodeRun operations
         ops.push(Operation::SetCellValues {
@@ -456,7 +461,8 @@ mod test {
         ];
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
-        let mut expected_data_table = DataTable::from((import, values.into()));
+        let sheet = gc.try_sheet(sheet_id).unwrap();
+        let mut expected_data_table = DataTable::from((import, values.into(), sheet));
         assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
         let data_table = match ops[1].clone() {

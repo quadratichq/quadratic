@@ -76,11 +76,13 @@ fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
 }
 
 fn upgrade_code_runs(
-    code_runs: Vec<(current::Pos, current::CodeRun)>,
+    sheet: current::Sheet,
 ) -> Result<Vec<(v1_7::PosSchema, v1_7::DataTableSchema)>> {
-    code_runs
+    sheet
+        .code_runs
         .into_iter()
-        .map(|(pos, code_run)| {
+        .enumerate()
+        .map(|(i, (pos, code_run))| {
             let error = if let current::CodeRunResult::Err(error) = &code_run.result {
                 let new_error_msg = match error.msg.to_owned() {
                     current::RunErrorMsg::PythonError(msg) => {
@@ -206,8 +208,10 @@ fn upgrade_code_runs(
             };
             let new_data_table = v1_7::DataTableSchema {
                 kind: v1_7::DataTableKindSchema::CodeRun(new_code_run),
+                name: format!("Table {}", i),
                 columns: None,
                 value,
+                readonly: true,
                 spill_error: code_run.spill_error,
                 last_modified: code_run.last_modified,
             };
@@ -217,6 +221,9 @@ fn upgrade_code_runs(
 }
 
 pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_7::SheetSchema> {
+    let data_tables = upgrade_code_runs(sheet.clone())?;
+    let borders = upgrade_borders(sheet.borders.clone())?;
+
     Ok(v1_7::SheetSchema {
         id: sheet.id,
         name: sheet.name,
@@ -224,13 +231,13 @@ pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_7::SheetSchema> {
         order: sheet.order,
         offsets: sheet.offsets,
         columns: sheet.columns,
-        data_tables: upgrade_code_runs(sheet.code_runs)?,
+        data_tables,
         formats_all: sheet.formats_all,
         formats_columns: sheet.formats_columns,
         formats_rows: sheet.formats_rows,
         rows_resize: sheet.rows_resize,
         validations: sheet.validations,
-        borders: upgrade_borders(sheet.borders)?,
+        borders,
     })
 }
 

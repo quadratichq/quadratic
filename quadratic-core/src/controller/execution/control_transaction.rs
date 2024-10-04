@@ -282,7 +282,13 @@ impl GridController {
             } else {
                 Value::Array(array.into())
             };
-            let data_table = DataTable::new(DataTableKind::CodeRun(code_run), value, false, false);
+            let data_table = DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table 1",
+                value,
+                false,
+                false,
+            );
 
             self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);
             transaction.waiting_for_async = None;
