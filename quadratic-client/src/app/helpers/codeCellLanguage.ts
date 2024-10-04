@@ -4,6 +4,7 @@ const codeCellsById = {
   Formula: { id: 'Formula', label: 'Formula', type: undefined },
   Javascript: { id: 'Javascript', label: 'JavaScript', type: undefined },
   Python: { id: 'Python', label: 'Python', type: undefined },
+  Import: { id: 'Import', label: 'Import', type: undefined },
   POSTGRES: { id: 'POSTGRES', label: 'Postgres', type: 'connection' },
   MYSQL: { id: 'MYSQL', label: 'MySQL', type: 'connection' },
   MSSQL: { id: 'MSSQL', label: 'MsSQL', type: 'connection' },

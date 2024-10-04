@@ -178,11 +178,9 @@ class PixiAppSettings {
       this._input.y !== undefined &&
       this._input.sheetId !== undefined
     ) {
-      console.log('here');
       pixiApp.cellsSheets.showLabel(this._input.x, this._input.y, this._input.sheetId, true);
     }
     if (input === true) {
-      console.log('here 2');
       const x = sheets.sheet.cursor.cursorPosition.x;
       const y = sheets.sheet.cursor.cursorPosition.y;
       if (multiplayer.cellIsBeingEdited(x, y, sheets.sheet.id)) {

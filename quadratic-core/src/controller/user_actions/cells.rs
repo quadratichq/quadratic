@@ -3,7 +3,7 @@ use anyhow::{anyhow, Result};
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
 use crate::selection::Selection;
-use crate::{CellValue, SheetPos};
+use crate::{CellValue, Pos, SheetPos};
 
 impl GridController {
     // Using sheet_pos, either set a cell value or a data table value
@@ -22,10 +22,17 @@ impl GridController {
             .and_then(|column| column.values.get(&sheet_pos.y));
 
         let is_data_table = if let Some(cell_value) = cell_value {
-            let var_name = matches!(cell_value, CellValue::Code(_) | CellValue::Import(_));
-            var_name
+            matches!(cell_value, CellValue::Code(_) | CellValue::Import(_))
         } else {
-            true
+            sheet
+                .data_tables
+                .iter()
+                .find(|(code_cell_pos, data_table)| {
+                    data_table
+                        .output_rect(**code_cell_pos, false)
+                        .contains(Pos::from(sheet_pos))
+                })
+                .is_some()
         };
 
         match is_data_table {

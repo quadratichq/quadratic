@@ -50,6 +50,7 @@ let registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
   Formula: false,
   Python: false,
   Javascript: false,
+  Import: false,
 };
 
 export const CodeEditorBody = (props: Props) => {

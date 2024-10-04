@@ -52,21 +52,20 @@ impl GridController {
     ) {
         if let Operation::SetDataTableAt { sheet_pos, values } = op {
             let sheet_id = sheet_pos.sheet_id;
+            let pos: Pos = sheet_pos.into();
 
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                let pos: Pos = sheet_pos.into();
-
                 if values.size() != 1 {
                     return dbgjs!("Only single values are supported for now");
                 }
 
-                let value = values.get(0, 0).cloned().unwrap_or_else(|| {
+                let value = if let Some(value) = values.get(0, 0).cloned() {
+                    value
+                } else {
                     return dbgjs!("No cell value found in CellValues at (0, 0)");
-                });
+                };
 
-                let old_value = sheet.get_code_cell_value(pos).unwrap_or_else(|| {
-                    return dbgjs!(format!("No cell value found in Sheet at {:?}", pos));
-                });
+                let old_value = sheet.get_code_cell_value(pos).unwrap_or(CellValue::Blank);
 
                 sheet.set_code_cell_value(pos, value.to_owned());
                 let sheet_rect = SheetRect::from_numbers(
