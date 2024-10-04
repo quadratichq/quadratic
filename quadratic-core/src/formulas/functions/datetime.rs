@@ -1,3 +1,6 @@
+use bigdecimal::num_traits::ToPrimitive;
+use chrono::{Datelike, Timelike};
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -189,6 +192,278 @@ fn get_functions() -> Vec<FormulaFunction> {
                     + Duration::from_seconds(seconds)
             }
         ),
+        // Extracting individual values
+        formula_fn!(
+            /// Returns the year portion of a date or duration.
+            ///
+            /// - The year portion of a date or date time is typically between
+            ///   `1900` and `2100`.
+            /// - The year portion of a time is always `0`.
+            /// - The year portion of a duration is rounded down, and may be
+            ///   negative. For example, the year portion of `1y 4mo` is `1` and
+            ///   the year portion of `-1y -4mo` is `-2`.
+            /// - The year portion of a number of days is not well-defined, so
+            ///   an error is returned.
+            #[examples(
+                "YEAR(DATE(2024, 4, 8)) = 2024",
+                "YEAR(TIME(30, 16, 45)) = 0",
+                "YEAR(DURATION.HMS(6, 10, 15)) = 0",
+                "YEAR(DURATION.YMD(1, 2, 3)) = 1",
+                "YEAR(DURATION.YMD(-1, -2, 3)) = -2",
+                "YEAR(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 1",
+                "YEAR(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 1",
+                "YEAR(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = -2",
+                "YEAR(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = -2"
+            )]
+            #[zip_map]
+            fn YEAR([date]: (Spanned<CellValue>)) {
+                match &date.inner {
+                    CellValue::Blank => 0,
+                    CellValue::DateTime(dt) => dt.year(),
+                    CellValue::Date(d) => d.year(),
+                    CellValue::Time(_t) => 0,
+                    CellValue::Duration(d) => d.years(),
+                    _ => {
+                        return Err(RunErrorMsg::Expected {
+                            expected: "date or duration".into(),
+                            got: Some(date.inner.type_name().into()),
+                        }
+                        .with_span(date.span))
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the month portion of a date or duration.
+            ///
+            /// - The month portion of a date or date time is always between `1`
+            ///   and `12` (inclusive).
+            /// - The month portion of a time is always `0`.
+            /// - The month portion of a duration is always between `0` and
+            ///   `11`, even if the duration is negative. For example, the month
+            ///   portion of `1y 4mo` is `4` and the month portion of `-1y -4mo`
+            ///   is `8`.
+            /// - The month portion of a number of days is not well-defined, so
+            ///   an error is returned.
+            #[examples(
+                "MONTH(DATE(2024, 4, 8)) = 4",
+                "MONTH(TIME(30, 16, 45)) = 0",
+                "MONTH(DURATION.HMS(6, 10, 15)) = 0",
+                "MONTH(DURATION.YMD(1, 2, 3)) = 2",
+                "MONTH(DURATION.YMD(-1, -2, 3)) = 10",
+                "MONTH(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 1",
+                "MONTH(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 1",
+                "MONTH(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 1",
+                "MONTH(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 1"
+            )]
+            #[zip_map]
+            fn MONTH([date]: (Spanned<CellValue>)) {
+                match &date.inner {
+                    CellValue::Blank => 0,
+                    CellValue::DateTime(dt) => dt.month() as u32,
+                    CellValue::Date(d) => d.month() as u32,
+                    CellValue::Time(_t) => 0,
+                    CellValue::Duration(d) => dbg!(d).subyear_months() as u32,
+                    _ => {
+                        return Err(RunErrorMsg::Expected {
+                            expected: "date or duration".into(),
+                            got: Some(date.inner.type_name().into()),
+                        }
+                        .with_span(date.span))
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the day portion of a date or duration.
+            ///
+            /// - The day portion of a date or date time is always between `1`
+            ///   and `31` (inclusive).
+            /// - The day portion of a time is always `0`.
+            /// - The day portion of a duration is rounded down, and may be
+            ///   negative.
+            /// - The day portion of a number of days is equal to its integer
+            ///   part when rounded down.
+            #[examples(
+                "DAY(DATE(2024, 4, 8)) = 8",
+                "DAY(TIME(30, 16, 45)) = 0",
+                "DAY(DURATION.HMS(6, 10, 15)) = 0",
+                "DAY(DURATION.YMD(1, 2, 3)) = 3",
+                "DAY(DURATION.YMD(-1, -2, 3)) = 3",
+                "DAY(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 3",
+                "DAY(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 2",
+                "DAY(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = -3",
+                "DAY(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = -4"
+            )]
+            #[zip_map]
+            fn DAY([date]: (Spanned<CellValue>)) {
+                match &date.inner {
+                    CellValue::Blank => 0,
+                    CellValue::Number(n) => n
+                        .with_scale_round(0, bigdecimal::RoundingMode::Floor)
+                        .to_i64()
+                        .ok_or(RunErrorMsg::Overflow.with_span(date.span))?,
+                    CellValue::DateTime(dt) => dt.day() as i64,
+                    CellValue::Date(d) => d.day() as i64,
+                    CellValue::Time(_t) => 0,
+                    CellValue::Duration(d) => d.days(),
+                    _ => {
+                        return Err(RunErrorMsg::Expected {
+                            expected: "date, duration, or number".into(),
+                            got: Some(date.inner.type_name().into()),
+                        }
+                        .with_span(date.span))
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the hour portion of a time or duration.
+            ///
+            /// - The hour portion of a date is always zero.
+            /// - The hour portion of a time or date time is always between `0`
+            ///   and `23` (inclusive).
+            /// - The hour portion of a duration is always between `0` and `23`
+            ///   (inclusive), even if the duration is negative.
+            /// - The hour portion of a number of days is equal to its
+            ///   fractional part, times `24`, rounded down. It is always
+            ///   between `0` and `23` (inclusive), even if the original number
+            ///   is negative.
+            #[examples(
+                "HOUR(TIME(30, 16, 45)) = 6",
+                "HOUR(TIME(30, 0, -1)) = 5",
+                "HOUR(TIME(0, 0, 0)) = 0",
+                "HOUR(TIME(0, 0, -1)) = 23",
+                "HOUR(789.084) = 2",
+                "HOUR(-789.084) = 57",
+                "HOUR(DURATION.HMS(6, 10, 15)) = 6",
+                "HOUR(DURATION.YMD(1, 2, 3)) = 0",
+                "HOUR(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 6",
+                "HOUR(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 17",
+                "HOUR(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 6",
+                "HOUR(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 17"
+            )]
+            #[zip_map]
+            fn HOUR([time]: (Spanned<CellValue>)) {
+                match &time.inner {
+                    CellValue::Blank => 0,
+                    CellValue::Number(n) => (n * 24_i32)
+                        .with_scale_round(0, bigdecimal::RoundingMode::Floor)
+                        .to_i64()
+                        .ok_or(RunErrorMsg::Overflow.with_span(time.span))?
+                        .rem_euclid(24) as u32,
+                    CellValue::DateTime(dt) => dt.hour() as u32,
+                    CellValue::Date(_d) => 0,
+                    CellValue::Time(t) => dbg!(t).hour() as u32,
+                    CellValue::Duration(d) => d.subday_hours() as u32,
+                    _ => {
+                        return Err(RunErrorMsg::Expected {
+                            expected: "time, duration, or number".into(),
+                            got: Some(time.inner.type_name().into()),
+                        }
+                        .with_span(time.span))
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the minute portion of a time or duration.
+            ///
+            /// - The minute portion of a date is always zero.
+            /// - The minute portion of a time or date time is always between
+            ///   `0` and `59` (inclusive).
+            /// - The minute portion of a duration is always between `0` and
+            ///   `59` (inclusive), even if the duration is negative.
+            /// - The minute portion of a number of days is equal to its
+            ///   fractional part, times `1440`, rounded down. It is always
+            ///   between `0` and `59` (inclusive), even if the original number
+            ///   is negative.
+            #[examples(
+                "MINUTE(TIME(30, 16, 45)) = 16",
+                "MINUTE(TIME(30, 0, -1)) = 59",
+                "MINUTE(TIME(0, 0, 0)) = 0",
+                "MINUTE(TIME(0, 0, -1)) = 59",
+                "MINUTE(789.001389) = 2",
+                "MINUTE(-789.001389) = 57",
+                "MINUTE(DURATION.HMS(6, 10, 15)) = 10",
+                "MINUTE(DURATION.YMD(1, 2, 3)) = 0",
+                "MINUTE(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 10",
+                "MINUTE(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 49",
+                "MINUTE(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 10",
+                "MINUTE(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 49"
+            )]
+            #[zip_map]
+            fn MINUTE([time]: (Spanned<CellValue>)) {
+                match &time.inner {
+                    CellValue::Blank => 0,
+                    CellValue::Number(n) => (n * 1_440_i32)
+                        .with_scale_round(0, bigdecimal::RoundingMode::Floor)
+                        .to_i64()
+                        .ok_or(RunErrorMsg::Overflow.with_span(time.span))?
+                        .rem_euclid(60) as u32,
+                    CellValue::DateTime(dt) => dt.minute() as u32,
+                    CellValue::Date(_d) => 0,
+                    CellValue::Time(t) => t.minute() as u32,
+                    CellValue::Duration(d) => d.subhour_minutes() as u32,
+                    _ => {
+                        return Err(RunErrorMsg::Expected {
+                            expected: "time, duration, or number".into(),
+                            got: Some(time.inner.type_name().into()),
+                        }
+                        .with_span(time.span))
+                    }
+                }
+            }
+        ),
+        formula_fn!(
+            /// Returns the second portion of a time or duration.
+            ///
+            /// - The second portion of a date is always zero.
+            /// - The second portion of a time or date time is always between
+            ///   `0` and `59` (inclusive).
+            /// - The second portion of a duration is always between `0` and
+            ///   `59` (inclusive), even if the duration is negative.
+            /// - The second portion of a number of days is equal to its
+            ///   fractional part, times `86400`, rounded down. It is always
+            ///   between `0` and `59` (inclusive), even if the original number
+            ///   is negative.
+            #[examples(
+                "SECOND(TIME(30, 16, 45)) = 45",
+                "SECOND(TIME(30, 0, -1)) = 59",
+                "SECOND(TIME(0, 0, 0)) = 0",
+                "SECOND(TIME(0, 0, -1)) = 59",
+                "SECOND(0.5557291667) = 15",
+                "SECOND(-0.5557291667) = 44",
+                "SECOND(DURATION.HMS(6, 10, 15)) = 15",
+                "SECOND(DURATION.YMD(1, 2, 3)) = 0",
+                "SECOND(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 15",
+                "SECOND(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 45",
+                "SECOND(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15)) = 15",
+                "SECOND(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15)) = 45"
+            )]
+            #[zip_map]
+            fn SECOND([time]: (Spanned<CellValue>)) {
+                match &time.inner {
+                    CellValue::Blank => 0,
+                    CellValue::Number(n) => (n * 86_400_i32)
+                        .with_scale_round(0, bigdecimal::RoundingMode::Floor)
+                        .to_i64()
+                        .ok_or(RunErrorMsg::Overflow.with_span(time.span))?
+                        .rem_euclid(60) as u32,
+                    CellValue::DateTime(dt) => dt.second() as u32,
+                    CellValue::Date(_d) => 0,
+                    CellValue::Time(t) => t.second() as u32,
+                    CellValue::Duration(d) => d.subminute_seconds() as u32,
+                    _ => {
+                        return Err(RunErrorMsg::Expected {
+                            expected: "time, duration, or number".into(),
+                            got: Some(time.inner.type_name().into()),
+                        }
+                        .with_span(time.span))
+                    }
+                }
+            }
+        ),
     ]
 }
 
@@ -263,6 +538,202 @@ mod tests {
         assert_eq!(
             eval_to_string(&g, "DURATION.HMS(-5, 62, 30)"),
             "-3h -57m -30s",
+        );
+    }
+
+    #[test]
+    fn test_formula_year() {
+        let g = Grid::new();
+        assert_eq!(eval_to_string(&g, "YEAR(DATE(2024, 4, 8))"), "2024");
+        assert_eq!(eval_to_string(&g, "YEAR(TIME(30, 16, 45))"), "0");
+        assert_eq!(eval_to_string(&g, "YEAR(DURATION.HMS(6, 10, 15))"), "0");
+        assert_eq!(eval_to_string(&g, "YEAR(DURATION.YMD(1, 2, 3))"), "1");
+        assert_eq!(eval_to_string(&g, "YEAR(DURATION.YMD(-1, -2, 3))"), "-2");
+        assert_eq!(
+            eval_to_string(&g, "YEAR(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"),
+            "1",
+        );
+        assert_eq!(
+            eval_to_string(&g, "YEAR(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"),
+            "1",
+        );
+        assert_eq!(
+            eval_to_string(&g, "YEAR(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"),
+            "-2",
+        );
+        assert_eq!(
+            eval_to_string(&g, "YEAR(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"),
+            "-2",
+        );
+    }
+
+    #[test]
+    fn test_formula_month() {
+        let g = Grid::new();
+        assert_eq!(eval_to_string(&g, "MONTH(DATE(2024, 4, 8))"), "4");
+        assert_eq!(eval_to_string(&g, "MONTH(TIME(30, 16, 45))"), "0");
+        assert_eq!(eval_to_string(&g, "MONTH(DURATION.HMS(6, 10, 15))"), "0");
+        assert_eq!(eval_to_string(&g, "MONTH(DURATION.YMD(1, 2, 3))"), "2");
+        assert_eq!(eval_to_string(&g, "MONTH(DURATION.YMD(-1, -2, 3))"), "10");
+        assert_eq!(
+            eval_to_string(&g, "MONTH(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"),
+            "2",
+        );
+        assert_eq!(
+            eval_to_string(&g, "MONTH(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"),
+            "2",
+        );
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "MONTH(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))",
+            ),
+            "10",
+        );
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "MONTH(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))",
+            ),
+            "10",
+        );
+    }
+
+    #[test]
+    fn test_formula_day() {
+        let g = Grid::new();
+        assert_eq!(eval_to_string(&g, "DAY(DATE(2024, 4, 8))"), "8");
+        assert_eq!(eval_to_string(&g, "DAY(TIME(30, 16, 45))"), "0");
+        assert_eq!(eval_to_string(&g, "DAY(DURATION.HMS(6, 10, 15))"), "0");
+        assert_eq!(eval_to_string(&g, "DAY(DURATION.YMD(1, 2, 3))"), "3");
+        assert_eq!(eval_to_string(&g, "DAY(DURATION.YMD(-1, -2, 3))"), "3");
+        assert_eq!(
+            eval_to_string(&g, "DAY(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"),
+            "3",
+        );
+        assert_eq!(
+            eval_to_string(&g, "DAY(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"),
+            "2",
+        );
+        assert_eq!(
+            eval_to_string(&g, "DAY(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"),
+            "-3",
+        );
+        assert_eq!(
+            eval_to_string(&g, "DAY(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"),
+            "-4",
+        );
+    }
+
+    #[test]
+    fn test_formula_hour() {
+        let g = Grid::new();
+        assert_eq!(eval_to_string(&g, "HOUR(TIME(30, 16, 45))"), "6");
+        assert_eq!(eval_to_string(&g, "HOUR(TIME(30, 0, -1))"), "5");
+        assert_eq!(eval_to_string(&g, "HOUR(TIME(0, 0, 0))"), "0");
+        assert_eq!(eval_to_string(&g, "HOUR(TIME(0, 0, -1))"), "23");
+        assert_eq!(eval_to_string(&g, "HOUR(789.084)"), "2");
+        assert_eq!(eval_to_string(&g, "HOUR(-789.084)"), "21");
+        assert_eq!(eval_to_string(&g, "HOUR(DURATION.HMS(6, 10, 15))"), "6");
+        assert_eq!(eval_to_string(&g, "HOUR(DURATION.YMD(1, 2, 3))"), "0");
+        assert_eq!(
+            eval_to_string(&g, "HOUR(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"),
+            "6",
+        );
+        assert_eq!(
+            eval_to_string(&g, "HOUR(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"),
+            "17",
+        );
+        assert_eq!(
+            eval_to_string(&g, "HOUR(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"),
+            "6",
+        );
+        assert_eq!(
+            eval_to_string(&g, "HOUR(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"),
+            "17",
+        );
+    }
+
+    #[test]
+    fn test_formula_minute() {
+        let g = Grid::new();
+
+        assert_eq!(eval_to_string(&g, "MINUTE(TIME(30, 16, 45))"), "16");
+        assert_eq!(eval_to_string(&g, "MINUTE(TIME(30, 0, -1))"), "59");
+        assert_eq!(eval_to_string(&g, "MINUTE(TIME(0, 0, 0))"), "0");
+        assert_eq!(eval_to_string(&g, "MINUTE(TIME(0, 0, -1))"), "59");
+        assert_eq!(eval_to_string(&g, "MINUTE(789.001389)"), "2");
+        assert_eq!(eval_to_string(&g, "MINUTE(-789.001389)"), "57");
+        assert_eq!(eval_to_string(&g, "MINUTE(DURATION.HMS(6, 10, 15))"), "10");
+        assert_eq!(eval_to_string(&g, "MINUTE(DURATION.YMD(1, 2, 3))"), "0");
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "MINUTE(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"
+            ),
+            "10",
+        );
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "MINUTE(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"
+            ),
+            "49",
+        );
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "MINUTE(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"
+            ),
+            "10",
+        );
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "MINUTE(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"
+            ),
+            "49",
+        );
+    }
+
+    #[test]
+    fn test_formula_second() {
+        let g = Grid::new();
+        assert_eq!(eval_to_string(&g, "SECOND(TIME(30, 16, 45))"), "45");
+        assert_eq!(eval_to_string(&g, "SECOND(TIME(30, 0, -1))"), "59");
+        assert_eq!(eval_to_string(&g, "SECOND(TIME(0, 0, 0))"), "0");
+        assert_eq!(eval_to_string(&g, "SECOND(TIME(0, 0, -1))"), "59");
+        assert_eq!(eval_to_string(&g, "SECOND(0.5557291667)"), "15");
+        assert_eq!(eval_to_string(&g, "SECOND(-0.5557291667)"), "44");
+        assert_eq!(eval_to_string(&g, "SECOND(DURATION.HMS(6, 10, 15))"), "15");
+        assert_eq!(eval_to_string(&g, "SECOND(DURATION.YMD(1, 2, 3))"), "0");
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "SECOND(DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"
+            ),
+            "15",
+        );
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "SECOND(DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"
+            ),
+            "45",
+        );
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "SECOND(-DURATION.YMD(1, 2, 3) + DURATION.HMS(6, 10, 15))"
+            ),
+            "15",
+        );
+        assert_eq!(
+            eval_to_string(
+                &g,
+                "SECOND(-DURATION.YMD(1, 2, 3) - DURATION.HMS(6, 10, 15))"
+            ),
+            "45",
         );
     }
 }
