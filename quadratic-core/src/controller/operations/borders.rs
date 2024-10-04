@@ -274,9 +274,7 @@ impl GridController {
     ) -> Option<Vec<Operation>> {
         // Check if the borders are already set to the same style. If they are,
         // toggle them off.
-        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
-            return None;
-        };
+        let sheet = self.try_sheet(selection.sheet_id)?;
         if sheet
             .borders
             .is_toggle_borders(&selection, border_selection, style)

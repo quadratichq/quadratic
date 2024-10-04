@@ -214,10 +214,8 @@ impl Borders {
         style: Option<BorderStyle>,
     ) -> bool {
         if let Some(style) = style {
-            if selection.all {
-                if !Self::is_same_sheet(border_selection, style, &self.all) {
-                    return false;
-                }
+            if selection.all && !Self::is_same_sheet(border_selection, style, &self.all) {
+                return false;
             }
             if let Some(columns) = selection.columns.as_ref() {
                 for column in columns.iter() {
