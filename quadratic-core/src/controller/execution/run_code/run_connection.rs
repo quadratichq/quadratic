@@ -113,7 +113,7 @@ impl GridController {
                 Err(msg) => {
                     let error = RunError {
                         span: None,
-                        msg: RunErrorMsg::PythonError(msg.to_owned().into()),
+                        msg: RunErrorMsg::CodeRunError(msg.to_owned().into()),
                     };
                     transaction.current_sheet_pos = Some(sheet_pos);
                     let _ = self.code_cell_sheet_error(transaction, &error);
@@ -269,7 +269,7 @@ mod tests {
             assert_eq!(
                 code_cell.unwrap().get_error(),
                 Some(RunError {
-                    msg: RunErrorMsg::PythonError(
+                    msg: RunErrorMsg::CodeRunError(
                         "Failed to find sheet with name: 'Sheet 2'".into()
                     ),
                     span: None
