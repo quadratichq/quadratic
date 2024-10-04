@@ -29,6 +29,17 @@ impl GridController {
         ]
     }
 
+    pub fn set_data_table_operations_at(
+        &self,
+        sheet_pos: SheetPos,
+        values: String,
+    ) -> Vec<Operation> {
+        let (_, cell_value) = &self.string_to_cell_value(sheet_pos, &values);
+        let values = CellValues::from(cell_value.to_owned());
+
+        vec![Operation::SetDataTableAt { sheet_pos, values }]
+    }
+
     // Returns whether a code_cell is dependent on another code_cell.
     fn is_dependent_on(&self, current: &DataTable, other_pos: SheetPos) -> bool {
         current

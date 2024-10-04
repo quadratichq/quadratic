@@ -10,6 +10,7 @@ pub enum TransactionName {
     SetBorders,
     SetCells,
     SetFormats,
+    SetDataTableAt,
     CutClipboard,
     PasteClipboard,
     SetCode,

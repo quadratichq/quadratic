@@ -1,10 +1,41 @@
+use anyhow::{anyhow, Result};
+
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-
 use crate::selection::Selection;
-use crate::SheetPos;
+use crate::{CellValue, SheetPos};
 
 impl GridController {
+    // Using sheet_pos, either set a cell value or a data table value
+    pub fn set_value(
+        &mut self,
+        sheet_pos: SheetPos,
+        value: String,
+        cursor: Option<String>,
+    ) -> Result<()> {
+        let sheet = self
+            .try_sheet_mut(sheet_pos.sheet_id)
+            .ok_or_else(|| anyhow!("Sheet not found"))?;
+
+        let cell_value = sheet
+            .get_column(sheet_pos.x)
+            .and_then(|column| column.values.get(&sheet_pos.y));
+
+        let is_data_table = if let Some(cell_value) = cell_value {
+            let var_name = matches!(cell_value, CellValue::Code(_) | CellValue::Import(_));
+            var_name
+        } else {
+            true
+        };
+
+        match is_data_table {
+            true => self.set_data_table_value(sheet_pos, value, cursor),
+            false => self.set_cell_value(sheet_pos, value, cursor),
+        };
+
+        Ok(())
+    }
+
     /// Starts a transaction to set the value of a cell by converting a user's String input
     pub fn set_cell_value(&mut self, sheet_pos: SheetPos, value: String, cursor: Option<String>) {
         let ops = self.set_cell_value_operations(sheet_pos, value);
@@ -37,6 +68,16 @@ impl GridController {
             y += 1;
         }
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
+    }
+
+    pub fn set_data_table_value(
+        &mut self,
+        sheet_pos: SheetPos,
+        value: String,
+        cursor: Option<String>,
+    ) {
+        let ops = self.set_data_table_operations_at(sheet_pos, value);
+        self.start_user_transaction(ops, cursor, TransactionName::SetDataTableAt);
     }
 
     /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.

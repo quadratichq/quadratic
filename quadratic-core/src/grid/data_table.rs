@@ -263,6 +263,25 @@ impl DataTable {
         }
     }
 
+    pub fn set_cell_value_at(&mut self, x: u32, y: u32, value: CellValue) -> Option<CellValue> {
+        if !self.spill_error {
+            match self.value {
+                Value::Single(_) => {
+                    self.value = Value::Single(value.to_owned());
+                }
+                Value::Array(ref mut a) => {
+                    // TODO(ddimaria): handle error
+                    a.set(x, y, value.to_owned()).unwrap();
+                }
+                Value::Tuple(_) => {}
+            }
+
+            return Some(value);
+        }
+
+        None
+    }
+
     /// Returns the size of the output array, or defaults to `_1X1` (since output always includes the code_cell).
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {

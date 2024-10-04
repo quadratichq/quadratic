@@ -26,6 +26,7 @@ export async function doubleClickCell(options: {
   // Open the correct code editor
   if (language) {
     const formula = language === 'Formula';
+    const file_import = language === 'Import';
 
     if (settings.editorInteractionState.showCodeEditor) {
       settings.setEditorInteractionState({
@@ -48,6 +49,8 @@ export async function doubleClickCell(options: {
         if (cursor.x !== column || cursor.y !== row) {
           sheets.sheet.cursor.changePosition({ cursorPosition: { x: column, y: row } });
         }
+        settings.changeInput(true, cell);
+      } else if (hasPermission && file_import) {
         settings.changeInput(true, cell);
       } else {
         settings.setEditorInteractionState({

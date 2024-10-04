@@ -118,6 +118,21 @@ impl Sheet {
             })
     }
 
+    pub fn set_code_cell_value(&mut self, pos: Pos, value: CellValue) -> Option<CellValue> {
+        self.data_tables
+            .iter_mut()
+            .find(|(code_cell_pos, data_table)| {
+                data_table.output_rect(**code_cell_pos, false).contains(pos)
+            })
+            .and_then(|(code_cell_pos, data_table)| {
+                let x = (pos.x - code_cell_pos.x) as u32;
+                let y = (pos.y - code_cell_pos.y) as u32;
+                data_table.set_cell_value_at(x, y, value.to_owned());
+
+                Some(value)
+            })
+    }
+
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
         self.data_tables
             .iter()

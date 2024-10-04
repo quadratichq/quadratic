@@ -5,9 +5,12 @@ use uuid::Uuid;
 use crate::{
     cell_values::CellValues,
     grid::{
-        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
-        js_types::JsRowHeight, sheet::borders::BorderStyleCellUpdates,
-        sheet::validations::validation::Validation, DataTable, Sheet, SheetBorders, SheetId,
+        file::sheet_schema::SheetSchema,
+        formats::Formats,
+        formatting::CellFmtArray,
+        js_types::JsRowHeight,
+        sheet::{borders::BorderStyleCellUpdates, validations::validation::Validation},
+        DataTable, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -37,6 +40,10 @@ pub enum Operation {
         sheet_pos: SheetPos,
         code_run: Option<DataTable>,
         index: usize,
+    },
+    SetDataTableAt {
+        sheet_pos: SheetPos,
+        values: CellValues,
     },
     ComputeCode {
         sheet_pos: SheetPos,
@@ -188,6 +195,11 @@ impl fmt::Display for Operation {
                 fmt,
                 "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} index: {} }}",
                 sheet_pos, run, index
+            ),
+            Operation::SetDataTableAt { sheet_pos, values } => write!(
+                fmt,
+                "SetDataTableAt {{ sheet_pos: {} values: {:?} }}",
+                sheet_pos, values
             ),
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::SetCellFormatsSelection { selection, formats } => {

@@ -18,7 +18,7 @@ const MAX_BIG_DECIMAL_SIZE: usize = 10000000;
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
     pub(super) fn string_to_cell_value(
-        &mut self,
+        &self,
         sheet_pos: SheetPos,
         value: &str,
     ) -> (Vec<Operation>, CellValue) {
@@ -195,7 +195,7 @@ mod test {
     #[test]
     #[parallel]
     fn boolean_to_cell_value() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -229,7 +229,7 @@ mod test {
     #[test]
     #[parallel]
     fn number_to_cell_value() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -264,7 +264,7 @@ mod test {
     #[test]
     #[parallel]
     fn formula_to_cell_value() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let sheet_pos = SheetPos {
             x: 1,
             y: 2,
@@ -305,7 +305,7 @@ mod test {
     #[test]
     #[parallel]
     fn problematic_number() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let value = "980E92207901934";
         let (_, cell_value) = gc.string_to_cell_value(
             SheetPos {

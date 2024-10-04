@@ -266,10 +266,12 @@ impl Sheet {
 
         if let Some(cell_value) = cell_value {
             match cell_value {
-                CellValue::Blank | CellValue::Code(_) => match self.data_tables.get(&pos) {
-                    Some(run) => run.get_cell_for_formula(0, 0),
-                    None => CellValue::Blank,
-                },
+                CellValue::Blank | CellValue::Code(_) | CellValue::Import(_) => {
+                    match self.data_tables.get(&pos) {
+                        Some(data_table) => data_table.get_cell_for_formula(0, 0),
+                        None => CellValue::Blank,
+                    }
+                }
                 other => other.clone(),
             }
         } else {

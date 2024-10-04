@@ -6,6 +6,7 @@ mod execute_borders;
 mod execute_code;
 mod execute_col_rows;
 mod execute_cursor;
+mod execute_data_table;
 mod execute_formats;
 mod execute_move_cells;
 mod execute_offsets;
@@ -24,6 +25,7 @@ impl GridController {
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
+                Operation::SetDataTableAt { .. } => self.execute_set_data_table_at(transaction, op),
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
                 Operation::SetCellFormatsSelection { .. } => {

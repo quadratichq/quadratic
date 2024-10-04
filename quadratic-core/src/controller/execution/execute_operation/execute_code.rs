@@ -4,7 +4,7 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::CodeCellLanguage,
-    CellValue, Pos, Rect, SheetPos, SheetRect,
+    CellValue, Pos, SheetPos, SheetRect,
 };
 
 impl GridController {
@@ -36,44 +36,6 @@ impl GridController {
                     }
                 });
             });
-    }
-
-    // delete any code runs within the sheet_rect.
-    pub(super) fn check_deleted_data_tables(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        sheet_rect: &SheetRect,
-    ) {
-        let sheet_id = sheet_rect.sheet_id;
-        let Some(sheet) = self.grid.try_sheet(sheet_id) else {
-            // sheet may have been deleted
-            return;
-        };
-        let rect: Rect = (*sheet_rect).into();
-        let data_tables_to_delete: Vec<Pos> = sheet
-            .data_tables
-            .iter()
-            .filter_map(|(pos, _)| {
-                // only delete code runs that are within the sheet_rect
-                if rect.contains(*pos) {
-                    // only delete when there's not another code cell in the same position (this maintains the original output until a run completes)
-                    if let Some(value) = sheet.cell_value(*pos) {
-                        if matches!(value, CellValue::Code(_)) {
-                            None
-                        } else {
-                            Some(*pos)
-                        }
-                    } else {
-                        Some(*pos)
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect();
-        data_tables_to_delete.iter().for_each(|pos| {
-            self.finalize_code_run(transaction, pos.to_sheet_pos(sheet_id), None, None);
-        });
     }
 
     pub(super) fn execute_set_code_run(
