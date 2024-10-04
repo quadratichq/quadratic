@@ -44,8 +44,8 @@ impl RunError {
 /// Information about the type of error that occurred.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum RunErrorMsg {
-    // TODO(ayush): rename to CodeRunError in next file version
-    PythonError(Cow<'static, str>),
+    CodeRunError(Cow<'static, str>),
+
     Spill,
 
     // Miscellaneous errors
@@ -115,7 +115,7 @@ pub enum RunErrorMsg {
 impl fmt::Display for RunErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::PythonError(s) => {
+            Self::CodeRunError(s) => {
                 write!(f, "{s}")
             }
             Self::Spill => {

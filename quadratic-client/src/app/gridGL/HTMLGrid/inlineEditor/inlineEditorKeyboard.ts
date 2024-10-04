@@ -14,7 +14,6 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { inlineEditorEvents } from './inlineEditorEvents';
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
@@ -326,7 +325,11 @@ class InlineEditorKeyboard {
       const today = new Date();
       // todo: this should be based on locale (maybe?)
       const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
-      inlineEditorEvents.emit('replaceText', formattedDate, false);
+      inlineEditorMonaco.insertTextAtCursor(formattedDate);
+    } else if (matchShortcut(Action.InsertTodayTime, e)) {
+      const today = new Date();
+      const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+      inlineEditorMonaco.insertTextAtCursor(formattedTime);
     }
 
     // Fallback for all other keys (used to end cursorIsMoving and return
