@@ -270,8 +270,20 @@ impl GridController {
         &self,
         selection: Selection,
         border_selection: BorderSelection,
-        style: Option<BorderStyle>,
+        mut style: Option<BorderStyle>,
     ) -> Option<Vec<Operation>> {
+        // Check if the borders are already set to the same style. If they are,
+        // toggle them off.
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return None;
+        };
+        if sheet
+            .borders
+            .is_toggle_borders(&selection, border_selection, style)
+        {
+            style = None;
+        }
+
         let mut borders = BorderStyleCellUpdates::default();
 
         if selection.all {

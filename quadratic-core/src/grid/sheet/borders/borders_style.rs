@@ -113,6 +113,11 @@ impl BorderStyleTimestamp {
         style.filter(|&style| style.line != CellBorderLine::Clear)
     }
 
+    /// Returns whether the style is the same by ignoring the timestamp.
+    pub fn is_equal_to_border_style(&self, other: &BorderStyle) -> bool {
+        self.color == other.color && self.line == other.line
+    }
+
     #[cfg(test)]
     pub fn is_equal_ignore_timestamp(
         b1: Option<BorderStyleTimestamp>,
