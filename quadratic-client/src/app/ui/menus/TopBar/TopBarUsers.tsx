@@ -1,11 +1,13 @@
 import { editorInteractionStateFollowAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { getAuth0AvatarSrc } from '@/app/helpers/links';
-import { colors } from '@/app/theme/colors';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
+import { Avatar } from '@/shared/components/Avatar';
+import { MoreHorizIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,21 +15,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
-import { Avatar, AvatarGroup } from '@mui/material';
-import { EyeOpenIcon } from '@radix-ui/react-icons';
-import { useCallback } from 'react';
+import { useState } from 'react';
 import { useSubmit } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-
-const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
 
 export const TopBarUsers = () => {
   const submit = useSubmit();
   const { loggedInUser: user } = useRootRouteLoaderData();
   const follow = useRecoilValue(editorInteractionStateFollowAtom);
+  const setFollow = useSetRecoilState(editorInteractionStateFollowAtom);
   const { users, followers } = useMultiplayerUsers();
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   const anonymous = !user
     ? {
@@ -36,94 +38,231 @@ export const TopBarUsers = () => {
       }
     : undefined;
 
+  const handleFollow = ({
+    isFollowingYou,
+    isBeingFollowedByYou,
+    sessionId,
+    viewport,
+  }: {
+    isFollowingYou: boolean;
+    isBeingFollowedByYou: boolean;
+    sessionId: string;
+    viewport: string;
+  }) => {
+    // you cannot follow a user that is following you
+    if (isFollowingYou) return;
+
+    if (isBeingFollowedByYou) {
+      multiplayer.sendFollow('');
+      setFollow(undefined);
+    } else {
+      pixiApp.viewport.loadMultiplayerViewport(JSON.parse(viewport));
+      multiplayer.sendFollow(sessionId);
+      setFollow(sessionId);
+    }
+  };
+
+  const displayUsers = users.map((user) => {
+    const isBeingFollowedByYou = follow === user.session_id; // follow
+    const isFollowingYou = followers.includes(user.session_id); // follower
+    const sessionId = user.session_id;
+    const viewport = user.viewport;
+
+    return {
+      name: displayName(user, false),
+      initials: displayInitials(user),
+      avatarSrc: user.image,
+      highlightColor: user.colorString,
+      sessionId,
+      viewport,
+      isBeingFollowedByYou,
+      isFollowingYou,
+      handleFollow: () => handleFollow({ isFollowingYou, isBeingFollowedByYou, sessionId, viewport }),
+    };
+  });
+
+  const visibleAvatarBtns = 4;
+  const truncateUsers = displayUsers.length > visibleAvatarBtns;
+  const visibleUsers = truncateUsers ? displayUsers.slice(0, visibleAvatarBtns - 1) : displayUsers;
+  const extraUsers = truncateUsers ? displayUsers.slice(visibleAvatarBtns - 1) : [];
+
   return (
     <>
-      {/* TODO(ayush): create custom AvatarGroup component */}
-      <AvatarGroup
-        componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
-        className="gap-1"
-        sx={{
-          alignSelf: 'center',
-          alignItems: 'center',
-          flexDirection: 'row',
-          // Styles for the "+2" avatar
-          '& > .MuiAvatar-root': { marginRight: '.25rem', backgroundColor: '#aaa', border: `2px solid #aaa` },
-        }}
-        max={5}
-      >
-        {
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <You
-                displayName={displayName(user ?? anonymous, true)}
-                initial={displayInitials(user ?? anonymous)}
-                picture={user?.picture ?? ''}
-                border={multiplayer.colorString ?? 'black'}
-                bgColor={multiplayer.colorString}
-              />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="text-sm">
-              <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  submit(null, { action: '/logout', method: 'POST' });
-                }}
-              >
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        }
-        {users.map((user) => {
-          return (
-            <UserAvatar
-              key={user.session_id}
-              displayName={displayName(user, false)}
-              initial={displayInitials(user)}
-              picture={user.image}
-              border={user.colorString}
-              sessionId={user.session_id}
-              follow={follow === user.session_id}
-              follower={followers.includes(user.session_id)}
-              viewport={user.viewport}
-              bgColor={user.colorString}
+      <div className="flex flex-row-reverse items-stretch gap-2 self-stretch">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="self-center">
+            <You
+              displayName={displayName(user ?? anonymous, true)}
+              initial={displayInitials(user ?? anonymous)}
+              picture={user?.picture ?? ''}
             />
-          );
-        })}
-      </AvatarGroup>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="text-sm">
+            <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => {
+                submit(null, { action: '/logout', method: 'POST' });
+              }}
+            >
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {visibleUsers.map(
+          ({
+            name,
+            initials,
+            avatarSrc,
+            highlightColor,
+            sessionId,
+            viewport,
+            isBeingFollowedByYou,
+            isFollowingYou,
+            handleFollow,
+          }) => (
+            <div className={cn('hidden lg:relative lg:flex lg:items-center')}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={handleFollow} disabled={isFollowingYou}>
+                    <UserAvatar
+                      name={name}
+                      initials={initials}
+                      avatarSrc={avatarSrc}
+                      highlightColor={highlightColor}
+                      isBeingFollowedByYou={isBeingFollowedByYou}
+                      isFollowingYou={isFollowingYou}
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipPortal>
+                  <TooltipContent>
+                    <p>
+                      {name}{' '}
+                      <span className="opacity-70">
+                        ({isFollowingYou ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`})
+                      </span>
+                    </p>
+                  </TooltipContent>
+                </TooltipPortal>
+              </Tooltip>
+            </div>
+          )
+        )}
+        {extraUsers.length > 0 && (
+          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex h-6 w-6 items-center justify-center self-center rounded-full p-0 text-xs font-normal text-muted-foreground"
+              >
+                <MoreHorizIcon />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="max-h-64 w-64 overflow-auto p-1"
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+                focusGrid();
+              }}
+            >
+              <ul className="flex flex-col">
+                {extraUsers.map(
+                  ({
+                    name,
+                    initials,
+                    avatarSrc,
+                    highlightColor,
+                    sessionId,
+                    viewport,
+                    isBeingFollowedByYou,
+                    isFollowingYou,
+                    handleFollow,
+                  }) => {
+                    return (
+                      <li>
+                        <button
+                          className={cn(
+                            'flex w-full items-center gap-4 rounded p-2 text-sm',
+                            !isFollowingYou && 'hover:bg-accent'
+                          )}
+                          onClick={() => {
+                            handleFollow();
+                            setIsPopoverOpen(false);
+                          }}
+                          disabled={isFollowingYou}
+                        >
+                          <UserAvatar
+                            name={name}
+                            initials={initials}
+                            avatarSrc={avatarSrc}
+                            highlightColor={highlightColor}
+                            isBeingFollowedByYou={isBeingFollowedByYou}
+                            isFollowingYou={isFollowingYou}
+                          />
+                          <span className={cn('truncate', isFollowingYou && 'text-muted-foreground')}>{name}</span>
+                          {isBeingFollowedByYou && (
+                            <span className="ml-auto text-xs text-muted-foreground">Following</span>
+                          )}
+                          {isFollowingYou && (
+                            <span className="ml-auto text-xs text-muted-foreground">Following you</span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  }
+                )}
+              </ul>
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
     </>
   );
 };
 
-function You({
-  displayName,
-  initial,
-  picture,
-  border,
-  bgColor,
+function UserAvatar({
+  name,
+  initials,
+  avatarSrc,
+  highlightColor,
+  isBeingFollowedByYou,
+  isFollowingYou,
 }: {
-  displayName: string;
-  initial: string;
-  picture: string;
-  border: string;
-  bgColor?: string;
+  name: string;
+  initials: string;
+  avatarSrc: string;
+  highlightColor: string;
+  isBeingFollowedByYou: boolean;
+  isFollowingYou: boolean;
 }) {
+  return (
+    <div className="relative">
+      <Avatar
+        alt={name}
+        src={avatarSrc}
+        className={cn(isBeingFollowedByYou && 'border border-background', isFollowingYou && 'opacity-50')}
+        style={{
+          boxShadow: isBeingFollowedByYou ? `0 0 0 2px ${highlightColor}` : undefined,
+        }}
+      >
+        {initials}
+      </Avatar>
+      {!isFollowingYou && (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 ml-auto h-3 w-3 rounded-full border-2 border-background"
+          style={{ backgroundColor: highlightColor }}
+        />
+      )}
+    </div>
+  );
+}
+
+function You({ displayName, initial, picture }: { displayName: string; initial: string; picture: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Avatar
-          sx={{
-            bgcolor: bgColor ?? colors.quadraticSecondary,
-            ...sharedAvatarSxProps,
-          }}
-          alt={displayName}
-          src={getAuth0AvatarSrc(picture)}
-          imgProps={{ crossOrigin: 'anonymous' }}
-          style={{
-            border: `2px solid ${border}`,
-          }}
-        >
+        <Avatar alt={displayName} src={picture}>
           {initial}
         </Avatar>
       </TooltipTrigger>
@@ -133,88 +272,5 @@ function You({
         </TooltipContent>
       </TooltipPortal>
     </Tooltip>
-  );
-}
-
-function UserAvatar({
-  displayName,
-  initial,
-  picture,
-  border,
-  sessionId,
-  follow,
-  follower,
-  viewport,
-  bgColor,
-}: {
-  displayName: string;
-  initial: string;
-  picture: string;
-  border: string;
-  sessionId: string;
-  follow: boolean;
-  follower: boolean;
-  viewport: string;
-  bgColor?: string;
-}) {
-  const setFollow = useSetRecoilState(editorInteractionStateFollowAtom);
-  const handleFollow = useCallback(() => {
-    // you cannot follow a user that is following you
-    if (follower) return;
-    if (follow) {
-      multiplayer.sendFollow('');
-      setFollow(undefined);
-    } else {
-      pixiApp.viewport.loadMultiplayerViewport(JSON.parse(viewport));
-      multiplayer.sendFollow(sessionId);
-      setFollow(sessionId);
-    }
-  }, [follow, follower, sessionId, setFollow, viewport]);
-  return (
-    <div className="hidden lg:relative lg:flex lg:items-center">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button onClick={handleFollow}>
-            <Avatar
-              sx={{
-                bgcolor: bgColor ?? colors.quadraticSecondary,
-                ...sharedAvatarSxProps,
-                pointerEvents: 'auto',
-                cursor: 'pointer',
-                position: 'relative',
-              }}
-              alt={displayName}
-              src={getAuth0AvatarSrc(picture)}
-              imgProps={{ crossOrigin: 'anonymous' }}
-              style={{
-                border: `2px solid ${border}`,
-              }}
-            >
-              {initial}
-            </Avatar>
-          </button>
-        </TooltipTrigger>
-        <TooltipPortal>
-          <TooltipContent>
-            <p>
-              {displayName}{' '}
-              <span className="opacity-70">
-                ({follower ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`})
-              </span>
-            </p>
-          </TooltipContent>
-        </TooltipPortal>
-      </Tooltip>
-      {follow && (
-        <div className="pointer-events-none absolute bottom-1 left-1/2 flex h-5  w-5 items-center justify-center rounded-full bg-white">
-          <EyeOpenIcon />
-        </div>
-      )}
-      {follower && (
-        <div className="pointer-events-none absolute left-1/2 top-1 flex h-5  w-5 items-center justify-center rounded-full bg-white">
-          <EyeOpenIcon />
-        </div>
-      )}
-    </div>
   );
 }
