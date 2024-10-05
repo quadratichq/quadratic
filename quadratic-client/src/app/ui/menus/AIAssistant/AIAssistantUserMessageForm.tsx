@@ -73,7 +73,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
           textareaRef.current?.focus();
         }}
       >
-        <AIAssistantSelectModelMenu />
+        <AIAssistantSelectModelMenu textAreaRef={textareaRef} />
 
         {loading ? (
           <div className="flex items-center gap-2">

@@ -1,24 +1,24 @@
 //! Error for file schema. Needs to be kept updated with src/error.rs.
 
-use super::schema::{OutputSize, Span};
+use super::schema::{OutputSizeSchema, SpanSchema};
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, num::NonZeroU32};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct RunError {
-    pub span: Option<Span>,
-    pub msg: RunErrorMsg,
+pub struct RunErrorSchema {
+    pub span: Option<SpanSchema>,
+    pub msg: RunErrorMsgSchema,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum Axis {
+pub enum AxisSchema {
     X = 0,
     Y = 1,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum RunErrorMsg {
-    PythonError(Cow<'static, str>),
+pub enum RunErrorMsgSchema {
+    CodeRunError(Cow<'static, str>),
 
     Spill,
 
@@ -55,16 +55,16 @@ pub enum RunErrorMsg {
 
     // Array size errors
     ExactArraySizeMismatch {
-        expected: OutputSize,
-        got: OutputSize,
+        expected: OutputSizeSchema,
+        got: OutputSizeSchema,
     },
     ExactArrayAxisMismatch {
-        axis: Axis,
+        axis: AxisSchema,
         expected: u32,
         got: u32,
     },
     ArrayAxisMismatch {
-        axis: Axis,
+        axis: AxisSchema,
         expected: u32,
         got: u32,
     },
@@ -87,64 +87,64 @@ pub enum RunErrorMsg {
 
 // todo: There's probably a better way to do the From/Into between the types.
 
-impl RunError {
+impl RunErrorSchema {
     pub fn from_grid_run_error(error: crate::RunError) -> Self {
         Self {
-            span: error.span.map(|span| Span {
+            span: error.span.map(|span| SpanSchema {
                 start: span.start,
                 end: span.end,
             }),
             msg: match error.msg.clone() {
-                crate::RunErrorMsg::CodeRunError(str) => RunErrorMsg::PythonError(str),
-                crate::RunErrorMsg::Spill => RunErrorMsg::Spill,
-                crate::RunErrorMsg::Unimplemented(str) => RunErrorMsg::Unimplemented(str),
-                crate::RunErrorMsg::UnknownError => RunErrorMsg::UnknownError,
-                crate::RunErrorMsg::InternalError(str) => RunErrorMsg::InternalError(str),
+                crate::RunErrorMsg::CodeRunError(str) => RunErrorMsgSchema::CodeRunError(str),
+                crate::RunErrorMsg::Spill => RunErrorMsgSchema::Spill,
+                crate::RunErrorMsg::Unimplemented(str) => RunErrorMsgSchema::Unimplemented(str),
+                crate::RunErrorMsg::UnknownError => RunErrorMsgSchema::UnknownError,
+                crate::RunErrorMsg::InternalError(str) => RunErrorMsgSchema::InternalError(str),
 
                 // Compile errors
-                crate::RunErrorMsg::Unterminated(str) => RunErrorMsg::Unterminated(str),
+                crate::RunErrorMsg::Unterminated(str) => RunErrorMsgSchema::Unterminated(str),
                 crate::RunErrorMsg::Expected { expected, got } => {
-                    RunErrorMsg::Expected { expected, got }
+                    RunErrorMsgSchema::Expected { expected, got }
                 }
-                crate::RunErrorMsg::Unexpected(str) => RunErrorMsg::Unexpected(str),
+                crate::RunErrorMsg::Unexpected(str) => RunErrorMsgSchema::Unexpected(str),
                 crate::RunErrorMsg::TooManyArguments {
                     func_name,
                     max_arg_count,
-                } => RunErrorMsg::TooManyArguments {
+                } => RunErrorMsgSchema::TooManyArguments {
                     func_name,
                     max_arg_count,
                 },
                 crate::RunErrorMsg::MissingRequiredArgument {
                     func_name,
                     arg_name,
-                } => RunErrorMsg::MissingRequiredArgument {
+                } => RunErrorMsgSchema::MissingRequiredArgument {
                     func_name,
                     arg_name,
                 },
-                crate::RunErrorMsg::BadFunctionName => RunErrorMsg::BadFunctionName,
-                crate::RunErrorMsg::BadCellReference => RunErrorMsg::BadCellReference,
-                crate::RunErrorMsg::BadNumber => RunErrorMsg::BadNumber,
+                crate::RunErrorMsg::BadFunctionName => RunErrorMsgSchema::BadFunctionName,
+                crate::RunErrorMsg::BadCellReference => RunErrorMsgSchema::BadCellReference,
+                crate::RunErrorMsg::BadNumber => RunErrorMsgSchema::BadNumber,
                 crate::RunErrorMsg::BadOp {
                     op,
                     ty1,
                     ty2,
                     use_duration_instead,
-                } => RunErrorMsg::BadOp {
+                } => RunErrorMsgSchema::BadOp {
                     op,
                     ty1,
                     ty2,
                     use_duration_instead,
                 },
-                crate::RunErrorMsg::NaN => RunErrorMsg::NaN,
+                crate::RunErrorMsg::NaN => RunErrorMsgSchema::NaN,
 
                 // Array size errors
                 crate::RunErrorMsg::ExactArraySizeMismatch { expected, got } => {
-                    RunErrorMsg::ExactArraySizeMismatch {
-                        expected: OutputSize {
+                    RunErrorMsgSchema::ExactArraySizeMismatch {
+                        expected: OutputSizeSchema {
                             w: expected.w.get() as i64,
                             h: expected.h.get() as i64,
                         },
-                        got: OutputSize {
+                        got: OutputSizeSchema {
                             w: got.w.get() as i64,
                             h: got.h.get() as i64,
                         },
@@ -154,10 +154,10 @@ impl RunError {
                     axis,
                     expected,
                     got,
-                } => RunErrorMsg::ExactArrayAxisMismatch {
+                } => RunErrorMsgSchema::ExactArrayAxisMismatch {
                     axis: match axis {
-                        crate::Axis::X => Axis::X,
-                        crate::Axis::Y => Axis::Y,
+                        crate::Axis::X => AxisSchema::X,
+                        crate::Axis::Y => AxisSchema::Y,
                     },
                     expected,
                     got,
@@ -166,71 +166,71 @@ impl RunError {
                     axis,
                     expected,
                     got,
-                } => RunErrorMsg::ArrayAxisMismatch {
+                } => RunErrorMsgSchema::ArrayAxisMismatch {
                     axis: match axis {
-                        crate::Axis::X => Axis::X,
-                        crate::Axis::Y => Axis::Y,
+                        crate::Axis::X => AxisSchema::X,
+                        crate::Axis::Y => AxisSchema::Y,
                     },
                     expected,
                     got,
                 },
-                crate::RunErrorMsg::EmptyArray => RunErrorMsg::EmptyArray,
-                crate::RunErrorMsg::NonRectangularArray => RunErrorMsg::NonRectangularArray,
-                crate::RunErrorMsg::NonLinearArray => RunErrorMsg::NonLinearArray,
-                crate::RunErrorMsg::ArrayTooBig => RunErrorMsg::ArrayTooBig,
+                crate::RunErrorMsg::EmptyArray => RunErrorMsgSchema::EmptyArray,
+                crate::RunErrorMsg::NonRectangularArray => RunErrorMsgSchema::NonRectangularArray,
+                crate::RunErrorMsg::NonLinearArray => RunErrorMsgSchema::NonLinearArray,
+                crate::RunErrorMsg::ArrayTooBig => RunErrorMsgSchema::ArrayTooBig,
 
-                crate::RunErrorMsg::CircularReference => RunErrorMsg::CircularReference,
-                crate::RunErrorMsg::Overflow => RunErrorMsg::Overflow,
-                crate::RunErrorMsg::DivideByZero => RunErrorMsg::DivideByZero,
-                crate::RunErrorMsg::NegativeExponent => RunErrorMsg::NegativeExponent,
-                crate::RunErrorMsg::NotANumber => RunErrorMsg::NotANumber,
-                crate::RunErrorMsg::Infinity => RunErrorMsg::Infinity,
-                crate::RunErrorMsg::IndexOutOfBounds => RunErrorMsg::IndexOutOfBounds,
-                crate::RunErrorMsg::NoMatch => RunErrorMsg::NoMatch,
-                crate::RunErrorMsg::InvalidArgument => RunErrorMsg::InvalidArgument,
+                crate::RunErrorMsg::CircularReference => RunErrorMsgSchema::CircularReference,
+                crate::RunErrorMsg::Overflow => RunErrorMsgSchema::Overflow,
+                crate::RunErrorMsg::DivideByZero => RunErrorMsgSchema::DivideByZero,
+                crate::RunErrorMsg::NegativeExponent => RunErrorMsgSchema::NegativeExponent,
+                crate::RunErrorMsg::NotANumber => RunErrorMsgSchema::NotANumber,
+                crate::RunErrorMsg::Infinity => RunErrorMsgSchema::Infinity,
+                crate::RunErrorMsg::IndexOutOfBounds => RunErrorMsgSchema::IndexOutOfBounds,
+                crate::RunErrorMsg::NoMatch => RunErrorMsgSchema::NoMatch,
+                crate::RunErrorMsg::InvalidArgument => RunErrorMsgSchema::InvalidArgument,
             },
         }
     }
 }
 
-impl From<RunError> for crate::RunError {
-    fn from(error: RunError) -> crate::RunError {
+impl From<RunErrorSchema> for crate::RunError {
+    fn from(error: RunErrorSchema) -> crate::RunError {
         crate::RunError {
             span: error.span.map(|span| crate::Span {
                 start: span.start,
                 end: span.end,
             }),
             msg: match error.msg {
-                RunErrorMsg::PythonError(str) => crate::RunErrorMsg::CodeRunError(str),
-                RunErrorMsg::Spill => crate::RunErrorMsg::Spill,
-                RunErrorMsg::Unimplemented(str) => crate::RunErrorMsg::Unimplemented(str),
-                RunErrorMsg::UnknownError => crate::RunErrorMsg::UnknownError,
-                RunErrorMsg::InternalError(str) => crate::RunErrorMsg::InternalError(str),
+                RunErrorMsgSchema::CodeRunError(str) => crate::RunErrorMsg::CodeRunError(str),
+                RunErrorMsgSchema::Spill => crate::RunErrorMsg::Spill,
+                RunErrorMsgSchema::Unimplemented(str) => crate::RunErrorMsg::Unimplemented(str),
+                RunErrorMsgSchema::UnknownError => crate::RunErrorMsg::UnknownError,
+                RunErrorMsgSchema::InternalError(str) => crate::RunErrorMsg::InternalError(str),
 
                 // Compile errors
-                RunErrorMsg::Unterminated(str) => crate::RunErrorMsg::Unterminated(str),
-                RunErrorMsg::Expected { expected, got } => {
+                RunErrorMsgSchema::Unterminated(str) => crate::RunErrorMsg::Unterminated(str),
+                RunErrorMsgSchema::Expected { expected, got } => {
                     crate::RunErrorMsg::Expected { expected, got }
                 }
-                RunErrorMsg::Unexpected(str) => crate::RunErrorMsg::Unexpected(str),
-                RunErrorMsg::TooManyArguments {
+                RunErrorMsgSchema::Unexpected(str) => crate::RunErrorMsg::Unexpected(str),
+                RunErrorMsgSchema::TooManyArguments {
                     func_name,
                     max_arg_count,
                 } => crate::RunErrorMsg::TooManyArguments {
                     func_name,
                     max_arg_count,
                 },
-                RunErrorMsg::MissingRequiredArgument {
+                RunErrorMsgSchema::MissingRequiredArgument {
                     func_name,
                     arg_name,
                 } => crate::RunErrorMsg::MissingRequiredArgument {
                     func_name,
                     arg_name,
                 },
-                RunErrorMsg::BadFunctionName => crate::RunErrorMsg::BadFunctionName,
-                RunErrorMsg::BadCellReference => crate::RunErrorMsg::BadCellReference,
-                RunErrorMsg::BadNumber => crate::RunErrorMsg::BadNumber,
-                RunErrorMsg::BadOp {
+                RunErrorMsgSchema::BadFunctionName => crate::RunErrorMsg::BadFunctionName,
+                RunErrorMsgSchema::BadCellReference => crate::RunErrorMsg::BadCellReference,
+                RunErrorMsgSchema::BadNumber => crate::RunErrorMsg::BadNumber,
+                RunErrorMsgSchema::BadOp {
                     op,
                     ty1,
                     ty2,
@@ -241,10 +241,10 @@ impl From<RunError> for crate::RunError {
                     ty2,
                     use_duration_instead,
                 },
-                RunErrorMsg::NaN => crate::RunErrorMsg::NaN,
+                RunErrorMsgSchema::NaN => crate::RunErrorMsg::NaN,
 
                 // Array size errors
-                RunErrorMsg::ExactArraySizeMismatch { expected, got } => {
+                RunErrorMsgSchema::ExactArraySizeMismatch { expected, got } => {
                     crate::RunErrorMsg::ExactArraySizeMismatch {
                         expected: crate::ArraySize {
                             w: NonZeroU32::new(expected.w as u32)
@@ -258,45 +258,45 @@ impl From<RunError> for crate::RunError {
                         },
                     }
                 }
-                RunErrorMsg::ExactArrayAxisMismatch {
+                RunErrorMsgSchema::ExactArrayAxisMismatch {
                     axis,
                     expected,
                     got,
                 } => crate::RunErrorMsg::ExactArrayAxisMismatch {
                     axis: match axis {
-                        Axis::X => crate::Axis::X,
-                        Axis::Y => crate::Axis::Y,
+                        AxisSchema::X => crate::Axis::X,
+                        AxisSchema::Y => crate::Axis::Y,
                     },
                     expected,
                     got,
                 },
-                RunErrorMsg::ArrayAxisMismatch {
+                RunErrorMsgSchema::ArrayAxisMismatch {
                     axis,
                     expected,
                     got,
                 } => crate::RunErrorMsg::ArrayAxisMismatch {
                     axis: match axis {
-                        Axis::X => crate::Axis::X,
-                        Axis::Y => crate::Axis::Y,
+                        AxisSchema::X => crate::Axis::X,
+                        AxisSchema::Y => crate::Axis::Y,
                     },
                     expected,
                     got,
                 },
-                RunErrorMsg::EmptyArray => crate::RunErrorMsg::EmptyArray,
-                RunErrorMsg::NonRectangularArray => crate::RunErrorMsg::NonRectangularArray,
-                RunErrorMsg::NonLinearArray => crate::RunErrorMsg::NonLinearArray,
-                RunErrorMsg::ArrayTooBig => crate::RunErrorMsg::ArrayTooBig,
+                RunErrorMsgSchema::EmptyArray => crate::RunErrorMsg::EmptyArray,
+                RunErrorMsgSchema::NonRectangularArray => crate::RunErrorMsg::NonRectangularArray,
+                RunErrorMsgSchema::NonLinearArray => crate::RunErrorMsg::NonLinearArray,
+                RunErrorMsgSchema::ArrayTooBig => crate::RunErrorMsg::ArrayTooBig,
 
                 // Runtime errors
-                RunErrorMsg::CircularReference => crate::RunErrorMsg::CircularReference,
-                RunErrorMsg::Overflow => crate::RunErrorMsg::Overflow,
-                RunErrorMsg::DivideByZero => crate::RunErrorMsg::DivideByZero,
-                RunErrorMsg::NegativeExponent => crate::RunErrorMsg::NegativeExponent,
-                RunErrorMsg::NotANumber => crate::RunErrorMsg::NotANumber,
-                RunErrorMsg::Infinity => crate::RunErrorMsg::Infinity,
-                RunErrorMsg::IndexOutOfBounds => crate::RunErrorMsg::IndexOutOfBounds,
-                RunErrorMsg::NoMatch => crate::RunErrorMsg::NoMatch,
-                RunErrorMsg::InvalidArgument => crate::RunErrorMsg::InvalidArgument,
+                RunErrorMsgSchema::CircularReference => crate::RunErrorMsg::CircularReference,
+                RunErrorMsgSchema::Overflow => crate::RunErrorMsg::Overflow,
+                RunErrorMsgSchema::DivideByZero => crate::RunErrorMsg::DivideByZero,
+                RunErrorMsgSchema::NegativeExponent => crate::RunErrorMsg::NegativeExponent,
+                RunErrorMsgSchema::NotANumber => crate::RunErrorMsg::NotANumber,
+                RunErrorMsgSchema::Infinity => crate::RunErrorMsg::Infinity,
+                RunErrorMsgSchema::IndexOutOfBounds => crate::RunErrorMsg::IndexOutOfBounds,
+                RunErrorMsgSchema::NoMatch => crate::RunErrorMsg::NoMatch,
+                RunErrorMsgSchema::InvalidArgument => crate::RunErrorMsg::InvalidArgument,
             },
         }
     }

@@ -13,7 +13,11 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export function AIAssistantSelectModelMenu() {
+interface AIAssistantSelectModelMenuProps {
+  textAreaRef: React.RefObject<HTMLTextAreaElement>;
+}
+
+export function AIAssistantSelectModelMenu({ textAreaRef }: AIAssistantSelectModelMenuProps) {
   const [selectedMode, setSelectedModel] = useAIAssistantModel();
   // If the model is not enabled, set the model to the first enabled model
   useEffect(() => {
@@ -48,7 +52,14 @@ export function AIAssistantSelectModelMenu() {
         </div>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start" alignOffset={-4}>
+      <DropdownMenuContent
+        align="start"
+        alignOffset={-4}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          textAreaRef.current?.focus();
+        }}
+      >
         {enabledModels.map((enabledModel) => {
           const displayName = MODEL_OPTIONS[enabledModel].displayName;
           return (

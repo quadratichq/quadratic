@@ -30,6 +30,7 @@ type InsertActionSpec = Pick<
   | Action.InsertCellReference
   | Action.RemoveInsertedCells
   | Action.InsertToday
+  | Action.InsertTodayTime
 >;
 
 export const insertActionsSpec: InsertActionSpec = {
@@ -256,6 +257,17 @@ export const insertActionsSpec: InsertActionSpec = {
       const today = new Date();
       const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
       quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedDate);
+    },
+  },
+  [Action.InsertTodayTime]: {
+    label: "Insert today's time",
+    Icon: FormatDateTimeIcon,
+    run: () => {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      const today = new Date();
+      const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedTime);
     },
   },
 };
