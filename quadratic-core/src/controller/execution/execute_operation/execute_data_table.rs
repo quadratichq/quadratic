@@ -67,6 +67,11 @@ impl GridController {
 
                 let old_value = sheet.get_code_cell_value(pos).unwrap_or(CellValue::Blank);
 
+                dbgjs!(format!(
+                    "SetDataTableAt sheet_pos: {:?} old_value: {:?} old_value: {:?}",
+                    sheet_pos, old_value, value
+                ));
+
                 sheet.set_code_cell_value(pos, value.to_owned());
                 let sheet_rect = SheetRect::from_numbers(
                     sheet_pos.x,

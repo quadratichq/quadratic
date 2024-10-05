@@ -34,8 +34,8 @@ impl GridController {
         sheet_pos: SheetPos,
         values: String,
     ) -> Vec<Operation> {
-        let (_, cell_value) = &self.string_to_cell_value(sheet_pos, &values);
-        let values = CellValues::from(cell_value.to_owned());
+        let (_, cell_value) = self.string_to_cell_value(sheet_pos, &values);
+        let values = CellValues::from(cell_value);
 
         vec![Operation::SetDataTableAt { sheet_pos, values }]
     }

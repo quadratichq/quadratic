@@ -62,16 +62,9 @@ impl GridController {
         let sheet = self
             .try_sheet_from_string_id(sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
-
         let val = sheet.get_cell_for_formula(pos);
-        dbgjs!(format!("getEditCell {} {:?}", &pos, val));
-        Ok(val.to_edit())
 
-        // if let Some(value) = sheet.cell_value(pos) {
-        //     Ok(value.to_edit())
-        // } else {
-        //     Ok(String::from(""))
-        // }
+        Ok(val.to_edit())
     }
 
     /// gets the display value for a cell
