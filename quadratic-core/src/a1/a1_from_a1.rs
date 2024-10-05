@@ -1,77 +1,29 @@
-use std::collections::HashMap;
+use crate::{Pos, Rect};
 
-use serde::Serialize;
-use ts_rs::TS;
-
-use crate::{grid::SheetId, Pos, Rect};
-
-pub type SheetNameIdMap = HashMap<String, SheetId>;
-
-#[derive(Serialize, Debug, Clone, PartialEq, Eq, TS)]
-pub enum A1Error {
-    InvalidSheetId(String),
-    InvalidSheetMap(String),
-    InvalidColumn(String),
-    InvalidSheetName(String),
-    TooManySheets,
-}
-
-impl From<A1Error> for String {
-    fn from(error: A1Error) -> Self {
-        serde_json::to_string(&error)
-            .unwrap_or(format!("Failed to convert A1Error to string: {:?}", error))
-    }
-}
-
-pub struct A1 {}
+use super::{A1Error, A1};
 
 impl A1 {
-    /// Convert column (x) to A1 notation
-    pub fn x_to_a1(column: u64) -> String {
-        let mut a1_notation = Vec::new();
-        let total_alphabets = (b'Z' - b'A' + 1) as u64;
-        let mut block = column;
-
-        while block > 0 {
-            block -= 1; // Subtract 1 before calculating the character
-            let char_code = (block % total_alphabets) as u8 + b'A';
-            a1_notation.push(char_code as char);
-            block /= total_alphabets;
-        }
-
-        // Reverse the vector and convert to string
-        a1_notation.reverse();
-        a1_notation.into_iter().collect()
+    /// Checks for all notation
+    pub fn try_from_all(a1: &str) -> bool {
+        a1.contains("*")
     }
 
-    /// Converts a position to an A1-style string.
-    pub fn pos_to_a1(x: u64, y: u64) -> String {
-        format!("{}{}", A1::x_to_a1(x), y)
-    }
-
-    /// Convert A1 notation column to a column index
-    pub fn try_from_column(a1_column: &str) -> Option<u64> {
-        let a1_column = a1_column.trim().to_uppercase();
-        if a1_column.is_empty() {
+    /// Tries to convert an A1 part to a column.
+    pub fn try_from_column(a1: &str) -> Option<u64> {
+        let a1 = a1.trim().replace("$", "").to_uppercase();
+        if a1.is_empty() {
             return None;
         }
 
         let total_alphabets = (b'Z' - b'A' + 1) as u64;
         let mut result = 0;
-        for (i, &c) in a1_column.as_bytes().iter().rev().enumerate() {
+        for (i, &c) in a1.as_bytes().iter().rev().enumerate() {
             if !c.is_ascii_uppercase() {
                 return None;
             }
             result += (c - b'A' + 1) as u64 * total_alphabets.pow(i as u32);
         }
         Some(result)
-    }
-
-    /// Try to create a row from an A1 string.
-    pub fn try_from_row(row: &str) -> Option<u64> {
-        row.parse::<u64>()
-            .ok()
-            .and_then(|n| if n > 0 { Some(n) } else { None })
     }
 
     /// Get a column from an A1 string and automatically unwrap it (only used
@@ -81,8 +33,28 @@ impl A1 {
         A1::try_from_column(a1_column).unwrap() as i64
     }
 
+    /// Tries to convert an A1 part to a row.
+    pub fn try_from_row(a1: &str) -> Option<u64> {
+        let a1 = a1.trim().replace("$", "");
+        if a1.is_empty() {
+            return None;
+        }
+        match a1.parse::<u64>() {
+            Ok(x) => {
+                if x > 0 {
+                    Some(x)
+                } else {
+                    None
+                }
+            }
+            Err(_) => None,
+        }
+    }
+
     /// Tries to create a Pos from an A1 string.
     pub fn try_from_pos(a1: &str) -> Option<Pos> {
+        let a1 = a1.trim().replace("$", "");
+
         // Find the index where the digits start
         let number_digit = a1.find(char::is_numeric)?;
 
@@ -102,7 +74,7 @@ impl A1 {
         Some(Pos::new(x as i64, y as i64))
     }
 
-    /// Try to create a rect from an A1 range.
+    /// Tries to create a Rect from an A1 string.
     pub fn try_from_range(range: &str) -> Option<Rect> {
         if let Some((from, to)) = range.split_once(':') {
             let from = A1::try_from_pos(from)?;
@@ -120,9 +92,8 @@ impl A1 {
         }
     }
 
-    /// Tries to create Column(s) from an A1 string.
+    /// Tries to create Column(s) from an A1 string. Returns a vector of column.
     pub fn try_from_columns(a1: &str) -> Option<Vec<u64>> {
-        // try multiple columns
         a1.split_once(':')
             .map(|(from, to)| {
                 let (from, to) = match (A1::try_from_column(from), A1::try_from_column(to)) {
@@ -134,7 +105,7 @@ impl A1 {
                 };
                 Some((from..=to).collect())
             })
-            .unwrap_or_else(|| A1::try_from_column(a1).map(|x| vec![x]))
+            .unwrap_or_else(|| A1::try_from_column(&a1).map(|x| vec![x]))
     }
 
     /// Tries to create Row(s) from an A1 string.
@@ -153,19 +124,26 @@ impl A1 {
             .unwrap_or_else(|| A1::try_from_row(a1).map(|y| vec![y]))
     }
 
-    // Example of how to use the Error type in a method
-    pub fn some_method(input: &str) -> Result<(), A1Error> {
-        if input.is_empty() {
-            Err(A1Error::InvalidColumn(input.to_string()))
-        } else {
-            Ok(())
-        }
-    }
-}
+    /// Gets the sheet name from an a1 string if present. Returns (the remaining
+    /// string, sheet name) or any error.
+    pub fn try_sheet_name(a1: &str) -> Result<(&str, Option<&str>), A1Error> {
+        // Count the number of exclamation marks in the A1 string
+        let exclamation_count = a1.chars().filter(|&c| c == '!').count();
 
-impl From<Pos> for String {
-    fn from(pos: Pos) -> Self {
-        A1::pos_to_a1(pos.x as u64, pos.y as u64)
+        // If there are more than one exclamation mark, return an error
+        if exclamation_count > 1 {
+            return Err(A1Error::TooManySheets);
+        }
+        if exclamation_count == 1 {
+            let Some((sheet_name, remaining)) = a1.split_once('!') else {
+                return Err(A1Error::TooManySheets);
+            };
+            // Remove single quotes around sheet name if present
+            let sheet_name = sheet_name.trim_matches('\'');
+            Ok((remaining, Some(sheet_name)))
+        } else {
+            Ok((a1, None))
+        }
     }
 }
 
@@ -174,46 +152,6 @@ mod tests {
     use serial_test::parallel;
 
     use super::*;
-
-    #[test]
-    #[parallel]
-    fn test_to_a1_column() {
-        assert_eq!(A1::x_to_a1(1), "A");
-        assert_eq!(A1::x_to_a1(2), "B");
-        assert_eq!(A1::x_to_a1(3), "C");
-        assert_eq!(A1::x_to_a1(25), "Y");
-        assert_eq!(A1::x_to_a1(26), "Z");
-        assert_eq!(A1::x_to_a1(27), "AA");
-    }
-
-    #[test]
-    #[parallel]
-    fn test_pos_to_a1() {
-        assert_eq!(A1::pos_to_a1(1, 1), "A1");
-        assert_eq!(A1::pos_to_a1(2, 1), "B1");
-        assert_eq!(A1::pos_to_a1(3, 1), "C1");
-        assert_eq!(A1::pos_to_a1(4, 1), "D1");
-        assert_eq!(A1::pos_to_a1(5, 1), "E1");
-        assert_eq!(A1::pos_to_a1(6, 1), "F1");
-
-        // Test near ±26
-        assert_eq!(A1::pos_to_a1(25, 1), "Y1");
-        assert_eq!(A1::pos_to_a1(26, 1), "Z1");
-        assert_eq!(A1::pos_to_a1(27, 1), "AA1");
-        assert_eq!(A1::pos_to_a1(28, 1), "AB1");
-
-        // Test near ±52
-        assert_eq!(A1::pos_to_a1(51, 1), "AY1");
-        assert_eq!(A1::pos_to_a1(52, 1), "AZ1");
-        assert_eq!(A1::pos_to_a1(53, 1), "BA1");
-        assert_eq!(A1::pos_to_a1(54, 1), "BB1");
-
-        // Test near ±702
-        assert_eq!(A1::pos_to_a1(701, 1), "ZY1");
-        assert_eq!(A1::pos_to_a1(702, 1), "ZZ1");
-        assert_eq!(A1::pos_to_a1(703, 1), "AAA1");
-        assert_eq!(A1::pos_to_a1(704, 1), "AAB1");
-    }
 
     #[test]
     #[parallel]
@@ -296,5 +234,31 @@ mod tests {
         assert_eq!(A1::try_from_row("0"), None);
         assert_eq!(A1::try_from_row("-1"), None);
         assert_eq!(A1::try_from_row("-100"), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_sheet_name() {
+        assert_eq!(A1::try_sheet_name("Sheet1!A1"), Ok(("A1", Some("Sheet1"))));
+        assert_eq!(
+            A1::try_sheet_name("'Sheet 1'!A1"),
+            Ok(("A1", Some("Sheet 1")))
+        );
+        assert_eq!(A1::try_sheet_name("A1"), Ok(("A1", None)));
+        assert_eq!(
+            A1::try_sheet_name("Sheet1!A1:B2"),
+            Ok(("A1:B2", Some("Sheet1")))
+        );
+        assert!(matches!(
+            A1::try_sheet_name("Sheet1!Sheet2!A1"),
+            Err(A1Error::TooManySheets)
+        ));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_all() {
+        assert!(A1::try_from_all("*"));
+        assert!(!A1::try_from_all("A1"));
     }
 }

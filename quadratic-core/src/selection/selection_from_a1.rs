@@ -1,4 +1,4 @@
-use crate::{grid::SheetId, A1Error, Rect, SheetNameIdMap, A1};
+use crate::{a1_parts::A1Parts, grid::SheetId, A1Error, Rect, SheetNameIdMap};
 
 use super::Selection;
 
@@ -6,80 +6,54 @@ impl Selection {
     /// Create a selection from an A1 string
     /// - sheets is sent from TS as we do not have access to Core here
     pub fn from_a1(
-        mut a1: &str,
+        a1: &str,
         sheet_id: SheetId,
         sheets: SheetNameIdMap,
     ) -> Result<Selection, A1Error> {
         let mut selection = Selection::new(sheet_id);
-        // Count the number of exclamation marks in the A1 string
-        let exclamation_count = a1.chars().filter(|&c| c == '!').count();
 
-        // If there are more than one exclamation mark, return an error
-        if exclamation_count > 1 {
-            return Err(A1Error::TooManySheets);
-        }
-        if exclamation_count == 1 {
-            let Some((sheet_name, remaining)) = a1.split_once('!') else {
-                return Err(A1Error::TooManySheets);
-            };
-            // Remove single quotes around sheet name if present
-            let sheet_name = sheet_name.trim_matches('\'');
+        let parts: A1Parts = A1Parts::from_a1(a1)?;
 
+        if let Some(sheet_name) = parts.sheet_name {
             let different_sheet_id = sheets
                 .iter()
                 .find(|(name, _)| name.to_lowercase() == sheet_name.to_lowercase())
                 .map(|(_, sheet_id)| sheet_id)
-                .ok_or(A1Error::InvalidSheetName(sheet_name.to_string()))?;
+                .ok_or(A1Error::InvalidSheetName(sheet_name))?;
 
             selection.sheet_id = different_sheet_id.to_owned();
-            a1 = remaining;
-        }
-        let entries = a1.split(',');
-        for entry in entries {
-            let entry = entry.trim();
-
-            // try range
-            if let Some(rect) = A1::try_from_range(entry) {
-                selection.add_rect(rect);
-            }
-
-            // try position
-            if let Some(pos) = A1::try_from_pos(entry) {
-                selection.x = pos.x;
-                selection.y = pos.y;
-                selection.add_rect(Rect::from_numbers(pos.x, pos.y, 1, 1));
-            }
-
-            // try columns
-            if let Some(columns) = A1::try_from_columns(entry) {
-                selection.add_columns(columns.iter().map(|x| *x as i64).collect());
-            }
-
-            // try rows
-            if let Some(rows) = A1::try_from_rows(entry) {
-                selection.add_rows(rows.iter().map(|x| *x as i64).collect());
-            }
-
-            // try all (which is just Selection::all)
-            if entry == "*" {
-                return Ok(Selection::all(sheet_id));
-            }
         }
 
-        // find the right place for the cursor
-        if let Some(rects) = selection.rects.as_ref() {
-            if !rects.is_empty() {
-                selection.x = rects[0].min.x;
-                selection.y = rects[0].min.y;
-            }
-        } else if let Some(columns) = selection.columns.as_ref() {
-            if !columns.is_empty() {
-                selection.x = columns[0];
-            }
-        } else if let Some(rows) = selection.rows.as_ref() {
-            if !rows.is_empty() {
-                selection.y = rows[0];
-            }
+        if parts.all {
+            selection.all = true;
+            return Ok(selection);
+        }
+
+        for column in parts.columns {
+            selection.add_columns(vec![column.index as i64]);
+        }
+        for row in parts.rows {
+            selection.add_rows(vec![row.index as i64]);
+        }
+        for column_range in parts.column_ranges {
+            selection.add_columns(
+                (column_range.from.index as i64..=column_range.to.index as i64).collect(),
+            );
+        }
+        for row_range in parts.row_ranges {
+            selection.add_rows((row_range.from.index as i64..=row_range.to.index as i64).collect());
+        }
+        for rect in parts.rects {
+            let x0 = rect.min.x.min(rect.max.x) as i64;
+            let y0 = rect.min.y.min(rect.max.y) as i64;
+            let x1 = rect.min.x.max(rect.max.x) as i64;
+            let y1 = rect.min.y.max(rect.max.y) as i64;
+            selection.add_rect(Rect::new(x0, y0, x1, y1));
+        }
+        for pos in parts.positions {
+            selection.add_rect(Rect::new(pos.x as i64, pos.y as i64, 1, 1));
+            selection.x = pos.x as i64;
+            selection.y = pos.y as i64;
         }
 
         Ok(selection)
@@ -159,22 +133,22 @@ mod tests {
     #[parallel]
     fn test_from_a1_everything() {
         let sheet_id = SheetId::test();
-        assert_eq!(
-            Selection::from_a1(
-                "A1, B1::D2, E:G, 2:3, 5:7, F6:G8, 4",
-                sheet_id,
-                HashMap::new()
-            ),
-            Ok(Selection {
-                sheet_id,
-                x: 1,
-                y: 1,
-                rects: Some(vec![Rect::new(1, 1, 1, 1), Rect::new(6, 6, 7, 8),]),
-                columns: Some(vec![5, 6, 7]),
-                rows: Some(vec![2, 3, 4, 5, 6, 7]),
-                all: false,
-            })
-        );
+        let selection = Selection::from_a1(
+            "A1, B1::D2, E:G, 2:3, 5:7, F6:G8, 4",
+            sheet_id,
+            HashMap::new(),
+        )
+        .unwrap();
+
+        assert_eq!(selection.sheet_id, sheet_id);
+        assert_eq!(selection.x, 1);
+        assert_eq!(selection.y, 1);
+        let rects = selection.rects.unwrap().clone();
+        assert_eq!(rects.len(), 2);
+        assert!(rects.contains(&Rect::new(1, 1, 1, 1)));
+        assert!(rects.contains(&Rect::new(6, 6, 7, 8)));
+        assert_eq!(selection.columns, Some(vec![5, 6, 7]));
+        assert_eq!(selection.rows, Some(vec![2, 3, 4, 5, 6, 7]));
     }
 
     #[test]
