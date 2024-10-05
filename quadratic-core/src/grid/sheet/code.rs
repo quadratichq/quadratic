@@ -103,6 +103,7 @@ impl Sheet {
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
+    /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         self.data_tables
             .iter()
@@ -118,7 +119,10 @@ impl Sheet {
             })
     }
 
-    pub fn set_code_cell_value(&mut self, pos: Pos, value: CellValue) -> Option<CellValue> {
+    /// Sets the CellValue for a DataTable at the Pos.
+    /// Returns true if the value was set.
+    /// TODO(ddimaria): move to DataTable code
+    pub fn set_code_cell_value(&mut self, pos: Pos, value: CellValue) -> bool {
         self.data_tables
             .iter_mut()
             .find(|(code_cell_pos, data_table)| {
@@ -127,10 +131,11 @@ impl Sheet {
             .and_then(|(code_cell_pos, data_table)| {
                 let x = (pos.x - code_cell_pos.x) as u32;
                 let y = (pos.y - code_cell_pos.y) as u32;
-                data_table.set_cell_value_at(x, y, value.to_owned());
+                data_table.set_cell_value_at(x, y, value);
 
-                Some(value)
+                Some(())
             })
+            .is_some()
     }
 
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {

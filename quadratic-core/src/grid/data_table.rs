@@ -150,6 +150,8 @@ impl DataTable {
         };
     }
 
+    /// Ensure that the index is within the bounds of the columns.
+    /// If there are no columns, apply default headers first if `apply_default_header` is true.
     fn check_index(&mut self, index: usize, apply_default_header: bool) -> anyhow::Result<()> {
         match self.columns {
             Some(ref mut columns) => {
@@ -168,6 +170,7 @@ impl DataTable {
         Ok(())
     }
 
+    /// Replace a column header at the given index in place.
     pub fn set_header_at(
         &mut self,
         index: usize,
@@ -187,6 +190,7 @@ impl DataTable {
         Ok(())
     }
 
+    /// Set the display of a column header at the given index.
     pub fn set_header_display_at(&mut self, index: usize, display: bool) -> anyhow::Result<()> {
         self.check_index(index, true)?;
 
@@ -263,23 +267,27 @@ impl DataTable {
         }
     }
 
-    pub fn set_cell_value_at(&mut self, x: u32, y: u32, value: CellValue) -> Option<CellValue> {
+    /// Sets the cell value at a relative location (0-indexed) into the code.
+    /// Returns `false` if the value cannot be set.
+    pub fn set_cell_value_at(&mut self, x: u32, y: u32, value: CellValue) -> bool {
         if !self.spill_error {
             match self.value {
                 Value::Single(_) => {
-                    self.value = Value::Single(value.to_owned());
+                    self.value = Value::Single(value);
                 }
                 Value::Array(ref mut a) => {
-                    // TODO(ddimaria): handle error
-                    a.set(x, y, value.to_owned()).unwrap();
+                    if let Err(error) = a.set(x, y, value) {
+                        dbgjs!(format!("Unable to set cell value at ({x}, {y}): {error}"));
+                        return false;
+                    }
                 }
                 Value::Tuple(_) => {}
             }
 
-            return Some(value);
+            return true;
         }
 
-        None
+        false
     }
 
     /// Returns the size of the output array, or defaults to `_1X1` (since output always includes the code_cell).
