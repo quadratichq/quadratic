@@ -223,10 +223,16 @@ impl GridController {
                     if pos.y < rect.max.y {
                         border_style.bottom = style;
                     }
+                    if pos.y > rect.min.y {
+                        border_style.top = style;
+                    }
                 }
                 BorderSelection::Vertical => {
                     if pos.x < rect.max.x {
                         border_style.right = style;
+                    }
+                    if pos.x > rect.min.x {
+                        border_style.left = style;
                     }
                 }
                 BorderSelection::Left => {
