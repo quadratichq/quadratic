@@ -99,6 +99,8 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     const key = `${message.hashX},${message.hashY}`;
     sheet.gridOverflowLines.updateHash(key, message.overflowGridLines);
+
+    events.emit('hashContentChanged', message.sheetId, message.hashX, message.hashY);
   }
 
   labelMeshEntry(message: RenderClientLabelMeshEntry) {

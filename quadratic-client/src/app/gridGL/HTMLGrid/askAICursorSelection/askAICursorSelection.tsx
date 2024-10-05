@@ -1,4 +1,5 @@
 import { aiAssistantContextAtom } from '@/app/atoms/aiAssistantAtom';
+import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -14,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 const CURSOR_SELECTION_PROMPTS: { label: string; prompt: string }[] = [
   { label: 'Create a chart', prompt: 'Create a chart from my data using Plotly in Python' },
@@ -30,6 +31,7 @@ const ASK_AI_CURSOR_SELECTION_DELAY = 500;
 
 export function AskAICursorSelection() {
   const setAIAssistantContext = useSetRecoilState(aiAssistantContextAtom);
+  const inlineEditorState = useRecoilValue(inlineEditorAtom);
   const [currentSheet, setCurrentSheet] = useState(sheets.current);
   const [selection, setSelection] = useState<Selection | undefined>();
   const [displayPos, setDisplayPos] = useState<Coordinate | undefined>();
@@ -50,7 +52,7 @@ export function AskAICursorSelection() {
       const column = Math.max(Number(rect.min.x), Number(rect.max.x));
       const row = Math.min(Number(rect.min.y), Number(rect.max.y));
       const rectangle = sheets.getById(selection.sheet_id.id)?.getCellOffsets(column, row);
-      if (hasContent && rectangle) {
+      if (hasContent && rectangle && !inlineEditorState.visible) {
         setSelection(selection);
         setDisplayPos({
           x: rectangle.x + rectangle.width,
@@ -64,7 +66,7 @@ export function AskAICursorSelection() {
       setSelection(undefined);
       setDisplayPos(undefined);
     }
-  }, []);
+  }, [inlineEditorState.visible]);
 
   const updateSelection = useCallback(() => {
     clearTimeout(timeoutRef.current);
@@ -117,6 +119,17 @@ export function AskAICursorSelection() {
     };
   }, [updateSelection]);
 
+  useEffect(() => {
+    const handleHashContentChanged = (sheetId: string) => {
+      if (currentSheet === sheetId) updateSelection();
+    };
+
+    events.on('hashContentChanged', handleHashContentChanged);
+    return () => {
+      events.off('hashContentChanged', handleHashContentChanged);
+    };
+  }, [currentSheet, updateSelection]);
+
   if (selection?.sheet_id.id !== currentSheet || displayPos === undefined) return null;
 
   return (
@@ -132,18 +145,20 @@ export function AskAICursorSelection() {
         transform: 'translate(-50%, -50%)',
       }}
     >
-      <DropdownMenu
-        onOpenChange={(open) => {
-          if (!open) setTimeout(focusGrid, 100);
-        }}
-      >
+      <DropdownMenu>
         <DropdownMenuTrigger asChild disabled={loading}>
           <div className="flex items-center px-2 py-1">
             <AIIcon />
           </div>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent
+          align="start"
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            focusGrid();
+          }}
+        >
           <div className="relative select-none items-center rounded-sm p-2 text-base font-bold">
             Take action on you selected data
           </div>

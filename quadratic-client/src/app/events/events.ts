@@ -137,6 +137,8 @@ interface EventTypes {
   askAICodeCell: (codeCell: CodeCell) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
+
+  hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
