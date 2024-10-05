@@ -1,3 +1,4 @@
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { TopBarMenus } from '@/app/ui/menus/TopBar/TopBarMenus/TopBarMenus';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
@@ -56,7 +57,12 @@ export const TopBar = () => {
           <DropdownMenuTrigger className="flex items-center gap-0 self-stretch px-2 md:hidden">
             <QuadraticLogo />
           </DropdownMenuTrigger>
-          <DropdownMenuContent>
+          <DropdownMenuContent
+            onCloseAutoFocus={(e) => {
+              e.preventDefault();
+              focusGrid();
+            }}
+          >
             <DropdownMenuItem
               onClick={() => {
                 window.location.href = '/';

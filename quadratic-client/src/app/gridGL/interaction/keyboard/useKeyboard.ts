@@ -54,6 +54,12 @@ export const useKeyboard = (): {
       const today = new Date();
       const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
       quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedDate);
+    } else if (matchShortcut(Action.InsertTodayTime, event)) {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      const today = new Date();
+      const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedTime);
     }
 
     // Prevent these commands if "command" key is being pressed
