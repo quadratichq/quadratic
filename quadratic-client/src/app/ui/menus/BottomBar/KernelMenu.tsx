@@ -2,6 +2,7 @@ import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
@@ -90,7 +91,13 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
           </SidebarToggle>
         </DropdownMenuTrigger>
       </SidebarTooltip>
-      <DropdownMenuContent side="right">
+      <DropdownMenuContent
+        side="right"
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          focusGrid();
+        }}
+      >
         <DropdownMenuLabel>
           Status: {pythonCodeRunning || javascriptCodeRunning || connectionCodeRunning ? 'running' : 'idle'}
         </DropdownMenuLabel>

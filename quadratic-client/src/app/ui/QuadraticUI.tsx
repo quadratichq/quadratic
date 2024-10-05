@@ -57,6 +57,7 @@ export default function QuadraticUI() {
 
   return (
     <div
+      id="quadratic-ui"
       style={{
         width: '100%',
         height: '100%',
