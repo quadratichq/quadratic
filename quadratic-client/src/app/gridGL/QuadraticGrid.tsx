@@ -1,17 +1,11 @@
-import { Action } from '@/app/actions/actions';
-import { events } from '@/app/events/events';
+import { gridPanMode, gridPanModeAtom, PanMode } from '@/app/atoms/gridPanModeAtom';
 import { HTMLGridContainer } from '@/app/gridGL/HTMLGrid/HTMLGridContainer';
 import { useKeyboard } from '@/app/gridGL/interaction/keyboard/useKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { ImportProgress } from '@/app/ui/components/ImportProgress';
 import { Search } from '@/app/ui/components/Search';
-import { MouseEvent, useCallback, useEffect, useState } from 'react';
-
-// Keep track of state of mouse/space for panning mode
-let mouseIsDown = false;
-let spaceIsDown = false;
+import { MouseEvent, useCallback, useState } from 'react';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 export default function QuadraticGrid() {
   const [container, setContainer] = useState<HTMLDivElement>();
@@ -22,58 +16,24 @@ export default function QuadraticGrid() {
     }
   }, []);
 
-  const [panMode, setPanMode] = useState<PanMode>(PanMode.Disabled);
-  useEffect(() => {
-    const updatePanMode = (panMode: PanMode) => {
-      setPanMode(panMode);
-    };
-    events.on('panMode', updatePanMode);
-    return () => {
-      events.off('panMode', updatePanMode);
-    };
-  }, []);
+  const panMode = useRecoilValue(gridPanMode);
+  const handleMouseChange = useRecoilCallback(
+    ({ set }) =>
+      (e: MouseEvent) => {
+        set(gridPanModeAtom, (prev) => ({ ...prev, mouseIsDown: e.buttons === 1 && e.button === 0 }));
+      },
+    []
+  );
+  const disablePanMode = useRecoilCallback(
+    ({ set }) =>
+      () => {
+        console.log('disablePanMode');
+        set(gridPanModeAtom, (prev) => ({ ...prev, mouseIsDown: false, spaceIsDown: false }));
+      },
+    []
+  );
 
-  // Pan mode
-  const onMouseUp = () => {
-    mouseIsDown = false;
-    if (panMode !== PanMode.Disabled) {
-      pixiAppSettings.changePanMode(spaceIsDown ? PanMode.Enabled : PanMode.Disabled);
-    } else {
-      pixiAppSettings.changePanMode(PanMode.Disabled);
-    }
-    window.removeEventListener('mouseup', onMouseUp);
-  };
-  const onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
-    mouseIsDown = true;
-    if (panMode === PanMode.Enabled) {
-      pixiAppSettings.changePanMode(PanMode.Dragging);
-    } else if (e.button === 1) {
-      pixiAppSettings.changePanMode(PanMode.Dragging);
-    }
-    window.addEventListener('mouseup', onMouseUp);
-  };
-  const onKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (matchShortcut(Action.GridPanMode, e)) {
-      spaceIsDown = true;
-      if (panMode === PanMode.Disabled) {
-        pixiAppSettings.changePanMode(PanMode.Enabled);
-      }
-      return true;
-    }
-    return false;
-  };
-  const onKeyUp = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (matchShortcut(Action.GridPanMode, e)) {
-      spaceIsDown = false;
-      if (panMode !== PanMode.Disabled && !mouseIsDown) {
-        pixiAppSettings.changePanMode(PanMode.Disabled);
-      }
-      return true;
-    }
-    return false;
-  };
-
-  const { onKeyDown: onKeyDownFromUseKeyboard, onKeyUp: onKeyUpFromUseKeyboard } = useKeyboard();
+  const { onKeyDown, onKeyUp } = useKeyboard();
 
   return (
     <div
@@ -87,14 +47,13 @@ export default function QuadraticGrid() {
         WebkitTapHighlightColor: 'transparent',
         cursor: panMode === PanMode.Enabled ? 'grab' : panMode === PanMode.Dragging ? 'grabbing' : 'unset',
       }}
-      onContextMenu={(event) => event.preventDefault()}
-      onMouseDown={onMouseDown}
-      onKeyDown={(e) => {
-        onKeyDown(e) || onKeyDownFromUseKeyboard(e);
-      }}
-      onKeyUp={(e) => {
-        onKeyUp(e) || onKeyUpFromUseKeyboard(e);
-      }}
+      onContextMenu={(e) => e.preventDefault()}
+      onMouseDown={handleMouseChange}
+      onMouseUp={handleMouseChange}
+      onMouseMove={handleMouseChange}
+      onBlur={disablePanMode}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
       <ImportProgress />
