@@ -295,7 +295,7 @@ How can I help you?
             textareaRef.current?.focus();
           }}
         >
-          <SelectAIModelDropdownMenu />
+          <SelectAIModelDropdownMenu textAreaRef={textareaRef} />
 
           {loading ? (
             <div className="flex items-center gap-2">
@@ -346,7 +346,7 @@ How can I help you?
   );
 };
 
-export function SelectAIModelDropdownMenu() {
+export function SelectAIModelDropdownMenu({ textAreaRef }: { textAreaRef: React.RefObject<HTMLTextAreaElement> }) {
   const [selectedModel, setSelectedModel] = useAIAssistantModel();
 
   // If the model is not enabled, set the model to the first enabled model
@@ -379,7 +379,14 @@ export function SelectAIModelDropdownMenu() {
           <CaretDownIcon />
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" alignOffset={-4}>
+      <DropdownMenuContent
+        align="start"
+        alignOffset={-4}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          textAreaRef.current?.focus();
+        }}
+      >
         {enabledModels.map((enabledModel) => {
           const displayName = MODEL_OPTIONS[enabledModel].displayName;
           return (
