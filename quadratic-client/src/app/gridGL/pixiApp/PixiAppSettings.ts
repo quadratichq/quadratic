@@ -94,10 +94,18 @@ class PixiAppSettings {
   }
 
   updateGridPanMode(gridPanMode: GridPanMode, setGridPanMode: SetterOrUpdater<GridPanMode>): void {
+    this._panMode = gridPanMode.panMode;
+
     this.gridPanMode = gridPanMode;
     this.setGridPanMode = setGridPanMode;
 
-    this._panMode = gridPanMode.panMode;
+    if (gridPanMode.panMode === PanMode.Enabled) {
+      pixiApp.canvas.style.cursor = 'grab';
+    } else if (gridPanMode.panMode === PanMode.Dragging) {
+      pixiApp.canvas.style.cursor = 'grabbing';
+    } else {
+      pixiApp.canvas.style.cursor = 'unset';
+    }
   }
 
   updateGridSettings(gridSettings: GridSettings, setGridSettings: SetterOrUpdater<GridSettings>): void {
