@@ -43,7 +43,7 @@ impl A1Part {
 
     /// Tries to convert an A1 part to all.
     fn try_from_all(a1: &str) -> bool {
-        a1.trim() == "*".to_string()
+        a1.trim() == "*"
     }
 
     /// Tries to convert an A1 part to RelColRow.
@@ -61,10 +61,10 @@ impl A1Part {
                 if x > 0 {
                     Ok(Some(RelColRow { index: x, relative }))
                 } else {
-                    return Err(A1Error::InvalidRow(a1.to_string()));
+                    Err(A1Error::InvalidRow(a1.to_string()))
                 }
             }
-            Err(_) => return Ok(None),
+            Err(_) => Ok(None),
         }
     }
 
@@ -89,7 +89,7 @@ impl A1Part {
                 Some(RelColRowRange { from, to })
             })
             .unwrap_or_else(|| {
-                A1Part::try_from_column(&a1).map(|x| RelColRowRange { from: x, to: x })
+                A1Part::try_from_column(a1).map(|x| RelColRowRange { from: x, to: x })
             })
     }
 

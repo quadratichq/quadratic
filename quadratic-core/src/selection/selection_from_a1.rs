@@ -3,9 +3,9 @@ use crate::{a1_parts::A1Parts, grid::SheetId, A1Error, A1Range, Rect, SheetNameI
 use super::Selection;
 
 impl Selection {
-    /// Create a selection from an A1 string
+    /// Create a selection from an A1 string. Note: this is not a complete
+    /// Selection as we can't exclude from column/row/all ranges (yet)
     /// - sheets is sent from TS as we do not have access to Core here
-    /// Note: this is not a complete Selection as we can't exclude from column/row/all ranges (yet)
     pub fn from_a1(
         a1: &str,
         sheet_id: SheetId,

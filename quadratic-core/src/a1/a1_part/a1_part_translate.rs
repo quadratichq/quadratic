@@ -4,7 +4,7 @@ use super::{A1Part, A1Range, RelColRow, RelColRowRange, RelPos, RelRect};
 
 fn translate_index(col_row: &RelColRow, delta: i64) -> Result<RelColRow, A1Error> {
     if !col_row.relative {
-        Ok(col_row.clone())
+        Ok(*col_row)
     } else {
         let new_index = col_row.index as i64 + delta;
         if new_index <= 0 {
