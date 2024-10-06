@@ -10,7 +10,7 @@ impl A1 {
         let mut block = column;
 
         while block > 0 {
-            block -= 1; // Subtract 1 before calculating the character
+            block -= 1;
             let char_code = (block % total_alphabets) as u8 + b'A';
             a1_notation.push(char_code as char);
             block /= total_alphabets;
@@ -25,19 +25,6 @@ impl A1 {
     pub fn pos_to_a1(x: u64, y: u64) -> String {
         format!("{}{}", A1::x_to_a1(x), y)
     }
-
-    // /// Translates an A1 string by a given delta when using a relative reference.
-    // pub fn translate(
-    //     &self,
-    //     a1: &str,
-    //     delta_x: i64,
-    //     delta_y: i64,
-    // ) -> Result<Option<String>, A1Error> {
-    //     let (left_over, sheet_name) = A1::try_sheet_name(a1)?;
-    //     let a1 = left_over;
-
-    //     Ok(None)
-    // }
 }
 
 impl From<Pos> for String {

@@ -130,11 +130,16 @@ impl Selection {
         }
 
         if results.is_empty() {
-            results.push(A1::pos_to_a1(self.x as u64, self.y as u64));
+            // results.push(A1Range::pos_to_a1(self.x as u64, self.y as u64));
         }
 
         if let Some(sheet_name) = sheet_name {
-            format!("{}!{}", sheet_name, results.join(","))
+            // Prepend the sheet name to each result
+            results
+                .iter()
+                .map(|result| format!("{}!{}", sheet_name, result))
+                .collect::<Vec<String>>()
+                .join(",")
         } else {
             results.join(",")
         }
@@ -198,6 +203,7 @@ mod tests {
             x: 1,
             y: 1,
             sheet_id: SheetId::test(),
+            rects: Some(vec![Rect::new(1, 1, 1, 1)]),
             ..Default::default()
         };
         assert_eq!(selection.to_a1(SheetId::test(), HashMap::new()), "A1");
@@ -261,8 +267,11 @@ mod tests {
             ("First".to_string(), sheet_id),
             ("Second".to_string(), sheet_second),
         ]);
-        let selection = Selection::from_a1("second!A1,B1,C1", sheet_id, map.clone()).unwrap();
-        assert_eq!(selection.to_a1(sheet_second, map.clone()), "A1,B1,C1");
-        assert_eq!(selection.to_a1(sheet_id, map.clone()), "Second!A1,B1,C1");
+        let selection =
+            Selection::from_a1("second!A1,second!B1,second!C1", sheet_id, map.clone()).unwrap();
+        assert_eq!(
+            selection.to_a1(sheet_id, map.clone()),
+            "Second!A1,Second!B1,Second!C1"
+        );
     }
 }

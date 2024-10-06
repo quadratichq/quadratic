@@ -76,7 +76,7 @@ impl Pos {
     }
 
     pub fn try_a1_string(a1: &str) -> Option<Self> {
-        A1::try_from_pos(a1)
+        A1::try_from_pos(a1).map(|rel_pos| rel_pos.into())
     }
 }
 
@@ -102,7 +102,7 @@ impl fmt::Display for Pos {
 #[cfg(test)]
 impl From<&str> for Pos {
     fn from(s: &str) -> Self {
-        crate::A1::try_from_pos(s).unwrap()
+        crate::A1::try_from_pos(s).unwrap().into()
     }
 }
 

@@ -7,7 +7,12 @@ pub enum A1Error {
     InvalidSheetMap(String),
     InvalidColumn(String),
     InvalidSheetName(String),
-    TooManySheets,
+    InvalidSheetNameMissingQuotes(String),
+    InvalidRange(String),
+    InvalidRow(String),
+    TooManySheets(String),
+    InvalidExclusion(String),
+    TranslateInvalid(String),
 }
 
 impl From<A1Error> for String {

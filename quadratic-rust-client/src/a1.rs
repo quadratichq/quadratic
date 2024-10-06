@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
-use quadratic_core::{grid::SheetId, selection::Selection, A1Error, SheetNameIdMap, A1};
+use quadratic_core::{grid::SheetId, selection::Selection, A1Error, SheetNameIdMap, A1Range};
 use wasm_bindgen::prelude::*;
 
 #[allow(non_snake_case)]
 #[wasm_bindgen(js_name = "posToA1")]
 pub fn pos_to_a1(x: u32, y: u32) -> String {
-    A1::pos_to_a1(x as u64, y as u64)
+    A1Range::pos_to_a1(x as u64, y as u64)
 }
 
 #[allow(non_snake_case)]
