@@ -8,6 +8,7 @@ use lazy_static::lazy_static;
 mod macros;
 mod array;
 pub mod excel;
+mod financial;
 mod logic;
 mod lookup;
 mod mathematics;
@@ -42,6 +43,7 @@ pub const CATEGORIES: &[FormulaFunctionCategory] = &[
     string::CATEGORY,
     array::CATEGORY,
     lookup::CATEGORY,
+    financial::CATEGORY,
     #[cfg(test)]
     tests::CATEGORY,
 ];
