@@ -66,12 +66,11 @@ pub struct JsCellValuePos {
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
-pub struct JsCellValuesInSelection {
-    pub all: Vec<Vec<JsCellValuePos>>,
-    pub columns: Vec<Vec<JsCellValuePos>>,
-    pub rows: Vec<Vec<JsCellValuePos>>,
-    pub rects: Vec<Vec<Vec<JsCellValuePos>>>,
-    pub cursor: Option<JsCellValuePos>,
+pub struct JsCellValuePosAIContext {
+    pub rect_origin: JsPos,
+    pub rect_width: u32,
+    pub rect_height: u32,
+    pub starting_rect_values: Vec<Vec<JsCellValuePos>>,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

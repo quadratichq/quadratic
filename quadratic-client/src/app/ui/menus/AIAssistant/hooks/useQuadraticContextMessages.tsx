@@ -12,7 +12,7 @@ export function useQuadraticContextMessages() {
     (language: CodeCellType | undefined, model: AnthropicModel | OpenAIModel): (UserMessage | AIMessage)[] => [
       {
         role: 'user',
-        content: `Note: Treat this message as an internal message for context. Don't quote it in your response.\n\n
+        content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 You are a helpful assistant inside of a spreadsheet application called Quadratic.\n
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}\n\n

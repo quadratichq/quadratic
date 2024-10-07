@@ -604,11 +604,11 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreGetCellValuesInSelection':
+      case 'clientCoreGetAIContextRectsInSheetRect':
         this.send({
-          type: 'coreClientGetCellValuesInSelection',
+          type: 'coreClientGetAIContextRectsInSheetRect',
           id: e.data.id,
-          value: core.getCellValuesInSelection(e.data.selection),
+          value: core.getAIContextRectsInSheetRect(e.data.sheetRect),
         });
         return;
 

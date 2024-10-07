@@ -3,7 +3,7 @@ import { Sheet } from '@/app/grid/sheet/Sheet';
 import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsRowHeight, Rect, Selection, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRowHeight, Rect, Selection, SheetInfo, SheetRect } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 
@@ -348,31 +348,26 @@ class Sheets {
     };
   }
 
-  getRustVisibleSelection(): Selection {
-    const selection: Selection = {
-      sheet_id: { id: this.sheet.id },
-      x: BigInt(this.sheet.cursor.cursorPosition.x),
-      y: BigInt(this.sheet.cursor.cursorPosition.y),
-      rects: [],
-      columns: null,
-      rows: null,
-      all: false,
-    };
+  getVisibleSheetRect(): SheetRect | undefined {
     const sheetBounds = this.sheet.boundsWithoutFormatting;
     if (sheetBounds.type === 'empty') {
-      return selection;
+      return undefined;
     }
-
-    const visibleCellRect = this.getVisibleRect();
-    const sheetRect: Rect = {
+    const sheetBoundsRect: Rect = {
       min: sheetBounds.min,
       max: sheetBounds.max,
     };
-    if (intersects.rectRect(sheetRect, visibleCellRect)) {
-      selection.rects = [visibleCellRect];
+
+    const visibleRect = this.getVisibleRect();
+    if (!intersects.rectRect(sheetBoundsRect, visibleRect)) {
+      return undefined;
     }
 
-    return selection;
+    const visibleSheetRect: SheetRect = {
+      sheet_id: { id: this.sheet.id },
+      ...visibleRect,
+    };
+    return visibleSheetRect;
   }
 }
 

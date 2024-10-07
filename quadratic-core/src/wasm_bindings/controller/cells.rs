@@ -2,7 +2,9 @@ use std::str::FromStr;
 
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{controller::GridController, grid::SheetId, selection::Selection, Pos, Rect};
+use crate::{
+    controller::GridController, grid::SheetId, selection::Selection, Pos, Rect, SheetRect,
+};
 
 #[wasm_bindgen]
 impl GridController {
@@ -114,14 +116,13 @@ impl GridController {
     }
 
     /// gets values, types with position for all cells in selection
-    /// returns a stringified array of JsCellValuesInSelection
-    #[wasm_bindgen(js_name = "getCellValuesInSelection")]
-    pub fn js_get_cell_value_selection(&self, selection: String) -> Result<String, JsValue> {
-        let selection =
-            Selection::from_str(&selection).map_err(|_| JsValue::from_str("Invalid selection"))?;
-        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let cell_value_selection = sheet.js_cell_value_selection(selection);
-            Ok(serde_json::to_string(&cell_value_selection).unwrap_or_default())
+    /// returns a stringified array of JsCellValuePosAIContext
+    #[wasm_bindgen(js_name = "getAIContextRectsInSheetRect")]
+    pub fn js_ai_context_rects_in_sheet_rect(&self, sheet_rect: String) -> Result<String, JsValue> {
+        let sheet_rect = SheetRect::from_str(&sheet_rect)?;
+        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+            let ai_context_rects = sheet.js_ai_context_rects_in_sheet_rect(sheet_rect.into());
+            Ok(serde_json::to_string(&ai_context_rects).unwrap_or_default())
         } else {
             Ok(String::new())
         }

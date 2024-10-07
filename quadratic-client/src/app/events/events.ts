@@ -130,9 +130,6 @@ interface EventTypes {
   // context menu opens on a grid heading
   gridContextMenu: (world: Point, row?: number, column?: number) => void;
 
-  // include cursor selection in AI context
-  askAICursorSelection: (selection: Selection) => void;
-
   // ask AI to fix error in code cell
   askAICodeCell: (codeCell: CodeCell) => void;
 

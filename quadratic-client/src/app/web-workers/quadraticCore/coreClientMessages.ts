@@ -10,7 +10,7 @@ import {
   Format,
   JsBordersSheet,
   JsCellValue,
-  JsCellValuesInSelection,
+  JsCellValuePosAIContext,
   JsCodeCell,
   JsHtmlOutput,
   JsPos,
@@ -1050,16 +1050,16 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
-export interface ClientCoreGetCellValuesInSelection {
-  type: 'clientCoreGetCellValuesInSelection';
+export interface ClientCoreGetAIContextRectsInSheetRect {
+  type: 'clientCoreGetAIContextRectsInSheetRect';
   id: number;
-  selection: Selection;
+  sheetRect: SheetRect;
 }
 
-export interface CoreClientGetCellValuesInSelection {
-  type: 'coreClientGetCellValuesInSelection';
+export interface CoreClientGetAIContextRectsInSheetRect {
+  type: 'coreClientGetAIContextRectsInSheetRect';
   id: number;
-  value: JsCellValuesInSelection | undefined;
+  value: JsCellValuePosAIContext[] | undefined;
 }
 
 export interface ClientCoreNeighborText {
@@ -1187,7 +1187,7 @@ export type ClientCoreMessage =
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
   | ClientCoreGetCellValue
-  | ClientCoreGetCellValuesInSelection
+  | ClientCoreGetAIContextRectsInSheetRect
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
@@ -1257,7 +1257,7 @@ export type CoreClientMessage =
   | CoreClientNeighborText
   | CoreClientBordersSheet
   | CoreClientGetCellValue
-  | CoreClientGetCellValuesInSelection
+  | CoreClientGetAIContextRectsInSheetRect
   | CoreClientFindNextColumnForRect
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically

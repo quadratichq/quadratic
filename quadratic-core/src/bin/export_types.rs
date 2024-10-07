@@ -5,7 +5,7 @@ use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::formats::format::Format;
 use grid::js_types::{
-    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuesInSelection, JsClipboard,
+    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
     JsCodeCell, JsHtmlOutput, JsNumber, JsPos, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill, JsRowHeight, JsSheetFill, JsValidationWarning,
 };
@@ -89,7 +89,7 @@ fn main() {
         JsBordersSheet,
         JsCellValue,
         JsCellValuePos,
-        JsCellValuesInSelection,
+        JsCellValuePosAIContext,
         JsClipboard,
         JsCodeCell,
         JsCodeResult,

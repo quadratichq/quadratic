@@ -17,7 +17,7 @@ import {
   CodeCellLanguage,
   Format,
   JsCellValue,
-  JsCellValuesInSelection,
+  JsCellValuePosAIContext,
   JsCodeCell,
   JsPos,
   JsRenderCell,
@@ -364,15 +364,15 @@ class QuadraticCore {
     });
   }
 
-  getCellValuesInSelection(selection: Selection): Promise<JsCellValuesInSelection | undefined> {
+  getAIContextRectsInSheetRect(sheetRect: SheetRect): Promise<JsCellValuePosAIContext[] | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { value: JsCellValuesInSelection | undefined }) => {
+      this.waitingForResponse[id] = (message: { value: JsCellValuePosAIContext[] | undefined }) => {
         resolve(message.value);
       };
       this.send({
-        type: 'clientCoreGetCellValuesInSelection',
-        selection,
+        type: 'clientCoreGetAIContextRectsInSheetRect',
+        sheetRect,
         id,
       });
     });

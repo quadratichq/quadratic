@@ -1,7 +1,7 @@
 import { aiAssistantContextAtom, aiAssistantLoadingAtom } from '@/app/atoms/aiAssistantAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { Selection } from '@/app/quadratic-core-types';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { AIAssistantContextModelMenu } from '@/app/ui/menus/AIAssistant/AIAssistantSelectContextMenu';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -16,7 +16,7 @@ export const AIAssistantContext = () => {
     >
       <span>{'Context: '}</span>
       <CodeCellContext codeCell={context.codeCell} />
-      <CursorSelectionContext selection={context.cursorSelection} />
+      <SelectionContext sheetRect={context.selection} />
       {!!context.visibleData && <span>{'[Visible data]'}</span>}
       {!!context.currentSheet && <span>{'[Current sheet]'}</span>}
       {!!context.allSheets && <span>{'[All sheets]'}</span>}
@@ -38,18 +38,17 @@ const CodeCellContext = ({ codeCell }: CodeCellContextProps) => {
   return <span>{`[CodeCell (${codeCell.language}): ${sheetName} (${pos.x}, ${pos.y})]`}</span>;
 };
 
-interface CursorSelectionContextProps {
-  selection?: Selection;
+interface SelectionContextProps {
+  sheetRect?: SheetRect;
 }
 
-const CursorSelectionContext = ({ selection }: CursorSelectionContextProps) => {
+const SelectionContext = ({ sheetRect }: SelectionContextProps) => {
   const selectionString = useMemo(
-    () =>
-      selection?.rects?.map((rect) => `((${rect.min.x}, ${rect.min.y}), (${rect.max.x}, ${rect.max.y}))`).join(', '),
-    [selection]
+    () => (sheetRect ? `((${sheetRect.min.x}, ${sheetRect.min.y}), (${sheetRect.max.x}, ${sheetRect.max.y}))` : ''),
+    [sheetRect]
   );
 
-  if (!selection || !selection.rects || selection.rects.length === 0) return null;
+  if (!sheetRect || !selectionString) return null;
 
-  return <span>{`[Cursor selection: ${selectionString}]`}</span>;
+  return <span>{`[Selection: ${selectionString}]`}</span>;
 };

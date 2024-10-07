@@ -1,6 +1,6 @@
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { Selection } from '@/app/quadratic-core-types';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { AIMessage, ContextType, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 export interface AIAssistantState {
@@ -11,8 +11,8 @@ export interface AIAssistantState {
   messages: (UserMessage | AIMessage)[];
   prompt: string;
   context: {
-    [key in Exclude<ContextType, 'cursorSelection' | 'codeCell' | 'userPrompt'>]: boolean;
-  } & { cursorSelection?: Selection; codeCell?: CodeCell };
+    [key in Exclude<ContextType, 'selection' | 'codeCell' | 'userPrompt'>]: boolean;
+  } & { selection?: SheetRect; codeCell?: CodeCell };
 }
 
 export const defaultAIAssistantState: AIAssistantState = {
@@ -28,7 +28,7 @@ export const defaultAIAssistantState: AIAssistantState = {
     allSheets: false,
     currentSheet: false,
     visibleData: true,
-    cursorSelection: undefined,
+    selection: undefined,
     codeCell: undefined,
   },
 };

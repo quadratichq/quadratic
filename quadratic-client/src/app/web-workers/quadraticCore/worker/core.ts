@@ -16,7 +16,7 @@ import {
   CodeCellLanguage,
   Format,
   JsCellValue,
-  JsCellValuesInSelection,
+  JsCellValuePosAIContext,
   JsCodeCell,
   JsCodeResult,
   JsPos,
@@ -25,6 +25,7 @@ import {
   SearchOptions,
   Selection,
   SheetPos,
+  SheetRect,
   SummarizeSelectionResult,
   Validation,
 } from '@/app/quadratic-core-types';
@@ -1122,11 +1123,11 @@ class Core {
     }
   }
 
-  getCellValuesInSelection(selection: Selection): JsCellValuesInSelection | undefined {
+  getAIContextRectsInSheetRect(sheetRect: SheetRect): JsCellValuePosAIContext[] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const cellValueSelection = this.gridController.getCellValuesInSelection(JSON.stringify(selection, bigIntReplacer));
-    if (cellValueSelection) {
-      return JSON.parse(cellValueSelection);
+    const aiContextRects = this.gridController.getAIContextRectsInSheetRect(JSON.stringify(sheetRect, bigIntReplacer));
+    if (aiContextRects) {
+      return JSON.parse(aiContextRects);
     }
   }
 

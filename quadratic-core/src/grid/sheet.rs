@@ -14,7 +14,7 @@ use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::{
-    CellFormatSummary, CellType, JsCellValue, JsCellValuePos, JsCellValuesInSelection,
+    CellFormatSummary, CellType, JsCellValue, JsCellValuePos, JsCellValuePosAIContext,
 };
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
@@ -243,9 +243,16 @@ impl Sheet {
     }
 
     /// Returns the JsCellValuePos in a rect
-    pub fn js_cell_value_pos_rect(&self, rect: Rect) -> Vec<Vec<JsCellValuePos>> {
+    pub fn js_cell_value_pos_rect(
+        &self,
+        rect: Rect,
+        max_rows: Option<u32>,
+    ) -> Vec<Vec<JsCellValuePos>> {
         let mut rect_values = Vec::new();
-        for y in rect.y_range() {
+        for y in rect
+            .y_range()
+            .take(max_rows.unwrap_or(rect.height()) as usize)
+        {
             let mut row_values = Vec::new();
             for x in rect.x_range() {
                 if let Some(cell_value_pos) = self.js_cell_value_pos((x, y).into()) {
@@ -259,62 +266,20 @@ impl Sheet {
         rect_values
     }
 
-    /// Returns JsCellValuePos for a selection
-    pub fn js_cell_value_selection(&self, selection: Selection) -> JsCellValuesInSelection {
-        let mut cell_value_selection = JsCellValuesInSelection {
-            cursor: self.js_cell_value_pos(selection.source()),
-            ..Default::default()
-        };
-
-        if selection.all {
-            if let GridBounds::NonEmpty(rect) = self.bounds(true) {
-                cell_value_selection.all = self.js_cell_value_pos_rect(rect);
-            }
-            return cell_value_selection;
+    /// Returns tabular data rects of JsCellValuePos in a sheet rect
+    pub fn js_ai_context_rects_in_sheet_rect(&self, rect: Rect) -> Vec<JsCellValuePosAIContext> {
+        let mut ai_context_rects = Vec::new();
+        let tabular_data_rects = self.find_tabular_data_rects(rect);
+        for rect in tabular_data_rects {
+            let js_cell_value_pos_ai_context = JsCellValuePosAIContext {
+                rect_origin: rect.min.into(),
+                rect_width: rect.width(),
+                rect_height: rect.height(),
+                starting_rect_values: self.js_cell_value_pos_rect(rect, Some(5)),
+            };
+            ai_context_rects.push(js_cell_value_pos_ai_context);
         }
-
-        if let Some(rects) = selection.rects {
-            for rect in rects {
-                let rect_values = self.js_cell_value_pos_rect(rect);
-                if !rect_values.is_empty() {
-                    cell_value_selection.rects.push(rect_values);
-                }
-            }
-        }
-
-        if let Some(rows) = selection.rows {
-            for y in rows {
-                let mut row_values = Vec::new();
-                if let Some((start, end)) = self.row_bounds(y, true) {
-                    for x in start..=end {
-                        if let Some(cell_value_pos) = self.js_cell_value_pos((x, y).into()) {
-                            row_values.push(cell_value_pos);
-                        }
-                    }
-                }
-                if !row_values.is_empty() {
-                    cell_value_selection.rows.push(row_values);
-                }
-            }
-        }
-
-        if let Some(columns) = selection.columns {
-            for x in columns {
-                let mut column_values = Vec::new();
-                if let Some((start, end)) = self.column_bounds(x, true) {
-                    for y in start..=end {
-                        if let Some(cell_value_pos) = self.js_cell_value_pos((x, y).into()) {
-                            column_values.push(cell_value_pos);
-                        }
-                    }
-                }
-                if !column_values.is_empty() {
-                    cell_value_selection.columns.push(column_values);
-                }
-            }
-        }
-
-        cell_value_selection
+        ai_context_rects
     }
 
     /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.

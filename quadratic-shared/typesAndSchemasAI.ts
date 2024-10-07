@@ -12,7 +12,7 @@ export const ContextTypeSchema = z.enum([
   'allSheets',
   'currentSheet',
   'visibleData',
-  'cursorSelection',
+  'selection',
   'codeCell',
   'userPrompt',
 ]);

@@ -5,7 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { Selection } from '@/app/quadratic-core-types';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/hooks/useSubmitAIAssistantPrompt';
 import { AIIcon } from '@/shared/components/Icons';
 import {
@@ -17,30 +17,33 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
-const CURSOR_SELECTION_PROMPTS: { label: string; prompt: string }[] = [
-  { label: 'Create a chart', prompt: 'Create a chart from my data using Plotly in Python' },
+const SELECTION_PROMPTS: { label: string; prompt: string }[] = [
+  { label: 'Create a chart', prompt: 'Create a chart from my selected data using Plotly in Python' },
   { label: 'Summarize data', prompt: 'Generate insights on my selected data using Python code' },
   { label: 'Tell me about the data', prompt: 'What kind of data is this, do not use code' },
   { label: 'Add a column', prompt: 'Add a column to my selected data, use Python' },
   { label: 'Add a row', prompt: 'Add a row to my selected data, use Python' },
-  { label: 'Perform EDA', prompt: 'Use Python to perform EDA on my data, do not create any charts in the process' },
+  {
+    label: 'Perform EDA',
+    prompt: 'Use Python to perform EDA on my selected data, do not create any charts in the process',
+  },
   { label: 'Clean data', prompt: 'Clean my selected data using Python' },
 ];
 
-const ASK_AI_CURSOR_SELECTION_DELAY = 500;
+const ASK_AI_SELECTION_DELAY = 500;
 
-export function AskAICursorSelection() {
+export function AskAISelection() {
   const setAIAssistantContext = useSetRecoilState(aiAssistantContextAtom);
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
   const [currentSheet, setCurrentSheet] = useState(sheets.current);
-  const [selection, setSelection] = useState<Selection | undefined>();
+  const [sheetRect, setSheetRect] = useState<SheetRect | undefined>();
   const [displayPos, setDisplayPos] = useState<Coordinate | undefined>();
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | undefined>();
 
   const { submitPrompt } = useSubmitAIAssistantPrompt();
 
-  const showAskAICursorSelection = useCallback(() => {
+  const showAskAISelection = useCallback(() => {
     const selection = sheets.getRustSelection();
     if (
       selection &&
@@ -48,22 +51,26 @@ export function AskAICursorSelection() {
       !(selection.rects[0].min.x === selection.rects[0].max.x && selection.rects[0].min.y === selection.rects[0].max.y)
     ) {
       const rect = selection.rects[0];
+      const sheetRect: SheetRect = {
+        sheet_id: selection.sheet_id,
+        ...rect,
+      };
       const hasContent = pixiApp.cellsSheets.getById(selection.sheet_id.id)?.cellsLabels.hasCellInRect(rect);
       const column = Math.max(Number(rect.min.x), Number(rect.max.x));
       const row = Math.min(Number(rect.min.y), Number(rect.max.y));
       const rectangle = sheets.getById(selection.sheet_id.id)?.getCellOffsets(column, row);
       if (hasContent && rectangle && !inlineEditorState.visible) {
-        setSelection(selection);
+        setSheetRect(sheetRect);
         setDisplayPos({
           x: rectangle.x + rectangle.width,
           y: rectangle.y,
         });
       } else {
-        setSelection(undefined);
+        setSheetRect(undefined);
         setDisplayPos(undefined);
       }
     } else {
-      setSelection(undefined);
+      setSheetRect(undefined);
       setDisplayPos(undefined);
     }
   }, [inlineEditorState.visible]);
@@ -71,29 +78,29 @@ export function AskAICursorSelection() {
   const updateSelection = useCallback(() => {
     clearTimeout(timeoutRef.current);
     setDisplayPos(undefined);
-    setSelection(undefined);
+    setSheetRect(undefined);
     setAIAssistantContext((prev) => ({
       ...prev,
-      cursorSelection: undefined,
+      selection: undefined,
     }));
 
     timeoutRef.current = setTimeout(() => {
-      showAskAICursorSelection();
-    }, ASK_AI_CURSOR_SELECTION_DELAY);
-  }, [setAIAssistantContext, showAskAICursorSelection]);
+      showAskAISelection();
+    }, ASK_AI_SELECTION_DELAY);
+  }, [setAIAssistantContext, showAskAISelection]);
 
   const handleSubmitPrompt = useCallback(
     (prompt: string) => {
       setLoading(true);
-      submitPrompt({ userPrompt: prompt, clearMessages: true, selection })
+      submitPrompt({ userPrompt: prompt, clearMessages: true, selectionSheetRect: sheetRect })
         .catch(console.error)
         .finally(() => {
           setLoading(false);
           setDisplayPos(undefined);
-          setSelection(undefined);
+          setSheetRect(undefined);
         });
     },
-    [selection, submitPrompt]
+    [sheetRect, submitPrompt]
   );
 
   useEffect(() => {
@@ -130,11 +137,11 @@ export function AskAICursorSelection() {
     };
   }, [currentSheet, updateSelection]);
 
-  if (selection?.sheet_id.id !== currentSheet || displayPos === undefined) return null;
+  if (sheetRect?.sheet_id.id !== currentSheet || displayPos === undefined) return null;
 
   return (
     <div
-      className={`ask-ai-cursor-selection-container pointer-events-auto z-10 cursor-pointer select-none rounded border border-accent bg-accent ${
+      className={`ask-ai-selection-container pointer-events-auto z-10 cursor-pointer select-none rounded border border-accent bg-accent ${
         loading ? 'animate-pulse' : ''
       }`}
       style={{
@@ -163,7 +170,7 @@ export function AskAICursorSelection() {
             Take action on you selected data
           </div>
 
-          {CURSOR_SELECTION_PROMPTS.map(({ label, prompt }) => (
+          {SELECTION_PROMPTS.map(({ label, prompt }) => (
             <DropdownMenuItem
               key={label}
               onClick={(e) => {
