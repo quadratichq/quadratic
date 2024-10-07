@@ -42,7 +42,7 @@ impl RunError {
 }
 
 /// Information about the type of error that occurred.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS, Hash)]
 pub enum RunErrorMsg {
     CodeRunError(Cow<'static, str>),
 

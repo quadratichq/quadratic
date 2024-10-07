@@ -1,6 +1,7 @@
 import { editorInteractionStateFollowAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import { colors } from '@/app/theme/colors';
 import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
@@ -62,7 +63,13 @@ export const TopBarUsers = () => {
                 bgColor={multiplayer.colorString}
               />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="text-sm">
+            <DropdownMenuContent
+              className="text-sm"
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+                focusGrid();
+              }}
+            >
               <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

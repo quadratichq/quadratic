@@ -220,7 +220,12 @@ export function Search() {
                 <DotsHorizontalIcon />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+                inputRef.current?.focus();
+              }}
+            >
               <DropdownMenuCheckboxItem
                 checked={!searchOptions.sheet_id}
                 onCheckedChange={() => changeOptions('sheet')}
