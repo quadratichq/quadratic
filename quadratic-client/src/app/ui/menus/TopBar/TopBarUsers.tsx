@@ -15,7 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
@@ -145,8 +144,8 @@ export const TopBarUsers = () => {
                   <TooltipContent>
                     <p>
                       {name}{' '}
-                      <span className="opacity-70">
-                        ({isFollowingYou ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`})
+                      <span className="opacity-60">
+                        ({isFollowingYou ? 'following you' : `click to ${follow ? 'unfollow' : 'follow'}`})
                       </span>
                     </p>
                   </TooltipContent>
@@ -156,68 +155,61 @@ export const TopBarUsers = () => {
           )
         )}
         {extraUsers.length > 0 && (
-          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-            <PopoverTrigger asChild>
+          <DropdownMenu open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+            <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex h-6 w-6 items-center justify-center self-center rounded-full p-0 text-xs font-normal text-muted-foreground"
+                className="flex h-6 w-6 items-center justify-center self-center rounded-full p-0 text-xs font-normal text-muted-foreground data-[state=open]:bg-accent"
               >
                 <MoreHorizIcon />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
               className="max-h-64 w-56 overflow-auto p-1"
               onCloseAutoFocus={(e) => {
                 e.preventDefault();
                 focusGrid();
               }}
             >
-              <ul className="flex flex-col">
-                {extraUsers.map(
-                  ({
-                    name,
-                    initials,
-                    avatarSrc,
-                    highlightColor,
-                    sessionId,
-                    viewport,
-                    isBeingFollowedByYou,
-                    isFollowingYou,
-                    handleFollow,
-                  }) => {
-                    return (
-                      <li>
-                        <button
-                          className={cn(
-                            'flex w-full items-center gap-3 rounded p-2 text-sm',
-                            !isFollowingYou && 'hover:bg-accent'
-                          )}
-                          onClick={() => {
-                            handleFollow();
-                            setIsPopoverOpen(false);
-                          }}
-                          disabled={isFollowingYou}
-                        >
-                          <UserAvatar
-                            name={name}
-                            initials={initials}
-                            avatarSrc={avatarSrc}
-                            highlightColor={highlightColor}
-                            isBeingFollowedByYou={isBeingFollowedByYou}
-                            isFollowingYou={isFollowingYou}
-                          />
-                          <span className={cn('truncate', isFollowingYou && 'text-muted-foreground')}>{name}</span>
-                          {isFollowingYou && (
-                            <span className="ml-auto text-xs text-muted-foreground">Following you</span>
-                          )}
-                        </button>
-                      </li>
-                    );
-                  }
-                )}
-              </ul>
-            </PopoverContent>
-          </Popover>
+              {extraUsers.map(
+                ({
+                  name,
+                  initials,
+                  avatarSrc,
+                  highlightColor,
+                  sessionId,
+                  viewport,
+                  isBeingFollowedByYou,
+                  isFollowingYou,
+                  handleFollow,
+                }) => {
+                  return (
+                    <DropdownMenuItem
+                      key={sessionId}
+                      className={cn('flex w-full items-center gap-3 rounded p-2 text-sm')}
+                      onClick={() => {
+                        handleFollow();
+                        setIsPopoverOpen(false);
+                      }}
+                    >
+                      <UserAvatar
+                        name={name}
+                        initials={initials}
+                        avatarSrc={avatarSrc}
+                        highlightColor={highlightColor}
+                        isBeingFollowedByYou={isBeingFollowedByYou}
+                        isFollowingYou={isFollowingYou}
+                      />
+                      <span className="truncate">{name}</span>
+                      {isFollowingYou && (
+                        <span className="ml-auto flex-shrink-0 text-xs text-muted-foreground">Following you</span>
+                      )}
+                    </DropdownMenuItem>
+                  );
+                }
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </>
@@ -244,16 +236,39 @@ function UserAvatar({
       <Avatar
         alt={name}
         src={avatarSrc}
-        className={cn(isBeingFollowedByYou && 'border border-background', isFollowingYou && 'opacity-50')}
+        className={cn(isBeingFollowedByYou && 'border border-background')}
         style={{
           boxShadow: isBeingFollowedByYou ? `0 0 0 2px ${highlightColor}` : undefined,
         }}
       >
         {initials}
       </Avatar>
-      {!isFollowingYou && (
+
+      {isFollowingYou || isBeingFollowedByYou ? (
+        <svg
+          width="13"
+          height="19"
+          viewBox="0 0 13 19"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{
+            position: 'absolute',
+            stroke: 'hsl(var(--background))',
+            strokeWidth: '2px',
+            right: '-6px',
+            bottom: '-6px',
+            width: '12px',
+            transform: 'rotate(-14deg)',
+          }}
+        >
+          <path
+            d="M5.65376 12.3674H5.46026L5.31717 12.4977L0.5 16.883V1.19849L11.7841 12.3674H5.65376Z"
+            fill={highlightColor}
+          />
+        </svg>
+      ) : (
         <span
-          className="absolute -bottom-0.5 -right-0.5 ml-auto h-3 w-3 rounded-full border-2 border-background"
+          className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background"
           style={{ backgroundColor: highlightColor }}
         />
       )}
