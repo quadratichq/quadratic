@@ -83,8 +83,14 @@ export const TopBarUsers = () => {
 
   const visibleAvatarBtns = 4;
   const truncateUsers = displayUsers.length > visibleAvatarBtns;
-  const visibleUsers = truncateUsers ? displayUsers.slice(0, visibleAvatarBtns - 1) : displayUsers;
-  const extraUsers = truncateUsers ? displayUsers.slice(visibleAvatarBtns - 1) : [];
+  let visibleUsers = truncateUsers ? displayUsers.slice(0, visibleAvatarBtns - 1) : displayUsers;
+  let extraUsers = truncateUsers ? displayUsers.slice(visibleAvatarBtns - 1) : [];
+  let userYouAreFollowing = extraUsers.filter((user) => user.isBeingFollowedByYou);
+  // If you follow someone in the dropdown, move them to the visible list of users
+  if (userYouAreFollowing.length === 1) {
+    visibleUsers = visibleUsers.concat(userYouAreFollowing);
+    extraUsers = extraUsers.filter((user) => !user.isBeingFollowedByYou);
+  }
 
   return (
     <>
@@ -160,7 +166,7 @@ export const TopBarUsers = () => {
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="max-h-64 w-64 overflow-auto p-1"
+              className="max-h-64 w-56 overflow-auto p-1"
               onCloseAutoFocus={(e) => {
                 e.preventDefault();
                 focusGrid();
@@ -183,7 +189,7 @@ export const TopBarUsers = () => {
                       <li>
                         <button
                           className={cn(
-                            'flex w-full items-center gap-4 rounded p-2 text-sm',
+                            'flex w-full items-center gap-3 rounded p-2 text-sm',
                             !isFollowingYou && 'hover:bg-accent'
                           )}
                           onClick={() => {
@@ -201,9 +207,6 @@ export const TopBarUsers = () => {
                             isFollowingYou={isFollowingYou}
                           />
                           <span className={cn('truncate', isFollowingYou && 'text-muted-foreground')}>{name}</span>
-                          {isBeingFollowedByYou && (
-                            <span className="ml-auto text-xs text-muted-foreground">Following</span>
-                          )}
                           {isFollowingYou && (
                             <span className="ml-auto text-xs text-muted-foreground">Following you</span>
                           )}
