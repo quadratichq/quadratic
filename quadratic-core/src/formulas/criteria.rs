@@ -10,9 +10,7 @@ use itertools::Itertools;
 use regex::Regex;
 
 use super::wildcard_pattern_to_regex;
-use crate::{
-    Array, CellValue, CodeResult, CoerceInto, RunError, SpannableIterExt, Spanned,
-};
+use crate::{Array, CellValue, CodeResult, CoerceInto, RunError, SpannableIterExt, Spanned};
 
 #[derive(Debug, Clone)]
 pub enum Criterion {
