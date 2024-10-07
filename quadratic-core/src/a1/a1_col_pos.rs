@@ -26,6 +26,14 @@ impl A1 {
         format!("{}{}", A1::x_to_a1(x), y)
     }
 
+    /// Convert's a position to an A1-style string.
+    pub fn pos_to_a1_absolute(x: u64, y: u64) -> String {
+        if x == 0 || y == 0 {
+            return format!("Unexpected index = 0");
+        }
+        format!("${}${}", A1::x_to_a1(x), y)
+    }
+
     /// Helper function to convert an A1 string to a Pos. Returns an Option and
     /// replaces errors with None..
     pub fn try_from_pos(a1: &str) -> Option<Pos> {
@@ -117,5 +125,16 @@ mod tests {
         assert_eq!(A1::try_from_pos("*"), None);
         assert_eq!(A1::try_from_pos(""), None);
         assert_eq!(A1::try_from_pos(" "), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_pos_to_a1_absolute() {
+        assert_eq!(A1::pos_to_a1_absolute(1, 1), "$A$1");
+        assert_eq!(A1::pos_to_a1_absolute(2, 1), "$B$1");
+        assert_eq!(A1::pos_to_a1_absolute(3, 1), "$C$1");
+        assert_eq!(A1::pos_to_a1_absolute(4, 1), "$D$1");
+        assert_eq!(A1::pos_to_a1_absolute(5, 1), "$E$1");
+        assert_eq!(A1::pos_to_a1_absolute(6, 1), "$F$1");
     }
 }

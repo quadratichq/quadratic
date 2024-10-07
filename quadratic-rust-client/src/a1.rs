@@ -10,6 +10,12 @@ pub fn pos_to_a1(x: u32, y: u32) -> String {
 }
 
 #[allow(non_snake_case)]
+#[wasm_bindgen(js_name = "posToA1Absolute")]
+pub fn pos_to_a1_absolute(x: u32, y: u32) -> String {
+    A1::pos_to_a1_absolute(x as u64, y as u64)
+}
+
+#[allow(non_snake_case)]
 #[wasm_bindgen(js_name = "selectionToA1")]
 pub fn a1_to_pos(selection: &str, sheet_id: &str, sheets: &str) -> Result<String, String> {
     let Ok(selection) = Selection::from_str(selection) else {

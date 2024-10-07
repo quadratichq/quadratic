@@ -93,13 +93,13 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   useEffect(() => {
     const insertText = (text: string) => {
       if (!editorInst) return;
-      const position = editorInst.getPosition();
-      const model = editorInst.getModel();
-      if (!position || !model) return;
+      const line = editorInst.getPosition();
+      if (!line) return;
       const selection = editorInst.getSelection();
-      const range =
-        selection || new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
-      model.applyEdits([{ range, text }]);
+      const range = new monaco.Range(line.lineNumber, line.column, line.lineNumber, line.column);
+      const id = { major: 1, minor: 1 };
+      const op = { identifier: id, range: selection || range, text: text, forceMoveMarkers: true };
+      editorInst.executeEdits('insertCelRef', [op]);
       editorInst.focus();
     };
     events.on('insertCodeEditorText', insertText);
