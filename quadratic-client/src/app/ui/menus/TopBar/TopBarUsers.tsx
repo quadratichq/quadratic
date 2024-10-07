@@ -96,7 +96,7 @@ export const TopBarUsers = () => {
     <>
       <div className="flex flex-row-reverse items-stretch gap-2 self-stretch">
         <DropdownMenu>
-          <DropdownMenuTrigger className="self-center">
+          <DropdownMenuTrigger className="self-center" disabled={Boolean(anonymous)}>
             <You
               displayName={displayName(user ?? anonymous, true)}
               initial={displayInitials(user ?? anonymous)}
