@@ -1,8 +1,9 @@
+import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Point, Rectangle } from 'pixi.js';
