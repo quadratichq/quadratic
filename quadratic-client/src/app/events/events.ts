@@ -1,6 +1,5 @@
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
-import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
@@ -39,7 +38,6 @@ interface EventTypes {
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
 
   zoom: (scale: number) => void;
-  panMode: (pan: PanMode) => void;
 
   undoRedo: (undo: boolean, redo: boolean) => void;
 
