@@ -223,6 +223,35 @@ impl TryFrom<CellValue> for String {
         }
     }
 }
+
+impl<'a> TryFrom<&'a CellValue> for chrono::NaiveDate {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
+        match value {
+            CellValue::Text(s) => {
+                if let Some(date) = crate::date_time::parse_date(s) {
+                    return Ok(date);
+                }
+            }
+            CellValue::DateTime(dt) => return Ok(dt.date()),
+            CellValue::Date(d) => return Ok(*d),
+            _ => (),
+        }
+        Err(RunErrorMsg::Expected {
+            expected: "date".into(),
+            got: Some(value.type_name().into()),
+        })
+    }
+}
+impl TryFrom<CellValue> for chrono::NaiveDate {
+    type Error = RunErrorMsg;
+
+    fn try_from(value: CellValue) -> Result<Self, Self::Error> {
+        chrono::NaiveDate::try_from(&value)
+    }
+}
+
 macro_rules! impl_try_from_cell_value_for {
     ($type:ty) => {
         impl TryFrom<CellValue> for $type {

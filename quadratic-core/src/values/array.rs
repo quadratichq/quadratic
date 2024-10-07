@@ -428,6 +428,17 @@ impl Spanned<Array> {
             Err(RunErrorMsg::ExactArraySizeMismatch { expected, got }.with_span(self.span))
         }
     }
+
+    /// Returns an iterator over all the values in the array, coercing each one
+    /// using `TryFrom`.
+    pub fn iter_coerced<'a, T: TryFrom<&'a CellValue, Error = RunErrorMsg>>(
+        &'a self,
+    ) -> impl 'a + Iterator<Item = CodeResult<T>> {
+        self.inner
+            .cell_values_slice()
+            .iter()
+            .map(|v| T::try_from(v).map_err(|e| e.with_span(self.span)))
+    }
 }
 
 #[cfg(test)]
