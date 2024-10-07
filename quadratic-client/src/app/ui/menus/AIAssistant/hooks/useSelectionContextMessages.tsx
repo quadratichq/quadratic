@@ -27,7 +27,8 @@ Each cell value is a JSON object having the following properties:\n
 
 This is being shared so that you can understand the table format, size and value types inside the data rectangle.\n
 
-Data from cells can be referenced by Formulas, Python, JavaScript or SQL code using \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions.\n
+Data from cells can be referenced by Formulas, Python, Javascript or SQL code using \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions.\n
+To reference data from different tabular data rectangles, use multiple \`cells\` functions.\n
 Use this selection data in the context of following messages. Refer to cells if required in code.\n\n
 
 Current selection data is:\n

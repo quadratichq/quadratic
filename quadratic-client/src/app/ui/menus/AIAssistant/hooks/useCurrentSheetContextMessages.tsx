@@ -1,16 +1,14 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { GridBounds, JsCellValuePosAIContext } from '@/app/quadratic-core-types';
+import { GridBounds, JsCellValuePosAIContext, SheetRect } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
-export function useVisibleContextMessages() {
-  const getVisibleContextMessages = useCallback(
+export function useCurrentSheetContextMessages() {
+  const getCurrentSheetContextMessages = useCallback(
     (
       sheetBounds: GridBounds,
-      visibleRectContext: JsCellValuePosAIContext[] | undefined,
-      cursorPosition: Coordinate,
+      sheetRectContext: JsCellValuePosAIContext[] | undefined,
       model: AnthropicModel | OpenAIModel
     ): (UserMessage | AIMessage)[] => {
       return [
@@ -26,11 +24,11 @@ ${
 }\n\n
 
 ${
-  visibleRectContext
+  sheetRectContext
     ? `
-Visible data in the viewport:\n
+Data in the currently open sheet:\n
 
-I am sharing visible data as an array of tabular data rectangles, each tabular data rectangle in this array has following properties:\n
+I am sharing current sheet data as an array of tabular data rectangles, each tabular data rectangle in this array has following properties:\n
   - rect_origin: This is a JSON object having x and y properties. x is the column index and y is the row index of the top left cell of the rectangle.\n
   - rect_width: This is the width of the rectangle in number of columns.\n
   - rect_height: This is the height of the rectangle in number of rows.\n
@@ -45,46 +43,48 @@ This is being shared so that you can understand the table format, size and value
 
 Data from cells can be referenced by Formulas, Python, Javascript or SQL code using \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions.\n
 To reference data from different tabular data rectangles, use multiple \`cells\` functions.\n
-Use this visible data in the context of following messages. Refer to cells if required in code.\n\n
+Use this sheet data in the context of following messages. Refer to cells if required in code.\n\n
 
-Current visible data is:\n
+Current sheet data is:\n
 \`\`\`json
-${JSON.stringify(visibleRectContext)}
+${JSON.stringify(sheetRectContext)}
 \`\`\`
 Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference functions, like \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions, to reference cells in code.\n\n
 `
-    : `This visible part of the sheet is empty.\n`
+    : `This currently open sheet is empty.\n`
 }\n
-
-My cursor is on cell x:${cursorPosition.x} and y:${cursorPosition.y}.\n 
 `,
           internalContext: true,
-          contextType: 'visibleData',
+          contextType: 'currentSheet',
         },
         {
           role: 'assistant',
-          content: `I understand the visible data, I will reference it to answer following messages. How can I help you?`,
+          content: `I understand the current sheet data, I will reference it to answer following messages. How can I help you?`,
           model,
           internalContext: true,
-          contextType: 'visibleData',
+          contextType: 'currentSheet',
         },
       ];
     },
     []
   );
 
-  const getVisibleContext = useCallback(
+  const getCurrentSheetContext = useCallback(
     async ({ model }: { model: AnthropicModel | OpenAIModel }) => {
       const sheetBounds = sheets.sheet.boundsWithoutFormatting;
-      const visibleSheetRect = sheets.getVisibleSheetRect();
-      const visibleRectContext = visibleSheetRect
-        ? await quadraticCore.getAIContextRectsInSheetRect(visibleSheetRect)
-        : undefined;
-      const { cursorPosition } = sheets.sheet.cursor;
-      return getVisibleContextMessages(sheetBounds, visibleRectContext, cursorPosition, model);
+      const sheetRect: SheetRect | undefined =
+        sheetBounds.type === 'empty'
+          ? undefined
+          : {
+              sheet_id: { id: sheets.current },
+              min: sheetBounds.min,
+              max: sheetBounds.max,
+            };
+      const sheetRectContext = sheetRect ? await quadraticCore.getAIContextRectsInSheetRect(sheetRect) : undefined;
+      return getCurrentSheetContextMessages(sheetBounds, sheetRectContext, model);
     },
-    [getVisibleContextMessages]
+    [getCurrentSheetContextMessages]
   );
 
-  return { getVisibleContext };
+  return { getCurrentSheetContext };
 }

@@ -57,7 +57,6 @@ export function AIAssistantContextModelMenu() {
           key={'current sheet'}
           checked={context.currentSheet}
           onCheckedChange={() => setContext((prev) => ({ ...prev, currentSheet: !prev.currentSheet }))}
-          disabled={true} // TODO: enable after implementing current sheet
         >
           <span>Current sheet</span>
         </DropdownMenuCheckboxItem>

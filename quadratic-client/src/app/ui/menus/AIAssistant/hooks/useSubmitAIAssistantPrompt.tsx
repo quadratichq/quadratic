@@ -14,6 +14,7 @@ import { SheetRect } from '@/app/quadratic-core-types';
 import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantModel';
 import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useCodeCellContextMessages';
+import { useCurrentSheetContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useCurrentSheetContextMessages';
 import { useQuadraticContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useQuadraticContextMessages';
 import { useSelectionContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useSelectionContextMessages';
 import { useVisibleContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useVisibleContextMessages';
@@ -23,6 +24,7 @@ import { useRecoilCallback } from 'recoil';
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getQuadraticContext } = useQuadraticContextMessages();
+  const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getSelectionContext } = useSelectionContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
@@ -69,6 +71,7 @@ export function useSubmitAIAssistantPrompt() {
         const quadraticContext = aiContext.quadraticDocs
           ? getQuadraticContext(getLanguage(aiContext.codeCell?.language), model)
           : [];
+        const sheetContext = aiContext.currentSheet ? await getCurrentSheetContext({ model }) : [];
         const visibleContext = aiContext.visibleData ? await getVisibleContext({ model }) : [];
         const selectionContext = await getSelectionContext({
           sheetRect: aiContext.selection,
@@ -79,6 +82,10 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantMessagesAtom, (prevMessages) => {
           const lastQuadraticContext = prevMessages
             .filter((message) => message.role === 'user' && message.contextType === 'quadraticDocs')
+            .at(-1);
+
+          const lastSheetContext = prevMessages
+            .filter((message) => message.role === 'user' && message.contextType === 'currentSheet')
             .at(-1);
 
           const lastVisibleContext = prevMessages
@@ -97,6 +104,7 @@ export function useSubmitAIAssistantPrompt() {
             ...(!clearMessages && lastQuadraticContext?.content === quadraticContext?.[0]?.content
               ? []
               : quadraticContext),
+            ...(!clearMessages && lastSheetContext?.content === sheetContext?.[0]?.content ? [] : sheetContext),
             ...(!clearMessages && lastVisibleContext?.content === visibleContext?.[0]?.content ? [] : visibleContext),
             ...(!clearMessages && lastSelectionContext?.content === selectionContext?.[0]?.content
               ? []

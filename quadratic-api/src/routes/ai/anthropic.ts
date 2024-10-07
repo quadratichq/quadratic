@@ -24,14 +24,18 @@ const ai_rate_limiter = rateLimit({
 
 anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, messages, temperature } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, messages, temperature, tools, tool_choice } = AnthropicAutoCompleteRequestBodySchema.parse(
+      request.body
+    );
     const result = await anthropic.messages.create({
       model,
       messages,
       temperature,
       max_tokens: 8192,
+      tools,
+      tool_choice,
     });
-    response.json(result.content[0]);
+    response.json(result.content);
   } catch (error: any) {
     if (error.response) {
       response.status(error.response.status).json(error.response.data);
@@ -49,30 +53,44 @@ anthropic_router.post(
   ai_rate_limiter,
   async (request: Request, response) => {
     try {
-      const { model, messages, temperature } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
+      const { model, messages, temperature, tools, tool_choice } = AnthropicAutoCompleteRequestBodySchema.parse(
+        request.body
+      );
       const chunks = await anthropic.messages.create({
         model,
         messages,
         temperature,
         max_tokens: 8192,
         stream: true,
+        tools,
+        tool_choice,
       });
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
       response.setHeader('Connection', 'keep-alive');
       for await (const chunk of chunks) {
-        response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        if (!response.writableEnded) {
+          response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+        } else {
+          break;
+        }
       }
 
-      response.end();
+      if (!response.writableEnded) {
+        response.end();
+      }
     } catch (error: any) {
-      if (error.response) {
-        response.status(error.response.status).json(error.response.data);
-        console.log(error.response.status, error.response.data);
+      if (!response.headersSent) {
+        if (error.response) {
+          response.status(error.response.status).json(error.response.data);
+          console.log(error.response.status, error.response.data);
+        } else {
+          response.status(400).json(error.message);
+          console.log(error.message);
+        }
       } else {
-        response.status(400).json(error.message);
-        console.log(error.message);
+        console.error('Error occurred after headers were sent:', error);
       }
     }
   }

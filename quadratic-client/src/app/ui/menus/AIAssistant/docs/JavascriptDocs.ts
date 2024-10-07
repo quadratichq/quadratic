@@ -1,14 +1,14 @@
 export const JavascriptDocs = `# Javascript Docs
 
-With JavaScript in Quadratic, the world's most popular programming language meets the world's most popular tool for working with data - spreadsheets. 
+With Javascript in Quadratic, the world's most popular programming language meets the world's most popular tool for working with data - spreadsheets. 
 
-Below are a bunch of quick links to find more details on how to write JavaScript in Quadratic.
+Below are a bunch of quick links to find more details on how to write Javascript in Quadratic.
 
 # Reference cells
 
 Reference cells from JavaScript.
 
-In Quadratic, reference individual cells from JavaScript for single values or reference a range of cells for multiple values. 
+In Quadratic, reference individual cells from Javascript for single values or reference a range of cells for multiple values. 
 
 Referencing individual cells
 
@@ -29,7 +29,7 @@ let data = c(0, 0) + c(0, 1) # Adds cell 0, 0 and cell 0, 1
 let data = c(0, 0) == c(0, 1) # Is cell 0, 0 equal to cell 0, 1 ?
 \`\`\`
 
-Any time cells dependent on other cells update the dependent cell will also update. This means your code will execute in one cell if it is dependent on another. This is the behavior you want in almost all situations, including user inputs in the sheet that cause calculation in a JavaScript cell. 
+Any time cells dependent on other cells update the dependent cell will also update. This means your code will execute in one cell if it is dependent on another. This is the behavior you want in almost all situations, including user inputs in the sheet that cause calculation in a Javascript cell. 
 
 Referencing a range of cells
 
@@ -88,7 +88,7 @@ return d;
 
 # Return data to the sheet
 
-Single values, arrays, and charts are the JavaScript types that can be returned to the sheet. Any data can be structured as an array and returned to the sheet. 
+Single values, arrays, and charts are the Javascript types that can be returned to the sheet. Any data can be structured as an array and returned to the sheet. 
 
 Single value 
 
@@ -162,7 +162,7 @@ How to make API requests in JavaScript.
 
 GET request
 
-Perform API requests using the standard JavaScript approach of Fetch. javascript
+Perform API requests using the standard Javascript approach of Fetch. javascript
 
 \`\`\`javascript
 // API for get requests
@@ -237,11 +237,11 @@ async function getData() {
 return await getData();
 \`\`\`
 
-If you ever get stuck with JavaScript code (especially requests) that doesn't seem to be working but is showing no error, you may be missing an \`await\` somewhere that it is needed. 
+If you ever get stuck with Javascript code (especially requests) that doesn't seem to be working but is showing no error, you may be missing an \`await\` somewhere that it is needed. 
 
 # Charts/visualizations
 
-Charts are supported in JavaScript using charts.js. No other libraries are currently supported. 
+Charts are supported in Javascript using charts.js. No other libraries are currently supported. 
 
 Bar chart
 
@@ -325,7 +325,7 @@ return canvas;
 
 # Packages
 
-Packages in JavaScript are supported using ESM. You can use a third-party JS CDN to load third-party packages. Some possible CDNs include: 
+Packages in Javascript are supported using ESM. You can use a third-party JS CDN to load third-party packages. Some possible CDNs include: 
 
 * We recommend using esm.run from https://www.jsdelivr.com/esm
 * https://www.unpkg.com
@@ -339,7 +339,7 @@ Below are some common examples of libraries, imported using esm.run. Many more l
 
 Charting 
 
-Chart.js is the only charting library in JavaScript supported in Quadratic. 
+Chart.js is the only charting library in Javascript supported in Quadratic. 
 
 \`\`\`javascript
 import Chart from 'https://esm.run/chart.js/auto';

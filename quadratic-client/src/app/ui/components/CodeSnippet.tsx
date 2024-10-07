@@ -1,6 +1,7 @@
 import { codeEditorAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { useAISetCodeCellValue } from '@/app/ui/menus/AIAssistant/hooks/useAISetCodeCellValue';
 import { useGetCodeCell } from '@/app/ui/menus/AIAssistant/hooks/useGetCodeCell';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -34,6 +35,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
         <div className="lowercase text-muted-foreground">{language}</div>
 
         <div className="flex items-center gap-1">
+          <CodeSnippetAIInsertButton text={code} language={language} />
           <CodeSnippetRunButton text={code} language={language} />
           <CodeSnippetInsertButton text={code} language={language} />
           <CodeSnippetCopyButton text={code} language={language} />
@@ -75,6 +77,34 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
   );
 }
 
+function CodeSnippetAIInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+  const { aiSetCodeCellValue } = useAISetCodeCellValue();
+
+  const handleAIInsert = useCallback(async () => {
+    mixpanel.track('[AI].code.ai_insert_code_cell', { language });
+    const setCodeCellValueArgs = await aiSetCodeCellValue({ language, text });
+
+    if (setCodeCellValueArgs) {
+      quadraticCore.setCodeCellValue({
+        sheetId: sheets.current,
+        x: setCodeCellValueArgs.x,
+        y: setCodeCellValueArgs.y,
+        codeString: setCodeCellValueArgs.codeString,
+        language: setCodeCellValueArgs.language,
+        cursor: sheets.getCursorPosition(),
+      });
+    }
+  }, [aiSetCodeCellValue, language, text]);
+
+  return (
+    <TooltipHint title={'Ask AI to Save and Run Code'}>
+      <IconButton size="small" onClick={handleAIInsert}>
+        <PlayArrowOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
+      </IconButton>
+    </TooltipHint>
+  );
+}
+
 function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
   const { getCodeCell } = useGetCodeCell();
 
@@ -100,7 +130,7 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
   );
 
   return (
-    <TooltipHint title={'Save and run code'}>
+    <TooltipHint title={'Save and run code (CodeEditor / Cursor Position)'}>
       <IconButton size="small" onClick={handleSaveAndRun}>
         <PlayArrowOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
       </IconButton>
