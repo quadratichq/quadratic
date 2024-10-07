@@ -11,7 +11,7 @@ use regex::Regex;
 
 use super::wildcard_pattern_to_regex;
 use crate::{
-    Array, CellValue, CodeResult, CoerceInto, RunError, RunErrorMsg, SpannableIterExt, Spanned,
+    Array, CellValue, CodeResult, CoerceInto, RunError, SpannableIterExt, Spanned,
 };
 
 #[derive(Debug, Clone)]
@@ -122,13 +122,7 @@ impl Criterion {
         output_values_range: Option<&'a Spanned<Array>>,
     ) -> CodeResult<impl 'a + Iterator<Item = Spanned<&'a CellValue>>> {
         if let Some(range) = output_values_range {
-            if range.inner.size() != eval_range.inner.size() {
-                return Err(RunErrorMsg::ExactArraySizeMismatch {
-                    expected: eval_range.inner.size(),
-                    got: range.inner.size(),
-                }
-                .with_span(range.span));
-            }
+            eval_range.check_array_size_exact(range.inner.size())?;
         }
         let output_values_range = output_values_range.unwrap_or(eval_range);
 
@@ -171,13 +165,7 @@ impl Criterion {
         };
 
         for (eval_range, _) in eval_ranges_and_criteria {
-            if output_values_range.inner.size() != eval_range.inner.size() {
-                return Err(RunErrorMsg::ExactArraySizeMismatch {
-                    expected: eval_range.inner.size(),
-                    got: output_values_range.inner.size(),
-                }
-                .with_span(output_values_range.span));
-            }
+            eval_range.check_array_size_exact(output_values_range.inner.size())?;
         }
 
         Ok(output_values_range

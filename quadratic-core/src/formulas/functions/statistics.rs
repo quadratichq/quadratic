@@ -229,23 +229,23 @@ mod tests {
         // Error on range size mismatch.
         assert_eq!(
             RunErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize::new(1, 11).unwrap(),
-                got: ArraySize::new(2, 1).unwrap(),
+                expected: ArraySize::new(2, 1).unwrap(),
+                got: ArraySize::new(1, 11).unwrap(),
             },
             eval_to_err(&g, "AVERAGEIF(0..10, \"<=5\", {A1, A2})").msg,
         );
         // ... even if one of the arguments is just a single value.
         assert_eq!(
             RunErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize::new(1, 11).unwrap(),
-                got: ArraySize::new(1, 1).unwrap(),
+                expected: ArraySize::new(1, 1).unwrap(),
+                got: ArraySize::new(1, 11).unwrap(),
             },
             eval_to_err(&g, "AVERAGEIF(0..10, \"<=5\", 3)").msg,
         );
         assert_eq!(
             RunErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize::new(1, 1).unwrap(),
-                got: ArraySize::new(1, 11).unwrap(),
+                expected: ArraySize::new(1, 11).unwrap(),
+                got: ArraySize::new(1, 1).unwrap(),
             },
             eval_to_err(&g, "AVERAGEIF(3, \"<=5\", 0..10)").msg,
         );
@@ -360,15 +360,15 @@ mod tests {
         assert_eq!("3", eval_to_string(&g, &make_countifs(&[cond3])));
         assert_eq!(
             RunErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize::new(11, 1).unwrap(),
-                got: ArraySize::new(1, 11).unwrap(),
+                expected: ArraySize::new(1, 11).unwrap(),
+                got: ArraySize::new(11, 1).unwrap(),
             },
             eval_to_err(&g, &make_countifs(&[cond1, cond3])).msg,
         );
         assert_eq!(
             RunErrorMsg::ExactArraySizeMismatch {
-                expected: ArraySize::new(11, 1).unwrap(),
-                got: ArraySize::new(1, 11).unwrap(),
+                expected: ArraySize::new(1, 11).unwrap(),
+                got: ArraySize::new(11, 1).unwrap(),
             },
             eval_to_err(&g, &make_countifs(&[cond1, cond2, cond3])).msg,
         );
