@@ -69,28 +69,6 @@ export const ThemePickerMenu = () => {
         <div className="grid grid-cols-3 gap-2">
           <AppearancePicker />
         </div>
-
-        <h3 className="mb-1 mt-4 text-xs font-semibold">Corners</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {['square', 'soft', 'rounded'].map((item) => (
-            <Button
-              size="sm"
-              variant="outline"
-              className="capitalize"
-              onClick={() => {
-                if (item === 'square') {
-                  document.documentElement.style.setProperty('--radius', '0rem');
-                } else if (item === 'soft') {
-                  document.documentElement.style.setProperty('--radius', '0.5rem');
-                } else if (item === 'rounded') {
-                  document.documentElement.style.setProperty('--radius', '1rem');
-                }
-              }}
-            >
-              {item}
-            </Button>
-          ))}
-        </div>
       </PopoverContent>
     </Popover>
   );

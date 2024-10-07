@@ -15,16 +15,7 @@ export const Component = () => {
   return (
     <>
       <div className="max-w-xl">
-        <DashboardHeader
-          title="My account"
-          actions={
-            <Form method="post" action={ROUTES.LOGOUT}>
-              <Button variant="outline" type="submit">
-                Log out
-              </Button>
-            </Form>
-          }
-        />
+        <DashboardHeader title="My account" />
 
         <AccountSection
           title="Your info"
@@ -49,6 +40,13 @@ export const Component = () => {
               Email
             </Type>
             <Type variant="body2">{user?.email}</Type>
+          </Row>
+          <Row>
+            <Form method="post" action={ROUTES.LOGOUT}>
+              <Button variant="outline" type="submit">
+                Log out
+              </Button>
+            </Form>
           </Row>
         </AccountSection>
 
