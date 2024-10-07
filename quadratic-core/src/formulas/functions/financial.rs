@@ -15,19 +15,14 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// TODO: document this
             #[examples("NPV(A1, B1:B6)", "NPV(A1, B1, B2, B3, B4)")]
-            fn NPV(span: Span, discount_rate: f64, net_cashflows: (Iter<f64>)) {
+            fn NPV(discount_rate: f64, net_cashflows: (Iter<f64>)) {
                 npv(discount_rate, net_cashflows.try_collect()?)
             }
         ),
         formula_fn!(
             /// TODO: document this
             #[examples("XNPV(A1, B1:B6, C1:C6)")]
-            fn XNPV(
-                span: Span,
-                discount_rate: f64,
-                net_cashflows: (Spanned<Array>),
-                dates: (Spanned<Array>),
-            ) {
+            fn XNPV(discount_rate: f64, net_cashflows: (Spanned<Array>), dates: (Spanned<Array>)) {
                 dates.check_array_size_exact(net_cashflows.inner.size())?;
 
                 xnpv(
@@ -46,19 +41,21 @@ fn npv(rate: f64, cashflows: Vec<f64>) -> f64 {
         .enumerate()
         .map(|(i, value)| {
             let exponent = i as f64 + 1.0;
-            value / (1.0 + rate).powf(exponent)})
+            value / (1.0 + rate).powf(exponent)
+        })
         .sum()
 }
 
 fn xnpv(rate: f64, cashflows: Vec<f64>, dates: Vec<chrono::NaiveDate>) -> f64 {
     let Some(&init_date) = dates.iter().min() else {
-         return 0.0
+        return 0.0;
     };
-    std::iter::zip(cashflows, dates).map(|(cashflow, date)| {
-        let exponent = (date-init_date).num_days() as f64 / 365.0;
-        cashflow / (1.0 + rate).powf(exponent)
-
-    }).sum()
+    std::iter::zip(cashflows, dates)
+        .map(|(cashflow, date)| {
+            let exponent = (date - init_date).num_days() as f64 / 365.0;
+            cashflow / (1.0 + rate).powf(exponent)
+        })
+        .sum()
 }
 
 #[cfg(test)]
