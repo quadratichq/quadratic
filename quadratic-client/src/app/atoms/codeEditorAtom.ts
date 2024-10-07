@@ -1,4 +1,4 @@
-import { aiAssistantContextAtom } from '@/app/atoms/aiAssistantAtom';
+import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { Coordinate } from '@/app/gridGL/types/size';
@@ -6,7 +6,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { atom, DefaultValue, selector, useSetRecoilState } from 'recoil';
+import { atom, DefaultValue, selector } from 'recoil';
 
 export interface ConsoleOutput {
   stdOut?: string;
@@ -65,25 +65,24 @@ export const codeEditorAtom = atom<CodeEditorState>({
   default: defaultCodeEditorState,
   effects: [
     ({ onSet, resetSelf }) => {
-      const setAIAssistantContext = useSetRecoilState(aiAssistantContextAtom);
       onSet((newValue, oldValue) => {
         if (oldValue instanceof DefaultValue) {
           return;
         }
 
-        if (newValue.showCodeEditor && newValue.codeCell.sheetId) {
-          setAIAssistantContext((prev) => ({
-            ...prev,
-            codeCell: newValue.codeCell,
-          }));
-        } else {
-          setAIAssistantContext((prev) => ({
-            ...prev,
-            codeCell: undefined,
-          }));
+        if (newValue.showCodeEditor) {
+          if (
+            newValue.codeCell.sheetId !== oldValue.codeCell.sheetId ||
+            newValue.codeCell.pos.x !== oldValue.codeCell.pos.x ||
+            newValue.codeCell.pos.y !== oldValue.codeCell.pos.y ||
+            newValue.codeCell.language !== oldValue.codeCell.language
+          ) {
+            events.emit('codeEditorCodeCell', newValue.codeCell);
+          }
         }
 
         if (oldValue.showCodeEditor && !newValue.showCodeEditor) {
+          events.emit('codeEditorCodeCell', undefined);
           resetSelf();
           focusGrid();
         }

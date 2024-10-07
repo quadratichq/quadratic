@@ -134,6 +134,8 @@ interface EventTypes {
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
+
+  codeEditorCodeCell: (codeCell?: CodeCell) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

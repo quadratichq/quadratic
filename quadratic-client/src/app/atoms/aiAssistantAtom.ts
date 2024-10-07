@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
@@ -47,6 +48,21 @@ export const aiAssistantAtom = atom<AIAssistantState>({
           focusGrid();
         }
       });
+    },
+    ({ setSelf }) => {
+      const updateCodeCell = (codeCell?: CodeCell) => {
+        setSelf((prev) => {
+          if (prev instanceof DefaultValue) {
+            return prev;
+          }
+
+          return { ...prev, context: { ...prev.context, codeCell } };
+        });
+      };
+      events.on('codeEditorCodeCell', updateCodeCell);
+      return () => {
+        events.off('codeEditorCodeCell', updateCodeCell);
+      };
     },
   ],
 });
