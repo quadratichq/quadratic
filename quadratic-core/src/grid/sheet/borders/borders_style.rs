@@ -1,6 +1,6 @@
 //! Data structures for borders.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 #[cfg(feature = "js")]
 use crate::color::Rgba;
@@ -458,7 +458,7 @@ impl JsBorderVertical {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, TS)]
 pub struct JsBordersSheet {
     pub all: Option<BorderStyleCell>,
 
@@ -469,6 +469,41 @@ pub struct JsBordersSheet {
 
     pub horizontal: Option<Vec<JsBorderHorizontal>>,
     pub vertical: Option<Vec<JsBorderVertical>>,
+}
+
+#[cfg(test)]
+impl PartialEq for JsBordersSheet {
+    fn eq(&self, other: &Self) -> bool {
+        self.all == other.all
+            && compare_option_hashmap(&self.columns, &other.columns)
+            && compare_option_hashmap(&self.rows, &other.rows)
+            && compare_option_vec(&self.horizontal, &other.horizontal)
+            && compare_option_vec(&self.vertical, &other.vertical)
+    }
+}
+
+#[cfg(test)]
+fn compare_option_hashmap<K, V>(a: &Option<HashMap<K, V>>, b: &Option<HashMap<K, V>>) -> bool
+where
+    K: Eq + Hash,
+    V: PartialEq,
+{
+    match (a, b) {
+        (Some(a), Some(b)) => {
+            a.len() == b.len() && a.iter().all(|(k, v)| b.get(k).map_or(false, |bv| v == bv))
+        }
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+#[cfg(test)]
+fn compare_option_vec<T: PartialEq>(a: &Option<Vec<T>>, b: &Option<Vec<T>>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => a.len() == b.len() && a.iter().all(|item| b.contains(item)),
+        (None, None) => true,
+        _ => false,
+    }
 }
 
 #[cfg(test)]
