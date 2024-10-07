@@ -7,6 +7,7 @@ import { keyboardClipboard } from '@/app/gridGL/interaction/keyboard/keyboardCli
 import { keyboardCode } from '@/app/gridGL/interaction/keyboard/keyboardCode';
 import { keyboardDropdown } from '@/app/gridGL/interaction/keyboard/keyboardDropdown';
 import { keyboardLink } from '@/app/gridGL/interaction/keyboard/keyboardLink';
+import { keyboardPanMode } from '@/app/gridGL/interaction/keyboard/keyboardPanMode';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { keyboardSearch } from '@/app/gridGL/interaction/keyboard/keyboardSearch';
 import { keyboardSelect } from '@/app/gridGL/interaction/keyboard/keyboardSelect';
@@ -31,6 +32,7 @@ export const useKeyboard = (): {
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
+      keyboardPanMode(event) ||
       keyboardLink(event) ||
       keyboardViewport(event) ||
       keyboardSearch(event) ||
@@ -75,7 +77,7 @@ export const useKeyboard = (): {
   };
 
   const onKeyUp = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (keyboardLink(event)) {
+    if (keyboardPanMode(event) || keyboardLink(event)) {
       event.preventDefault();
       event.stopPropagation();
       return;

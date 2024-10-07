@@ -5,7 +5,7 @@ import { AtomEffect, DefaultValue, atom, selector } from 'recoil';
 
 const SETTINGS_KEY = 'viewSettings';
 
-export type GridSettings = {
+export interface GridSettings {
   showGridAxes: boolean;
   showHeadings: boolean;
   showGridLines: boolean;
@@ -13,7 +13,7 @@ export type GridSettings = {
   showA1Notation: boolean;
   showCodePeek: boolean;
   presentationMode: boolean;
-};
+}
 
 export const defaultGridSettings: GridSettings = {
   showGridAxes: true,

@@ -106,9 +106,9 @@ export class Pointer {
   };
 
   private pointerMove = (e: InteractionEvent): void => {
-    // ignore pointerMove if the target is a child of an element with class pointer-move-stop-propagation
-    const target = e.data.originalEvent.target as HTMLElement | null;
-    const isWithinPointerMoveIgnore = !!target?.closest('.pointer-move-ignore');
+    // ignore pointerMove if the target is a child of an element with class pointer-move-ignore
+    const target = e.data.originalEvent.target;
+    const isWithinPointerMoveIgnore = target instanceof HTMLElement && !!target.closest('.pointer-move-ignore');
     if (isWithinPointerMoveIgnore) return;
 
     if (this.isMoreThanOneTouch(e) || this.isOverCodeEditor(e)) return;
