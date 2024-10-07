@@ -1,10 +1,10 @@
+import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
+import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/shared/shadcn/ui/form';
+import { Switch } from '@/shared/shadcn/ui/switch';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-
-import { AccentColorPicker, AppearancePicker } from '@/app/ui/components/ThemePickerMenu';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/shared/shadcn/ui/form';
-import { Switch } from '@/shared/shadcn/ui/switch';
 
 const FormSchema = z.object({
   themeDarkMode: z.boolean().default(false).optional(),
@@ -49,7 +49,7 @@ export function Labs() {
                   </div>
                   {field.value && (
                     <div className="flex gap-2 border-t border-border pt-3">
-                      <AppearancePicker />
+                      <ThemeAppearanceModes />
                     </div>
                   )}
                 </FormItem>
@@ -71,7 +71,7 @@ export function Labs() {
                   </div>
                   {field.value && (
                     <div className="flex flex-row items-center gap-2 border-t border-border pt-3">
-                      <AccentColorPicker />
+                      <ThemeAccentColors />
                     </div>
                   )}
                 </FormItem>

@@ -1,6 +1,7 @@
 import { authClient } from '@/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
+import { MuiTheme } from '@/shared/components/MuiTheme';
 import { Theme } from '@/shared/components/Theme';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
 import { initializeAnalytics } from '@/shared/utils/analytics';
@@ -29,9 +30,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<R
 export const Component = () => {
   return (
     <Theme>
-      <GlobalSnackbarProvider>
-        <Outlet />
-      </GlobalSnackbarProvider>
+      <MuiTheme>
+        <GlobalSnackbarProvider>
+          <Outlet />
+        </GlobalSnackbarProvider>
+      </MuiTheme>
     </Theme>
   );
 };
