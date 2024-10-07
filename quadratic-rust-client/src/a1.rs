@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
-use quadratic_core::{grid::SheetId, selection::Selection, A1Error, SheetNameIdMap, A1Range};
+use quadratic_core::{grid::SheetId, selection::Selection, A1Error, SheetNameIdMap, A1};
 use wasm_bindgen::prelude::*;
 
 #[allow(non_snake_case)]
 #[wasm_bindgen(js_name = "posToA1")]
 pub fn pos_to_a1(x: u32, y: u32) -> String {
-    A1Range::pos_to_a1(x as u64, y as u64)
+    A1::pos_to_a1(x as u64, y as u64)
 }
 
 #[allow(non_snake_case)]
@@ -58,6 +58,8 @@ pub fn a1_to_sheet_id(selection: &str, sheet_id: &str, sheets: &str) -> Result<S
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
     use quadratic_core::Rect;
 
@@ -77,10 +79,13 @@ mod tests {
     #[test]
     fn test_a1_to_selection_sheet_names() {
         let selection = "Sheet1!A1:B2,Sheet2!C3:D4";
-        let sheet_id = SheetId::test();
+        let sheet_id = SheetId::new();
+        let sheet_id2 = SheetId::new();
+        let map = HashMap::from([("Sheet1", sheet_id), ("Sheet2", sheet_id2)]);
+        let map_str = serde_json::to_string(&map).unwrap();
         assert_eq!(
-            a1_to_selection(selection, &sheet_id.to_string(), "{}"),
-            Err(A1Error::TooManySheets.into())
+            a1_to_selection(selection, &sheet_id.to_string(), &map_str),
+            Err(A1Error::TooManySheets(selection.to_string()).into())
         )
     }
 
@@ -92,7 +97,7 @@ mod tests {
             a1_to_selection(selection, &sheet_id.to_string(), "{}"),
             Err(A1Error::InvalidSheetName("Bad Name".to_string()).into())
         );
-        let selection = "Bad Name!A1:B2,C3:D4";
+        let selection = "'Bad Name'!A1:B2,C3:D4";
         assert_eq!(
             a1_to_selection(selection, &sheet_id.to_string(), "{}"),
             Err(A1Error::InvalidSheetName("Bad Name".to_string()).into())
