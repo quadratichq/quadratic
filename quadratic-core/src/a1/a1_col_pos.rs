@@ -1,6 +1,6 @@
 use crate::Pos;
 
-use super::A1;
+use super::{A1Range, A1};
 
 impl A1 {
     /// Convert column (x) to A1 notation
@@ -24,6 +24,26 @@ impl A1 {
     /// Converts a position to an A1-style string.
     pub fn pos_to_a1(x: u64, y: u64) -> String {
         format!("{}{}", A1::x_to_a1(x), y)
+    }
+
+    /// Helper function to convert an A1 string to a Pos. Returns an Option and
+    /// replaces errors with None..
+    pub fn try_from_pos(a1: &str) -> Option<Pos> {
+        if a1.contains(" ") || a1.contains("!") {
+            return None;
+        }
+        if let Ok(rel_pos) = A1Range::try_from_position(a1) {
+            rel_pos.map(|rel_pos| rel_pos.into())
+        } else {
+            None
+        }
+    }
+
+    /// Get a column from an A1 string and automatically unwrap it (only used
+    /// for tests).
+    #[cfg(test)]
+    pub fn column(a1_column: &str) -> i64 {
+        A1Range::try_from_column(a1_column).unwrap().index as i64
     }
 }
 
@@ -77,5 +97,25 @@ mod tests {
         assert_eq!(A1::pos_to_a1(702, 1), "ZZ1");
         assert_eq!(A1::pos_to_a1(703, 1), "AAA1");
         assert_eq!(A1::pos_to_a1(704, 1), "AAB1");
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_pos() {
+        assert_eq!(A1::try_from_pos("A1"), Some(Pos::new(1, 1)));
+        assert_eq!(A1::try_from_pos("B2"), Some(Pos::new(2, 2)));
+        assert_eq!(A1::try_from_pos("C3"), Some(Pos::new(3, 3)));
+        assert_eq!(A1::try_from_pos("D4"), Some(Pos::new(4, 4)));
+        assert_eq!(A1::try_from_pos("E5"), Some(Pos::new(5, 5)));
+        assert_eq!(A1::try_from_pos("F6"), Some(Pos::new(6, 6)));
+        assert_eq!(A1::try_from_pos("Sheet 1!A1"), None);
+        assert_eq!(A1::try_from_pos("A1!"), None);
+        assert_eq!(A1::try_from_pos("A!1"), None);
+        assert_eq!(A1::try_from_pos("!A1"), None);
+        assert_eq!(A1::try_from_pos("A"), None);
+        assert_eq!(A1::try_from_pos("3"), None);
+        assert_eq!(A1::try_from_pos("*"), None);
+        assert_eq!(A1::try_from_pos(""), None);
+        assert_eq!(A1::try_from_pos(" "), None);
     }
 }

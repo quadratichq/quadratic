@@ -1,6 +1,6 @@
 use crate::A1Error;
 
-use super::{A1Part, A1Range, RelColRow, RelColRowRange, RelPos, RelRect};
+use super::{A1Range, A1RangeType, RelColRow, RelColRowRange, RelPos, RelRect};
 
 fn translate_index(col_row: &RelColRow, delta: i64) -> Result<RelColRow, A1Error> {
     if !col_row.relative {
@@ -45,31 +45,37 @@ fn translate_rect(rect: &RelRect, delta_x: i64, delta_y: i64) -> Result<RelRect,
     })
 }
 
-impl A1Part {
-    /// Translates the A1Part by a delta.
+impl A1Range {
+    /// Translates the range by a delta (only translates relative columns and rows).
     pub fn translate(&mut self, delta_x: i64, delta_y: i64) -> Result<(), A1Error> {
         self.range = match &self.range {
-            A1Range::All => A1Range::All,
-            A1Range::Column(x) => A1Range::Column(translate_index(x, delta_x)?),
-            A1Range::ExcludeColumn(x) => A1Range::ExcludeColumn(translate_index(x, delta_x)?),
-            A1Range::ColumnRange(range) => {
-                A1Range::ColumnRange(translate_col_row_range(range, delta_x)?)
+            A1RangeType::Column(x) => A1RangeType::Column(translate_index(x, delta_x)?),
+            A1RangeType::ExcludeColumn(x) => {
+                A1RangeType::ExcludeColumn(translate_index(x, delta_x)?)
             }
-            A1Range::ExcludeColumnRange(range) => {
-                A1Range::ExcludeColumnRange(translate_col_row_range(range, delta_x)?)
+            A1RangeType::ColumnRange(range) => {
+                A1RangeType::ColumnRange(translate_col_row_range(range, delta_x)?)
             }
-            A1Range::Row(x) => A1Range::Row(translate_index(x, delta_y)?),
-            A1Range::ExcludeRow(x) => A1Range::ExcludeRow(translate_index(x, delta_y)?),
-            A1Range::RowRange(range) => A1Range::RowRange(translate_col_row_range(range, delta_y)?),
-            A1Range::ExcludeRowRange(range) => {
-                A1Range::ExcludeRowRange(translate_col_row_range(range, delta_y)?)
+            A1RangeType::ExcludeColumnRange(range) => {
+                A1RangeType::ExcludeColumnRange(translate_col_row_range(range, delta_x)?)
             }
-            A1Range::Pos(pos) => A1Range::Pos(translate_pos(pos, delta_x, delta_y)?),
-            A1Range::ExcludePos(pos) => A1Range::ExcludePos(translate_pos(pos, delta_x, delta_y)?),
-            A1Range::Rect(rect) => A1Range::Rect(translate_rect(rect, delta_x, delta_y)?),
-            A1Range::ExcludeRect(rect) => {
-                A1Range::ExcludeRect(translate_rect(rect, delta_x, delta_y)?)
+            A1RangeType::Row(x) => A1RangeType::Row(translate_index(x, delta_y)?),
+            A1RangeType::ExcludeRow(x) => A1RangeType::ExcludeRow(translate_index(x, delta_y)?),
+            A1RangeType::RowRange(range) => {
+                A1RangeType::RowRange(translate_col_row_range(range, delta_y)?)
             }
+            A1RangeType::ExcludeRowRange(range) => {
+                A1RangeType::ExcludeRowRange(translate_col_row_range(range, delta_y)?)
+            }
+            A1RangeType::Pos(pos) => A1RangeType::Pos(translate_pos(pos, delta_x, delta_y)?),
+            A1RangeType::ExcludePos(pos) => {
+                A1RangeType::ExcludePos(translate_pos(pos, delta_x, delta_y)?)
+            }
+            A1RangeType::Rect(rect) => A1RangeType::Rect(translate_rect(rect, delta_x, delta_y)?),
+            A1RangeType::ExcludeRect(rect) => {
+                A1RangeType::ExcludeRect(translate_rect(rect, delta_x, delta_y)?)
+            }
+            A1RangeType::All => A1RangeType::All,
         };
         Ok(())
     }
@@ -223,10 +229,10 @@ mod tests {
     fn test_translate_column() {
         let sheet_id = SheetId::new();
         let sheet_name_id = HashMap::new();
-        let mut a1_part = A1Part::from_a1("B", sheet_id, &sheet_name_id).unwrap();
-        dbg!(&a1_part);
-        a1_part.translate(1, 0).unwrap();
-        assert_eq!(a1_part.range, A1Range::Column(RelColRow::new(3, true)));
+        let mut range = A1Range::from_a1("B", sheet_id, &sheet_name_id).unwrap();
+        dbg!(&range);
+        range.translate(1, 0).unwrap();
+        assert_eq!(range.range, A1RangeType::Column(RelColRow::new(3, true)));
     }
 
     #[test]
@@ -234,9 +240,9 @@ mod tests {
     fn test_translate_row() {
         let sheet_id = SheetId::new();
         let sheet_name_id = HashMap::new();
-        let mut a1_part = A1Part::from_a1("2", sheet_id, &sheet_name_id).unwrap();
-        a1_part.translate(0, 2).unwrap();
-        assert_eq!(a1_part.range, A1Range::Row(RelColRow::new(4, true)));
+        let mut range = A1Range::from_a1("2", sheet_id, &sheet_name_id).unwrap();
+        range.translate(0, 2).unwrap();
+        assert_eq!(range.range, A1RangeType::Row(RelColRow::new(4, true)));
     }
 
     #[test]
@@ -244,9 +250,9 @@ mod tests {
     fn test_translate_position() {
         let sheet_id = SheetId::new();
         let sheet_name_id = HashMap::new();
-        let mut a1_part = A1Part::from_a1("C3", sheet_id, &sheet_name_id).unwrap();
-        a1_part.translate(2, 1).unwrap();
-        assert_eq!(a1_part.range, A1Range::Pos(RelPos::new(5, 4, true, true)));
+        let mut range = A1Range::from_a1("C3", sheet_id, &sheet_name_id).unwrap();
+        range.translate(2, 1).unwrap();
+        assert_eq!(range.range, A1RangeType::Pos(RelPos::new(5, 4, true, true)));
     }
 
     #[test]
@@ -254,11 +260,11 @@ mod tests {
     fn test_translate_range() {
         let sheet_id = SheetId::new();
         let sheet_name_id = HashMap::new();
-        let mut a1_part = A1Part::from_a1("A1:B2", sheet_id, &sheet_name_id).unwrap();
-        a1_part.translate(1, 1).unwrap();
+        let mut range = A1Range::from_a1("A1:B2", sheet_id, &sheet_name_id).unwrap();
+        range.translate(1, 1).unwrap();
         assert_eq!(
-            a1_part.range,
-            A1Range::Rect(RelRect {
+            range.range,
+            A1RangeType::Rect(RelRect {
                 min: RelPos::new(2, 2, true, true),
                 max: RelPos::new(3, 3, true, true),
             })
@@ -270,12 +276,12 @@ mod tests {
     fn test_translate_excluded_column() {
         let sheet_id = SheetId::new();
         let sheet_name_id = HashMap::new();
-        let mut a1_part = A1Part::from_a1("C", sheet_id, &sheet_name_id).unwrap();
-        a1_part.to_excluded().unwrap();
-        a1_part.translate(-1, 0).unwrap();
+        let mut range = A1Range::from_a1("C", sheet_id, &sheet_name_id).unwrap();
+        range.to_excluded().unwrap();
+        range.translate(-1, 0).unwrap();
         assert_eq!(
-            a1_part.range,
-            A1Range::ExcludeColumn(RelColRow::new(2, true))
+            range.range,
+            A1RangeType::ExcludeColumn(RelColRow::new(2, true))
         );
     }
 
@@ -284,9 +290,9 @@ mod tests {
     fn test_translate_all() {
         let sheet_id = SheetId::new();
         let sheet_name_id = HashMap::new();
-        let mut a1_part = A1Part::from_a1("*", sheet_id, &sheet_name_id).unwrap();
-        a1_part.translate(1, 1).unwrap();
-        assert_eq!(a1_part.range, A1Range::All);
+        let mut range = A1Range::from_a1("*", sheet_id, &sheet_name_id).unwrap();
+        range.translate(1, 1).unwrap();
+        assert_eq!(range.range, A1RangeType::All);
     }
 
     #[test]
@@ -294,7 +300,7 @@ mod tests {
     fn test_translate_out_of_bounds() {
         let sheet_id = SheetId::new();
         let sheet_name_id = HashMap::new();
-        let mut a1_part = A1Part::from_a1("A1", sheet_id, &sheet_name_id).unwrap();
-        assert!(a1_part.translate(-1, -1).is_err());
+        let mut range = A1Range::from_a1("A1", sheet_id, &sheet_name_id).unwrap();
+        assert!(range.translate(-1, -1).is_err());
     }
 }

@@ -1,4 +1,35 @@
-use crate::{Pos, Rect, A1};
+//! A1Range is an enum that represents a range within in an A1 string.
+
+pub mod a1_range;
+pub mod a1_range_from_a1;
+pub mod a1_range_to_a1;
+pub mod a1_range_translate;
+
+use crate::{grid::SheetId, Pos, Rect, A1};
+
+#[derive(Debug, PartialEq)]
+pub struct A1Range {
+    pub sheet_id: SheetId,
+    pub range: A1RangeType,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum A1RangeType {
+    All,
+    Column(RelColRow),
+    Row(RelColRow),
+    ColumnRange(RelColRowRange),
+    RowRange(RelColRowRange),
+    Rect(RelRect),
+    Pos(RelPos),
+
+    ExcludeColumn(RelColRow),
+    ExcludeRow(RelColRow),
+    ExcludeColumnRange(RelColRowRange),
+    ExcludeRowRange(RelColRowRange),
+    ExcludeRect(RelRect),
+    ExcludePos(RelPos),
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RelColRowRange {
@@ -72,6 +103,14 @@ pub struct RelRect {
     pub max: RelPos,
 }
 
+impl RelRect {
+    /// Counts the number of cells in the range.
+    pub fn count(&self) -> usize {
+        let rect = Rect::from(*self);
+        rect.count()
+    }
+}
+
 impl From<RelRect> for Rect {
     fn from(rect: RelRect) -> Self {
         Rect {
@@ -79,24 +118,6 @@ impl From<RelRect> for Rect {
             max: rect.max.into(),
         }
     }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum A1Range {
-    All,
-    Column(RelColRow),
-    Row(RelColRow),
-    ColumnRange(RelColRowRange),
-    RowRange(RelColRowRange),
-    Rect(RelRect),
-    Pos(RelPos),
-
-    ExcludeColumn(RelColRow),
-    ExcludeRow(RelColRow),
-    ExcludeColumnRange(RelColRowRange),
-    ExcludeRowRange(RelColRowRange),
-    ExcludeRect(RelRect),
-    ExcludePos(RelPos),
 }
 
 #[cfg(test)]
@@ -139,5 +160,15 @@ mod tests {
 
         let rel_pos = RelPos::new(1, 1, false, true);
         assert_eq!(rel_pos.to_a1(), "$A1");
+    }
+
+    #[test]
+    #[parallel]
+    fn test_rel_rect_count() {
+        let rel_rect = RelRect {
+            min: RelPos::new(1, 1, true, true),
+            max: RelPos::new(3, 3, true, true),
+        };
+        assert_eq!(rel_rect.count(), 9);
     }
 }

@@ -1,19 +1,8 @@
-use crate::grid::SheetId;
+use crate::{a1::a1_sheet_name::try_sheet_name, grid::SheetId, A1Error, SheetNameIdMap};
 
-pub mod a1_part_to_a1;
-pub mod a1_part_translate;
-mod a1_part_types;
-pub use a1_part_types::*;
+use super::{A1Range, A1RangeType, RelColRow, RelColRowRange, RelPos, RelRect};
 
-use super::{a1_sheet_name::try_sheet_name, A1Error, SheetNameIdMap};
-
-#[derive(Debug, PartialEq)]
-pub struct A1Part {
-    pub sheet_id: Option<SheetId>,
-    pub range: A1Range,
-}
-
-impl A1Part {
+impl A1Range {
     /// Tries to convert an A1 part to a (column, relative).
     pub(crate) fn try_from_column(a1: &str) -> Option<RelColRow> {
         let mut a1 = a1.to_ascii_uppercase();
@@ -72,8 +61,7 @@ impl A1Part {
     fn try_from_column_range(a1: &str) -> Option<RelColRowRange> {
         a1.split_once(':')
             .map(|(from, to)| {
-                let (from, to) = match (A1Part::try_from_column(from), A1Part::try_from_column(to))
-                {
+                let (from, to) = match (Self::try_from_column(from), Self::try_from_column(to)) {
                     (Some(a), Some(b)) => {
                         if a.index > b.index {
                             (b, a)
@@ -88,17 +76,15 @@ impl A1Part {
                 };
                 Some(RelColRowRange { from, to })
             })
-            .unwrap_or_else(|| {
-                A1Part::try_from_column(a1).map(|x| RelColRowRange { from: x, to: x })
-            })
+            .unwrap_or_else(|| Self::try_from_column(a1).map(|x| RelColRowRange { from: x, to: x }))
     }
 
     /// Tries to create Row ranges from an A1 string.
     fn try_from_row_range(a1: &str) -> Result<Option<RelColRowRange>, A1Error> {
         a1.split_once(':')
             .map(|(from, to)| {
-                let from = A1Part::try_from_row(from)?;
-                let to = A1Part::try_from_row(to)?;
+                let from = Self::try_from_row(from)?;
+                let to = Self::try_from_row(to)?;
 
                 match (from, to) {
                     (Some(a), Some(b)) => {
@@ -110,7 +96,7 @@ impl A1Part {
                 }
             })
             .unwrap_or_else(|| {
-                A1Part::try_from_row(a1).map(|row| row.map(|x| RelColRowRange { from: x, to: x }))
+                Self::try_from_row(a1).map(|row| row.map(|x| RelColRowRange { from: x, to: x }))
             })
     }
 
@@ -134,12 +120,12 @@ impl A1Part {
         let (column, row) = a1.split_at(number_digit);
 
         // Parse the column part
-        let Some(x) = A1Part::try_from_column(column) else {
+        let Some(x) = A1Range::try_from_column(column) else {
             return Ok(None);
         };
 
         // Parse the row part
-        let Some(y) = A1Part::try_from_row(row)? else {
+        let Some(y) = A1Range::try_from_row(row)? else {
             return Ok(None);
         };
 
@@ -149,10 +135,10 @@ impl A1Part {
     /// Tries to create a Vec<RelRect> from an A1 string.
     fn try_from_rect(a1: &str) -> Result<Option<RelRect>, A1Error> {
         if let Some((from, to)) = a1.split_once(':') {
-            let Some(min) = A1Part::try_from_position(from)? else {
+            let Some(min) = A1Range::try_from_position(from)? else {
                 return Ok(None);
             };
-            let Some(max) = A1Part::try_from_position(to)? else {
+            let Some(max) = A1Range::try_from_position(to)? else {
                 return Ok(None);
             };
             Ok(Some(RelRect { min, max }))
@@ -165,63 +151,53 @@ impl A1Part {
         original_a1: &str,
         sheet_id: SheetId,
         sheet_name_id: &SheetNameIdMap,
-    ) -> Result<A1Part, A1Error> {
-        let (a1, sheet_id) = try_sheet_name(original_a1, sheet_id, sheet_name_id)?;
+    ) -> Result<Self, A1Error> {
+        let (a1, other_sheet_id) = try_sheet_name(original_a1, sheet_id, sheet_name_id)?;
 
-        let range = if A1Part::try_from_all(a1) {
-            A1Range::All
-        } else if let Some(column) = A1Part::try_from_column(a1) {
-            A1Range::Column(column)
-        } else if let Some(row) = A1Part::try_from_row(a1)? {
-            A1Range::Row(row)
-        } else if let Some(column_range) = A1Part::try_from_column_range(a1) {
-            A1Range::ColumnRange(column_range)
-        } else if let Some(row_range) = A1Part::try_from_row_range(a1)? {
-            A1Range::RowRange(row_range)
-        } else if let Some(pos) = A1Part::try_from_position(a1)? {
-            A1Range::Pos(pos)
-        } else if let Some(rect) = A1Part::try_from_rect(a1)? {
-            A1Range::Rect(rect)
+        let range = if Self::try_from_all(a1) {
+            A1RangeType::All
+        } else if let Some(column) = Self::try_from_column(a1) {
+            A1RangeType::Column(column)
+        } else if let Some(row) = Self::try_from_row(a1)? {
+            A1RangeType::Row(row)
+        } else if let Some(column_range) = Self::try_from_column_range(a1) {
+            A1RangeType::ColumnRange(column_range)
+        } else if let Some(row_range) = Self::try_from_row_range(a1)? {
+            A1RangeType::RowRange(row_range)
+        } else if let Some(pos) = Self::try_from_position(a1)? {
+            A1RangeType::Pos(pos)
+        } else if let Some(rect) = Self::try_from_rect(a1)? {
+            A1RangeType::Rect(rect)
         } else {
             return Err(A1Error::InvalidRange(a1.to_string()));
         };
 
-        Ok(A1Part { sheet_id, range })
+        Ok(A1Range {
+            range,
+            sheet_id: other_sheet_id.unwrap_or(sheet_id),
+        })
     }
 
     /// Converts a normal A1Part into an excluded part.
     pub fn to_excluded(&mut self) -> Result<(), A1Error> {
         self.range = match &self.range {
-            A1Range::Column(x) => A1Range::ExcludeColumn(*x),
-            A1Range::Row(x) => A1Range::ExcludeRow(*x),
-            A1Range::ColumnRange(x) => A1Range::ExcludeColumnRange(*x),
-            A1Range::RowRange(x) => A1Range::ExcludeRowRange(*x),
-            A1Range::Rect(x) => A1Range::ExcludeRect(*x),
-            A1Range::Pos(x) => A1Range::ExcludePos(*x),
+            A1RangeType::Column(x) => A1RangeType::ExcludeColumn(*x),
+            A1RangeType::Row(x) => A1RangeType::ExcludeRow(*x),
+            A1RangeType::ColumnRange(x) => A1RangeType::ExcludeColumnRange(*x),
+            A1RangeType::RowRange(x) => A1RangeType::ExcludeRowRange(*x),
+            A1RangeType::Rect(x) => A1RangeType::ExcludeRect(*x),
+            A1RangeType::Pos(x) => A1RangeType::ExcludePos(*x),
 
-            A1Range::ExcludeColumn(x) => A1Range::ExcludeColumn(*x),
-            A1Range::ExcludeRow(x) => A1Range::ExcludeRow(*x),
-            A1Range::ExcludeColumnRange(x) => A1Range::ExcludeColumnRange(*x),
-            A1Range::ExcludeRowRange(x) => A1Range::ExcludeRowRange(*x),
-            A1Range::ExcludeRect(x) => A1Range::ExcludeRect(*x),
-            A1Range::ExcludePos(x) => A1Range::ExcludePos(*x),
+            A1RangeType::ExcludeColumn(x) => A1RangeType::ExcludeColumn(*x),
+            A1RangeType::ExcludeRow(x) => A1RangeType::ExcludeRow(*x),
+            A1RangeType::ExcludeColumnRange(x) => A1RangeType::ExcludeColumnRange(*x),
+            A1RangeType::ExcludeRowRange(x) => A1RangeType::ExcludeRowRange(*x),
+            A1RangeType::ExcludeRect(x) => A1RangeType::ExcludeRect(*x),
+            A1RangeType::ExcludePos(x) => A1RangeType::ExcludePos(*x),
 
-            A1Range::All => return Err(A1Error::InvalidExclusion("*".to_string())),
+            A1RangeType::All => return Err(A1Error::InvalidExclusion("*".to_string())),
         };
         Ok(())
-    }
-
-    /// Returns true if the A1Part is excluded.
-    pub fn is_excluded(&self) -> bool {
-        matches!(
-            self.range,
-            A1Range::ExcludeColumn(_)
-                | A1Range::ExcludeRow(_)
-                | A1Range::ExcludeColumnRange(_)
-                | A1Range::ExcludeRowRange(_)
-                | A1Range::ExcludeRect(_)
-                | A1Range::ExcludePos(_)
-        )
     }
 }
 
@@ -246,10 +222,10 @@ mod tests {
     fn test_from_a1_column() {
         let (sheet_id, _, sheet_name_id) = setup_sheet_ids();
         assert_eq!(
-            A1Part::from_a1("A", sheet_id, &sheet_name_id),
-            Ok(A1Part {
-                sheet_id: None,
-                range: A1Range::Column(RelColRow::new(1, true)),
+            A1Range::from_a1("A", sheet_id, &sheet_name_id),
+            Ok(A1Range {
+                sheet_id,
+                range: A1RangeType::Column(RelColRow::new(1, true)),
             })
         );
     }
@@ -259,10 +235,10 @@ mod tests {
     fn test_from_a1_row() {
         let (sheet_id, _, sheet_name_id) = setup_sheet_ids();
         assert_eq!(
-            A1Part::from_a1("1", sheet_id, &sheet_name_id),
-            Ok(A1Part {
-                sheet_id: None,
-                range: A1Range::Row(RelColRow::new(1, true)),
+            A1Range::from_a1("1", sheet_id, &sheet_name_id),
+            Ok(A1Range {
+                sheet_id,
+                range: A1RangeType::Row(RelColRow::new(1, true)),
             })
         );
     }
@@ -272,10 +248,10 @@ mod tests {
     fn test_from_a1_column_range() {
         let (sheet_id, _, sheet_name_id) = setup_sheet_ids();
         assert_eq!(
-            A1Part::from_a1("A:C", sheet_id, &sheet_name_id),
-            Ok(A1Part {
-                sheet_id: None,
-                range: A1Range::ColumnRange(RelColRowRange {
+            A1Range::from_a1("A:C", sheet_id, &sheet_name_id),
+            Ok(A1Range {
+                sheet_id,
+                range: A1RangeType::ColumnRange(RelColRowRange {
                     from: RelColRow::new(1, true),
                     to: RelColRow::new(3, true),
                 }),
@@ -288,10 +264,10 @@ mod tests {
     fn test_from_a1_row_range() {
         let (sheet_id, _, sheet_name_id) = setup_sheet_ids();
         assert_eq!(
-            A1Part::from_a1("1:3", sheet_id, &sheet_name_id),
-            Ok(A1Part {
-                sheet_id: None,
-                range: A1Range::RowRange(RelColRowRange {
+            A1Range::from_a1("1:3", sheet_id, &sheet_name_id),
+            Ok(A1Range {
+                sheet_id,
+                range: A1RangeType::RowRange(RelColRowRange {
                     from: RelColRow::new(1, true),
                     to: RelColRow::new(3, true),
                 }),
@@ -304,10 +280,10 @@ mod tests {
     fn test_from_a1_position() {
         let (sheet_id, _, sheet_name_id) = setup_sheet_ids();
         assert_eq!(
-            A1Part::from_a1("A1", sheet_id, &sheet_name_id),
-            Ok(A1Part {
-                sheet_id: None,
-                range: A1Range::Pos(RelPos::new(1, 1, true, true)),
+            A1Range::from_a1("A1", sheet_id, &sheet_name_id),
+            Ok(A1Range {
+                sheet_id,
+                range: A1RangeType::Pos(RelPos::new(1, 1, true, true)),
             })
         );
     }
@@ -317,10 +293,10 @@ mod tests {
     fn test_from_a1_rect() {
         let (sheet_id, _, sheet_name_id) = setup_sheet_ids();
         assert_eq!(
-            A1Part::from_a1("A1:B2", sheet_id, &sheet_name_id),
-            Ok(A1Part {
-                sheet_id: None,
-                range: A1Range::Rect(RelRect {
+            A1Range::from_a1("A1:B2", sheet_id, &sheet_name_id),
+            Ok(A1Range {
+                sheet_id,
+                range: A1RangeType::Rect(RelRect {
                     min: RelPos::new(1, 1, true, true),
                     max: RelPos::new(2, 2, true, true),
                 }),
@@ -333,57 +309,11 @@ mod tests {
     fn test_from_a1_with_sheet_name() {
         let (sheet_id, sheet_id_2, sheet_name_id) = setup_sheet_ids();
         assert_eq!(
-            A1Part::from_a1("'Sheet 2'!A1", sheet_id, &sheet_name_id),
-            Ok(A1Part {
-                sheet_id: Some(sheet_id_2),
-                range: A1Range::Pos(RelPos::new(1, 1, true, true)),
+            A1Range::from_a1("'Sheet 2'!A1", sheet_id, &sheet_name_id),
+            Ok(A1Range {
+                sheet_id: sheet_id_2,
+                range: A1RangeType::Pos(RelPos::new(1, 1, true, true)),
             })
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn test_is_excluded() {
-        let (sheet_id, _, sheet_name_id) = setup_sheet_ids();
-
-        // Test non-excluded A1Parts
-        let non_excluded = vec![
-            A1Part::from_a1("A", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("1", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("A:C", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("1:3", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("A1", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("A1:B2", sheet_id, &sheet_name_id).unwrap(),
-        ];
-
-        for part in non_excluded {
-            assert!(
-                !part.is_excluded(),
-                "Expected {:?} to not be excluded",
-                part
-            );
-        }
-
-        // Test excluded A1Parts
-        let mut excluded = vec![
-            A1Part::from_a1("A", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("1", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("A:C", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("1:3", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("A1", sheet_id, &sheet_name_id).unwrap(),
-            A1Part::from_a1("A1:B2", sheet_id, &sheet_name_id).unwrap(),
-        ];
-
-        for part in &mut excluded {
-            part.to_excluded().unwrap();
-            assert!(part.is_excluded(), "Expected {:?} to be excluded", part);
-        }
-
-        // Test that All cannot be excluded
-        let mut all = A1Part::from_a1("*", sheet_id, &sheet_name_id).unwrap();
-        assert!(
-            all.to_excluded().is_err(),
-            "Expected All to not be excludable"
         );
     }
 }

@@ -4,16 +4,15 @@ use regex::Regex;
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, ConnectionKind, SheetId},
+    selection::Selection,
     Pos, RunError, RunErrorMsg, SheetPos, SheetRect,
 };
 
 use lazy_static::lazy_static;
 
 lazy_static! {
-    static ref HANDLEBARS_REGEX: Regex = Regex::new(
-        r#"\{\{\s*(?:(relative)\s*:\s*)?(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*"?([^"]*)"?\s*)?\}\}"#
-    )
-    .expect("Failed to compile regex");
+    static ref HANDLEBARS_REGEX: Regex =
+        Regex::new(r#"\{\{(.*?)\}\}"#).expect("Failed to compile regex");
 }
 
 impl GridController {
@@ -21,12 +20,16 @@ impl GridController {
     fn replace_handlebars(
         &self,
         transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
+
+        // todo: do we need this?
+        _sheet_pos: SheetPos,
         code: &str,
         default_sheet_id: SheetId,
     ) -> Result<String, String> {
         let mut result = String::new();
         let mut last_match_end = 0;
+
+        let map = self.grid.sheet_name_id_map();
 
         for cap in HANDLEBARS_REGEX.captures_iter(code) {
             let Some(whole_match) = cap.get(0) else {
@@ -36,42 +39,30 @@ impl GridController {
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let replacement: Result<String, String> = (|| {
-                let is_relative = cap.get(1).is_some();
+                let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
 
-                // Parse x and y coordinates
-                let x: i64 = cap[2].parse().map_err(|_| "Failed to parse x coordinate")?;
-                let y: i64 = cap[3].parse().map_err(|_| "Failed to parse y coordinate")?;
+                let selection = Selection::from_a1(content, default_sheet_id, map.clone())?;
 
-                // Adjust coordinates based on whether it's relative
-                let (x, y) = if is_relative {
-                    (x + sheet_pos.x, y + sheet_pos.y)
-                } else {
-                    (x, y)
-                };
+                // Gets the display value of the cell at the cursor position of
+                // the Selection (for now we only support 1 cell)
+                let value = self
+                    .try_sheet(selection.sheet_id)
+                    .map(|sheet| {
+                        sheet
+                            .display_value(Pos::new(selection.x, selection.y))
+                            .map(|value| value.to_display())
+                            .unwrap_or_default()
+                    })
+                    .unwrap_or_default();
 
-                // Get the sheet where the cell is located
-                let sheet = if let Some(sheet_name) = cap.get(4) {
-                    let sheet_name = sheet_name.as_str().trim().to_string();
-                    self.grid()
-                        .try_sheet_from_name(sheet_name.clone())
-                        .ok_or_else(|| {
-                            format!("Failed to find sheet with name: '{}'", sheet_name)
-                        })?
-                } else {
-                    self.try_sheet(default_sheet_id).ok_or_else(|| {
-                        format!("Failed to find sheet with id: {}", default_sheet_id)
-                    })?
-                };
-
-                transaction
-                    .cells_accessed
-                    .insert(SheetRect::new(x, y, x, y, sheet.id));
-
-                if let Some(cell) = sheet.display_value(Pos { x, y }) {
-                    Ok(cell.to_string())
-                } else {
-                    Ok(String::new())
-                }
+                transaction.cells_accessed.insert(SheetRect::new(
+                    selection.x,
+                    selection.y,
+                    selection.x,
+                    selection.y,
+                    selection.sheet_id,
+                ));
+                Ok(value)
             })();
 
             match replacement {
@@ -155,7 +146,7 @@ mod tests {
             sheet_id,
         };
 
-        let code = r#"{{ 1, 2 }}"#;
+        let code = r#"{{$A$2}}"#;
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
@@ -170,7 +161,7 @@ mod tests {
         let sheet_2 = gc.sheet_mut(sheet_2_id);
         sheet_2.set_cell_value(Pos { x: 1, y: 2 }, "test2".to_string());
 
-        let code = r#"{{ 1, 2, "Sheet 2" }}"#;
+        let code = r#"{{'Sheet 2'!$A$2}}"#;
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
@@ -198,7 +189,7 @@ mod tests {
             sheet_id,
         };
 
-        let code = r#"{{ relative: 0, 1 }}"#;
+        let code = r#"{{A2}}"#;
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
@@ -208,7 +199,7 @@ mod tests {
             .cells_accessed
             .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)));
 
-        let code = r#"{{relative:0,1,"Sheet 1" }}"#;
+        let code = r#"{{'Sheet 1'!A2}}"#;
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
@@ -222,17 +213,16 @@ mod tests {
     #[test]
     #[parallel]
     fn replace_handlebars_actual_case() {
-        let code =
-            "SELECT age FROM 'public'.'test_table' WHERE name='{{ relative: -1, 0 }}' LIMIT 100";
+        let code = "SELECT age FROM 'public'.'test_table' WHERE name='{{A1}}' LIMIT 100";
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test".to_string());
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, "test".to_string());
 
         let sheet_pos = SheetPos {
             x: 1,
-            y: 0,
+            y: 2,
             sheet_id,
         };
 
@@ -269,9 +259,7 @@ mod tests {
             assert_eq!(
                 code_cell.unwrap().get_error(),
                 Some(RunError {
-                    msg: RunErrorMsg::CodeRunError(
-                        "Failed to find sheet with name: 'Sheet 2'".into()
-                    ),
+                    msg: RunErrorMsg::CodeRunError("{\"InvalidSheetName\":\"Sheet 2\"}".into()),
                     span: None
                 })
             );
@@ -280,44 +268,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        test_error(&mut gc, r#"{{ 1, 2, "Sheet 2" }}"#, sheet_id);
-        test_error(&mut gc, r#"{{ 1, 2, Sheet 2 }}"#, sheet_id);
-        test_error(&mut gc, r#"{{1,2,Sheet 2}}"#, sheet_id);
-        test_error(&mut gc, r#"{{1,2,"Sheet 2"}}"#, sheet_id);
-    }
-
-    #[test]
-    #[parallel]
-    fn run_connection_relative() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, "test".to_string());
-
-        let mut transaction = PendingTransaction::default();
-
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
-
-        gc.run_connection(
-            &mut transaction,
-            sheet_pos,
-            r#"{{ relative: 0, 1 }}"#.to_string(),
-            ConnectionKind::Postgres,
-            "test".to_string(),
-        );
-
-        assert_eq!(
-            transaction.waiting_for_async,
-            Some(CodeCellLanguage::Connection {
-                kind: ConnectionKind::Postgres,
-                id: "test".to_string(),
-            })
-        );
-        assert_eq!(transaction.current_sheet_pos, Some(sheet_pos));
+        test_error(&mut gc, r#"{{'Sheet 2'!A2}}"#, sheet_id);
+        test_error(&mut gc, r#"{{'Sheet 2'!$A$2}}"#, sheet_id);
     }
 }

@@ -1,4 +1,4 @@
-use crate::{a1_parts::A1Parts, grid::SheetId, A1Error, A1Range, Rect, SheetNameIdMap};
+use crate::{a1::A1, grid::SheetId, A1Error, A1RangeType, Rect, SheetNameIdMap};
 
 use super::Selection;
 
@@ -13,7 +13,7 @@ impl Selection {
     ) -> Result<Selection, A1Error> {
         let mut selection = Selection::new(sheet_id);
 
-        let parts = A1Parts::from_a1(a1, sheet_id, sheets)?;
+        let parts = A1::from_a1(a1, sheet_id, sheets)?;
 
         let sheets = parts.sheets();
 
@@ -25,14 +25,15 @@ impl Selection {
         // if the origin sheet_id is not in the parts, then switch the
         // Selection's sheet_id to the first Part's sheet_id.
         if !sheets.contains(&sheet_id) {
-            selection.sheet_id = parts.iter().find_map(|part| part.sheet_id).ok_or_else(|| {
+            let range = parts.ranges.first().ok_or_else(|| {
                 A1Error::InvalidSheetId(
                     "No sheet ID found when converting from A1 to Selection".to_string(),
                 )
             })?;
+            selection.sheet_id = range.sheet_id;
         }
         parts.iter().for_each(|part| match part.range {
-            A1Range::Pos(pos) => {
+            A1RangeType::Pos(pos) => {
                 selection.x = pos.x.index as i64;
                 selection.y = pos.y.index as i64;
                 selection.rects.get_or_insert_with(Vec::new).push(Rect::new(
@@ -42,19 +43,19 @@ impl Selection {
                     pos.y.index as i64,
                 ));
             }
-            A1Range::Column(col) => {
+            A1RangeType::Column(col) => {
                 selection
                     .columns
                     .get_or_insert_with(Vec::new)
                     .push(col.index as i64);
             }
-            A1Range::Row(row) => {
+            A1RangeType::Row(row) => {
                 selection
                     .rows
                     .get_or_insert_with(Vec::new)
                     .push(row.index as i64);
             }
-            A1Range::ColumnRange(range) => {
+            A1RangeType::ColumnRange(range) => {
                 for col in range.from.index..=range.to.index {
                     selection
                         .columns
@@ -62,12 +63,12 @@ impl Selection {
                         .push(col as i64);
                 }
             }
-            A1Range::RowRange(range) => {
+            A1RangeType::RowRange(range) => {
                 for row in range.from.index..=range.to.index {
                     selection.rows.get_or_insert_with(Vec::new).push(row as i64);
                 }
             }
-            A1Range::Rect(rect) => {
+            A1RangeType::Rect(rect) => {
                 // normalize the rect to a min-max rect
                 let x0 = rect.min.x.index.min(rect.max.x.index) as i64;
                 let y0 = rect.min.y.index.min(rect.max.y.index) as i64;
@@ -78,7 +79,7 @@ impl Selection {
                     .get_or_insert_with(Vec::new)
                     .push(Rect::new(x0, y0, x1, y1));
             }
-            A1Range::All => {
+            A1RangeType::All => {
                 selection.all = true;
             }
             _ => (),

@@ -1,3 +1,5 @@
+use crate::SheetNameIdMap;
+
 use super::{Grid, Sheet, SheetId};
 use lexicon_fractional_index::key_between;
 use std::str::FromStr;
@@ -160,6 +162,11 @@ impl Grid {
     #[cfg(test)]
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
+    }
+
+    /// Returns a map of sheet names to sheet ids.
+    pub fn sheet_name_id_map(&self) -> SheetNameIdMap {
+        self.sheets.iter().map(|s| (s.name.clone(), s.id)).collect()
     }
 }
 
@@ -332,5 +339,30 @@ mod test {
         )));
         assert_eq!(grid.sheets[0].name, "Sheet 1".to_string());
         assert_eq!(grid.sheets[1].name, "Sheet 1 (1)".to_string());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_sheet_name_id_map() {
+        let mut grid = Grid::new();
+        let id0 = grid.first_sheet_id();
+        grid.sheets[0].name = "Sheet 0".to_string();
+        let id1 = grid.add_sheet(Some(Sheet::new(
+            SheetId::new(),
+            "Sheet 1".to_string(),
+            "a1".to_string(),
+        )));
+        let id2 = grid.add_sheet(Some(Sheet::new(
+            SheetId::new(),
+            "Sheet 2".to_string(),
+            "a2".to_string(),
+        )));
+
+        let map = grid.sheet_name_id_map();
+
+        assert_eq!(map.len(), 3);
+        assert_eq!(map.get("Sheet 0"), Some(&id0));
+        assert_eq!(map.get("Sheet 1"), Some(&id1));
+        assert_eq!(map.get("Sheet 2"), Some(&id2));
     }
 }
