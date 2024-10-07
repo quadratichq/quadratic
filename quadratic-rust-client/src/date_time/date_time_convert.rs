@@ -48,7 +48,7 @@ pub(crate) fn format_time(date: &str, format: Option<String>) -> String {
 pub(crate) fn parse_time_from_format(date: &str, time: &str) -> String {
     if let (Ok(date), Some(parsed)) = (
         NaiveDate::parse_from_str(date, "%Y-%m-%d"),
-        CellValue::unpack_time(time),
+        CellValue::parse_time(time),
     ) {
         match parsed {
             CellValue::Time(time) => {

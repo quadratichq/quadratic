@@ -56,7 +56,7 @@ impl CellValue {
                     || value.to_lowercase().starts_with("<div>")
                 {
                     CellValue::Html(value.to_string())
-                } else if let Some(time) = Self::unpack_time(value) {
+                } else if let Some(time) = Self::parse_time(value) {
                     time
                 } else {
                     CellValue::Text(value.to_string())
@@ -109,14 +109,12 @@ impl CellValue {
                 CellValue::Logical(is_true)
             }
             "instant" => CellValue::Text("not implemented".into()), //unpack_str_unix_timestamp(value)?,
-            "duration" => {
-                CellValue::unpack_duration(value).unwrap_or(CellValue::Text(value.into()))
-            }
+            "duration" => CellValue::parse_duration(value).unwrap_or(CellValue::Text(value.into())),
             "image" => CellValue::Image(value.into()),
             "date" => Self::from_js_date(value),
             "date time" => Self::from_js_date_time(value),
-            _ => CellValue::unpack_date_time(value)
-                .or_else(|| CellValue::unpack_duration(value))
+            _ => CellValue::parse_date_time(value)
+                .or_else(|| CellValue::parse_duration(value))
                 .unwrap_or_else(|| CellValue::Text(value.clone())),
         };
 
