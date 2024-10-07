@@ -6,7 +6,6 @@ import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
-import { MoreHorizIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -159,9 +158,9 @@ export const TopBarUsers = () => {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex h-6 w-6 items-center justify-center self-center rounded-full p-0 text-xs font-normal text-muted-foreground data-[state=open]:bg-accent"
+                className="flex h-6 min-w-6 items-center justify-center self-center rounded-full p-0 text-sm font-normal text-muted-foreground hover:bg-transparent data-[state=open]:text-foreground"
               >
-                <MoreHorizIcon />
+                +{extraUsers.length}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
