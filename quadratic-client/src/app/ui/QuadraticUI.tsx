@@ -1,5 +1,4 @@
 import {
-  editorInteractionStateFollowAtom,
   editorInteractionStateShowNewFileMenuAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
@@ -9,7 +8,6 @@ import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
-import { Following } from '@/app/ui/components/Following';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -22,7 +20,6 @@ import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
 import SheetBar from '@/app/ui/menus/SheetBar';
 import Toolbar from '@/app/ui/menus/Toolbar';
 import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
-import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
 import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
 import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
@@ -31,7 +28,6 @@ import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useMemo } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -46,13 +42,6 @@ export default function QuadraticUI() {
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
   const [showNewFileMenu, setShowNewFileMenu] = useRecoilState(editorInteractionStateShowNewFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
-  const editorInteractionStateFollow = useRecoilValue(editorInteractionStateFollowAtom);
-  const { users } = useMultiplayerUsers();
-  const follow = useMemo(
-    () =>
-      editorInteractionStateFollow ? users.find((user) => user.session_id === editorInteractionStateFollow) : undefined,
-    [editorInteractionStateFollow, users]
-  );
   const presentationMode = useRecoilValue(presentationModeAtom);
 
   return (
@@ -87,17 +76,6 @@ export default function QuadraticUI() {
           </FileDragDropWrapper>
           <CodeEditor />
           <ValidationPanel />
-          <Following follow={follow} />
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              overflow: 'hidden',
-              position: 'absolute',
-              border: follow ? `3px solid ${follow.colorString}` : '',
-              pointerEvents: 'none',
-            }}
-          ></div>
         </div>
 
         {!presentationMode && !isEmbed && <BottomBar />}

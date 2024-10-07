@@ -391,6 +391,10 @@ export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
 };
 
+export const StopCircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop_circle</Icon>;
+};
+
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_bottom</Icon>;
 };

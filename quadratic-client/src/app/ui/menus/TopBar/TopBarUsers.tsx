@@ -125,7 +125,7 @@ export const TopBarUsers = () => {
             isFollowingYou,
             handleFollow,
           }) => (
-            <div className={cn('hidden lg:relative lg:flex lg:items-center')}>
+            <div className={cn('hidden lg:relative lg:flex lg:items-center')} key={sessionId}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button onClick={handleFollow} disabled={isFollowingYou}>
