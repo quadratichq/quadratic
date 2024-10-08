@@ -9,7 +9,7 @@ export const ThemePickerMenu = () => {
   const [showThemeMenu, setShowThemeMenu] = useState(false);
 
   return (
-    <Popover defaultOpen={true}>
+    <Popover>
       <SidebarTooltip label="Theme color">
         <PopoverTrigger asChild>
           <SidebarToggle
