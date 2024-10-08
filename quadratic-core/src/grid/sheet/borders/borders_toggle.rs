@@ -150,6 +150,12 @@ impl Borders {
                         if x > rect.min.x && !Self::is_same_style(cell, style, Sides::left()) {
                             return false;
                         }
+                        if x < rect.max.x && !Self::is_same_style(cell, style, Sides::right()) {
+                            return false;
+                        }
+                        if y > rect.min.y && !Self::is_same_style(cell, style, Sides::top()) {
+                            return false;
+                        }
                         if y < rect.max.y && !Self::is_same_style(cell, style, Sides::bottom()) {
                             return false;
                         }
@@ -213,6 +219,16 @@ impl Borders {
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
     ) -> bool {
+        // convert a clear border style to None (this fixes an issue where we
+        // would not toggle borders where clear is used when bottom is set, but
+        // the cell below's top is set)
+        // let style = style.and_then(|style| {
+        //     if style.line == CellBorderLine::Clear {
+        //         None
+        //     } else {
+        //         Some(style)
+        //     }
+        // });
         if let Some(style) = style {
             if selection.all && !Self::is_same_sheet(border_selection, style, &self.all) {
                 return false;
@@ -258,7 +274,7 @@ impl Borders {
 mod test {
     use serial_test::parallel;
 
-    use crate::{color::Rgba, controller::GridController, Rect};
+    use crate::{color::Rgba, controller::GridController, Rect, SheetRect};
 
     use super::*;
 
@@ -515,5 +531,34 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Bottom, &style));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_toggle_border() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let style = BorderStyle::default();
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            BorderSelection::All,
+            Some(style),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let border = sheet.borders.get(1, 1);
+
+        assert!(BorderStyleCell::is_equal_ignore_timestamp(
+            Some(border),
+            Some(BorderStyleCell::all())
+        ));
+
+        assert!(sheet.borders.is_toggle_borders(
+            &Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            BorderSelection::Bottom,
+            Some(style)
+        ));
     }
 }

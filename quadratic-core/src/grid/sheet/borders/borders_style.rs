@@ -210,9 +210,7 @@ impl BorderStyleCell {
             right: Some(BorderStyleTimestamp::default()),
         }
     }
-}
 
-impl BorderStyleCell {
     /// Apply an update to the cell.
     ///
     /// Returns the original cell so it can be used for undo.

@@ -5,7 +5,7 @@ use crate::{
             BorderSelection, BorderSide, BorderStyle, BorderStyleCellUpdate,
             BorderStyleCellUpdates, BorderStyleTimestamp,
         },
-        Sheet, SheetId,
+        CellBorderLine, Sheet, SheetId,
     },
     selection::Selection,
     Rect,
@@ -201,6 +201,12 @@ impl GridController {
                     if pos.x > rect.min.x {
                         border_style.left = style;
                     }
+                    if pos.x < rect.max.x {
+                        border_style.right = style;
+                    }
+                    if pos.y > rect.min.y {
+                        border_style.top = style;
+                    }
                     if pos.y < rect.max.y {
                         border_style.bottom = style;
                     }
@@ -276,31 +282,40 @@ impl GridController {
         &self,
         selection: Selection,
         border_selection: BorderSelection,
-        mut style: Option<BorderStyle>,
+        style: Option<BorderStyle>,
     ) -> Option<Vec<Operation>> {
         // Check if the borders are already set to the same style. If they are,
         // toggle them off.
         let sheet = self.try_sheet(selection.sheet_id)?;
-        if sheet
-            .borders
-            .is_toggle_borders(&selection, border_selection, style)
-        {
-            style = None;
-        }
+        let (style_sheet, style_rect) =
+            if sheet
+                .borders
+                .is_toggle_borders(&selection, border_selection, style)
+            {
+                (
+                    None,
+                    Some(BorderStyle {
+                        line: CellBorderLine::Clear,
+                        ..Default::default()
+                    }),
+                )
+            } else {
+                (style, style)
+            };
 
         let mut borders = BorderStyleCellUpdates::default();
 
         if selection.all {
-            Self::border_style_sheet(border_selection, style, &mut borders);
+            Self::border_style_sheet(border_selection, style_sheet, &mut borders);
         }
         if let Some(columns) = selection.columns.as_ref() {
             for _ in columns {
-                Self::border_style_sheet(border_selection, style, &mut borders);
+                Self::border_style_sheet(border_selection, style_sheet, &mut borders);
             }
         }
         if let Some(rows) = selection.rows.as_ref() {
             for _ in rows {
-                Self::border_style_sheet(border_selection, style, &mut borders);
+                Self::border_style_sheet(border_selection, style_sheet, &mut borders);
             }
         }
         if let Some(rects) = selection.rects.as_ref() {
@@ -308,7 +323,7 @@ impl GridController {
                 self.border_style_rect(
                     selection.sheet_id,
                     border_selection,
-                    style,
+                    style_rect,
                     rect,
                     &mut borders,
                 );
@@ -370,7 +385,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn borders_operations_all() {
+    fn test_borders_operations_all() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let selection = Selection::all(sheet_id);
