@@ -1,23 +1,22 @@
+import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { TransientResize } from '@/app/quadratic-core-types/index.js';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
+import { isMac } from '@/shared/utils/isMac';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
-
-// minimum cell when resizing in 1 character
-const MIN_CELL_WIDTH = 10;
 
 // Returns an array with all numbers inclusive of start to end
 function fillArray(start: number, end: number): number[] {
@@ -43,8 +42,8 @@ export class PointerHeading {
 
   private resizing?: {
     start: number;
-    row?: number;
-    column?: number;
+    row: number | null;
+    column: number | null;
     width?: number;
     height?: number;
     lastSize: number;
@@ -83,11 +82,11 @@ export class PointerHeading {
     const headingResize = !hasPermission ? undefined : headings.intersectsHeadingGridLine(world);
     if (headingResize) {
       pixiApp.setViewportDirty();
-      if (this.clicked && headingResize.column !== undefined) {
+      if (this.clicked && headingResize.column !== null) {
         event.preventDefault();
         this.autoResizeColumn(headingResize.column);
         return true;
-      } else if (this.clicked && headingResize.row !== undefined) {
+      } else if (this.clicked && headingResize.row !== null) {
         event.preventDefault();
         this.autoResizeRow(headingResize.row);
         return true;
@@ -95,7 +94,7 @@ export class PointerHeading {
       this.viewportChanges = {
         change: 0,
         originalSize: headingResize.width ?? headingResize.height ?? 0,
-        viewportStart: headingResize.row === undefined ? viewport.x : viewport.y,
+        viewportStart: headingResize.row === null ? viewport.x : viewport.y,
       };
       this.resizing = {
         lastSize: this.viewportChanges.originalSize,
@@ -127,9 +126,10 @@ export class PointerHeading {
       // then it add or removes the clicked column or row. If shift is pressed,
       // then it selects all columns or rows between the last clicked column or
       // row and the current one.
-      const isRightClick = (event as MouseEvent).button === 2;
+      const isRightClick =
+        (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
       if (event.ctrlKey || event.metaKey || isRightClick) {
-        if (intersects.column !== undefined) {
+        if (intersects.column !== null) {
           let column = intersects.column;
           const columns = cursor.columnRow?.columns || [];
           if (event.shiftKey) {
@@ -145,8 +145,8 @@ export class PointerHeading {
             }
           } else {
             if (columns.includes(column)) {
-              if (isRightClick || event.ctrlKey) {
-                events.emit('gridContextMenu', world, column, undefined);
+              if (isRightClick) {
+                events.emit('gridContextMenu', world, column, null);
               } else {
                 selectColumns(
                   columns.filter((c) => c !== column),
@@ -155,16 +155,16 @@ export class PointerHeading {
                 );
               }
             } else {
-              if (isRightClick || event.ctrlKey) {
+              if (isRightClick) {
                 selectColumns([column], undefined, true);
                 // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('gridContextMenu', world, column, undefined));
+                setTimeout(() => events.emit('gridContextMenu', world, column, null));
               } else {
                 selectColumns([...columns, column], undefined, true);
               }
             }
           }
-        } else if (intersects.row !== undefined) {
+        } else if (intersects.row !== null) {
           let row = intersects.row;
           const rows = cursor.columnRow?.rows || [];
           if (event.shiftKey) {
@@ -180,8 +180,8 @@ export class PointerHeading {
             }
           } else {
             if (rows.includes(row)) {
-              if (isRightClick || event.ctrlKey) {
-                events.emit('gridContextMenu', world, undefined, row);
+              if (isRightClick) {
+                events.emit('gridContextMenu', world, null, row);
               } else {
                 selectRows(
                   rows.filter((c) => c !== row),
@@ -190,10 +190,10 @@ export class PointerHeading {
                 );
               }
             } else {
-              if (isRightClick || event.ctrlKey) {
+              if (isRightClick) {
                 selectRows([row], undefined, true);
                 // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('gridContextMenu', world, undefined, row));
+                setTimeout(() => events.emit('gridContextMenu', world, null, row));
               } else {
                 selectRows([...rows, row], undefined, true);
               }
@@ -206,11 +206,11 @@ export class PointerHeading {
       // Otherwise it selects between the last selected column/row and the
       // current one.
       else if (event.shiftKey) {
-        if (intersects.column !== undefined) {
+        if (intersects.column !== null) {
           let x1 = cursor.cursorPosition.x;
           let x2 = intersects.column;
           selectColumns(fillArray(x1, x2), x1);
-        } else if (intersects.row !== undefined) {
+        } else if (intersects.row !== null) {
           let y1 = cursor.cursorPosition.y;
           let y2 = intersects.row;
           selectRows(fillArray(y1, y2), y1);
@@ -219,10 +219,10 @@ export class PointerHeading {
 
       // Otherwise, it selects the column/row.
       else {
-        if (intersects.column !== undefined) {
+        if (intersects.column !== null) {
           selectColumns([intersects.column]);
           // check if we're trying to open the context menu
-        } else if (intersects.row !== undefined) {
+        } else if (intersects.row !== null) {
           selectRows([intersects.row]);
         }
       }
@@ -244,7 +244,7 @@ export class PointerHeading {
       const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
       const headingResize = this.active ? this.resizing : headings.intersectsHeadingGridLine(world);
       if (hasPermission && headingResize) {
-        this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
+        this.cursor = headingResize.column !== null ? 'col-resize' : 'row-resize';
       } else {
         this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
       }
@@ -255,7 +255,7 @@ export class PointerHeading {
       return false;
     } else if (this.resizing) {
       const offsets = sheets.sheet.offsets;
-      if (this.resizing.column !== undefined) {
+      if (this.resizing.column !== null) {
         let size: number;
         if (this.resizing.column >= 0) {
           size = Math.max(MINIMUM_COLUMN_SIZE, world.x - this.resizing.start);
@@ -273,20 +273,21 @@ export class PointerHeading {
           offsets.resizeColumnTransiently(this.resizing.column, size);
           const delta = this.resizing.width ? this.resizing.lastSize - this.resizing.width : undefined;
           if (delta) {
-            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, this.resizing.column, undefined, delta);
+            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, this.resizing.column, null, delta);
             gridLines.dirty = true;
             cursor.dirty = true;
             headings.dirty = true;
             pixiApp.adjustHeadings({
               sheetId: sheets.sheet.id,
               column: this.resizing.column,
+              row: null,
               delta: size - this.resizing.lastSize,
             });
           }
           this.resizing.lastSize = size;
           events.emit('resizeHeadingColumn', sheets.sheet.id, this.resizing.column);
         }
-      } else if (this.resizing.row !== undefined) {
+      } else if (this.resizing.row !== null) {
         let size: number;
         if (this.resizing.row >= 0) {
           size = Math.max(MINIMUM_COLUMN_SIZE, world.y - this.resizing.start);
@@ -304,12 +305,13 @@ export class PointerHeading {
           offsets.resizeRowTransiently(this.resizing.row, size);
           const delta = this.resizing.height ? this.resizing.lastSize - this.resizing.height : undefined;
           if (delta) {
-            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, undefined, this.resizing.row, delta);
+            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, null, this.resizing.row, delta);
             gridLines.dirty = true;
             cursor.dirty = true;
             headings.dirty = true;
             pixiApp.adjustHeadings({
               sheetId: sheets.sheet.id,
+              column: null,
               row: this.resizing.row,
               delta: size - this.resizing.lastSize,
             });

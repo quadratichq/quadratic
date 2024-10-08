@@ -121,6 +121,19 @@ impl GridController {
         }
     }
 
+    pub fn process_dirty_hashes(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test))
+            || transaction.dirty_hashes.is_empty()
+            || transaction.is_server()
+        {
+            return;
+        }
+
+        self.process_visible_dirty_hashes(transaction);
+        self.process_remaining_dirty_hashes(transaction);
+        self.clear_viewport_buffer(transaction);
+    }
+
     pub fn send_render_cells_in_viewport(
         &self,
         sheet_id: SheetId,

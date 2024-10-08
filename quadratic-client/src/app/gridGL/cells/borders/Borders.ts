@@ -15,13 +15,13 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { BorderStyleCell, BorderStyleTimestamp, JsBordersSheet } from '@/app/quadratic-core-types';
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { Sheet } from '../../../grid/sheet/Sheet';
+import { intersects } from '../../helpers/intersects';
+import { pixiApp } from '../../pixiApp/PixiApp';
 import { CellsSheet } from '../CellsSheet';
 import { BorderCull, drawCellBorder } from '../drawBorders';
-import { BorderStyleCell, BorderStyleTimestamp, JsBordersSheet } from '@/app/quadratic-core-types';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { intersects } from '../../helpers/intersects';
 import { divideLine, findPerpendicularHorizontalLines, findPerpendicularVerticalLines } from './bordersUtil';
 
 // this sets when to fade the sheet borders when (for performance reasons)
@@ -47,7 +47,12 @@ export class Borders extends Container {
 
     events.on('bordersSheet', this.drawSheetCells);
     events.on('sheetOffsets', this.setDirty);
-    events.on('resizeRowHeights', this.setDirty);
+  }
+
+  destroy() {
+    events.off('bordersSheet', this.drawSheetCells);
+    events.off('sheetOffsets', this.setDirty);
+    super.destroy();
   }
 
   setDirty = () => (this.dirty = true);
@@ -169,13 +174,15 @@ export class Borders extends Container {
   // Takes the borders.all, .columns, and .rows, and then draws any borders
   // within the visible bounds.
   private drawSheetBorders() {
+    this.cellLines.removeChildren();
     this.sheetLines.removeChildren();
+
     const borders = this.borders;
     if (!borders) return;
 
-    if (!borders.all && !borders.columns && !borders.rows) return;
-
     this.drawAll();
+    this.drawHorizontal();
+    this.drawVertical();
 
     const bounds = pixiApp.viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
