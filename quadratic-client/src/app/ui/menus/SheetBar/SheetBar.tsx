@@ -18,6 +18,10 @@ const SCROLLING_INTERVAL = 17;
 const ARROW_REPEAT_INTERVAL = 17;
 
 export const SheetBar = (): JSX.Element => {
+  // used to trigger state change (eg, when sheets change)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setTrigger] = useState(0);
+
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = useMemo(() => hasPermissionToEditFile(permissions) && !isMobile, [permissions]);
 
@@ -29,6 +33,7 @@ export const SheetBar = (): JSX.Element => {
   useEffect(() => {
     const updateSheet = () => {
       setActiveSheet(sheets.current);
+      setTrigger((trigger) => trigger + 1);
     };
 
     events.on('changeSheet', updateSheet);

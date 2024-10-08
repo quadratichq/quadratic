@@ -45,13 +45,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
           <ArrowDropDownIcon />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        onPointerDown={(e) => e.stopPropagation()}
-        onCloseAutoFocus={(e) => {
-          e.preventDefault();
-          focusGrid();
-        }}
-      >
+      <DropdownMenuContent onPointerDown={(e) => e.stopPropagation()} onCloseAutoFocus={(e) => e.preventDefault()}>
         {numberOfSheets > 1 && (
           <DropdownMenuItem
             onClick={() => {
@@ -59,6 +53,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
                 mixpanel.track('[Sheets].delete');
                 sheets.userDeleteSheet(sheets.sheet.id);
               }
+              setTimeout(focusGrid);
             }}
           >
             Delete
@@ -68,6 +63,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
           onClick={() => {
             mixpanel.track('[Sheets].duplicate');
             sheets.duplicate();
+            focusGrid();
           }}
         >
           Duplicate
@@ -81,11 +77,13 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
                 sheets.sheet.color = color;
                 quadraticCore.setSheetColor(sheets.sheet.id, color, sheets.getCursorPosition());
                 handleClose();
+                focusGrid();
               }}
               onClear={() => {
                 sheets.sheet.color = undefined;
                 quadraticCore.setSheetColor(sheets.sheet.id, undefined, sheets.getCursorPosition());
                 handleClose();
+                focusGrid();
               }}
             />
           </DropdownMenuSubContent>
@@ -104,6 +102,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
           disabled={sheets.getFirst().id === sheets.sheet.id}
           onClick={() => {
             sheets.moveSheet({ id: sheets.sheet.id, delta: -1 });
+            focusGrid();
           }}
         >
           Move left
@@ -112,6 +111,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
           disabled={sheets.getLast().id === sheets.sheet.id}
           onClick={() => {
             sheets.moveSheet({ id: sheets.sheet.id, delta: 1 });
+            focusGrid();
           }}
         >
           Move right
