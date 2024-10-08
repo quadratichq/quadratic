@@ -40,7 +40,6 @@ export const BottomBar = () => {
       <div className="flex items-center">
         <SelectionSummary />
         <SyncState />
-        {/* {showOnDesktop && <PythonStateItem />} */}
         <div className="hidden lg:block">
           <BottomBarItem>{VERSION}</BottomBarItem>
         </div>

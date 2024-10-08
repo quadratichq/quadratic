@@ -1,11 +1,13 @@
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { codeEditorCodeCellAtom, codeEditorWaitingForEditorClose } from '@/app/atoms/codeEditorAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import Editor from '@monaco-editor/react';
-import { ContentCopy, ContentPasteGoOutlined } from '@mui/icons-material';
+import { ContentCopyOutlined, ContentPasteGoOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import { useRef, useState } from 'react';
-import { codeEditorBaseStyles } from '../menus/CodeEditor/styles';
-import { TooltipHint } from './TooltipHint';
+import { useCallback, useState } from 'react';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface Props {
   code: string;
@@ -13,24 +15,6 @@ interface Props {
 }
 
 export function CodeSnippet({ code, language = 'plaintext' }: Props) {
-  const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
-  const editorRef = useRef(null);
-
-  const handleClick = (e: any) => {
-    mixpanel.track('[AI].code.copy', { language });
-    if (editorRef.current) {
-      navigator.clipboard.writeText(code);
-      setTooltipMsg('Copied!');
-      setTimeout(() => {
-        setTooltipMsg('Copy');
-      }, 2000);
-    }
-  };
-
-  const handleEditorDidMount = (editor: any) => {
-    editorRef.current = editor;
-  };
-
   let syntax = language.toLowerCase();
   if (syntax === 'postgres') {
     syntax = 'sql';
@@ -48,12 +32,8 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
         <div className="lowercase text-muted-foreground">{language}</div>
 
         <div className="flex items-center gap-1">
-          <CodeEditorInsertButton text={code} language={language} />
-          <TooltipHint title={tooltipMsg}>
-            <IconButton onClick={handleClick} size="small">
-              <ContentCopy fontSize="inherit" color="inherit" className="text-muted-foreground" />
-            </IconButton>
-          </TooltipHint>
+          <CodeSnippetInsertButton text={code} language={language} />
+          <CodeSnippetCopyButton text={code} language={language} />
         </div>
       </div>
       <div
@@ -85,40 +65,53 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
             folding: false,
             renderLineHighlightOnlyWhenFocus: true,
           }}
-          onMount={handleEditorDidMount}
         />
       </div>
     </div>
   );
 }
 
-function CodeEditorInsertButton({ language, text }: { language: Props['language']; text: string }) {
-  const { editorRef } = useCodeEditor();
-
-  // Replace what's in the editor with the given text
-  const handleClick = () => {
-    mixpanel.track('[AI].code.copy', { language });
-
-    if (editorRef.current) {
-      const model = editorRef.current.getModel();
-      if (!model) return;
-
-      const range = model.getFullModelRange();
-      editorRef.current.executeEdits('insert-code', [
-        {
-          range,
-          text,
-        },
-      ]);
-
-      editorRef.current.focus();
-    }
-  };
+function CodeSnippetInsertButton({ language, text }: { language: Props['language']; text: string }) {
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+  const setWaitingForEditorClose = useSetRecoilState(codeEditorWaitingForEditorClose);
+  const handleReplace = useCallback(() => {
+    mixpanel.track('[AI].code.replace', { language });
+    setWaitingForEditorClose({
+      codeCell: {
+        sheetId: codeCell.sheetId ? codeCell.sheetId : sheets.current,
+        pos: codeCell.pos,
+        language: codeCell.language,
+      },
+      showCellTypeMenu: false,
+      inlineEditor: false,
+      initialCode: text,
+    });
+  }, [codeCell.language, codeCell.pos, codeCell.sheetId, language, setWaitingForEditorClose, text]);
 
   return (
-    <TooltipHint title={'Insert and replace'}>
-      <IconButton size="small" onClick={handleClick}>
+    <TooltipHint title={'Open in code editor'}>
+      <IconButton size="small" onClick={handleReplace} disabled={!language}>
         <ContentPasteGoOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
+      </IconButton>
+    </TooltipHint>
+  );
+}
+
+function CodeSnippetCopyButton({ language, text }: { language: Props['language']; text: string }) {
+  const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
+  const handleCopy = useCallback(() => {
+    mixpanel.track('[AI].code.copy', { language });
+    navigator.clipboard.writeText(text);
+    setTooltipMsg('Copied!');
+    setTimeout(() => {
+      setTooltipMsg('Copy');
+    }, 2000);
+  }, [language, text]);
+
+  return (
+    <TooltipHint title={tooltipMsg}>
+      <IconButton onClick={handleCopy} size="small">
+        <ContentCopyOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
       </IconButton>
     </TooltipHint>
   );

@@ -8,10 +8,6 @@ interface ResizeControlProps {
 }
 
 export function ResizeControl({ disabled, setState, position, style }: ResizeControlProps) {
-  if (!style) {
-    style = {};
-  }
-
   return (
     <div
       className={`resize-control resize-control--position-${position} ${disabled ? 'resize-control--disabled' : ''}`}

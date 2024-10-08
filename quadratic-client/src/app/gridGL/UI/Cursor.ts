@@ -1,14 +1,14 @@
 //! Draws the cursor, code cursor, and selection to the screen.
 
+import { hasPermissionToEditFile } from '@/app/actions';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { Coordinate } from '@/app/gridGL/types/size';
+import { drawColumnRowCursor, drawMultiCursor } from '@/app/gridGL/UI/drawCursor';
+import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
-import { hasPermissionToEditFile } from '../../actions';
-import { sheets } from '../../grid/controller/Sheets';
-import { colors } from '../../theme/colors';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { Coordinate } from '../types/size';
-import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
 
 export const CURSOR_THICKNESS = 2;
 export const FILL_ALPHA = 0.1;
@@ -72,20 +72,20 @@ export class Cursor extends Container {
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
     const { viewport } = pixiApp;
-    const { editorInteractionState } = pixiAppSettings;
+    const { codeEditorState } = pixiAppSettings;
     const cell = cursor.cursorPosition;
     const showInput = pixiAppSettings.input.show;
 
     let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
-    const editor_selected_cell = editorInteractionState.selectedCell;
+    const codeCell = codeEditorState.codeCell;
 
     // draw cursor but leave room for cursor indicator if needed
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
-      (!pixiAppSettings.editorInteractionState.showCodeEditor ||
-        cursor.cursorPosition.x !== editor_selected_cell.x ||
-        cursor.cursorPosition.y !== editor_selected_cell.y)
+      (!pixiAppSettings.codeEditorState.showCodeEditor ||
+        cursor.cursorPosition.x !== codeCell.pos.x ||
+        cursor.cursorPosition.y !== codeCell.pos.y)
         ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
         : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
@@ -110,11 +110,7 @@ export class Cursor extends Container {
     }
 
     // hide cursor if code editor is open and CodeCursor is in the same cell
-    if (
-      editorInteractionState.showCodeEditor &&
-      editor_selected_cell.x === cell.x &&
-      editor_selected_cell.y === cell.y
-    ) {
+    if (codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y) {
       this.cursorRectangle = undefined;
       return;
     }
@@ -182,8 +178,8 @@ export class Cursor extends Container {
     const cursor = sheets.sheet.cursor;
 
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
-      const { editorInteractionState } = pixiAppSettings;
-      const editor_selected_cell = editorInteractionState.selectedCell;
+      const { codeEditorState } = pixiAppSettings;
+      const codeCell = codeEditorState.codeCell;
       const cell = cursor.cursorPosition;
 
       // draw cursor indicator
@@ -197,9 +193,7 @@ export class Cursor extends Container {
       let color = pixiApp.accentColor;
       if (
         inlineEditorHandler.getShowing(cell.x, cell.y) ||
-        (editorInteractionState.showCodeEditor &&
-          editor_selected_cell.x === cell.x &&
-          editor_selected_cell.y === cell.y)
+        (codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y)
       )
         color = pixiApp.accentColor;
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
@@ -217,18 +211,18 @@ export class Cursor extends Container {
       offsets.width = inlineEditorHandler.width + CURSOR_THICKNESS;
       offsets.height = inlineEditorHandler.height + CURSOR_THICKNESS;
     } else {
-      const { editorInteractionState } = pixiAppSettings;
-      const cell = editorInteractionState.selectedCell;
-      if (!editorInteractionState.showCodeEditor || sheets.sheet.id !== editorInteractionState.selectedCellSheet) {
+      const { codeEditorState } = pixiAppSettings;
+      const codeCell = codeEditorState.codeCell;
+      if (!codeEditorState.showCodeEditor || sheets.sheet.id !== codeCell.sheetId) {
         return;
       }
-      offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
+      offsets = sheets.sheet.getCellOffsets(codeCell.pos.x, codeCell.pos.y);
       color =
-        editorInteractionState.mode === 'Python'
+        codeCell.language === 'Python'
           ? colors.cellColorUserPython
-          : editorInteractionState.mode === 'Formula'
+          : codeCell.language === 'Formula'
           ? colors.cellColorUserFormula
-          : editorInteractionState.mode === 'Javascript'
+          : codeCell.language === 'Javascript'
           ? colors.cellColorUserJavascript
           : colors.independence;
     }

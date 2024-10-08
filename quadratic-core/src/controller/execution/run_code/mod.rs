@@ -249,7 +249,7 @@ impl GridController {
                 formatted_code_string: None,
                 result: CodeRunResult::Err(RunError {
                     span: None,
-                    msg: RunErrorMsg::PythonError(
+                    msg: RunErrorMsg::CodeRunError(
                         "Sheet was deleted before the async operation completed".into(),
                     ),
                 }),
@@ -290,7 +290,7 @@ impl GridController {
                 .std_err
                 .clone()
                 .unwrap_or_else(|| "Unknown Error".into());
-            let msg = RunErrorMsg::PythonError(error_msg.into());
+            let msg = RunErrorMsg::CodeRunError(error_msg.into());
             let span = js_code_result.line_number.map(|line_number| Span {
                 start: line_number,
                 end: line_number,

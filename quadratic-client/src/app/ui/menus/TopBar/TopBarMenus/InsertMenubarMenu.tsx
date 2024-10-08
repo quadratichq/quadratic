@@ -1,6 +1,6 @@
 import { Action } from '@/app/actions/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarFileMenu/MenubarItemAction';
+import { editorInteractionStateShowCellTypeMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CodeIcon, DataObjectIcon, InsertChartIcon } from '@/shared/components/Icons';
 import { IMPORT_MESSAGE } from '@/shared/constants/appConstants';
@@ -17,12 +17,12 @@ import {
 import { useSetRecoilState } from 'recoil';
 
 export const InsertMenubarMenu = () => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   return (
     <MenubarMenu>
       <MenubarTrigger>Insert</MenubarTrigger>
-      <MenubarContent onCloseAutoFocus={(e) => e.preventDefault()} className="pointer-move-ignore">
+      <MenubarContent className="pointer-move-ignore">
         <MenubarSub>
           <MenubarSubTrigger>
             <CodeIcon /> Code
@@ -56,9 +56,7 @@ export const InsertMenubarMenu = () => {
             <MenubarItemAction action={Action.InsertApiRequestJavascript} actionArgs={undefined} />
             <MenubarItemAction action={Action.InsertApiRequestPython} actionArgs={undefined} />
             <MenubarSeparator />
-            <MenubarItem onClick={() => setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }))}>
-              From connection…
-            </MenubarItem>
+            <MenubarItem onClick={() => setShowCellTypeMenu(true)}>From connection…</MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
 

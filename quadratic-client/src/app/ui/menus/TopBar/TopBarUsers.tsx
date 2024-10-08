@@ -1,6 +1,7 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateFollowAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import { colors } from '@/app/theme/colors';
 import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
@@ -17,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
+import { useCallback } from 'react';
 import { useSubmit } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -25,7 +27,7 @@ const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
 export const TopBarUsers = () => {
   const submit = useSubmit();
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const follow = useRecoilValue(editorInteractionStateFollowAtom);
   const { users, followers } = useMultiplayerUsers();
 
   const anonymous = !user
@@ -61,7 +63,13 @@ export const TopBarUsers = () => {
                 bgColor={multiplayer.colorString}
               />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="text-sm">
+            <DropdownMenuContent
+              className="text-sm"
+              onCloseAutoFocus={(e) => {
+                e.preventDefault();
+                focusGrid();
+              }}
+            >
               <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -83,7 +91,7 @@ export const TopBarUsers = () => {
               picture={user.image}
               border={user.colorString}
               sessionId={user.session_id}
-              follow={editorInteractionState.follow === user.session_id}
+              follow={follow === user.session_id}
               follower={followers.includes(user.session_id)}
               viewport={user.viewport}
               bgColor={user.colorString}
@@ -156,20 +164,19 @@ function UserAvatar({
   viewport: string;
   bgColor?: string;
 }) {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  const handleFollow = () => {
+  const setFollow = useSetRecoilState(editorInteractionStateFollowAtom);
+  const handleFollow = useCallback(() => {
     // you cannot follow a user that is following you
     if (follower) return;
-    setEditorInteractionState((prev) => {
-      if (follow) {
-        multiplayer.sendFollow('');
-        return { ...prev, follow: undefined };
-      }
+    if (follow) {
+      multiplayer.sendFollow('');
+      setFollow(undefined);
+    } else {
       pixiApp.viewport.loadMultiplayerViewport(JSON.parse(viewport));
       multiplayer.sendFollow(sessionId);
-      return { ...prev, follow: sessionId };
-    });
-  };
+      setFollow(sessionId);
+    }
+  }, [follow, follower, sessionId, setFollow, viewport]);
   return (
     <div className="hidden lg:relative lg:flex lg:items-center">
       <Tooltip>
