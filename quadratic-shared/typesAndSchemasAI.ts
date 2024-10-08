@@ -54,6 +54,7 @@ export const AnthropicToolSchema = z.object({
     .object({
       type: z.literal('object'),
       properties: z.record(z.unknown()).optional().nullable(),
+      required: z.array(z.string()).optional(),
     })
     .and(z.record(z.unknown())),
 });

@@ -13,7 +13,7 @@ export function useSetCodeCellValueMessages() {
 ${text}
 \`\`\`\n
 
-You should use the SetCodeCellValue function to set this code cell value. This function requires language, codeString and the cell position (x, y).\n
+You should use the SetCodeCellValue function to set this code cell value. This function requires language, codeString, the cell position (x, y) and the width and height of the code output on running this Code in spreadsheet.\n
 
 The required location (x,y) for this code cell is one which satisfies the following conditions:\n
    - The code cell location (x,y) should be empty and should have enough space to the right and below to accommodate the code result. If there is a value in a single cell where the code result is suppose to go, it will result in spill error. Use current sheet context to identify empty space.\n

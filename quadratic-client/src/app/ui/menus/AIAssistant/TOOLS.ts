@@ -24,32 +24,45 @@ export const AI_TOOL_DEFINITIONS = {
           type: 'number',
           description: 'The y position of the cell, which is the row index of the current spreadsheet',
         },
+        width: {
+          type: 'number',
+          description: 'The width, i.e. number of columns, of the code output on running this Code in spreadsheet',
+        },
+        height: {
+          type: 'number',
+          description: 'The height, i.e. number of rows, of the code output on running this Code in spreadsheet',
+        },
       },
     },
+    required: ['language', 'codeString', 'x', 'y', 'width', 'height'],
     responseSchema: z.object({
       language: z.enum(['Python', 'Javascript', 'Formula']),
       codeString: z.string(),
       x: z.number(),
       y: z.number(),
+      width: z.number(),
+      height: z.number(),
     }),
   },
 } as const;
 
 export const anthropicTools: AnthropicTool[] = Object.entries(AI_TOOL_DEFINITIONS).map(
-  ([name, { description, parameters }]) => ({
+  ([name, { description, parameters: input_schema, required }]) => ({
     name,
     description,
-    input_schema: parameters,
+    input_schema,
+    required,
   })
 );
 
 export const openAITools: OpenAITool[] = Object.entries(AI_TOOL_DEFINITIONS).map(
-  ([name, { description, parameters }]) => ({
+  ([name, { description, parameters, required }]) => ({
     type: 'function',
     function: {
       name,
       description,
       parameters,
+      required,
     },
   })
 );
