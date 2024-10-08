@@ -13,7 +13,7 @@ import { getColumnA1Notation } from './getA1Notation';
 
 type Selected = 'all' | number[] | undefined;
 
-export type IntersectsHeadings = { column?: number; row?: number; corner?: true };
+export type IntersectsHeadings = { column: number | null; row: number | null; corner?: true };
 
 // Constants for headers
 export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.7;
@@ -495,20 +495,20 @@ export class GridHeadings extends Container {
     const offsets = sheets.sheet.offsets;
 
     if (intersects.rectanglePoint(this.cornerRect, world)) {
-      return { corner: true };
+      return { corner: true, column: null, row: null };
     }
     if (intersects.rectanglePoint(this.columnRect, world)) {
-      return { column: offsets.getXPlacement(world.x).index };
+      return { column: offsets.getXPlacement(world.x).index, row: null };
     }
     if (intersects.rectanglePoint(this.rowRect, world)) {
-      return { row: offsets.getYPlacement(world.y).index };
+      return { row: offsets.getYPlacement(world.y).index, column: null };
     }
   }
 
   // whether the point is on the heading gridLine (with tolerance)
   intersectsHeadingGridLine(
     world: Point
-  ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
+  ): { start: number; column: number | null; row: number | null; width?: number; height?: number } | undefined {
     if (!this.columnRect || !this.rowRect) return;
 
     const offsets = sheets.sheet.offsets;
@@ -518,7 +518,7 @@ export class GridHeadings extends Container {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
           const start = offsets.getColumnPlacement(line.column);
-          return { start: start.position, column: line.column, width: line.width };
+          return { start: start.position, column: line.column, row: null, width: line.width };
         }
       }
     }
@@ -527,7 +527,7 @@ export class GridHeadings extends Container {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
           const start = offsets.getRowPlacement(line.row);
-          return { start: start.position, row: line.row, height: line.height };
+          return { start: start.position, column: null, row: line.row, height: line.height };
         }
       }
     }

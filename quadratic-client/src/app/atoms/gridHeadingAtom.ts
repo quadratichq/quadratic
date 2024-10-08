@@ -4,14 +4,14 @@ import { atom } from 'recoil';
 
 interface GridHeading {
   world?: Point;
-  column?: number;
-  row?: number;
+  column: number | null;
+  row: number | null;
 }
 
 const defaultGridHeadingState: GridHeading = {
   world: undefined,
-  column: undefined,
-  row: undefined,
+  column: null,
+  row: null,
 };
 
 export const gridHeadingAtom = atom({
@@ -20,10 +20,10 @@ export const gridHeadingAtom = atom({
   effects: [
     ({ setSelf }) => {
       const clear = () => {
-        setSelf(() => ({ world: undefined, column: undefined, row: undefined }));
+        setSelf(() => ({ world: undefined, column: null, row: null }));
       };
 
-      const set = (world?: Point, column?: number, row?: number) => {
+      const set = (world: Point, column: number | null, row: number | null) => {
         setSelf(() => ({ world, column, row }));
       };
 
