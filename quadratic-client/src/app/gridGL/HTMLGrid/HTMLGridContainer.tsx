@@ -13,6 +13,7 @@ import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { HtmlValidations } from '@/app/gridGL/HTMLGrid/validations/HtmlValidations';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { SuggestionDropDown } from './SuggestionDropdown';
 
 interface Props {
   parent?: HTMLDivElement;
@@ -111,6 +112,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
               <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
               <HtmlValidations />
               <Annotations />
+              <SuggestionDropDown />
             </div>
           </div>
         </div>

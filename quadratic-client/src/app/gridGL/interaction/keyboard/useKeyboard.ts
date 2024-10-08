@@ -1,9 +1,13 @@
+import { Action } from '@/app/actions/actions';
+import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { keyboardCell } from '@/app/gridGL/interaction/keyboard/keyboardCell';
 import { keyboardClipboard } from '@/app/gridGL/interaction/keyboard/keyboardClipboard';
 import { keyboardCode } from '@/app/gridGL/interaction/keyboard/keyboardCode';
 import { keyboardDropdown } from '@/app/gridGL/interaction/keyboard/keyboardDropdown';
 import { keyboardLink } from '@/app/gridGL/interaction/keyboard/keyboardLink';
+import { keyboardPanMode } from '@/app/gridGL/interaction/keyboard/keyboardPanMode';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { keyboardSearch } from '@/app/gridGL/interaction/keyboard/keyboardSearch';
 import { keyboardSelect } from '@/app/gridGL/interaction/keyboard/keyboardSelect';
@@ -11,6 +15,13 @@ import { keyboardUndoRedo } from '@/app/gridGL/interaction/keyboard/keyboardUndo
 import { keyboardViewport } from '@/app/gridGL/interaction/keyboard/keyboardViewport';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+
+export interface IProps {
+  editorInteractionState: EditorInteractionState;
+  setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
+}
 
 export const pixiKeyboardCanvasProps: { headerSize: Size } = { headerSize: { width: 0, height: 0 } };
 
@@ -21,6 +32,7 @@ export const useKeyboard = (): {
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
+      keyboardPanMode(event) ||
       keyboardLink(event) ||
       keyboardViewport(event) ||
       keyboardSearch(event) ||
@@ -36,6 +48,22 @@ export const useKeyboard = (): {
       return;
     }
 
+    // todo: we need to reorganize this so we can handle shortcuts in keyboardCell when ctrl or meta is pressed
+    // insert today's date if the inline editor is not open
+    if (matchShortcut(Action.InsertToday, event)) {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      const today = new Date();
+      const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedDate);
+    } else if (matchShortcut(Action.InsertTodayTime, event)) {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      const today = new Date();
+      const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedTime);
+    }
+
     // Prevent these commands if "command" key is being pressed
     if (event.metaKey || event.ctrlKey) {
       return;
@@ -49,7 +77,7 @@ export const useKeyboard = (): {
   };
 
   const onKeyUp = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (keyboardLink(event)) {
+    if (keyboardPanMode(event) || keyboardLink(event)) {
       event.preventDefault();
       event.stopPropagation();
       return;

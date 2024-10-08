@@ -63,16 +63,15 @@ export const FeedbackMenu = () => {
 
   return (
     <Dialog open={true} onOpenChange={closeMenu}>
-      <DialogContent className=" max-w-xl">
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Provide feedback</DialogTitle>
           <DialogDescription>
             Or{' '}
             <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-              contact us by some other form
-            </a>
-            {', '}
-            we would love to hear from you!
+              contact us directly
+            </a>{' '}
+            with any questions, we’d love to hear from you!
           </DialogDescription>
         </DialogHeader>
         <form

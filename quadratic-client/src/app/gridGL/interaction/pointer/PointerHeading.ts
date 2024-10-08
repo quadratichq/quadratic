@@ -1,3 +1,4 @@
+import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { TransientResize } from '@/app/quadratic-core-types/index.js';
@@ -12,7 +13,7 @@ import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;

@@ -1,6 +1,5 @@
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
-import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
   JsBordersSheet,
@@ -38,7 +37,6 @@ interface EventTypes {
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
 
   zoom: (scale: number) => void;
-  panMode: (pan: PanMode) => void;
 
   undoRedo: (undo: boolean, redo: boolean) => void;
 
@@ -127,6 +125,8 @@ interface EventTypes {
 
   // context menu opens on a grid heading
   gridContextMenu: (world: Point, row: number | null, column: number | null) => void;
+
+  suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

@@ -231,7 +231,7 @@ impl GridController {
         self.rollback_unsaved_transactions();
 
         // combine all transaction into one transaction
-        transactions.iter().for_each(|t| {
+        transactions.into_iter().for_each(|t| {
             let operations =
                 Transaction::decompress_and_deserialize::<Vec<Operation>>(&t.operations);
 

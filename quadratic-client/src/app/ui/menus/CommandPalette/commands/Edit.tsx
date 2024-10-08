@@ -18,6 +18,8 @@ const data: CommandGroup = {
     Action.ShowGoToMenu,
     Action.FindInCurrentSheet,
     Action.FindInAllSheets,
+    Action.InsertToday,
+    Action.InsertTodayTime,
     {
       label: 'Copy selection as PNG',
       isAvailable: () => fullClipboardSupport(),

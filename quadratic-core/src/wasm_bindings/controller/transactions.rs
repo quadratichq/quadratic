@@ -1,7 +1,8 @@
 use super::*;
 use crate::controller::{
     active_transactions::unsaved_transactions::UnsavedTransaction,
-    operations::operation::Operation, transaction::Transaction,
+    operations::operation::Operation,
+    transaction::{Transaction, TransactionServer},
 };
 use uuid::Uuid;
 
@@ -44,23 +45,23 @@ impl GridController {
         )?)
     }
 
-    // TODO(ddimaria): re-enable 5 - 7 days after we roll out the compressed
-    // transactions PR, so that we'll know all transactions are of the same version.
-    //
-    // #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
-    // pub fn js_receive_multiplayer_transactions(
-    //     &mut self,
-    //     transactions: &str,
-    // ) -> Result<JsValue, JsValue> {
-    //     match serde_json::from_str::<Vec<TransactionServer>>(transactions) {
-    //         Ok(transactions) => Ok(serde_wasm_bindgen::to_value(
-    //             &self.received_transactions(&transactions[..]),
-    //         )?),
-    //         Err(e) => Err(JsValue::from_str(&format!(
-    //             "Invalid transactions received in receiveMultiplayerTransactions: {e}"
-    //         ))),
-    //     }
-    // }
+    #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
+    pub fn js_receive_multiplayer_transactions(
+        &mut self,
+        transactions: String,
+    ) -> Result<JsValue, JsValue> {
+        match serde_json::from_str::<Vec<TransactionServer>>(&transactions) {
+            Ok(transactions) => Ok(serde_wasm_bindgen::to_value(
+                &self.received_transactions(transactions),
+            )?),
+            Err(e) => {
+                dbgjs!(format!("{transactions}"));
+                Err(JsValue::from_str(&format!(
+                    "Invalid transactions received in receiveMultiplayerTransactions: {e}"
+                )))
+            }
+        }
+    }
 
     #[wasm_bindgen(js_name = "applyOfflineUnsavedTransaction")]
     pub fn js_apply_offline_unsaved_transaction(
