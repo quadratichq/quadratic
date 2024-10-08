@@ -13,7 +13,9 @@ use super::column::Column;
 use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
-use super::js_types::{CellFormatSummary, CellType, JsCellValue};
+use super::js_types::{
+    CellFormatSummary, CellType, JsCellValue, JsCellValuePos, JsCellValuePosAIContext,
+};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
 use crate::selection::Selection;
@@ -232,6 +234,55 @@ impl Sheet {
             value: value.to_string(),
             kind: value.type_name().to_string(),
         })
+    }
+
+    /// Returns the JsCellValuePos at a position
+    pub fn js_cell_value_pos(&self, pos: Pos) -> Option<JsCellValuePos> {
+        self.display_value(pos).map(|cell_value| match cell_value {
+            CellValue::Image(_) => CellValue::Image("Image string".into()).to_cell_value_pos(pos),
+            CellValue::Html(_) => CellValue::Html("Html string".into()).to_cell_value_pos(pos),
+            _ => cell_value.to_cell_value_pos(pos),
+        })
+    }
+
+    /// Returns the JsCellValuePos in a rect
+    pub fn js_cell_value_pos_rect(
+        &self,
+        rect: Rect,
+        max_rows: Option<u32>,
+    ) -> Vec<Vec<JsCellValuePos>> {
+        let mut rect_values = Vec::new();
+        for y in rect
+            .y_range()
+            .take(max_rows.unwrap_or(rect.height()) as usize)
+        {
+            let mut row_values = Vec::new();
+            for x in rect.x_range() {
+                if let Some(cell_value_pos) = self.js_cell_value_pos((x, y).into()) {
+                    row_values.push(cell_value_pos);
+                }
+            }
+            if !row_values.is_empty() {
+                rect_values.push(row_values);
+            }
+        }
+        rect_values
+    }
+
+    /// Returns tabular data rects of JsCellValuePos in a sheet rect
+    pub fn js_ai_context_rects_in_sheet_rect(&self, rect: Rect) -> Vec<JsCellValuePosAIContext> {
+        let mut ai_context_rects = Vec::new();
+        let tabular_data_rects = self.find_tabular_data_rects(rect);
+        for rect in tabular_data_rects {
+            let js_cell_value_pos_ai_context = JsCellValuePosAIContext {
+                rect_origin: rect.min.into(),
+                rect_width: rect.width(),
+                rect_height: rect.height(),
+                starting_rect_values: self.js_cell_value_pos_rect(rect, Some(5)),
+            };
+            ai_context_rects.push(js_cell_value_pos_ai_context);
+        }
+        ai_context_rects
     }
 
     /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.

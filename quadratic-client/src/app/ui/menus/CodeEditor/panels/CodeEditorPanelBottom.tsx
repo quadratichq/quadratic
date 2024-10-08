@@ -1,30 +1,33 @@
 import {
+  codeEditorCodeCellAtom,
   codeEditorConsoleOutputAtom,
   codeEditorPanelBottomActiveTabAtom,
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { AIAssistant } from '@/app/ui/menus/AIAssistant/AIAssistant';
+import { events } from '@/app/events/events';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
 import { ReactNode, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
+export type PanelTab = 'console' | 'data-browser';
 
 interface CodeEditorPanelBottomProps {
   schemaBrowser: ReactNode | undefined;
-  showAIAssistant: boolean;
 }
 
-export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEditorPanelBottomProps) {
+export function CodeEditorPanelBottom({ schemaBrowser }: CodeEditorPanelBottomProps) {
   const { bottomHidden, setBottomHidden } = useCodeEditorPanelData();
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
-  const [tab, setTab] = useRecoilState(codeEditorPanelBottomActiveTabAtom);
+  const [panelBottomActiveTab, setPanelBottomActiveTab] = useRecoilState(codeEditorPanelBottomActiveTabAtom);
   const hasOutput = useMemo(
     () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),
     [consoleOutput?.stdErr?.length, consoleOutput?.stdOut?.length, spillError]
@@ -32,9 +35,9 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
 
   return (
     <Tabs
-      value={tab}
+      value={panelBottomActiveTab}
       onValueChange={(value) => {
-        setTab(value as PanelTab);
+        setPanelBottomActiveTab(value as PanelTab);
         if (bottomHidden) {
           setBottomHidden((prev) => !prev);
         }
@@ -52,18 +55,25 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
         </Button>
         <TabsList>
           {schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
-          {showAIAssistant && <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>}
           <TabsTrigger
             value="console"
             className={cn(
               `relative font-medium after:absolute after:right-1 after:top-4`,
               // Special indicators when the console isn't active and there's output
-              tab !== 'console' && hasOutput && `after:h-[4px] after:w-[4px] after:rounded-full after:content-['']`,
-              tab !== 'console' && consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
+              hasOutput && `after:h-[4px] after:w-[4px] after:rounded-full after:content-['']`,
+              consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
             )}
           >
             Console
           </TabsTrigger>
+
+          {consoleOutput?.stdErr ? (
+            <TooltipPopover label={'Ask AI to fix error'}>
+              <Button className="ml-2" size="sm" onClick={() => events.emit('askAICodeCell', codeCell)}>
+                <AIIcon />
+              </Button>
+            </TooltipPopover>
+          ) : null}
         </TabsList>
       </div>
 
@@ -74,12 +84,6 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
           </div>
         )}
       </TabsContent>
-
-      {showAIAssistant && (
-        <TabsContent value="ai-assistant" className="m-0 grow overflow-hidden">
-          {!bottomHidden && <AIAssistant autoFocus={true} />}
-        </TabsContent>
-      )}
 
       {schemaBrowser && (
         <TabsContent value="data-browser" className="m-0 grow overflow-hidden">

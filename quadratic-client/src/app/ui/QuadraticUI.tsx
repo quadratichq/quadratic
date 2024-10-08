@@ -1,5 +1,7 @@
+import { hasPermissionToEditFile } from '@/app/actions';
 import {
   editorInteractionStateFollowAtom,
+  editorInteractionStatePermissionsAtom,
   editorInteractionStateShowNewFileMenuAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
@@ -13,6 +15,7 @@ import { Following } from '@/app/ui/components/Following';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { AIAssistant } from '@/app/ui/menus/AIAssistant/AIAssistant';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import CodeEditor from '@/app/ui/menus/CodeEditor';
@@ -27,6 +30,7 @@ import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
 import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
@@ -36,6 +40,7 @@ import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export default function QuadraticUI() {
+  const { isAuthenticated } = useRootRouteLoaderData();
   const {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
@@ -54,6 +59,8 @@ export default function QuadraticUI() {
     [editorInteractionStateFollow, users]
   );
   const presentationMode = useRecoilValue(presentationModeAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
 
   return (
     <div
@@ -82,6 +89,7 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
+          {canEditFile && isAuthenticated && <AIAssistant />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}

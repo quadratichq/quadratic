@@ -17,6 +17,7 @@ export const openCodeEditor = async () => {
   if (cell?.language) {
     setCodeEditorState({
       ...codeEditorState,
+      modifiedEditorContent: undefined,
       waitingForEditorClose: {
         codeCell: {
           sheetId: sheets.current,
@@ -31,6 +32,7 @@ export const openCodeEditor = async () => {
     // code editor is already open, so check it for save before closing
     setCodeEditorState({
       ...codeEditorState,
+      modifiedEditorContent: undefined,
       waitingForEditorClose: {
         codeCell: {
           sheetId: sheets.current,
@@ -49,6 +51,7 @@ export const openCodeEditor = async () => {
     }));
     setCodeEditorState({
       ...codeEditorState,
+      modifiedEditorContent: undefined,
       initialCode: '',
       codeCell: {
         sheetId: sheets.current,

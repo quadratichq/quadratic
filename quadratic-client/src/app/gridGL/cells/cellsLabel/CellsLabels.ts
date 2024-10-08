@@ -12,17 +12,17 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Link } from '@/app/gridGL/types/links';
+import { JsValidationWarning, Rect } from '@/app/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
+import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 import { CellsSheet, ErrorMarker, ErrorValidation } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
-import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -84,7 +84,7 @@ export class CellsLabels extends Container {
   }
 
   // Returns whether the cell has content by checking CellsTextHashContent.
-  hasCell(column: number, row: number): boolean {
+  hasCell = (column: number, row: number): boolean => {
     const hashX = Math.floor(column / sheetHashWidth);
     const hashY = Math.floor(row / sheetHashHeight);
     const key = `${hashX},${hashY}`;
@@ -93,7 +93,20 @@ export class CellsLabels extends Container {
       return cellsTextHash.content.hasContent(column, row);
     }
     return false;
-  }
+  };
+
+  // Returns whether the rect has content by checking CellsTextHashContent.
+  hasCellInRect = (rect: Rect): boolean => {
+    const { min, max } = rect;
+    for (let column = Number(min.x); column <= Number(max.x); column++) {
+      for (let row = Number(min.y); row <= Number(max.y); row++) {
+        if (this.hasCell(column, row)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
   // received a new LabelMeshEntry to add to a CellsTextHash
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {

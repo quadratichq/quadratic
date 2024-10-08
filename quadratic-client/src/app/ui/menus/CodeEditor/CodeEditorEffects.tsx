@@ -107,7 +107,7 @@ export const CodeEditorEffects = () => {
   useEffect(() => {
     if (showCodeEditor) {
       events.emit('codeEditor');
-      setPanelBottomActiveTab(language === 'Connection' ? 'data-browser' : 'ai-assistant');
+      setPanelBottomActiveTab(language === 'Connection' ? 'data-browser' : 'console');
     }
   }, [codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, language, showCodeEditor, setPanelBottomActiveTab]);
 

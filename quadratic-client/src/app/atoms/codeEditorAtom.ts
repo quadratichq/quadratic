@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { Coordinate } from '@/app/gridGL/types/size';
@@ -5,7 +6,6 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface ConsoleOutput {
@@ -14,12 +14,6 @@ export interface ConsoleOutput {
 }
 
 export interface CodeEditorState {
-  aiAssistant: {
-    abortController?: AbortController;
-    loading: boolean;
-    messages: (UserMessage | AIMessage)[];
-    prompt: string;
-  };
   showCodeEditor: boolean;
   escapePressed: boolean;
   loading: boolean;
@@ -32,8 +26,9 @@ export interface CodeEditorState {
   showSnippetsPopover: boolean;
   initialCode?: string;
   editorContent?: string;
+  modifiedEditorContent?: string;
   showSaveChangesAlert: boolean;
-  cellsAccessed: SheetRect[] | undefined | null;
+  cellsAccessed?: SheetRect[] | null;
   waitingForEditorClose?: {
     codeCell: CodeCell;
     showCellTypeMenu: boolean;
@@ -43,12 +38,6 @@ export interface CodeEditorState {
 }
 
 export const defaultCodeEditorState: CodeEditorState = {
-  aiAssistant: {
-    abortController: undefined,
-    loading: false,
-    messages: [],
-    prompt: '',
-  },
   showCodeEditor: false,
   escapePressed: false,
   loading: false,
@@ -61,10 +50,11 @@ export const defaultCodeEditorState: CodeEditorState = {
   evaluationResult: undefined,
   consoleOutput: undefined,
   spillError: undefined,
-  panelBottomActiveTab: 'ai-assistant',
+  panelBottomActiveTab: 'console',
   showSnippetsPopover: false,
   initialCode: undefined,
   editorContent: undefined,
+  modifiedEditorContent: undefined,
   showSaveChangesAlert: false,
   cellsAccessed: undefined,
   waitingForEditorClose: undefined,
@@ -73,24 +63,32 @@ export const defaultCodeEditorState: CodeEditorState = {
 export const codeEditorAtom = atom<CodeEditorState>({
   key: 'codeEditorAtom',
   default: defaultCodeEditorState,
-});
+  effects: [
+    ({ onSet, resetSelf }) => {
+      onSet((newValue, oldValue) => {
+        if (oldValue instanceof DefaultValue) {
+          return;
+        }
 
-export const codeEditorShowCodeEditorAtom = selector<CodeEditorState['showCodeEditor']>({
-  key: 'codeEditorShowCodeEditorAtom',
-  get: ({ get }) => get(codeEditorAtom)['showCodeEditor'],
-  set: ({ set }, newValue) =>
-    set(codeEditorAtom, (prev) => {
-      if (prev.showCodeEditor && !newValue) {
-        focusGrid();
-      }
-      if (!newValue) {
-        return defaultCodeEditorState;
-      }
-      return {
-        ...prev,
-        showCodeEditor: newValue instanceof DefaultValue ? prev['showCodeEditor'] : newValue,
-      };
-    }),
+        if (newValue.showCodeEditor) {
+          if (
+            newValue.codeCell.sheetId !== oldValue.codeCell.sheetId ||
+            newValue.codeCell.pos.x !== oldValue.codeCell.pos.x ||
+            newValue.codeCell.pos.y !== oldValue.codeCell.pos.y ||
+            newValue.codeCell.language !== oldValue.codeCell.language
+          ) {
+            events.emit('codeEditorCodeCell', newValue.codeCell);
+          }
+        }
+
+        if (oldValue.showCodeEditor && !newValue.showCodeEditor) {
+          events.emit('codeEditorCodeCell', undefined);
+          resetSelf();
+          focusGrid();
+        }
+      });
+    },
+  ],
 });
 
 const createSelector = <T extends keyof CodeEditorState>(key: T) =>
@@ -103,6 +101,7 @@ const createSelector = <T extends keyof CodeEditorState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
+export const codeEditorShowCodeEditorAtom = createSelector('showCodeEditor');
 export const codeEditorEscapePressedAtom = createSelector('escapePressed');
 export const codeEditorLoadingAtom = createSelector('loading');
 export const codeEditorCodeCellAtom = createSelector('codeCell');
@@ -114,30 +113,37 @@ export const codeEditorPanelBottomActiveTabAtom = createSelector('panelBottomAct
 export const codeEditorShowSnippetsPopoverAtom = createSelector('showSnippetsPopover');
 export const codeEditorInitialCodeAtom = createSelector('initialCode');
 export const codeEditorEditorContentAtom = createSelector('editorContent');
+export const codeEditorModifiedEditorContentAtom = createSelector('modifiedEditorContent');
 export const codeEditorShowSaveChangesAlertAtom = createSelector('showSaveChangesAlert');
 export const codeEditorCellsAccessedAtom = createSelector('cellsAccessed');
 export const codeEditorWaitingForEditorClose = createSelector('waitingForEditorClose');
 
-export const codeEditorUnsavedChangesAtom = selector<boolean>({
-  key: 'codeEditorUnsavedChangesAtom',
+export const codeEditorShowDiffEditorAtom = selector<boolean>({
+  key: 'codeEditorShowDiffEditorAtom',
   get: ({ get }) => {
-    const unsavedChanges = get(codeEditorAtom).editorContent !== get(codeEditorAtom).codeString;
-    pixiAppSettings.unsavedEditorChanges = unsavedChanges ? get(codeEditorAtom).editorContent : undefined;
-    return unsavedChanges;
+    const { waitingForEditorClose, modifiedEditorContent, editorContent } = get(codeEditorAtom);
+
+    return (
+      waitingForEditorClose === undefined &&
+      modifiedEditorContent !== undefined &&
+      !!editorContent &&
+      modifiedEditorContent !== editorContent
+    );
   },
 });
 
-const createAIAssistantSelector = <T extends keyof CodeEditorState['aiAssistant']>(key: T) =>
-  selector<CodeEditorState['aiAssistant'][T]>({
-    key: `codeEditorAIAssistant${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
-    get: ({ get }) => get(codeEditorAtom).aiAssistant[key],
-    set: ({ set }, newValue) =>
-      set(codeEditorAtom, (prev) => ({
-        ...prev,
-        aiAssistant: { ...prev.aiAssistant, [key]: newValue },
-      })),
-  });
-export const codeEditorAIAssistantAbortControllerAtom = createAIAssistantSelector('abortController');
-export const codeEditorAIAssistantLoadingAtom = createAIAssistantSelector('loading');
-export const codeEditorAIAssistantMessagesAtom = createAIAssistantSelector('messages');
-export const codeEditorAIAssistantPromptAtom = createAIAssistantSelector('prompt');
+export const codeEditorUnsavedChangesAtom = selector<boolean>({
+  key: 'codeEditorUnsavedChangesAtom',
+  get: ({ get }) => {
+    const { editorContent, codeString } = get(codeEditorAtom);
+    const unsavedChanges = editorContent !== codeString;
+
+    if (unsavedChanges) {
+      pixiAppSettings.unsavedEditorChanges = editorContent;
+    } else {
+      pixiAppSettings.unsavedEditorChanges = undefined;
+    }
+
+    return unsavedChanges;
+  },
+});

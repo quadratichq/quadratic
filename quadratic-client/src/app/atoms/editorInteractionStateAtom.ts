@@ -24,7 +24,7 @@ export interface EditorInteractionState {
   redo: boolean;
 }
 
-export const editorInteractionStateDefault: EditorInteractionState = {
+export const defaultEditorInteractionState: EditorInteractionState = {
   isRunningAsyncAction: false,
   showCellTypeMenu: false,
   showCommandPalette: false,
@@ -47,7 +47,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
 
 export const editorInteractionStateAtom = atom<EditorInteractionState>({
   key: 'editorInteractionState', // unique ID (with respect to other atoms/selectors)
-  default: editorInteractionStateDefault,
+  default: defaultEditorInteractionState,
   effects: [
     // this effect is used to focus the grid when the modal is closed
     ({ onSet }) => {

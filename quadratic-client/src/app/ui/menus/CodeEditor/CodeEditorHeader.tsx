@@ -1,5 +1,10 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { codeEditorCodeCellAtom, codeEditorUnsavedChangesAtom } from '@/app/atoms/codeEditorAtom';
+import { showAIAssistantAtom } from '@/app/atoms/aiAssistantAtom';
+import {
+  codeEditorCodeCellAtom,
+  codeEditorShowDiffEditorAtom,
+  codeEditorUnsavedChangesAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -8,6 +13,7 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
@@ -16,13 +22,14 @@ import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRun
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { AIIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useEffect, useMemo, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 interface CodeEditorHeaderProps {
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
@@ -37,6 +44,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const codeCell = useMemo(() => getCodeCell(codeCellState.language), [codeCellState.language]);
   const language = useMemo(() => getLanguage(codeCellState.language), [codeCellState.language]);
   const isConnection = useMemo(() => codeCellIsAConnection(codeCellState.language), [codeCellState.language]);
@@ -44,6 +52,8 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
     [permissions, teamPermissions, isConnection]
   );
+
+  const setShowAIAssistant = useSetRecoilState(showAIAssistantAtom);
 
   const connectionsFetcher = useConnectionsFetcher();
 
@@ -191,22 +201,44 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
         {hasPermission && (
           <>
-            {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
-
-            {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
-
-            {!isRunningComputation ? (
-              <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-                  <PlayArrow />
-                </IconButton>
-              </TooltipHint>
+            {showDiffEditor ? (
+              <CodeEditorDiffButtons />
             ) : (
-              <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                  <Stop />
-                </IconButton>
-              </TooltipHint>
+              <>
+                <TooltipHint title="Show AI Assistant" placement="bottom">
+                  <IconButton
+                    id="QuadraticCodeEditorShowAIAssistantButtonID"
+                    size="small"
+                    color="primary"
+                    onClick={() => setShowAIAssistant((prev) => !prev)}
+                  >
+                    <AIIcon />
+                  </IconButton>
+                </TooltipHint>
+
+                {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
+
+                {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
+
+                {!isRunningComputation ? (
+                  <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
+                    <IconButton
+                      id="QuadraticCodeEditorRunButtonID"
+                      size="small"
+                      color="primary"
+                      onClick={saveAndRunCell}
+                    >
+                      <PlayArrow />
+                    </IconButton>
+                  </TooltipHint>
+                ) : (
+                  <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
+                    <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
+                      <Stop />
+                    </IconButton>
+                  </TooltipHint>
+                )}
+              </>
             )}
           </>
         )}
