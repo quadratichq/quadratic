@@ -139,6 +139,8 @@ extern "C" {
     pub fn jsSendViewportBuffer(transaction_id: String, buffer: SharedArrayBuffer);
 
     pub fn jsClearViewportBuffer(transaction_id: String);
+
+    pub fn jsClientMessage(message: String, error: bool);
 }
 
 #[cfg(test)]
@@ -655,5 +657,14 @@ pub fn jsClearViewportBuffer(transaction_id: String) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendViewportBuffer",
         format!("{:?}", transaction_id),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsClientMessage(message: String, error: bool) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsClientMessage",
+        format!("{},{}", message, error),
     ));
 }

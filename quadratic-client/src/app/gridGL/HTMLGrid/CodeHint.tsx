@@ -10,7 +10,7 @@ export const CodeHint = () => {
 
   if (isMobile || sheetNotEmpty || !showCodeHint) return null;
 
-  const offset = sheets.sheet.getCellOffsets(0, 0);
+  const offset = sheets.sheet.getCellOffsets(1, 1);
   return (
     <div
       className="center pointer-events-none absolute ml-1 whitespace-nowrap pr-0.5 text-xs leading-3 text-muted-foreground"

@@ -1,6 +1,9 @@
+//! Cloned from pixi-viewport Wheel plugin.
+
 import { isMac } from '@/shared/utils/isMac';
 import { IPointData, Point } from '@pixi/math';
 import { Plugin, Viewport } from 'pixi-viewport';
+import { pixiApp } from '../PixiApp';
 
 /** Options for {@link Wheel}. */
 export interface IWheelOptions {
@@ -329,9 +332,27 @@ export class Wheel extends Plugin {
 
       const deltas = [e.deltaX, e.deltaY];
       let [deltaX, deltaY] = deltas;
+      let newX = this.parent.x + (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * step * -1;
+      const clamp = pixiApp.headings.headingSize;
+      if (newX > this.parent.x && newX > clamp.width) {
+        if (this.parent.x < clamp.width) {
+          newX = clamp.width;
+        } else {
+          newX = this.parent.x;
+        }
+      }
+      let newY = this.parent.y + deltaY * step * -1 * (this.horizontalScrollKeyIsPressed && !isMac ? 0 : 1);
+      if (newY > this.parent.y && newY > clamp.height) {
+        if (this.parent.y < clamp.height) {
+          newY = clamp.height;
+        } else {
+          newY = this.parent.y;
+        }
+      }
 
-      this.parent.x += (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * step * -1;
-      this.parent.y += deltaY * step * -1 * (this.horizontalScrollKeyIsPressed && !isMac ? 0 : 1);
+      this.parent.x = newX;
+      this.parent.y = newY;
+
       this.parent.emit('wheel-scroll', this.parent);
       this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
     }

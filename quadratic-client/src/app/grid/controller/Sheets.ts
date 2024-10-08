@@ -1,9 +1,11 @@
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
-import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
+import { ColumnRowCursor, SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { JsRowHeight, Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Rectangle } from 'pixi.js';
 
 class Sheets {
@@ -185,7 +187,6 @@ class Sheets {
       this._current = value;
       pixiApp.viewport.dirty = true;
       pixiApp.gridLines.dirty = true;
-      pixiApp.axesLines.dirty = true;
       pixiApp.headings.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.multiplayerCursor.dirty = true;
@@ -329,8 +330,54 @@ class Sheets {
     return this.sheet.cursor.getMultiplayerSelection();
   }
 
+  /// Gets a Selection for Rust
   getRustSelection(): Selection {
     return this.sheet.cursor.getRustSelection();
+  }
+
+  getRustSelectionStringified(): string {
+    return JSON.stringify(this.getRustSelection(), bigIntReplacer);
+  }
+
+  // Gets a stringified sheet name to id map for Rust's A1 functions
+  getRustSheetMap(): string {
+    const sheetMap: Record<string, { id: string }> = {};
+    sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
+    return JSON.stringify(sheetMap);
+  }
+
+  // Changes the cursor to the incoming selection
+  changeSelection(selection: Selection, ensureVisible = true) {
+    // change the sheet id if needed
+    if (selection.sheet_id.id !== this.current) {
+      if (this.getById(selection.sheet_id.id)) {
+        this.current = selection.sheet_id.id;
+      }
+    }
+
+    // assign the cursor position
+    const pos = { x: Number(selection.x), y: Number(selection.y) };
+
+    // assign the multi cursor
+    const multiCursor = selection.rects?.map((rect) => rectToRectangle(rect)) ?? null;
+    let columnRow: ColumnRowCursor | null = null;
+    if (selection.all) {
+      columnRow = { all: true };
+    } else {
+      if (selection.rows || selection.columns) {
+        columnRow = {
+          rows: selection.rows?.map((row) => Number(row)),
+          columns: selection.columns?.map((column) => Number(column)),
+        };
+      }
+    }
+    sheets.sheet.cursor.changePosition({
+      keyboardMovePosition: pos,
+      cursorPosition: pos,
+      multiCursor,
+      columnRow,
+      ensureVisible,
+    });
   }
 }
 

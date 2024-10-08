@@ -3,7 +3,6 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -15,27 +14,30 @@ import { IconButton } from '@mui/material';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 
 export const CodeEditorRefButton = () => {
-  const [relative, setRelative] = useLocalStorage('insertCellRefRelative', false);
+  const codeEditor = useRecoilValue(codeEditorCodeCellAtom);
+  const [relative, setRelative] = useState(true);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
 
   const [disabled, setDisabled] = useState(true);
   useEffect(() => {
     const checkDisabled = () => {
-      // we do not yet support multiple multiCursors for inserting cell references
       if (
-        (sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) ||
-        sheets.sheet.cursor.columnRow !== undefined
+        sheets.sheet.cursor.multiCursor ||
+        (codeCell.sheetId === sheets.sheet.id &&
+          codeCell.pos.x === sheets.sheet.cursor.cursorPosition.x &&
+          codeCell.pos.y === sheets.sheet.cursor.cursorPosition.y)
       ) {
         setDisabled(true);
       } else {
-        setDisabled(
-          !sheets.sheet.cursor.multiCursor &&
-            codeCell.sheetId === sheets.sheet.id &&
-            codeCell.pos.x === sheets.sheet.cursor.cursorPosition.x &&
-            codeCell.pos.y === sheets.sheet.cursor.cursorPosition.y
-        );
+        // for connections, we currently only support one cursor position
+        if (codeCellIsAConnection(codeEditor.language)) {
+          setDisabled(!sheets.sheet.cursor.onlySingleSelection());
+        } else {
+          setDisabled(false);
+        }
       }
     };
     events.on('cursorPosition', checkDisabled);
@@ -44,16 +46,18 @@ export const CodeEditorRefButton = () => {
       events.off('cursorPosition', checkDisabled);
       events.off('changeSheet', checkDisabled);
     };
-  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId]);
+  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, codeEditor.language]);
 
   const tooltip = useMemo(
     () =>
       !disabled ? (
         <>Insert {relative ? 'relative ' : ''}cell reference</>
+      ) : codeCellIsAConnection(codeEditor.language) ? (
+        <>Select one cell on the grid to insert cell reference.</>
       ) : (
         <>Select cells on the grid to insert cell reference.</>
       ),
-    [disabled, relative]
+    [codeEditor.language, disabled, relative]
   );
 
   return (
@@ -77,11 +81,11 @@ export const CodeEditorRefButton = () => {
           </IconButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuCheckboxItem checked={!relative} onClick={() => setRelative(false)}>
-            Absolute cell reference
-          </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem checked={relative} onClick={() => setRelative(true)}>
             Relative cell reference
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={!relative} onClick={() => setRelative(false)}>
+            Absolute cell reference
           </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>

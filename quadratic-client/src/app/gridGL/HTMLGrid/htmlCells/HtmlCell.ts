@@ -5,7 +5,7 @@ import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { Wheel } from '../../pixiOverride/Wheel';
+import { Wheel } from '../../pixiApp/viewport/Wheel';
 import { HtmlCellResizing } from './HtmlCellResizing';
 
 // number of screen pixels to trigger the resize cursor

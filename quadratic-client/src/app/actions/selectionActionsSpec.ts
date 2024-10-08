@@ -183,7 +183,12 @@ export const selectionActionsSpec: SelectionActionSpec = {
   },
   [Action.GotoRowStart]: {
     label: 'Goto row start',
-    run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
+    run: () => {
+      sheets.sheet.cursor.changePosition({
+        columnRow: null,
+        cursorPosition: { x: 1, y: sheets.sheet.cursor.cursorPosition.y },
+      });
+    },
   },
   [Action.GotoRowEnd]: {
     label: 'Goto row end',

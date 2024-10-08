@@ -77,6 +77,12 @@ export const ZoomMenu = () => {
           action={Action.ZoomTo200}
           actionArgs={undefined}
         />
+        <DropdownMenuSeparator />
+        <DropdownMenuItemFromAction
+          mixpanelEvent="[ZoomDropdown].zoomReset"
+          action={Action.ZoomReset}
+          actionArgs={undefined}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );

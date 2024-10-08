@@ -3,12 +3,13 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { TooltipHint } from './TooltipHint';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import { Button } from '@/shared/shadcn/ui/button';
-import { FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { getSelectionString, parseSelectionString } from '@/app/grid/sheet/selection';
+import { FocusEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { cn } from '@/shared/shadcn/utils';
 import { Selection } from '@/app/quadratic-core-types';
 import { events } from '@/app/events/events';
+import { a1StringToSelection, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 
 interface Props {
   label?: string;
@@ -26,7 +27,8 @@ interface Props {
 
   onEnter?: () => void;
 
-  requireSheetId?: string;
+  onlyCurrentSheet?: string;
+  onlyCurrentSheetError?: string;
 }
 
 export const SheetRange = (props: Props) => {
@@ -37,35 +39,53 @@ export const SheetRange = (props: Props) => {
     triggerError,
     changeCursor,
     readOnly,
-    requireSheetId,
+    onlyCurrentSheet,
+    onlyCurrentSheetError,
   } = props;
   const [rangeError, setRangeError] = useState<string | undefined>();
   const ref = useRef<HTMLInputElement>(null);
 
+  const a1SheetId = useMemo((): string => {
+    return changeCursor === true ? sheets.sheet.id : changeCursor ?? '';
+  }, [changeCursor]);
+
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     if (ref.current) {
-      const selection = sheets.getRustSelection();
-      ref.current.value = getSelectionString(selection);
+      ref.current.value = selectionToA1String(
+        sheets.getRustSelectionStringified(),
+        a1SheetId,
+        sheets.getRustSheetMap()
+      );
+      const selection = sheets.sheet.cursor.getRustSelection();
       onChangeRange(selection);
       setRangeError(undefined);
     }
-  }, [onChangeRange]);
+  }, [a1SheetId, onChangeRange]);
 
   const updateValue = useCallback(
     (value: string) => {
-      const selection = parseSelectionString(value, sheets.sheet.id);
-      if (selection.selection) {
-        onChangeRange(selection.selection);
+      try {
+        const selectionString = a1StringToSelection(
+          value,
+          onlyCurrentSheet ?? (changeCursor === true ? sheets.sheet.id : changeCursor ?? sheets.sheet.id),
+          onlyCurrentSheet ? '{}' : sheets.getRustSheetMap()
+        );
+        const selection = JSON.parse(selectionString);
+        onChangeRange(selection);
         setRangeError(undefined);
-      } else if (selection.error) {
-        onChangeRange(undefined);
-        setRangeError(selection.error.error);
-      } else {
-        throw new Error('Invalid selection from parseSelectionRange');
+      } catch (e: any) {
+        try {
+          const parsed = JSON.parse(e);
+          if (parsed.InvalidSheetName) {
+            setRangeError(onlyCurrentSheetError ?? 'Invalid sheet name');
+          }
+        } catch (_) {
+          // ignore
+        }
       }
     },
-    [onChangeRange]
+    [changeCursor, onChangeRange, onlyCurrentSheet, onlyCurrentSheetError]
   );
 
   const onBlur = useCallback(
@@ -78,21 +98,26 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial ? getSelectionString(initial) : '';
+      ref.current.value = initial
+        ? selectionToA1String(JSON.stringify(initial, bigIntReplacer), a1SheetId, sheets.getRustSheetMap())
+        : '';
     }
-  }, [initial]);
+  }, [changeCursor, a1SheetId, initial]);
 
   const onFocus = () => {
     if (!ref.current || !changeCursor) return;
-    const selection = parseSelectionString(ref.current.value, changeCursor === true ? sheets.sheet.id : changeCursor);
-    if (selection.selection) {
-      // we need to hack the cursorPosition :(
-      const rects = selection.selection.rects;
-      if (rects?.length) {
-        selection.selection.x = rects[0].min.x;
-        selection.selection.y = rects[0].min.y;
+    try {
+      const selectionString = a1StringToSelection(
+        ref.current.value,
+        changeCursor === true ? sheets.sheet.id : changeCursor,
+        '{}'
+      );
+      const selection = JSON.parse(selectionString);
+      if (selection) {
+        sheets.sheet.cursor.loadFromSelection(selection, true);
       }
-      sheets.sheet.cursor.loadFromSelection(selection.selection, true);
+    } catch (_) {
+      // there was an error parsing the range, so nothing more to do
     }
   };
 
@@ -106,7 +131,7 @@ export const SheetRange = (props: Props) => {
       events.off('changeSheet', updateSheet);
     };
   }, []);
-  const disableButton = requireSheetId ? requireSheetId !== sheetId : false;
+  const disableButton = onlyCurrentSheet ? onlyCurrentSheet !== sheetId : false;
 
   return (
     <div>

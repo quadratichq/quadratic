@@ -1024,6 +1024,12 @@ export interface ClientCoreInsertRow {
   cursor: string;
 }
 
+export interface CoreClientClientMessage {
+  type: 'coreClientClientMessage';
+  message: string;
+  error: boolean;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1168,4 +1174,5 @@ export type CoreClientMessage =
   | CoreClientGetCellValue
   | CoreClientNeighborText
   | CoreClientBordersSheet
-  | CoreClientGetCellValue;
+  | CoreClientGetCellValue
+  | CoreClientClientMessage;

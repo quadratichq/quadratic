@@ -27,6 +27,8 @@ export class Update {
 
   private lastSheetId = '';
 
+  firstRenderComplete = false;
+
   constructor() {
     if (debugShowFPS) {
       this.fps = new FPS();
@@ -54,6 +56,7 @@ export class Update {
 
   updateViewport(): void {
     const { viewport } = pixiApp;
+
     let dirty = false;
     if (this.lastViewportScale !== viewport.scale.x) {
       this.lastViewportScale = viewport.scale.x;
@@ -79,6 +82,10 @@ export class Update {
     if (dirty) {
       pixiApp.viewportChanged();
       this.sendRenderViewport();
+
+      // signals to react that the viewport has changed (so it can update any
+      // related positioning)
+      events.emit('viewportChangedReady');
     }
   }
 
@@ -101,7 +108,6 @@ export class Update {
 
     let rendererDirty =
       pixiApp.gridLines.dirty ||
-      pixiApp.axesLines.dirty ||
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
       pixiApp.multiplayerCursor.dirty ||
@@ -115,8 +121,8 @@ export class Update {
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
         `dirty: ${pixiApp.viewport.dirty ? 'viewport ' : ''}${pixiApp.gridLines.dirty ? 'gridLines ' : ''}${
-          pixiApp.axesLines.dirty ? 'axesLines ' : ''
-        }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}${
+          pixiApp.headings.dirty ? 'headings ' : ''
+        }${pixiApp.cursor.dirty ? 'cursor ' : ''}${
           pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : pixiApp.cellImages.dirty ? 'uiImageResize' : ''
         }
           ${pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : ''}${pixiApp.cellMoving.dirty ? 'cellMoving' : ''}`
@@ -126,8 +132,6 @@ export class Update {
     debugTimeReset();
     pixiApp.gridLines.update();
     debugTimeCheck('[Update] gridLines');
-    pixiApp.axesLines.update();
-    debugTimeCheck('[Update] axesLines');
     pixiApp.headings.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] headings');
     pixiApp.boxCells.update();
@@ -145,6 +149,8 @@ export class Update {
     pixiApp.cellsSheets.update();
     debugTimeCheck('[Update] cellsSheets');
     pixiApp.validations.update(pixiApp.viewport.dirty);
+    debugTimeCheck('[Update] backgrounds');
+    pixiApp.background.update(pixiApp.viewport.dirty);
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();
@@ -158,6 +164,11 @@ export class Update {
     } else {
       debugRendererLight(false);
       thumbnail.check();
+    }
+
+    if (!this.firstRenderComplete) {
+      this.firstRenderComplete = true;
+      pixiApp.viewport.loadViewport();
     }
 
     this.raf = requestAnimationFrame(this.update);

@@ -87,10 +87,12 @@ export class GridHeadings extends Container {
     const cellHeight = CELL_HEIGHT / scale;
     const offsets = sheets.sheet.offsets;
     const cursor = sheets.sheet.cursor;
+    const clamp = sheets.sheet.clamp;
 
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(bounds.left, bounds.top, bounds.width, cellHeight);
+    const left = Math.max(bounds.left, clamp.left);
+    this.columnRect = new Rectangle(left, bounds.top, bounds.width, cellHeight);
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
 
@@ -169,7 +171,6 @@ export class GridHeadings extends Container {
     const cellWidth = CELL_WIDTH / scale;
     const cellHeight = CELL_HEIGHT / scale;
     const gridAlpha = calculateAlphaForGridLines(scale);
-    const showA1Notation = pixiAppSettings.showA1Notation;
 
     const start = offsets.getXPlacement(bounds.left);
     const end = offsets.getXPlacement(bounds.right);
@@ -243,7 +244,7 @@ export class GridHeadings extends Container {
 
           // show only when selected or not intersects one of the selected numbers
           if (!intersectsLast) {
-            const text = showA1Notation ? getColumnA1Notation(column) : column.toString();
+            const text = getColumnA1Notation(column);
             this.labels.add({ text, x: xPosition, y });
             lastLabel = { left, right, selected };
           }
@@ -265,6 +266,7 @@ export class GridHeadings extends Container {
     const bounds = viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
     const cursor = sheets.sheet.cursor;
+    const clamp = sheets.sheet.clamp;
 
     const start = offsets.getYPlacement(bounds.top);
     const end = offsets.getYPlacement(bounds.bottom);
@@ -281,7 +283,8 @@ export class GridHeadings extends Container {
     // draw background of vertical bar
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
+    const top = Math.max(bounds.top, clamp.top);
+    this.columnRect = new Rectangle(bounds.left, top, this.rowWidth, bounds.height);
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
     this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
@@ -440,7 +443,7 @@ export class GridHeadings extends Container {
     this.verticalLabels();
   }
 
-  private drawCorner(): void {
+  private drawCorner() {
     const { viewport } = pixiApp;
     const bounds = viewport.getVisibleBounds();
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
@@ -449,16 +452,28 @@ export class GridHeadings extends Container {
     this.cornerRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, cellHeight);
     this.corner.drawShape(this.cornerRect);
     this.corner.endFill();
+    this.corner.lineStyle(1, colors.gridLines, colors.headerSelectedRowColumnBackgroundColorAlpha, 0, true);
+    this.corner.moveTo(bounds.left + this.rowWidth, bounds.top);
+    this.corner.lineTo(bounds.left + this.rowWidth, bounds.top + cellHeight);
+    this.corner.lineTo(bounds.left, bounds.top + cellHeight);
   }
 
-  private drawHeadingLines(): void {
+  // draws the lines under and to the right of the headings
+  private drawHeadingLines() {
     const { viewport } = pixiApp;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
+    const clamp = sheets.sheet.clamp;
     this.headingsGraphics.lineStyle(1, colors.gridLines, colors.headerSelectedRowColumnBackgroundColorAlpha, 0.5, true);
-    this.headingsGraphics.moveTo(bounds.left + this.rowWidth, viewport.top);
+
+    // draw the left line to the right of the headings
+    const top = Math.max(bounds.top, clamp.top);
+    this.headingsGraphics.moveTo(bounds.left + this.rowWidth, top);
     this.headingsGraphics.lineTo(bounds.left + this.rowWidth, viewport.bottom);
-    this.headingsGraphics.moveTo(bounds.left, bounds.top + cellHeight);
+
+    // draw the top line under the headings
+    const left = Math.max(bounds.left, clamp.left);
+    this.headingsGraphics.moveTo(left, bounds.top + cellHeight);
     this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
   }
 

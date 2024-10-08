@@ -1,4 +1,3 @@
-import { HEADING_SIZE } from '@/shared/constants/gridConstants';
 import { Point } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { intersects } from '../helpers/intersects';
@@ -113,20 +112,16 @@ export function ensureVisible(visible: Coordinate | undefined) {
  * @param [options.pageDown] move viewport down one page
  * @param [options.force] force viewport to move even if cell is already visible
  */
-export function moveViewport(options: {
-  center?: Coordinate;
-  topLeft?: Coordinate;
-  pageUp?: boolean;
-  pageDown?: boolean;
-  force?: boolean;
-}): void {
-  const { center, topLeft, pageUp, pageDown, force } = options;
-  if (!center && !topLeft && !pageUp && !pageDown) return;
+export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinate; force?: boolean }): void {
+  const { center, topLeft, force } = options;
+  if (!center && !topLeft) return;
 
   const sheet = sheets.sheet;
   const bounds = pixiApp.viewport.getVisibleBounds();
   const zoom = pixiApp.viewport.scale.x;
-  const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE / zoom : 0;
+  const { width, height } = pixiApp.headings.headingSize;
+  const adjustX = width / zoom;
+  const adjustY = height / zoom;
 
   if (center) {
     const cell = sheet.getCellOffsets(center.x, center.y);
@@ -134,12 +129,8 @@ export function moveViewport(options: {
     pixiApp.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
   } else if (topLeft) {
     const cell = sheet.getCellOffsets(topLeft.x, topLeft.y);
-    if (!force && intersects.rectanglePoint(bounds, new Point(cell.x - adjust, cell.y - adjust))) return;
-    pixiApp.viewport.moveCorner(cell.x - adjust, cell.y - adjust);
-  } else if (pageUp) {
-    pixiApp.viewport.moveCorner(bounds.x, bounds.y - (bounds.height - adjust));
-  } else if (pageDown) {
-    pixiApp.viewport.moveCorner(bounds.x, bounds.y + (bounds.height - adjust));
+    if (!force && intersects.rectanglePoint(bounds, new Point(cell.x - adjustX, cell.y - adjustY))) return;
+    pixiApp.viewport.moveCorner(cell.x - adjustX, cell.y - adjustY);
   }
 
   pixiApp.viewportChanged();
@@ -158,4 +149,27 @@ export function getShareUrlParams(): string {
     }
   }
   return url;
+}
+
+// Moves the cursor up or down one page
+export function pageUpDown(up: boolean) {
+  const cursorRect = pixiApp.cursor.cursorRectangle;
+  const { viewport } = pixiApp;
+  if (cursorRect) {
+    const distanceTopToCursorTop = cursorRect.top - viewport.top;
+    const newY = cursorRect.y + pixiApp.viewport.screenHeightInWorldPixels * (up ? -1 : 1);
+    const newRow = Math.max(1, sheets.sheet.getColumnRowFromScreen(0, newY).row);
+    const cursor = sheets.sheet.cursor;
+    cursor.changePosition({
+      columnRow: null,
+      multiCursor: null,
+      cursorPosition: { x: cursor.cursorPosition.x, y: newRow },
+      keyboardMovePosition: { x: cursor.cursorPosition.x, y: newRow },
+      ensureVisible: false,
+    });
+    const newCursorY = sheets.sheet.getRowY(newRow);
+    const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+    pixiApp.viewport.y = Math.min(gridHeadings, -newCursorY + distanceTopToCursorTop);
+    pixiApp.viewportChanged();
+  }
 }

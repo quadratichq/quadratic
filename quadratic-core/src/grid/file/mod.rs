@@ -6,19 +6,22 @@ use crate::compression::{
 use super::Grid;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use shift_negative_offsets::shift_negative_offsets;
 use std::fmt::Debug;
 use std::str;
-use v1_7::schema::GridSchema as current;
+use v1_7_1::GridSchema as current;
 
 pub mod serialize;
 pub mod sheet_schema;
+mod shift_negative_offsets;
 mod v1_3;
 mod v1_4;
 mod v1_5;
 mod v1_6;
 mod v1_7;
+pub mod v1_7_1;
 
-pub static CURRENT_VERSION: &str = "1.7";
+pub static CURRENT_VERSION: &str = "1.7.1";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
 pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
@@ -31,6 +34,11 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.7.1")]
+    V1_7_1 {
+        #[serde(flatten)]
+        grid: v1_7_1::GridSchema,
+    },
     #[serde(rename = "1.7")]
     V1_7 {
         #[serde(flatten)]
@@ -61,15 +69,18 @@ enum GridFile {
 impl GridFile {
     fn into_latest(self) -> Result<v1_7::schema::GridSchema> {
         match self {
-            GridFile::V1_7 { grid } => Ok(grid),
-            GridFile::V1_6 { grid } => v1_6::file::upgrade(grid),
-            GridFile::V1_5 { grid } => v1_6::file::upgrade(v1_5::file::upgrade(grid)?),
-            GridFile::V1_4 { grid } => {
-                v1_6::file::upgrade(v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?)
+            GridFile::V1_7_1 { grid } => Ok(grid),
+            GridFile::V1_7 { grid } => v1_7::upgrade(grid),
+            GridFile::V1_6 { grid } => v1_7::upgrade(v1_6::file::upgrade(grid)?),
+            GridFile::V1_5 { grid } => {
+                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(grid)?)?)
             }
-            GridFile::V1_3 { grid } => v1_6::file::upgrade(v1_5::file::upgrade(
+            GridFile::V1_4 { grid } => v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
+                v1_4::file::upgrade(grid)?,
+            )?)?),
+            GridFile::V1_3 { grid } => v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
                 v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?,
-            )?),
+            )?)?),
         }
     }
 }
@@ -88,11 +99,11 @@ pub fn import(file_contents: Vec<u8>) -> Result<Grid> {
 fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
     let (header, data) = remove_header(&file_contents)?;
 
-    // we're currently not doing anything with the file version, but will in
-    // the future as we use different serialization and compression methods
     let file_version = deserialize::<FileVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
-    match file_version.version.as_str() {
+    let mut check_for_negative_offsets = false;
+    let grid = match file_version.version.as_str() {
         "1.6" => {
+            check_for_negative_offsets = true;
             let schema = decompress_and_deserialize::<v1_6::schema::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
@@ -103,6 +114,16 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             Ok(serialize::import(schema)?)
         }
         "1.7" => {
+            check_for_negative_offsets = true;
+            let schema = decompress_and_deserialize::<v1_7::schema::GridSchema>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            )?;
+            drop(file_contents);
+            Ok(serialize::import(schema)?)
+        }
+        "1.7.1" => {
             let schema = decompress_and_deserialize::<current>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
@@ -115,6 +136,17 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             "Unsupported file version: {}",
             file_version.version
         )),
+    };
+
+    if check_for_negative_offsets {
+        if let Ok(mut grid) = grid {
+            shift_negative_offsets(&mut grid);
+            Ok(grid)
+        } else {
+            grid
+        }
+    } else {
+        grid
     }
 }
 

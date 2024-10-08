@@ -7,7 +7,6 @@ import {
   editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
 import {
   validationRuleSimple,
@@ -79,11 +78,12 @@ export const useValidationData = (): ValidationData => {
       return false;
     }
 
-    // if selection is empty, then show error
-    if (getSelectionString(validation.selection) === '') {
-      setTriggerError(true);
-      return false;
-    }
+    // todo...
+    // // if selection is empty, then show error
+    // if (getSelectionString(validation.selection) === '') {
+    //   setTriggerError(true);
+    //   return false;
+    // }
 
     if (validation.rule === 'None') {
       return true;

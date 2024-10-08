@@ -193,7 +193,8 @@ export function useFileImport() {
               if (openImportedFile) {
                 setFilesImportProgressListState({ show: false });
                 setNewFileDialogState((prev) => ({ ...prev, show: false }));
-                window.location.href = ROUTES.FILE(uuid);
+                const imported = quadraticCore.receivedClientMessage ? '?negative_offsets' : '';
+                window.location.href = ROUTES.FILE(uuid) + imported;
               }
             })
             .catch((error) => {

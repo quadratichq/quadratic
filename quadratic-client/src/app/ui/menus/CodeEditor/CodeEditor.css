@@ -16,3 +16,7 @@
 
   @apply text-foreground opacity-50;
 }
+
+.w-cursor {
+  width: 1.5px;
+}

@@ -31,9 +31,10 @@ import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { pixiAppSettings } from '../gridGL/pixiApp/PixiAppSettings';
 
 export default function QuadraticUI() {
   const {
@@ -48,12 +49,24 @@ export default function QuadraticUI() {
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
   const editorInteractionStateFollow = useRecoilValue(editorInteractionStateFollowAtom);
   const { users } = useMultiplayerUsers();
+
   const follow = useMemo(
     () =>
       editorInteractionStateFollow ? users.find((user) => user.session_id === editorInteractionStateFollow) : undefined,
     [editorInteractionStateFollow, users]
   );
   const presentationMode = useRecoilValue(presentationModeAtom);
+
+  // Show negative_offsets warning if present in URL (the result of an imported
+  // file)
+  useEffect(() => {
+    const url = new URLSearchParams(window.location.search);
+    if (url.has('negative_offsets')) {
+      pixiAppSettings.snackbar('negative_offsets', 'error');
+      url.delete('negative_offsets');
+      window.history.replaceState({}, '', `${window.location.pathname}${url.toString() ? `?${url}` : ''}`);
+    }
+  }, []);
 
   return (
     <div

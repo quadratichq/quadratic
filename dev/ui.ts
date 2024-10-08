@@ -129,7 +129,7 @@ export class UI {
     } else {
       this.write(" " + DONE, "green");
     }
-    if (component === "core" && this.cli.options.perf) {
+    if ((component === "core" && this.cli.options.perf) || (component === "rustClient" && this.cli.options.perf && this.cli.options.rustClient)) {
       this.write(PERF);
     }
     this.write(SPACE);

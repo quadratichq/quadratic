@@ -4,7 +4,7 @@
 import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
+import { moveViewport, pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -32,8 +32,10 @@ function setCursorPosition(x: number, y: number) {
 // - if there are no more cells then select the next cell over (excel selects to the end of the sheet; we don’t have an end (yet) so right now I select one cell over)
 //   the above checks are always made relative to the original cursor position (the highlighted cell)
 async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
-  const cursor = sheets.sheet.cursor;
-  const sheetId = sheets.sheet.id;
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
+  const sheetId = sheet.id;
+  const clamp = sheet.clamp;
 
   // holds either the existing multiCursor or creates a new one based on cursor position
   const multiCursor = cursor.multiCursor ?? [new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1)];
@@ -84,12 +86,10 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
       });
     }
     if (nextCol === undefined) {
-      nextCol = x < 0 ? 0 : x + 1;
+      nextCol = x + 1 < clamp.left ? clamp.left : x + 1;
     }
+    nextCol = Math.min(nextCol, clamp.right);
     x = nextCol;
-    if (keyboardX < -1) {
-      x = Math.min(x, -1);
-    }
     if (x === keyboardX) x++;
     if (select) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
@@ -150,6 +150,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
       x = Math.max(x, 0);
     }
     if (x === keyboardX) x--;
+    x = Math.max(x, clamp.left);
     if (select) {
       lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
       lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
@@ -205,10 +206,8 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
       nextRow = y < 0 ? 0 : y + 1;
     }
     y = nextRow;
-    if (keyboardY < -1) {
-      y = Math.min(y, -1);
-    }
     if (y === keyboardY) y++;
+    y = Math.max(y, clamp.top);
     if (select) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
       lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
@@ -268,6 +267,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
       y = Math.max(y, 0);
     }
     if (y === keyboardY) y--;
+    y = Math.max(y, clamp.top);
     if (select) {
       lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
       lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
@@ -284,6 +284,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
 
 // use arrow to select when shift key is pressed
 function expandSelection(deltaX: number, deltaY: number) {
+  const clamp = sheets.sheet.clamp;
   const cursor = sheets.sheet.cursor;
 
   const downPosition = cursor.cursorPosition;
@@ -300,6 +301,20 @@ function expandSelection(deltaX: number, deltaY: number) {
   lastMultiCursor.y = downPosition.y < newMovePosition.y ? downPosition.y : newMovePosition.y;
   lastMultiCursor.width = Math.abs(newMovePosition.x - downPosition.x) + 1;
   lastMultiCursor.height = Math.abs(newMovePosition.y - downPosition.y) + 1;
+  if (lastMultiCursor.x < clamp.left) {
+    lastMultiCursor.width -= clamp.left - lastMultiCursor.x;
+    lastMultiCursor.x = clamp.left;
+  }
+  if (lastMultiCursor.y < clamp.top) {
+    lastMultiCursor.height -= clamp.top - lastMultiCursor.y;
+    lastMultiCursor.y = clamp.top;
+  }
+  if (lastMultiCursor.right > clamp.right) {
+    lastMultiCursor.width -= lastMultiCursor.right - clamp.right;
+  }
+  if (lastMultiCursor.bottom > clamp.bottom) {
+    lastMultiCursor.height -= lastMultiCursor.bottom - clamp.bottom;
+  }
   cursor.changePosition({
     columnRow: null,
     multiCursor,
@@ -312,8 +327,18 @@ function expandSelection(deltaX: number, deltaY: number) {
 }
 
 function moveCursor(deltaX: number, deltaY: number) {
+  const clamp = sheets.sheet.clamp;
   const cursor = sheets.sheet.cursor;
-  const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };
+  const newPos = {
+    x: Math.max(clamp.left, cursor.cursorPosition.x + deltaX),
+    y: Math.max(clamp.left, cursor.cursorPosition.y + deltaY),
+  };
+  if (newPos.x > clamp.right) {
+    newPos.x = clamp.right;
+  }
+  if (newPos.y > clamp.bottom) {
+    newPos.y = clamp.bottom;
+  }
   cursor.changePosition({
     columnRow: null,
     multiCursor: null,
@@ -421,7 +446,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move cursor to A0, reset viewport position with A0 at top left
   if (matchShortcut(Action.GotoA0, event)) {
-    setCursorPosition(0, 0);
+    setCursorPosition(1, 1);
     moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
     return true;
   }
@@ -450,27 +475,10 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move cursor to the start of the row content
   if (matchShortcut(Action.GotoRowStart, event)) {
-    const sheet = sheets.sheet;
-    const bounds = sheet.getBounds(true);
-    if (bounds) {
-      const y = sheet.cursor.cursorPosition.y;
-      quadraticCore
-        .findNextColumn({
-          sheetId: sheet.id,
-          columnStart: bounds.left,
-          row: y,
-          reverse: false,
-          withContent: true,
-        })
-        .then((x) => {
-          x = x ?? bounds.left;
-          quadraticCore.cellHasContent(sheet.id, x, y).then((hasContent) => {
-            if (hasContent) {
-              setCursorPosition(x, y);
-            }
-          });
-        });
-    }
+    sheets.sheet.cursor.changePosition({
+      columnRow: null,
+      cursorPosition: { x: 1, y: sheets.sheet.cursor.cursorPosition.y },
+    });
     return true;
   }
 
@@ -502,13 +510,13 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move viewport up
   if (matchShortcut(Action.PageUp, event)) {
-    moveViewport({ pageUp: true });
+    pageUpDown(true);
     return true;
   }
 
   // Move viewport down
   if (matchShortcut(Action.PageDown, event)) {
-    moveViewport({ pageDown: true });
+    pageUpDown(false);
     return true;
   }
 

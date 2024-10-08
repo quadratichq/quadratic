@@ -61,8 +61,7 @@ export class CellsFills extends Container {
     events.on('resizeHeadingColumn', this.drawCells);
     events.on('resizeHeadingRow', this.drawCells);
     events.on('resizeRowHeights', this.drawSheetCells);
-    pixiApp.viewport.on('zoomed', this.setDirty);
-    pixiApp.viewport.on('moved', this.setDirty);
+    events.on('viewportChanged', this.setDirty);
   }
 
   destroy() {
@@ -73,8 +72,7 @@ export class CellsFills extends Container {
     events.off('resizeHeadingColumn', this.drawCells);
     events.off('resizeHeadingRow', this.drawCells);
     events.off('resizeRowHeights', this.drawSheetCells);
-    pixiApp.viewport.off('zoomed', this.setDirty);
-    pixiApp.viewport.off('moved', this.setDirty);
+    events.off('viewportChanged', this.setDirty);
     super.destroy();
   }
 

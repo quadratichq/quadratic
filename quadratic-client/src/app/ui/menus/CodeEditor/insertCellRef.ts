@@ -4,6 +4,7 @@ import { Coordinate } from '@/app/gridGL/types/size';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { posToA1, posToA1Absolute } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 export const insertCellRef = (
   selectedCell: Coordinate,
@@ -73,7 +74,7 @@ export const insertCellRef = (
         }
       }
     }
-  } else if ((language as any) === 'Javascript') {
+  } else if (language === 'Javascript') {
     // any needed until Javascript is properly defined in Javascript branch
     if (cursor.multiCursor) {
       if (cursor.multiCursor.length > 1) {
@@ -106,6 +107,14 @@ export const insertCellRef = (
           ref = `cell(${location.x}, ${location.y})`;
         }
       }
+    }
+  } else if (language === 'Connection') {
+    const location = cursor.cursorPosition;
+    let sheetRef = sheet ? (sheet.includes(' ') || sheet.includes('!') ? `'${sheet}'!` : `${sheet}!`) : '';
+    if (relative) {
+      ref = `{{${sheetRef}${posToA1(location.x, location.y)}}}`;
+    } else {
+      ref = `{{${sheetRef}${posToA1Absolute(location.x, location.y)}}}`;
     }
   }
   events.emit('insertCodeEditorText', ref);

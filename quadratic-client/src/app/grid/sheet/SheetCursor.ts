@@ -51,8 +51,8 @@ export class SheetCursor {
   constructor(sheet: Sheet) {
     this.sheetId = sheet.id;
     this.boxCells = false;
-    this.keyboardMovePosition = { x: 0, y: 0 };
-    this.cursorPosition = { x: 0, y: 0 };
+    this.keyboardMovePosition = { x: 1, y: 1 };
+    this.cursorPosition = { x: 1, y: 1 };
   }
 
   set viewport(save: IViewportTransformState) {
@@ -60,8 +60,8 @@ export class SheetCursor {
   }
   get viewport(): IViewportTransformState {
     if (!this._viewport) {
-      const { x, y } = pixiApp.getStartingViewport();
-      return { x, y, scaleX: 1, scaleY: 1 };
+      const heading = pixiApp.headings.headingSize;
+      return { x: heading.width, y: heading.height, scaleX: 1, scaleY: 1 };
     }
     return this._viewport;
   }
@@ -148,6 +148,8 @@ export class SheetCursor {
     }
 
     if (options.cursorPosition) {
+      options.cursorPosition.x = Math.max(1, options.cursorPosition.x);
+      options.cursorPosition.y = Math.max(1, options.cursorPosition.y);
       this.cursorPosition = options.cursorPosition;
       this.keyboardMovePosition = options.keyboardMovePosition ?? this.cursorPosition;
     } else if (options.keyboardMovePosition) {
@@ -189,7 +191,7 @@ export class SheetCursor {
     }
   }
 
-  getRustSelection(): Selection {
+  getRustSelection(includeSingleRect = true): Selection {
     const sheet_id = { id: this.sheetId };
     const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;
     const rows = this.columnRow?.rows ? this.columnRow.rows.map((y) => BigInt(y)) : null;
@@ -200,7 +202,7 @@ export class SheetCursor {
         min: { x: BigInt(rect.x), y: BigInt(rect.y) },
         max: { x: BigInt(rect.x + rect.width - 1), y: BigInt(rect.y + rect.height - 1) },
       }));
-    } else if (!this.columnRow) {
+    } else if (!this.columnRow && includeSingleRect) {
       rects = [
         {
           min: { x: BigInt(this.cursorPosition.x), y: BigInt(this.cursorPosition.y) },

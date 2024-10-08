@@ -60,11 +60,16 @@ import {
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
 } from './coreClientMessages';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 
 class QuadraticCore {
   private worker?: Worker;
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
+
+  // This is a hack to get import files to properly show negative offsets dialog
+  // after importing from dashboard. This can be removed in the future.
+  receivedClientMessage = false;
 
   initWorker() {
     if (!this.worker) {
@@ -180,6 +185,14 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientBordersSheet') {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
+      return;
+    } else if (e.data.type === 'coreClientClientMessage') {
+      pixiAppSettings.snackbar(e.data.message, e.data.error ? 'error' : 'success');
+
+      // This is a hack to get import files to properly show negative offsets dialog
+      // after importing from dashboard. This can be removed in the future.
+      this.receivedClientMessage = true;
+
       return;
     }
 

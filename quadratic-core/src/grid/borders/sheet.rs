@@ -1,3 +1,6 @@
+//! This is deprecated from the old Borders format. We keep a subset of the old
+//! code to convert files with old borders.
+
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};

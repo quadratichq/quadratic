@@ -66,7 +66,8 @@ export const Validation = () => {
           changeCursor={true}
           readOnly={readOnly}
           onEnter={onEnter}
-          requireSheetId={sheetId}
+          onlyCurrentSheet={sheetId}
+          onlyCurrentSheetError="Range must be on the same sheet"
         />
         <ValidationDropdown
           label="Criteria"

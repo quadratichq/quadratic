@@ -23,15 +23,13 @@ export const MultiplayerCursors = (props: Props) => {
     events.on('multiplayerCursor', updatePlayersTrigger);
     events.on('changeSheet', updatePlayersTrigger);
     window.addEventListener('resize', updatePlayersTrigger);
-    pixiApp.viewport.on('moved', updatePlayersTrigger);
-    pixiApp.viewport.on('zoomed', updatePlayersTrigger);
+    events.on('viewportChangedReady', updatePlayersTrigger);
     return () => {
       events.off('multiplayerChangeSheet', updatePlayersTrigger);
       events.off('multiplayerCursor', updatePlayersTrigger);
       events.off('changeSheet', updatePlayersTrigger);
       window.removeEventListener('resize', updatePlayersTrigger);
-      pixiApp.viewport.off('moved', updatePlayersTrigger);
-      pixiApp.viewport.off('zoomed', updatePlayersTrigger);
+      events.off('viewportChangedReady', updatePlayersTrigger);
     };
   }, []);
 

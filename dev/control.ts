@@ -241,6 +241,7 @@ export class Control {
   togglePerf() {
     this.cli.options.perf = !this.cli.options.perf;
     this.restartCore();
+    this.restartRustClient();
   }
 
   async runCore(restart?: boolean) {
@@ -530,7 +531,7 @@ export class Control {
       "npm",
       [
         "run",
-        this.cli.options.rustClient ? "dev" : "build",
+        this.cli.options.rustClient ? (this.cli.options.perf ? "dev:perf" :"dev") : "build",
         "--workspace=quadratic-rust-client",
       ],
       { signal: this.signals.rustClient.signal }

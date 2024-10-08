@@ -11,6 +11,7 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { SetterOrUpdater } from 'recoil';
+import { messages } from './messages';
 
 interface Input {
   show: boolean;
@@ -27,6 +28,7 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: Input;
+  private waitingForSnackbar: { message: JSX.Element | string; severity: 'error' | 'success' }[] = [];
 
   // Keeps track of code editor content. This is used when moving code cells to
   // keep track of any unsaved changes, and keyboardCell.
@@ -76,7 +78,6 @@ class PixiAppSettings {
       this.settings = defaultGridSettings;
     }
     pixiApp.gridLines.dirty = true;
-    pixiApp.axesLines.dirty = true;
     pixiApp.headings.dirty = true;
 
     if (
@@ -152,9 +153,6 @@ class PixiAppSettings {
   get showGridLines(): boolean {
     return !this.settings.presentationMode && this.settings.showGridLines;
   }
-  get showGridAxes(): boolean {
-    return !this.settings.presentationMode && this.settings.showGridAxes;
-  }
   get showHeadings(): boolean {
     return !this.settings.presentationMode && this.settings.showHeadings;
   }
@@ -229,6 +227,26 @@ class PixiAppSettings {
 
   get panMode() {
     return this._panMode;
+  }
+
+  setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) {
+    this.addGlobalSnackbar = addGlobalSnackbar;
+    for (const snackbar of this.waitingForSnackbar) {
+      this.addGlobalSnackbar(snackbar.message, { severity: snackbar.severity });
+    }
+    this.waitingForSnackbar = [];
+  }
+
+  snackbar(message: string, severity: 'error' | 'success') {
+    let display: JSX.Element | string = message;
+    if (messages[message]) {
+      display = messages[message];
+    }
+    if (this.addGlobalSnackbar) {
+      this.addGlobalSnackbar(display, { severity });
+    } else {
+      this.waitingForSnackbar.push({ message: display, severity });
+    }
   }
 }
 

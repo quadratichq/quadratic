@@ -48,7 +48,7 @@ import { numbersToRectStringified, pointsToRect, posToPos, posToRect } from './r
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
-const bigIntReplacer = (_key: string, value: any): any => {
+export const bigIntReplacer = (_key: string, value: any): any => {
   return typeof value === 'bigint' ? Number(value) : value;
 };
 
@@ -904,7 +904,7 @@ class Core {
 
   connectionComplete(transactionId: string, data: ArrayBuffer, std_out?: string, std_err?: string, extra?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.connectionComplete(transactionId, data as Uint8Array, std_out, std_err, extra);
+    this.gridController.connectionComplete(transactionId, data, std_out, std_err, extra);
   }
 
   getCells(transactionId: string, x: number, y: number, w: number, h?: number, sheet?: string, lineNumber?: number) {

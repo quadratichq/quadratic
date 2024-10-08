@@ -5,6 +5,7 @@
 pub mod util;
 #[macro_use]
 mod error_run;
+pub mod a1;
 pub mod color;
 pub mod compression;
 pub mod controller;
@@ -29,13 +30,13 @@ pub mod viewport;
 #[cfg(feature = "js")]
 pub mod wasm_bindings;
 
+pub use a1::*;
 pub use error_run::*;
 pub use ext::*;
 pub use pos::*;
 pub use rect::*;
 pub use rle::RunLengthEncoding;
 pub use sheet_rect::*;
-
 pub use span::*;
 pub use values::*;
 

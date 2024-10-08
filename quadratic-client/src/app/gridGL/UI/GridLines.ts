@@ -1,6 +1,7 @@
 //! Draws grid lines on the canvas. The grid lines fade as the user zooms out,
 //! and disappears at higher zoom levels. We remove lines between cells that
-//! overflow (and in the future, merged cells).
+//! overflow (and in the future, merged cells). Grid lines also respect the
+//! sheet.clamp value.
 
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
@@ -62,11 +63,20 @@ export class GridLines extends Graphics {
   }
 
   private drawVerticalLines(bounds: Rectangle, range: [number, number]) {
-    const offsets = sheets.sheet.offsets;
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
     const columnPlacement = offsets.getXPlacement(bounds.left);
     const index = columnPlacement.index;
     const position = columnPlacement.position;
     const gridOverflowLines = sheets.sheet.gridOverflowLines;
+
+    const top = bounds.top <= sheet.clamp.top ? sheet.clamp.top : bounds.top;
+
+    // draw 0-line if it's visible (since it's not part of the sheet anymore)
+    if (bounds.left <= 0) {
+      this.moveTo(0, top);
+      this.lineTo(0, bounds.bottom);
+    }
 
     let column = index;
     const offset = bounds.left - position;
@@ -83,10 +93,10 @@ export class GridLines extends Graphics {
             this.lineTo(x - offset, end);
           }
         } else {
-          this.moveTo(x - offset, bounds.top);
+          this.moveTo(x - offset, top);
           this.lineTo(x - offset, bounds.bottom);
         }
-        this.gridLinesX.push({ column, x: x - offset, y: bounds.top, w: 1, h: bounds.bottom - bounds.top });
+        this.gridLinesX.push({ column, x: x - offset, y: top, w: 1, h: bounds.bottom - top });
       }
       size = sheets.sheet.offsets.getColumnWidth(column);
       column++;
@@ -95,10 +105,19 @@ export class GridLines extends Graphics {
 
   // @returns the vertical range of [rowStart, rowEnd]
   private drawHorizontalLines(bounds: Rectangle): [number, number] {
-    const offsets = sheets.sheet.offsets;
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
     const rowPlacement = offsets.getYPlacement(bounds.top);
     const index = rowPlacement.index;
     const position = rowPlacement.position;
+
+    const left = bounds.left <= sheet.clamp.left ? sheet.clamp.left : bounds.left;
+
+    // draw 0-line if it's visible (since it's not part of the sheet anymore)
+    if (bounds.top <= sheet.clamp.top) {
+      this.moveTo(left, 0);
+      this.lineTo(bounds.right, 0);
+    }
 
     let row = index;
     const offset = bounds.top - position;
@@ -106,9 +125,9 @@ export class GridLines extends Graphics {
     for (let y = bounds.top; y <= bounds.bottom + size - 1; y += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {
-        this.moveTo(bounds.left, y - offset);
+        this.moveTo(left, y - offset);
         this.lineTo(bounds.right, y - offset);
-        this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - bounds.left, h: 1 });
+        this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - left, h: 1 });
       }
       size = offsets.getRowHeight(row);
       row++;

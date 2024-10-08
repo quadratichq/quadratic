@@ -191,7 +191,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
         {hasPermission && (
           <>
-            {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
+            {['Python', 'Javascript', 'Formula', 'Connection'].includes(language as string) && <CodeEditorRefButton />}
 
             {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
 
