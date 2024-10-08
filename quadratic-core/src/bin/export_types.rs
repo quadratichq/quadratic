@@ -119,6 +119,7 @@ fn main() {
         Rgba,
         RunError,
         RunErrorMsg,
+        ScreenRect,
         SearchOptions,
         Selection,
         SheetBounds,

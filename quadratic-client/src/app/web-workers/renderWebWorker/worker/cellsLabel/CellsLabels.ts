@@ -94,8 +94,7 @@ export class CellsLabels {
   }
 
   getCellOffsets(x: number, y: number) {
-    const screenRectStringified = this.sheetOffsets.getCellOffsets(x, y);
-    const screenRect = JSON.parse(screenRectStringified);
+    const screenRect = this.sheetOffsets.getCellOffsets(x, y);
     const rect = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
     return rect;
   }
