@@ -1,6 +1,6 @@
 use crate::{
     controller::{active_transactions::transaction_name::TransactionName, GridController},
-    Pos, SheetPos,
+    Pos, SheetPos, SheetRect,
 };
 
 use anyhow::{anyhow, Result};
@@ -18,6 +18,11 @@ impl GridController {
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {
         let ops = self.flatten_data_table_operations(sheet_pos, cursor.to_owned());
         self.start_user_transaction(ops, cursor, TransactionName::FlattenDataTable);
+    }
+
+    pub fn grid_to_data_table(&mut self, sheet_rect: SheetRect, cursor: Option<String>) {
+        let ops = self.grid_to_data_table_operations(sheet_rect, cursor.to_owned());
+        self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
 }
 

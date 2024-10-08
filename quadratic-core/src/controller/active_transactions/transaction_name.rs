@@ -16,6 +16,7 @@ pub enum TransactionName {
     SetCode,
     RunCode,
     FlattenDataTable,
+    GridToDataTable,
     Import,
     SetSheetMetadata,
     SheetAdd,
