@@ -13,10 +13,10 @@ export function useSetCodeCellValueMessages() {
 ${text}
 \`\`\`\n
 
-I need you use SetCodeCellValue function to set this code cell value. This function requires the cell position (x, y), codeString and language.\n
+You should use the SetCodeCellValue function to set this code cell value. This function requires language, codeString and the cell position (x, y).\n
 
 The required location (x,y) for this code cell is one which satisfies the following conditions:\n
-   - The code cell should be empty and should have enough space to the right and below to accommodate the code result. If there is a value in a single cell where the code result is suppose to go, it will result in spill error. Use current sheet context to identify empty space.\n
+   - The code cell location (x,y) should be empty and should have enough space to the right and below to accommodate the code result. If there is a value in a single cell where the code result is suppose to go, it will result in spill error. Use current sheet context to identify empty space.\n
    - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
    - If the referenced data is portrait in a table format, the code cell should be next to the top right corner of the table.\n
    - If the referenced data is landscape in a table format, the code cell should be below the bottom left corner of the table.\n

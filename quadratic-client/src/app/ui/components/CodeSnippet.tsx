@@ -1,5 +1,6 @@
 import { codeEditorAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useAISetCodeCellValue } from '@/app/ui/menus/AIAssistant/hooks/useAISetCodeCellValue';
 import { useGetCodeCell } from '@/app/ui/menus/AIAssistant/hooks/useGetCodeCell';
@@ -85,14 +86,17 @@ function CodeSnippetAIInsertButton({ language, text }: { language: CodeSnippetPr
     const setCodeCellValueArgs = await aiSetCodeCellValue({ language, text });
 
     if (setCodeCellValueArgs) {
+      const { x, y, codeString, language } = setCodeCellValueArgs;
       quadraticCore.setCodeCellValue({
         sheetId: sheets.current,
-        x: setCodeCellValueArgs.x,
-        y: setCodeCellValueArgs.y,
-        codeString: setCodeCellValueArgs.codeString,
-        language: setCodeCellValueArgs.language,
+        x,
+        y,
+        codeString,
+        language,
         cursor: sheets.getCursorPosition(),
       });
+
+      ensureVisible({ x, y });
     }
   }, [aiSetCodeCellValue, language, text]);
 

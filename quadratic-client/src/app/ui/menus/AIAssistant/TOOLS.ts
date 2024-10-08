@@ -7,6 +7,15 @@ export const AI_TOOL_DEFINITIONS = {
     parameters: {
       type: 'object',
       properties: {
+        language: {
+          type: 'string',
+          description:
+            'The language of the code cell, this can be one of Python, Javascript or Formula. This is case sensitive.',
+        },
+        codeString: {
+          type: 'string',
+          description: 'The code which will run in the cell',
+        },
         x: {
           type: 'number',
           description: 'The x position of the cell, which is the column index of the current spreadsheet',
@@ -15,22 +24,13 @@ export const AI_TOOL_DEFINITIONS = {
           type: 'number',
           description: 'The y position of the cell, which is the row index of the current spreadsheet',
         },
-        codeString: {
-          type: 'string',
-          description: 'The code which will run in the cell',
-        },
-        language: {
-          type: 'string',
-          description:
-            'The language of the code cell, this can be one of Python, Javascript or Formula. This is case sensitive.',
-        },
       },
     },
     responseSchema: z.object({
+      language: z.enum(['Python', 'Javascript', 'Formula']),
+      codeString: z.string(),
       x: z.number(),
       y: z.number(),
-      codeString: z.string(),
-      language: z.enum(['Python', 'Javascript', 'Formula']),
     }),
   },
 } as const;

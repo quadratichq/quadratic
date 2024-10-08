@@ -14,7 +14,6 @@ import { useCurrentSheetContextMessages } from '@/app/ui/menus/AIAssistant/hooks
 import { useQuadraticContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useQuadraticContextMessages';
 import { useSelectionContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useSelectionContextMessages';
 import { useSetCodeCellValueMessages } from '@/app/ui/menus/AIAssistant/hooks/useSetCodeCellValueMessages';
-
 import { useVisibleContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useVisibleContextMessages';
 import { AI_TOOL_DEFINITIONS } from '@/app/ui/menus/AIAssistant/TOOLS';
 import { AIMessage, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
