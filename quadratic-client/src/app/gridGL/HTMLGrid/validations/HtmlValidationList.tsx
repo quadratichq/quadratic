@@ -106,7 +106,6 @@ export const HtmlValidationList = (props: Props) => {
   // handle keyboard events when list is open
   useEffect(() => {
     const dropdownKeyboard = (key: 'ArrowDown' | 'ArrowUp' | 'ArrowLeft' | 'ArrowRight' | 'Enter' | 'Escape') => {
-      debugger;
       if (!list) return;
 
       if (key === 'ArrowDown' || key === 'ArrowUp') {

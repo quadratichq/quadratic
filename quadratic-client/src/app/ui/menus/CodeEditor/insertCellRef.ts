@@ -109,7 +109,6 @@ export const insertCellRef = (
       }
     }
   } else if (language === 'Connection') {
-    debugger;
     const location = cursor.cursorPosition;
     let sheetRef = sheet ? (sheet.includes(' ') || sheet.includes('!') ? `'${sheet}'!` : `${sheet}!`) : '';
     if (relative) {
