@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsOffset, JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { CoreRenderMessage, RenderCoreMessage, RenderCoreRequestRenderCells } from '../coreRenderMessages';
 import { core } from './core';
 
@@ -17,16 +17,10 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
-    sendSheetOffsetsRender: (
-      sheetId: string,
-      column: bigint | undefined,
-      row: bigint | undefined,
-      size: number
-    ) => void;
+    sendSheetOffsetsRender: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: string) => void;
-    sendResizeRowHeightsRender: (sheetId: string, rowHeights: string) => void;
     sendHashesDirty: (sheetId: string, hashes: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
   };
@@ -90,13 +84,11 @@ class CoreRender {
     this.send({ type: 'coreRenderDeleteSheet', sheetId });
   };
 
-  sendSheetOffsets = (sheetId: string, column: bigint | undefined, row: bigint | undefined, size: number) => {
+  sendSheetOffsets = (sheetId: string, offsets: JsOffset[]) => {
     this.send({
       type: 'coreRenderSheetOffsets',
       sheetId,
-      column: column === undefined ? undefined : Number(column),
-      row: row === undefined ? undefined : Number(row),
-      size,
+      offsets,
     });
   };
 
@@ -110,10 +102,6 @@ class CoreRender {
 
   handleResponseRowHeights = (transactionId: string, sheetId: string, rowHeights: string) => {
     core.receiveRowHeights(transactionId, sheetId, rowHeights);
-  };
-
-  sendResizeRowHeights = (sheetId: string, rowHeights: string) => {
-    this.send({ type: 'coreRenderResizeRowHeights', sheetId, rowHeights });
   };
 
   sendHashesDirty = (sheetId: string, hashes: string) => {
@@ -139,6 +127,5 @@ self.sendSheetInfoUpdateRender = coreRender.sendSheetInfoUpdate;
 self.sendSheetBoundsUpdateRender = coreRender.sendSheetBoundsUpdate;
 self.sendRequestRowHeights = coreRender.sendRequestRowHeights;
 self.handleResponseRowHeights = coreRender.handleResponseRowHeights;
-self.sendResizeRowHeightsRender = coreRender.sendResizeRowHeights;
 self.sendHashesDirty = coreRender.sendHashesDirty;
 self.sendViewportBuffer = coreRender.sendViewportBuffer;

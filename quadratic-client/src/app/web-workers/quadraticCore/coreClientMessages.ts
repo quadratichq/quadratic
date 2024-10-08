@@ -12,10 +12,10 @@ import {
   JsCellValue,
   JsCodeCell,
   JsHtmlOutput,
+  JsOffset,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-  JsRowHeight,
   JsSheetFill,
   JsValidationWarning,
   MinMax,
@@ -627,9 +627,7 @@ export interface CoreClientSetCursor {
 export interface CoreClientSheetOffsets {
   type: 'coreClientSheetOffsets';
   sheetId: string;
-  column?: number;
-  row?: number;
-  size: number;
+  offsets: JsOffset[];
 }
 
 export interface CoreClientGenerateThumbnail {
@@ -652,12 +650,6 @@ export interface CoreClientSheetCodeCellRender {
   type: 'coreClientSheetCodeCellRender';
   sheetId: string;
   codeCells: JsRenderCodeCell[];
-}
-
-export interface CoreClientResizeRowHeights {
-  type: 'coreClientResizeRowHeights';
-  sheetId: string;
-  rowHeights: JsRowHeight[];
 }
 
 //#endregion
@@ -980,6 +972,20 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
+export interface ClientCoreNeighborText {
+  type: 'clientCoreNeighborText';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientNeighborText {
+  type: 'coreClientNeighborText';
+  id: number;
+  text: string[];
+}
+
 export interface ClientCoreDeleteColumns {
   type: 'clientCoreDeleteColumns';
   sheetId: string;
@@ -1085,6 +1091,7 @@ export type ClientCoreMessage =
   | ClientCoreGetDisplayCell
   | ClientCoreValidateInput
   | ClientCoreGetCellValue
+  | ClientCoreNeighborText
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
@@ -1143,12 +1150,12 @@ export type CoreClientMessage =
   | CoreClientGetValidations
   | CoreClientSheetValidations
   | CoreClientGetValidationFromPos
-  | CoreClientResizeRowHeights
   | CoreClientGetValidationList
   | CoreClientGetDisplayCell
   | CoreClientRenderValidationWarnings
-  | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
+  | CoreClientGetCellValue
+  | CoreClientNeighborText
   | CoreClientBordersSheet
   | CoreClientGetCellValue;

@@ -45,6 +45,19 @@ impl Selection {
         }
     }
 
+    /// Creates a selection for multiple rects
+    pub fn rects(rects: &[Rect], sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: rects[0].min.x,
+            y: rects[0].min.y,
+            rects: Some(rects.to_vec()),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
     /// Creates a selection via a single sheet position
     pub fn sheet_pos(sheet_pos: SheetPos) -> Self {
         Selection {
@@ -1282,6 +1295,26 @@ mod test {
         assert_eq!(
             selection.rects_to_hashes(),
             HashSet::from([Pos { x: -1, y: -1 }, Pos { x: 0, y: 0 }])
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_rects() {
+        let sheet_id = SheetId::test();
+        let rects = vec![
+            Rect::from_numbers(0, 0, 2, 2),
+            Rect::from_numbers(3, 3, 2, 2),
+        ];
+        let selection = Selection::rects(&rects, sheet_id);
+
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                rects: Some(rects.clone()),
+                ..Default::default()
+            }
         );
     }
 }

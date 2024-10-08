@@ -140,8 +140,6 @@ export const HtmlValidationList = (props: Props) => {
 
   if (annotationState !== 'dropdown' || !offsets || !list || readOnly) return;
 
-  const viewportBottom = pixiApp.viewport.bottom;
-
   return (
     <div
       className={cn(
@@ -154,7 +152,7 @@ export const HtmlValidationList = (props: Props) => {
         transformOrigin: `0 0`,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
         minWidth: offsets.width,
-        maxHeight: `min(50vh, calc(${viewportBottom - offsets.bottom}px))`,
+        maxHeight: `min(50vh, calc(${pixiApp.viewport.bottom - offsets.bottom}px))`,
       }}
     >
       <div className="block w-full px-1">

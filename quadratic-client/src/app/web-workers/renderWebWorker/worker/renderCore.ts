@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsRenderCell, JsRowHeight } from '@/app/quadratic-core-types';
+import { JsRenderCell } from '@/app/quadratic-core-types';
 import {
   CoreRenderCells,
   CoreRenderMessage,
@@ -51,7 +51,7 @@ class RenderCore {
         break;
 
       case 'coreRenderSheetOffsets':
-        renderText.sheetOffsetsSize(e.data.sheetId, e.data.column, e.data.row, e.data.size);
+        renderText.sheetOffsetsSize(e.data.sheetId, e.data.offsets);
         break;
 
       case 'coreRenderSheetInfoUpdate':
@@ -64,10 +64,6 @@ class RenderCore {
 
       case 'coreRenderRequestRowHeights':
         this.getRowHeights(e.data.transactionId, e.data.sheetId, e.data.rows);
-        break;
-
-      case 'coreRenderResizeRowHeights':
-        this.resizeRowHeights(e.data.sheetId, e.data.rowHeights);
         break;
 
       case 'coreRenderHashesDirty':
@@ -102,15 +98,6 @@ class RenderCore {
       this.renderCorePort.postMessage(message);
     } catch (e) {
       console.error('[renderCore] getRowHeights: Error parsing rows: ', e);
-    }
-  }
-
-  resizeRowHeights(sheetId: string, rowHeightsString: string) {
-    try {
-      const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
-      renderText.resizeRowHeights(sheetId, rowHeights);
-    } catch (e) {
-      console.error('[renderCore] resizeRowHeights: Error parsing JsRowHeight: ', e);
     }
   }
 

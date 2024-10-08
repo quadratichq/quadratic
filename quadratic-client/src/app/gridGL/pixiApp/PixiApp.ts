@@ -325,7 +325,7 @@ export class PixiApp {
     events.emit('cursorPosition');
   }
 
-  adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
+  adjustHeadings(options: { sheetId: string; delta: number; row: number | null; column: number | null }): void {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.adjustOffsetsBorders(options.sheetId);
     this.cellsSheets.adjustCellsImages(options.sheetId);
