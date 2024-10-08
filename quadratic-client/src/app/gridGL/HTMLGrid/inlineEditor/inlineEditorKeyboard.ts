@@ -145,6 +145,11 @@ class InlineEditorKeyboard {
       }
     }
 
+    // Space key
+    else if (matchShortcut(Action.GridPanMode, e)) {
+      e.stopPropagation();
+    }
+
     // Enter key
     else if (matchShortcut(Action.SaveInlineEditor, e)) {
       e.stopPropagation();

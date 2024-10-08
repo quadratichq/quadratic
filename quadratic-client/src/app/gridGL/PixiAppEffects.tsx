@@ -1,5 +1,6 @@
 import { codeEditorAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
 import { gridSettingsAtom, presentationModeAtom, showHeadingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -51,6 +52,28 @@ export const PixiAppEffects = () => {
   useEffect(() => {
     pixiAppSettings.updateGridSettings(gridSettings, setGridSettings);
   }, [gridSettings, setGridSettings]);
+
+  const [gridPanMode, setGridPanMode] = useRecoilState(gridPanModeAtom);
+  useEffect(() => {
+    pixiAppSettings.updateGridPanMode(gridPanMode, setGridPanMode);
+  }, [gridPanMode, setGridPanMode]);
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      setGridPanMode((prev) => ({ ...prev, mouseIsDown: false }));
+    };
+
+    const disablePanMode = () => {
+      setGridPanMode((prev) => ({ ...prev, mouseIsDown: false, spaceIsDown: false }));
+    };
+
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('blur', disablePanMode);
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('blur', disablePanMode);
+    };
+  }, [setGridPanMode]);
 
   return null;
 };
