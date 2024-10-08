@@ -37,7 +37,7 @@ export const CursorPosition = () => {
         <span className="truncate">{cursorPositionString}</span>
         <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
+      <PopoverContent className="w-72 p-0" align="start" onCloseAutoFocus={(e) => e.preventDefault()}>
         <GoTo />
       </PopoverContent>
     </Popover>
