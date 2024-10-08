@@ -26,8 +26,6 @@ impl GridController {
             );
         }
 
-        self.send_viewport_buffer(transaction);
-
         loop {
             if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
                 transaction.complete = true;
@@ -74,8 +72,8 @@ impl GridController {
             }
         }
 
-        self.process_dirty_hashes(transaction);
-        self.clear_viewport_buffer(transaction);
+        self.process_visible_dirty_hashes(transaction);
+        self.process_remaining_dirty_hashes(transaction);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
@@ -140,7 +138,8 @@ impl GridController {
                     self.send_offsets_modified(*sheet_id, offsets);
                 });
 
-            self.process_dirty_hashes(&mut transaction);
+            self.process_visible_dirty_hashes(&mut transaction);
+            self.process_remaining_dirty_hashes(&mut transaction);
 
             transaction.validations.iter().for_each(|sheet_id| {
                 if let Some(sheet) = self.try_sheet(*sheet_id) {

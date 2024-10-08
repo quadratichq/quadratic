@@ -24,7 +24,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(({ src, alt, siz
   return (
     <>
       {error ? (
-        <span ref={ref} style={{ ...stylePreset, ...style }}>
+        <span ref={ref} style={{ ...stylePreset, ...style }} {...rest}>
           {typeof children === 'string' ? getLettersFromString(children) : children}
         </span>
       ) : (

@@ -84,15 +84,9 @@ export interface CoreRenderHashesDirty {
   hashes: string;
 }
 
-export interface CoreRenderSetViewportBuffer {
-  type: 'coreRenderSetViewportBuffer';
-  transactionId: string;
+export interface CoreRenderViewportBuffer {
+  type: 'coreRenderViewportBuffer';
   buffer: SharedArrayBuffer;
-}
-
-export interface CoreRenderClearViewportBuffer {
-  type: 'coreRenderClearViewportBuffer';
-  transactionId: string;
 }
 
 export type CoreRenderMessage =
@@ -106,7 +100,6 @@ export type CoreRenderMessage =
   | CoreRenderSheetBoundsUpdate
   | CoreRenderRequestRowHeights
   | CoreRenderHashesDirty
-  | CoreRenderSetViewportBuffer
-  | CoreRenderClearViewportBuffer;
+  | CoreRenderViewportBuffer;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells | RenderCoreResponseRowHeights;

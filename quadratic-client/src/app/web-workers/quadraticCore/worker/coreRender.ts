@@ -22,8 +22,7 @@ declare var self: WorkerGlobalScope &
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
     handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: string) => void;
     sendHashesDirty: (sheetId: string, hashes: string) => void;
-    sendSetViewportBuffer: (transactionId: string, buffer: SharedArrayBuffer) => void;
-    sendClearViewportBuffer: (transactionId: string) => void;
+    sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
   };
 
 class CoreRender {
@@ -109,18 +108,10 @@ class CoreRender {
     this.send({ type: 'coreRenderHashesDirty', sheetId, hashes });
   };
 
-  sendSetViewportBuffer = (transactionId: string, buffer: SharedArrayBuffer) => {
+  sendViewportBuffer = (buffer: SharedArrayBuffer) => {
     this.send({
-      type: 'coreRenderSetViewportBuffer',
-      transactionId,
+      type: 'coreRenderViewportBuffer',
       buffer,
-    });
-  };
-
-  sendClearViewportBuffer = (transactionId: string) => {
-    this.send({
-      type: 'coreRenderClearViewportBuffer',
-      transactionId,
     });
   };
 }
@@ -137,5 +128,4 @@ self.sendSheetBoundsUpdateRender = coreRender.sendSheetBoundsUpdate;
 self.sendRequestRowHeights = coreRender.sendRequestRowHeights;
 self.handleResponseRowHeights = coreRender.handleResponseRowHeights;
 self.sendHashesDirty = coreRender.sendHashesDirty;
-self.sendSetViewportBuffer = coreRender.sendSetViewportBuffer;
-self.sendClearViewportBuffer = coreRender.sendClearViewportBuffer;
+self.sendViewportBuffer = coreRender.sendViewportBuffer;
