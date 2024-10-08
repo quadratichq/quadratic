@@ -13,7 +13,7 @@ export const ThemePickerMenu = () => {
       <SidebarTooltip label="Theme color">
         <PopoverTrigger asChild>
           <SidebarToggle
-            pressed={showThemeMenu}
+            pressed={!showThemeMenu}
             onPressedChange={() => setShowThemeMenu(!showThemeMenu)}
             // className="relative before:absolute before:left-2 before:top-2 before:h-4 before:w-4 before:rounded-full before:border-2 before:border-primary before:bg-primary before:content-['']"
           >
