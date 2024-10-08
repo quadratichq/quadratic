@@ -294,4 +294,8 @@ export class SheetCursor {
   onlySingleSelection(): boolean {
     return !this.multiCursor?.length && !this.columnRow;
   }
+
+  hasDataTable(oneCell?: boolean): boolean {
+    return true;
+  }
 }

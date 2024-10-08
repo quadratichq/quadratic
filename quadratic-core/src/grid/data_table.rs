@@ -335,16 +335,14 @@ impl DataTable {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use std::collections::HashSet;
 
     use super::*;
     use crate::{controller::GridController, grid::SheetId, Array};
     use serial_test::parallel;
 
-    #[test]
-    #[parallel]
-    fn test_import_data_table_and_headers() {
+    pub fn new_data_table() -> (Sheet, DataTable) {
         let sheet = GridController::test().grid().sheets()[0].clone();
         let file_name = "test.csv";
         let values = vec![
@@ -354,10 +352,19 @@ mod test {
             vec!["Seattle", "WA", "United States", "100"],
         ];
         let import = Import::new(file_name.into());
-        let kind = DataTableKind::Import(import.clone());
+        let data_table = DataTable::from((import.clone(), values.clone().into(), &sheet));
 
+        (sheet, data_table)
+    }
+
+    #[test]
+    #[parallel]
+    fn test_import_data_table_and_headers() {
         // test data table without column headings
-        let mut data_table = DataTable::from((import.clone(), values.clone().into(), &sheet));
+        let (_, mut data_table) = new_data_table();
+        let kind = data_table.kind.clone();
+        let values = data_table.value.clone().into_array().unwrap();
+
         let expected_values = Value::Array(values.clone().into());
         let expected_data_table =
             DataTable::new(kind.clone(), "Table 1", expected_values, false, false)
@@ -393,14 +400,11 @@ mod test {
         ];
         assert_eq!(data_table.columns, Some(expected_columns));
 
-        let expected_values = values
-            .clone()
-            .into_iter()
-            .skip(1)
-            .collect::<Vec<Vec<&str>>>();
+        let mut expected_values = values.clone();
+        expected_values.shift().unwrap();
         assert_eq!(
             data_table.value.clone().into_array().unwrap(),
-            expected_values.into()
+            expected_values
         );
 
         // test setting header at index

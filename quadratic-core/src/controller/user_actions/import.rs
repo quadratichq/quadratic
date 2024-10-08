@@ -73,7 +73,7 @@ impl GridController {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use std::str::FromStr;
 
@@ -110,18 +110,24 @@ mod tests {
     // const LARGE_PARQUET_FILE: &str =
     // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
 
-    #[test]
-    #[parallel]
-    fn imports_a_simple_csv() {
-        let scv_file = read_test_csv_file("simple.csv");
+    pub(crate) fn simple_csv() -> (GridController, SheetId, Pos, &'static str) {
+        let csv_file = read_test_csv_file("simple.csv");
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
         let file_name = "simple.csv";
 
         grid_controller
-            .import_csv(sheet_id, scv_file.as_slice().to_vec(), file_name, pos, None)
+            .import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
             .unwrap();
+
+        (grid_controller, sheet_id, pos, file_name)
+    }
+
+    #[test]
+    #[parallel]
+    fn imports_a_simple_csv() {
+        let (grid_controller, sheet_id, pos, file_name) = simple_csv();
 
         print_table(
             &grid_controller,
@@ -458,12 +464,12 @@ mod tests {
     #[parallel]
     fn should_import_with_title_header() {
         let file_name = "title_row.csv";
-        let scv_file = read_test_csv_file(file_name);
+        let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, scv_file.as_slice().to_vec(), file_name, pos, None)
+        gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
             .unwrap();
 
         print_data_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
@@ -484,12 +490,12 @@ mod tests {
     #[parallel]
     fn should_import_with_title_header_and_empty_first_row() {
         let file_name = "title_row_empty_first.csv";
-        let scv_file = read_test_csv_file(file_name);
+        let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, scv_file.as_slice().to_vec(), file_name, pos, None)
+        gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
             .unwrap();
 
         print_data_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
@@ -514,13 +520,13 @@ mod tests {
     #[parallel]
     fn should_import_utf16_with_invalid_characters() {
         let file_name = "encoding_issue.csv";
-        let scv_file = read_test_csv_file(&file_name);
+        let csv_file = read_test_csv_file(&file_name);
 
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, scv_file.as_slice().to_vec(), file_name, pos, None)
+        gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
             .unwrap();
 
         print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));

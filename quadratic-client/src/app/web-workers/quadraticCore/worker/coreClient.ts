@@ -580,6 +580,10 @@ class CoreClient {
         core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
         return;
 
+      case 'clientCoreFlattenDataTable':
+        core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

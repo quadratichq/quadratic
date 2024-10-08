@@ -1155,6 +1155,18 @@ class QuadraticCore {
   }
 
   //#endregion
+  //#region data tables
+
+  flattenDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    this.send({
+      type: 'clientCoreFlattenDataTable',
+      sheetId,
+      x,
+      y,
+      cursor,
+    });
+  }
+  //#endregion
 }
 
 export const quadraticCore = new QuadraticCore();

@@ -45,6 +45,9 @@ pub enum Operation {
         sheet_pos: SheetPos,
         values: CellValues,
     },
+    FlattenDataTable {
+        sheet_pos: SheetPos,
+    },
     ComputeCode {
         sheet_pos: SheetPos,
     },
@@ -201,6 +204,9 @@ impl fmt::Display for Operation {
                 "SetDataTableAt {{ sheet_pos: {} values: {:?} }}",
                 sheet_pos, values
             ),
+            Operation::FlattenDataTable { sheet_pos } => {
+                write!(fmt, "FlattenDataTable {{ sheet_pos: {} }}", sheet_pos)
+            }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::SetCellFormatsSelection { selection, formats } => {
                 write!(

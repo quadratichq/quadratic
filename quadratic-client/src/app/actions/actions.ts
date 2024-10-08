@@ -134,4 +134,5 @@ export enum Action {
   InsertRowBelow = 'insert_row_below',
   DeleteRow = 'delete_row',
   DeleteColumn = 'delete_column',
+  FlattenDataTable = 'flatten_data_table',
 }

@@ -1069,6 +1069,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
   }
+
+  flattenDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.flattenDataTable(sheetId, posToPos(x, y), cursor);
+  }
 }
 
 export const core = new Core();

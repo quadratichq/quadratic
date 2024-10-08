@@ -1010,6 +1010,14 @@ export interface ClientCoreInsertRow {
   cursor: string;
 }
 
+export interface ClientCoreFlattenDataTable {
+  type: 'clientCoreFlattenDataTable';
+  sheetId: string;
+  x: number;
+  y: number;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1088,7 +1096,8 @@ export type ClientCoreMessage =
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
-  | ClientCoreInsertRow;
+  | ClientCoreInsertRow
+  | ClientCoreFlattenDataTable;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

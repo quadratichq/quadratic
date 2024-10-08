@@ -59,16 +59,11 @@ impl GridController {
         let mut ops = vec![];
         let mut x = sheet_pos.x;
         let mut y = sheet_pos.y;
+
         for row in values {
             for value in row {
-                ops.extend(self.set_cell_value_operations(
-                    SheetPos {
-                        x,
-                        y,
-                        sheet_id: sheet_pos.sheet_id,
-                    },
-                    value.to_string(),
-                ));
+                let op_sheet_pos = SheetPos::new(sheet_pos.sheet_id, x, y);
+                ops.extend(self.set_cell_value_operations(op_sheet_pos, value.to_string()));
                 x += 1;
             }
             x = sheet_pos.x;

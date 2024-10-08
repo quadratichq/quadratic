@@ -15,6 +15,7 @@ pub enum TransactionName {
     PasteClipboard,
     SetCode,
     RunCode,
+    FlattenDataTable,
     Import,
     SetSheetMetadata,
     SheetAdd,

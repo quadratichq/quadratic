@@ -4,6 +4,7 @@ import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
@@ -13,7 +14,6 @@ import { Point } from 'pixi.js';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { sheets } from '@/app/grid/controller/Sheets';
 
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
@@ -47,6 +47,7 @@ export const GridContextMenu = () => {
   const ref = useRef<HTMLDivElement>(null);
 
   const isColumnRowAvailable = sheets.sheet.cursor.hasOneColumnRowSelection(true);
+  const isDataTable = sheets.sheet.cursor.hasDataTable(true);
 
   return (
     <div
@@ -81,6 +82,8 @@ export const GridContextMenu = () => {
         {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowAbove} />}
         {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowBelow} />}
         <MenuItemAction action={Action.DeleteRow} />
+        <MenuDivider />
+        {isDataTable && <MenuItemAction action={Action.FlattenDataTable} />}
       </ControlledMenu>
     </div>
   );

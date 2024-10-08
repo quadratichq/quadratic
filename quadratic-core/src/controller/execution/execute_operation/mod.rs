@@ -15,6 +15,13 @@ mod execute_validation;
 mod execute_values;
 
 impl GridController {
+    #[track_caller]
+    pub fn handle_execution_operation_result(result: anyhow::Result<()>) {
+        if let Err(error) = result {
+            dbgjs!(&format!("Error in execute_operation: {:?}", &error));
+        }
+    }
+
     /// Executes the given operation.
     ///
     pub fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
@@ -25,7 +32,12 @@ impl GridController {
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
-                Operation::SetDataTableAt { .. } => self.execute_set_data_table_at(transaction, op),
+                Operation::SetDataTableAt { .. } => Self::handle_execution_operation_result(
+                    self.execute_set_data_table_at(transaction, op),
+                ),
+                Operation::FlattenDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_flatten_data_table(transaction, op),
+                ),
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
                 Operation::SetCellFormatsSelection { .. } => {
