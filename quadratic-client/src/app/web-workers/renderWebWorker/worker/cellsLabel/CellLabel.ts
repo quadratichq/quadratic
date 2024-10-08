@@ -23,7 +23,7 @@ import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel
 import { convertNumber, reduceDecimals } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/convertNumber';
 import { LabelMeshEntry } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshEntry';
 import { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
-import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 
@@ -423,7 +423,11 @@ export class CellLabel {
       chars.push(charRenderData);
       pos.x += charData.xAdvance + this.letterSpacing;
       prevCharCode = charCode;
-      if (maxWidth !== undefined && isFloatGreaterThan(pos.x, maxWidth / scale)) {
+      if (
+        maxWidth !== undefined &&
+        isFloatGreaterThan(pos.x, maxWidth / scale) &&
+        isFloatLessThan(charData.xAdvance + this.letterSpacing, maxWidth / scale)
+      ) {
         const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
         const count = lastBreakPos === -1 ? 1 : 1 + i - lastBreakPos;
         removeItems(chars, start, count);
@@ -732,7 +736,7 @@ export class CellLabel {
   };
 
   adjustWidth = (delta: number, negativeX: boolean) => {
-    this.AABB.width -= delta;
+    this.AABB.width = Math.max(this.AABB.width - delta, MIN_CELL_WIDTH);
     if (negativeX) {
       this.AABB.x += delta;
     }
@@ -740,7 +744,7 @@ export class CellLabel {
   };
 
   adjustHeight = (delta: number, negativeY: boolean): void => {
-    this.AABB.height -= delta;
+    this.AABB.height = Math.max(this.AABB.height - delta, CELL_HEIGHT);
     if (negativeY) {
       this.AABB.y += delta;
     }

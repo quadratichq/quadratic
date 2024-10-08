@@ -2,7 +2,7 @@
  * Messages between Core web worker and Render web worker.
  */
 
-import { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsOffset, JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 
 export interface RenderCoreRequestRenderCells {
   type: 'renderCoreRequestRenderCells';
@@ -58,9 +58,7 @@ export interface CoreRenderDeleteSheet {
 export interface CoreRenderSheetOffsets {
   type: 'coreRenderSheetOffsets';
   sheetId: string;
-  column?: number;
-  row?: number;
-  size: number;
+  offsets: JsOffset[];
 }
 
 export interface CoreRenderSheetInfoUpdate {
@@ -78,12 +76,6 @@ export interface CoreRenderRequestRowHeights {
   transactionId: string;
   sheetId: string;
   rows: string;
-}
-
-export interface CoreRenderResizeRowHeights {
-  type: 'coreRenderResizeRowHeights';
-  sheetId: string;
-  rowHeights: string;
 }
 
 export interface CoreRenderHashesDirty {
@@ -113,7 +105,6 @@ export type CoreRenderMessage =
   | CoreRenderSheetInfoUpdate
   | CoreRenderSheetBoundsUpdate
   | CoreRenderRequestRowHeights
-  | CoreRenderResizeRowHeights
   | CoreRenderHashesDirty
   | CoreRenderSetViewportBuffer
   | CoreRenderClearViewportBuffer;

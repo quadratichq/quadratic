@@ -1,7 +1,10 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
-    grid::{js_types::JsRenderFill, RenderSize, SheetId},
+    grid::{
+        js_types::{JsOffset, JsRenderFill},
+        RenderSize, SheetId,
+    },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
@@ -219,17 +222,20 @@ impl GridController {
     pub fn send_offsets_modified(
         &self,
         sheet_id: SheetId,
-        column: Option<i64>,
-        row: Option<i64>,
-        new_size: f64,
+        offsets: &HashMap<(Option<i64>, Option<i64>), f64>,
     ) {
         if cfg!(target_family = "wasm") || cfg!(test) {
-            crate::wasm_bindings::js::jsOffsetsModified(
-                sheet_id.to_string(),
-                column,
-                row,
-                new_size,
-            );
+            let mut offsets = offsets
+                .iter()
+                .map(|(&(column, row), &size)| JsOffset {
+                    column: column.map(|c| c as i32),
+                    row: row.map(|r| r as i32),
+                    size,
+                })
+                .collect::<Vec<JsOffset>>();
+            offsets.sort_by(|a, b| a.row.cmp(&b.row).then(a.column.cmp(&b.column)));
+            let offsets = serde_json::to_string(&offsets).unwrap();
+            crate::wasm_bindings::js::jsOffsetsModified(sheet_id.to_string(), offsets);
         }
     }
 

@@ -7,7 +7,7 @@
  */
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
-import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import init from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
@@ -78,8 +78,6 @@ class RenderText {
     let sheetIds = Array.from(this.cellsLabels.keys());
     if (this.sheetId) {
       sheetIds = [this.sheetId, ...sheetIds.filter((sheetId) => sheetId !== this.sheetId)];
-    } else {
-      sheetIds = Array.from(this.cellsLabels.keys());
     }
     let firstRender = true;
     let render = false;
@@ -162,16 +160,16 @@ class RenderText {
     this.cellsLabels.delete(sheetId);
   }
 
-  sheetOffsetsDelta(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
+  sheetOffsetsDelta(sheetId: string, column: number | null, row: number | null, delta: number) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsetsDelta');
     cellsLabels.setOffsetsDelta(column, row, delta);
   }
 
-  sheetOffsetsSize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
+  sheetOffsetsSize(sheetId: string, offsets: JsOffset[]) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsetsSize');
-    cellsLabels.setOffsetsSize(column, row, size);
+    cellsLabels.setOffsetsSize(offsets);
   }
 
   sheetInfoUpdate(sheetInfo: SheetInfo) {
@@ -209,12 +207,6 @@ class RenderText {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.getRowHeights');
     return cellsLabels.getRowHeights(rows);
-  }
-
-  resizeRowHeights(sheetId: string, rowHeights: JsRowHeight[]) {
-    const cellsLabels = this.cellsLabels.get(sheetId);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.resizeRowHeights');
-    cellsLabels.resizeRowHeights(rowHeights);
   }
 
   setHashesDirty(sheetId: string, hashes: string) {

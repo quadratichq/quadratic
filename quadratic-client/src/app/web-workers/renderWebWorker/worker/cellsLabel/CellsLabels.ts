@@ -9,7 +9,15 @@ import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { isFloatEqual } from '@/app/helpers/float';
-import { ColumnRow, JsPos, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import {
+  ColumnRow,
+  JsOffset,
+  JsPos,
+  JsRenderCell,
+  JsRowHeight,
+  SheetBounds,
+  SheetInfo,
+} from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -31,6 +39,8 @@ export class CellsLabels {
 
   // bounds without formatting
   bounds?: Rectangle;
+
+  offsetsModifiedReceivedTime = 0;
 
   // Keep track of headings that need adjusting during next update tick;
   // we aggregate all requests between update ticks
@@ -84,8 +94,7 @@ export class CellsLabels {
   }
 
   getCellOffsets(x: number, y: number) {
-    const screenRectStringified = this.sheetOffsets.getCellOffsets(x, y);
-    const screenRect = JSON.parse(screenRectStringified);
+    const screenRect = this.sheetOffsets.getCellOffsets(x, y);
     const rect = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
     return rect;
   }
@@ -157,8 +166,9 @@ export class CellsLabels {
     return hash;
   }
 
-  private updateHeadings(): boolean {
+  private updateHeadings = (): boolean => {
     if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
+
     // make a copy so new dirty markings are properly handled
     const dirtyColumnHeadings = new Map(this.dirtyColumnHeadings);
     const columnTransient = this.columnTransient;
@@ -169,16 +179,25 @@ export class CellsLabels {
     this.dirtyRowHeadings.clear();
     this.rowTransient = false;
 
+    const bounds = renderText.viewport;
     const neighborRect = this.getViewportNeighborBounds();
-    if (!neighborRect) return false;
+    if (!bounds || !neighborRect) return false;
+
+    const visibleDirtyHashes: CellsTextHash[] = [];
+    const neighborDirtyHashes: CellsTextHash[] = [];
 
     const applyColumnDelta = (hash: CellsTextHash, column: number, delta: number, transient: boolean) => {
       if (!delta) return;
-      if (hash.adjustHeadings({ column, delta })) {
-        if (transient) {
-          hash.dirtyText = true;
-          if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
-            hash.dirtyBuffers = true;
+      if (hash.renderCellsReceivedTime < this.offsetsModifiedReceivedTime || !hash.dirtyText) {
+        hash.adjustHeadings({ column, delta });
+        hash.dirtyText ||= !transient;
+        if (hash.dirtyText) {
+          if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
+            visibleDirtyHashes.push(hash);
+          } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+            neighborDirtyHashes.push(hash);
+          } else {
+            hash.unloadClient();
           }
         }
       }
@@ -189,23 +208,31 @@ export class CellsLabels {
       dirtyColumnHeadings.forEach((delta, column) => {
         const columnHash = Math.floor(column / sheetHashWidth);
         if (hash.hashX === columnHash) {
-          applyColumnDelta(hash, column, delta, true);
-        } else if (hash.hashX > columnHash) {
-          totalNeighborDelta += delta;
+          applyColumnDelta(hash, column, delta, false);
+        } else if ((hash.hashX >= 0 && column >= 0) || (hash.hashX < 0 && column < 0)) {
+          if (Math.abs(hash.hashX) > Math.abs(columnHash)) {
+            totalNeighborDelta += delta;
+          }
         }
       });
       // column is one less than hash column as it has to applied to all labels in the hash
       const column = hash.hashX * sheetHashWidth - 1;
-      applyColumnDelta(hash, column, totalNeighborDelta, !columnTransient);
+      applyColumnDelta(hash, column, totalNeighborDelta, columnTransient);
     });
 
     const applyRowDelta = (hash: CellsTextHash, row: number, delta: number, transient: boolean) => {
       if (!delta) return;
-      if (transient) {
+      if (hash.renderCellsReceivedTime < this.offsetsModifiedReceivedTime || !hash.dirtyText) {
         if (hash.adjustHeadings({ row, delta })) {
-          hash.dirtyText = true;
-          if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
-            hash.dirtyBuffers = true;
+          hash.dirtyText ||= !transient;
+          if (hash.dirtyText) {
+            if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
+              visibleDirtyHashes.push(hash);
+            } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect)) {
+              neighborDirtyHashes.push(hash);
+            } else {
+              hash.unloadClient();
+            }
           }
         }
       }
@@ -216,18 +243,25 @@ export class CellsLabels {
       dirtyRowHeadings.forEach((delta, row) => {
         const rowHash = Math.floor(row / sheetHashHeight);
         if (hash.hashY === rowHash) {
-          applyRowDelta(hash, row, delta, true);
-        } else if (hash.hashY > rowHash) {
-          totalNeighborDelta += delta;
+          applyRowDelta(hash, row, delta, false);
+        } else if ((hash.hashY >= 0 && row >= 0) || (hash.hashY < 0 && row < 0)) {
+          if (Math.abs(hash.hashY) > Math.abs(rowHash)) {
+            totalNeighborDelta += delta;
+          }
         }
       });
       // row is one less than hash row as it has to applied to all labels in the hash
       const row = hash.hashY * sheetHashHeight - 1;
-      applyRowDelta(hash, row, totalNeighborDelta, !rowTransient);
+      applyRowDelta(hash, row, totalNeighborDelta, rowTransient);
+    });
+
+    [...visibleDirtyHashes, ...neighborDirtyHashes].forEach((hash) => {
+      hash.updateText();
+      hash.updateBuffers();
     });
 
     return true;
-  }
+  };
 
   getViewportNeighborBounds(): Rectangle | undefined {
     const viewportBounds = renderText.viewport;
@@ -279,16 +313,18 @@ export class CellsLabels {
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
+      const dirty = hash.dirty || hash.dirtyText || hash.dirtyBuffers;
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
-        if (!hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (!hash.loaded || !hash.clientLoaded || dirty) {
           visibleDirtyHashes.push(hash);
         }
       } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
-        if (!hash.clientLoaded || hash.dirty || hash.dirtyText || hash.dirtyBuffers) {
+        if (!hash.loaded || !hash.clientLoaded || dirty) {
+          if (hash.clientLoaded && dirty) hash.unloadClient();
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       } else {
-        if (hash.dirty || hash.dirtyText) {
+        if (dirty) {
           if (hash.clientLoaded) hash.unloadClient();
           notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         } else if (hash.loaded) {
@@ -301,7 +337,10 @@ export class CellsLabels {
       return;
     }
 
+    // if hashes are visible then sort smallest to largest by y and return the first one
     visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
+
+    // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
     notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
 
     const runningTransaction = renderText.viewportBuffer.size > 0;
@@ -320,18 +359,12 @@ export class CellsLabels {
         return { hash: hashWithRenderCells[0], visible: true };
       }
     } else if (visibleDirtyHashes.length) {
-      // if hashes are visible then sort smallest to largest by y and return the first one
-      visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
-
       if (debugShowLoadingHashes)
         console.log(
           `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
         );
       return { hash: visibleDirtyHashes[0], visible: true };
-    } else if (notVisibleDirtyHashes.length) {
-      // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
-      notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
-
+    } else if (notVisibleDirtyHashes.length && !findHashToDelete) {
       if (debugShowLoadingHashes) {
         console.log(
           `[CellsTextHash] rendering offscreen: ${notVisibleDirtyHashes[0].hash.hashX}, ${notVisibleDirtyHashes[0].hash.hashY}`
@@ -353,6 +386,10 @@ export class CellsLabels {
     const next = this.nextDirtyHash();
     if (next) {
       await next.hash.update();
+      const neighborRect = this.getViewportNeighborBounds();
+      if (neighborRect && !intersects.rectangleRectangle(next.hash.viewRectangle, neighborRect)) {
+        next.hash.unload();
+      }
       if (debugShowLoadingHashes) console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
       return next.visible ? 'visible' : true;
     }
@@ -360,15 +397,15 @@ export class CellsLabels {
   };
 
   // adjust headings without recalculating the glyph geometries
-  adjustHeadings(delta: number, column?: number, row?: number) {
-    if (column !== undefined) {
+  adjustHeadings(delta: number, column: number | null, row: number | null) {
+    if (column !== null) {
       const existing = this.dirtyColumnHeadings.get(column);
       if (existing) {
         this.dirtyColumnHeadings.set(column, existing + delta);
       } else {
         this.dirtyColumnHeadings.set(column, delta);
       }
-    } else if (row !== undefined) {
+    } else if (row !== null) {
       const existing = this.dirtyRowHeadings.get(row);
       if (existing) {
         this.dirtyRowHeadings.set(row, existing + delta);
@@ -385,6 +422,7 @@ export class CellsLabels {
       cellsHash = new CellsTextHash(this, hashX, hashY);
       this.cellsTextHash.set(key, cellsHash);
     }
+    cellsHash.renderCellsReceivedTime = performance.now();
     cellsHash.dirty = renderCells;
   }
 
@@ -407,12 +445,13 @@ export class CellsLabels {
     }
   }
 
-  setOffsetsDelta(column: number | undefined, row: number | undefined, delta: number) {
-    if (column !== undefined) {
+  setOffsetsDelta = (column: number | null, row: number | null, delta: number) => {
+    this.offsetsModifiedReceivedTime = performance.now();
+    if (column !== null) {
       const size = this.sheetOffsets.getColumnWidth(column) - delta;
       this.sheetOffsets.setColumnWidth(column, size);
       this.columnTransient = true;
-    } else if (row !== undefined) {
+    } else if (row !== null) {
       const size = this.sheetOffsets.getRowHeight(row) - delta;
       this.sheetOffsets.setRowHeight(row, size);
       this.rowTransient = true;
@@ -420,23 +459,26 @@ export class CellsLabels {
     if (delta) {
       this.adjustHeadings(delta, column, row);
     }
-  }
+  };
 
-  setOffsetsSize(column: number | undefined, row: number | undefined, size: number) {
-    let delta = 0;
-    if (column !== undefined) {
-      delta = this.sheetOffsets.getColumnWidth(column) - size;
-      this.sheetOffsets.setColumnWidth(column, size);
-      this.columnTransient = false;
-    } else if (row !== undefined) {
-      delta = this.sheetOffsets.getRowHeight(row) - size;
-      this.sheetOffsets.setRowHeight(row, size);
-      this.rowTransient = false;
-    }
-    if (delta) {
-      this.adjustHeadings(delta, column, row);
-    }
-  }
+  setOffsetsSize = (offsets: JsOffset[]) => {
+    this.offsetsModifiedReceivedTime = performance.now();
+    offsets.forEach(({ column, row, size }) => {
+      let delta = 0;
+      if (column !== null) {
+        delta = this.sheetOffsets.getColumnWidth(column) - size;
+        this.sheetOffsets.setColumnWidth(column, size);
+        this.columnTransient = false;
+      } else if (row !== null) {
+        delta = this.sheetOffsets.getRowHeight(row) - size;
+        this.sheetOffsets.setRowHeight(row, size);
+        this.rowTransient = false;
+      }
+      if (delta) {
+        this.adjustHeadings(delta, column, row);
+      }
+    });
+  };
 
   showLabel(x: number, y: number, show: boolean) {
     const hash = this.getCellsHash(x, y);
@@ -525,11 +567,5 @@ export class CellsLabels {
       ({ row, height }) => !isFloatEqual(height, this.sheetOffsets.getRowHeight(Number(row)))
     );
     return changesRowHeights;
-  }
-
-  resizeRowHeights(rowHeights: JsRowHeight[]) {
-    rowHeights.forEach(({ row, height }) => {
-      this.setOffsetsSize(undefined, Number(row), height);
-    });
   }
 }
