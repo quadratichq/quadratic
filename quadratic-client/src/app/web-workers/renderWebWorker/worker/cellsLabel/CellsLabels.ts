@@ -386,6 +386,10 @@ export class CellsLabels {
     const next = this.nextDirtyHash();
     if (next) {
       await next.hash.update();
+      const neighborRect = this.getViewportNeighborBounds();
+      if (neighborRect && !intersects.rectangleRectangle(next.hash.viewRectangle, neighborRect)) {
+        next.hash.unload();
+      }
       if (debugShowLoadingHashes) console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
       return next.visible ? 'visible' : true;
     }

@@ -47,6 +47,7 @@ impl GridController {
                 .next()
                 .map(|(&k, v)| (k, v.clone()))
             {
+                // TODO(ayush): consolidate these calls, when viewport buffer PR is merged
                 transaction.sheet_info.iter().for_each(|sheet_id| {
                     self.send_sheet_info(*sheet_id);
                 });
@@ -121,6 +122,7 @@ impl GridController {
 
         transaction.send_transaction();
 
+        // TODO(ayush): consolidate these calls, when viewport buffer PR is merged
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             crate::wasm_bindings::js::jsUndoRedo(
                 !self.undo_stack.is_empty(),

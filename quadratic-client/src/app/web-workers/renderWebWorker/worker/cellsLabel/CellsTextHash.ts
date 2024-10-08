@@ -170,21 +170,6 @@ export class CellsTextHash {
   };
 
   update = async (): Promise<boolean> => {
-    console.log('[CellsTextHash] update', this.hashX, this.hashY);
-    const neighborRect = this.cellsLabels.getViewportNeighborBounds();
-    if (!neighborRect) return false;
-
-    const visibleOrNeighbor = intersects.rectangleRectangle(this.viewRectangle, neighborRect);
-    if (!visibleOrNeighbor) {
-      if (Array.isArray(this.dirty)) {
-        this.createLabels(this.dirty);
-        this.updateText();
-        this.updateBuffers();
-      }
-      this.unload();
-      return false;
-    }
-
     if (!this.loaded || this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
