@@ -158,7 +158,7 @@ export const TopBarUsers = () => {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex h-6 min-w-6 items-center justify-center self-center rounded-full p-0 text-sm font-normal text-muted-foreground hover:bg-transparent data-[state=open]:text-foreground"
+                className="hidden h-6 min-w-6 items-center justify-center self-center rounded-full p-0 text-sm font-normal text-muted-foreground hover:bg-transparent data-[state=open]:text-foreground lg:flex"
               >
                 +{extraUsers.length}
               </Button>
