@@ -342,35 +342,30 @@ export class CellsLabels {
 
     // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
     notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
+    const hashesWithRenderCells = [
+      ...visibleDirtyHashes.filter((hash) => Array.isArray(hash.dirty)),
+      ...notVisibleDirtyHashes.filter((h) => Array.isArray(h.hash.dirty)).map((h) => h.hash),
+    ];
 
-    const runningTransaction = renderText.viewportBuffer.size > 0;
-    if (runningTransaction) {
-      const hashWithRenderCells = [
-        ...visibleDirtyHashes.filter((hash) => Array.isArray(hash.dirty)),
-        ...notVisibleDirtyHashes.filter((h) => Array.isArray(h.hash)).map((h) => h.hash),
-      ];
-
-      if (debugShowLoadingHashes)
-        console.log(
-          `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
-        );
-
-      if (hashWithRenderCells.length) {
-        return { hash: hashWithRenderCells[0], visible: true };
-      }
-    } else if (visibleDirtyHashes.length) {
-      if (debugShowLoadingHashes)
-        console.log(
-          `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
-        );
-      return { hash: visibleDirtyHashes[0], visible: true };
-    } else if (notVisibleDirtyHashes.length && !findHashToDelete) {
+    // hash has render cells if core has sent render cells for rerendering, process them first
+    if (hashesWithRenderCells.length) {
+      const hash = hashesWithRenderCells[0];
       if (debugShowLoadingHashes) {
-        console.log(
-          `[CellsTextHash] rendering offscreen: ${notVisibleDirtyHashes[0].hash.hashX}, ${notVisibleDirtyHashes[0].hash.hashY}`
-        );
+        console.log(`[CellsTextHash] rendering hash with render cells: ${hash.hashX}, ${hash.hashY}`);
       }
-      return { hash: notVisibleDirtyHashes[0].hash, visible: false };
+      return { hash, visible: true };
+    } else if (visibleDirtyHashes.length) {
+      const hash = visibleDirtyHashes[0];
+      if (debugShowLoadingHashes) {
+        console.log(`[CellsTextHash] rendering visible: ${hash.hashX}, ${hash.hashY}`);
+      }
+      return { hash, visible: true };
+    } else if (notVisibleDirtyHashes.length) {
+      const hash = notVisibleDirtyHashes[0].hash;
+      if (debugShowLoadingHashes) {
+        console.log(`[CellsTextHash] rendering offscreen: ${hash.hashX}, ${hash.hashY}`);
+      }
+      return { hash, visible: false };
     }
   }
 
