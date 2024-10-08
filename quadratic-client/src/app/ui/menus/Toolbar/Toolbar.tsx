@@ -1,12 +1,11 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { CursorPosition } from '@/app/ui/menus/Toolbar/CursorPosition';
 import { FormattingBar } from '@/app/ui/menus/Toolbar/FormattingBar';
 import { ZoomMenu } from '@/app/ui/menus/Toolbar/ZoomMenu';
 import { useRecoilValue } from 'recoil';
 
 export const Toolbar = () => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { permissions } = editorInteractionState;
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
 
   return (
     <div className="hidden h-8 flex-shrink-0 select-none justify-between border-b border-border md:flex">

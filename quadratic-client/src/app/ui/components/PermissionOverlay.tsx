@@ -1,4 +1,4 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
 import { Type } from '@/shared/components/Type';
@@ -15,7 +15,7 @@ const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
-  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const theme = useTheme();
   const { isAuthenticated } = useRootRouteLoaderData();
 

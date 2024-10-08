@@ -38,7 +38,10 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     { uuid: string; view: 'edit' | 'details' } | undefined
   >(initialConnectionUuid ? { uuid: initialConnectionUuid, view: 'edit' } : undefined);
   const [activeConnectionType, setActiveConnectionType] = useState<ConnectionType | undefined>(
-    initialConnectionType === 'MYSQL' || initialConnectionType === 'POSTGRES' || initialConnectionType === 'MSSQL'
+    initialConnectionType === 'MYSQL' ||
+      initialConnectionType === 'POSTGRES' ||
+      initialConnectionType === 'MSSQL' ||
+      initialConnectionType === 'SNOWFLAKE'
       ? initialConnectionType
       : undefined
   );

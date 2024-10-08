@@ -1,9 +1,12 @@
+//! Stores column data, including formatting.
+//!
+//! TODO: This file is confusing and should be broken up and refactored.
+
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Range;
 
-use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
@@ -11,12 +14,15 @@ use smallvec::{smallvec, SmallVec};
 use super::formats::format::Format;
 use super::formatting::*;
 use super::{Block, BlockContent, SameValue};
+use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 use crate::{CellValue, IsBlank};
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct Column {
     pub x: i64,
     pub values: BTreeMap<i64, CellValue>,
+
+    // should have 12 format options
     pub align: ColumnData<SameValue<CellAlign>>,
     pub vertical_align: ColumnData<SameValue<CellVerticalAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
@@ -28,10 +34,12 @@ pub struct Column {
     pub text_color: ColumnData<SameValue<String>>,
     pub fill_color: ColumnData<SameValue<String>>,
     pub render_size: ColumnData<SameValue<RenderSize>>,
-
     #[serde(default)]
     pub date_time: ColumnData<SameValue<String>>,
+    pub underline: ColumnData<SameValue<bool>>,
+    pub strike_through: ColumnData<SameValue<bool>>,
 }
+
 impl Column {
     pub fn new(x: i64) -> Self {
         Self {
@@ -65,7 +73,10 @@ impl Column {
                 self.italic.range(),
                 self.text_color.range(),
                 self.fill_color.range(),
+                self.render_size.range(),
                 self.date_time.range(),
+                self.underline.range(),
+                self.strike_through.range(),
             ])
         }
     }
@@ -82,25 +93,37 @@ impl Column {
             self.italic.range(),
             self.text_color.range(),
             self.fill_color.range(),
+            self.render_size.range(),
             self.date_time.range(),
+            self.underline.range(),
+            self.strike_through.range(),
         ])
     }
 
     pub fn has_data_in_row(&self, y: i64) -> bool {
         self.values.get(&y).is_some_and(|v| !v.is_blank())
     }
-    pub fn has_anything_in_row(&self, y: i64) -> bool {
-        self.has_data_in_row(y)
-            || self.align.get(y).is_some()
+
+    /// Returns true if the column has any format options set in the given row.
+    pub fn has_format_in_row(&self, y: i64) -> bool {
+        self.align.get(y).is_some()
             || self.vertical_align.get(y).is_some()
             || self.wrap.get(y).is_some()
             || self.numeric_format.get(y).is_some()
             || self.numeric_decimals.get(y).is_some()
+            || self.numeric_commas.get(y).is_some()
             || self.bold.get(y).is_some()
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
+            || self.render_size.get(y).is_some()
             || self.date_time.get(y).is_some()
+            || self.underline.get(y).is_some()
+            || self.strike_through.get(y).is_some()
+    }
+
+    pub fn has_anything_in_row(&self, y: i64) -> bool {
+        self.has_data_in_row(y) || self.has_format_in_row(y)
     }
 
     /// Gets the Format for a column (which will eventually replace the data structure)
@@ -118,6 +141,8 @@ impl Column {
             fill_color: self.fill_color.get(y),
             render_size: self.render_size.get(y),
             date_time: self.date_time.get(y),
+            underline: self.underline.get(y),
+            strike_through: self.strike_through.get(y),
         };
         if format.is_default() {
             None
@@ -140,21 +165,21 @@ impl<B: BlockContent> ColumnData<B> {
     pub fn new() -> Self {
         Self(BTreeMap::new())
     }
-    fn get_block_containing(&self, y: i64) -> Option<&Block<B>> {
+    pub fn get_block_containing(&self, y: i64) -> Option<&Block<B>> {
         self.0
             .range(..=y)
             .next_back()
             .map(|(_, block)| block)
             .filter(|block| block.contains(y))
     }
-    fn remove_block_containing(&mut self, y: i64) -> Option<Block<B>> {
+    pub fn remove_block_containing(&mut self, y: i64) -> Option<Block<B>> {
         let key = self.get_block_containing(y)?.start();
         self.remove_block_at(key)
     }
-    fn remove_block_at(&mut self, y: i64) -> Option<Block<B>> {
+    pub fn remove_block_at(&mut self, y: i64) -> Option<Block<B>> {
         self.0.remove(&y)
     }
-    fn add_block(&mut self, block: Block<B>) {
+    pub fn add_block(&mut self, block: Block<B>) {
         if block.is_empty() {
             return;
         }
@@ -164,7 +189,6 @@ impl<B: BlockContent> ColumnData<B> {
     }
 
     /// Adds blocks w/o regard to whether they overlap with existing blocks.
-    /// This is temporary and for use with column.values only!
     pub fn add_blocks(&mut self, blocks: impl IntoIterator<Item = Block<B>>) {
         for block in blocks {
             self.add_block(block);
@@ -249,6 +273,10 @@ impl<B: BlockContent> ColumnData<B> {
 
     pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
         self.0.values()
+    }
+
+    pub fn into_blocks(self) -> impl Iterator<Item = Block<B>> {
+        self.0.into_values()
     }
 
     pub fn has_blocks_in_range(&self, y_range: Range<i64>) -> bool {
@@ -338,6 +366,110 @@ impl<B: BlockContent> ColumnData<B> {
                 (start..end).filter_map(|y| Some((y, block.get(y)?)))
             })
     }
+
+    pub fn min(&self) -> Option<i64> {
+        self.0.first_key_value().map(|(y, _)| *y)
+    }
+    pub fn max(&self) -> Option<i64> {
+        self.0
+            .last_key_value()
+            .map(|(y, block)| *y + block.len() as i64 - 1)
+    }
+
+    /// Shift all blocks so there's an empty entry at y.
+    ///
+    /// Note: this is not designed to handle negative values (since we're deprecating it on the sheet)
+    pub fn insert_and_shift_right(&mut self, y: i64) -> bool {
+        let mut changed = false;
+        let mut new_blocks = BTreeMap::new();
+
+        for (start, block) in self.0.iter() {
+            // block is before the insertion point, then copy
+            if *start < y && (*start + block.len() as i64) < y {
+                new_blocks.insert(*start, block.clone());
+            }
+            // block is at or after the insertion point, then shift right
+            else if *start >= y {
+                let mut new_block = block.clone();
+                new_block.y += 1;
+                new_blocks.insert(*start + 1, new_block);
+                changed = true;
+            }
+            // otherwise we have to split the block
+            else {
+                let split_point = y;
+                let [before, after] = block.clone().split(split_point);
+                if let Some(before) = before {
+                    new_blocks.insert(*start, before);
+                }
+                if let Some(mut after) = after {
+                    after.y = split_point + 1;
+                    new_blocks.insert(split_point + 1, after);
+                }
+                changed = true;
+            }
+        }
+        self.0 = new_blocks;
+        changed
+    }
+
+    /// Removes a position and shifts the remaining positions to the left.
+    pub fn remove_and_shift_left(&mut self, y: i64) -> bool {
+        let mut changed = false;
+        let mut new_blocks = BTreeMap::new();
+
+        for (start, block) in self.0.iter() {
+            // block is before the removal point, then copy
+            if *start < y && (*start + block.len() as i64) < y {
+                new_blocks.insert(*start, block.clone());
+            }
+            // block contains the removal point
+            else if *start <= y && (*start + block.len() as i64) >= y {
+                let [before, after] = block.clone().split(y);
+                if let Some(before) = before {
+                    new_blocks.insert(*start, before);
+                }
+                if let Some(mut after) = after {
+                    // if after only contains y, then we're done
+                    if after.len() > 1 {
+                        // otherwise, we shorten its length
+                        after.delta_len(-1);
+                        new_blocks.insert(after.y, after);
+                    }
+                }
+                changed = true;
+            }
+            // block is after the removal point, then shift left
+            else if *start >= y {
+                let mut new_block = block.clone();
+                new_block.y -= 1;
+                new_blocks.insert(*start - 1, new_block);
+                changed = true;
+            }
+        }
+        self.0 = new_blocks;
+        changed
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    #[cfg(test)]
+    pub fn print(&self) {
+        if let Some(bounds) = self.range() {
+            for y in bounds.start..bounds.end {
+                if y != bounds.end - 1 {
+                    print!("{}: {:?}, ", y, self.get(y));
+                } else {
+                    print!("{}: {:?}", y, self.get(y));
+                }
+            }
+            println!();
+        } else {
+            println!("empty");
+        }
+    }
 }
 
 impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
@@ -372,12 +504,19 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
         }
         replaced
     }
+
+    /// Sets a block at a specific y value without merging. This is used by serialize functions.
+    pub fn insert_block(&mut self, y: i64, len: usize, value: T) {
+        debug_assert!(!self.0.contains_key(&y));
+        self.set_range(y..y + len as i64, value);
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use serial_test::parallel;
+
+    use super::*;
 
     #[test]
     #[parallel]
@@ -460,6 +599,9 @@ mod test {
                 h: "2".to_string(),
             },
         );
+        cd.underline.set_range(Range { start: 0, end: 10 }, true);
+        cd.strike_through
+            .set_range(Range { start: 0, end: 10 }, true);
 
         let format = cd.format(0).unwrap();
         assert_eq!(format.align, Some(CellAlign::Center));
@@ -485,6 +627,8 @@ mod test {
                 h: "2".to_string()
             })
         );
+        assert_eq!(format.underline, Some(true));
+        assert_eq!(format.strike_through, Some(true));
     }
 
     #[test]
@@ -522,9 +666,192 @@ mod test {
                 h: "2".to_string(),
             },
         );
+        cd.underline.set_range(Range { start: 0, end: 10 }, true);
+        cd.strike_through
+            .set_range(Range { start: 0, end: 10 }, true);
 
         let range = cd.format_range().unwrap();
         assert_eq!(range.start, 0);
         assert_eq!(range.end, 10);
+    }
+
+    #[test]
+    #[parallel]
+    fn min_max() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+        cd.set(1, Some(true));
+        cd.set(2, Some(true));
+        cd.set(3, Some(true));
+
+        assert_eq!(cd.min(), Some(1));
+        assert_eq!(cd.max(), Some(3));
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_block() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+        cd.insert_block(3, 2, true);
+        assert_eq!(cd.get(3), Some(true));
+        assert_eq!(cd.get(4), Some(true));
+        assert_eq!(cd.get(5), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_and_shift_right_simple() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(10..13, true);
+        cd.insert_and_shift_right(11);
+        assert_eq!(cd.get(10), Some(true));
+        assert_eq!(cd.get(11), None);
+        assert_eq!(cd.get(12), Some(true));
+        assert_eq!(cd.get(13), Some(true));
+        assert_eq!(cd.get(14), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_and_shift_right_start() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.insert_and_shift_right(1);
+        assert_eq!(cd.get(1), None);
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), Some(true));
+        assert_eq!(cd.get(4), Some(true));
+        assert_eq!(cd.get(5), None);
+        assert_eq!(cd.get(6), Some(false));
+        assert_eq!(cd.get(7), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_and_shift_right_middle() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.insert_and_shift_right(3);
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), None);
+        assert_eq!(cd.get(4), Some(true));
+        assert_eq!(cd.get(5), None);
+        assert_eq!(cd.get(6), Some(false));
+        assert_eq!(cd.get(7), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn insert_and_shift_right_end() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        assert!(!cd.insert_and_shift_right(1));
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        assert!(cd.insert_and_shift_right(4));
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), Some(true));
+        assert_eq!(cd.get(4), None);
+        assert_eq!(cd.get(5), None);
+        assert_eq!(cd.get(6), Some(false));
+        assert_eq!(cd.get(7), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn remove_and_shift_left_start() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.remove_and_shift_left(1);
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), None);
+        assert_eq!(cd.get(4), Some(false));
+        assert_eq!(cd.get(5), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn remove_and_shift_left_middle() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        cd.remove_and_shift_left(2);
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), None);
+        assert_eq!(cd.get(4), Some(false));
+        assert_eq!(cd.get(5), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn remove_and_shift_left_end() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        assert!(!cd.remove_and_shift_left(1));
+        cd.set_range(1..4, true);
+        cd.set_range(5..6, false);
+        assert!(cd.remove_and_shift_left(3));
+        assert_eq!(cd.get(1), Some(true));
+        assert_eq!(cd.get(2), Some(true));
+        assert_eq!(cd.get(3), None);
+        assert_eq!(cd.get(4), Some(false));
+        assert_eq!(cd.get(5), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn has_format_in_row() {
+        let mut cd: Column = Column::new(0);
+        cd.align.set(1, Some(CellAlign::Center));
+        cd.vertical_align.set(2, Some(CellVerticalAlign::Middle));
+        cd.wrap.set(3, Some(CellWrap::Wrap));
+        cd.numeric_format.set(
+            4,
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }),
+        );
+        cd.numeric_decimals.set(5, Some(2));
+        cd.numeric_commas.set(6, Some(true));
+        cd.bold.set(7, Some(true));
+        cd.italic.set(8, Some(true));
+        cd.text_color.set(9, Some("red".to_string()));
+        cd.fill_color.set(10, Some("blue".to_string()));
+        cd.render_size.set(
+            11,
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+        );
+
+        assert!(cd.has_format_in_row(1));
+        assert!(cd.has_format_in_row(2));
+        assert!(cd.has_format_in_row(3));
+        assert!(cd.has_format_in_row(4));
+        assert!(cd.has_format_in_row(5));
+        assert!(cd.has_format_in_row(6));
+        assert!(cd.has_format_in_row(7));
+        assert!(cd.has_format_in_row(8));
+        assert!(cd.has_format_in_row(9));
+        assert!(cd.has_format_in_row(10));
+        assert!(cd.has_format_in_row(11));
+        assert!(!cd.has_format_in_row(12));
+    }
+
+    #[test]
+    #[parallel]
+    fn is_empty() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+        assert!(cd.is_empty());
+        cd.set(1, Some(true));
+        assert!(!cd.is_empty());
     }
 }

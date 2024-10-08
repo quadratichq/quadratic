@@ -10,7 +10,7 @@ const transformEmptyStringToUndefined = (val: string | undefined) => (val === ''
  */
 
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' });
-export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL', 'MSSQL']);
+export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE']);
 const ConnectionTypeDetailsSchema = z.record(z.string(), z.any());
 const ConnectionSchema = z.object({
   createdDate: z.string().datetime(),
@@ -53,6 +53,14 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
 export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
 export const ConnectionTypeDetailsMssqlSchema = ConnectionTypeDetailsPostgresSchema.extend({
   database: z.string().optional(),
+});
+export const ConnectionTypeDetailsSnowflakeSchema = z.object({
+  account_identifier: z.string().min(1, { message: 'Required' }),
+  database: z.string().min(1, { message: 'Required' }),
+  username: z.string().min(1, { message: 'Required' }),
+  password: z.string().min(1, { message: 'Required' }),
+  warehouse: z.string().optional().transform(transformEmptyStringToUndefined),
+  role: z.string().optional().transform(transformEmptyStringToUndefined),
 });
 
 /**

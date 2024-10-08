@@ -1,11 +1,16 @@
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { CodeCellLanguage } from '@/app/quadratic-core-types';
 
-export const insertCellRef = (editorInteractionState: EditorInteractionState, relative?: boolean) => {
-  const { selectedCell, selectedCellSheet, mode } = editorInteractionState;
+export const insertCellRef = (
+  selectedCell: Coordinate,
+  selectedCellSheet: string,
+  mode?: CodeCellLanguage,
+  relative?: boolean
+) => {
   const language = getLanguage(mode);
   let ref = '';
   let sheet = '';

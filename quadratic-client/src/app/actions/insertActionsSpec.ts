@@ -5,7 +5,14 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { ArrowDropDownCircleIcon, CheckBoxIcon, DataValidationsIcon, SheetIcon } from '@/shared/components/Icons';
+import {
+  ArrowDropDownCircleIcon,
+  CheckBoxIcon,
+  DataValidationsIcon,
+  SheetIcon,
+  FormatDateTimeIcon,
+} from '@/shared/components/Icons';
+import { quadraticCore } from '../web-workers/quadraticCore/quadraticCore';
 
 type InsertActionSpec = Pick<
   ActionSpecRecord,
@@ -22,6 +29,8 @@ type InsertActionSpec = Pick<
   | Action.ToggleDataValidation
   | Action.InsertCellReference
   | Action.RemoveInsertedCells
+  | Action.InsertToday
+  | Action.InsertTodayTime
 >;
 
 export const insertActionsSpec: InsertActionSpec = {
@@ -29,15 +38,20 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'Python',
     labelVerbose: 'Insert Python code',
     run: () => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
+      if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.getCursor();
-      pixiAppSettings.setEditorInteractionState((prev) => ({
+      pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Python',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: '',
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x: cursor.x, y: cursor.y },
+            language: 'Python',
+          },
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: '',
+        },
       }));
     },
   },
@@ -45,15 +59,20 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'JavaScript',
     labelVerbose: 'Insert JavaScript code',
     run: () => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
+      if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.getCursor();
-      pixiAppSettings.setEditorInteractionState((prev) => ({
+      pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Javascript',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: '',
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x: cursor.x, y: cursor.y },
+            language: 'Javascript',
+          },
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: '',
+        },
       }));
     },
   },
@@ -61,15 +80,20 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'Formula',
     labelVerbose: 'Insert Formula',
     run: () => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
+      if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.getCursor();
-      pixiAppSettings.setEditorInteractionState((prev) => ({
+      pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Formula',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: '',
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x: cursor.x, y: cursor.y },
+            language: 'Formula',
+          },
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: '',
+        },
       }));
     },
   },
@@ -77,15 +101,20 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'Python (Plotly)',
     labelVerbose: 'Insert Python chart (Plotly)',
     run: () => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
+      if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.getCursor();
-      pixiAppSettings.setEditorInteractionState((prev) => ({
+      pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Python',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: SNIPPET_PY_CHART,
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x: cursor.x, y: cursor.y },
+            language: 'Python',
+          },
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: SNIPPET_PY_CHART,
+        },
       }));
     },
   },
@@ -93,15 +122,20 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'JavaScript (Chart.js)',
     labelVerbose: 'Insert JavaScript chart (Chart.js)',
     run: () => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
+      if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.getCursor();
-      pixiAppSettings.setEditorInteractionState((prev) => ({
+      pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Javascript',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: SNIPPET_JS_CHART,
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x: cursor.x, y: cursor.y },
+            language: 'Javascript',
+          },
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: SNIPPET_JS_CHART,
+        },
       }));
     },
   },
@@ -109,15 +143,20 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'From JavaScript API request',
     labelVerbose: 'Insert JavaScript API request',
     run: () => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
+      if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.getCursor();
-      pixiAppSettings.setEditorInteractionState((prev) => ({
+      pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Javascript',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: SNIPPET_JS_API,
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x: cursor.x, y: cursor.y },
+            language: 'Javascript',
+          },
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: SNIPPET_JS_API,
+        },
       }));
     },
   },
@@ -125,15 +164,20 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'From Python API request',
     labelVerbose: 'Insert Python API request',
     run: () => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
+      if (!pixiAppSettings.setCodeEditorState) return;
       const cursor = sheets.sheet.cursor.getCursor();
-      pixiAppSettings.setEditorInteractionState((prev) => ({
+      pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        mode: 'Python',
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
-        initialCode: SNIPPET_PY_API,
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x: cursor.x, y: cursor.y },
+            language: 'Python',
+          },
+          showCellTypeMenu: false,
+          inlineEditor: false,
+          initialCode: SNIPPET_PY_API,
+        },
       }));
     },
   },
@@ -185,8 +229,9 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'Cell reference',
     labelVerbose: 'Insert cell reference',
     run: () => {
-      if (pixiAppSettings.editorInteractionState.showCodeEditor) {
-        insertCellRef(pixiAppSettings.editorInteractionState);
+      if (pixiAppSettings.codeEditorState.showCodeEditor) {
+        const { sheetId, pos, language } = pixiAppSettings.codeEditorState.codeCell;
+        insertCellRef(pos, sheetId, language);
       }
     },
   },
@@ -194,6 +239,28 @@ export const insertActionsSpec: InsertActionSpec = {
     label: 'Remove inserted cells',
     run: () => {
       // TODO(ayush): add this when refactoring shortcuts to use action specs
+    },
+  },
+  [Action.InsertToday]: {
+    label: "Insert today's date",
+    Icon: FormatDateTimeIcon,
+    run: () => {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      const today = new Date();
+      const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedDate);
+    },
+  },
+  [Action.InsertTodayTime]: {
+    label: "Insert today's time",
+    Icon: FormatDateTimeIcon,
+    run: () => {
+      const sheet = sheets.sheet;
+      const cursor = sheet.cursor;
+      const today = new Date();
+      const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+      quadraticCore.setCellValue(sheet.id, cursor.cursorPosition.x, cursor.cursorPosition.y, formattedTime);
     },
   },
 };

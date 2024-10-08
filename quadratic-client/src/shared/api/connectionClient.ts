@@ -41,7 +41,7 @@ type StaticIpsResponse = z.infer<typeof StaticIpsSchema>;
 export const connectionClient = {
   schemas: {
     get: async (
-      connectionType: 'postgres' | 'mysql' | 'mssql',
+      connectionType: 'postgres' | 'mysql' | 'mssql' | 'snowflake',
       connectionId: string
     ): Promise<SqlSchemaResponse | null> => {
       const res = await fetch(`${API_URL}/${connectionType}/schema/${connectionId}`, {

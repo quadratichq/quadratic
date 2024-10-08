@@ -1,7 +1,7 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
@@ -32,7 +32,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const initialFileData = useFileRouteLoaderData();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.file.name);
   let isFirstUpdate = useRef(true);
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setPermissions = useSetRecoilState(editorInteractionStatePermissionsAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
 
   const syncState = latestSync.state;
@@ -79,8 +79,8 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   // TODO figure out a way to set this in RecoilRoot (if possible)
   //      or let it flow if we go with react-router's loaders for this
   useEffect(() => {
-    setEditorInteractionState((prev) => ({ ...prev, permission: initialFileData.userMakingRequest.filePermissions }));
-  }, [initialFileData.userMakingRequest.filePermissions, setEditorInteractionState]);
+    setPermissions(initialFileData.userMakingRequest.filePermissions);
+  }, [initialFileData.userMakingRequest.filePermissions, setPermissions]);
 
   // Keep track of lifecycle so we can run things at a specific time
   useEffect(() => {

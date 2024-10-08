@@ -1,21 +1,21 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetRange } from '@/app/ui/components/SheetRange';
+import { useValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import { ValidationDateTime } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationDateTime';
+import { ValidationHeader } from '@/app/ui/menus/Validations/Validation/ValidationHeader';
+import { ValidationList } from '@/app/ui/menus/Validations/Validation/ValidationList';
+import { ValidationLogical } from '@/app/ui/menus/Validations/Validation/ValidationLogical';
+import { ValidationMessage } from '@/app/ui/menus/Validations/Validation/ValidationMessage';
+import { ValidationNone } from '@/app/ui/menus/Validations/Validation/ValidationNone';
+import { ValidationNumber } from '@/app/ui/menus/Validations/Validation/ValidationNumber';
+import { ValidationText } from '@/app/ui/menus/Validations/Validation/ValidationText';
+import { ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
+import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useCallback, useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
-import { useValidationData } from './useValidationData';
-import { ValidationDateTime } from './ValidationDateTime/ValidationDateTime';
-import { ValidationHeader } from './ValidationHeader';
-import { ValidationList } from './ValidationList';
-import { ValidationLogical } from './ValidationLogical';
-import { ValidationMessage } from './ValidationMessage';
-import { ValidationNone } from './ValidationNone';
-import { ValidationNumber } from './ValidationNumber';
-import { ValidationText } from './ValidationText';
-import { ValidationRuleSimple } from './validationType';
-import { ValidationDropdown } from './ValidationUI/ValidationUI';
 
 const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
   { value: 'none', label: 'Message only' },
@@ -28,21 +28,18 @@ const CRITERIA_OPTIONS: { value: ValidationRuleSimple; label: string }[] = [
 ];
 
 export const Validation = () => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
 
   const validationData = useValidationData();
   const { rule, changeRule, moreOptions, validation, triggerError, setSelection, sheetId, readOnly, applyValidation } =
     validationData;
 
-  const removeValidation = () => {
+  const removeValidation = useCallback(() => {
     if (validation) {
       quadraticCore.removeValidation(sheetId, validation.id, sheets.getCursorPosition());
     }
-    setEditorInteractionState((old) => ({
-      ...old,
-      showValidation: true,
-    }));
-  };
+    setShowValidation(true);
+  }, [setShowValidation, sheetId, validation]);
 
   const [enterTrigger, setEnterTrigger] = useState(false);
   useEffect(() => {

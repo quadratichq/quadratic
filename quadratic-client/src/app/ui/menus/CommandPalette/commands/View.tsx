@@ -1,9 +1,17 @@
+import {
+  presentationModeAtom,
+  showCellTypeOutlinesAtom,
+  showCodePeekAtom,
+  showGridAxesAtom,
+  showGridLinesAtom,
+  showHeadingsAtom,
+} from '@/app/atoms/gridSettingsAtom';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { ZoomInIcon, ZoomOutIcon } from '@/shared/components/Icons';
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
-import { useGridSettings } from '../../../hooks/useGridSettings';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+import { useRecoilState } from 'recoil';
 
 const commands: CommandGroup = {
   heading: 'View',
@@ -11,14 +19,12 @@ const commands: CommandGroup = {
     {
       label: 'Row and column headings',
       Component: (props) => {
-        const settings = useGridSettings();
+        const [showHeadings, setShowHeadings] = useRecoilState(showHeadingsAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<Checkbox checked={settings.showHeadings} />}
-            action={() => {
-              settings.setShowHeadings(!settings.showHeadings);
-            }}
+            icon={<Checkbox checked={showHeadings} />}
+            action={() => setShowHeadings((prev) => !prev)}
           />
         );
       },
@@ -27,14 +33,12 @@ const commands: CommandGroup = {
     {
       label: 'Axis',
       Component: (props) => {
-        const settings = useGridSettings();
+        const [showGridAxes, setShowGridAxes] = useRecoilState(showGridAxesAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<Checkbox checked={settings.showGridAxes} />}
-            action={() => {
-              settings.setShowGridAxes(!settings.showGridAxes);
-            }}
+            icon={<Checkbox checked={showGridAxes} />}
+            action={() => setShowGridAxes((prev) => !prev)}
           />
         );
       },
@@ -43,14 +47,12 @@ const commands: CommandGroup = {
     {
       label: 'Grid lines',
       Component: (props) => {
-        const settings = useGridSettings();
+        const [showGridLines, setShowGridLines] = useRecoilState(showGridLinesAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<Checkbox checked={settings.showGridLines} />}
-            action={() => {
-              settings.setShowGridLines(!settings.showGridLines);
-            }}
+            icon={<Checkbox checked={showGridLines} />}
+            action={() => setShowGridLines((prev) => !prev)}
           />
         );
       },
@@ -58,14 +60,12 @@ const commands: CommandGroup = {
     {
       label: 'Code cell outlines',
       Component: (props) => {
-        const settings = useGridSettings();
+        const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<Checkbox checked={settings.showCellTypeOutlines} />}
-            action={() => {
-              settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
-            }}
+            icon={<Checkbox checked={showCellTypeOutlines} />}
+            action={() => setShowCellTypeOutlines((prev) => !prev)}
           />
         );
       },
@@ -73,14 +73,12 @@ const commands: CommandGroup = {
     {
       label: 'Code peek',
       Component: (props) => {
-        const settings = useGridSettings();
+        const [showCodePeek, setShowCodePeek] = useRecoilState(showCodePeekAtom);
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<Checkbox checked={settings.showCodePeek} />}
-            action={() => {
-              settings.setShowCodePeek(!settings.showCodePeek);
-            }}
+            icon={<Checkbox checked={showCodePeek} />}
+            action={() => setShowCodePeek((prev) => !prev)}
           />
         );
       },
@@ -88,14 +86,12 @@ const commands: CommandGroup = {
     {
       label: 'Presentation mode',
       Component: (props) => {
-        const { presentationMode, setPresentationMode } = useGridSettings();
+        const [presentationMode, setPresentationMode] = useRecoilState(presentationModeAtom);
         return (
           <CommandPaletteListItem
             {...props}
             icon={<Checkbox checked={presentationMode} />}
-            action={() => {
-              setPresentationMode(!presentationMode);
-            }}
+            action={() => setPresentationMode((prev) => !prev)}
             shortcut="."
             shortcutModifiers={[KeyboardSymbols.Command]}
           />

@@ -3,61 +3,85 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export const openCodeEditor = async () => {
-  const { editorInteractionState, setEditorInteractionState } = pixiAppSettings;
+  const { codeEditorState, setCodeEditorState, setEditorInteractionState } = pixiAppSettings;
+  if (!setCodeEditorState) {
+    throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
+  }
+
   if (!setEditorInteractionState) {
     throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
   }
-  const cursorPosition = sheets.sheet.cursor.cursorPosition;
 
-  const x = cursorPosition.x;
-  const y = cursorPosition.y;
-  const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
-  if (cell?.language) {
-    if (editorInteractionState.showCodeEditor) {
-      // Open code editor, or move change editor if already open.
-      setEditorInteractionState({
-        ...editorInteractionState,
-        showCellTypeMenu: false,
-        waitingForEditorClose: {
-          selectedCell: { x: x, y: y },
-          selectedCellSheet: sheets.sheet.id,
-          mode: cell.language,
-          showCellTypeMenu: false,
-          initialCode: undefined,
-        },
+  const { x, y } = sheets.sheet.cursor.cursorPosition;
+  const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, x, y);
+  if (codeCell) {
+    const {
+      codeCell: {
+        pos: { x: openX, y: openY },
+        language: openLanguage,
+        sheetId: openSheetId,
+      },
+    } = codeEditorState;
+
+    // check if the code editor is already open on the same cell
+    const closeCodeEditor =
+      codeEditorState.showCodeEditor &&
+      openX === x &&
+      openY === y &&
+      openLanguage === codeCell.language &&
+      openSheetId === sheets.current;
+
+    if (closeCodeEditor) {
+      // if the code editor is already open on the same cell, then close it
+      // this open save changes modal if there are unsaved changes
+      setCodeEditorState({
+        ...codeEditorState,
+        escapePressed: true,
       });
     } else {
-      setEditorInteractionState({
-        ...editorInteractionState,
-        showCellTypeMenu: false,
-        selectedCell: { x: x, y: y },
-        selectedCellSheet: sheets.sheet.id,
-        mode: cell.language,
-        showCodeEditor: true,
-        initialCode: undefined,
+      // if the code editor is not already open on the same cell, then open it
+      // this will also open the save changes modal if there are unsaved changes
+      setCodeEditorState({
+        ...codeEditorState,
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x, y },
+            language: codeCell.language,
+          },
+          showCellTypeMenu: false,
+          initialCode: '',
+        },
       });
     }
-  } else if (editorInteractionState.showCodeEditor) {
+  } else if (codeEditorState.showCodeEditor) {
     // code editor is already open, so check it for save before closing
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setCodeEditorState({
+      ...codeEditorState,
       waitingForEditorClose: {
+        codeCell: {
+          sheetId: sheets.current,
+          pos: { x, y },
+          language: 'Python',
+        },
         showCellTypeMenu: true,
-        selectedCell: { x: x, y: y },
-        selectedCellSheet: sheets.sheet.id,
-        mode: 'Python',
-        initialCode: undefined,
+        initialCode: '',
       },
     });
   } else {
     // just open the code editor selection menu
-    setEditorInteractionState({
-      ...editorInteractionState,
+    setEditorInteractionState((prev) => ({
+      ...prev,
       showCellTypeMenu: true,
-      selectedCell: { x: x, y: y },
-      selectedCellSheet: sheets.sheet.id,
-      mode: undefined,
-      initialCode: undefined,
+    }));
+    setCodeEditorState({
+      ...codeEditorState,
+      initialCode: '',
+      codeCell: {
+        sheetId: sheets.current,
+        pos: { x, y },
+        language: codeEditorState.codeCell.language,
+      },
     });
   }
 };

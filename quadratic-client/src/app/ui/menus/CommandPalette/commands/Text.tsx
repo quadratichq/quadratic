@@ -1,20 +1,30 @@
-import { setAlign, setBold, setItalic, setVerticalAlign, setWrap } from '@/app/ui/helpers/formatCells';
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import {
+  setAlign,
+  setBold,
+  setItalic,
+  setStrikeThrough,
+  setUnderline,
+  setVerticalAlign,
+  setWrap,
+} from '@/app/ui/helpers/formatCells';
+import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import {
   FormatAlignCenterIcon,
   FormatAlignLeftIcon,
   FormatAlignRightIcon,
   FormatBoldIcon,
   FormatItalicIcon,
+  FormatStrikethroughIcon,
   FormatTextClipIcon,
   FormatTextOverflowIcon,
   FormatTextWrapIcon,
+  FormatUnderlinedIcon,
   VerticalAlignBottomIcon,
   VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
-import { isAvailableBecauseCanEditFile } from '../../../../actions';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Text',
@@ -48,6 +58,22 @@ const commands: CommandGroup = {
             shortcut="I"
             shortcutModifiers={KeyboardSymbols.Command}
           />
+        );
+      },
+    },
+    {
+      label: 'Underline',
+      isAvailable: isAvailableBecauseCanEditFile,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} icon={<FormatUnderlinedIcon />} action={() => setUnderline()} />;
+      },
+    },
+    {
+      label: 'Strike-through',
+      isAvailable: isAvailableBecauseCanEditFile,
+      Component: (props) => {
+        return (
+          <CommandPaletteListItem {...props} icon={<FormatStrikethroughIcon />} action={() => setStrikeThrough()} />
         );
       },
     },

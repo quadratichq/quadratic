@@ -1,5 +1,5 @@
 use reqwest::{RequestBuilder, Response, StatusCode};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use strum_macros::Display;
 use uuid::Uuid;
 
@@ -129,32 +129,22 @@ pub async fn set_file_checkpoint(
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct Connection {
+pub struct Connection<T> {
     pub uuid: Uuid,
     pub name: String,
     pub r#type: String,
     pub created_date: String,
     pub updated_date: String,
-    pub type_details: TypeDetails,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct TypeDetails {
-    pub host: String,
-    pub port: Option<String>,
-    pub username: Option<String>,
-    pub password: Option<String>,
-    pub database: String,
+    pub type_details: T,
 }
 
 /// Retrieve user's connection from the quadratic API server.
-pub async fn get_connection(
+pub async fn get_connection<T: DeserializeOwned>(
     base_url: &str,
     jwt: &str,
     user_id: &str,
     connection_id: &Uuid,
-) -> Result<Connection> {
+) -> Result<Connection<T>> {
     let url = format!("{base_url}/v0/internal/user/{user_id}/connections/{connection_id}");
     let client = get_client(&url, jwt);
     let response = client.send().await?;
@@ -168,7 +158,7 @@ pub async fn get_connection(
 
     handle_response(&response)?;
 
-    Ok(response.json::<Connection>().await?)
+    Ok(response.json::<Connection<T>>().await?)
 }
 
 fn handle_response(response: &Response) -> Result<()> {

@@ -1,3 +1,4 @@
+import { Selection } from '@/app/quadratic-core-types';
 import { describe, expect, it } from 'vitest';
 import type { RectangleLike } from './SheetCursor';
 import {
@@ -8,7 +9,6 @@ import {
   parseRange,
   parseSelectionString,
 } from './selection';
-import { Selection } from '@/app/quadratic-core-types';
 
 const mockSelection = (options: {
   rects?: RectangleLike[];

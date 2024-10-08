@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from '@/shared/shadcn/utils';
 import { ArrowLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigation } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
@@ -35,10 +35,14 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
   const gridItemClassName =
     'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full group';
   const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
-  const activeConnection = connections.find((connection) => connection.uuid === activeConnectionUuid);
+
+  const activeConnection = useMemo(
+    () => connections.find((connection) => connection.uuid === activeConnectionUuid),
+    [activeConnectionUuid, connections]
+  );
 
   // Do an in-memory navigation if we're not in the app
-  const reloadDocument = location.pathname.startsWith('/file/');
+  const reloadDocument = useMemo(() => location.pathname.startsWith('/file/'), [location.pathname]);
 
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
   const handleDragEnter = useCallback(

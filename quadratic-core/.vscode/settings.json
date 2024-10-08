@@ -1,6 +1,7 @@
 {
   "cSpell.words": [
     "bigdecimal",
+    "Bincode",
     "Datelike",
     "dateparser",
     "datetime",
@@ -10,6 +11,7 @@
     "indexmap",
     "Itertools",
     "milli",
+    "minmax",
     "Rects",
     "rposition",
     "Strftime",

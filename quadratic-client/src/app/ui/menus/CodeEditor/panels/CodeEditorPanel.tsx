@@ -1,35 +1,34 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
+import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
+import { PanelPosition, useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useConnectionSchemaBrowserTableQueryActionInsertQuery } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
-import { MouseEvent, memo, useCallback } from 'react';
+import * as monaco from 'monaco-editor';
+import { MouseEvent, memo, useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
-import { CodeEditorPanelBottom } from './CodeEditorPanelBottom';
-import { CodeEditorPanelSide } from './CodeEditorPanelSide';
 
-interface Props {
-  codeEditorPanelData: CodeEditorPanelData;
-}
+type CodeEditorPanelProps = {
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
+  codeEditorRef: React.RefObject<HTMLDivElement>;
+};
 
-export const CodeEditorPanel = memo((props: Props) => {
+export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPanelProps) => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { teamPermissions },
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
-  const { editorRef } = useCodeEditor();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const connectionInfo = getConnectionInfo(editorInteractionState.mode);
-  const { codeEditorPanelData } = props;
-  const { panelPosition, setPanelPosition } = codeEditorPanelData;
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
+  const connectionInfo = useMemo(() => getConnectionInfo(language), [language]);
+  const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
 
   const changePanelPosition = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -39,7 +38,7 @@ export const CodeEditorPanel = memo((props: Props) => {
     [setPanelPosition]
   );
 
-  const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionInsertQuery({ editorRef });
+  const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionInsertQuery({ editorInst });
   const schemaBrowser =
     isAuthenticated && connectionInfo !== undefined && teamPermissions?.includes('TEAM_EDIT') ? (
       <ConnectionSchemaBrowser
@@ -50,7 +49,7 @@ export const CodeEditorPanel = memo((props: Props) => {
       />
     ) : undefined;
 
-  const showAiAssistant = Boolean(isAuthenticated);
+  const showAIAssistant = Boolean(isAuthenticated);
 
   return (
     <>
@@ -65,17 +64,13 @@ export const CodeEditorPanel = memo((props: Props) => {
 
       {panelPosition === 'left' && (
         <CodeEditorPanelSide
+          codeEditorRef={codeEditorRef}
           schemaBrowser={schemaBrowser}
-          showAiAssistant={showAiAssistant}
-          codeEditorPanelData={props.codeEditorPanelData}
+          showAIAssistant={showAIAssistant}
         />
       )}
       {panelPosition === 'bottom' && (
-        <CodeEditorPanelBottom
-          schemaBrowser={schemaBrowser}
-          showAiAssistant={showAiAssistant}
-          codeEditorPanelData={props.codeEditorPanelData}
-        />
+        <CodeEditorPanelBottom schemaBrowser={schemaBrowser} showAIAssistant={showAIAssistant} />
       )}
     </>
   );

@@ -10,6 +10,7 @@ import { cn } from '@/shared/shadcn/utils';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useRecoilValue } from 'recoil';
 import './borderMenuStyles.scss';
+import { sheets } from '@/app/grid/controller/Sheets';
 
 const borderActionKeys = [
   Action.FormatBorderAll,
@@ -38,6 +39,10 @@ export const BorderMenu = () => {
   const borderColorSpec = defaultActionSpec[Action.FormatBorderColor];
   const borderMenuState = useRecoilValue(borderMenuAtom);
 
+  // this doesn't need to be an effect since the menu is closed when the cursor
+  // changes
+  const singleSelection = sheets.sheet.cursor.onlySingleSelection();
+
   return (
     <div>
       <ToggleGroup.Root type="single" className="flex flex-row border-b border-border pb-1">
@@ -45,8 +50,11 @@ export const BorderMenu = () => {
           const label = defaultActionSpec[actionKey].label;
           const Icon = 'Icon' in defaultActionSpec[actionKey] ? defaultActionSpec[actionKey].Icon : undefined;
           const run = defaultActionSpec[actionKey].run;
+          const disabled =
+            (actionKey === Action.FormatBorderHorizontal || actionKey === Action.FormatBorderVertical) &&
+            singleSelection;
           return (
-            <Tooltip>
+            <Tooltip key={actionKey}>
               <TooltipTrigger asChild>
                 <ToggleGroup.Item asChild value={actionKey} key={actionKey}>
                   <Button
@@ -54,9 +62,8 @@ export const BorderMenu = () => {
                     variant="ghost"
                     className="focus-visible:bg-accent"
                     key={actionKey}
-                    onClick={() => {
-                      run(borders);
-                    }}
+                    disabled={disabled}
+                    onClick={() => run(borders)}
                   >
                     {Icon && <Icon />}
                   </Button>

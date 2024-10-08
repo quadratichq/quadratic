@@ -1,8 +1,9 @@
+import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Point, Rectangle } from 'pixi.js';
@@ -221,17 +222,20 @@ export class PointerCellMoving {
         // if we moved the code cell, we need to repopulate the code editor with
         // unsaved content.
         if (pixiAppSettings.unsavedEditorChanges) {
-          const state = pixiAppSettings.editorInteractionState;
+          const { codeCell } = pixiAppSettings.codeEditorState;
           if (
-            state.selectedCellSheet === sheets.sheet.id &&
-            intersects.rectanglePoint(rectangle, new Point(state.selectedCell.x, state.selectedCell.y))
+            codeCell.sheetId === sheets.current &&
+            intersects.rectanglePoint(rectangle, new Point(codeCell.pos.x, codeCell.pos.y))
           ) {
-            pixiAppSettings.setEditorInteractionState?.({
-              ...pixiAppSettings.editorInteractionState,
-              initialCode: pixiAppSettings.unsavedEditorChanges,
-              selectedCell: {
-                x: state.selectedCell.x + this.movingCells.toColumn - this.movingCells.column,
-                y: state.selectedCell.y + this.movingCells.toRow - this.movingCells.row,
+            pixiAppSettings.setCodeEditorState?.({
+              ...pixiAppSettings.codeEditorState,
+              initialCode: pixiAppSettings.unsavedEditorChanges ?? '',
+              codeCell: {
+                ...codeCell,
+                pos: {
+                  x: codeCell.pos.x + this.movingCells.toColumn - this.movingCells.column,
+                  y: codeCell.pos.y + this.movingCells.toRow - this.movingCells.row,
+                },
               },
             });
           }

@@ -1,0 +1,4 @@
+.hover-link-fade-in-no-delay {
+  opacity: 1;
+  transition: opacity 150ms linear;
+}

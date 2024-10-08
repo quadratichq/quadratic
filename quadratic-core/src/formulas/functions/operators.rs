@@ -119,7 +119,6 @@ fn get_functions() -> Vec<FormulaFunction> {
 mod tests {
     use crate::formulas::tests::*;
     use serial_test::parallel;
-    use std::str::FromStr;
 
     #[test]
     #[parallel]
@@ -480,18 +479,6 @@ mod tests {
     /// (number), or `1y 10d` (duration).
     fn val(s: &str) -> CellValue {
         CellValue::parse_from_str(s)
-    }
-    /// Parses a date from a string such as `2024-12-31`.
-    fn date(s: &str) -> CellValue {
-        CellValue::from(chrono::NaiveDate::from_str(s).unwrap())
-    }
-    /// Parses a time from a string such as `16:30:00`.
-    fn time(s: &str) -> CellValue {
-        CellValue::from(chrono::NaiveTime::from_str(s).unwrap())
-    }
-    /// Parses a datetime from a string such as `2024-12-31T16:30:00`.
-    fn datetime(s: &str) -> CellValue {
-        CellValue::from(chrono::NaiveDateTime::from_str(s).unwrap())
     }
 
     #[track_caller]

@@ -1,6 +1,6 @@
 /**
  * This is where we map all the icons we use to the ones from [Google's Material Symbols](https://fonts.google.com/icons)
- * We use Google’s recommended implementation stragegy, which is loading the font
+ * We use Google’s recommended implementation strategy, which is loading the font
  * FWIW: the font is loaded via the root `index.html`
  * We import 20 dp icons, as those are the only ones we use at the moment.
  */
@@ -240,6 +240,14 @@ export const FormatItalicIcon: IconComponent = (props) => {
   return <Icon {...props}>format_italic</Icon>;
 };
 
+export const FormatUnderlinedIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_underlined</Icon>;
+};
+
+export const FormatStrikethroughIcon: IconComponent = (props) => {
+  return <Icon {...props}>format_strikethrough</Icon>;
+};
+
 export const FormatNumberAutomaticIcon: IconComponent = (props) => {
   return <Icon {...props}>award_star</Icon>;
 };
@@ -324,6 +332,10 @@ export const MoreVertIcon: IconComponent = (props) => {
   return <Icon {...props}>more_vert</Icon>;
 };
 
+export const MoreHorizIcon: IconComponent = (props) => {
+  return <Icon {...props}>more_horiz</Icon>;
+};
+
 export const Number123Icon: IconComponent = (props) => {
   // This icon is just too small, so we make it more readable within its container
   // by increasing its size and adjusting its position
@@ -377,6 +389,10 @@ export const SettingsIcon: IconComponent = (props) => {
 
 export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
+};
+
+export const StopCircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop_circle</Icon>;
 };
 
 export const VerticalAlignBottomIcon: IconComponent = (props) => {

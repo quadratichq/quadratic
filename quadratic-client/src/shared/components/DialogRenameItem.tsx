@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 export function DialogRenameItem({
   itemLabel,
@@ -24,33 +24,35 @@ export function DialogRenameItem({
 }) {
   const [localValue, setLocalValue] = useState<string>(value);
 
-  const count = localValue.length;
-  const disabled = count === 0;
+  const disabled = useMemo(() => localValue.length === 0, [localValue]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
 
-    // Don't do anything if we're disabled
-    if (disabled) {
-      return;
-    }
+      // Don't do anything if we're disabled
+      if (disabled) {
+        return;
+      }
 
-    // Don't do anything if the name didn't change
-    if (localValue === value) {
+      // Don't do anything if the name didn't change
+      if (localValue === value) {
+        onClose();
+        return;
+      }
+
+      // TODO: value-specific validation, don't allow empty values
+
+      onSave(localValue);
       onClose();
-      return;
-    }
+    },
+    [disabled, localValue, onClose, onSave, value]
+  );
 
-    // TODO: value-specific validation, don't allow empty values
-
-    onSave(localValue);
-    onClose();
-  };
-
-  const handleInputChange = (e: React.FormEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.FormEvent<HTMLInputElement>) => {
     const newValue = e.currentTarget.value;
     setLocalValue(newValue);
-  };
+  }, []);
 
   const formId = 'rename-item';
   const inputId = 'rename-item-input';

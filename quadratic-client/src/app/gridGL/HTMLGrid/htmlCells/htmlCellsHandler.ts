@@ -17,7 +17,6 @@ class HTMLCellsHandler {
     events.on('htmlUpdate', this.htmlUpdate);
     events.on('changeSheet', this.changeSheet);
     events.on('sheetOffsets', (sheetId) => this.updateOffsets([sheetId]));
-    events.on('resizeRowHeights', (sheetId) => this.updateOffsets([sheetId]));
   }
 
   attach = (parent: HTMLDivElement) => {

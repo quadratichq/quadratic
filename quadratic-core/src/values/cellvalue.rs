@@ -1,4 +1,6 @@
-use std::{fmt, str::FromStr};
+use std::fmt;
+use std::hash::Hash;
+use std::str::FromStr;
 
 use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
@@ -377,6 +379,13 @@ impl CellValue {
             other => Ok(other),
         }
     }
+    /// Converts an error value into an actual error.
+    pub fn as_non_error_value(&self) -> CodeResult<&Self> {
+        match self {
+            CellValue::Error(e) => Err((**e).clone()),
+            other => Ok(other),
+        }
+    }
 
     /// Coerces the value to a specific type; returns `None` if the conversion
     /// fails or the original value is `None`.
@@ -390,70 +399,37 @@ impl CellValue {
         }
     }
 
-    /// Compares two values but propagates errors and returns `None` in the case
-    /// of disparate types.
-    pub fn partial_cmp(&self, other: &Self) -> CodeResult<Option<std::cmp::Ordering>> {
-        Ok(Some(match (self, other) {
-            (CellValue::Error(e), _) | (_, CellValue::Error(e)) => return Err((**e).clone()),
-
-            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),
-            (CellValue::Text(a), CellValue::Text(b)) => {
-                let a = a.to_ascii_uppercase();
-                let b = b.to_ascii_uppercase();
-                a.cmp(&b)
-            }
-            (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
-            (CellValue::Instant(a), CellValue::Instant(b)) => a.cmp(b),
-            (CellValue::Date(a), CellValue::Date(b)) => a.cmp(b),
-            (CellValue::Time(a), CellValue::Time(b)) => a.cmp(b),
-            (CellValue::DateTime(a), CellValue::DateTime(b)) => a.cmp(b),
-            (CellValue::DateTime(a), CellValue::Date(b)) => a.date().cmp(b),
-            (CellValue::Date(a), CellValue::DateTime(b)) => a.cmp(&b.date()),
-            (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
-            (CellValue::Blank, CellValue::Blank) => std::cmp::Ordering::Equal,
-
-            (CellValue::Number(_), _)
-            | (CellValue::Text(_), _)
-            | (CellValue::Logical(_), _)
-            | (CellValue::Instant(_), _)
-            | (CellValue::Duration(_), _)
-            | (CellValue::Date(_), _)
-            | (CellValue::Time(_), _)
-            | (CellValue::DateTime(_), _)
-            | (CellValue::Html(_), _)
-            | (CellValue::Code(_), _)
-            | (CellValue::Image(_), _)
-            | (CellValue::Blank, _) => return Ok(None),
-        }))
+    /// Returns the sort order of a value, based on the results of Excel's
+    /// `SORT()` function. The comparison operators are the same, except that
+    /// blank coerces to `0`, `FALSE`, or `""` before comparison.
+    pub fn type_id(&self) -> u8 {
+        match self {
+            CellValue::Number(_) => 0,
+            CellValue::Text(_) => 1,
+            CellValue::Logical(_) => 2,
+            CellValue::Error(_) => 3,
+            CellValue::Instant(_) | CellValue::DateTime(_) => 4,
+            CellValue::Date(_) => 5,
+            CellValue::Time(_) => 6,
+            CellValue::Duration(_) => 7,
+            CellValue::Blank => 8,
+            CellValue::Html(_) => 9,
+            CellValue::Code(_) => 10,
+            CellValue::Image(_) => 11,
+        }
     }
 
     /// Compares two values using a total ordering that propagates errors and
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
-    pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
-        fn type_id(v: &CellValue) -> u8 {
-            // Sort order, based on the results of Excel's `SORT()` function.
-            // The comparison operators are the same, except that blank coerces
-            // to zero before comparison.
-            match v {
-                CellValue::Number(_) => 0,
-                CellValue::Text(_) => 1,
-                CellValue::Logical(_) => 2,
-                CellValue::Error(_) => 3,
-                CellValue::Instant(_) => 4,
-                CellValue::Duration(_) => 5,
-                CellValue::Blank => 6,
-                CellValue::Html(_) => 7,
-                CellValue::Code(_) => 8,
-                CellValue::Image(_) => 9,
-                CellValue::Date(_) => 10,
-                CellValue::Time(_) => 11,
-                CellValue::DateTime(_) => 12,
-            }
+    pub fn partial_cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
+        if self.is_blank() && other.eq_blank() || other.is_blank() && self.eq_blank() {
+            return Ok(std::cmp::Ordering::Equal);
         }
 
-        let mut lhs = self;
-        let mut rhs = other;
+        // Coerce blank to zero.
+        let mut lhs = self.as_non_error_value()?;
+        let mut rhs = other.as_non_error_value()?;
         let lhs_cell_value: CellValue;
         let rhs_cell_value: CellValue;
         if lhs.is_blank() {
@@ -464,35 +440,64 @@ impl CellValue {
             rhs_cell_value = CellValue::Number(BigDecimal::zero());
             rhs = &rhs_cell_value;
         }
-
-        Ok(lhs
-            .partial_cmp(rhs)?
-            .unwrap_or_else(|| type_id(lhs).cmp(&type_id(rhs))))
+        Ok(lhs.total_cmp(rhs))
     }
 
-    /// Returns whether `self == other` using `CellValue::cmp()`.
+    /// Compares two values according to the total sort order, with no coercion
+    /// and no errors.
+    pub fn total_cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (CellValue::Text(a), CellValue::Text(b)) => {
+                let a = crate::util::case_fold(a);
+                let b = crate::util::case_fold(b);
+                a.cmp(&b)
+            }
+            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),
+            (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
+            (CellValue::DateTime(a), CellValue::DateTime(b)) => a.cmp(b),
+            (CellValue::Date(a), CellValue::Date(b)) => a.cmp(b),
+            (CellValue::Time(a), CellValue::Time(b)) => a.cmp(b),
+            (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
+            _ => self.type_id().cmp(&other.type_id()),
+        }
+    }
+
+    /// Returns whether `self == other` using a case-insensitive and
+    /// blank-coercing comparison.
+    ///
+    /// Returns an error if either argument is [`CellValue::Error`].
     pub fn eq(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.cmp(other)? == std::cmp::Ordering::Equal)
+        Ok(self.partial_cmp(other)? == std::cmp::Ordering::Equal)
+    }
+    /// Returns whether blank can coerce to this cell value.
+    fn eq_blank(&self) -> bool {
+        match self {
+            CellValue::Blank => true,
+            CellValue::Text(s) => s.is_empty(),
+            CellValue::Number(n) => n.is_zero(),
+            CellValue::Logical(b) => !b,
+            _ => false,
+        }
     }
     /// Returns whether `self < other` using `CellValue::cmp()`.
     pub fn lt(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.cmp(other)? == std::cmp::Ordering::Less)
+        Ok(self.partial_cmp(other)? == std::cmp::Ordering::Less)
     }
     /// Returns whether `self > other` using `CellValue::cmp()`.
     pub fn gt(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.cmp(other)? == std::cmp::Ordering::Greater)
+        Ok(self.partial_cmp(other)? == std::cmp::Ordering::Greater)
     }
     /// Returns whether `self <= other` using `CellValue::cmp()`.
     pub fn lte(&self, other: &Self) -> CodeResult<bool> {
         Ok(matches!(
-            self.cmp(other)?,
+            self.partial_cmp(other)?,
             std::cmp::Ordering::Less | std::cmp::Ordering::Equal,
         ))
     }
     /// Returns whether `self >= other` using `CellValue::cmp()`.
     pub fn gte(&self, other: &Self) -> CodeResult<bool> {
         Ok(matches!(
-            self.cmp(other)?,
+            self.partial_cmp(other)?,
             std::cmp::Ordering::Greater | std::cmp::Ordering::Equal,
         ))
     }
@@ -540,13 +545,31 @@ impl CellValue {
         }
     }
 
-    fn to_numeric(&self) -> CodeResult<CellValue> {
+    /// Returns a hashable value that is unique per-value for most common types,
+    /// but may not always be unique.
+    pub fn hash(&self) -> CellValueHash {
         match self {
+            CellValue::Blank => CellValueHash::Blank,
+            CellValue::Text(s) => CellValueHash::Text(crate::util::case_fold(s)),
+            CellValue::Number(n) => CellValueHash::Number(n.clone()),
+            CellValue::Logical(b) => CellValueHash::Logical(*b),
+            CellValue::Instant(Instant { seconds }) => {
+                CellValueHash::Instant(seconds.to_ne_bytes())
+            }
+            CellValue::Duration(Duration { months, seconds }) => {
+                CellValueHash::Duration(*months, seconds.to_ne_bytes())
+            }
+            CellValue::Error(e) => CellValueHash::Error(e.msg.clone()),
+            _ => CellValueHash::Unknown(self.type_id()),
+        }
+    }
+
+    fn to_numeric(&self) -> CodeResult<CellValue> {
+        match self.as_non_error_value()? {
             CellValue::Blank => Ok(CellValue::Number(0.into())),
             CellValue::Text(s) => Ok(CellValue::parse_from_str(s)),
             CellValue::Logical(false) => Ok(CellValue::Number(0.into())),
             CellValue::Logical(true) => Ok(CellValue::Number(1.into())),
-            CellValue::Error(e) => Err((**e).clone()),
             _ => Ok(self.clone()),
         }
     }
@@ -847,6 +870,23 @@ impl CellValue {
     }
 }
 
+/// Unique hash of [`CellValue`], for performance optimization. This is
+/// **case-folded**, so strings with the same contents in a different case will
+/// hash to the same value.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+pub enum CellValueHash {
+    #[default]
+    Blank,
+    Text(String),
+    // If we ever switch to using `f64`, replace this with `[u8; 8]`.
+    Number(BigDecimal),
+    Logical(bool),
+    Instant([u8; 8]),
+    Duration(i32, [u8; 8]),
+    Error(RunErrorMsg),
+    Unknown(u8),
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -1126,5 +1166,32 @@ mod test {
                 .unwrap(),
         );
         assert_eq!(value.to_get_cells(), "2024-08-15T10:53:48.750");
+    }
+
+    #[test]
+    #[parallel]
+    fn test_cell_value_equality() {
+        for ([l, r], expected) in [
+            // Reflexivity
+            ([CellValue::Blank, CellValue::Blank], true),
+            (["".into(), "".into()], true),
+            ([0.into(), 0.into()], true),
+            // Blank coercion
+            ([CellValue::Blank, "".into()], true),
+            ([CellValue::Blank, 0.into()], true),
+            // Case-insensitivity
+            (["a".into(), "A".into()], true),
+            // ("ß", "SS", true), // TODO: proper Unicode case folding
+            // Other cases
+            ([0.into(), "".into()], false),
+            (["a".into(), "ab".into()], false),
+            ([CellValue::Blank, 1.into()], false),
+            ([CellValue::Blank, (-1).into()], false),
+            ([CellValue::Blank, "a".into()], false),
+        ] {
+            println!("Comparing {l:?} to {r:?}");
+            assert_eq!(expected, l.eq(&r).unwrap());
+            assert_eq!(expected, r.eq(&l).unwrap());
+        }
     }
 }

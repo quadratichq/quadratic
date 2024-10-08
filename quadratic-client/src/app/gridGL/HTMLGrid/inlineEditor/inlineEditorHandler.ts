@@ -15,7 +15,7 @@ import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { CellFormatSummary } from '@/app/quadratic-core-types';
-import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
+import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -47,6 +47,8 @@ class InlineEditorHandler {
   private formatSummary?: CellFormatSummary;
   temporaryBold: boolean | undefined;
   temporaryItalic: boolean | undefined;
+  temporaryUnderline: boolean | undefined;
+  temporaryStrikeThrough: boolean | undefined;
 
   constructor() {
     events.on('changeInput', this.changeInput);
@@ -54,7 +56,6 @@ class InlineEditorHandler {
     events.on('sheetOffsets', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
-    events.on('resizeRowHeights', this.sheetOffsets);
     inlineEditorEvents.on('replaceText', this.replaceText);
     createFormulaStyleHighlights();
   }
@@ -80,6 +81,8 @@ class InlineEditorHandler {
     this.formatSummary = undefined;
     this.temporaryBold = undefined;
     this.temporaryItalic = undefined;
+    this.temporaryUnderline = undefined;
+    this.temporaryStrikeThrough = undefined;
     this.changeToFormula(false);
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
@@ -148,7 +151,7 @@ class InlineEditorHandler {
       }
       inlineEditorFormula.cursorMoved();
     } else {
-      this.close(0, 0, true);
+      this.close(0, 0, false, true);
     }
   };
 
@@ -197,7 +200,10 @@ class InlineEditorHandler {
       );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
+      this.temporaryUnderline = this.formatSummary?.underline || undefined;
+      this.temporaryStrikeThrough = this.formatSummary?.strikeThrough || undefined;
       inlineEditorMonaco.set(value);
+      inlineEditorMonaco.triggerSuggestion();
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
@@ -222,6 +228,8 @@ class InlineEditorHandler {
       inlineCodeEditor: !!this.formula,
       bold: this.temporaryBold,
       italic: this.temporaryItalic,
+      underline: this.temporaryUnderline,
+      strikeThrough: this.temporaryStrikeThrough,
     });
   }
 
@@ -242,6 +250,26 @@ class InlineEditorHandler {
       this.temporaryBold = !this.temporaryBold;
     }
     this.updateFont();
+    this.sendMultiplayerUpdate();
+  }
+
+  toggleUnderline() {
+    if (this.temporaryUnderline === undefined) {
+      this.temporaryUnderline = !this.formatSummary?.underline;
+    } else {
+      this.temporaryUnderline = !this.temporaryUnderline;
+    }
+    inlineEditorMonaco.setUnderline(this.temporaryUnderline);
+    this.sendMultiplayerUpdate();
+  }
+
+  toggleStrikeThrough() {
+    if (this.temporaryStrikeThrough === undefined) {
+      this.temporaryStrikeThrough = !this.formatSummary?.strikeThrough;
+    } else {
+      this.temporaryStrikeThrough = !this.temporaryStrikeThrough;
+    }
+    inlineEditorMonaco.setStrikeThrough(this.temporaryStrikeThrough);
     this.sendMultiplayerUpdate();
   }
 
@@ -291,12 +319,16 @@ class InlineEditorHandler {
     const align = this.formatSummary?.align ?? 'left';
     const verticalAlign = this.formatSummary?.verticalAlign ?? 'top';
     const wrap = this.formatSummary?.wrap ?? 'overflow';
+    const underline = this.temporaryUnderline ?? this.formatSummary?.underline ?? false;
+    const strikeThrough = this.temporaryStrikeThrough ?? this.formatSummary?.strikeThrough ?? false;
     const { width: inlineEditorWidth, height: inlineEditorHeight } = inlineEditorMonaco.updateTextLayout(
       cellContentWidth,
       cellContentHeight,
       align,
       verticalAlign,
-      wrap
+      wrap,
+      underline,
+      strikeThrough
     );
 
     this.x = cellOutlineOffset + (align === 'right' ? Math.min(x, x + cellContentWidth - inlineEditorWidth) : x);
@@ -331,7 +363,7 @@ class InlineEditorHandler {
       // need to show the change to A1 notation
       pixiApp.headings.dirty = true;
     } else {
-      inlineEditorMonaco.setLanguage('plaintext');
+      inlineEditorMonaco.setLanguage('inline-editor');
     }
 
     pixiAppSettings.setInlineEditorState((prev) => ({
@@ -368,7 +400,7 @@ class InlineEditorHandler {
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   // @returns whether the editor closed successfully
-  close = async (deltaX = 0, deltaY = 0, cancel: boolean): Promise<boolean> => {
+  close = async (deltaX = 0, deltaY = 0, cancel: boolean, skipChangeSheet = false): Promise<boolean> => {
     if (!this.open) return true;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
@@ -381,7 +413,9 @@ class InlineEditorHandler {
 
     if (!cancel) {
       // Ensure we're on the right sheet so we can show the change
-      sheets.current = this.location.sheetId;
+      if (!skipChangeSheet) {
+        sheets.current = this.location.sheetId;
+      }
 
       if (this.formula) {
         const updatedValue = inlineEditorFormula.closeParentheses();
@@ -410,6 +444,10 @@ class InlineEditorHandler {
         const validationError = await this.validateInput();
         if (validationError) {
           events.emit('hoverCell', { x: this.location.x, y: this.location.y, validationId: validationError, value });
+          // need to change the sheet back to the original sheet if there's a validation error
+          if (skipChangeSheet) {
+            sheets.current = location.sheetId;
+          }
           return false;
         } else {
           quadraticCore.setCellValue(
@@ -419,7 +457,9 @@ class InlineEditorHandler {
             value.trim(),
             sheets.getCursorPosition()
           );
-          events.emit('hoverCell');
+          if (!skipChangeSheet) {
+            events.emit('hoverCell');
+          }
         }
       }
     }
@@ -449,19 +489,24 @@ class InlineEditorHandler {
   // Handler for the click for the expand code editor button.
   openCodeEditor = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.stopPropagation();
-    if (!pixiAppSettings.setEditorInteractionState) {
-      throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
+    if (!pixiAppSettings.setCodeEditorState) {
+      throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
     }
     if (!this.location) {
       throw new Error('Expected location to be defined in openCodeEditor');
     }
-    pixiAppSettings.setEditorInteractionState({
-      ...pixiAppSettings.editorInteractionState,
-      mode: 'Formula',
-      selectedCell: { x: this.location.x, y: this.location.y },
-      selectedCellSheet: this.location.sheetId,
-      initialCode: inlineEditorMonaco.get().slice(1),
-      showCodeEditor: true,
+    const { sheetId, x, y } = this.location;
+    pixiAppSettings.setCodeEditorState({
+      ...pixiAppSettings.codeEditorState,
+      waitingForEditorClose: {
+        codeCell: {
+          sheetId,
+          pos: { x, y },
+          language: 'Formula',
+        },
+        showCellTypeMenu: false,
+        initialCode: inlineEditorMonaco.get().slice(1),
+      },
     });
     this.close(0, 0, true);
   };
@@ -545,7 +590,7 @@ class InlineEditorHandler {
     return true;
   }
 
-  private replaceText = (text: string, highlight: boolean) => {
+  private replaceText = (text: string, highlight: boolean | number) => {
     if (!this.open) return;
     inlineEditorMonaco.set(text, highlight);
   };

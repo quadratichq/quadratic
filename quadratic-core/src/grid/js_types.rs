@@ -8,7 +8,6 @@ use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
-use crate::grid::BorderStyle;
 use crate::{Pos, SheetRect};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -71,7 +70,6 @@ pub struct JsRenderCell {
     /// Code language, set only for the top left cell of a code output.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<CodeCellLanguage>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub align: Option<CellAlign>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -84,11 +82,14 @@ pub struct JsRenderCell {
     pub italic: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_color: Option<String>,
-
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub special: Option<JsRenderCellSpecial>,
-
     #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<JsNumber>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub underline: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strike_through: Option<bool>,
 }
 
 #[cfg(test)]
@@ -133,40 +134,6 @@ pub struct JsSheetFill {
     pub all: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct JsRenderBorders {
-    pub horizontal: Vec<JsRenderBorder>,
-    pub vertical: Vec<JsRenderBorder>,
-}
-
-impl JsRenderBorders {
-    pub fn new(horizontal: Vec<JsRenderBorder>, vertical: Vec<JsRenderBorder>) -> Self {
-        JsRenderBorders {
-            horizontal,
-            vertical,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct JsRenderBorder {
-    pub x: i64,
-    pub y: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub w: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub h: Option<usize>,
-    pub style: BorderStyle,
-}
-
-impl JsRenderBorder {
-    pub fn new(x: i64, y: i64, w: Option<usize>, h: Option<usize>, style: BorderStyle) -> Self {
-        Self { x, y, w, h, style }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 pub enum CellType {
     Date,
@@ -189,6 +156,9 @@ pub struct CellFormatSummary {
 
     pub date_time: Option<String>,
     pub cell_type: Option<CellType>,
+
+    pub underline: Option<bool>,
+    pub strike_through: Option<bool>,
 }
 
 #[derive(Serialize, PartialEq, Debug)]
@@ -280,13 +250,32 @@ impl fmt::Display for JsRowHeight {
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
+pub struct JsOffset {
+    pub column: Option<i32>,
+    pub row: Option<i32>,
+    pub size: f64,
+}
+
+impl fmt::Display for JsOffset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "JsOffset(column: {:?}, row: {:?}, size: {})",
+            self.column, self.row, self.size
+        )
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
 pub struct JsPos {
     pub x: i64,
     pub y: i64,
 }
 impl fmt::Display for JsPos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "JsPos(x: {}, x: {})", self.x, self.x)
+        write!(f, "JsPos(x: {}, y: {})", self.x, self.y)
     }
 }
 impl From<Pos> for JsPos {

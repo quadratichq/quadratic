@@ -5,3 +5,5 @@ export const validationCommandGroup: CommandGroup = {
   heading: 'Data validation',
   commands: [Action.InsertCheckbox, Action.InsertDropdown, Action.ToggleDataValidation],
 };
+
+export default validationCommandGroup;

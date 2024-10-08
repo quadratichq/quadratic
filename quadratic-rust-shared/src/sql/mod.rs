@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use parquet::arrow::ArrowWriter;
 use schema::DatabaseSchema;
+use snowflake_connection::SnowflakeConnection;
 use std::sync::Arc;
 
 use crate::{arrow::arrow_type::ArrowType, error::Result};
@@ -19,11 +20,13 @@ pub mod mssql_connection;
 pub mod mysql_connection;
 pub mod postgres_connection;
 pub mod schema;
+pub mod snowflake_connection;
 
 pub enum SqlConnection {
     Postgres(PostgresConnection),
     Mysql(MySqlConnection),
     Mssql(MsSqlConnection),
+    SnowflakeConnection(SnowflakeConnection),
 }
 
 #[async_trait]
@@ -36,12 +39,14 @@ pub trait Connection {
     async fn connect(&self) -> Result<Self::Conn>;
 
     /// Generically query a database
+    ///
+    /// Returns: (Parquet bytes, is over the limit, number of records)
     async fn query(
         &self,
         pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool)>;
+    ) -> Result<(Bytes, bool, usize)>;
 
     /// Get the number of columns in a row
     fn row_len(row: &Self::Row) -> usize;
@@ -60,13 +65,14 @@ pub trait Connection {
 
     /// Default implementation of converting a vec of rows to a Parquet byte array
     ///
+    /// Returns: (Parquet bytes, number of records)
     /// This should work over any row/column SQLx vec
-    fn to_parquet(data: Vec<Self::Row>) -> Result<Bytes> {
+    fn to_parquet(data: Vec<Self::Row>) -> Result<(Bytes, usize)> {
         if data.is_empty() {
             // return Err(SharedError::Sql(Sql::ParquetConversion(
             //     "No data to convert".to_string(),
             // )));
-            return Ok(Bytes::new());
+            return Ok((Bytes::new(), 0));
         }
 
         let col_count = Self::row_len(&data[0]);
@@ -76,7 +82,7 @@ pub trait Connection {
 
         for row in &data {
             for (col_index, col) in Self::row_columns(row).enumerate() {
-                let value = Self::to_arrow(row, &col, col_index);
+                let value = Self::to_arrow(row, col, col_index);
                 transposed[col_index].push(value);
             }
         }
@@ -92,7 +98,7 @@ pub trait Connection {
             .enumerate()
             .map(|(index, col)| {
                 Field::new(
-                    Self::column_name(&col).to_string(),
+                    Self::column_name(col).to_string(),
                     cols[index].data_type().to_owned(),
                     true,
                 )
@@ -110,10 +116,12 @@ pub trait Connection {
 
         let schema = ArrowSchema::new(fields);
         let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None)?;
-        writer.write(&RecordBatch::try_new(Arc::new(schema), cols)?)?;
+        let record_batch = RecordBatch::try_new(Arc::new(schema), cols)?;
+        let record_count = record_batch.num_rows();
+        writer.write(&record_batch)?;
         let parquet = writer.into_inner()?;
 
-        Ok(parquet.into())
+        Ok((parquet.into(), record_count))
     }
 }
 

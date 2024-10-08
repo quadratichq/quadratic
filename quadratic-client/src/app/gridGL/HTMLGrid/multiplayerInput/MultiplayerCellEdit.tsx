@@ -24,8 +24,11 @@ export const MultiplayerCellEdit = (props: Props) => {
     })();
   }, [input.location, sheet.id]);
 
-  const displayItalic = input.cellEdit.italic === null ? formatting?.italic : input.cellEdit.italic;
-  const displayBold = input.cellEdit.bold === null ? formatting?.bold : input.cellEdit.bold;
+  const displayItalic = input.cellEdit.italic === undefined ? formatting?.italic : input.cellEdit.italic;
+  const displayBold = input.cellEdit.bold === undefined ? formatting?.bold : input.cellEdit.bold;
+  const displayUnderline = input.cellEdit.underline === undefined ? formatting?.underline : input.cellEdit.underline;
+  const displayStrikeThrough =
+    input.cellEdit.strikeThrough === undefined ? formatting?.strikeThrough : input.cellEdit.strikeThrough;
   let fontFamily: string = 'OpenSans';
   if (displayItalic && displayBold) {
     fontFamily = 'OpenSans-BoldItalic';
@@ -66,6 +69,7 @@ export const MultiplayerCellEdit = (props: Props) => {
           fontSize: '14px',
           backgroundColor: formatting?.fillColor ?? 'white',
           whiteSpace: 'nowrap',
+          textDecoration: `${displayUnderline ? 'underline' : ''} ${displayStrikeThrough ? 'line-through' : ''}`,
         }}
       >
         <div style={{ position: 'relative' }}>

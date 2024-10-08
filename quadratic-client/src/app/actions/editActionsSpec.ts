@@ -127,6 +127,7 @@ export const editActionsSpec: EditActionSpec = {
   },
   [Action.CopyAsPng]: {
     label: 'Copy as PNG',
+    labelVerbose: 'Copy selection as PNG',
     Icon: CopyAsPng,
     run: () => {
       if (!pixiAppSettings.addGlobalSnackbar) return;
@@ -135,6 +136,7 @@ export const editActionsSpec: EditActionSpec = {
   },
   [Action.DownloadAsCsv]: {
     label: 'Download as CSV',
+    labelVerbose: 'Download selection as CSV',
     Icon: CsvIcon,
     run: async () => {
       // Convert ISO timestamp to a string without colons or dots

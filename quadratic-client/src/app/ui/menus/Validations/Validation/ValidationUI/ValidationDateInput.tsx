@@ -63,7 +63,7 @@ export const ValidationDateInput = (props: ValidationInputProps) => {
           variant="ghost"
           className="absolute right-0 px-2"
           style={{ top: 1 }}
-          onClick={() => setShowCalendar((show) => !show)}
+          onClick={() => setShowCalendar((prev) => !prev)}
         >
           <CalendarMonthIcon />
         </Button>

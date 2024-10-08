@@ -1,14 +1,13 @@
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getSelectionString } from '@/app/grid/sheet/selection';
 import { Validation } from '@/app/quadratic-core-types';
+import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
+import { ValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
 import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useCallback, useMemo } from 'react';
-
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { cn } from '@/shared/shadcn/utils';
 import { useSetRecoilState } from 'recoil';
-import { ValidationsData } from './useValidationsData';
-import { validationRuleSimple } from '../Validation/validationType';
 
 interface Props {
   validation: Validation;
@@ -41,7 +40,7 @@ export const validationText = (validation: Validation) => {
 };
 
 export const ValidationEntry = (props: Props) => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
   const { validation, validationsData, highlight, active } = props;
   const { deleteValidation, readOnly } = validationsData;
 
@@ -50,11 +49,8 @@ export const ValidationEntry = (props: Props) => {
   const selection = useMemo(() => getSelectionString(validation.selection), [validation.selection]);
 
   const selectValidation = useCallback(() => {
-    setEditorInteractionState((old) => ({
-      ...old,
-      showValidation: validation.id,
-    }));
-  }, [setEditorInteractionState, validation.id]);
+    setShowValidation(validation.id);
+  }, [setShowValidation, validation.id]);
 
   const ref = useCallback(
     (node: HTMLButtonElement) => {

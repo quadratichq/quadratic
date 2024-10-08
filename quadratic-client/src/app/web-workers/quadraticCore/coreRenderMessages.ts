@@ -2,7 +2,7 @@
  * Messages between Core web worker and Render web worker.
  */
 
-import { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsOffset, JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 
 export interface RenderCoreRequestRenderCells {
   type: 'renderCoreRequestRenderCells';
@@ -58,9 +58,7 @@ export interface CoreRenderDeleteSheet {
 export interface CoreRenderSheetOffsets {
   type: 'coreRenderSheetOffsets';
   sheetId: string;
-  column?: number;
-  row?: number;
-  size: number;
+  offsets: JsOffset[];
 }
 
 export interface CoreRenderSheetInfoUpdate {
@@ -80,27 +78,15 @@ export interface CoreRenderRequestRowHeights {
   rows: string;
 }
 
-export interface CoreRenderResizeRowHeights {
-  type: 'coreRenderResizeRowHeights';
-  sheetId: string;
-  rowHeights: string;
-}
-
 export interface CoreRenderHashesDirty {
   type: 'coreRenderHashesDirty';
   sheetId: string;
   hashes: string;
 }
 
-export interface CoreRenderSetViewportBuffer {
-  type: 'coreRenderSetViewportBuffer';
-  transactionId: string;
+export interface CoreRenderViewportBuffer {
+  type: 'coreRenderViewportBuffer';
   buffer: SharedArrayBuffer;
-}
-
-export interface CoreRenderClearViewportBuffer {
-  type: 'coreRenderClearViewportBuffer';
-  transactionId: string;
 }
 
 export type CoreRenderMessage =
@@ -113,9 +99,7 @@ export type CoreRenderMessage =
   | CoreRenderSheetInfoUpdate
   | CoreRenderSheetBoundsUpdate
   | CoreRenderRequestRowHeights
-  | CoreRenderResizeRowHeights
   | CoreRenderHashesDirty
-  | CoreRenderSetViewportBuffer
-  | CoreRenderClearViewportBuffer;
+  | CoreRenderViewportBuffer;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells | RenderCoreResponseRowHeights;

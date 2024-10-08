@@ -24,7 +24,9 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq> Bl
     fn len(&self) -> usize {
         self.len
     }
-
+    fn delta_len(&mut self, delta: isize) {
+        self.len = (self.len as isize + delta) as usize;
+    }
     fn get(&self, index: usize) -> Option<Self::Item> {
         (index < self.len()).then(|| self.value.clone())
     }

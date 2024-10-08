@@ -1,17 +1,16 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
+import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
 import mixpanel from 'mixpanel-browser';
-import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { focusGrid } from '../../../helpers/focusGrid';
-import { SheetBarButton } from './SheetBarButton';
-import { SheetBarTab } from './SheetBarTab';
-import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
 
 const ARROW_SCROLL_AMOUNT = 10;
 const HOVER_SCROLL_AMOUNT = 5;
@@ -23,8 +22,8 @@ export const SheetBar = (): JSX.Element => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
 
-  const { permissions } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const hasPermission = useMemo(() => hasPermissionToEditFile(permissions) && !isMobile, [permissions]);
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);
@@ -36,6 +35,7 @@ export const SheetBar = (): JSX.Element => {
       setActiveSheet(sheets.current);
       setTrigger((trigger) => trigger + 1);
     };
+
     events.on('changeSheet', updateSheet);
     return () => {
       events.off('changeSheet', updateSheet);
@@ -170,6 +170,7 @@ export const SheetBar = (): JSX.Element => {
       const tab = event.currentTarget;
       if (tab) {
         const rect = tab.getBoundingClientRect();
+        rect.x -= sheetTabs.offsetLeft;
         const originalOrderIndex = getOrderIndex(sheet.order);
         down.current = {
           tab,
@@ -384,24 +385,7 @@ export const SheetBar = (): JSX.Element => {
     };
   }, [handlePointerMove, handlePointerUp]);
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string; name: string } | undefined>();
-  const handleContextEvent = useCallback(
-    (event: MouseEvent, sheet: Sheet) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (hasPermission) {
-        setContextMenu({ x: event.clientX, y: event.clientY, name: sheet.name, id: sheet.id });
-      }
-    },
-    [hasPermission]
-  );
-
   const [forceRename, setForceRename] = useState<string | undefined>();
-  const handleRename = useCallback(() => {
-    if (!contextMenu || !sheetTabs) return;
-    setForceRename(contextMenu.id);
-    setContextMenu(undefined);
-  }, [contextMenu, sheetTabs]);
   const clearRename = useCallback(() => setForceRename(undefined), []);
 
   return (
@@ -434,7 +418,6 @@ export const SheetBar = (): JSX.Element => {
           <SheetBarTab
             key={sheet.id}
             order={getOrderIndex(sheet.order).toString()}
-            onContextMenu={handleContextEvent}
             onPointerDown={handlePointerDown}
             active={activeSheet === sheet.id}
             sheet={sheet}
@@ -463,11 +446,6 @@ export const SheetBar = (): JSX.Element => {
           <ChevronRightIcon />
         </SheetBarButton>
       </div>
-      <SheetBarTabContextMenu
-        contextMenu={contextMenu}
-        handleClose={() => setContextMenu(undefined)}
-        handleRename={handleRename}
-      />
     </div>
   );
 };

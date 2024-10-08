@@ -1,69 +1,52 @@
+import {
+  editorInteractionStateShowNewFileMenuAtom,
+  editorInteractionStateShowRenameFileMenuAtom,
+  editorInteractionStateShowShareFileMenuAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
+import { isEmbed } from '@/app/helpers/isEmbed';
+import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
+import { useFileContext } from '@/app/ui/components/FileProvider';
+import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
+import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { useGridSettings } from '@/app/ui/hooks/useGridSettings';
-import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
+import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
+import CodeEditor from '@/app/ui/menus/CodeEditor';
+import CommandPalette from '@/app/ui/menus/CommandPalette';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
+import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
+import SheetBar from '@/app/ui/menus/SheetBar';
 import Toolbar from '@/app/ui/menus/Toolbar';
+import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
+import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
+import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
+import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useEffect } from 'react';
-import { isMobile } from 'react-device-detect';
 import { useNavigation, useParams } from 'react-router';
-import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import QuadraticGrid from '../gridGL/QuadraticGrid';
-import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import { isEmbed } from '../helpers/isEmbed';
-import { TopBar } from '../ui/menus/TopBar/TopBar';
-import { QuadraticSidebar } from './QuadraticSidebar';
-import { UpdateAlertVersion } from './UpdateAlertVersion';
-import { FileDragDropWrapper } from './components/FileDragDropWrapper';
-import { useFileContext } from './components/FileProvider';
-import { Following } from './components/Following';
-import { PermissionOverlay } from './components/PermissionOverlay';
-import PresentationModeHint from './components/PresentationModeHint';
-import { BottomBar } from './menus/BottomBar/BottomBar';
-import CellTypeMenu from './menus/CellTypeMenu';
-import CommandPalette from './menus/CommandPalette';
-import FeedbackMenu from './menus/FeedbackMenu';
-import SheetBar from './menus/SheetBar';
-import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
-import { ValidationPanel } from './menus/Validations/ValidationPanel';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 export default function QuadraticUI() {
   const {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const connectionsFetcher = useConnectionsFetcher();
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
   const { name, renameFile } = useFileContext();
-  const { users } = useMultiplayerUsers();
-  const gridSettings = useGridSettings();
-  const follow = editorInteractionState.follow
-    ? users.find((user) => user.session_id === editorInteractionState.follow)
-    : undefined;
-
-  // Resize the canvas when user goes in/out of presentation mode
-  useEffect(() => {
-    pixiApp.resize();
-  }, [presentationMode, editorInteractionState.showCodeEditor]);
-
-  // For mobile, set Headers to not visible by default
-  useEffect(() => {
-    if (isMobile) {
-      gridSettings.setShowHeadings(false);
-      pixiApp.viewportChanged();
-    }
-    // eslint-disable-next-line
-  }, []);
+  const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
+  const [showNewFileMenu, setShowNewFileMenu] = useRecoilState(editorInteractionStateShowNewFileMenuAtom);
+  const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
+  const presentationMode = useRecoilValue(presentationModeAtom);
 
   return (
     <div
+      id="quadratic-ui"
       style={{
         width: '100%',
         height: '100%',
@@ -92,55 +75,30 @@ export default function QuadraticUI() {
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
           </FileDragDropWrapper>
-          {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
-          {editorInteractionState.showValidation && <ValidationPanel />}
-          <Following follow={follow} />
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              overflow: 'hidden',
-              position: 'absolute',
-              border: follow ? `3px solid ${follow.colorString}` : '',
-              pointerEvents: 'none',
-            }}
-          ></div>
+          <CodeEditor />
+          <ValidationPanel />
         </div>
 
         {!presentationMode && !isEmbed && <BottomBar />}
       </div>
-
       {/* Global overlay menus */}
-      {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
-      {editorInteractionState.showShareFileMenu && (
-        <ShareFileDialog
-          onClose={() => {
-            setEditorInteractionState((prevState) => ({
-              ...prevState,
-              showShareFileMenu: false,
-            }));
-          }}
-          name={name}
-          uuid={uuid}
-        />
-      )}
-      {editorInteractionState.showNewFileMenu && (
+      <FeedbackMenu />
+      {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
+      {showNewFileMenu && (
         <NewFileDialog
-          onClose={() => {
-            setEditorInteractionState((prev) => ({ ...prev, showNewFileMenu: false }));
-          }}
+          onClose={() => setShowNewFileMenu(false)}
           isPrivate={true}
           connections={connectionsFetcher.data ? connectionsFetcher.data.connections : []}
           teamUuid={teamUuid}
         />
       )}
       {presentationMode && <PresentationModeHint />}
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
-      {editorInteractionState.showCommandPalette && <CommandPalette />}
-      {editorInteractionState.showRenameFileMenu && (
+      <CellTypeMenu />
+      <CommandPalette />
+      {showRenameFileMenu && (
         <DialogRenameItem
           itemLabel="file"
-          onClose={() => setEditorInteractionState((prev) => ({ ...prev, showRenameFileMenu: false }))}
+          onClose={() => setShowRenameFileMenu(false)}
           onSave={(newValue) => renameFile(newValue)}
           value={name}
         />

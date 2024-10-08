@@ -51,6 +51,20 @@ export const setTextColor = (rgb?: ColorResult) => {
   );
 };
 
+export const setUnderline = async () => {
+  const selection = sheets.getRustSelection();
+  const format = await getFormat(selection);
+  const underline = !(format ? format.underline === true : true);
+  quadraticCore.setCellUnderline(selection, underline, sheets.getCursorPosition());
+};
+
+export const setStrikeThrough = async () => {
+  const selection = sheets.getRustSelection();
+  const format = await getFormat(selection);
+  const strikeThrough = !(format ? format.strike_through === true : true);
+  quadraticCore.setCellStrikeThrough(sheets.getRustSelection(), strikeThrough, sheets.getCursorPosition());
+};
+
 export const setAlign = (align: CellAlign) => {
   quadraticCore.setCellAlign(sheets.getRustSelection(), align, sheets.getCursorPosition());
 };

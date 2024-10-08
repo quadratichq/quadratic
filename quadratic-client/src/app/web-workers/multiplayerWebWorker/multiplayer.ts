@@ -60,6 +60,8 @@ export class Multiplayer {
       }
     };
     window.addEventListener('beforeunload', alertUser);
+    window.addEventListener('online', () => this.sendOnline());
+    window.addEventListener('offline', () => this.sendOffline());
     events.on('changeSheet', this.sendChangeSheet);
     events.on('pythonState', this.pythonState);
     events.on('multiplayerState', (state: MultiplayerState) => {
@@ -225,6 +227,14 @@ export class Multiplayer {
     this.send({ type: 'clientMultiplayerSheet', sheetId: sheets.sheet.id });
   };
 
+  private sendOnline = () => {
+    this.send({ type: 'clientMultiplayerOnline' });
+  };
+
+  private sendOffline = () => {
+    this.send({ type: 'clientMultiplayerOffline' });
+  };
+
   sendCellEdit(options: {
     text: string;
     cursor: number;
@@ -232,8 +242,10 @@ export class Multiplayer {
     inlineCodeEditor: boolean;
     bold?: boolean;
     italic?: boolean;
+    underline?: boolean;
+    strikeThrough?: boolean;
   }) {
-    const { text, cursor, codeEditor, inlineCodeEditor, bold, italic } = options;
+    const { text, cursor, codeEditor, inlineCodeEditor, bold, italic, underline, strikeThrough } = options;
     this.send({
       type: 'clientMultiplayerCellEdit',
       cellEdit: {
@@ -244,6 +256,8 @@ export class Multiplayer {
         inline_code_editor: inlineCodeEditor,
         bold,
         italic,
+        underline,
+        strikeThrough,
       },
     });
   }

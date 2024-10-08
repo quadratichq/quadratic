@@ -1,0 +1,212 @@
+when:
+  path: /session/v1/login-request
+  method: POST
+  body: '{"data":{"CLIENT_APP_ID":"Go","CLIENT_APP_VERSION":"1.6.22","SVN_REVISION":"","ACCOUNT_NAME":"TEST","LOGIN_NAME":"TEST","SESSION_PARAMETERS":{"CLIENT_VALIDATE_DEFAULT_PARAMETERS":true},"CLIENT_ENVIRONMENT":{"APPLICATION":"Rust","OS":"darwin","OS_VERSION":"gc-arm64","OCSP_MODE":"FAIL_OPEN"},"PASSWORD":"TEST"}}'
+then:
+  status: 200
+  header:
+  - name: date
+    value: Thu, 26 Sep 2024 16:14:21 GMT
+  - name: content-type
+    value: application/json
+  - name: cache-control
+    value: no-cache, no-store, no-transform
+  - name: vary
+    value: Accept-Encoding, User-Agent
+  - name: content-length
+    value: '3875'
+  - name: server
+    value: SF-LB
+  - name: x-envoy-attempt-count
+    value: '1'
+  - name: x-envoy-upstream-service-time
+    value: '334'
+  - name: x-content-type-options
+    value: nosniff
+  - name: x-xss-protection
+    value: 1; mode=block
+  - name: expect-ct
+    value: enforce, max-age=3600
+  - name: strict-transport-security
+    value: max-age=31536000
+  - name: x-snowflake-fe-instance
+    value: envoy-ingress-prod3-s7sd4
+  - name: x-snowflake-fe-config
+    value: 490da634_1726513610_79c8088e_1727367191211_0_1727367207304
+  - name: x-frame-options
+    value: deny
+  body: |-
+    {
+      "data" : {
+      "masterToken" : "ver:3-hint:3386314761-ETMsDgAAAZIvHKwPABRBRVMvQ0JDL1BLQ1M1UGFkZGluZwEAABAAEErn8qVFxyz3vMlZcXIXf5MAAACgWO6ZEC2GOrwpYRft2FLOmdkYfMJvgAfJj/48Lt1n3Rv+0GKwBOfmrRSaIaaBdpQ1JttLsr8libIzMdj56AJd1IqqdI79bDyWBkwCZlRMwAkNWsSeTMvq8HsAa5W2cdWhNayCcJfXkyEoDjFeHxavVO2egr+B2bcwFQW0NXmMj4a6JsTQM6DLL5WYpmXF7Afxg5xwo8PnUMFC66Y8qqP42wAUGeeYbXUYoc42GvqWJ3pcN6cZAnY=",
+      "token" : "ver:3-hint:3386314761-ETMsDgAAAZIvHKyWABRBRVMvQ0JDL1BLQ1M1UGFkZGluZwEAABAAEODoC8pFmM1/L3PRDPH2+FIAAACAJoKGhOXaAkREJcLoM3fIMoXvEUTYgUFalL8ejhaXxmotjHZ+OiSKjXmKSorcoaxlmIc479tPJL6QAL9MS5yPAvx1eOrnJORhWwzlgpXOEul7QnTKWpzEvHnLVLyYk9rLvmDAGpV/7sJWuPymy91+dF82Ovff8y9lbSmLEz2lj+0AFFOivMzZ1/iMNYFxJ8nZR04oGkkS",
+      "validityInSeconds" : 3600,
+      "masterValidityInSeconds" : 14400,
+      "displayUserName" : "DDIMARIA",
+      "serverVersion" : "8.36.2",
+      "firstLogin" : true,
+      "remMeToken" : null,
+      "remMeValidityInSeconds" : 0,
+      "healthCheckInterval" : 45,
+      "newClientForUpgrade" : null,
+      "sessionId" : 221925255389190,
+      "parameters" : [ {
+        "name" : "CLIENT_PREFETCH_THREADS",
+        "value" : 4
+      }, {
+        "name" : "TIMESTAMP_OUTPUT_FORMAT",
+        "value" : "YYYY-MM-DD HH24:MI:SS.FF3 TZHTZM"
+      }, {
+        "name" : "TIME_OUTPUT_FORMAT",
+        "value" : "HH24:MI:SS"
+      }, {
+        "name" : "CLIENT_RESULT_CHUNK_SIZE",
+        "value" : 160
+      }, {
+        "name" : "TIMESTAMP_TZ_OUTPUT_FORMAT",
+        "value" : ""
+      }, {
+        "name" : "CLIENT_SESSION_KEEP_ALIVE",
+        "value" : false
+      }, {
+        "name" : "CLIENT_METADATA_USE_SESSION_DATABASE",
+        "value" : false
+      }, {
+        "name" : "QUERY_CONTEXT_CACHE_SIZE",
+        "value" : 5
+      }, {
+        "name" : "CLIENT_OUT_OF_BAND_TELEMETRY_ENABLED",
+        "value" : false
+      }, {
+        "name" : "ENABLE_STAGE_S3_PRIVATELINK_FOR_US_EAST_1",
+        "value" : false
+      }, {
+        "name" : "CLIENT_RESULT_PREFETCH_THREADS",
+        "value" : 1
+      }, {
+        "name" : "TIMESTAMP_NTZ_OUTPUT_FORMAT",
+        "value" : "YYYY-MM-DD HH24:MI:SS.FF3"
+      }, {
+        "name" : "CLIENT_METADATA_REQUEST_USE_CONNECTION_CTX",
+        "value" : false
+      }, {
+        "name" : "CLIENT_HONOR_CLIENT_TZ_FOR_TIMESTAMP_NTZ",
+        "value" : true
+      }, {
+        "name" : "CLIENT_MEMORY_LIMIT",
+        "value" : 1536
+      }, {
+        "name" : "CLIENT_TIMESTAMP_TYPE_MAPPING",
+        "value" : "TIMESTAMP_LTZ"
+      }, {
+        "name" : "TIMEZONE",
+        "value" : "America/Los_Angeles"
+      }, {
+        "name" : "CLIENT_RESULT_PREFETCH_SLOTS",
+        "value" : 2
+      }, {
+        "name" : "CLIENT_TELEMETRY_ENABLED",
+        "value" : true
+      }, {
+        "name" : "CLIENT_USE_V1_QUERY_API",
+        "value" : true
+      }, {
+        "name" : "CLIENT_DISABLE_INCIDENTS",
+        "value" : true
+      }, {
+        "name" : "CLIENT_RESULT_COLUMN_CASE_INSENSITIVE",
+        "value" : false
+      }, {
+        "name" : "BINARY_OUTPUT_FORMAT",
+        "value" : "HEX"
+      }, {
+        "name" : "CSV_TIMESTAMP_FORMAT",
+        "value" : ""
+      }, {
+        "name" : "CLIENT_ENABLE_LOG_INFO_STATEMENT_PARAMETERS",
+        "value" : false
+      }, {
+        "name" : "CLIENT_TELEMETRY_SESSIONLESS_ENABLED",
+        "value" : true
+      }, {
+        "name" : "CLIENT_FORCE_PROTECT_ID_TOKEN",
+        "value" : true
+      }, {
+        "name" : "DATE_OUTPUT_FORMAT",
+        "value" : "YYYY-MM-DD"
+      }, {
+        "name" : "CLIENT_CONSENT_CACHE_ID_TOKEN",
+        "value" : false
+      }, {
+        "name" : "CLIENT_STAGE_ARRAY_BINDING_THRESHOLD",
+        "value" : 65280
+      }, {
+        "name" : "CLIENT_SESSION_KEEP_ALIVE_HEARTBEAT_FREQUENCY",
+        "value" : 3600
+      }, {
+        "name" : "CLIENT_SESSION_CLONE",
+        "value" : false
+      }, {
+        "name" : "AUTOCOMMIT",
+        "value" : true
+      }, {
+        "name" : "TIMESTAMP_LTZ_OUTPUT_FORMAT",
+        "value" : ""
+      } ],
+      "sessionInfo" : {
+        "databaseName" : "ALL_NATIVE_DATA_TYPES",
+        "schemaName" : null,
+        "warehouseName" : "COMPUTE_WH",
+        "roleName" : "ACCOUNTADMIN"
+      },
+      "idToken" : null,
+      "idTokenValidityInSeconds" : 0,
+      "responseData" : null,
+      "mfaToken" : null,
+      "mfaTokenValidityInSeconds" : 0
+    },
+      "code" : null,
+      "message" : null,
+      "success" : true
+    }
+---
+when:
+  path: /queries/v1/query-request
+  method: POST
+  body: '{"sqlText":"\n            SELECT\n                db.database_name,\n                sch.schema_name,\n                tbl.table_name,\n                col.column_name,\n                col.data_type,\n                col.is_nullable\n            FROM\n                ALL_NATIVE_DATA_TYPES.information_schema.columns col\n            JOIN\n                ALL_NATIVE_DATA_TYPES.information_schema.tables tbl \n                    ON col.table_catalog = tbl.table_catalog\n                    AND col.table_schema = tbl.table_schema\n                    AND col.table_name = tbl.table_name\n            JOIN\n                ALL_NATIVE_DATA_TYPES.information_schema.schemata sch\n                    ON tbl.table_schema = sch.schema_name\n            JOIN\n                ALL_NATIVE_DATA_TYPES.information_schema.databases db\n                ON sch.catalog_name = db.database_name\n            where sch.schema_name != ''INFORMATION_SCHEMA''\n            ORDER BY\n                db.database_name,\n                sch.schema_name,\n                tbl.table_name,\n                col.ordinal_position;","asyncExec":false,"sequenceId":1,"isInternal":false}'
+then:
+  status: 200
+  header:
+  - name: date
+    value: Thu, 26 Sep 2024 16:14:21 GMT
+  - name: cache-control
+    value: no-cache, no-store
+  - name: content-type
+    value: application/json
+  - name: vary
+    value: Accept-Encoding, User-Agent
+  - name: server
+    value: SF-LB
+  - name: x-envoy-attempt-count
+    value: '1'
+  - name: x-envoy-upstream-service-time
+    value: '2336'
+  - name: x-content-type-options
+    value: nosniff
+  - name: x-xss-protection
+    value: 1; mode=block
+  - name: expect-ct
+    value: enforce, max-age=3600
+  - name: strict-transport-security
+    value: max-age=31536000
+  - name: x-snowflake-fe-instance
+    value: envoy-ingress-prod3-s7sd4
+  - name: x-snowflake-fe-config
+    value: 490da634_1726513610_79c8088e_1727367191211_0_1727367207304
+  - name: x-frame-options
+    value: deny
+  - name: content-encoding
+    value: gzip
+  - name: transfer-encoding
+    value: chunked
+  body_base64: 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

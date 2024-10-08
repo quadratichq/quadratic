@@ -1,7 +1,8 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
   DropdownMenu,
@@ -12,13 +13,12 @@ import {
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import { IconButton } from '@mui/material';
 import { CaretDownIcon } from '@radix-ui/react-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { insertCellRef } from './insertCellRef';
 
 export const CodeEditorRefButton = () => {
   const [relative, setRelative] = useLocalStorage('insertCellRefRelative', false);
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
 
   const [disabled, setDisabled] = useState(true);
   useEffect(() => {
@@ -32,9 +32,9 @@ export const CodeEditorRefButton = () => {
       } else {
         setDisabled(
           !sheets.sheet.cursor.multiCursor &&
-            editorInteractionState.selectedCell.x === sheets.sheet.cursor.cursorPosition.x &&
-            editorInteractionState.selectedCell.y === sheets.sheet.cursor.cursorPosition.y &&
-            editorInteractionState.selectedCellSheet === sheets.sheet.id
+            codeCell.sheetId === sheets.sheet.id &&
+            codeCell.pos.x === sheets.sheet.cursor.cursorPosition.x &&
+            codeCell.pos.y === sheets.sheet.cursor.cursorPosition.y
         );
       }
     };
@@ -44,12 +44,16 @@ export const CodeEditorRefButton = () => {
       events.off('cursorPosition', checkDisabled);
       events.off('changeSheet', checkDisabled);
     };
-  });
+  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId]);
 
-  const tooltip = !disabled ? (
-    <>Insert {relative ? 'relative ' : ''}cell reference</>
-  ) : (
-    <>Select cells on the grid to insert cell reference.</>
+  const tooltip = useMemo(
+    () =>
+      !disabled ? (
+        <>Insert {relative ? 'relative ' : ''}cell reference</>
+      ) : (
+        <>Select cells on the grid to insert cell reference.</>
+      ),
+    [disabled, relative]
   );
 
   return (
@@ -60,7 +64,7 @@ export const CodeEditorRefButton = () => {
             disabled={disabled}
             size="small"
             color="primary"
-            onClick={() => insertCellRef(editorInteractionState, relative)}
+            onClick={() => insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language, relative)}
           >
             <HighlightAltIcon fontSize="small" />
           </IconButton>

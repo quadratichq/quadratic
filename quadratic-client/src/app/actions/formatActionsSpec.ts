@@ -10,7 +10,9 @@ import {
   setCellCommas,
   setFillColor,
   setItalic,
+  setStrikeThrough,
   setTextColor,
+  setUnderline,
   setVerticalAlign,
   setWrap,
   textFormatDecreaseDecimalPlaces,
@@ -45,10 +47,12 @@ import {
   FormatDateTimeIcon,
   FormatItalicIcon,
   FormatNumberAutomaticIcon,
+  FormatStrikethroughIcon,
   FormatTextClipIcon,
   FormatTextOverflowIcon,
   FormatTextWrapIcon,
   FormatToggleCommasIcon,
+  FormatUnderlinedIcon,
   PercentIcon,
   ScientificIcon,
   VerticalAlignBottomIcon,
@@ -67,6 +71,8 @@ type FormatActionSpec = Pick<
   | Action.FormatAlignVerticalTop
   | Action.ToggleBold
   | Action.ToggleItalic
+  | Action.ToggleUnderline
+  | Action.ToggleStrikeThrough
   | Action.ClearFormattingBorders
   | Action.FormatNumberAutomatic
   | Action.FormatNumberCurrency
@@ -179,6 +185,20 @@ export const formatActionsSpec: FormatActionSpec = {
     Icon: FormatItalicIcon,
     run: () => {
       setItalic();
+    },
+  },
+  [Action.ToggleUnderline]: {
+    label: 'Underline',
+    Icon: FormatUnderlinedIcon,
+    run: () => {
+      setUnderline();
+    },
+  },
+  [Action.ToggleStrikeThrough]: {
+    label: 'Strike through',
+    Icon: FormatStrikethroughIcon,
+    run: () => {
+      setStrikeThrough();
     },
   },
   [Action.ClearFormattingBorders]: {

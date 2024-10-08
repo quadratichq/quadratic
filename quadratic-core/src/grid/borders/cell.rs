@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::grid::borders::style::BorderStyle;
+use crate::grid::sheet::borders::BorderStyle;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -25,11 +25,6 @@ impl CellBorders {
             as_array[*side as usize] = Some(*style);
         }
         Self { borders: as_array }
-    }
-
-    #[cfg(test)]
-    pub(super) fn contains(&self, side: &CellSide) -> bool {
-        self.borders[*side as usize].is_some()
     }
 
     pub(super) fn combine(

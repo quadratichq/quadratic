@@ -12,6 +12,7 @@ pub struct SummarizeSelectionResult {
 
 #[wasm_bindgen]
 impl GridController {
+    #[allow(non_snake_case)]
     #[wasm_bindgen(js_name = "summarizeSelection")]
     pub fn js_summarize_selection(
         &mut self,

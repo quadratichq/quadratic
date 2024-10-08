@@ -4,6 +4,7 @@ use crate::{
     grid::{
         formats::Formats,
         series::{find_auto_complete, SeriesOptions},
+        sheet::borders::BorderStyleCellUpdates,
         SheetId,
     },
     selection::Selection,
@@ -159,6 +160,12 @@ impl GridController {
         ops
     }
 
+    /// Expand the selection to the right
+    ///
+    /// selection is range of cells to be expanded
+    /// range is the target range
+    /// down_range is the range below the target range
+    /// up_range is the range above the target range
     fn expand_right(
         &mut self,
         sheet_id: SheetId,
@@ -169,7 +176,12 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut format_rects = vec![];
         let mut formats = Formats::default();
+
+        let mut borders = BorderStyleCellUpdates::default();
+        let mut border_rects = vec![];
+
         let mut values = vec![];
+
         let mut ops = selection
             .y_range()
             .map(|y| {
@@ -185,6 +197,14 @@ impl GridController {
                         format_rect,
                         &mut format_rects,
                         &mut formats,
+                    );
+
+                    self.apply_borders(
+                        sheet_id,
+                        start_pos,
+                        format_rect,
+                        &mut border_rects,
+                        &mut borders,
                     );
                 });
 
@@ -240,6 +260,16 @@ impl GridController {
         };
         ops.push(formats_op);
 
+        let borders_op = Operation::SetBordersSelection {
+            selection: Selection {
+                sheet_id,
+                rects: border_rects.into(),
+                ..Default::default()
+            },
+            borders,
+        };
+        ops.push(borders_op);
+
         Ok(ops)
     }
 
@@ -253,7 +283,12 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut format_rects = vec![];
         let mut formats = Formats::default();
+
+        let mut border_rects = vec![];
+        let mut borders = BorderStyleCellUpdates::default();
+
         let mut values = vec![];
+
         let mut ops = selection
             .y_range()
             .map(|y| {
@@ -275,6 +310,14 @@ impl GridController {
                         format_rect,
                         &mut format_rects,
                         &mut formats,
+                    );
+
+                    self.apply_borders(
+                        sheet_id,
+                        start_pos,
+                        format_rect,
+                        &mut border_rects,
+                        &mut borders,
                     );
                 });
 
@@ -329,6 +372,17 @@ impl GridController {
             formats,
         };
         ops.push(formats_op);
+
+        let borders_op = Operation::SetBordersSelection {
+            selection: Selection {
+                sheet_id,
+                rects: border_rects.into(),
+                ..Default::default()
+            },
+            borders,
+        };
+        ops.push(borders_op);
+
         Ok(ops)
     }
 
@@ -340,6 +394,10 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut format_rects = vec![];
         let mut formats = Formats::default();
+
+        let mut border_rects = vec![];
+        let mut borders = BorderStyleCellUpdates::default();
+
         let mut ops = selection
             .x_range()
             .rev()
@@ -356,6 +414,14 @@ impl GridController {
                         format_rect,
                         &mut format_rects,
                         &mut formats,
+                    );
+
+                    self.apply_borders(
+                        sheet_id,
+                        start_pos,
+                        format_rect,
+                        &mut border_rects,
+                        &mut borders,
                     );
                 });
 
@@ -389,6 +455,16 @@ impl GridController {
         };
         ops.push(formats_op);
 
+        let borders_op = Operation::SetBordersSelection {
+            selection: Selection {
+                sheet_id,
+                rects: border_rects.into(),
+                ..Default::default()
+            },
+            borders,
+        };
+        ops.push(borders_op);
+
         Ok(ops)
     }
 
@@ -400,6 +476,10 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut format_rects = vec![];
         let mut formats = Formats::default();
+
+        let mut border_rects = vec![];
+        let mut borders = BorderStyleCellUpdates::default();
+
         let mut ops = selection
             .x_range()
             .map(|x| {
@@ -421,6 +501,14 @@ impl GridController {
                         format_rect,
                         &mut format_rects,
                         &mut formats,
+                    );
+
+                    self.apply_borders(
+                        sheet_id,
+                        start_pos,
+                        format_rect,
+                        &mut border_rects,
+                        &mut borders,
                     );
                 });
 
@@ -454,6 +542,16 @@ impl GridController {
         };
         ops.push(formats_op);
 
+        let borders_op = Operation::SetBordersSelection {
+            selection: Selection {
+                sheet_id,
+                rects: border_rects.into(),
+                ..Default::default()
+            },
+            borders,
+        };
+        ops.push(borders_op);
+
         Ok(ops)
     }
 
@@ -468,6 +566,10 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut format_rects = vec![];
         let mut formats = Formats::default();
+
+        let mut border_rects = vec![];
+        let mut borders = BorderStyleCellUpdates::default();
+
         let height = values.len() as i64 / width;
         let mut ops = range
             .x_range()
@@ -513,6 +615,14 @@ impl GridController {
                             &mut format_rects,
                             &mut formats,
                         );
+
+                        self.apply_borders(
+                            sheet_id,
+                            start_pos,
+                            format_rect,
+                            &mut border_rects,
+                            &mut borders,
+                        );
                     });
 
                 let (operations, _) = self.apply_auto_complete(
@@ -538,6 +648,16 @@ impl GridController {
         };
         ops.push(formats_op);
 
+        let borders_op = Operation::SetBordersSelection {
+            selection: Selection {
+                sheet_id,
+                rects: border_rects.into(),
+                ..Default::default()
+            },
+            borders,
+        };
+        ops.push(borders_op);
+
         Ok(ops)
     }
 
@@ -552,6 +672,10 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut format_rects = vec![];
         let mut formats = Formats::default();
+
+        let mut border_rects = vec![];
+        let mut borders = BorderStyleCellUpdates::default();
+
         let height = values.len() as i64 / width;
 
         let mut ops = range
@@ -603,6 +727,14 @@ impl GridController {
                             &mut format_rects,
                             &mut formats,
                         );
+
+                        self.apply_borders(
+                            sheet_id,
+                            start_pos,
+                            format_rect,
+                            &mut border_rects,
+                            &mut borders,
+                        );
                     });
 
                 let (operations, _) = self.apply_auto_complete(
@@ -627,6 +759,16 @@ impl GridController {
             formats,
         };
         ops.push(formats_op);
+
+        let borders_op = Operation::SetBordersSelection {
+            selection: Selection {
+                sheet_id,
+                rects: border_rects.into(),
+                ..Default::default()
+            },
+            borders,
+        };
+        ops.push(borders_op);
 
         Ok(ops)
     }
@@ -696,6 +838,29 @@ impl GridController {
                         sheet
                             .format_cell(start_pos.x + x, start_pos.y + y, true)
                             .to_replace(),
+                    );
+                }
+            }
+        }
+    }
+
+    fn apply_borders(
+        &self,
+        sheet_id: SheetId,
+        start_pos: Pos,
+        border_rect: Rect,
+        border_rects: &mut Vec<Rect>,
+        borders: &mut BorderStyleCellUpdates,
+    ) {
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            border_rects.push(border_rect);
+            for x in 0..border_rect.width() as i64 {
+                for y in 0..border_rect.height() as i64 {
+                    borders.push(
+                        sheet
+                            .borders
+                            .get(start_pos.x + x, start_pos.y + y)
+                            .override_border(false),
                     );
                 }
             }

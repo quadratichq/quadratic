@@ -1,10 +1,10 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { Validation } from '@/app/ui/menus/Validations/Validation/Validation';
+import { Validations } from '@/app/ui/menus/Validations/Validations/Validations';
 import { useRecoilValue } from 'recoil';
-import { Validations } from './Validations/Validations';
-import { Validation } from './Validation/Validation';
 
 export const ValidationPanel = () => {
-  const { showValidation } = useRecoilValue(editorInteractionStateAtom);
+  const showValidation = useRecoilValue(editorInteractionStateShowValidationAtom);
 
   if (showValidation === false) {
     return null;

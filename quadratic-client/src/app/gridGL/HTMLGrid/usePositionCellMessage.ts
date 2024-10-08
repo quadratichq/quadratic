@@ -1,11 +1,12 @@
-import { Rectangle } from 'pixi.js';
-import { useEffect, useState } from 'react';
-import { pixiApp } from '../pixiApp/PixiApp';
+import { editorInteractionStateAnnotationStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
-import { inlineEditorEvents } from './inlineEditor/inlineEditorEvents';
-import { inlineEditorHandler } from './inlineEditor/inlineEditorHandler';
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Rectangle } from 'pixi.js';
+import { useLayoutEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 
 interface Props {
   div: HTMLDivElement | null;
@@ -14,40 +15,58 @@ interface Props {
   // used to trigger a check to see if the message should be forced to the left
   forceLeft?: boolean;
 
+  forceTop?: boolean;
+
   direction?: 'vertical' | 'horizontal';
+
+  centerHorizontal?: boolean;
 }
 
 interface PositionCellMessage {
-  top: number | undefined;
-  left: number | undefined;
+  top: number;
+  left: number;
 }
 
 export const usePositionCellMessage = (props: Props): PositionCellMessage => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { div, offsets, forceLeft, direction: side } = props;
-  const [top, setTop] = useState<number | undefined>();
-  const [left, setLeft] = useState<number | undefined>();
+  const annotationState = useRecoilValue(editorInteractionStateAnnotationStateAtom);
+  const { div, offsets, forceLeft, forceTop, direction: side, centerHorizontal } = props;
+  const [top, setTop] = useState(0);
+  const [left, setLeft] = useState(0);
+  const { leftHeading, topHeading } = useHeadingSize();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updatePosition = () => {
       if (!div || !offsets) return;
 
       const viewport = pixiApp.viewport;
-      const scale = pixiApp.viewport.scale.x;
       const bounds = viewport.getVisibleBounds();
 
-      if (side === 'vertical') {
-        setLeft(offsets.left);
-        setTop(offsets.bottom);
-      } else {
-        const offsetWidth = div.offsetWidth * scale;
-        const offsetHeight = div.offsetHeight * scale;
+      const scale = pixiApp.viewport.scale.x;
+      const offsetWidth = div.offsetWidth / scale;
+      const offsetHeight = div.offsetHeight / scale;
+      const topHeadingScaled = topHeading / scale;
+      const leftHeadingScaled = leftHeading / scale;
 
+      if (side === 'vertical') {
+        let left = offsets.left - (centerHorizontal ? offsetWidth / 2 : 0);
+        left = Math.min(left, bounds.right - offsetWidth);
+        left = Math.max(left, bounds.left + leftHeadingScaled);
+        setLeft(left);
+
+        let top = offsets.bottom;
+        if (forceTop) {
+          top = offsets.top - offsetHeight;
+          if (top < bounds.top + topHeadingScaled) {
+            top = offsets.bottom;
+          }
+        }
+        setTop(top);
+      } else {
         // checks whether the inline editor or dropdown is open; if so, always
         // show to the left to avoid overlapping the content
         let triggerLeft = false;
         if (forceLeft) {
-          triggerLeft = inlineEditorHandler.isOpen() || editorInteractionState.annotationState === 'dropdown';
+          triggerLeft = inlineEditorHandler.isOpen() || annotationState === 'dropdown';
         }
         // only box to the left if it doesn't fit.
         if (triggerLeft || offsets.right + offsetWidth > bounds.right) {
@@ -81,7 +100,7 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       pixiApp.viewport.off('moved', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
-  }, [div, editorInteractionState.annotationState, forceLeft, offsets, side]);
+  }, [centerHorizontal, div, annotationState, forceLeft, forceTop, leftHeading, offsets, side, topHeading]);
 
   return { top, left };
 };

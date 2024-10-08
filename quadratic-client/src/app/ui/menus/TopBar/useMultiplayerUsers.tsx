@@ -1,4 +1,4 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateFollowAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const useMultiplayerUsers = (): { users: MultiplayerUser[]; followers: string[] } => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const follow = useRecoilValue(editorInteractionStateFollowAtom);
 
   const [users, setUsers] = useState<MultiplayerUser[]>([]);
   const [followers, setFollowers] = useState<string[]>([]);
@@ -31,7 +31,7 @@ export const useMultiplayerUsers = (): { users: MultiplayerUser[]; followers: st
     return () => {
       events.off('multiplayerUpdate', handleUpdate);
     };
-  }, [editorInteractionState.follow]);
+  }, [follow]);
 
   return { users, followers };
 };

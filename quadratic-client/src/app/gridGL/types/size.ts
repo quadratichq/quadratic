@@ -29,3 +29,8 @@ export interface MinMax {
   min: number;
   max: number;
 }
+
+export interface DrawRects {
+  rects: Rectangle[];
+  tint: number;
+}

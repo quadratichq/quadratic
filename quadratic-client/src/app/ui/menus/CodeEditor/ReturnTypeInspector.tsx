@@ -1,25 +1,34 @@
+import {
+  codeEditorCodeCellAtom,
+  codeEditorEditorContentAtom,
+  codeEditorEvaluationResultAtom,
+  codeEditorLoadingAtom,
+  codeEditorUnsavedChangesAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { useTheme } from '@mui/material';
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
 import { codeEditorBaseStyles } from './styles';
 
-interface ReturnTypeInspectorProps {
-  evaluationResult: EvaluationResult | undefined;
-  language: CodeCellLanguage | undefined;
-  unsaved: boolean;
-}
-
-export function ReturnTypeInspector({ evaluationResult, unsaved, language }: ReturnTypeInspectorProps) {
+export function ReturnTypeInspector() {
   const theme = useTheme();
-  const show = evaluationResult?.line_number && evaluationResult?.output_type && !unsaved;
+  const loading = useRecoilValue(codeEditorLoadingAtom);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
+  const mode = useMemo(() => getLanguage(language), [language]);
+
+  const editorContent = useRecoilValue(codeEditorEditorContentAtom);
+
+  const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
+  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+
+  const show = evaluationResult?.line_number && evaluationResult?.output_type && !unsavedChanges;
 
   let message: JSX.Element | undefined = undefined;
 
-  if (getLanguage(language) === 'Python') {
+  if (mode === 'Python') {
     message = show ? (
       <>
         {evaluationResult.line_number ? `Line ${evaluationResult.line_number} returned ` : 'Returned '}
@@ -51,7 +60,7 @@ export function ReturnTypeInspector({ evaluationResult, unsaved, language }: Ret
         </Link>
       </>
     );
-  } else if (getLanguage(language) === 'Javascript') {
+  } else if (mode === 'Javascript') {
     message = show ? (
       <>
         {evaluationResult.line_number ? `Line ${evaluationResult.line_number} returned ` : 'Returned '}
@@ -65,7 +74,7 @@ export function ReturnTypeInspector({ evaluationResult, unsaved, language }: Ret
         </Link>
       </>
     );
-  } else if (getLanguage(language) === 'Connection' && show && evaluationResult?.output_type) {
+  } else if (mode === 'Connection' && show && evaluationResult?.output_type) {
     const fullMessage = evaluationResult.output_type.split('\n');
     message = (
       <>
@@ -78,7 +87,7 @@ export function ReturnTypeInspector({ evaluationResult, unsaved, language }: Ret
     );
   }
 
-  if (message === undefined) {
+  if (message === undefined || language === 'Formula' || !editorContent || loading) {
     return null;
   }
 

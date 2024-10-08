@@ -1,3 +1,4 @@
+import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -6,7 +7,7 @@ import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
 import { intersects } from '../../helpers/intersects';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { Coordinate } from '../../types/size';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;

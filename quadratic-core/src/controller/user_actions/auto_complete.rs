@@ -29,7 +29,8 @@ mod tests {
     use super::*;
     use crate::{
         array,
-        grid::CodeCellLanguage,
+        grid::{BorderSelection, BorderStyle, CodeCellLanguage},
+        selection::Selection,
         test_util::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
@@ -82,16 +83,20 @@ mod tests {
 
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
-                        grid_controller.set_cell_bold(sheet_pos.into(), Some(true), None);
+                        grid_controller
+                            .set_bold_selection(Selection::sheet_pos(sheet_pos), true, None)
+                            .unwrap();
                     }
                 }
 
                 if let Some(fill_color) = fill_colors.get(count) {
-                    grid_controller.set_cell_fill_color(
-                        SheetRect::single_sheet_pos(sheet_pos),
-                        Some(fill_color.to_lowercase()),
-                        None,
-                    );
+                    grid_controller
+                        .set_fill_color_selection(
+                            Selection::sheet_pos(sheet_pos),
+                            Some(fill_color.to_lowercase()),
+                            None,
+                        )
+                        .unwrap();
                 }
 
                 if let Some(code_cell) = code_cells.get(count) {
@@ -628,5 +633,93 @@ mod tests {
 
         let result = grid.autocomplete(SheetId::new(), selected, range, None);
         assert!(result.is_err());
+    }
+
+    #[test]
+    #[parallel]
+    fn expand_right_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 1, 3, 3, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        gc.autocomplete(sheet_id, Rect::new(1, 1, 3, 3), Rect::new(1, 1, 5, 3), None)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        // it's +1, +1 because we the bounds is calculated from the top/left of
+        // the cell (so bottom/right is +1)
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 6, 4)));
+    }
+
+    #[test]
+    #[parallel]
+    fn expand_left_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(3, 1, 6, 1, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        gc.autocomplete(sheet_id, Rect::new(3, 1, 6, 1), Rect::new(1, 1, 5, 1), None)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        // it's +1, +1 because we the bounds is calculated from the top/left of
+        // the cell (so bottom/right is +1)
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 7, 2)));
+    }
+
+    #[test]
+    #[parallel]
+    fn expand_up_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        gc.autocomplete(sheet_id, Rect::new(1, 3, 1, 6), Rect::new(1, 1, 1, 5), None)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        // it's +1, +1 because we the bounds is calculated from the top/left of
+        // the cell (so bottom/right is +1)
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 2, 7)));
+    }
+
+    #[test]
+    #[parallel]
+    fn expand_down_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        gc.autocomplete(sheet_id, Rect::new(1, 3, 1, 6), Rect::new(1, 1, 1, 5), None)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        // it's +1, +1 because we the bounds is calculated from the top/left of
+        // the cell (so bottom/right is +1)
+        assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 2, 7)));
     }
 }

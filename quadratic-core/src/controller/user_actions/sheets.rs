@@ -51,9 +51,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        color::Rgba,
         controller::GridController,
-        grid::{BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, SheetId},
+        grid::sheet::borders::{BorderSelection, BorderStyle},
+        grid::{CodeCellLanguage, SheetId},
+        selection::Selection,
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
@@ -228,9 +229,7 @@ mod test {
 
     #[test]
     #[serial]
-    fn test_duplicate_sheet() {
-        clear_js_calls();
-
+    fn duplicate_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -245,20 +244,30 @@ mod test {
             "10 + 10".to_string(),
             None,
         );
-        gc.set_cell_fill_color((1, 1, 1, 1, sheet_id).into(), Some("red".to_string()), None);
-        gc.set_borders(
-            SheetRect::single_pos((2, 2).into(), sheet_id),
-            vec![BorderSelection::Top, BorderSelection::Left],
-            Some(BorderStyle {
-                color: Rgba::default(),
-                line: CellBorderLine::Line1,
+        gc.set_fill_color_selection(
+            Selection::sheet_pos(SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
             }),
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
+
+        gc.set_borders_selection(
+            Selection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),
+            BorderSelection::Top,
+            Some(BorderStyle::default()),
             None,
         );
+
+        clear_js_calls();
 
         gc.duplicate_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy");
+
         let duplicated_sheet_id = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
         expect_js_call(
@@ -276,14 +285,15 @@ mod test {
             false,
         );
         // should send borders for the duplicated sheet
-        let borders = gc.sheet(duplicated_sheet_id).render_borders();
+        let borders = gc
+            .sheet(duplicated_sheet_id)
+            .borders
+            .borders_in_sheet()
+            .unwrap();
+        let borders_str = serde_json::to_string(&borders).unwrap();
         expect_js_call(
-            "jsSheetBorders",
-            format!(
-                "{},{}",
-                duplicated_sheet_id,
-                serde_json::to_string(&borders).unwrap()
-            ),
+            "jsBordersSheet",
+            format!("{},{}", duplicated_sheet_id, borders_str),
             false,
         );
         // code cells should rerun and send updated code cell
@@ -304,7 +314,7 @@ mod test {
             "jsUpdateCodeCell",
             format!(
                 "{},{},{},{:?},{:?}",
-                sheet_id,
+                duplicated_sheet_id,
                 sheet_pos.x,
                 sheet_pos.y,
                 Some(serde_json::to_string(&code_cell).unwrap()),

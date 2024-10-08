@@ -1,18 +1,17 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
-export function keyboardCode(
-  event: React.KeyboardEvent<HTMLElement>,
-  editorInteractionState: EditorInteractionState
-): boolean {
+export function keyboardCode(event: React.KeyboardEvent<HTMLElement>): boolean {
+  const { editorInteractionState, codeEditorState } = pixiAppSettings;
   if (!hasPermissionToEditFile(editorInteractionState.permissions)) {
     return false;
   }
+
   // Execute code cell
   if (matchShortcut(Action.ExecuteCode, event)) {
     quadraticCore.rerunCodeCells(
@@ -37,8 +36,9 @@ export function keyboardCode(
   }
 
   // Insert cell reference
-  if (editorInteractionState.showCodeEditor && matchShortcut(Action.InsertCellReference, event)) {
-    insertCellRef(editorInteractionState);
+  if (codeEditorState.showCodeEditor && matchShortcut(Action.InsertCellReference, event)) {
+    const { sheetId, pos, language } = codeEditorState.codeCell;
+    insertCellRef(pos, sheetId, language);
     return true;
   }
 

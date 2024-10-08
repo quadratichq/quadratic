@@ -1,18 +1,20 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import {
+  editorInteractionStateFollowAtom,
+  editorInteractionStatePermissionsAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { SheetBarTabDropdownMenu } from '@/app/ui/menus/SheetBar/SheetBarTabDropdownMenu';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { ArrowDropDownIcon } from '@/shared/components/Icons';
-import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { Box, Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
-import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
+import { PointerEvent, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { focusGrid } from '../../../helpers/focusGrid';
 
 const SHEET_NAME_MAX_LENGTH = 50;
 
@@ -21,18 +23,18 @@ interface Props {
   order: string;
   active: boolean;
   onPointerDown: (options: { event: PointerEvent<HTMLDivElement>; sheet: Sheet }) => void;
-  onContextMenu: (event: MouseEvent, sheet: Sheet) => void;
   forceRename: boolean;
   clearRename: () => void;
 }
 
 export const SheetBarTab = (props: Props): JSX.Element => {
-  const { sheet, order, active, onPointerDown, onContextMenu, forceRename, clearRename } = props;
+  const [isOpenDropdown, setIsOpenDropdown] = useState(false);
+  const { sheet, order, active, onPointerDown, forceRename, clearRename } = props;
   const [nameExists, setNameExists] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
-  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
 
   useEffect(() => {
@@ -66,7 +68,10 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           setIsRenaming(true);
         }
       }}
-      onContextMenu={(e) => onContextMenu(e, sheet)}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setIsOpenDropdown(true);
+      }}
     >
       <TabWrapper sheet={sheet} active={active}>
         <TabName
@@ -79,7 +84,14 @@ export const SheetBarTab = (props: Props): JSX.Element => {
         />
         {sheet.id !== sheets.sheet.id && <TabMultiplayer sheetId={sheet.id} />}
         <div className={cn('flex', !active && 'invisible opacity-0 group-hover:visible group-hover:opacity-100')}>
-          <TabButton active={active} hasPermission={hasPermission} onContextMenu={onContextMenu} sheet={sheet} />
+          {hasPermission && (
+            <SheetBarTabDropdownMenu
+              isOpen={isOpenDropdown}
+              setIsOpen={setIsOpenDropdown}
+              handleClose={() => setIsOpenDropdown(false)}
+              handleRename={() => setIsRenaming(true)}
+            />
+          )}
         </div>
         <Popper open={nameExists} anchorEl={containerRef.current} transition>
           {({ TransitionProps }) => (
@@ -106,7 +118,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
 
 function TabWrapper({ children, sheet, active }: any) {
   const theme = useTheme();
-  const { follow } = useRecoilValue(editorInteractionStateAtom);
+  const follow = useRecoilValue(editorInteractionStateFollowAtom);
   return (
     <Stack
       className={cn(active && 'text-primary')}
@@ -270,32 +282,6 @@ function TabName({
       {sheet.name}
     </Box>
   );
-}
-
-function TabButton({
-  active,
-  hasPermission,
-  onContextMenu,
-  sheet,
-}: {
-  active: Props['active'];
-  hasPermission: boolean;
-  onContextMenu: Props['onContextMenu'];
-  sheet: Props['sheet'];
-}) {
-  return hasPermission ? (
-    <Button
-      variant="ghost"
-      className={'-mr-1 h-4 w-4'}
-      size="icon-sm"
-      onClick={(e) => {
-        e.stopPropagation();
-        onContextMenu(e, sheet);
-      }}
-    >
-      <ArrowDropDownIcon />
-    </Button>
-  ) : null;
 }
 
 function selectElementContents(el: HTMLDivElement | null) {

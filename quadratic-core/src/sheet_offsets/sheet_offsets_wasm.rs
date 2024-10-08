@@ -1,5 +1,5 @@
 use super::SheetOffsets;
-use crate::Rect;
+use crate::{Rect, ScreenRect};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -20,9 +20,8 @@ pub struct ColumnRow {
 impl SheetOffsets {
     /// Returns a rectangle with the screen coordinates for a cell
     #[wasm_bindgen(js_name = "getCellOffsets")]
-    pub fn js_get_cell_offsets(&self, column: i32, row: i32) -> String {
-        let screen_rect = self.cell_offsets(column as i64, row as i64);
-        serde_json::to_string(&screen_rect).unwrap_or("".to_string())
+    pub fn js_get_cell_offsets(&self, column: i32, row: i32) -> ScreenRect {
+        self.cell_offsets(column as i64, row as i64)
     }
 
     // Returns a rectangle with the screen coordinates for a rectangle of cells

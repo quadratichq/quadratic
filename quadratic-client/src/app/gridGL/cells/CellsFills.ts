@@ -14,8 +14,8 @@ interface SpriteBounds extends Sprite {
 }
 
 interface ColumnRow {
-  row?: number;
-  column?: number;
+  row: number | null;
+  column: number | null;
   color: string;
   timestamp: number;
 }
@@ -60,7 +60,6 @@ export class CellsFills extends Container {
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
     events.on('resizeHeadingRow', this.drawCells);
-    events.on('resizeRowHeights', this.drawSheetCells);
     pixiApp.viewport.on('zoomed', this.setDirty);
     pixiApp.viewport.on('moved', this.setDirty);
   }
@@ -72,7 +71,6 @@ export class CellsFills extends Container {
     events.off('cursorPosition', this.setDirty);
     events.off('resizeHeadingColumn', this.drawCells);
     events.off('resizeHeadingRow', this.drawCells);
-    events.off('resizeRowHeights', this.drawSheetCells);
     pixiApp.viewport.off('zoomed', this.setDirty);
     pixiApp.viewport.off('moved', this.setDirty);
     super.destroy();
@@ -147,12 +145,12 @@ export class CellsFills extends Container {
       // they are drawn in the correct order
       const columns: ColumnRow[] = this.metaFill.columns.map((entry) => ({
         column: Number(entry[0]),
-        row: undefined,
+        row: null,
         color: entry[1][0],
         timestamp: Number(entry[1][1]),
       }));
       const rows: ColumnRow[] = this.metaFill.rows.map((entry) => ({
-        column: undefined,
+        column: null,
         row: Number(entry[0]),
         color: entry[1][0],
         timestamp: Number(entry[1][1]),
@@ -160,7 +158,7 @@ export class CellsFills extends Container {
       const fills = [...columns, ...rows].sort((a, b) => a.timestamp - b.timestamp);
 
       fills.forEach((fill) => {
-        if (fill.column !== undefined) {
+        if (fill.column !== null) {
           const screen = this.sheet.offsets.getColumnPlacement(Number(fill.column));
           const left = screen.position;
           const width = screen.size;
@@ -171,7 +169,7 @@ export class CellsFills extends Container {
           this.meta.beginFill(this.getColor(fill.color));
           this.meta.drawRect(left, viewport.top, width, viewport.height);
           this.meta.endFill();
-        } else if (fill.row !== undefined) {
+        } else if (fill.row !== null) {
           const screen = this.sheet.offsets.getRowPlacement(fill.row);
           const top = screen.position;
           const height = screen.size;

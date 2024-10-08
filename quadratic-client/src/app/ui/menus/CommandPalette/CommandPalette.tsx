@@ -1,79 +1,91 @@
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import {
+  editorInteractionStateAnnotationStateAtom,
+  editorInteractionStatePermissionsAtom,
+  editorInteractionStateShowCellTypeMenuAtom,
+  editorInteractionStateShowCommandPaletteAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
+import {
+  Command,
+  CommandPaletteListItem,
+  CommandPaletteListItemDynamicProps,
+} from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { BordersHook } from '@/app/ui/menus/CommandPalette/commands/Borders';
+import codeCommandGroup from '@/app/ui/menus/CommandPalette/commands/Code';
+import columnRowCommandGroup from '@/app/ui/menus/CommandPalette/commands/ColumnRow';
+import connectionsCommandGroup from '@/app/ui/menus/CommandPalette/commands/Connections';
+import editCommandGroup from '@/app/ui/menus/CommandPalette/commands/Edit';
+import fileCommandGroup from '@/app/ui/menus/CommandPalette/commands/File';
+import formatCommandGroup from '@/app/ui/menus/CommandPalette/commands/Format';
+import helpCommandGroup from '@/app/ui/menus/CommandPalette/commands/Help';
+import importCommandGroup from '@/app/ui/menus/CommandPalette/commands/Import';
+import getSheetCommandGroup from '@/app/ui/menus/CommandPalette/commands/Sheets';
+import textCommandGroup from '@/app/ui/menus/CommandPalette/commands/Text';
+import validationCommandGroup from '@/app/ui/menus/CommandPalette/commands/Validation';
+import viewCommandGroup from '@/app/ui/menus/CommandPalette/commands/View';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useState } from 'react';
-import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { Command, CommandPaletteListItem, CommandPaletteListItemDynamicProps } from './CommandPaletteListItem';
-import { BordersHook } from './commands/Borders';
-import codeCommandGroup from './commands/Code';
-import { columnRowCommandGroup } from './commands/ColumnRow';
-import connectionsCommandGroup from './commands/Connections';
-import editCommandGroup from './commands/Edit';
-import fileCommandGroup from './commands/File';
-import formatCommandGroup from './commands/Format';
-import helpCommandGroup from './commands/Help';
-import importCommandGroup from './commands/Import';
-import getSheetCommandGroup from './commands/Sheets';
-import textCommandGroup from './commands/Text';
-import { validationCommandGroup } from './commands/Validation';
-import viewCommandGroup from './commands/View';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const CommandPalette = () => {
+  const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
   const { isAuthenticated } = useRootRouteLoaderData();
   const {
     userMakingRequest: { fileTeamPrivacy, teamPermissions },
   } = useFileRouteLoaderData();
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const setAnnotationState = useSetRecoilState(editorInteractionStateAnnotationStateAtom);
   const [activeSearchValue, setActiveSearchValue] = useState<string>('');
-  const { permissions } = editorInteractionState;
 
   // Fn that closes the command palette and gets passed down to individual ListItems
   const closeCommandPalette = useCallback(() => {
-    setEditorInteractionState((state) => ({
-      ...state,
-      showCellTypeMenu: false,
-      showCommandPalette: false,
-    }));
-  }, [setEditorInteractionState]);
+    setShowCellTypeMenu(false);
+    setShowCommandPalette(false);
+  }, [setShowCellTypeMenu, setShowCommandPalette]);
 
-  const openDateFormat = () => {
-    setEditorInteractionState((state) => ({
-      ...state,
-      annotationState: 'date-format',
-    }));
-  };
+  const openDateFormat = useCallback(() => {
+    setAnnotationState('date-format');
+  }, [setAnnotationState]);
 
   useEffect(() => {
     mixpanel.track('[CommandPalette].open');
   }, []);
 
   const borderCommandGroup = BordersHook();
+  const sheetsCommandGroup = getSheetCommandGroup();
+  const commandGroups = useMemo(
+    () => [
+      editCommandGroup,
+      fileCommandGroup,
+      viewCommandGroup,
+      importCommandGroup,
+      connectionsCommandGroup,
+      borderCommandGroup,
+      textCommandGroup,
+      formatCommandGroup,
+      sheetsCommandGroup,
+      helpCommandGroup,
+      codeCommandGroup,
+      columnRowCommandGroup,
+      validationCommandGroup,
+    ],
+    [borderCommandGroup, sheetsCommandGroup]
+  );
 
-  const commandGroups = [
-    editCommandGroup,
-    fileCommandGroup,
-    viewCommandGroup,
-    importCommandGroup,
-    connectionsCommandGroup,
-    borderCommandGroup,
-    textCommandGroup,
-    formatCommandGroup,
-    getSheetCommandGroup(),
-    helpCommandGroup,
-    codeCommandGroup,
-    columnRowCommandGroup,
-    validationCommandGroup,
-  ];
+  if (!showCommandPalette) {
+    return null;
+  }
 
   return (
     <CommandDialog
       dialogProps={{
-        open: editorInteractionState.showCommandPalette,
+        open: showCommandPalette,
         onOpenChange: closeCommandPalette,
       }}
       commandProps={{ shouldFilter: false }}
