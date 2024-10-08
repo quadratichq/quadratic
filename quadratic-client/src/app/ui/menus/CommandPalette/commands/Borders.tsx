@@ -1,17 +1,17 @@
+import { ChangeBorder, useBorders, UseBordersResults } from '@/app/ui/hooks/useBorders';
 import {
   BorderAllIcon,
   BorderBottomIcon,
+  BorderClearIcon,
   BorderHorizontalIcon,
   BorderInnerIcon,
   BorderLeftIcon,
-  BorderNoneIcon,
   BorderOuterIcon,
   BorderRightIcon,
   BorderTopIcon,
   BorderVerticalIcon,
-} from '@/app/ui/icons';
+} from '@/shared/components/Icons';
 import { isAvailableBecauseCanEditFile } from '../../../../actions';
-import { ChangeBorder, UseBordersResults, useBorders } from '../../TopBar/SubMenus/useBorders';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 export const BordersHook = (): CommandGroup => {
@@ -37,11 +37,10 @@ export const BordersHook = (): CommandGroup => {
           return (
             <CommandPaletteListItem
               {...props}
-              icon={<BorderNoneIcon />}
+              icon={<BorderClearIcon />}
               action={() => {
                 borders.clearBorders();
               }}
-              disabled={borders.disabled}
             />
           );
         },
@@ -76,7 +75,6 @@ function generateListItem(
             borders.changeBorders(changeBordersArgs);
           }}
           {...(icon ? { icon } : {})}
-          disabled={borders.disabled}
         />
       );
     },

@@ -1,26 +1,25 @@
-use crate::CellValue;
-#[cfg(test)]
-use crate::{Array, Pos};
 use block::{Block, BlockContent, SameValue};
-#[cfg(test)]
-pub use borders::print_borders;
 pub use borders::{
-    generate_borders, generate_borders_full, get_cell_borders_in_rect, get_rect_borders,
-    set_rect_borders, BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide,
-    IdSpaceBorders, LegacyCellBorder, LegacyCellBorders, SheetBorders,
+    BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide, IdSpaceBorders,
+    SheetBorders,
 };
 pub use bounds::GridBounds;
 pub use code_run::*;
 pub use column::{Column, ColumnData};
 pub use formatting::{
     Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap, FillColor, Italic, NumericCommas,
-    NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, TextColor,
+    NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, StrikeThrough, TextColor,
+    Underline,
 };
 pub use ids::*;
 use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
+
+use crate::CellValue;
+#[cfg(test)]
+use crate::{Array, Pos};
 
 mod block;
 mod borders;

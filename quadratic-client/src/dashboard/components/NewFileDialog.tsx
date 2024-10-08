@@ -1,27 +1,19 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
-import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { useConnectionSchemaBrowserTableQueryActionNewFile } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { PrivateFileToggle } from '@/shared/components/connections/PrivateFileToggle';
+import { AddIcon, ApiIcon, DatabaseIcon, ExamplesIcon, FilePrivateIcon, ImportIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { useNewFileFromStatePythonApi } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
-import {
-  ArrowDownIcon,
-  ArrowLeftIcon,
-  ChevronRightIcon,
-  LockClosedIcon,
-  MixIcon,
-  PlusIcon,
-  RocketIcon,
-} from '@radix-ui/react-icons';
+import { ArrowLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigation } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
@@ -43,10 +35,14 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
   const gridItemClassName =
     'flex flex-col items-center justify-center gap-1 rounded-lg border border-border p-4 pt-5 w-full group';
   const gridItemInteractiveClassName = 'hover:bg-accent hover:text-foreground cursor-pointer';
-  const activeConnection = connections.find((connection) => connection.uuid === activeConnectionUuid);
+
+  const activeConnection = useMemo(
+    () => connections.find((connection) => connection.uuid === activeConnectionUuid),
+    [activeConnectionUuid, connections]
+  );
 
   // Do an in-memory navigation if we're not in the app
-  const reloadDocument = location.pathname.startsWith('/file/');
+  const reloadDocument = useMemo(() => location.pathname.startsWith('/file/'), [location.pathname]);
 
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
   const handleDragEnter = useCallback(
@@ -65,7 +61,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
           <div className="absolute left-0 right-0 top-0 h-full w-full bg-background/60" />
         )}
         <DialogHeader className="space-y-0">
-          <DialogTitle className="flex h-7 items-center gap-1.5">
+          <DialogTitle className="flex h-7 items-center gap-1">
             {activeConnection ? (
               <>
                 <Button
@@ -81,7 +77,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
             ) : (
               'New file'
             )}
-            {isPrivate && <LockClosedIcon className="mr-0.5" />}
+            {isPrivate && <FilePrivateIcon />}
           </DialogTitle>
           <DialogDescription asChild>
             <PrivateFileToggle
@@ -110,7 +106,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
                 onClick={onClose}
               >
                 <ItemIcon>
-                  <PlusIcon />
+                  <AddIcon />
                 </ItemIcon>
                 Blank
               </Link>
@@ -128,7 +124,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
                 }}
               >
                 <ItemIcon>
-                  <ArrowDownIcon />
+                  <ImportIcon />
                 </ItemIcon>
                 Import data from a file (.csv, .pqt, .xlsx, .grid)
               </button>
@@ -140,7 +136,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
                 onClick={onClose}
               >
                 <ItemIcon>
-                  <RocketIcon />
+                  <ApiIcon />
                 </ItemIcon>
                 Fetch data from an API
               </Link>
@@ -153,7 +149,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
                 onClick={onClose}
               >
                 <ItemIcon>
-                  <MixIcon />
+                  <ExamplesIcon />
                 </ItemIcon>
                 Learn from an example file
               </Link>
@@ -161,7 +157,7 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
             <li className={`col-span-4 rounded border border-border`}>
               <div className={`text-muted-foreground ${gridItemClassName} border-none`}>
                 <ItemIcon disabled>
-                  <ConnectionsIcon className="text-muted-foreground" />
+                  <DatabaseIcon className="text-muted-foreground" />
                 </ItemIcon>
                 Query data from a connection
               </div>
@@ -208,7 +204,7 @@ function ItemIcon({ children, disabled }: { children: React.ReactNode; disabled?
   return (
     <div
       className={cn(
-        `flex h-6 w-6 items-center justify-center rounded bg-accent text-primary`,
+        `flex h-8 w-8 items-center justify-center rounded bg-accent text-primary`,
         disabled ? '' : `group-hover:bg-primary group-hover:text-background`
       )}
     >

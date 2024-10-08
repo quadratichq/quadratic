@@ -1,12 +1,12 @@
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 use itertools::Itertools;
 
-use super::{CellValue, IsBlank, Value};
+use super::{CellValue, Duration, IsBlank, Value};
 use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
 
-const F64_DECIMAL_PRECISION: u64 = 16; // just enough to not lose information
+const F64_DECIMAL_PRECISION: u64 = 14; // just enough to not lose information
 
 /*
  * CONVERSIONS (specific type -> Value)
@@ -74,6 +74,26 @@ impl From<usize> for CellValue {
 impl From<bool> for CellValue {
     fn from(value: bool) -> Self {
         CellValue::Logical(value)
+    }
+}
+impl From<chrono::NaiveDateTime> for CellValue {
+    fn from(value: chrono::NaiveDateTime) -> Self {
+        CellValue::DateTime(value)
+    }
+}
+impl From<chrono::NaiveDate> for CellValue {
+    fn from(value: chrono::NaiveDate) -> Self {
+        CellValue::Date(value)
+    }
+}
+impl From<chrono::NaiveTime> for CellValue {
+    fn from(value: chrono::NaiveTime) -> Self {
+        CellValue::Time(value)
+    }
+}
+impl From<Duration> for CellValue {
+    fn from(value: Duration) -> Self {
+        CellValue::Duration(value)
     }
 }
 impl<T> From<CodeResult<T>> for CellValue
@@ -297,10 +317,7 @@ where
 
 impl<'a> CoerceInto for Spanned<&'a CellValue> {
     fn into_non_error_value(self) -> CodeResult<&'a CellValue> {
-        match self.inner {
-            CellValue::Error(e) => Err((**e).clone()),
-            other => Ok(other),
-        }
+        self.inner.as_non_error_value()
     }
 }
 impl CoerceInto for Spanned<CellValue> {

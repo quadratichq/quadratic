@@ -6,13 +6,15 @@ import { Empty } from '@/dashboard/components/Empty';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { apiClient } from '@/shared/api/apiClient';
+import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
+import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { ExclamationTriangleIcon, HamburgerMenuIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
@@ -195,39 +197,41 @@ export const Component = () => {
 
   return (
     <RecoilRoot>
-      <div className={`h-full lg:flex lg:flex-row`}>
-        <div
-          ref={contentPaneRef}
-          className={cn(
-            `relative order-2 flex h-full w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
-            isLoading ? 'overflow-hidden' : 'overflow-auto',
-            isLoading && 'pointer-events-none opacity-25'
-          )}
-        >
-          <div className={`sticky top-0 z-50 -mx-4 flex items-center justify-end bg-background px-2 py-1 lg:hidden`}>
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
-                  <HamburgerMenuIcon />
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="p-0" style={{ width: DRAWER_WIDTH }}>
-                <DashboardSidebar isLoading={isLoading} />
-              </SheetContent>
-            </Sheet>
+      <TooltipProvider>
+        <div className={`h-full lg:flex lg:flex-row`}>
+          <div
+            ref={contentPaneRef}
+            className={cn(
+              `relative order-2 flex h-full w-full flex-grow flex-col px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
+              isLoading ? 'overflow-hidden' : 'overflow-auto',
+              isLoading && 'pointer-events-none opacity-25'
+            )}
+          >
+            <div className={`sticky top-0 z-50 -mx-4 flex items-center justify-end bg-background px-2 py-1 lg:hidden`}>
+              <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
+                    <MenuIcon />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="p-0" style={{ width: DRAWER_WIDTH }}>
+                  <DashboardSidebar isLoading={isLoading} />
+                </SheetContent>
+              </Sheet>
+            </div>
+            <Outlet />
           </div>
-          <Outlet />
+          <div
+            className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`}
+            style={{ width: DRAWER_WIDTH }}
+          >
+            <DashboardSidebar isLoading={isLoading} />
+          </div>
+          {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
-        <div
-          className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`}
-          style={{ width: DRAWER_WIDTH }}
-        >
-          <DashboardSidebar isLoading={isLoading} />
-        </div>
-        {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
-      </div>
-      <NewFileDialogWrapper />
-      <ImportProgressList />
+        <NewFileDialogWrapper />
+        <ImportProgressList />
+      </TooltipProvider>
     </RecoilRoot>
   );
 };

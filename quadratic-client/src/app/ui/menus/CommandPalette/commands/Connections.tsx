@@ -1,7 +1,15 @@
 import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateShowCellTypeMenuAtom,
+  editorInteractionStateShowConnectionsMenuAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import {
+  CommandGroup,
+  CommandPaletteListItem,
+  CommandPaletteListItemDynamicProps,
+} from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import { DatabaseIcon } from '@/shared/components/Icons';
 import { useSetRecoilState } from 'recoil';
-import { CommandGroup, CommandPaletteListItem, CommandPaletteListItemDynamicProps } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Connections',
@@ -10,31 +18,19 @@ const commands: CommandGroup = {
       label: 'Use a connection',
       isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
       Component: (props: CommandPaletteListItemDynamicProps) => {
-        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
 
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => {
-              setEditorInteractionState((prev) => ({ ...prev, showCellTypeMenu: true }));
-            }}
-          />
-        );
+        return <CommandPaletteListItem {...props} action={() => setShowCellTypeMenu(true)} icon={<DatabaseIcon />} />;
       },
     },
     {
       label: 'Manage connections',
       isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
       Component: (props: CommandPaletteListItemDynamicProps) => {
-        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+        const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
 
         return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => {
-              setEditorInteractionState((prev) => ({ ...prev, showConnectionsMenu: true }));
-            }}
-          />
+          <CommandPaletteListItem {...props} action={() => setShowConnectionsMenu(true)} icon={<DatabaseIcon />} />
         );
       },
     },

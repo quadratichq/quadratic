@@ -15,7 +15,7 @@ use crate::crypto::error::Crypto;
 use crate::sql::error::Sql;
 use crate::storage::error::Storage;
 
-pub type Result<T> = std::result::Result<T, SharedError>;
+pub type Result<T, E = SharedError> = std::result::Result<T, E>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum SharedError {
@@ -30,6 +30,8 @@ pub enum SharedError {
 
     #[error("Error with Crypto: {0}")]
     Crypto(Crypto),
+    #[error("{0}")]
+    Generic(String),
 
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),

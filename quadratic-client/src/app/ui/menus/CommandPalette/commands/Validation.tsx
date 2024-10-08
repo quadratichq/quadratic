@@ -1,24 +1,9 @@
-import { validationAction } from '../../../../actions';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
-import { useSetRecoilState } from 'recoil';
+import { Action } from '@/app/actions/actions';
+import { CommandGroup } from '../CommandPaletteListItem';
 
 export const validationCommandGroup: CommandGroup = {
-  heading: 'Data Validations',
-  commands: [
-    {
-      label: validationAction.label,
-      Component: (props) => {
-        const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => {
-              setEditorInteractionState((old) => ({ ...old, showValidation: true }));
-            }}
-          />
-        );
-      },
-    },
-  ],
+  heading: 'Data validation',
+  commands: [Action.InsertCheckbox, Action.InsertDropdown, Action.ToggleDataValidation],
 };
+
+export default validationCommandGroup;

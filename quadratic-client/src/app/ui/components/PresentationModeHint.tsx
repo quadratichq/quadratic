@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { useGridSettings } from '../menus/TopBar/SubMenus/useGridSettings';
-import { QuadraticSnackBar } from './QuadraticSnackBar';
+import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { QuadraticSnackBar } from '@/app/ui/components/QuadraticSnackBar';
+import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export default function PresentationModeHint() {
-  const { presentationMode } = useGridSettings();
+  const presentationMode = useRecoilValue(presentationModeAtom);
   const [open, setOpen] = useState<boolean>(false);
 
   useEffect(() => {

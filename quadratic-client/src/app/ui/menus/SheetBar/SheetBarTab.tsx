@@ -1,16 +1,21 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import {
+  editorInteractionStateFollowAtom,
+  editorInteractionStatePermissionsAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { ArrowDropDown } from '@mui/icons-material';
-import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
+import { ArrowDropDownIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
+import { Box, Fade, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { hasPermissionToEditFile } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { focusGrid } from '../../../helpers/focusGrid';
 
 const SHEET_NAME_MAX_LENGTH = 50;
 
@@ -30,7 +35,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   const [isRenaming, setIsRenaming] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
-  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
 
   useEffect(() => {
@@ -42,24 +47,15 @@ export const SheetBarTab = (props: Props): JSX.Element => {
     containerRef.current.style.order = order;
   }
   return (
-    <Box
+    <div
+      className={cn(
+        'group relative hover:bg-accent',
+        active &&
+          'sticky left-0 right-0 z-[1] -mt-[1px] !bg-background shadow-[inset_1px_0_0_hsl(var(--border)),inset_-1px_0_0_hsl(var(--border))]'
+      )}
       ref={containerRef}
-      sx={{
+      style={{
         order,
-        position: 'relative',
-        '&:hover': {
-          backgroundColor: theme.palette.action.hover,
-        },
-        ...(active
-          ? {
-              backgroundColor: theme.palette.background.default + ' !important',
-              position: 'sticky',
-              left: '0',
-              right: '0',
-              boxShadow: `inset 1px 0 0 ${theme.palette.divider}, inset -1px 0 0 ${theme.palette.divider}`,
-              zIndex: 1,
-            }
-          : {}),
       }}
       data-id={sheet.id}
       data-order={sheet.order}
@@ -85,7 +81,9 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           sheet={sheet}
         />
         {sheet.id !== sheets.sheet.id && <TabMultiplayer sheetId={sheet.id} />}
-        <TabButton active={active} hasPermission={hasPermission} onContextMenu={onContextMenu} sheet={sheet} />
+        <div className={cn('flex', !active && 'invisible opacity-0 group-hover:visible group-hover:opacity-100')}>
+          <TabButton active={active} hasPermission={hasPermission} onContextMenu={onContextMenu} sheet={sheet} />
+        </div>
         <Popper open={nameExists} anchorEl={containerRef.current} transition>
           {({ TransitionProps }) => (
             <Fade {...TransitionProps} timeout={350}>
@@ -105,15 +103,16 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           )}
         </Popper>
       </TabWrapper>
-    </Box>
+    </div>
   );
 };
 
 function TabWrapper({ children, sheet, active }: any) {
   const theme = useTheme();
-  const { follow } = useRecoilValue(editorInteractionStateAtom);
+  const follow = useRecoilValue(editorInteractionStateFollowAtom);
   return (
     <Stack
+      className={cn(active && 'text-primary')}
       direction="row"
       alignItems="center"
       gap={theme.spacing(0.25)}
@@ -136,11 +135,6 @@ function TabWrapper({ children, sheet, active }: any) {
           width: 'calc(100% - 2px)',
           backgroundColor: sheet.color ? sheet.color : 'transparent',
         },
-        ...(active
-          ? {
-              color: theme.palette.primary.main,
-            }
-          : {}),
         '&:hover .MuiIconButton-root': {
           opacity: 1,
           visibility: 'visible',
@@ -292,28 +286,18 @@ function TabButton({
   onContextMenu: Props['onContextMenu'];
   sheet: Props['sheet'];
 }) {
-  const theme = useTheme();
-
   return hasPermission ? (
-    <IconButton
-      size="small"
-      sx={{
-        mr: theme.spacing(-0.5),
-        p: '0',
-        ...(active
-          ? {
-              opacity: 1,
-              visibility: 'visible',
-            }
-          : { opacity: 0, visibility: 'none' }),
-      }}
+    <Button
+      variant="ghost"
+      className={'-mr-1 h-4 w-4'}
+      size="icon-sm"
       onClick={(e) => {
         e.stopPropagation();
         onContextMenu(e, sheet);
       }}
     >
-      <ArrowDropDown fontSize="inherit" />
-    </IconButton>
+      <ArrowDropDownIcon />
+    </Button>
   ) : null;
 }
 

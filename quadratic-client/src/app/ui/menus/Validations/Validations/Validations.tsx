@@ -1,16 +1,16 @@
-import { Button } from '@/shared/shadcn/ui/button';
-import { useValidationsData } from './useValidationsData';
-import { ValidationsHeader } from './ValidationsHeader';
-import { ValidationEntry } from './ValidationEntry';
-import { useCallback, useEffect, useState } from 'react';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { useSetRecoilState } from 'recoil';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { useValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
+import { ValidationEntry } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
+import { ValidationsHeader } from '@/app/ui/menus/Validations/Validations/ValidationsHeader';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Button } from '@/shared/shadcn/ui/button';
+import { useCallback, useEffect, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 export const Validations = () => {
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
   const validationsData = useValidationsData();
   const { validations, sheetId, readOnly } = validationsData;
 
@@ -35,15 +35,12 @@ export const Validations = () => {
   }, [sheetId, validations]);
 
   const addValidation = useCallback(() => {
-    setEditorInteractionState((old) => ({
-      ...old,
-      showValidation: 'new',
-    }));
-  }, [setEditorInteractionState]);
+    setShowValidation('new');
+  }, [setShowValidation]);
 
-  const removeValidations = () => {
+  const removeValidations = useCallback(() => {
     quadraticCore.removeValidations(sheetId);
-  };
+  }, [sheetId]);
 
   return (
     <div
@@ -70,7 +67,9 @@ export const Validations = () => {
             <Button variant="secondary" onClick={removeValidations}>
               Remove All
             </Button>
-            <Button onClick={addValidation}>Add Validation</Button>
+            <Button onClick={addValidation} autoFocus>
+              Add Validation
+            </Button>
           </div>
         </div>
       )}

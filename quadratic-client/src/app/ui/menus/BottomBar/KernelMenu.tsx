@@ -2,9 +2,10 @@ import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
-import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
+import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { LanguageState } from '@/app/web-workers/languageTypes';
@@ -16,16 +17,16 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
-import MemoryIcon from '@mui/icons-material/Memory';
+import { Tooltip, TooltipContent } from '@/shared/shadcn/ui/tooltip';
 import StopIcon from '@mui/icons-material/Stop';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import { useEffect, useState } from 'react';
-import BottomBarItem from './BottomBarItem';
 
-export const KernelMenu = () => {
+// Update the KernelMenu component to accept a custom trigger
+export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) => {
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
   useEffect(() => {
     const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.isCursorOnCodeCell());
@@ -76,32 +77,33 @@ export const KernelMenu = () => {
     setRunning((pythonCodeRunning ? 1 : 0) + (javascriptCodeRunning ? 1 : 0) + (connectionCodeRunning ? 1 : 0));
   }, [pythonCodeRunning, javascriptCodeRunning, connectionCodeRunning]);
 
-  const [open, setOpen] = useState(false);
-
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <BottomBarItem title="Kernel Menu" open={open} icon={<MemoryIcon fontSize="inherit" />} onClick={() => {}}>
-          <div className="text-xs">Kernel</div>
-          {running > 0 && (
-            <div
-              className="absolute left-0 top-0 rounded-full px-1 text-white"
-              style={{ background: colors.darkGray, fontSize: '0.5rem' }}
-            >
-              {running}
-            </div>
-          )}
-        </BottomBarItem>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
+    <DropdownMenu>
+      <SidebarTooltip label="Kernel">
+        <DropdownMenuTrigger asChild>
+          <SidebarToggle>
+            {triggerIcon}
+            {running > 0 && (
+              <div className="pointer-events-none absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] text-background">
+                {running}
+              </div>
+            )}
+          </SidebarToggle>
+        </DropdownMenuTrigger>
+      </SidebarTooltip>
+      <DropdownMenuContent
+        side="right"
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          focusGrid();
+        }}
+      >
         <DropdownMenuLabel>
           Status: {pythonCodeRunning || javascriptCodeRunning || connectionCodeRunning ? 'running' : 'idle'}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>
-          <MenuLineItem
-            primary={pythonState.pythonState === 'loading' ? 'Python loading...' : 'all code languages are ready'}
-          />
+          {pythonState.pythonState === 'loading' ? 'Python loading...' : 'All code languages are ready'}
         </DropdownMenuLabel>
         {pythonCodeRunning && (
           <>
@@ -111,21 +113,19 @@ export const KernelMenu = () => {
         )}
         {pythonCodeRunning && (
           <DropdownMenuItem onClick={pythonWebWorker.cancelExecution}>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipContent>Stop running cell</TooltipContent>
-                <TooltipTrigger>
-                  <div className="ml-5 text-sm">
-                    <StopIcon style={{ color: colors.darkGray }} />
-                    cell({pythonCodeRunning.sheetPos.x}, {pythonCodeRunning.sheetPos.y}
-                    {pythonCodeRunning.sheetPos.sheetId !== sheets.sheet.id
-                      ? `, "${sheets.getById(pythonCodeRunning.sheetPos.sheetId)?.name || ''}"`
-                      : ''}
-                    ) is running...
-                  </div>
-                </TooltipTrigger>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipContent>Stop running cell</TooltipContent>
+              <TooltipTrigger>
+                <div className="ml-5 text-sm">
+                  <StopIcon style={{ color: colors.darkGray }} />
+                  cell({pythonCodeRunning.sheetPos.x}, {pythonCodeRunning.sheetPos.y}
+                  {pythonCodeRunning.sheetPos.sheetId !== sheets.sheet.id
+                    ? `, "${sheets.getById(pythonCodeRunning.sheetPos.sheetId)?.name || ''}"`
+                    : ''}
+                  ) is running...
+                </div>
+              </TooltipTrigger>
+            </Tooltip>
           </DropdownMenuItem>
         )}
         {javascriptCodeRunning && (
@@ -136,21 +136,19 @@ export const KernelMenu = () => {
         )}
         {javascriptCodeRunning && (
           <DropdownMenuItem onClick={javascriptWebWorker.cancelExecution}>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipContent>Stop running cell</TooltipContent>
-                <TooltipTrigger>
-                  <div className="ml-5 text-sm">
-                    <StopIcon style={{ color: colors.darkGray }} />
-                    cell({javascriptCodeRunning.sheetPos.x}, {javascriptCodeRunning.sheetPos.y}
-                    {javascriptCodeRunning.sheetPos.sheetId !== sheets.sheet.id
-                      ? `, "${sheets.getById(javascriptCodeRunning.sheetPos.sheetId)?.name || ''}"`
-                      : ''}
-                    ) is running...
-                  </div>
-                </TooltipTrigger>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipContent>Stop running cell</TooltipContent>
+              <TooltipTrigger>
+                <div className="ml-5 text-sm">
+                  <StopIcon style={{ color: colors.darkGray }} />
+                  cell({javascriptCodeRunning.sheetPos.x}, {javascriptCodeRunning.sheetPos.y}
+                  {javascriptCodeRunning.sheetPos.sheetId !== sheets.sheet.id
+                    ? `, "${sheets.getById(javascriptCodeRunning.sheetPos.sheetId)?.name || ''}"`
+                    : ''}
+                  ) is running...
+                </div>
+              </TooltipTrigger>
+            </Tooltip>
           </DropdownMenuItem>
         )}
         {connectionCodeRunning && (
@@ -161,21 +159,19 @@ export const KernelMenu = () => {
         )}
         {connectionCodeRunning && (
           <DropdownMenuItem onClick={() => quadraticCore.sendCancelExecution({ Connection: {} as any })}>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipContent>Stop running cell</TooltipContent>
-                <TooltipTrigger>
-                  <div className="ml-5 text-sm">
-                    <StopIcon style={{ color: colors.darkGray }} />
-                    cell({connectionCodeRunning.sheetPos.x}, {connectionCodeRunning.sheetPos.y}
-                    {connectionCodeRunning.sheetPos.sheetId !== sheets.sheet.id
-                      ? `, "${sheets.getById(connectionCodeRunning.sheetPos.sheetId)?.name || ''}"`
-                      : ''}
-                    ) is running...
-                  </div>
-                </TooltipTrigger>
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip>
+              <TooltipContent>Stop running cell</TooltipContent>
+              <TooltipTrigger>
+                <div className="ml-5 text-sm">
+                  <StopIcon style={{ color: colors.darkGray }} />
+                  cell({connectionCodeRunning.sheetPos.x}, {connectionCodeRunning.sheetPos.y}
+                  {connectionCodeRunning.sheetPos.sheetId !== sheets.sheet.id
+                    ? `, "${sheets.getById(connectionCodeRunning.sheetPos.sheetId)?.name || ''}"`
+                    : ''}
+                  ) is running...
+                </div>
+              </TooltipTrigger>
+            </Tooltip>
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
@@ -190,25 +186,28 @@ export const KernelMenu = () => {
             )
           }
         >
-          <MenuLineItem primary="Run current code cell" secondary={KeyboardSymbols.Command + KeyboardSymbols.Enter} />
+          Run current code cell
+          <DropdownMenuShortcut className="pl-4">
+            {KeyboardSymbols.Command + KeyboardSymbols.Enter}
+          </DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() =>
             quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition())
           }
         >
-          <MenuLineItem
-            primary="Run all code cells in sheet"
-            secondary={KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Enter}
-          />
+          Run all code cells in sheet
+          <DropdownMenuShortcut className="pl-4">
+            {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Enter}
+          </DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition())}
         >
-          <MenuLineItem
-            primary="Run all code cells in file"
-            secondary={KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Alt + KeyboardSymbols.Enter}
-          />
+          Run all code cells in file
+          <DropdownMenuShortcut className="pl-4">
+            {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Alt + KeyboardSymbols.Enter}
+          </DropdownMenuShortcut>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

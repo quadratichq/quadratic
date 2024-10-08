@@ -3,6 +3,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{controller::GridController, grid::SheetId, Rect};
 
+#[allow(non_snake_case)]
 #[wasm_bindgen]
 impl GridController {
     /// Extend and/or shrink the contents of selection to range by inferring patterns.

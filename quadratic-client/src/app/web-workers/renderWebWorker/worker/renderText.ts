@@ -7,7 +7,7 @@
  */
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
-import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import init from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
@@ -37,10 +37,17 @@ class RenderText {
   scale?: number;
 
   lastUpdateTick = 0;
-  viewportBuffer: Map<string, SharedArrayBuffer>;
+
+  // SharedArrayBuffer for the live viewport information, implemented using Ping-Pong Buffer pattern
+  // (5 int32 + 36 uint8) * 2 (reader and writer) = 112
+  // in each slice:
+  // first int32 is flag
+  // next 4 int32 are top_left_hash and bottom_right_hash
+  // next 36 uint8 are sheet_id
+  viewportBuffer: SharedArrayBuffer | undefined;
 
   constructor() {
-    this.viewportBuffer = new Map();
+    this.viewportBuffer = undefined;
     init().then(() => {
       this.status.rust = true;
       this.ready();
@@ -78,8 +85,6 @@ class RenderText {
     let sheetIds = Array.from(this.cellsLabels.keys());
     if (this.sheetId) {
       sheetIds = [this.sheetId, ...sheetIds.filter((sheetId) => sheetId !== this.sheetId)];
-    } else {
-      sheetIds = Array.from(this.cellsLabels.keys());
     }
     let firstRender = true;
     let render = false;
@@ -113,35 +118,61 @@ class RenderText {
   };
 
   updateViewportBuffer = () => {
-    if (!this.viewport || !this.sheetId) return;
+    const buffer = this.viewportBuffer;
+    const sheetId = this.sheetId;
+    if (!buffer || !sheetId) return;
 
-    const cellsLabels = this.cellsLabels.get(this.sheetId);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.updateViewportBuffer');
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) return;
+
     const neighborRect = cellsLabels.getViewportNeighborBounds();
-    if (!neighborRect || !this.sheetId) return;
+    if (!neighborRect) return;
 
-    this.viewportBuffer.forEach((buffer) => {
-      const cornerHashes = cellsLabels.getCornerHashesInBound(neighborRect);
-      if (cornerHashes.length === 0) return;
+    const cornerHashes = cellsLabels.getCornerHashesInBound(neighborRect);
+    if (cornerHashes.length !== 4) return;
 
-      // Update the viewport in the SharedArrayBuffer
-      const int32Array = new Int32Array(buffer);
+    // Update the viewport in the SharedArrayBuffer
+    const int32Array = new Int32Array(buffer);
 
-      int32Array[0] = 0; // Set flag to indicate viewport is set
+    // there are 2 slices in the SharedArrayBuffer, one for the reader and one for the writer
+    // pick the slice that is not locked (flag !== 2) for writing current viewport info
+    let writerStart =
+      Atomics.load(int32Array, 0) === 0 // first slice is dirty
+        ? 0
+        : Atomics.load(int32Array, 14) === 0 // second slice is dirty
+        ? 14
+        : Atomics.compareExchange(int32Array, 0, 1, 0) === 1 // first slice is not locked, this is to avoid race condition
+        ? 0
+        : Atomics.compareExchange(int32Array, 14, 1, 0) === 1 // second slice is not locked, this is to avoid race condition
+        ? 14
+        : -1;
+    if (writerStart === -1) {
+      console.error('[RenderText] updateViewportBuffer: invalid flag state in viewport buffer');
+      return;
+    }
 
-      int32Array[1] = cornerHashes[0];
-      int32Array[2] = cornerHashes[1];
-      int32Array[3] = cornerHashes[2];
-      int32Array[4] = cornerHashes[3];
+    // set the top_left_hash and bottom_right_hash in the writer slice
+    int32Array[writerStart + 1] = cornerHashes[0];
+    int32Array[writerStart + 2] = cornerHashes[1];
+    int32Array[writerStart + 3] = cornerHashes[2];
+    int32Array[writerStart + 4] = cornerHashes[3];
 
-      // Update the UUID (sheetId) in the SharedArrayBuffer
-      const uint8Array = new Uint8Array(buffer);
-      const encoder = new TextEncoder();
-      const sheetIdBytes = encoder.encode(this.sheetId);
-      uint8Array.set(sheetIdBytes, 20);
+    // Update the UUID (sheetId) in the SharedArrayBuffer
+    const uint8Array = new Uint8Array(buffer);
+    const encoder = new TextEncoder();
+    const sheetIdBytes = encoder.encode(sheetId);
+    if (sheetIdBytes.length !== 36) {
+      console.error('[RenderText] updateViewportBuffer: SheetId must be exactly 36 bytes long');
+      return;
+    }
+    uint8Array.set(sheetIdBytes, writerStart * 4 + 20);
 
-      int32Array[0] = 1; // Set flag to indicate viewport is set
-    });
+    // Set writer flag to 1 when done writing to the slice, marking this slice as ready to be read
+    Atomics.compareExchange(int32Array, writerStart, 0, 1);
+
+    // Set the other slice as dirty by setting the flag to 0
+    const otherSliceStart = (writerStart + 14) % 28;
+    Atomics.compareExchange(int32Array, otherSliceStart, 1, 0);
   };
 
   // Called before first render when all text visible in the viewport has been rendered and sent to the client
@@ -160,16 +191,16 @@ class RenderText {
     this.cellsLabels.delete(sheetId);
   }
 
-  sheetOffsetsDelta(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
+  sheetOffsetsDelta(sheetId: string, column: number | null, row: number | null, delta: number) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsetsDelta');
     cellsLabels.setOffsetsDelta(column, row, delta);
   }
 
-  sheetOffsetsSize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
+  sheetOffsetsSize(sheetId: string, offsets: JsOffset[]) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsetsSize');
-    cellsLabels.setOffsetsSize(column, row, size);
+    cellsLabels.setOffsetsSize(offsets);
   }
 
   sheetInfoUpdate(sheetInfo: SheetInfo) {
@@ -209,25 +240,15 @@ class RenderText {
     return cellsLabels.getRowHeights(rows);
   }
 
-  resizeRowHeights(sheetId: string, rowHeights: JsRowHeight[]) {
-    const cellsLabels = this.cellsLabels.get(sheetId);
-    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.resizeRowHeights');
-    cellsLabels.resizeRowHeights(rowHeights);
-  }
-
   setHashesDirty(sheetId: string, hashes: string) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
     cellsLabels.setHashesDirty(hashes);
   }
 
-  setViewportBuffer = (transactionId: string, buffer: SharedArrayBuffer) => {
-    this.viewportBuffer.set(transactionId, buffer);
+  receiveViewportBuffer = (buffer: SharedArrayBuffer) => {
+    this.viewportBuffer = buffer;
     this.updateViewportBuffer();
-  };
-
-  clearViewportBuffer = (transactionId: string) => {
-    this.viewportBuffer.delete(transactionId);
   };
 }
 

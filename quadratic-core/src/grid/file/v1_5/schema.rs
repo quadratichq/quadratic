@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 
+pub use super::run_error::Axis;
 pub use super::run_error::RunError;
 pub use super::run_error::RunErrorMsg;
 
@@ -206,7 +207,7 @@ pub enum CellValue {
     Image(String),
 }
 
-pub fn string_bool(s: &str) -> bool {
+pub fn string_bool(s: String) -> bool {
     match s.to_ascii_lowercase().as_str() {
         "true" => true,
         _ => false,

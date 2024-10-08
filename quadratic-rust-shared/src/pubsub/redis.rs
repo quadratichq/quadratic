@@ -97,7 +97,7 @@ impl super::PubSub for RedisConnection {
         value: &[u8],
         _active_channel: Option<&str>,
     ) -> Result<()> {
-        () = self.multiplex.publish(channel, value).await?;
+        let () = self.multiplex.publish(channel, value).await?;
         Ok(())
     }
 

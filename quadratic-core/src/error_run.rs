@@ -41,11 +41,10 @@ impl RunError {
 }
 
 /// Information about the type of error that occurred.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum RunErrorMsg {
-    // TODO(ayush): rename to CodeRunError in next file version
-    PythonError(Cow<'static, str>),
+    CodeRunError(Cow<'static, str>),
 
     Spill,
 
@@ -72,6 +71,12 @@ pub enum RunErrorMsg {
     BadFunctionName,
     BadCellReference,
     BadNumber,
+    BadOp {
+        op: Cow<'static, str>,
+        ty1: Cow<'static, str>,
+        ty2: Option<Cow<'static, str>>,
+        use_duration_instead: bool,
+    },
     /// NaN or ±Infinity
     NaN,
 
@@ -110,7 +115,7 @@ pub enum RunErrorMsg {
 impl fmt::Display for RunErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::PythonError(s) => {
+            Self::CodeRunError(s) => {
                 write!(f, "{s}")
             }
             Self::Spill => {
@@ -162,6 +167,21 @@ impl fmt::Display for RunErrorMsg {
             }
             Self::BadNumber => {
                 write!(f, "Bad numeric literal")
+            }
+            Self::BadOp {
+                op,
+                ty1,
+                ty2,
+                use_duration_instead,
+            } => {
+                write!(f, "Cannot {op} {ty1}")?;
+                if let Some(ty2) = ty2 {
+                    write!(f, " and {ty2}")?;
+                }
+                if *use_duration_instead {
+                    write!(f, "; use a duration such as '1y 5d 12h 30m' instead")?;
+                }
+                Ok(())
             }
             Self::NaN => {
                 write!(f, "NaN")

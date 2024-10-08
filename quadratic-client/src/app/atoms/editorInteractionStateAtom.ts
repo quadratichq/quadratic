@@ -1,50 +1,38 @@
-import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid.js';
-import { CodeCellLanguage, SearchOptions } from '@/app/quadratic-core-types';
+import { SearchOptions } from '@/app/quadratic-core-types';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
-import { atom, DefaultValue } from 'recoil';
+import { atom, DefaultValue, selector } from 'recoil';
 
 export interface EditorInteractionState {
+  isRunningAsyncAction: boolean;
   showCellTypeMenu: boolean;
-  showCodeEditor: boolean;
   showCommandPalette: boolean;
   showConnectionsMenu: boolean;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showNewFileMenu: boolean;
+  showRenameFileMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
+  showContextMenu: boolean;
   showValidation: boolean | string;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
-  showContextMenu: boolean;
   permissions: FilePermission[];
   uuid: string;
-  selectedCell: Coordinate;
-  selectedCellSheet: string;
-  mode?: CodeCellLanguage;
-  initialCode?: string;
   follow?: string;
-  editorEscapePressed?: boolean;
-  waitingForEditorClose?: {
-    selectedCell: Coordinate;
-    selectedCellSheet: string;
-    mode?: CodeCellLanguage;
-    showCellTypeMenu: boolean;
-    inlineEditor?: boolean;
-    initialCode?: string;
-  };
   undo: boolean;
   redo: boolean;
 }
 
 export const editorInteractionStateDefault: EditorInteractionState = {
+  isRunningAsyncAction: false,
   showCellTypeMenu: false,
-  showCodeEditor: false,
   showCommandPalette: false,
   showConnectionsMenu: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
   showNewFileMenu: false,
+  showRenameFileMenu: false,
   showShareFileMenu: false,
   showSearch: false,
   showContextMenu: false,
@@ -52,15 +40,12 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
-  selectedCell: { x: 0, y: 0 },
-  selectedCellSheet: '',
-  initialCode: undefined,
-  mode: undefined,
+  follow: undefined,
   undo: false,
   redo: false,
 };
 
-export const editorInteractionStateAtom = atom({
+export const editorInteractionStateAtom = atom<EditorInteractionState>({
   key: 'editorInteractionState', // unique ID (with respect to other atoms/selectors)
   default: editorInteractionStateDefault,
   effects: [
@@ -70,24 +55,26 @@ export const editorInteractionStateAtom = atom({
         if (oldValue instanceof DefaultValue) return;
         const oldModalShow =
           oldValue.showCellTypeMenu ||
-          oldValue.showCodeEditor ||
           oldValue.showCommandPalette ||
           oldValue.showConnectionsMenu ||
           oldValue.showGoToMenu ||
           oldValue.showFeedbackMenu ||
           oldValue.showNewFileMenu ||
+          oldValue.showRenameFileMenu ||
           oldValue.showShareFileMenu ||
-          oldValue.showSearch;
+          oldValue.showSearch ||
+          oldValue.showContextMenu;
         const newModelShow =
           newValue.showCellTypeMenu ||
-          newValue.showCodeEditor ||
           newValue.showCommandPalette ||
           newValue.showConnectionsMenu ||
           newValue.showGoToMenu ||
           newValue.showFeedbackMenu ||
           newValue.showNewFileMenu ||
+          newValue.showRenameFileMenu ||
           newValue.showShareFileMenu ||
-          newValue.showSearch;
+          newValue.showSearch ||
+          newValue.showContextMenu;
         if (oldModalShow && !newModelShow) {
           focusGrid();
         }
@@ -95,3 +82,34 @@ export const editorInteractionStateAtom = atom({
     },
   ],
 });
+
+const createSelector = <T extends keyof EditorInteractionState>(key: T) =>
+  selector<EditorInteractionState[T]>({
+    key: `editorInteractionState${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
+    get: ({ get }) => get(editorInteractionStateAtom)[key],
+    set: ({ set }, newValue) =>
+      set(editorInteractionStateAtom, (prev) => ({
+        ...prev,
+        [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
+      })),
+  });
+
+export const editorInteractionStateShowIsRunningAsyncActionAtom = createSelector('isRunningAsyncAction');
+export const editorInteractionStateShowCellTypeMenuAtom = createSelector('showCellTypeMenu');
+export const editorInteractionStateShowCommandPaletteAtom = createSelector('showCommandPalette');
+export const editorInteractionStateShowConnectionsMenuAtom = createSelector('showConnectionsMenu');
+export const editorInteractionStateShowGoToMenuAtom = createSelector('showGoToMenu');
+export const editorInteractionStateShowFeedbackMenuAtom = createSelector('showFeedbackMenu');
+export const editorInteractionStateShowNewFileMenuAtom = createSelector('showNewFileMenu');
+export const editorInteractionStateShowRenameFileMenuAtom = createSelector('showRenameFileMenu');
+export const editorInteractionStateShowShareFileMenuAtom = createSelector('showShareFileMenu');
+export const editorInteractionStateShowSearchAtom = createSelector('showSearch');
+export const editorInteractionStateShowContextMenuAtom = createSelector('showContextMenu');
+export const editorInteractionStateShowValidationAtom = createSelector('showValidation');
+
+export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
+export const editorInteractionStatePermissionsAtom = createSelector('permissions');
+export const editorInteractionStateUuidAtom = createSelector('uuid');
+export const editorInteractionStateFollowAtom = createSelector('follow');
+export const editorInteractionStateUndoAtom = createSelector('undo');
+export const editorInteractionStateRedoAtom = createSelector('redo');

@@ -65,13 +65,11 @@ docker/mysql/data
 docker/postgres/data
 docker/redis/data
 docker/static/html
+docker/file-storage
 docker/postgres-connection/data
 docker/mysql-connection/data
-<<<<<<< HEAD
-docker/file-storage
-=======
+docker/snowflake-connection/data
 docker/mssql-connection/data
->>>>>>> origin/qa
 
 # JMeter
 jmeter.log

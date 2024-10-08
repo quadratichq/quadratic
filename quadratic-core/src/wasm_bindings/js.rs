@@ -67,14 +67,14 @@ extern "C" {
         code_cell: Option<String>,        /*JsCodeCell*/
         render_code_cell: Option<String>, /*JsRenderCodeCell*/
     );
-    pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64);
+    pub fn jsOffsetsModified(sheet_id: String, offsets: String /* Vec<JsOffset> */);
     pub fn jsSetCursor(cursor: String);
     pub fn jsSetCursorSelection(selection: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
     pub fn jsClearHtml(sheet_id: String, x: i64, y: i64);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
     pub fn jsGenerateThumbnail();
-    pub fn jsSheetBorders(sheet_id: String, borders: String);
+    pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */);
     pub fn jsSheetCodeCell(sheet_id: String, code_cells: String);
     pub fn jsSheetBoundsUpdate(bounds: String);
 
@@ -116,8 +116,6 @@ extern "C" {
 
     // rows: Vec<i64>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, rows: String);
-    // row_heights: Vec<JsRowHeight>
-    pub fn jsResizeRowHeights(sheet_id: String, row_heights: String);
 
     pub fn jsSheetValidations(sheet_id: String, validations: String /* Vec<Validation> */);
     pub fn jsValidationWarning(
@@ -136,9 +134,7 @@ extern "C" {
     // hashes: Vec<JsPos>
     pub fn jsHashesDirty(sheet_id: String, hashes: String);
 
-    pub fn jsSendViewportBuffer(transaction_id: String, buffer: SharedArrayBuffer);
-
-    pub fn jsClearViewportBuffer(transaction_id: String);
+    pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 }
 
 #[cfg(test)]
@@ -187,6 +183,38 @@ pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
     if clear {
         TEST_ARRAY.lock().unwrap().clear();
     }
+}
+
+#[cfg(test)]
+use js_types::JsOffset;
+
+#[cfg(test)]
+use std::collections::HashMap;
+
+#[cfg(test)]
+pub fn expect_js_offsets(
+    sheet_id: SheetId,
+    offsets: HashMap<(Option<i64>, Option<i64>), f64>,
+    clear: bool,
+) {
+    let mut offsets = offsets
+        .iter()
+        .map(|(&(column, row), &size)| JsOffset {
+            column: column.map(|c| c as i32),
+            row: row.map(|r| r as i32),
+            size,
+        })
+        .collect::<Vec<JsOffset>>();
+
+    offsets.sort_by(|a, b| a.row.cmp(&b.row).then(a.column.cmp(&b.column)));
+
+    let offsets = serde_json::to_string(&offsets).unwrap();
+
+    expect_js_call(
+        "jsOffsetsModified",
+        format!("{},{}", sheet_id, offsets),
+        clear,
+    );
 }
 
 #[cfg(test)]
@@ -367,10 +395,10 @@ pub fn jsUpdateCodeCell(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64) {
+pub fn jsOffsetsModified(sheet_id: String, offsets: String /*Vec<JsOffset>*/) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsOffsetsModified",
-        format!("{},{:?},{:?},{}", sheet_id, column, row, size),
+        format!("{},{}", sheet_id, offsets),
     ));
 }
 
@@ -430,9 +458,9 @@ pub fn jsGenerateThumbnail() {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSheetBorders(sheet_id: String, borders: String) {
+pub fn jsBordersSheet(sheet_id: String, borders: String /* JsBordersSheet */) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSheetBorders",
+        "jsBordersSheet",
         format!("{},{}", sheet_id, borders),
     ));
 }
@@ -583,15 +611,6 @@ pub fn jsRequestRowHeights(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsResizeRowHeights",
-        format!("{},{}", sheet_id, row_heights),
-    ));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
 pub fn jsValidationWarning(
     sheet_id: String,
     validations: String, /* Vec<(x, y, validation_id, failed) */
@@ -642,18 +661,9 @@ pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<JsPos>*/) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendViewportBuffer(transaction_id: String, buffer: [u8; 56]) {
+pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendViewportBuffer",
-        format!("{:?},{:?}", transaction_id, buffer),
-    ));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsClearViewportBuffer(transaction_id: String) {
-    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsSendViewportBuffer",
-        format!("{:?}", transaction_id),
+        format!("{:?}", buffer),
     ));
 }

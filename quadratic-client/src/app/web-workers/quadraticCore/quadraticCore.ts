@@ -29,7 +29,6 @@ import {
   Validation,
 } from '@/app/quadratic-core-types';
 import { authClient } from '@/auth/auth';
-import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
   ClientCoreCellHasContent,
@@ -56,6 +55,7 @@ import {
   CoreClientHasRenderCells,
   CoreClientLoad,
   CoreClientMessage,
+  CoreClientNeighborText,
   CoreClientSearch,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
@@ -99,7 +99,7 @@ class QuadraticCore {
       events.emit('setCursor', e.data.cursor);
       return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
-      events.emit('sheetOffsets', e.data.sheetId, e.data.column, e.data.row, e.data.size);
+      events.emit('sheetOffsets', e.data.sheetId, e.data.offsets);
       return;
     } else if (e.data.type === 'coreClientHtmlOutput') {
       events.emit('htmlOutput', e.data.html);
@@ -112,9 +112,6 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSheetRenderCells') {
       events.emit('renderCells', e.data.sheetId, e.data.renderCells);
-      return;
-    } else if (e.data.type === 'coreClientSheetBorders') {
-      events.emit('sheetBorders', e.data.sheetId, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientSheetCodeCellRender') {
       events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
@@ -172,14 +169,14 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetValidations') {
       events.emit('sheetValidations', e.data.sheetId, e.data.validations);
       return;
-    } else if (e.data.type === 'coreClientResizeRowHeights') {
-      events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
-      return;
     } else if (e.data.type === 'coreClientRenderValidationWarnings') {
       events.emit('renderValidationWarnings', e.data.sheetId, e.data.hashX, e.data.hashY, e.data.validationWarnings);
       return;
     } else if (e.data.type === 'coreClientMultiplayerSynced') {
       events.emit('multiplayerSynced');
+      return;
+    } else if (e.data.type === 'coreClientBordersSheet') {
+      events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     }
 
@@ -582,6 +579,24 @@ class QuadraticCore {
     });
   }
 
+  setCellUnderline(selection: Selection, underline: boolean, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellUnderline',
+      selection,
+      underline,
+      cursor,
+    });
+  }
+
+  setCellStrikeThrough(selection: Selection, strikeThrough: boolean, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellStrikeThrough',
+      selection,
+      strikeThrough,
+      cursor,
+    });
+  }
+
   setCellAlign(selection: Selection, align: CellAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellAlign',
@@ -700,6 +715,22 @@ class QuadraticCore {
     });
   }
 
+  neighborText(sheetId: string, x: number, y: number): Promise<string[]> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientNeighborText) => {
+        resolve(message.text);
+      };
+      this.send({
+        type: 'clientCoreNeighborText',
+        id,
+        sheetId,
+        x,
+        y,
+      });
+    });
+  }
+
   rerunCodeCells(sheetId: string | undefined, x: number | undefined, y: number | undefined, cursor: string) {
     this.send({
       type: 'clientCoreRerunCodeCells',
@@ -799,16 +830,12 @@ class QuadraticCore {
 
   //#region Borders
 
-  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+  setBorders(selection: Selection, borderSelection: BorderSelection, style?: BorderStyle) {
     this.send({
-      type: 'clientCoreSetRegionBorders',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
-      selection: JSON.stringify(selection),
-      style: style ? JSON.stringify(style) : undefined,
+      type: 'clientCoreSetBorders',
+      selection,
+      borderSelection,
+      style,
       cursor: sheets.getCursorPosition(),
     });
   }
@@ -1097,6 +1124,47 @@ class QuadraticCore {
         y,
         input,
       });
+    });
+  }
+
+  //#endregion
+  //#region manipulate columns and rows
+
+  deleteColumns(sheetId: string, columns: number[], cursor: string) {
+    this.send({
+      type: 'clientCoreDeleteColumns',
+      sheetId,
+      columns,
+      cursor,
+    });
+  }
+
+  insertColumn(sheetId: string, column: number, right: boolean, cursor: string) {
+    this.send({
+      type: 'clientCoreInsertColumn',
+      sheetId,
+      column,
+      right,
+      cursor,
+    });
+  }
+
+  deleteRows(sheetId: string, rows: number[], cursor: string) {
+    this.send({
+      type: 'clientCoreDeleteRows',
+      sheetId,
+      rows,
+      cursor,
+    });
+  }
+
+  insertRow(sheetId: string, row: number, below: boolean, cursor: string) {
+    this.send({
+      type: 'clientCoreInsertRow',
+      sheetId,
+      row,
+      below,
+      cursor,
     });
   }
 

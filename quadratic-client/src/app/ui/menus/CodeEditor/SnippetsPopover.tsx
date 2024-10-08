@@ -1,6 +1,8 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorCodeCellAtom, codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
-import { ExternalLinkIcon } from '@/app/ui/icons';
+import { snippetsJS } from '@/app/ui/menus/CodeEditor/snippetsJS';
+import { snippetsPY } from '@/app/ui/menus/CodeEditor/snippetsPY';
+import { ExternalLinkIcon } from '@/shared/components/Icons';
 import {
   DOCUMENTATION_JAVASCRIPT_URL,
   DOCUMENTATION_PYTHON_URL,
@@ -20,18 +22,17 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { IntegrationInstructionsOutlined } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
-import { ReactNode, useEffect } from 'react';
-import { useRecoilValue } from 'recoil';
-import { useCodeEditor } from './CodeEditorContext';
-import { snippetsJS } from './snippetsJS';
-import { snippetsPY } from './snippetsPY';
+import * as monaco from 'monaco-editor';
+import { ReactNode, useEffect, useMemo } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
-export function SnippetsPopover() {
-  const { editorRef } = useCodeEditor();
-  const {
-    showSnippetsPopover: [showSnippetsPopover, setShowSnippetsPopover],
-  } = useCodeEditor();
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+interface SnippetsPopoverProps {
+  editorInst: monaco.editor.IStandaloneCodeEditor | null;
+}
+
+export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
+  const [showSnippetsPopover, setShowSnippetsPopover] = useRecoilState(codeEditorShowSnippetsPopoverAtom);
+  const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const theme = useTheme();
 
   useEffect(() => {
@@ -40,9 +41,11 @@ export function SnippetsPopover() {
     }
   }, [showSnippetsPopover]);
 
-  const snippets = editorInteractionState.mode === 'Javascript' ? snippetsJS : snippetsPY;
-  const documentationLink =
-    editorInteractionState.mode === 'Javascript' ? DOCUMENTATION_JAVASCRIPT_URL : DOCUMENTATION_PYTHON_URL;
+  const snippets = useMemo(() => (language === 'Javascript' ? snippetsJS : snippetsPY), [language]);
+  const documentationLink = useMemo(
+    () => (language === 'Javascript' ? DOCUMENTATION_JAVASCRIPT_URL : DOCUMENTATION_PYTHON_URL),
+    [language]
+  );
   return (
     <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>
       <PopoverTrigger asChild>
@@ -90,15 +93,15 @@ export function SnippetsPopover() {
                   onSelect={() => {
                     mixpanel.track('[Snippets].selected', { label });
 
-                    if (editorRef.current) {
-                      const selection = editorRef.current.getSelection();
+                    if (editorInst) {
+                      const selection = editorInst.getSelection();
                       if (!selection) return;
                       const id = { major: 1, minor: 1 };
                       const text = code;
                       const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
-                      editorRef.current.executeEdits('my-source', [op]);
+                      editorInst.executeEdits('my-source', [op]);
                       setShowSnippetsPopover(false);
-                      editorRef.current.focus();
+                      editorInst.focus();
                     }
                   }}
                   className="flex flex-col items-start"
@@ -147,10 +150,10 @@ export function SnippetsPopover() {
           onClick={() => {
             mixpanel.track('[Snippets].clickDocs');
           }}
-          className="flex w-full items-center gap-4 border-t border-border px-3 py-2 text-sm text-muted-foreground hover:underline"
+          className="flex w-full items-center justify-between gap-4 border-t border-border px-3 py-2 text-sm text-muted-foreground hover:underline"
         >
-          <ExternalLinkIcon style={{ fontSize: '.875rem' }} className="opacity-80" />
           Read the docs
+          <ExternalLinkIcon className="float-right opacity-50" />
         </ExternalLink>
       </PopoverContent>
     </Popover>

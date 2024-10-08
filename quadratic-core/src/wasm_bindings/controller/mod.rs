@@ -22,6 +22,7 @@ pub mod summarize;
 pub mod transactions;
 pub mod validation;
 pub mod worker;
+pub mod col_row;
 
 #[wasm_bindgen]
 impl GridController {
@@ -34,10 +35,12 @@ impl GridController {
     ) -> Result<GridController, JsValue> {
         match file::import(file).map_err(|e| e.to_string()) {
             Ok(file) => {
-                let grid = GridController::from_grid(file, last_sequence_num as u64);
+                let mut grid = GridController::from_grid(file, last_sequence_num as u64);
 
                 // populate data for client and text renderer
                 if initialize {
+                    grid.send_viewport_buffer();
+
                     // first recalculate all bounds in sheets
                     let mut html = vec![];
                     let sheets_info = grid
@@ -64,13 +67,6 @@ impl GridController {
                             crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
                         }
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
-                            let borders = sheet.render_borders();
-                            if let Ok(borders) = serde_json::to_string(&borders) {
-                                crate::wasm_bindings::js::jsSheetBorders(
-                                    sheet_id.to_string(),
-                                    borders,
-                                );
-                            }
                             let code = sheet.get_all_render_code_cells();
                             if !code.is_empty() {
                                 if let Ok(code) = serde_json::to_string(&code) {
@@ -91,6 +87,9 @@ impl GridController {
 
                             // sends all validation warnings to the client
                             sheet.send_all_validation_warnings();
+
+                            // sends all borders to the client
+                            sheet.borders.send_sheet_borders(*sheet_id);
                         }
                     });
                 }

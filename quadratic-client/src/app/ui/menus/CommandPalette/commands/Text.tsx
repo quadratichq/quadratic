@@ -1,20 +1,30 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import {
-  FontBoldIcon,
-  FontItalicIcon,
-  TextAlignCenterIcon,
-  TextAlignLeftIcon,
-  TextAlignRightIcon,
-  TextClipIcon,
-  TextOverflowIcon,
-  TextVerticalAlignBottomIcon,
-  TextVerticalAlignMiddleIcon,
-  TextVerticalAlignTopIcon,
-  WrapTextIcon,
-} from '@/app/ui/icons';
-import { isAvailableBecauseCanEditFile } from '../../../../actions';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { setAlign, setBold, setItalic, setVerticalAlign, setWrap } from '../../TopBar/SubMenus/formatCells';
-import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
+  setAlign,
+  setBold,
+  setItalic,
+  setStrikeThrough,
+  setUnderline,
+  setVerticalAlign,
+  setWrap,
+} from '@/app/ui/helpers/formatCells';
+import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
+import {
+  FormatAlignCenterIcon,
+  FormatAlignLeftIcon,
+  FormatAlignRightIcon,
+  FormatBoldIcon,
+  FormatItalicIcon,
+  FormatStrikethroughIcon,
+  FormatTextClipIcon,
+  FormatTextOverflowIcon,
+  FormatTextWrapIcon,
+  FormatUnderlinedIcon,
+  VerticalAlignBottomIcon,
+  VerticalAlignMiddleIcon,
+  VerticalAlignTopIcon,
+} from '@/shared/components/Icons';
 
 const commands: CommandGroup = {
   heading: 'Text',
@@ -26,7 +36,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<FontBoldIcon />}
+            icon={<FormatBoldIcon />}
             action={async () => {
               setBold();
             }}
@@ -43,7 +53,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<FontItalicIcon />}
+            icon={<FormatItalicIcon />}
             action={async () => setItalic()}
             shortcut="I"
             shortcutModifiers={KeyboardSymbols.Command}
@@ -52,24 +62,40 @@ const commands: CommandGroup = {
       },
     },
     {
+      label: 'Underline',
+      isAvailable: isAvailableBecauseCanEditFile,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} icon={<FormatUnderlinedIcon />} action={() => setUnderline()} />;
+      },
+    },
+    {
+      label: 'Strike-through',
+      isAvailable: isAvailableBecauseCanEditFile,
+      Component: (props) => {
+        return (
+          <CommandPaletteListItem {...props} icon={<FormatStrikethroughIcon />} action={() => setStrikeThrough()} />
+        );
+      },
+    },
+    {
       label: 'Left align',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setAlign('left')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatAlignLeftIcon />} action={() => setAlign('left')} />;
       },
     },
     {
       label: 'Center align',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextAlignCenterIcon />} action={() => setAlign('center')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatAlignCenterIcon />} action={() => setAlign('center')} />;
       },
     },
     {
       label: 'Right align',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setAlign('right')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatAlignRightIcon />} action={() => setAlign('right')} />;
       },
     },
     {
@@ -77,11 +103,7 @@ const commands: CommandGroup = {
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
-          <CommandPaletteListItem
-            {...props}
-            icon={<TextVerticalAlignTopIcon />}
-            action={() => setVerticalAlign('top')}
-          />
+          <CommandPaletteListItem {...props} icon={<VerticalAlignTopIcon />} action={() => setVerticalAlign('top')} />
         );
       },
     },
@@ -92,7 +114,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<TextVerticalAlignMiddleIcon />}
+            icon={<VerticalAlignMiddleIcon />}
             action={() => setVerticalAlign('middle')}
           />
         );
@@ -105,7 +127,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            icon={<TextVerticalAlignBottomIcon />}
+            icon={<VerticalAlignBottomIcon />}
             action={() => setVerticalAlign('bottom')}
           />
         );
@@ -115,21 +137,23 @@ const commands: CommandGroup = {
       label: 'Text overflow',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextOverflowIcon />} action={() => setWrap('overflow')} />;
+        return (
+          <CommandPaletteListItem {...props} icon={<FormatTextOverflowIcon />} action={() => setWrap('overflow')} />
+        );
       },
     },
     {
       label: 'Text wrap',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<WrapTextIcon />} action={() => setWrap('wrap')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatTextWrapIcon />} action={() => setWrap('wrap')} />;
       },
     },
     {
       label: 'Text clip',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextClipIcon />} action={() => setWrap('clip')} />;
+        return <CommandPaletteListItem {...props} icon={<FormatTextClipIcon />} action={() => setWrap('clip')} />;
       },
     },
   ],

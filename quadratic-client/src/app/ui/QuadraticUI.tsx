@@ -1,127 +1,109 @@
+import {
+  editorInteractionStateShowNewFileMenuAtom,
+  editorInteractionStateShowRenameFileMenuAtom,
+  editorInteractionStateShowShareFileMenuAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
+import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
+import { isEmbed } from '@/app/helpers/isEmbed';
+import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
+import { useFileContext } from '@/app/ui/components/FileProvider';
+import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
+import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
+import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
+import CodeEditor from '@/app/ui/menus/CodeEditor';
+import CommandPalette from '@/app/ui/menus/CommandPalette';
 import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
+import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
+import SheetBar from '@/app/ui/menus/SheetBar';
+import Toolbar from '@/app/ui/menus/Toolbar';
+import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
+import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
+import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
+import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
+import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
-import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import QuadraticGrid from '../gridGL/QuadraticGrid';
-import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import { isEmbed } from '../helpers/isEmbed';
-import { TopBar } from '../ui/menus/TopBar/TopBar';
-import { UpdateAlertVersion } from './UpdateAlertVersion';
-import { FileDragDropWrapper } from './components/FileDragDropWrapper';
-import { useFileContext } from './components/FileProvider';
-import { Following } from './components/Following';
-import { PermissionOverlay } from './components/PermissionOverlay';
-import PresentationModeHint from './components/PresentationModeHint';
-import { BottomBar } from './menus/BottomBar/BottomBar';
-import CellTypeMenu from './menus/CellTypeMenu';
-import CommandPalette from './menus/CommandPalette';
-import FeedbackMenu from './menus/FeedbackMenu';
-import GoTo from './menus/GoTo';
-import SheetBar from './menus/SheetBar';
-import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
-import { useMultiplayerUsers } from './menus/TopBar/useMultiplayerUsers';
-import { ValidationPanel } from './menus/Validations/ValidationPanel';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 export default function QuadraticUI() {
   const {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const connectionsFetcher = useConnectionsFetcher();
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
-  const { name } = useFileContext();
-  const { users } = useMultiplayerUsers();
-  const follow = editorInteractionState.follow
-    ? users.find((user) => user.session_id === editorInteractionState.follow)
-    : undefined;
-
-  // Resize the canvas when user goes in/out of presentation mode
-  useEffect(() => {
-    pixiApp.resize();
-  }, [presentationMode, editorInteractionState.showCodeEditor]);
+  const { name, renameFile } = useFileContext();
+  const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
+  const [showNewFileMenu, setShowNewFileMenu] = useRecoilState(editorInteractionStateShowNewFileMenuAtom);
+  const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
+  const presentationMode = useRecoilValue(presentationModeAtom);
 
   return (
     <div
+      id="quadratic-ui"
       style={{
         width: '100%',
         height: '100%',
         display: 'flex',
-        flexDirection: 'column',
+        // flexDirection: 'column',
         transition: '.3s ease opacity',
         opacity: 1,
         ...(navigation.state !== 'idle' ? { opacity: '.5', pointerEvents: 'none' } : {}),
       }}
     >
-      {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
-      {!presentationMode && <TopBar />}
-      {editorInteractionState.showCommandPalette && <CommandPalette />}
-      {editorInteractionState.showGoToMenu && <GoTo />}
+      {!presentationMode && !isEmbed && <QuadraticSidebar />}
+      <div className="flex min-w-0 flex-grow flex-col" id="main">
+        {!presentationMode && <TopBar />}
+        {!presentationMode && !isEmbed && <Toolbar />}
 
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          overflow: 'hidden',
-          position: 'relative',
-        }}
-      >
-        <FileDragDropWrapper>
-          <QuadraticGrid />
-          {!presentationMode && <SheetBar />}
-        </FileDragDropWrapper>
-        {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
-        {editorInteractionState.showValidation && <ValidationPanel />}
-        <Following follow={follow} />
         <div
           style={{
             width: '100%',
             height: '100%',
+            display: 'flex',
             overflow: 'hidden',
-            position: 'absolute',
-            border: follow ? `3px solid ${follow.colorString}` : '',
-            pointerEvents: 'none',
+            position: 'relative',
           }}
-        ></div>
-      </div>
+        >
+          <FileDragDropWrapper>
+            <QuadraticGrid />
+            {!presentationMode && <SheetBar />}
+          </FileDragDropWrapper>
+          <CodeEditor />
+          <ValidationPanel />
+        </div>
 
-      {!presentationMode && !isEmbed && <BottomBar />}
-      {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
-      {editorInteractionState.showShareFileMenu && (
-        <ShareFileDialog
-          onClose={() => {
-            setEditorInteractionState((prevState) => ({
-              ...prevState,
-              showShareFileMenu: false,
-            }));
-          }}
-          name={name}
-          uuid={uuid}
-        />
-      )}
-      {editorInteractionState.showNewFileMenu && (
+        {!presentationMode && !isEmbed && <BottomBar />}
+      </div>
+      {/* Global overlay menus */}
+      <FeedbackMenu />
+      {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
+      {showNewFileMenu && (
         <NewFileDialog
-          onClose={() => {
-            setEditorInteractionState((prev) => ({ ...prev, showNewFileMenu: false }));
-          }}
+          onClose={() => setShowNewFileMenu(false)}
           isPrivate={true}
           connections={connectionsFetcher.data ? connectionsFetcher.data.connections : []}
           teamUuid={teamUuid}
         />
       )}
       {presentationMode && <PresentationModeHint />}
-
+      <CellTypeMenu />
+      <CommandPalette />
+      {showRenameFileMenu && (
+        <DialogRenameItem
+          itemLabel="file"
+          onClose={() => setShowRenameFileMenu(false)}
+          onSave={(newValue) => renameFile(newValue)}
+          value={name}
+        />
+      )}
       <ConnectionsMenu />
-      <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
       <UserMessage />

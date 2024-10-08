@@ -45,6 +45,12 @@ pub enum RunErrorMsg {
     BadFunctionName,
     BadCellReference,
     BadNumber,
+    BadOp {
+        op: Cow<'static, str>,
+        ty1: Cow<'static, str>,
+        ty2: Option<Cow<'static, str>>,
+        use_duration_instead: bool,
+    },
     NaN,
 
     // Array size errors
@@ -89,7 +95,7 @@ impl RunError {
                 end: span.end,
             }),
             msg: match error.msg.clone() {
-                crate::RunErrorMsg::PythonError(str) => RunErrorMsg::PythonError(str),
+                crate::RunErrorMsg::CodeRunError(str) => RunErrorMsg::PythonError(str),
                 crate::RunErrorMsg::Spill => RunErrorMsg::Spill,
                 crate::RunErrorMsg::Unimplemented(str) => RunErrorMsg::Unimplemented(str),
                 crate::RunErrorMsg::UnknownError => RunErrorMsg::UnknownError,
@@ -118,6 +124,17 @@ impl RunError {
                 crate::RunErrorMsg::BadFunctionName => RunErrorMsg::BadFunctionName,
                 crate::RunErrorMsg::BadCellReference => RunErrorMsg::BadCellReference,
                 crate::RunErrorMsg::BadNumber => RunErrorMsg::BadNumber,
+                crate::RunErrorMsg::BadOp {
+                    op,
+                    ty1,
+                    ty2,
+                    use_duration_instead,
+                } => RunErrorMsg::BadOp {
+                    op,
+                    ty1,
+                    ty2,
+                    use_duration_instead,
+                },
                 crate::RunErrorMsg::NaN => RunErrorMsg::NaN,
 
                 // Array size errors
@@ -184,7 +201,7 @@ impl From<RunError> for crate::RunError {
                 end: span.end,
             }),
             msg: match error.msg {
-                RunErrorMsg::PythonError(str) => crate::RunErrorMsg::PythonError(str),
+                RunErrorMsg::PythonError(str) => crate::RunErrorMsg::CodeRunError(str),
                 RunErrorMsg::Spill => crate::RunErrorMsg::Spill,
                 RunErrorMsg::Unimplemented(str) => crate::RunErrorMsg::Unimplemented(str),
                 RunErrorMsg::UnknownError => crate::RunErrorMsg::UnknownError,
@@ -213,6 +230,17 @@ impl From<RunError> for crate::RunError {
                 RunErrorMsg::BadFunctionName => crate::RunErrorMsg::BadFunctionName,
                 RunErrorMsg::BadCellReference => crate::RunErrorMsg::BadCellReference,
                 RunErrorMsg::BadNumber => crate::RunErrorMsg::BadNumber,
+                RunErrorMsg::BadOp {
+                    op,
+                    ty1,
+                    ty2,
+                    use_duration_instead,
+                } => crate::RunErrorMsg::BadOp {
+                    op,
+                    ty1,
+                    ty2,
+                    use_duration_instead,
+                },
                 RunErrorMsg::NaN => crate::RunErrorMsg::NaN,
 
                 // Array size errors

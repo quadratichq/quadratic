@@ -240,4 +240,58 @@ export class SheetCursor {
   overlapsSelection(selection: Selection): boolean {
     return selectionOverlapsSelection(this.getRustSelection(), selection);
   }
+
+  hasOneColumnRowSelection(oneCell?: boolean): boolean {
+    return (
+      !this.columnRow?.all &&
+      !!(
+        (this.columnRow?.columns && this.columnRow.columns.length === 1) ||
+        (this.columnRow?.rows && this.columnRow.rows.length === 1) ||
+        (oneCell && !this.multiCursor)
+      )
+    );
+  }
+
+  includesCell(column: number, row: number): boolean {
+    if (this.multiCursor) {
+      return this.multiCursor.some((rect) => rect.contains(column, row));
+    } else {
+      return this.cursorPosition.x === column && this.cursorPosition.y === row;
+    }
+  }
+
+  // Returns the columns that are selected.
+  getColumnsSelection(): number[] {
+    const columns = new Set<number>();
+    if (this.columnRow?.columns) {
+      this.columnRow.columns.forEach((column) => columns.add(column));
+    }
+    if (this.multiCursor) {
+      for (const rect of this.multiCursor) {
+        columns.add(rect.x);
+      }
+    }
+    columns.add(this.cursorPosition.x);
+    return Array.from(columns);
+  }
+
+  // Returns the rows that are selected.
+  getRowsSelection(): number[] {
+    const rows = new Set<number>();
+    if (this.columnRow?.rows) {
+      this.columnRow.rows.forEach((row) => rows.add(row));
+    }
+    if (this.multiCursor) {
+      for (const rect of this.multiCursor) {
+        rows.add(rect.y);
+      }
+    }
+    rows.add(this.cursorPosition.y);
+    return Array.from(rows);
+  }
+
+  // Returns true if the cursor is only selecting a single cell
+  onlySingleSelection(): boolean {
+    return !this.multiCursor?.length && !this.columnRow;
+  }
 }

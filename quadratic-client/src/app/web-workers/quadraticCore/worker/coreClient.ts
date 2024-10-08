@@ -8,13 +8,13 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import {
+  JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
-  JsRenderBorders,
+  JsOffset,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-  JsRowHeight,
   JsSheetFill,
   JsValidationWarning,
   Selection,
@@ -51,17 +51,11 @@ declare var self: WorkerGlobalScope &
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendSetCursor: (cursor: string) => void;
     sendSetCursorSelection: (selection: Selection) => void;
-    sendSheetOffsetsClient: (
-      sheetId: string,
-      column: bigint | undefined,
-      row: bigint | undefined,
-      size: number,
-      borders: JsRenderBorders
-    ) => void;
+    sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
-    sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+    sendBordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
     sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
@@ -85,7 +79,6 @@ declare var self: WorkerGlobalScope &
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
-    sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
     sendRenderValidationWarnings: (
       sheetId: string,
       hashX: number,
@@ -115,7 +108,7 @@ class CoreClient {
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
-    self.sendSheetBorders = coreClient.sendSheetBorders;
+    self.sendBordersSheet = coreClient.sendBordersSheet;
     self.sendSheetRenderCells = coreClient.sendSheetRenderCells;
     self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
@@ -125,7 +118,6 @@ class CoreClient {
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
     self.sendSheetValidations = coreClient.sendSheetValidations;
-    self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
     self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
@@ -256,6 +248,14 @@ class CoreClient {
         await core.setCellTextColor(e.data.selection, e.data.color, e.data.cursor);
         return;
 
+      case 'clientCoreSetCellUnderline':
+        await core.setCellUnderline(e.data.selection, e.data.underline, e.data.cursor);
+        return;
+
+      case 'clientCoreSetCellStrikeThrough':
+        await core.setCellStrikeThrough(e.data.selection, e.data.strikeThrough, e.data.cursor);
+        return;
+
       case 'clientCoreSetCellFillColor':
         await core.setCellFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
         return;
@@ -335,6 +335,14 @@ class CoreClient {
         this.send({ type: 'coreClientSearch', id: e.data.id, results });
         return;
 
+      case 'clientCoreNeighborText':
+        this.send({
+          type: 'coreClientNeighborText',
+          id: e.data.id,
+          text: core.neighborText(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
       case 'clientCoreHasRenderCells':
         const hasRenderCells = await core.hasRenderCells(
           e.data.sheetId,
@@ -372,17 +380,8 @@ class CoreClient {
         await core.pasteFromClipboard(e.data.selection, e.data.plainText, e.data.html, e.data.special, e.data.cursor);
         return;
 
-      case 'clientCoreSetRegionBorders':
-        await core.setRegionBorders(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.selection,
-          e.data.style,
-          e.data.cursor
-        );
+      case 'clientCoreSetBorders':
+        await core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor);
         return;
 
       case 'clientCoreSetCellRenderResize':
@@ -566,6 +565,22 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreDeleteColumns':
+        core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        return;
+
+      case 'clientCoreDeleteRows':
+        core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        return;
+
+      case 'clientCoreInsertColumn':
+        core.insertColumn(e.data.sheetId, e.data.column, e.data.right, e.data.cursor);
+        return;
+
+      case 'clientCoreInsertRow':
+        core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core
@@ -625,20 +640,11 @@ class CoreClient {
     this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 
-  sendSheetOffsets = (
-    sheetId: string,
-    column: bigint | undefined,
-    row: bigint | undefined,
-    size: number,
-    borders: JsRenderBorders
-  ) => {
+  sendSheetOffsets = (sheetId: string, offsets: JsOffset[]) => {
     this.send({
       type: 'coreClientSheetOffsets',
       sheetId,
-      column: column === undefined ? undefined : Number(column),
-      row: row === undefined ? undefined : Number(row),
-      size,
-      borders,
+      offsets,
     });
   };
 
@@ -654,8 +660,8 @@ class CoreClient {
     this.send({ type: 'coreClientGenerateThumbnail' });
   };
 
-  sendSheetBorders = (sheetId: string, borders: JsRenderBorders) => {
-    this.send({ type: 'coreClientSheetBorders', sheetId, borders });
+  sendBordersSheet = (sheetId: string, borders: JsBordersSheet) => {
+    this.send({ type: 'coreClientBordersSheet', sheetId, borders });
   };
 
   sendSheetRenderCells = (sheetId: string, renderCells: JsRenderCell[]) => {
@@ -727,15 +733,6 @@ class CoreClient {
 
   sendSheetValidations = (sheetId: string, validations: Validation[]) => {
     this.send({ type: 'coreClientSheetValidations', sheetId, validations });
-  };
-
-  sendResizeRowHeights = (sheetId: string, rowHeightsString: string) => {
-    try {
-      const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
-      this.send({ type: 'coreClientResizeRowHeights', sheetId, rowHeights });
-    } catch (e) {
-      console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
-    }
   };
 
   sendRenderValidationWarnings = (

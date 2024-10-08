@@ -1,4 +1,6 @@
-use std::{fmt, str::FromStr};
+use std::fmt;
+use std::hash::Hash;
+use std::str::FromStr;
 
 use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
@@ -9,7 +11,7 @@ use super::{Duration, Instant, IsBlank};
 use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-    CodeResult, RunError,
+    CodeResult, RunError, RunErrorMsg, Span, Spanned,
 };
 
 // todo: fill this out
@@ -39,13 +41,16 @@ pub enum CellValue {
     Number(BigDecimal),
     /// Logical value.
     Logical(bool),
-    /// Instant in time.
+    /// Instant in time. TODO: remove
     #[cfg_attr(test, proptest(skip))]
     Instant(Instant),
+    // Date + time.
     #[cfg_attr(test, proptest(skip))]
     DateTime(NaiveDateTime),
+    // Date.
     #[cfg_attr(test, proptest(skip))]
     Date(NaiveDate),
+    // Time.
     #[cfg_attr(test, proptest(skip))]
     Time(NaiveTime),
     /// Duration of time.
@@ -96,7 +101,7 @@ impl CellValue {
             CellValue::Number(_) => "number",
             CellValue::Logical(_) => "logical",
             CellValue::Instant(_) => "time instant",
-            CellValue::Duration(_) => "time duration",
+            CellValue::Duration(_) => "duration",
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
             CellValue::Code(_) => "code",
@@ -115,7 +120,7 @@ impl CellValue {
             CellValue::Logical(true) => "TRUE".to_string(),
             CellValue::Logical(false) => "FALSE".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
-            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
             CellValue::Code(_) => todo!("repr of code"),
@@ -165,7 +170,7 @@ impl CellValue {
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
-            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Date(d) => d.format(DEFAULT_DATE_FORMAT).to_string(),
             CellValue::Time(d) => d.format(DEFAULT_TIME_FORMAT).to_string(),
@@ -272,7 +277,7 @@ impl CellValue {
             CellValue::Time(t) => t.format("%-I:%M %p").to_string(),
             CellValue::DateTime(t) => t.format("%m/%d/%Y %-I:%M %p").to_string(),
 
-            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
 
             // this should not be editable
@@ -294,7 +299,7 @@ impl CellValue {
             CellValue::Date(d) => d.format("%Y-%m-%d").to_string(),
             CellValue::Time(t) => t.format("%H:%M:%S%.3f").to_string(),
             CellValue::DateTime(t) => t.format("%Y-%m-%dT%H:%M:%S%.3f").to_string(),
-            CellValue::Duration(_) => todo!("repr of Duration"),
+            CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
 
             // these should not return a value
@@ -374,6 +379,13 @@ impl CellValue {
             other => Ok(other),
         }
     }
+    /// Converts an error value into an actual error.
+    pub fn as_non_error_value(&self) -> CodeResult<&Self> {
+        match self {
+            CellValue::Error(e) => Err((**e).clone()),
+            other => Ok(other),
+        }
+    }
 
     /// Coerces the value to a specific type; returns `None` if the conversion
     /// fails or the original value is `None`.
@@ -387,70 +399,37 @@ impl CellValue {
         }
     }
 
-    /// Compares two values but propagates errors and returns `None` in the case
-    /// of disparate types.
-    pub fn partial_cmp(&self, other: &Self) -> CodeResult<Option<std::cmp::Ordering>> {
-        Ok(Some(match (self, other) {
-            (CellValue::Error(e), _) | (_, CellValue::Error(e)) => return Err((**e).clone()),
-
-            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),
-            (CellValue::Text(a), CellValue::Text(b)) => {
-                let a = a.to_ascii_uppercase();
-                let b = b.to_ascii_uppercase();
-                a.cmp(&b)
-            }
-            (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
-            (CellValue::Instant(a), CellValue::Instant(b)) => a.cmp(b),
-            (CellValue::Date(a), CellValue::Date(b)) => a.cmp(b),
-            (CellValue::Time(a), CellValue::Time(b)) => a.cmp(b),
-            (CellValue::DateTime(a), CellValue::DateTime(b)) => a.cmp(b),
-            (CellValue::DateTime(a), CellValue::Date(b)) => a.date().cmp(b),
-            (CellValue::Date(a), CellValue::DateTime(b)) => a.cmp(&b.date()),
-            (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
-            (CellValue::Blank, CellValue::Blank) => std::cmp::Ordering::Equal,
-
-            (CellValue::Number(_), _)
-            | (CellValue::Text(_), _)
-            | (CellValue::Logical(_), _)
-            | (CellValue::Instant(_), _)
-            | (CellValue::Duration(_), _)
-            | (CellValue::Date(_), _)
-            | (CellValue::Time(_), _)
-            | (CellValue::DateTime(_), _)
-            | (CellValue::Html(_), _)
-            | (CellValue::Code(_), _)
-            | (CellValue::Image(_), _)
-            | (CellValue::Blank, _) => return Ok(None),
-        }))
+    /// Returns the sort order of a value, based on the results of Excel's
+    /// `SORT()` function. The comparison operators are the same, except that
+    /// blank coerces to `0`, `FALSE`, or `""` before comparison.
+    pub fn type_id(&self) -> u8 {
+        match self {
+            CellValue::Number(_) => 0,
+            CellValue::Text(_) => 1,
+            CellValue::Logical(_) => 2,
+            CellValue::Error(_) => 3,
+            CellValue::Instant(_) | CellValue::DateTime(_) => 4,
+            CellValue::Date(_) => 5,
+            CellValue::Time(_) => 6,
+            CellValue::Duration(_) => 7,
+            CellValue::Blank => 8,
+            CellValue::Html(_) => 9,
+            CellValue::Code(_) => 10,
+            CellValue::Image(_) => 11,
+        }
     }
 
     /// Compares two values using a total ordering that propagates errors and
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
-    pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
-        fn type_id(v: &CellValue) -> u8 {
-            // Sort order, based on the results of Excel's `SORT()` function.
-            // The comparison operators are the same, except that blank coerces
-            // to zero before comparison.
-            match v {
-                CellValue::Number(_) => 0,
-                CellValue::Text(_) => 1,
-                CellValue::Logical(_) => 2,
-                CellValue::Error(_) => 3,
-                CellValue::Instant(_) => 4,
-                CellValue::Duration(_) => 5,
-                CellValue::Blank => 6,
-                CellValue::Html(_) => 7,
-                CellValue::Code(_) => 8,
-                CellValue::Image(_) => 9,
-                CellValue::Date(_) => 10,
-                CellValue::Time(_) => 11,
-                CellValue::DateTime(_) => 12,
-            }
+    pub fn partial_cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
+        if self.is_blank() && other.eq_blank() || other.is_blank() && self.eq_blank() {
+            return Ok(std::cmp::Ordering::Equal);
         }
 
-        let mut lhs = self;
-        let mut rhs = other;
+        // Coerce blank to zero.
+        let mut lhs = self.as_non_error_value()?;
+        let mut rhs = other.as_non_error_value()?;
         let lhs_cell_value: CellValue;
         let rhs_cell_value: CellValue;
         if lhs.is_blank() {
@@ -461,35 +440,64 @@ impl CellValue {
             rhs_cell_value = CellValue::Number(BigDecimal::zero());
             rhs = &rhs_cell_value;
         }
-
-        Ok(lhs
-            .partial_cmp(rhs)?
-            .unwrap_or_else(|| type_id(lhs).cmp(&type_id(rhs))))
+        Ok(lhs.total_cmp(rhs))
     }
 
-    /// Returns whether `self == other` using `CellValue::cmp()`.
+    /// Compares two values according to the total sort order, with no coercion
+    /// and no errors.
+    pub fn total_cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (CellValue::Text(a), CellValue::Text(b)) => {
+                let a = crate::util::case_fold(a);
+                let b = crate::util::case_fold(b);
+                a.cmp(&b)
+            }
+            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),
+            (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
+            (CellValue::DateTime(a), CellValue::DateTime(b)) => a.cmp(b),
+            (CellValue::Date(a), CellValue::Date(b)) => a.cmp(b),
+            (CellValue::Time(a), CellValue::Time(b)) => a.cmp(b),
+            (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
+            _ => self.type_id().cmp(&other.type_id()),
+        }
+    }
+
+    /// Returns whether `self == other` using a case-insensitive and
+    /// blank-coercing comparison.
+    ///
+    /// Returns an error if either argument is [`CellValue::Error`].
     pub fn eq(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.cmp(other)? == std::cmp::Ordering::Equal)
+        Ok(self.partial_cmp(other)? == std::cmp::Ordering::Equal)
+    }
+    /// Returns whether blank can coerce to this cell value.
+    fn eq_blank(&self) -> bool {
+        match self {
+            CellValue::Blank => true,
+            CellValue::Text(s) => s.is_empty(),
+            CellValue::Number(n) => n.is_zero(),
+            CellValue::Logical(b) => !b,
+            _ => false,
+        }
     }
     /// Returns whether `self < other` using `CellValue::cmp()`.
     pub fn lt(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.cmp(other)? == std::cmp::Ordering::Less)
+        Ok(self.partial_cmp(other)? == std::cmp::Ordering::Less)
     }
     /// Returns whether `self > other` using `CellValue::cmp()`.
     pub fn gt(&self, other: &Self) -> CodeResult<bool> {
-        Ok(self.cmp(other)? == std::cmp::Ordering::Greater)
+        Ok(self.partial_cmp(other)? == std::cmp::Ordering::Greater)
     }
     /// Returns whether `self <= other` using `CellValue::cmp()`.
     pub fn lte(&self, other: &Self) -> CodeResult<bool> {
         Ok(matches!(
-            self.cmp(other)?,
+            self.partial_cmp(other)?,
             std::cmp::Ordering::Less | std::cmp::Ordering::Equal,
         ))
     }
     /// Returns whether `self >= other` using `CellValue::cmp()`.
     pub fn gte(&self, other: &Self) -> CodeResult<bool> {
         Ok(matches!(
-            self.cmp(other)?,
+            self.partial_cmp(other)?,
             std::cmp::Ordering::Greater | std::cmp::Ordering::Equal,
         ))
     }
@@ -497,7 +505,12 @@ impl CellValue {
     /// Generic conversion from &str to CellValue
     /// This would normally be an implementation of FromStr, but we are holding
     /// off as we want formatting to happen with conversions in most places
-    pub fn to_cell_value(value: &str) -> CellValue {
+    pub fn parse_from_str(value: &str) -> CellValue {
+        // check for duration
+        if let Ok(duration) = value.parse() {
+            return CellValue::Duration(duration);
+        }
+
         // check for number
         let parsed = CellValue::strip_percentage(CellValue::strip_currency(value)).trim();
         let without_commas = CellValue::strip_commas(parsed);
@@ -531,6 +544,347 @@ impl CellValue {
             other => panic!("expected error value; got {other:?}"),
         }
     }
+
+    /// Returns a hashable value that is unique per-value for most common types,
+    /// but may not always be unique.
+    pub fn hash(&self) -> CellValueHash {
+        match self {
+            CellValue::Blank => CellValueHash::Blank,
+            CellValue::Text(s) => CellValueHash::Text(crate::util::case_fold(s)),
+            CellValue::Number(n) => CellValueHash::Number(n.clone()),
+            CellValue::Logical(b) => CellValueHash::Logical(*b),
+            CellValue::Instant(Instant { seconds }) => {
+                CellValueHash::Instant(seconds.to_ne_bytes())
+            }
+            CellValue::Duration(Duration { months, seconds }) => {
+                CellValueHash::Duration(*months, seconds.to_ne_bytes())
+            }
+            CellValue::Error(e) => CellValueHash::Error(e.msg.clone()),
+            _ => CellValueHash::Unknown(self.type_id()),
+        }
+    }
+
+    fn to_numeric(&self) -> CodeResult<CellValue> {
+        match self.as_non_error_value()? {
+            CellValue::Blank => Ok(CellValue::Number(0.into())),
+            CellValue::Text(s) => Ok(CellValue::parse_from_str(s)),
+            CellValue::Logical(false) => Ok(CellValue::Number(0.into())),
+            CellValue::Logical(true) => Ok(CellValue::Number(1.into())),
+            _ => Ok(self.clone()),
+        }
+    }
+    /// Returns whether the type is a date, time, datetime, or duration.
+    fn has_date_or_time(&self) -> bool {
+        matches!(
+            self,
+            CellValue::Date(_) | CellValue::Time(_) | CellValue::DateTime(_),
+        )
+    }
+
+    /// Adds two values, casting them as needed.
+    pub fn add(
+        span: Span,
+        lhs: Spanned<&CellValue>,
+        rhs: Spanned<&CellValue>,
+    ) -> CodeResult<Spanned<CellValue>> {
+        let v = match (&lhs.inner.to_numeric()?, &rhs.inner.to_numeric()?) {
+            // number + number
+            (CellValue::Number(a), CellValue::Number(b)) => CellValue::Number(a + b),
+
+            // datetime + number(days)
+            (CellValue::Number(n), CellValue::DateTime(dt))
+            | (CellValue::DateTime(dt), CellValue::Number(n)) => CellValue::DateTime(
+                super::time::add_to_datetime(*dt, Duration::from_days_bigdec(n)),
+            ),
+
+            // date + number(days)
+            (CellValue::Number(n), CellValue::Date(d))
+            | (CellValue::Date(d), CellValue::Number(n)) => {
+                CellValue::Date(super::time::add_to_date(*d, Duration::from_days_bigdec(n)))
+            }
+
+            // time + number(hours)
+            (CellValue::Number(n), CellValue::Time(t))
+            | (CellValue::Time(t), CellValue::Number(n)) => {
+                CellValue::Time(super::time::add_to_time(*t, Duration::from_hours_bigdec(n)))
+            }
+
+            // duration + number(days)
+            (CellValue::Duration(dur), CellValue::Number(n))
+            | (CellValue::Number(n), CellValue::Duration(dur)) => {
+                CellValue::Duration(*dur + Duration::from_days_bigdec(n))
+            }
+
+            // date + time
+            (CellValue::Date(date), CellValue::Time(time))
+            | (CellValue::Time(time), CellValue::Date(date)) => {
+                CellValue::DateTime(date.and_time(*time))
+            }
+
+            // datetime + duration
+            (CellValue::Duration(dur), CellValue::DateTime(dt))
+            | (CellValue::DateTime(dt), CellValue::Duration(dur)) => {
+                CellValue::DateTime(super::time::add_to_datetime(*dt, *dur))
+            }
+
+            // date + duration
+            (CellValue::Duration(dur), CellValue::Date(d))
+            | (CellValue::Date(d), CellValue::Duration(dur)) => {
+                if dur.is_integer_days() {
+                    CellValue::Date(super::time::add_to_date(*d, *dur))
+                } else {
+                    CellValue::DateTime(super::time::add_to_datetime(NaiveDateTime::from(*d), *dur))
+                }
+            }
+
+            // time + duration
+            (CellValue::Duration(dur), CellValue::Time(t))
+            | (CellValue::Time(t), CellValue::Duration(dur)) => {
+                CellValue::Time(super::time::add_to_time(*t, *dur))
+            }
+
+            // duration + duration
+            (CellValue::Duration(dur1), CellValue::Duration(dur2)) => {
+                CellValue::Duration(*dur1 + *dur2)
+            }
+
+            // other operation
+            _ => {
+                return Err(RunErrorMsg::BadOp {
+                    op: "add".into(),
+                    ty1: lhs.inner.type_name().into(),
+                    ty2: Some(rhs.inner.type_name().into()),
+                    use_duration_instead: (lhs.inner.has_date_or_time()
+                        || rhs.inner.has_date_or_time())
+                        && !matches!(lhs.inner, CellValue::Duration(_))
+                        && !matches!(rhs.inner, CellValue::Duration(_)),
+                }
+                .with_span(span));
+            }
+        };
+
+        Ok(Spanned { span, inner: v })
+    }
+
+    /// Subtracts two values, casting them as needed.
+    pub fn sub(
+        span: Span,
+        lhs: Spanned<&CellValue>,
+        rhs: Spanned<&CellValue>,
+    ) -> CodeResult<Spanned<CellValue>> {
+        let a = lhs.inner.to_numeric()?;
+        let b = rhs.inner.to_numeric()?;
+
+        let v = match (&a, &b) {
+            // number - number
+            (CellValue::Number(n1), CellValue::Number(n2)) => CellValue::Number(n1 - n2),
+
+            // datetime - number(days)
+            (CellValue::DateTime(dt), CellValue::Number(n)) => CellValue::DateTime(
+                super::time::add_to_datetime(*dt, Duration::from_days_bigdec(&-n)),
+            ),
+
+            // date - number(days)
+            (CellValue::Date(d), CellValue::Number(n)) => CellValue::Date(
+                super::time::add_to_date(*d, Duration::from_days_bigdec(&-n)),
+            ),
+
+            // time - number(hours)
+            (CellValue::Time(t), CellValue::Number(n)) => CellValue::Time(
+                super::time::add_to_time(*t, Duration::from_hours_bigdec(&-n)),
+            ),
+
+            // duration - number(days)
+            (CellValue::Duration(dur), CellValue::Number(n)) => {
+                CellValue::Duration(*dur - Duration::from_days_bigdec(n))
+            }
+
+            // number(days) - duration
+            (CellValue::Number(n), CellValue::Duration(dur)) => {
+                CellValue::Duration(Duration::from_days_bigdec(n) - *dur)
+            }
+
+            // datetime - duration
+            (CellValue::DateTime(dt), CellValue::Duration(dur)) => {
+                CellValue::DateTime(super::time::add_to_datetime(*dt, -*dur))
+            }
+
+            // date - duration
+            (CellValue::Date(d), CellValue::Duration(dur)) => {
+                if dur.is_integer_days() {
+                    CellValue::Date(super::time::add_to_date(*d, -*dur))
+                } else {
+                    CellValue::DateTime(super::time::add_to_datetime(
+                        NaiveDateTime::from(*d),
+                        -*dur,
+                    ))
+                }
+            }
+
+            // time - duration
+            (CellValue::Time(t), CellValue::Duration(dur)) => {
+                CellValue::Time(super::time::add_to_time(*t, -*dur))
+            }
+
+            // datetime - datetime
+            (CellValue::DateTime(dt1), CellValue::DateTime(dt2)) => {
+                CellValue::Duration(Duration::from(*dt1 - *dt2))
+            }
+            // datetime - date
+            (CellValue::DateTime(dt), CellValue::Date(d)) => {
+                CellValue::Duration(Duration::from(*dt - NaiveDateTime::from(*d)))
+            }
+            // date - datetime
+            (CellValue::Date(d), CellValue::DateTime(dt)) => {
+                CellValue::Duration(Duration::from(NaiveDateTime::from(*d) - *dt))
+            }
+            // date - date
+            (CellValue::Date(d1), CellValue::Date(d2)) => {
+                CellValue::Duration(Duration::from(*d1 - *d2))
+            }
+
+            // time - time
+            (CellValue::Time(t1), CellValue::Time(t2)) => {
+                CellValue::Duration(Duration::from(*t1 - *t2))
+            }
+
+            // duration - duration
+            (CellValue::Duration(dur1), CellValue::Duration(dur2)) => {
+                CellValue::Duration(*dur1 - *dur2)
+            }
+
+            // other operation
+            _ => {
+                return Err(RunErrorMsg::BadOp {
+                    op: "subtract".into(),
+                    ty1: a.type_name().into(),
+                    ty2: Some(b.type_name().into()),
+                    use_duration_instead: a.has_date_or_time()
+                        && !matches!(b, CellValue::Duration(_)),
+                }
+                .with_span(span));
+            }
+        };
+
+        Ok(Spanned { span, inner: v })
+    }
+
+    /// Negates a value.
+    pub fn neg(value: Spanned<&CellValue>) -> CodeResult<Spanned<CellValue>> {
+        let span = value.span;
+
+        let v = match value.inner.to_numeric()? {
+            CellValue::Number(n) => CellValue::Number(-n),
+            CellValue::Duration(dur) => CellValue::Duration(-dur),
+            _ => return Err(RunErrorMsg::InvalidArgument.with_span(value.span)),
+        };
+
+        Ok(Spanned { span, inner: v })
+    }
+
+    // Multiplies two values.
+    pub fn mul(
+        span: Span,
+        lhs: Spanned<&CellValue>,
+        rhs: Spanned<&CellValue>,
+    ) -> CodeResult<Spanned<CellValue>> {
+        let v = match (&lhs.inner.to_numeric()?, &rhs.inner.to_numeric()?) {
+            (CellValue::Number(n1), CellValue::Number(n2)) => CellValue::Number(n1 * n2),
+
+            (CellValue::Duration(d), CellValue::Number(n))
+            | (CellValue::Number(n), CellValue::Duration(d)) => {
+                CellValue::Duration(*d * n.to_f64().unwrap_or(0.0))
+            }
+
+            _ => {
+                return Err(RunErrorMsg::BadOp {
+                    op: "multiply".into(),
+                    ty1: lhs.inner.type_name().into(),
+                    ty2: Some(rhs.inner.type_name().into()),
+                    use_duration_instead: (lhs.inner.has_date_or_time()
+                        && matches!(rhs.inner, CellValue::Number(_)))
+                        || (rhs.inner.has_date_or_time()
+                            && matches!(lhs.inner, CellValue::Number(_))),
+                }
+                .with_span(span));
+            }
+        };
+
+        Ok(Spanned { span, inner: v })
+    }
+
+    // Divides two values, returning an error in case of division by zero.
+    pub fn checked_div(
+        span: Span,
+        lhs: Spanned<&CellValue>,
+        rhs: Spanned<&CellValue>,
+    ) -> CodeResult<Spanned<CellValue>> {
+        let a = lhs.inner.to_numeric()?;
+        let b = rhs.inner.to_numeric()?;
+
+        let v = match (&a, &b) {
+            (CellValue::Number(n1), CellValue::Number(n2)) => {
+                CellValue::from(crate::formulas::util::checked_div(
+                    span,
+                    n1.to_f64().unwrap_or(0.0),
+                    n2.to_f64().unwrap_or(0.0),
+                )?)
+            }
+            (CellValue::Duration(d), CellValue::Number(n)) => {
+                let recip = n.to_f64().unwrap_or(1.0).recip();
+                match recip.is_finite() {
+                    true => CellValue::Duration(*d * recip),
+                    false => return Err(RunErrorMsg::DivideByZero.with_span(span)),
+                }
+            }
+
+            _ => {
+                return Err(RunErrorMsg::BadOp {
+                    op: "divide".into(),
+                    ty1: a.type_name().into(),
+                    ty2: Some(b.type_name().into()),
+                    use_duration_instead: a.has_date_or_time() && matches!(b, CellValue::Number(_)),
+                }
+                .with_span(span));
+            }
+        };
+
+        Ok(Spanned { span, inner: v })
+    }
+
+    /// Returns the arithmetic mean of a sequence of values, or an error if
+    /// there are no values. Ignores blank values.
+    pub fn average(
+        span: Span,
+        values: impl IntoIterator<Item = CodeResult<f64>>,
+    ) -> CodeResult<f64> {
+        // This may someday be generalized to work with dates as well, but it's
+        // important that it still ignores blanks.
+        let mut sum = 0.0;
+        let mut count = 0;
+        for n in values {
+            sum += n?;
+            count += 1;
+        }
+        crate::formulas::util::checked_div(span, sum, count as f64)
+    }
+}
+
+/// Unique hash of [`CellValue`], for performance optimization. This is
+/// **case-folded**, so strings with the same contents in a different case will
+/// hash to the same value.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+pub enum CellValueHash {
+    #[default]
+    Blank,
+    Text(String),
+    // If we ever switch to using `f64`, replace this with `[u8; 8]`.
+    Number(BigDecimal),
+    Logical(bool),
+    Instant([u8; 8]),
+    Duration(i32, [u8; 8]),
+    Error(RunErrorMsg),
+    Unknown(u8),
 }
 
 #[cfg(test)]
@@ -812,5 +1166,32 @@ mod test {
                 .unwrap(),
         );
         assert_eq!(value.to_get_cells(), "2024-08-15T10:53:48.750");
+    }
+
+    #[test]
+    #[parallel]
+    fn test_cell_value_equality() {
+        for ([l, r], expected) in [
+            // Reflexivity
+            ([CellValue::Blank, CellValue::Blank], true),
+            (["".into(), "".into()], true),
+            ([0.into(), 0.into()], true),
+            // Blank coercion
+            ([CellValue::Blank, "".into()], true),
+            ([CellValue::Blank, 0.into()], true),
+            // Case-insensitivity
+            (["a".into(), "A".into()], true),
+            // ("ß", "SS", true), // TODO: proper Unicode case folding
+            // Other cases
+            ([0.into(), "".into()], false),
+            (["a".into(), "ab".into()], false),
+            ([CellValue::Blank, 1.into()], false),
+            ([CellValue::Blank, (-1).into()], false),
+            ([CellValue::Blank, "a".into()], false),
+        ] {
+            println!("Comparing {l:?} to {r:?}");
+            assert_eq!(expected, l.eq(&r).unwrap());
+            assert_eq!(expected, r.eq(&l).unwrap());
+        }
     }
 }

@@ -1,27 +1,47 @@
+import { hasPermissionToEditFile } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
 import { debug } from '@/app/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets.js';
+import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
+import {
+  clearFormattingAndBorders,
+  setBold,
+  setItalic,
+  setStrikeThrough,
+  setUnderline,
+} from '@/app/ui/helpers/formatCells';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker.js';
+import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore.js';
-import { hasPermissionToEditFile } from '../../../actions';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
-import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
-import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
-import { pixiApp } from '../../pixiApp/PixiApp';
 
-export function keyboardViewport(options: {
-  event: React.KeyboardEvent<HTMLElement>;
-  editorInteractionState: EditorInteractionState;
-  setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-  presentationMode: boolean;
-  setPresentationMode: Function;
-}): boolean {
-  const { event, editorInteractionState, setEditorInteractionState, presentationMode, setPresentationMode } = options;
+export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boolean {
   const { pointer } = pixiApp;
+  const {
+    editorInteractionState,
+    setEditorInteractionState,
+    codeEditorState,
+    setCodeEditorState,
+    gridSettings,
+    setGridSettings,
+  } = pixiAppSettings;
+
+  if (!setEditorInteractionState) {
+    throw new Error('Expected setEditorInteractionState to be defined in keyboardViewport');
+  }
+
+  if (!setCodeEditorState) {
+    throw new Error('Expected setCodeEditorState to be defined in keyboardViewport');
+  }
+
+  if (!setGridSettings) {
+    throw new Error('Expected d to be defined in keyboardViewport');
+  }
 
   // Show command palette
-  if (matchShortcut('show_command_palette', event)) {
+  if (matchShortcut(Action.ShowCommandPalette, event)) {
     setEditorInteractionState({
       ...editorInteractionState,
       showFeedbackMenu: false,
@@ -34,20 +54,20 @@ export function keyboardViewport(options: {
   }
 
   // Toggle presentation mode
-  if (matchShortcut('toggle_presentation_mode', event)) {
-    setPresentationMode(!presentationMode);
+  if (matchShortcut(Action.TogglePresentationMode, event)) {
+    setGridSettings({ ...gridSettings, presentationMode: !gridSettings.presentationMode });
     return true;
   }
 
   // Close overlay
-  if (matchShortcut('close_overlay', event)) {
-    if (presentationMode) {
-      setPresentationMode(false);
+  if (matchShortcut(Action.CloseOverlay, event)) {
+    if (gridSettings.presentationMode) {
+      setGridSettings({ ...gridSettings, presentationMode: false });
       return true;
-    } else if (editorInteractionState.showCodeEditor) {
-      setEditorInteractionState({
-        ...editorInteractionState,
-        editorEscapePressed: true,
+    } else if (codeEditorState.showCodeEditor) {
+      setCodeEditorState({
+        ...codeEditorState,
+        escapePressed: true,
       });
       return true;
     } else if (editorInteractionState.showValidation) {
@@ -62,7 +82,7 @@ export function keyboardViewport(options: {
   }
 
   // Show go to menu
-  if (matchShortcut('show_go_to_menu', event)) {
+  if (matchShortcut(Action.ShowGoToMenu, event)) {
     setEditorInteractionState({
       ...editorInteractionState,
       showFeedbackMenu: false,
@@ -74,43 +94,43 @@ export function keyboardViewport(options: {
   }
 
   // Zoom in
-  if (matchShortcut('zoom_in', event)) {
+  if (matchShortcut(Action.ZoomIn, event)) {
     zoomIn();
     return true;
   }
 
   // Zoom out
-  if (matchShortcut('zoom_out', event)) {
+  if (matchShortcut(Action.ZoomOut, event)) {
     zoomOut();
     return true;
   }
 
   // Zoom to selection
-  if (matchShortcut('zoom_to_selection', event)) {
+  if (matchShortcut(Action.ZoomToSelection, event)) {
     zoomToSelection();
     return true;
   }
 
   // Zoom to fit
-  if (matchShortcut('zoom_to_fit', event)) {
+  if (matchShortcut(Action.ZoomToFit, event)) {
     zoomToFit();
     return true;
   }
 
   // Zoom to 100%
-  if (matchShortcut('zoom_to_100', event)) {
+  if (matchShortcut(Action.ZoomTo100, event)) {
     zoomTo100();
     return true;
   }
 
   // Save
-  if (matchShortcut('save', event)) {
+  if (matchShortcut(Action.Save, event)) {
     // don't do anything on Command+S
     return true;
   }
 
   // Switch to next sheet
-  if (matchShortcut('switch_sheet_next', event)) {
+  if (matchShortcut(Action.SwitchSheetNext, event)) {
     if (sheets.size > 1) {
       const nextSheet = sheets.getNext(sheets.sheet.order) ?? sheets.getFirst();
       sheets.current = nextSheet.id;
@@ -119,7 +139,7 @@ export function keyboardViewport(options: {
   }
 
   // Switch to previous sheet
-  if (matchShortcut('switch_sheet_previous', event)) {
+  if (matchShortcut(Action.SwitchSheetPrevious, event)) {
     if (sheets.size > 1) {
       const previousSheet = sheets.getPrevious(sheets.sheet.order) ?? sheets.getLast();
       sheets.current = previousSheet.id;
@@ -133,26 +153,38 @@ export function keyboardViewport(options: {
   }
 
   // Clear formatting and borders
-  if (matchShortcut('clear_formatting_borders', event)) {
+  if (matchShortcut(Action.ClearFormattingBorders, event)) {
     clearFormattingAndBorders();
     return true;
   }
 
   // Toggle bold
-  if (matchShortcut('toggle_bold', event)) {
+  if (matchShortcut(Action.ToggleBold, event)) {
     setBold();
     return true;
   }
 
   // Toggle italic
-  if (matchShortcut('toggle_italic', event)) {
+  if (matchShortcut(Action.ToggleItalic, event)) {
     setItalic();
+    return true;
+  }
+
+  // Toggle underline
+  if (matchShortcut(Action.ToggleUnderline, event)) {
+    setUnderline();
+    return true;
+  }
+
+  // Toggle strike-through
+  if (matchShortcut(Action.ToggleStrikeThrough, event)) {
+    setStrikeThrough();
     return true;
   }
 
   // Fill right
   // Disabled in debug mode, to allow page reload
-  if (!debug && matchShortcut('fill_right', event)) {
+  if (!debug && matchShortcut(Action.FillRight, event)) {
     const cursor = sheets.sheet.cursor;
     if (cursor.columnRow?.all || cursor.columnRow?.rows) return true;
     if (cursor.columnRow?.columns && cursor.multiCursor) return true;
@@ -206,7 +238,7 @@ export function keyboardViewport(options: {
   }
 
   // Fill down
-  if (matchShortcut('fill_down', event)) {
+  if (matchShortcut(Action.FillDown, event)) {
     const cursor = sheets.sheet.cursor;
     if (cursor.columnRow?.all || cursor.columnRow?.columns) return true;
     if (cursor.columnRow?.rows && cursor.multiCursor) return true;
@@ -260,7 +292,7 @@ export function keyboardViewport(options: {
   }
 
   // Cancel execution
-  if (matchShortcut('cancel_execution', event)) {
+  if (matchShortcut(Action.CancelExecution, event)) {
     pythonWebWorker.cancelExecution();
     javascriptWebWorker.cancelExecution();
   }

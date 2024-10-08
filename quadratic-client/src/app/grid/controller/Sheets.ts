@@ -1,10 +1,10 @@
 import { events } from '@/app/events/events';
-import { JsRowHeight, Selection, SheetInfo } from '@/app/quadratic-core-types';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { JsOffset, Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { Sheet } from '../sheet/Sheet';
-import { SheetCursorSave } from '../sheet/SheetCursor';
 
 class Sheets {
   sheets: Sheet[];
@@ -24,7 +24,6 @@ class Sheets {
     events.on('sheetInfoUpdate', this.updateSheet);
     events.on('setCursor', this.setCursor);
     events.on('sheetOffsets', this.updateOffsets);
-    events.on('resizeRowHeights', this.resizeRowHeights);
   }
 
   private create = (sheetInfo: SheetInfo[]) => {
@@ -85,23 +84,13 @@ class Sheets {
     this.updateSheetBar();
   };
 
-  private updateOffsets = (sheetId: string, column: number | undefined, row: number | undefined, size: number) => {
+  private updateOffsets = (sheetId: string, offsets: JsOffset[]) => {
     const sheet = this.getById(sheetId);
 
     // it's possible we deleted the sheet locally before receiving the message
     if (!sheet) return;
-    sheet.updateSheetOffsets(column, row, size);
-    pixiApp.headings.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
-  };
-
-  private resizeRowHeights = (sheetId: string, rowHeights: JsRowHeight[]) => {
-    const sheet = this.getById(sheetId);
-    if (!sheet) return;
-    rowHeights.forEach(({ row, height }) => {
-      sheet.updateSheetOffsets(undefined, Number(row), height);
+    offsets.forEach(({ column, row, size }) => {
+      sheet.updateSheetOffsets(column, row, size);
     });
     pixiApp.headings.dirty = true;
     pixiApp.gridLines.dirty = true;
@@ -144,7 +133,7 @@ class Sheets {
   private updateSheetBar() {
     this.sort();
     // this avoids React complaints about rendering one component while another one is rendering
-    setTimeout(() => events.emit('changeSheet'), 0);
+    setTimeout(() => events.emit('changeSheet', this.current), 0);
   }
 
   private sort(): void {

@@ -1,24 +1,24 @@
-import { downloadSelectionAsCsvAction } from '@/app/actions';
+import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { copySelectionToPNG, fullClipboardSupport } from '@/app/grid/actions/clipboard/clipboard';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 
-export function keyboardClipboard(props: {
-  event: React.KeyboardEvent<HTMLElement>;
-  addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
-  fileName: string;
-}): boolean {
-  const { addGlobalSnackbar, event, fileName } = props;
+export function keyboardClipboard(event: React.KeyboardEvent<HTMLElement>): boolean {
+  const { addGlobalSnackbar } = pixiAppSettings;
+  if (!addGlobalSnackbar) {
+    throw new Error('Expected addGlobalSnackbar to be defined in keyboardClipboard');
+  }
 
   // Copy as PNG
-  if (fullClipboardSupport() && matchShortcut('copy_as_png', event)) {
+  if (fullClipboardSupport() && matchShortcut(Action.CopyAsPng, event)) {
     copySelectionToPNG(addGlobalSnackbar);
     return true;
   }
 
   // Download as CSV
-  if (matchShortcut('download_as_csv', event)) {
-    downloadSelectionAsCsvAction.run({ fileName });
+  if (matchShortcut(Action.DownloadAsCsv, event)) {
+    defaultActionSpec[Action.DownloadAsCsv]?.run();
     return true;
   }
 
