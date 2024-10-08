@@ -37,14 +37,12 @@ export class CellsArray extends Container {
     events.on('renderCodeCells', this.renderCodeCells);
     events.on('sheetOffsets', this.sheetOffsets);
     events.on('updateCodeCell', this.updateCodeCell);
-    events.on('resizeRowHeights', this.sheetOffsets);
   }
 
   destroy() {
     events.off('renderCodeCells', this.renderCodeCells);
     events.off('sheetOffsets', this.sheetOffsets);
     events.off('updateCodeCell', this.updateCodeCell);
-    events.off('resizeRowHeights', this.sheetOffsets);
     super.destroy();
   }
 

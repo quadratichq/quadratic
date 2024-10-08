@@ -1,15 +1,14 @@
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
-import { PanMode } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
+  JsOffset,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-  JsRowHeight,
   JsSheetFill,
   JsValidationWarning,
   Selection,
@@ -38,7 +37,6 @@ interface EventTypes {
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
 
   zoom: (scale: number) => void;
-  panMode: (pan: PanMode) => void;
 
   undoRedo: (undo: boolean, redo: boolean) => void;
 
@@ -56,7 +54,7 @@ interface EventTypes {
   headingSize: (width: number, height: number) => void;
   gridSettings: () => void;
 
-  sheetOffsets: (sheetId: string, column: number | undefined, row: number | undefined, size: number) => void;
+  sheetOffsets: (sheetId: string, offsets: JsOffset[]) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
   sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
@@ -64,7 +62,6 @@ interface EventTypes {
   bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
   renderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
-  resizeRowHeights: (sheetId: string, rowHeights: JsRowHeight[]) => void;
 
   pythonInit: (version: string) => void;
   pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
@@ -127,7 +124,7 @@ interface EventTypes {
   validation: (validation: string | boolean) => void;
 
   // context menu opens on a grid heading
-  gridContextMenu: (world: Point, column?: number, row?: number) => void;
+  gridContextMenu: (world: Point, row: number | null, column: number | null) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 }
