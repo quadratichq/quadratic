@@ -384,7 +384,10 @@ impl Sheet {
         }
 
         // signal client to update the hashes for changed columns
-        let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
+        let dirty_hashes = transaction
+            .dirty_hashes
+            .entry(self.id)
+            .or_insert_with(HashSet::new);
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
                 for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
@@ -394,6 +397,8 @@ impl Sheet {
                 }
             }
         });
+        // Ensure a new entry is added to dirty_hashes
+        dirty_hashes.insert(Pos { x: column, y: 0 });
 
         self.validations.insert_column(transaction, self.id, column);
 
@@ -402,11 +407,7 @@ impl Sheet {
         let changes = self.offsets.insert_column(column);
         if !changes.is_empty() {
             changes.iter().for_each(|(index, size)| {
-                transaction
-                    .offsets_modified
-                    .entry(self.id)
-                    .or_default()
-                    .insert((Some(*index), None), *size);
+                transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
             });
         }
     }

@@ -288,6 +288,26 @@ impl PendingTransaction {
             }
         }
     }
+
+    /// Updates the offsets modified for a column or row.
+    pub fn offsets_modified(
+        &mut self,
+        sheet_id: SheetId,
+        column: Option<i64>,
+        row: Option<i64>,
+        size: Option<f64>,
+    ) {
+        let offsets_modified = self
+            .offsets_modified
+            .entry(sheet_id)
+            .or_insert_with(HashMap::new);
+        if let Some(column) = column {
+            offsets_modified.insert((Some(column), None), size.unwrap_or(0.0));
+        }
+        if let Some(row) = row {
+            offsets_modified.insert((None, Some(row)), size.unwrap_or(0.0));
+        }
+    }
 }
 
 #[cfg(test)]
@@ -491,5 +511,25 @@ mod tests {
         transaction.add_image_cell(sheet_id, pos);
         assert_eq!(transaction.image_cells.len(), 1);
         assert_eq!(transaction.image_cells[&sheet_id].len(), 1);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_offsets_modified() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        transaction.offsets_modified(sheet_id, Some(1), None, Some(10.0));
+        assert_eq!(transaction.offsets_modified.len(), 1);
+        assert_eq!(transaction.offsets_modified[&sheet_id].len(), 1);
+        assert_eq!(
+            transaction.offsets_modified[&sheet_id][&(Some(1), None)],
+            10.0
+        );
+        transaction.offsets_modified(sheet_id, None, Some(1), Some(10.0));
+        assert_eq!(transaction.offsets_modified[&sheet_id].len(), 2);
+        assert_eq!(
+            transaction.offsets_modified[&sheet_id][&(None, Some(1))],
+            10.0
+        );
     }
 }
