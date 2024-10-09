@@ -50,34 +50,32 @@ impl A1Range {
     pub fn translate(&mut self, delta_x: i64, delta_y: i64) -> Result<(), A1Error> {
         self.range = match &self.range {
             A1RangeType::Column(x) => A1RangeType::Column(translate_index(x, delta_x)?),
-            A1RangeType::ExcludeColumn(x) => {
-                A1RangeType::ExcludeColumn(translate_index(x, delta_x)?)
-            }
             A1RangeType::ColumnRange(range) => {
                 A1RangeType::ColumnRange(translate_col_row_range(range, delta_x)?)
             }
-            A1RangeType::ExcludeColumnRange(range) => {
-                A1RangeType::ExcludeColumnRange(translate_col_row_range(range, delta_x)?)
-            }
             A1RangeType::Row(x) => A1RangeType::Row(translate_index(x, delta_y)?),
-            A1RangeType::ExcludeRow(x) => A1RangeType::ExcludeRow(translate_index(x, delta_y)?),
             A1RangeType::RowRange(range) => {
                 A1RangeType::RowRange(translate_col_row_range(range, delta_y)?)
             }
-            A1RangeType::ExcludeRowRange(range) => {
-                A1RangeType::ExcludeRowRange(translate_col_row_range(range, delta_y)?)
-            }
             A1RangeType::Pos(pos) => A1RangeType::Pos(translate_pos(pos, delta_x, delta_y)?),
-            A1RangeType::ExcludePos(pos) => {
-                A1RangeType::ExcludePos(translate_pos(pos, delta_x, delta_y)?)
-            }
             A1RangeType::Rect(rect) => A1RangeType::Rect(translate_rect(rect, delta_x, delta_y)?),
-            A1RangeType::ExcludeRect(rect) => {
-                A1RangeType::ExcludeRect(translate_rect(rect, delta_x, delta_y)?)
-            }
             A1RangeType::All => A1RangeType::All,
         };
         Ok(())
+    }
+
+    /// Gets the general cell count of the A1Part. Returns None for all
+    /// sheet-based ranges (eg, *, A, 1:5). ExcludedRanges return 0.
+    pub fn cell_count(&self) -> Option<usize> {
+        match &self.range {
+            A1RangeType::All => None,
+            A1RangeType::Column(_) => None,
+            A1RangeType::Row(_) => None,
+            A1RangeType::ColumnRange(_) => None,
+            A1RangeType::RowRange(_) => None,
+            A1RangeType::Rect(rect) => Some(rect.count()),
+            A1RangeType::Pos(_) => Some(1),
+        }
     }
 }
 
@@ -273,20 +271,6 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn test_translate_excluded_column() {
-        let sheet_id = SheetId::new();
-        let sheet_name_id = HashMap::new();
-        let mut range = A1Range::from_a1("C", sheet_id, &sheet_name_id).unwrap();
-        range.to_excluded().unwrap();
-        range.translate(-1, 0).unwrap();
-        assert_eq!(
-            range.range,
-            A1RangeType::ExcludeColumn(RelColRow::new(2, true))
-        );
-    }
-
-    #[test]
-    #[parallel]
     fn test_translate_all() {
         let sheet_id = SheetId::new();
         let sheet_name_id = HashMap::new();
@@ -302,5 +286,32 @@ mod tests {
         let sheet_name_id = HashMap::new();
         let mut range = A1Range::from_a1("A1", sheet_id, &sheet_name_id).unwrap();
         assert!(range.translate(-1, -1).is_err());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_cell_count() {
+        let sheet_id = SheetId::new();
+        let sheet_name_id = HashMap::new();
+
+        // Test single cell
+        let range = A1Range::from_a1("A1", sheet_id, &sheet_name_id).unwrap();
+        assert_eq!(range.cell_count(), Some(1));
+
+        // Test rectangle
+        let range = A1Range::from_a1("A1:B2", sheet_id, &sheet_name_id).unwrap();
+        assert_eq!(range.cell_count(), Some(4));
+
+        // Test column
+        let range = A1Range::from_a1("A:A", sheet_id, &sheet_name_id).unwrap();
+        assert_eq!(range.cell_count(), None);
+
+        // Test row
+        let range = A1Range::from_a1("1:1", sheet_id, &sheet_name_id).unwrap();
+        assert_eq!(range.cell_count(), None);
+
+        // Test all
+        let range = A1Range::from_a1("*", sheet_id, &sheet_name_id).unwrap();
+        assert_eq!(range.cell_count(), None);
     }
 }

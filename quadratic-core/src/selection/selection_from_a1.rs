@@ -82,7 +82,6 @@ impl Selection {
             A1RangeType::All => {
                 selection.all = true;
             }
-            _ => (),
         });
 
         Ok(selection)

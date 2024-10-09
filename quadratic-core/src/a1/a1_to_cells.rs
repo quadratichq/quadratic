@@ -26,14 +26,6 @@ impl A1 {
     /// supported Quadratic languages.
     ///
     /// This currently only supports a single A1Range by design.
-    ///
-    /// todo: it should also support Quadratic-specific A1 processing:
-    /// - `A2:A` = all rows from A2 to the end of column A
-    /// - `A2:2` = all columns from A2 to the end of row 2
-    /// - `B:` = all content in columns starting from column B (the height is based on the longest column)
-    /// - `2:` = all content in rows starting from row 2 (the width is based on the longest row)
-    ///
-    /// todo: we might also want to support exclusions (eg, `A A5``)
     pub fn to_cells(a1: &str) -> Result<A1Cells, A1Error> {
         let (remaining, sheet_name) = simple_sheet_name(a1)?;
 
@@ -52,22 +44,22 @@ impl A1 {
                 cells: A1CellsType::Columns(vec![column.index]),
                 sheet_name,
             })
-        } else if let Some(rows) = A1Range::try_from_row_range(remaining)? {
+        } else if let Some(rows) = A1Range::try_from_row_range(remaining) {
             Ok(A1Cells {
                 cells: A1CellsType::Rows(rows.into()),
                 sheet_name,
             })
-        } else if let Some(row) = A1Range::try_from_row(remaining)? {
+        } else if let Some(row) = A1Range::try_from_row(remaining) {
             Ok(A1Cells {
                 cells: A1CellsType::Rows(vec![row.index]),
                 sheet_name,
             })
-        } else if let Some(rect) = A1Range::try_from_rect(remaining)? {
+        } else if let Some(rect) = A1Range::try_from_rect(remaining) {
             Ok(A1Cells {
                 cells: A1CellsType::Rect(rect.into()),
                 sheet_name,
             })
-        } else if let Some(pos) = A1Range::try_from_position(remaining)? {
+        } else if let Some(pos) = A1Range::try_from_position(remaining) {
             Ok(A1Cells {
                 cells: A1CellsType::PartialRect(pos.x.index, pos.y.index, 0),
                 sheet_name,

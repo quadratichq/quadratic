@@ -13,41 +13,9 @@ impl A1 {
 
         // First break up the string by commas. This is an A1Range.
         for part in a1.split(',') {
-            // Then break up the part by spaces. Anything after a space is an
-            // excluded part. Need to also ignore spaces within quotes (which
-            // are sheet names).
-            let mut in_quotes = false;
-            let mut after_space = false;
-            let mut current_part = String::new();
-            for char in part.chars() {
-                match char {
-                    '\'' => {
-                        in_quotes = !in_quotes;
-                        current_part.push(char);
-                    }
-                    ' ' if !in_quotes => {
-                        if !current_part.is_empty() {
-                            let mut range = A1Range::from_a1(&current_part, sheet_id, &map)?;
-                            if after_space {
-                                range.to_excluded()?;
-                            }
-                            parts.ranges.push(range);
-                            current_part.clear();
-                            after_space = true;
-                        }
-                    }
-                    _ => {
-                        current_part.push(char);
-                    }
-                }
-            }
-
             // Add the last part if it exists
-            if !current_part.is_empty() {
-                let mut range = A1Range::from_a1(&current_part, sheet_id, &map)?;
-                if after_space {
-                    range.to_excluded()?;
-                }
+            if !part.is_empty() {
+                let range = A1Range::from_a1(&part, sheet_id, &map)?;
                 parts.ranges.push(range);
             }
         }
@@ -85,11 +53,7 @@ impl A1 {
         for (i, range) in self.ranges.iter().enumerate() {
             s.push_str(&range.to_a1(sheet_id, map)?);
             if i != len - 1 {
-                if range.is_excluded() {
-                    s.push(' ');
-                } else {
-                    s.push(',');
-                }
+                s.push(',');
             }
         }
         Ok(s)
@@ -412,9 +376,5 @@ mod tests {
         // Test multiple ranges
         let parts = A1::from_a1("A1,B2:C3", sheet_id, map.clone()).unwrap();
         assert_eq!(parts.cell_count(), Some(5));
-
-        // test excluded ranges (should not add to the count)
-        let parts = A1::from_a1("A1 B2:C3 B4", sheet_id, map.clone()).unwrap();
-        assert_eq!(parts.cell_count(), Some(1));
     }
 }

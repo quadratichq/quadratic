@@ -26,16 +26,16 @@ impl A1Range {
 
         let range_str = match &self.range {
             A1RangeType::All => "*".to_string(),
-            A1RangeType::Column(col) | A1RangeType::ExcludeColumn(col) => col.to_column_a1(),
-            A1RangeType::Row(row) | A1RangeType::ExcludeRow(row) => row.to_row_a1(),
-            A1RangeType::ColumnRange(cols) | A1RangeType::ExcludeColumnRange(cols) => {
+            A1RangeType::Column(col) => col.to_column_a1(),
+            A1RangeType::Row(row) => row.to_row_a1(),
+            A1RangeType::ColumnRange(cols) => {
                 format!("{}:{}", cols.from.to_column_a1(), cols.to.to_column_a1())
             }
-            A1RangeType::RowRange(rows) | A1RangeType::ExcludeRowRange(rows) => {
+            A1RangeType::RowRange(rows) => {
                 format!("{}:{}", rows.from.to_row_a1(), rows.to.to_row_a1())
             }
-            A1RangeType::Pos(pos) | A1RangeType::ExcludePos(pos) => pos.to_a1(),
-            A1RangeType::Rect(rect) | A1RangeType::ExcludeRect(rect) => {
+            A1RangeType::Pos(pos) => pos.to_a1(),
+            A1RangeType::Rect(rect) => {
                 format!("{}:{}", rect.min.to_a1(), rect.max.to_a1())
             }
         };
@@ -98,12 +98,6 @@ mod tests {
         };
         let result = range.to_a1(sheet_id, &map).unwrap();
         assert_eq!(result, "$C");
-        let range = A1Range {
-            sheet_id,
-            range: A1RangeType::ExcludeColumn(RelColRow::new(3, true)),
-        };
-        let result = range.to_a1(sheet_id, &map).unwrap();
-        assert_eq!(result, "C");
     }
 
     #[test]
@@ -123,12 +117,6 @@ mod tests {
         };
         let result = range.to_a1(sheet_id, &map).unwrap();
         assert_eq!(result, "$3");
-        let range = A1Range {
-            sheet_id,
-            range: A1RangeType::ExcludeRow(RelColRow::new(3, true)),
-        };
-        let result = range.to_a1(sheet_id, &map).unwrap();
-        assert_eq!(result, "3");
     }
 
     #[test]
@@ -145,14 +133,6 @@ mod tests {
         };
         let result = range.to_a1(sheet_id, &map).unwrap();
         assert_eq!(result, "C:E");
-        let range = A1Range {
-            sheet_id,
-            range: A1RangeType::ExcludeColumnRange(RelColRowRange {
-                from: RelColRow::new(3, true),
-                to: RelColRow::new(5, true),
-            }),
-        };
-        let result = range.to_a1(sheet_id, &map).unwrap();
         assert_eq!(result, "C:E");
         let range = A1Range {
             sheet_id,
@@ -181,15 +161,6 @@ mod tests {
         assert_eq!(result, "3:5");
         let range = A1Range {
             sheet_id,
-            range: A1RangeType::ExcludeRowRange(RelColRowRange {
-                from: RelColRow::new(3, true),
-                to: RelColRow::new(5, true),
-            }),
-        };
-        let result = range.to_a1(sheet_id, &map).unwrap();
-        assert_eq!(result, "3:5");
-        let range = A1Range {
-            sheet_id,
             range: A1RangeType::RowRange(RelColRowRange {
                 from: RelColRow::new(3, false),
                 to: RelColRow::new(5, false),
@@ -207,12 +178,6 @@ mod tests {
         let range = A1Range {
             sheet_id,
             range: A1RangeType::Pos(RelPos::new(3, 5, true, true)),
-        };
-        let result = range.to_a1(sheet_id, &map).unwrap();
-        assert_eq!(result, "C5");
-        let range = A1Range {
-            sheet_id,
-            range: A1RangeType::ExcludePos(RelPos::new(3, 5, true, true)),
         };
         let result = range.to_a1(sheet_id, &map).unwrap();
         assert_eq!(result, "C5");

@@ -11,6 +11,7 @@ pub enum A1Error {
     InvalidRange(String),
     InvalidRow(String),
     TooManySheets(String),
+    MismatchedQuotes(String),
     WrongCellCount(String),
     InvalidExclusion(String),
     TranslateInvalid(String),

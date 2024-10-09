@@ -1,6 +1,5 @@
 //! A1Range is an enum that represents a range within in an A1 string.
 
-pub mod a1_range;
 pub mod a1_range_from_a1;
 pub mod a1_range_to_a1;
 pub mod a1_range_translate;
@@ -22,13 +21,6 @@ pub enum A1RangeType {
     RowRange(RelColRowRange),
     Rect(RelRect),
     Pos(RelPos),
-
-    ExcludeColumn(RelColRow),
-    ExcludeRow(RelColRow),
-    ExcludeColumnRange(RelColRowRange),
-    ExcludeRowRange(RelColRowRange),
-    ExcludeRect(RelRect),
-    ExcludePos(RelPos),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

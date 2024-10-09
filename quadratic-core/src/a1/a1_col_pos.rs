@@ -40,11 +40,7 @@ impl A1 {
         if a1.contains(" ") || a1.contains("!") {
             return None;
         }
-        if let Ok(rel_pos) = A1Range::try_from_position(a1) {
-            rel_pos.map(|rel_pos| rel_pos.into())
-        } else {
-            None
-        }
+        A1Range::try_from_position(a1).map(|rel_pos| rel_pos.into())
     }
 
     /// Get a column from an A1 string and automatically unwrap it (only used

@@ -18,7 +18,7 @@ impl A1Range {
         let total_alphabets = (b'Z' - b'A' + 1) as u64;
         let mut column = 0;
         for (i, &c) in a1.as_bytes().iter().rev().enumerate() {
-            if !c.is_ascii_uppercase() {
+            if !c.is_ascii_uppercase() || c < b'A' || c > b'Z' {
                 return None;
             }
             column += (c - b'A' + 1) as u64 * total_alphabets.pow(i as u32);
@@ -36,79 +36,73 @@ impl A1Range {
     }
 
     /// Tries to convert an A1 part to RelColRow.
-    pub(crate) fn try_from_row(a1: &str) -> Result<Option<RelColRow>, A1Error> {
-        let mut a1 = a1;
-        let relative = if a1.starts_with('$') {
-            a1 = &a1[1..];
-            false
-        } else {
-            true
+    pub(crate) fn try_from_row(a1: &str) -> Option<RelColRow> {
+        // Return None if the input contains any letters
+        if a1.chars().any(|c| c.is_alphabetic()) {
+            return None;
+        }
+        let (a1, relative) = match a1.strip_prefix('$') {
+            Some(stripped) => (stripped, false),
+            None => (a1, true),
         };
 
-        match a1.parse::<u64>() {
-            Ok(x) => {
-                if x > 0 {
-                    Ok(Some(RelColRow { index: x, relative }))
-                } else {
-                    Err(A1Error::InvalidRow(a1.to_string()))
-                }
-            }
-            Err(_) => Ok(None),
+        if !a1.chars().all(|c| c.is_ascii_digit()) {
+            return None;
         }
+
+        a1.parse::<u64>()
+            .ok()
+            .filter(|&x| x > 0)
+            .map(|index| RelColRow { index, relative })
     }
 
     /// Tries to create Column(s) from an A1 string. Returns a vector of RelColRow.
     pub(crate) fn try_from_column_range(a1: &str) -> Option<RelColRowRange> {
-        a1.split_once(':')
-            .map(|(from, to)| {
-                let (from, to) = match (Self::try_from_column(from), Self::try_from_column(to)) {
-                    (Some(a), Some(b)) => {
-                        if a.index > b.index {
-                            (b, a)
-                        } else {
-                            (a, b)
-                        }
-                    }
-
-                    // handles the case of a "A:" (partially inputted range)
-                    (Some(a), None) => (a, a),
-                    _ => return None,
-                };
-                Some(RelColRowRange { from, to })
-            })
-            .unwrap_or_else(|| Self::try_from_column(a1).map(|x| RelColRowRange { from: x, to: x }))
+        if !a1.contains(':') {
+            return None;
+        }
+        a1.split_once(':').and_then(|(from, to)| {
+            let (from, to) = match (Self::try_from_column(from), Self::try_from_column(to)) {
+                (Some(a), Some(b)) if a.index <= b.index => (a, b),
+                (Some(a), Some(b)) => (b, a),
+                (Some(a), None) => (a, a),
+                _ => return None,
+            };
+            Some(RelColRowRange { from, to })
+        })
     }
 
     /// Tries to create Row ranges from an A1 string.
-    pub(crate) fn try_from_row_range(a1: &str) -> Result<Option<RelColRowRange>, A1Error> {
+    pub(crate) fn try_from_row_range(a1: &str) -> Option<RelColRowRange> {
+        if !a1.contains(':') {
+            return None;
+        }
         a1.split_once(':')
             .map(|(from, to)| {
-                let from = Self::try_from_row(from)?;
-                let to = Self::try_from_row(to)?;
+                let from = Self::try_from_row(from);
+                let to = Self::try_from_row(to);
 
                 match (from, to) {
                     (Some(a), Some(b)) => {
                         let (from, to) = if a.index > b.index { (b, a) } else { (a, b) };
-                        Ok(Some(RelColRowRange { from, to }))
+                        Some(RelColRowRange { from, to })
                     }
-                    (Some(a), None) => Ok(Some(RelColRowRange { from: a, to: a })),
-                    _ => Ok(None),
+                    (Some(a), None) => Some(RelColRowRange { from: a, to: a }),
+                    _ => None,
                 }
             })
-            .unwrap_or_else(|| {
-                Self::try_from_row(a1).map(|row| row.map(|x| RelColRowRange { from: x, to: x }))
-            })
+            .flatten()
     }
 
     /// Tries to convert an A1 part to RelPos.
-    pub(crate) fn try_from_position(a1: &str) -> Result<Option<RelPos>, A1Error> {
+    pub(crate) fn try_from_position(a1: &str) -> Option<RelPos> {
         // Find the index where the digits start
         let Some(mut number_digit) = a1.find(char::is_numeric) else {
-            return Ok(None);
+            return None;
         };
 
         if number_digit == 0 {
-            return Ok(None);
+            return None;
         }
 
         // include the $ in the digit part
@@ -121,29 +115,29 @@ impl A1Range {
 
         // Parse the column part
         let Some(x) = A1Range::try_from_column(column) else {
-            return Ok(None);
+            return None;
         };
 
         // Parse the row part
-        let Some(y) = A1Range::try_from_row(row)? else {
-            return Ok(None);
+        let Some(y) = A1Range::try_from_row(row) else {
+            return None;
         };
 
-        Ok(Some(RelPos { x, y }))
+        Some(RelPos { x, y })
     }
 
     /// Tries to create a Vec<RelRect> from an A1 string.
-    pub(crate) fn try_from_rect(a1: &str) -> Result<Option<RelRect>, A1Error> {
+    pub(crate) fn try_from_rect(a1: &str) -> Option<RelRect> {
         if let Some((from, to)) = a1.split_once(':') {
-            let Some(min) = A1Range::try_from_position(from)? else {
-                return Ok(None);
+            let Some(min) = A1Range::try_from_position(from) else {
+                return None;
             };
-            let Some(max) = A1Range::try_from_position(to)? else {
-                return Ok(None);
+            let Some(max) = A1Range::try_from_position(to) else {
+                return None;
             };
-            Ok(Some(RelRect { min, max }))
+            Some(RelRect { min, max })
         } else {
-            Ok(None)
+            None
         }
     }
 
@@ -158,15 +152,15 @@ impl A1Range {
             A1RangeType::All
         } else if let Some(column) = Self::try_from_column(a1) {
             A1RangeType::Column(column)
-        } else if let Some(row) = Self::try_from_row(a1)? {
+        } else if let Some(row) = Self::try_from_row(a1) {
             A1RangeType::Row(row)
         } else if let Some(column_range) = Self::try_from_column_range(a1) {
             A1RangeType::ColumnRange(column_range)
-        } else if let Some(row_range) = Self::try_from_row_range(a1)? {
+        } else if let Some(row_range) = Self::try_from_row_range(a1) {
             A1RangeType::RowRange(row_range)
-        } else if let Some(pos) = Self::try_from_position(a1)? {
+        } else if let Some(pos) = Self::try_from_position(a1) {
             A1RangeType::Pos(pos)
-        } else if let Some(rect) = Self::try_from_rect(a1)? {
+        } else if let Some(rect) = Self::try_from_rect(a1) {
             A1RangeType::Rect(rect)
         } else {
             return Err(A1Error::InvalidRange(a1.to_string()));
@@ -176,28 +170,6 @@ impl A1Range {
             range,
             sheet_id: other_sheet_id.unwrap_or(sheet_id),
         })
-    }
-
-    /// Converts a normal A1Part into an excluded part.
-    pub fn to_excluded(&mut self) -> Result<(), A1Error> {
-        self.range = match &self.range {
-            A1RangeType::Column(x) => A1RangeType::ExcludeColumn(*x),
-            A1RangeType::Row(x) => A1RangeType::ExcludeRow(*x),
-            A1RangeType::ColumnRange(x) => A1RangeType::ExcludeColumnRange(*x),
-            A1RangeType::RowRange(x) => A1RangeType::ExcludeRowRange(*x),
-            A1RangeType::Rect(x) => A1RangeType::ExcludeRect(*x),
-            A1RangeType::Pos(x) => A1RangeType::ExcludePos(*x),
-
-            A1RangeType::ExcludeColumn(x) => A1RangeType::ExcludeColumn(*x),
-            A1RangeType::ExcludeRow(x) => A1RangeType::ExcludeRow(*x),
-            A1RangeType::ExcludeColumnRange(x) => A1RangeType::ExcludeColumnRange(*x),
-            A1RangeType::ExcludeRowRange(x) => A1RangeType::ExcludeRowRange(*x),
-            A1RangeType::ExcludeRect(x) => A1RangeType::ExcludeRect(*x),
-            A1RangeType::ExcludePos(x) => A1RangeType::ExcludePos(*x),
-
-            A1RangeType::All => return Err(A1Error::InvalidExclusion("*".to_string())),
-        };
-        Ok(())
     }
 }
 
@@ -215,6 +187,104 @@ mod tests {
             ("Sheet 2".to_string(), sheet_id_2),
         ]);
         (sheet_id, sheet_id_2, sheet_name_id)
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_column() {
+        assert_eq!(A1Range::try_from_column("A"), Some(RelColRow::new(1, true)));
+        assert_eq!(
+            A1Range::try_from_column("$B"),
+            Some(RelColRow::new(2, false))
+        );
+        assert_eq!(A1Range::try_from_column("in2valid"), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_all() {
+        assert_eq!(A1Range::try_from_all("*"), true);
+        assert_eq!(A1Range::try_from_all("invalid"), false);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_row() {
+        assert_eq!(A1Range::try_from_row("1"), Some(RelColRow::new(1, true)));
+        assert_eq!(
+            A1Range::try_from_row("$100"),
+            Some(RelColRow::new(100, false))
+        );
+        assert_eq!(A1Range::try_from_row("invalid"), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_from_position() {
+        assert_eq!(
+            A1Range::try_from_position("A1"),
+            Some(RelPos::new(1, 1, true, true))
+        );
+        assert_eq!(
+            A1Range::try_from_position("A$1"),
+            Some(RelPos::new(1, 1, true, false))
+        );
+        assert_eq!(
+            A1Range::try_from_position("$A1"),
+            Some(RelPos::new(1, 1, false, true))
+        );
+        assert_eq!(
+            A1Range::try_from_position("$A$1"),
+            Some(RelPos::new(1, 1, false, false))
+        );
+        assert_eq!(A1Range::try_from_position("invalid"), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_rect() {
+        assert_eq!(
+            A1Range::try_from_rect("A1:B2"),
+            Some(RelRect {
+                min: RelPos::new(1, 1, true, true),
+                max: RelPos::new(2, 2, true, true),
+            })
+        );
+        assert_eq!(A1Range::try_from_rect("invalid"), None);
+        assert_eq!(A1Range::try_from_rect("A:C"), None);
+        assert_eq!(A1Range::try_from_rect("A"), None);
+        assert_eq!(A1Range::try_from_rect("5"), None);
+        assert_eq!(A1Range::try_from_rect("A5"), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_column_range() {
+        assert_eq!(
+            A1Range::try_from_column_range("A:C"),
+            Some(RelColRowRange {
+                from: RelColRow::new(1, true),
+                to: RelColRow::new(3, true),
+            })
+        );
+        assert_eq!(A1Range::try_from_column_range("A1:B4"), None);
+        assert_eq!(A1Range::try_from_column_range("A"), None);
+        assert_eq!(A1Range::try_from_column_range("1"), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_try_from_row_range() {
+        assert_eq!(
+            A1Range::try_from_row_range("1:3"),
+            Some(RelColRowRange {
+                from: RelColRow::new(1, true),
+                to: RelColRow::new(3, true),
+            })
+        );
+        assert_eq!(A1Range::try_from_row_range("A1:B4"), None);
+        assert_eq!(A1Range::try_from_row_range("A"), None);
+        assert_eq!(A1Range::try_from_row_range("1"), None);
     }
 
     #[test]

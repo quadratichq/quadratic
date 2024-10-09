@@ -8,7 +8,7 @@ pub type SheetNameIdMap = HashMap<String, SheetId>;
 /// Gets the sheet name from an a1 string if present: either a string without
 /// spaces followed by '!', or a string in single quotes followed by '!'.
 pub(crate) fn simple_sheet_name<'a>(a1: &'a str) -> Result<(&'a str, Option<String>), A1Error> {
-    let sheet_name_end = match a1.find('!') {
+    let sheet_name_end = match a1.rfind('!') {
         Some(end) => end,
         None => return Ok((a1, None)),
     };
@@ -17,10 +17,12 @@ pub(crate) fn simple_sheet_name<'a>(a1: &'a str) -> Result<(&'a str, Option<Stri
     let sheet_name = if sheet_name.starts_with('\'') && sheet_name.ends_with('\'') {
         // Remove single quotes if present
         &sheet_name[1..sheet_name.len() - 1]
-    } else if sheet_name.contains(' ') {
+    } else if sheet_name.contains(' ') || sheet_name.contains('!') {
         return Err(A1Error::InvalidSheetNameMissingQuotes(
             sheet_name.to_string(),
         ));
+    } else if sheet_name.contains('\'') {
+        return Err(A1Error::MismatchedQuotes(sheet_name.to_string()));
     } else {
         sheet_name
     };
@@ -51,9 +53,9 @@ pub(crate) fn try_sheet_name<'a>(
         .ok_or_else(|| A1Error::InvalidSheetName(sheet_name.to_string()))?;
 
     if parsed_sheet_id == sheet_id {
-        Ok((&remaining[1..], None))
+        Ok((&remaining, None))
     } else {
-        Ok((&remaining[1..], Some(parsed_sheet_id)))
+        Ok((&remaining, Some(parsed_sheet_id)))
     }
 }
 
@@ -88,16 +90,16 @@ mod tests {
         assert_eq!(
             simple_sheet_name("Sheet1!Sheet2!A1"),
             Err(A1Error::InvalidSheetNameMissingQuotes(
-                "Sheet1!Sheet2!A1".to_string()
+                "Sheet1!Sheet2".to_string()
             ))
         );
         assert_eq!(
-            simple_sheet_name("'Sheet1!A1"),
+            simple_sheet_name("'Sheet1'!A1"),
             Ok(("A1", Some("Sheet1".to_string())))
         );
         assert_eq!(
-            simple_sheet_name("Sheet1'!A1"),
-            Ok(("A1", Some("Sheet1'".to_string())))
+            simple_sheet_name("'Sheet1!A1"),
+            Err(A1Error::MismatchedQuotes("'Sheet1".to_string()))
         );
     }
 
@@ -121,10 +123,8 @@ mod tests {
             Ok(("A1:B2", None))
         );
         assert_eq!(
-            try_sheet_name("Sheet1!Sheet2!A1", sheet_1, &map),
-            Err(A1Error::InvalidSheetNameMissingQuotes(
-                "Sheet1!Sheet2!A1".to_string()
-            ))
+            try_sheet_name("Sheet1!Sheet2A1", sheet_1, &map),
+            Ok(("Sheet2A1", None))
         );
         assert_eq!(
             try_sheet_name("Sheet 1!A1", sheet_1, &map),
