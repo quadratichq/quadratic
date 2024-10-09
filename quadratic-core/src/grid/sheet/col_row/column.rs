@@ -7,7 +7,6 @@ use crate::{
         operations::operation::{CopyFormats, Operation},
     },
     grid::{formats::Formats, Sheet},
-    renderer_constants::CELL_SHEET_HEIGHT,
     selection::Selection,
     Pos, Rect, SheetPos,
 };

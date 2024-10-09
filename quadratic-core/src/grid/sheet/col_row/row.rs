@@ -9,7 +9,6 @@ use crate::{
         operations::operation::{CopyFormats, Operation},
     },
     grid::{formats::Formats, GridBounds, Sheet},
-    renderer_constants::CELL_SHEET_WIDTH,
     selection::Selection,
     Pos, Rect, SheetPos,
 };
