@@ -32,6 +32,7 @@ export class Javascript {
     this.awaitingExecution = [];
     this.init();
     this.api = new JavascriptAPI(this);
+    debugger;
   }
 
   init = async () => {

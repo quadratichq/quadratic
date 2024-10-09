@@ -3,7 +3,7 @@
 // (x,y) position with the code, so `pos()` and `relCell()` can be calculated
 // within the worker using getCells.
 
-import { a1StringToSelection, a1ToCells } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { a1ToCells } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { A1Cells, JsGetCellResponse } from '@/app/quadratic-core-types';
 import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
@@ -30,6 +30,7 @@ export class JavascriptAPI {
     const cellsStringified = a1ToCells(a1);
     try {
       const cells: A1Cells = JSON.parse(cellsStringified);
+      console.log(cells);
       debugger;
     } catch (e) {
       console.error(e);
@@ -45,6 +46,7 @@ export class JavascriptAPI {
     sheet?: string,
     lineNumber?: number
   ): Promise<CellType[][] | undefined> => {
+    debugger;
     if (typeof x0 === 'string') {
       return this.getCellsA1(x0);
     }
