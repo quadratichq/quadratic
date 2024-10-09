@@ -1,4 +1,5 @@
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { useFeatureFlag } from '@/shared/components/FeatureFlags';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { createContext, Dispatch, SetStateAction, useContext, useEffect } from 'react';
 
@@ -38,11 +39,23 @@ export function Theme({ children }: { children: React.ReactNode }) {
 type AppearanceMode = 'light' | 'dark' | 'system';
 export const appearanceModes: AppearanceMode[] = ['light', 'dark', 'system'];
 
+const DEFAULT_APPEARANCE_MODE = 'light';
 const useAppearanceMode = () => {
-  const state = useLocalStorage('theme', 'light') as [AppearanceMode, Dispatch<SetStateAction<AppearanceMode>>];
-  const [appearanceMode] = state;
+  const [featureFlag] = useFeatureFlag('themeAppearanceMode');
+  const state = useLocalStorage('theme', DEFAULT_APPEARANCE_MODE) as [
+    AppearanceMode,
+    Dispatch<SetStateAction<AppearanceMode>>
+  ];
+  const [appearanceMode, setAppearanceMode] = state;
   const darkModePreference = window.matchMedia('(prefers-color-scheme: dark)');
   const lightModePreference = window.matchMedia('(prefers-color-scheme: light)');
+
+  // If the user turns the feature off, reset it to the default
+  useEffect(() => {
+    if (featureFlag === false) {
+      setAppearanceMode(DEFAULT_APPEARANCE_MODE);
+    }
+  }, [featureFlag, setAppearanceMode]);
 
   // User change prefernce via UI preference
   useEffect(() => {
@@ -89,13 +102,23 @@ function changeAppearanceMode(mode: 'light' | 'dark') {
 export const accentColors = ['blue', 'violet', 'orange', 'green', 'rose', 'black'] as const;
 type AccentColor = (typeof accentColors)[number];
 
+const DEFAULT_ACCENT_COLOR = 'blue';
+
 /**
  * This hook sources its value from localstorage, but gets used in multiple places
  * so it's essentially a global state value. That's why we check if it's been set
  * in useEffect before we set it, otherwise multiple hooks will try to set it.
  */
 const useAccentColor = () => {
-  const [accentColor, setAccentColor] = useLocalStorage<AccentColor>('accentColor', 'blue');
+  const [featureFlag] = useFeatureFlag('themeAccentColor');
+  const [accentColor, setAccentColor] = useLocalStorage<AccentColor>('accentColor', DEFAULT_ACCENT_COLOR);
+
+  // If the user turns the feature off, reset it to the default
+  useEffect(() => {
+    if (featureFlag === false) {
+      setAccentColor(DEFAULT_ACCENT_COLOR);
+    }
+  }, [featureFlag, setAccentColor]);
 
   useEffect(() => {
     // Set the current theme color via CSS
@@ -108,10 +131,6 @@ const useAccentColor = () => {
     const [h, s, l] = primaryColorHslString.split(' ').map((val) => Number(val.replace('%', '')));
     // [200, 10, 50] -> `#c81a7f`
     const hex = hslToHex(h, s, l).replace('#', '');
-    console.log(
-      `%c theme change: ${accentColor} ${primaryColorHslString}`,
-      `color: white; background-color: hsl(${primaryColorHslString})`
-    );
     pixiApp.setAccentColor(hex);
   }, [accentColor]);
 
