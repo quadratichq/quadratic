@@ -274,7 +274,6 @@ export class SheetCursor {
       }
     }
     columns.add(this.cursorPosition.x);
-    console.log(Array.from(columns));
     return Array.from(columns);
   }
 
