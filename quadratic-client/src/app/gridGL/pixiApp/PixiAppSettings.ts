@@ -1,5 +1,6 @@
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
 import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
 import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
@@ -10,12 +11,6 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { SetterOrUpdater } from 'recoil';
-
-export enum PanMode {
-  Disabled = 'DISABLED',
-  Enabled = 'ENABLED',
-  Dragging = 'DRAGGING',
-}
 
 interface Input {
   show: boolean;
@@ -38,13 +33,21 @@ class PixiAppSettings {
   unsavedEditorChanges?: string;
 
   temporarilyHideCellTypeOutlines = false;
+
+  gridPanMode = defaultGridPanMode;
+  setGridPanMode?: SetterOrUpdater<GridPanMode>;
+
   gridSettings = defaultGridSettings;
   setGridSettings?: SetterOrUpdater<GridSettings>;
+
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
+
   addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
+
   inlineEditorState = defaultInlineEditor;
   setInlineEditorState?: (fn: (prev: InlineEditorState) => InlineEditorState) => void;
+
   codeEditorState = defaultCodeEditorState;
   setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
 
@@ -90,6 +93,20 @@ class PixiAppSettings {
     return this.editorInteractionState.permissions;
   }
 
+  updateGridPanMode(gridPanMode: GridPanMode, setGridPanMode: SetterOrUpdater<GridPanMode>): void {
+    if (gridPanMode.panMode === PanMode.Enabled) {
+      pixiApp.canvas.style.cursor = 'grab';
+    } else if (gridPanMode.panMode === PanMode.Dragging) {
+      pixiApp.canvas.style.cursor = 'grabbing';
+    } else if (gridPanMode.panMode !== PanMode.Disabled) {
+      pixiApp.canvas.style.cursor = 'unset';
+    }
+
+    this._panMode = gridPanMode.panMode;
+    this.gridPanMode = gridPanMode;
+    this.setGridPanMode = setGridPanMode;
+  }
+
   updateGridSettings(gridSettings: GridSettings, setGridSettings: SetterOrUpdater<GridSettings>): void {
     this.gridSettings = gridSettings;
     this.setGridSettings = setGridSettings;
@@ -101,14 +118,6 @@ class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
-
-    // these ifs are needed to because pixiApp may be in a bad state during hmr
-    if (pixiApp.headings) {
-      pixiApp.headings.dirty = true;
-    }
-    if (pixiApp.cursor) {
-      pixiApp.cursor.dirty = true;
-    }
   }
 
   updateInlineEditorState(
@@ -117,14 +126,6 @@ class PixiAppSettings {
   ): void {
     this.inlineEditorState = inlineEditorState;
     this.setInlineEditorState = setInlineEditorState;
-
-    // these ifs are needed to because pixiApp may be in a bad state during hmr
-    if (pixiApp.headings) {
-      pixiApp.headings.dirty = true;
-    }
-    if (pixiApp.cursor) {
-      pixiApp.cursor.dirty = true;
-    }
   }
 
   updateCodeEditorState(codeEditorState: CodeEditorState, setCodeEditorState: SetterOrUpdater<CodeEditorState>): void {
@@ -204,15 +205,6 @@ class PixiAppSettings {
 
     // this is used by CellInput to control visibility
     events.emit('changeInput', input, initialValue);
-  }
-
-  changePanMode(mode: PanMode): void {
-    if (this._panMode !== mode) {
-      this._panMode = mode;
-
-      // this is used by QuadraticGrid to trigger changes in pan mode
-      events.emit('panMode', mode);
-    }
   }
 
   get input() {
