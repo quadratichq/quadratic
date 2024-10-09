@@ -68,6 +68,8 @@ fn main() {
 
     s += &generate_type_declarations!(
         A1Error,
+        A1Cells,
+        A1CellsType,
         ArraySize,
         Axis,
         BorderSelection,
