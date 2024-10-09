@@ -5,14 +5,9 @@ use super::A1Error;
 
 pub type SheetNameIdMap = HashMap<String, SheetId>;
 
-/// Gets the sheet name from an a1 string if present. Returns (the remaining
-/// string, sheet name) or any error.
-pub(crate) fn try_sheet_name<'a>(
-    a1: &'a str,
-    sheet_id: SheetId,
-    sheet_name_id: &SheetNameIdMap,
-) -> Result<(&'a str, Option<SheetId>), A1Error> {
-    // Find sheet name: either a string without spaces followed by '!', or a string in single quotes followed by '!'
+/// Gets the sheet name from an a1 string if present: either a string without
+/// spaces followed by '!', or a string in single quotes followed by '!'.
+pub(crate) fn simple_sheet_name<'a>(a1: &'a str) -> Result<(&'a str, Option<String>), A1Error> {
     let sheet_name_end = match a1.find('!') {
         Some(end) => end,
         None => return Ok((a1, None)),
@@ -34,6 +29,20 @@ pub(crate) fn try_sheet_name<'a>(
         return Err(A1Error::InvalidSheetNameMissingQuotes(a1.to_string()));
     }
 
+    Ok((&remaining[1..], Some(sheet_name.to_string())))
+}
+
+/// Gets the sheet name from an a1 string if present. Returns (the remaining
+/// string, sheet name) or any error.
+pub(crate) fn try_sheet_name<'a>(
+    a1: &'a str,
+    sheet_id: SheetId,
+    sheet_name_id: &SheetNameIdMap,
+) -> Result<(&'a str, Option<SheetId>), A1Error> {
+    let (remaining, Some(sheet_name)) = simple_sheet_name(a1)? else {
+        return Ok((a1, None));
+    };
+
     let parsed_sheet_id = sheet_name_id
         .iter()
         .find(|(name, _)| name.to_lowercase() == sheet_name.to_lowercase())
@@ -53,6 +62,44 @@ mod tests {
     use serial_test::parallel;
 
     use super::*;
+
+    #[test]
+    #[parallel]
+    fn test_simple_sheet_name() {
+        assert_eq!(
+            simple_sheet_name("Sheet1!A1"),
+            Ok(("A1", Some("Sheet1".to_string())))
+        );
+        assert_eq!(
+            simple_sheet_name("'Sheet 1'!A1"),
+            Ok(("A1", Some("Sheet 1".to_string())))
+        );
+        assert_eq!(simple_sheet_name("A1"), Ok(("A1", None)));
+        assert_eq!(
+            simple_sheet_name("'Sheet with ! mark'!A1"),
+            Ok(("A1", Some("Sheet with ! mark".to_string())))
+        );
+        assert_eq!(
+            simple_sheet_name("Sheet 1!A1"),
+            Err(A1Error::InvalidSheetNameMissingQuotes(
+                "Sheet 1".to_string()
+            ))
+        );
+        assert_eq!(
+            simple_sheet_name("Sheet1!Sheet2!A1"),
+            Err(A1Error::InvalidSheetNameMissingQuotes(
+                "Sheet1!Sheet2!A1".to_string()
+            ))
+        );
+        assert_eq!(
+            simple_sheet_name("'Sheet1!A1"),
+            Ok(("A1", Some("Sheet1".to_string())))
+        );
+        assert_eq!(
+            simple_sheet_name("Sheet1'!A1"),
+            Ok(("A1", Some("Sheet1'".to_string())))
+        );
+    }
 
     #[test]
     #[parallel]

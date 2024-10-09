@@ -3,6 +3,7 @@
 // (x,y) position with the code, so `pos()` and `relCell()` can be calculated
 // within the worker using getCells.
 
+import { a1StringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { JsGetCellResponse } from '@/app/quadratic-core-types';
 import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
@@ -25,14 +26,22 @@ export class JavascriptAPI {
     return entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
   }
 
+  getCellsA1 = async (a1: string): Promise<CellType[][] | undefined> => {
+    const [rect, sheetName] = a1StringToCellsRect(a1);
+    return this.getCells(x0, y0, x1, y1);
+  };
+
   getCells = async (
-    x0: number,
+    x0: number | string,
     y0: number,
     x1: number,
     y1?: number,
     sheet?: string,
     lineNumber?: number
   ): Promise<CellType[][] | undefined> => {
+    if (typeof x0 === 'string') {
+      return this.getCellsA1(x0);
+    }
     if (!this.javascript.transactionId) {
       throw new Error('No transactionId in getCells');
     }

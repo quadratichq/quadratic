@@ -31,14 +31,14 @@ impl A1Range {
     }
 
     /// Tries to convert an A1 part to all.
-    fn try_from_all(a1: &str) -> bool {
-        a1.trim() == "*"
+    pub(crate) fn try_from_all(a1: &str) -> bool {
+        a1 == "*"
     }
 
     /// Tries to convert an A1 part to RelColRow.
-    fn try_from_row(a1: &str) -> Result<Option<RelColRow>, A1Error> {
+    pub(crate) fn try_from_row(a1: &str) -> Result<Option<RelColRow>, A1Error> {
         let mut a1 = a1;
-        let relative = if a1.trim().starts_with('$') {
+        let relative = if a1.starts_with('$') {
             a1 = &a1[1..];
             false
         } else {
@@ -58,7 +58,7 @@ impl A1Range {
     }
 
     /// Tries to create Column(s) from an A1 string. Returns a vector of RelColRow.
-    fn try_from_column_range(a1: &str) -> Option<RelColRowRange> {
+    pub(crate) fn try_from_column_range(a1: &str) -> Option<RelColRowRange> {
         a1.split_once(':')
             .map(|(from, to)| {
                 let (from, to) = match (Self::try_from_column(from), Self::try_from_column(to)) {
@@ -80,7 +80,7 @@ impl A1Range {
     }
 
     /// Tries to create Row ranges from an A1 string.
-    fn try_from_row_range(a1: &str) -> Result<Option<RelColRowRange>, A1Error> {
+    pub(crate) fn try_from_row_range(a1: &str) -> Result<Option<RelColRowRange>, A1Error> {
         a1.split_once(':')
             .map(|(from, to)| {
                 let from = Self::try_from_row(from)?;
@@ -133,7 +133,7 @@ impl A1Range {
     }
 
     /// Tries to create a Vec<RelRect> from an A1 string.
-    fn try_from_rect(a1: &str) -> Result<Option<RelRect>, A1Error> {
+    pub(crate) fn try_from_rect(a1: &str) -> Result<Option<RelRect>, A1Error> {
         if let Some((from, to)) = a1.split_once(':') {
             let Some(min) = A1Range::try_from_position(from)? else {
                 return Ok(None);

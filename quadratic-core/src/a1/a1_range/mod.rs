@@ -37,6 +37,18 @@ pub struct RelColRowRange {
     pub to: RelColRow,
 }
 
+impl From<RelColRowRange> for Vec<u64> {
+    fn from(range: RelColRowRange) -> Self {
+        let mut indices = Vec::new();
+        let mut current = range.from.index;
+        while current <= range.to.index {
+            indices.push(current);
+            current += 1;
+        }
+        indices
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RelColRow {
     pub index: u64,

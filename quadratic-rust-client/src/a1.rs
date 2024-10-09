@@ -62,6 +62,17 @@ pub fn a1_to_sheet_id(selection: &str, sheet_id: &str, sheets: &str) -> Result<S
     }
 }
 
+#[allow(non_snake_case)]
+#[wasm_bindgen(js_name = "a1ToCells")]
+pub fn a1_to_cells(a1: &str) -> Result<String, String> {
+    let cells = A1::to_cells(a1)?;
+
+    match serde_json::to_string(&cells) {
+        Ok(json) => Ok(json),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
