@@ -9,7 +9,10 @@ fn main() {
         }
 
         output.push_str(&format!("## {}\n\n", category.name));
-        output.push_str(category.docs);
+        if let Some(category_docs) = category.docs {
+            output.push_str(category_docs.trim_end());
+            output.push_str("\n\n");
+        }
 
         // Table header
         output.push_str("| **Function** | **Description** |\n");

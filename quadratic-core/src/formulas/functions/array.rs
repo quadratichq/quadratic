@@ -10,7 +10,7 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
     include_in_completions: true,
     name: "Array functions",
-    docs: "",
+    docs: None,
     get_functions,
 };
 

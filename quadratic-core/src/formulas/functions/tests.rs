@@ -7,7 +7,7 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
     include_in_completions: true,
     name: "Test functions",
-    docs: "These functions should not appear in production.\n\n",
+    docs: Some("These functions should not appear in production."),
     get_functions,
 };
 
