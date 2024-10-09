@@ -308,7 +308,7 @@ impl Sheet {
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_rows.iter().for_each(|row| {
             if let Some((start, end)) = self.row_bounds(*row, false) {
-                for x in (start..=end).step_by(CELL_SHEET_WIDTH as usize) {
+                for x in start..=end {
                     let mut pos = Pos { x, y: *row };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);
@@ -512,7 +512,7 @@ impl Sheet {
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_rows.iter().for_each(|row| {
             if let Some((start, end)) = self.row_bounds(*row, false) {
-                for x in (start..=end).step_by(CELL_SHEET_WIDTH as usize) {
+                for x in start..=end {
                     let mut pos = Pos { x, y: *row };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);
@@ -527,11 +527,7 @@ impl Sheet {
         let changes = self.offsets.insert_row(row);
         if !changes.is_empty() {
             changes.iter().for_each(|(index, size)| {
-                transaction
-                    .offsets_modified
-                    .entry(self.id)
-                    .or_default()
-                    .insert((None, Some(*index)), *size);
+                transaction.offsets_modified(self.id, None, Some(*index), Some(*size));
             });
         }
     }
