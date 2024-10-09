@@ -104,6 +104,13 @@ const TeamUserMakingRequestSchema = z.object({
 
 export const TeamClientDataKvSchema = z.record(z.any());
 
+export const LicenseSchema = z.object({
+  limits: z.object({
+    seats: z.number(),
+  }),
+  status: z.enum(['active', 'exceeded', 'revoked']),
+});
+
 // Zod schemas for API endpoints
 export const ApiSchemas = {
   /**
@@ -154,6 +161,7 @@ export const ApiSchemas = {
       teamPermissions: z.array(TeamPermissionSchema).optional(),
       teamRole: UserTeamRoleSchema.optional(),
     }),
+    license: LicenseSchema,
   }),
   '/v0/files/:uuid.DELETE.response': z.object({
     message: z.string(),
@@ -325,6 +333,7 @@ export const ApiSchemas = {
     ),
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
+    license: LicenseSchema,
     connections: ConnectionListSchema,
     clientDataKv: TeamClientDataKvSchema,
   }),

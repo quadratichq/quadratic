@@ -7,6 +7,7 @@ pub mod pubsub;
 pub mod settings;
 pub mod stats;
 
+use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use tokio::sync::Mutex;
@@ -26,7 +27,7 @@ pub(crate) struct State {
 }
 
 impl State {
-    pub(crate) async fn new(config: &Config) -> Result<Self> {
+    pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Result<Self> {
         let pubsub_config = PubSubConfig::RedisStreams(RedisStreamsConfig {
             host: config.pubsub_host.to_owned(),
             port: config.pubsub_port.to_owned(),
@@ -36,7 +37,7 @@ impl State {
 
         Ok(State {
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
-            settings: Settings::new(config).await,
+            settings: Settings::new(config, jwks).await,
             stats: Mutex::new(Stats::new()),
         })
     }

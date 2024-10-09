@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/node';
 import { Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsersFromAuth0, lookupUsersFromAuth0ByEmail } from '../../auth0/profile';
+import { getUsers, getUsersByEmail } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { sendEmail } from '../../email/sendEmail';
 import { templates } from '../../email/templates';
@@ -68,7 +68,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   // Get the auth0 info (email/name) for the user making the request
-  const resultsById = await getUsersFromAuth0([{ id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id }]);
+  const resultsById = await getUsers([{ id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id }]);
   const { email: userMakingRequestEmail, name: userMakingRequestName } = resultsById[userMakingRequestId];
 
   // Stuff for sending email
@@ -93,7 +93,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   };
 
   // Look up the invited user by email in Auth0 and then 1 of 3 things will happen:
-  const auth0Users = await lookupUsersFromAuth0ByEmail(email);
+  const auth0Users = await getUsersByEmail(email);
 
   // 1.
   // If there are 0 users, somebody who doesn't have a Quadratic account is
@@ -151,7 +151,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   // 3.
   // There are 2 or more users in auth0 with that email. This is unexpected
   // so we throw and log the error.
-  throw new ApiError(500, 'Internal server error: user lookup error.');
   Sentry.captureEvent({
     message: 'User has 3 or more accounts in auth0 with the same email.',
     level: 'error',
@@ -159,4 +158,5 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
       auth0Users,
     },
   });
+  throw new ApiError(500, 'Internal server error: user lookup error.');
 }

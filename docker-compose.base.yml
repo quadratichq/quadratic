@@ -23,7 +23,6 @@ services:
       POSTGRES_USER: postgres
       PGUSER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s

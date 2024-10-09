@@ -60,7 +60,12 @@ class Core {
   private renderQueue: Function[] = [];
 
   private async loadGridFile(file: string): Promise<Uint8Array> {
-    const res = await fetch(file);
+    const jwt = await coreClient.getJwt();
+    const res = await fetch(file, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    });
     return new Uint8Array(await res.arrayBuffer());
   }
 

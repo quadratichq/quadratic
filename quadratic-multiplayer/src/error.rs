@@ -5,7 +5,7 @@
 //! Convert third party crate errors to application errors.
 //! Convert errors to responses.
 
-use quadratic_rust_shared::{Aws, SharedError};
+use quadratic_rust_shared::{aws::error::Aws as AwsError, SharedError};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
@@ -108,7 +108,7 @@ impl From<SharedError> for MpError {
         match error {
             SharedError::QuadraticApi(error) => MpError::FilePermissions(error),
             SharedError::Aws(aws) => match aws {
-                Aws::S3(error) => MpError::S3(error),
+                AwsError::S3(error) => MpError::S3(error),
             },
             SharedError::PubSub(error) => MpError::PubSub(error),
             _ => MpError::Unknown(format!("Unknown Quadratic API error: {error}")),
