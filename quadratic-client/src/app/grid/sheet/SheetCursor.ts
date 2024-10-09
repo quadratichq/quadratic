@@ -268,10 +268,13 @@ export class SheetCursor {
     }
     if (this.multiCursor) {
       for (const rect of this.multiCursor) {
-        columns.add(rect.x);
+        for (let x = rect.x; x < rect.x + rect.width; x++) {
+          columns.add(x);
+        }
       }
     }
     columns.add(this.cursorPosition.x);
+    console.log(Array.from(columns));
     return Array.from(columns);
   }
 
@@ -283,7 +286,9 @@ export class SheetCursor {
     }
     if (this.multiCursor) {
       for (const rect of this.multiCursor) {
-        rows.add(rect.y);
+        for (let y = rect.y; y < rect.y + rect.height; y++) {
+          rows.add(y);
+        }
       }
     }
     rows.add(this.cursorPosition.y);
