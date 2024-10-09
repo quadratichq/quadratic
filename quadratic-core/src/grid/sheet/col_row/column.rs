@@ -384,10 +384,7 @@ impl Sheet {
         }
 
         // signal client to update the hashes for changed columns
-        let dirty_hashes = transaction
-            .dirty_hashes
-            .entry(self.id)
-            .or_insert_with(HashSet::new);
+        let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
                 for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {

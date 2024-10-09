@@ -297,10 +297,7 @@ impl PendingTransaction {
         row: Option<i64>,
         size: Option<f64>,
     ) {
-        let offsets_modified = self
-            .offsets_modified
-            .entry(sheet_id)
-            .or_insert_with(HashMap::new);
+        let offsets_modified = self.offsets_modified.entry(sheet_id).or_default();
         if let Some(column) = column {
             offsets_modified.insert((Some(column), None), size.unwrap_or(0.0));
         }
