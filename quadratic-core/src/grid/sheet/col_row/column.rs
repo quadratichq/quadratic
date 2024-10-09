@@ -7,7 +7,6 @@ use crate::{
         operations::operation::{CopyFormats, Operation},
     },
     grid::{formats::Formats, Sheet},
-    renderer_constants::CELL_SHEET_HEIGHT,
     selection::Selection,
     Pos, Rect, SheetPos,
 };
@@ -252,7 +251,7 @@ impl Sheet {
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
-                for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
+                for y in start..=end {
                     let mut pos = Pos { x: *col, y };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);
@@ -387,7 +386,7 @@ impl Sheet {
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
-                for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
+                for y in start..=end {
                     let mut pos = Pos { x: *col, y };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);
@@ -402,11 +401,7 @@ impl Sheet {
         let changes = self.offsets.insert_column(column);
         if !changes.is_empty() {
             changes.iter().for_each(|(index, size)| {
-                transaction
-                    .offsets_modified
-                    .entry(self.id)
-                    .or_default()
-                    .insert((Some(*index), None), *size);
+                transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
             });
         }
     }
