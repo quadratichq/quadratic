@@ -1,6 +1,8 @@
 import { authClient } from '@/auth';
 import { Empty } from '@/dashboard/components/Empty';
+import { FeatureFlags } from '@/shared/components/FeatureFlags';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
+import { MuiTheme } from '@/shared/components/MuiTheme';
 import { Theme } from '@/shared/components/Theme';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
 import { initializeAnalytics } from '@/shared/utils/analytics';
@@ -27,12 +29,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<R
 };
 
 export const Component = () => {
+  // Feature flags needs to be at the root, because other descendants might use a feature flag
   return (
-    <Theme>
-      <GlobalSnackbarProvider>
-        <Outlet />
-      </GlobalSnackbarProvider>
-    </Theme>
+    <FeatureFlags>
+      <Theme>
+        <MuiTheme>
+          <GlobalSnackbarProvider>
+            <Outlet />
+          </GlobalSnackbarProvider>
+        </MuiTheme>
+      </Theme>
+    </FeatureFlags>
   );
 };
 

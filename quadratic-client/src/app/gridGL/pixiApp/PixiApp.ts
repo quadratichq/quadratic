@@ -28,6 +28,7 @@ import { Viewport } from '@/app/gridGL/pixiApp/Viewport';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { isEmbed } from '@/app/helpers/isEmbed';
+import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { HEADING_SIZE } from '@/shared/constants/gridConstants';
@@ -70,6 +71,8 @@ export class PixiApp {
   loading = true;
   destroyed = false;
   paused = true;
+
+  accentColor = colors.cursorCell;
 
   // for testing purposes
   debug!: Graphics;
@@ -215,6 +218,17 @@ export class PixiApp {
     this.viewport.destroy();
     this.removeListeners();
     this.destroyed = true;
+  }
+
+  setAccentColor(newHexAccentColor: string): void {
+    this.accentColor = Number(`0x${newHexAccentColor}`);
+    if (!this.parent || this.destroyed) return;
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
+    this.render();
   }
 
   resize = (): void => {
