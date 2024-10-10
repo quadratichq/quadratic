@@ -220,17 +220,9 @@ export class PixiApp {
     this.destroyed = true;
   }
 
-  setAccentColor(newAccentColor: string): void {
-    this.accentColor = Number(`0x${newAccentColor}`);
+  setAccentColor(newHexAccentColor: string): void {
+    this.accentColor = Number(`0x${newHexAccentColor}`);
 
-    // Copied from resize
-    if (!this.parent || this.destroyed) return;
-    const width = this.parent.offsetWidth;
-    const height = this.parent.offsetHeight;
-    this.canvas.width = this.renderer.resolution * width;
-    this.canvas.height = this.renderer.resolution * height;
-    this.renderer.resize(width, height);
-    this.viewport.resize(width, height);
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
     this.headings.dirty = true;
