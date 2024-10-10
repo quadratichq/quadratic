@@ -1,5 +1,5 @@
-import { A1Cells } from '@/app/quadratic-core-types';
-import { a1ToCells } from '@/app/quadratic-rust-client/quadratic_rust_client';
+// import { A1Cells } from '@/app/quadratic-core-types';
+// import { a1ToCells } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
@@ -120,19 +120,18 @@ declare global {
   ): Record<string, number | string | boolean | undefined>[];
 }
 
-const getCellsA1 = (a1: string): (number | string | boolean | Date | undefined)[][] => {
-    const cellsStringified = a1ToCells(a1);
-    try {
-      const cells: A1Cells = JSON.parse(cellsStringified);
-      console.log(cells);
-      debugger;
-      return [];
-    } catch (e) {
-      console.error(e);
-      return [];
-    }
-
-};
+// const getCellsA1 = (a1: string): (number | string | boolean | Date | undefined)[][] => {
+//     const cellsStringified = a1ToCells(a1);
+//     try {
+//       const cells: A1Cells = JSON.parse(cellsStringified);
+//       console.log(cells);
+//       debugger;
+//       return [];
+//     } catch (e) {
+//       console.error(e);
+//       return [];
+//     }
+// };
 
 const getCellsDB = (
   x0: number | string,
@@ -141,10 +140,6 @@ const getCellsDB = (
   y1?: number,
   sheetName?: string
 ): (number | string | boolean | Date | undefined)[][] => {
-console.log('hELLO!!!')
-  if (typeof x0 === 'string') {
-    return getCellsA1(x0);
-  }
   try {
     // This is a shared buffer that will be used to communicate with core
     // The first 4 bytes are used to signal the python core that the data is ready

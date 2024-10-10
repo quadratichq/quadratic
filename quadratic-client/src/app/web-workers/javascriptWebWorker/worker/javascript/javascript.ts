@@ -32,7 +32,6 @@ export class Javascript {
     this.awaitingExecution = [];
     this.init();
     this.api = new JavascriptAPI(this);
-    debugger;
   }
 
   init = async () => {
@@ -129,6 +128,7 @@ export class Javascript {
           setTimeout(this.next, 0);
           runner.terminate();
         } else if (e.data.type === 'getCellsLength') {
+          debugger;
           const { sharedBuffer, x0, y0, x1, y1, sheetName } = e.data;
           this.api.getCells(x0, y0, x1, y1, sheetName).then((cells) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
@@ -150,6 +150,7 @@ export class Javascript {
             }
           });
         } else if (e.data.type === 'getCellsData') {
+          debugger;
           const { id, sharedBuffer } = e.data;
           const cells = this.getCellsResponses[id];
           delete this.getCellsResponses[id];
