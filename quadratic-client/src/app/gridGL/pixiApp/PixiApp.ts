@@ -222,7 +222,7 @@ export class PixiApp {
 
   setAccentColor(newHexAccentColor: string): void {
     this.accentColor = Number(`0x${newHexAccentColor}`);
-
+    if (!this.parent || this.destroyed) return;
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
     this.headings.dirty = true;
