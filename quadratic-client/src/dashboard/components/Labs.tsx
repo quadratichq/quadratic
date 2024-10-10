@@ -1,6 +1,7 @@
 import { useFeatureFlag, type FeatureFlagKey } from '@/shared/components/FeatureFlags';
 import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
+import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
 
 type LabProps = {
@@ -44,11 +45,13 @@ function LabToggle({ featureFlagKey, label, description, Component }: LabProps) 
     <div className="space-y-3 rounded-lg border p-3 shadow-sm">
       <div className="flex w-full flex-row items-center justify-between gap-3">
         <div className="mr-auto space-y-0.5 text-sm">
-          <p className="font-medium">{label}</p>
+          <Label htmlFor={featureFlagKey} className="font-medium">
+            {label}
+          </Label>
           <p className="text-muted-foreground">{description}</p>
         </div>
 
-        <Switch checked={isOn} onCheckedChange={setIsOn} />
+        <Switch id={featureFlagKey} checked={isOn} onCheckedChange={setIsOn} />
       </div>
       {isOn && (
         <div className="flex gap-2 border-t border-border pt-3">
