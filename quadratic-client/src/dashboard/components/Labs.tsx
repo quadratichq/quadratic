@@ -3,9 +3,6 @@ import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
 import { Switch } from '@/shared/shadcn/ui/switch';
 
-// TODO: wire these up in the dashboard
-// TODO: persist these?
-
 type LabProps = {
   featureFlagKey: FeatureFlagKey;
   label: string;
@@ -16,14 +13,14 @@ type LabProps = {
 const labFeatures = [
   {
     featureFlagKey: 'themeAppearanceMode',
-    label: 'Appearance (dark mode)',
-    description: 'Customize the app’s appearance for light, dark, or system mode.',
+    label: 'Appearance',
+    description: 'Choose light or dark mode (or use your system’s setting).',
     Component: ThemeAppearanceModes,
   },
   {
     featureFlagKey: 'themeAccentColor',
     label: 'Accent color',
-    description: 'Customize the primary color of the app.',
+    description: 'Choose a custom accent color used throughout the app.',
     Component: ThemeAccentColors,
   },
 ] as const;
@@ -45,7 +42,7 @@ function LabToggle({ featureFlagKey, label, description, Component }: LabProps) 
 
   return (
     <div className="space-y-3 rounded-lg border p-3 shadow-sm">
-      <div className="flex w-full flex-row items-center justify-between">
+      <div className="flex w-full flex-row items-center justify-between gap-3">
         <div className="mr-auto space-y-0.5 text-sm">
           <p className="font-medium">{label}</p>
           <p className="text-muted-foreground">{description}</p>

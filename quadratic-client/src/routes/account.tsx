@@ -50,7 +50,15 @@ export const Component = () => {
           </Row>
         </AccountSection>
 
-        <AccountSection title="Labs" description="Experimental features">
+        <AccountSection
+          title="Experimental features"
+          description={
+            <>
+              Try features while they’re still being created and refined by our team.{' '}
+              <em>Please note: these preferences are stored in the browser and do not persist across devices.</em>
+            </>
+          }
+        >
           <Labs />
         </AccountSection>
       </div>

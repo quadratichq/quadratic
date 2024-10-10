@@ -408,7 +408,7 @@ export const StopCircleIcon: IconComponent = (props) => {
 };
 
 export const ThemeIcon: IconComponent = (props) => {
-  return <Icon {...props}>contrast</Icon>;
+  return <Icon {...props}>imagesearch_roller</Icon>;
 };
 
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
