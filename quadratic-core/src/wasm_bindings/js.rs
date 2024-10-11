@@ -135,6 +135,12 @@ extern "C" {
     pub fn jsHashesDirty(sheet_id: String, hashes: String);
 
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
+
+    pub fn jsRequestAIResearcherResult(
+        transaction_id: String,
+        prompt: String,
+        ref_cell_values: String,
+    );
 }
 
 #[cfg(test)]
@@ -665,5 +671,18 @@ pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendViewportBuffer",
         format!("{:?}", buffer),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsRequestAIResearcherResult(
+    transaction_id: String,
+    prompt: String,
+    ref_cell_values: String,
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsRequestAIResearcherResult",
+        format!("{},{},{}", transaction_id, prompt, ref_cell_values),
     ));
 }

@@ -1114,6 +1114,11 @@ class Core {
       this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
     });
   }
+
+  responseAIResearcherResult(transactionId: string, result?: string, error?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.responseAIResearcherResult(transactionId, result, error);
+  }
 }
 
 export const core = new Core();

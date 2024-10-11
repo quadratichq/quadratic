@@ -86,6 +86,7 @@ declare var self: WorkerGlobalScope &
       validationWarnings: JsValidationWarning[]
     ) => void;
     sendMultiplayerSynced: () => void;
+    sendRequestAIResearcherResult: (transactionId: string, prompt: string, refCellValues: string) => void;
   };
 
 class CoreClient {
@@ -120,6 +121,7 @@ class CoreClient {
     self.sendSheetValidations = coreClient.sendSheetValidations;
     self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
+    self.sendRequestAIResearcherResult = coreClient.sendRequestAIResearcherResult;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -581,6 +583,10 @@ class CoreClient {
         core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
         return;
 
+      case 'clientCoreResponseAIResearcherResult':
+        core.responseAIResearcherResult(e.data.transactionId, e.data.result, e.data.error);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core
@@ -746,6 +752,10 @@ class CoreClient {
 
   sendMultiplayerSynced = () => {
     this.send({ type: 'coreClientMultiplayerSynced' });
+  };
+
+  sendRequestAIResearcherResult = (transactionId: string, prompt: string, refCellValues: string) => {
+    this.send({ type: 'coreClientRequestAIResearcherResult', transactionId, prompt, refCellValues });
   };
 }
 

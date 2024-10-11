@@ -1,6 +1,7 @@
 import { CodeCellIds } from '@/app/helpers/codeCellLanguage';
 import { colors } from '@/app/theme/colors';
 import { Formula, JavaScript, MssqlIcon, MysqlIcon, PostgresIcon, Python, SnowflakeIcon } from '@/app/ui/icons';
+import { AIIcon } from '@/shared/components/Icons';
 import { Subject } from '@mui/icons-material';
 import { SvgIconProps } from '@mui/material/SvgIcon';
 
@@ -23,6 +24,8 @@ export function LanguageIcon({ language, ...props }: LanguageIconProps) {
     <MssqlIcon sx={{ color: colors.languageMssql, ...(props.sx ? props.sx : {}) }} />
   ) : language === 'SNOWFLAKE' ? (
     <SnowflakeIcon sx={{ color: colors.languageSnowflake, ...(props.sx ? props.sx : {}) }} />
+  ) : language === 'AIResearcher' ? (
+    <AIIcon />
   ) : (
     <Subject {...props} />
   );

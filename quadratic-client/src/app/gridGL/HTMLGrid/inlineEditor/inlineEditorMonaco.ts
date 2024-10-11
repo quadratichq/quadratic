@@ -1,5 +1,6 @@
 //! This is an abstraction of the Monaco Editor for use with the inline editor.
 
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
@@ -10,8 +11,8 @@ import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker
 import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import JsonEditorWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
-import { inlineEditorEvents } from './inlineEditorEvents';
 
 // This is where we globally define worker types for Monaco. See
 // https://github.com/microsoft/monaco-editor/blob/main/docs/integrate-esm.md
@@ -21,6 +22,8 @@ window.MonacoEnvironment = {
       case 'typescript':
       case 'javascript':
         return new TsEditorWorker({ name: label });
+      case 'json':
+        return new JsonEditorWorker({ name: label });
       default:
         return new DefaultEditorWorker({ name: label });
     }

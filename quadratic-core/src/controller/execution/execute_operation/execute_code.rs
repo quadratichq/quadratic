@@ -129,6 +129,9 @@ impl GridController {
                 CodeCellLanguage::Javascript => {
                     self.run_javascript(transaction, sheet_pos, code);
                 }
+                CodeCellLanguage::AIResearcher => {
+                    self.run_ai_researcher(transaction, sheet_pos, code);
+                }
             }
         }
     }

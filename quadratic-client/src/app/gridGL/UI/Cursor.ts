@@ -224,6 +224,8 @@ export class Cursor extends Container {
           ? colors.cellColorUserFormula
           : codeCell.language === 'Javascript'
           ? colors.cellColorUserJavascript
+          : codeCell.language === 'AIResearcher'
+          ? colors.cellColorUserAI
           : colors.independence;
     }
     if (!color || !offsets) return;

@@ -1,4 +1,5 @@
 use js_sys::Uint8Array;
+use uuid::Uuid;
 
 use super::*;
 
@@ -116,6 +117,24 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let data = Uint8Array::new(&data);
         self.connection_complete(transaction_id, data.to_vec(), std_out, std_err, extra)
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "responseAIResearcherResult")]
+    pub fn js_response_ai_researcher_result(
+        &mut self,
+        transaction_id: String,
+        result: Option<String>,
+        error: Option<String>,
+    ) -> Result<(), JsValue> {
+        let transaction_id = match Uuid::parse_str(&transaction_id) {
+            Ok(transaction_id) => transaction_id,
+            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
+        };
+
+        self.response_ai_researcher_result(transaction_id, result, error)
             .map_err(|e| e.to_string())?;
 
         Ok(())

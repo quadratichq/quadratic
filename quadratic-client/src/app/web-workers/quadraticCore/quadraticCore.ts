@@ -178,6 +178,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientBordersSheet') {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
+    } else if (e.data.type === 'coreClientRequestAIResearcherResult') {
+      events.emit('requestAIResearcherResult', e.data.transactionId, e.data.prompt, e.data.refCellValues);
+      return;
     }
 
     if (e.data.id !== undefined) {
@@ -1165,6 +1168,15 @@ class QuadraticCore {
       row,
       below,
       cursor,
+    });
+  }
+
+  responseAIResearcherResult(transactionId: string, result?: string, error?: string) {
+    this.send({
+      type: 'clientCoreResponseAIResearcherResult',
+      transactionId,
+      result,
+      error,
     });
   }
 

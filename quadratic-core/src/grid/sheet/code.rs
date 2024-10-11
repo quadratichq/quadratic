@@ -145,7 +145,10 @@ impl Sheet {
         match code_cell {
             CellValue::Code(mut code_cell) => {
                 // replace internal cell references with a1 notation
-                if matches!(code_cell.language, CodeCellLanguage::Formula) {
+                if matches!(
+                    code_cell.language,
+                    CodeCellLanguage::Formula | CodeCellLanguage::AIResearcher
+                ) {
                     let replaced = replace_internal_cell_references(&code_cell.code, code_pos);
                     code_cell.code = replaced;
                 }
