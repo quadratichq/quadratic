@@ -263,7 +263,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                     CellValue::DateTime(dt) => dt.month(),
                     CellValue::Date(d) => d.month(),
                     CellValue::Time(_t) => 0,
-                    CellValue::Duration(d) => dbg!(d).subyear_months() as u32,
+                    CellValue::Duration(d) => d.subyear_months() as u32,
                     _ => {
                         return Err(RunErrorMsg::Expected {
                             expected: "date or duration".into(),
@@ -354,7 +354,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                         .rem_euclid(24) as u32,
                     CellValue::DateTime(dt) => dt.hour(),
                     CellValue::Date(_d) => 0,
-                    CellValue::Time(t) => dbg!(t).hour() as u32,
+                    CellValue::Time(t) => t.hour() as u32,
                     CellValue::Duration(d) => d.subday_hours() as u32,
                     _ => {
                         return Err(RunErrorMsg::Expected {
