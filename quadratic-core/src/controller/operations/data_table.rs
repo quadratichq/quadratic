@@ -17,6 +17,20 @@ impl GridController {
     ) -> Vec<Operation> {
         vec![Operation::GridToDataTable { sheet_rect }]
     }
+
+    pub fn sort_data_table_operations(
+        &self,
+        sheet_rect: SheetRect,
+        column_index: u32,
+        sort_order: String,
+        _cursor: Option<String>,
+    ) -> Vec<Operation> {
+        vec![Operation::SortDataTable {
+            sheet_rect,
+            column_index,
+            sort_order,
+        }]
+    }
 }
 
 #[cfg(test)]

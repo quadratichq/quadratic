@@ -155,6 +155,7 @@ pub struct DataTableSchema {
     pub kind: DataTableKindSchema,
     pub name: String,
     pub columns: Option<Vec<DataTableColumnSchema>>,
+    pub display_buffer: Option<Vec<u64>>,
     pub value: OutputValueSchema,
     pub readonly: bool,
     pub spill_error: bool,

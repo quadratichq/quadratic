@@ -112,50 +112,49 @@ pub(crate) mod tests {
 
     pub(crate) fn simple_csv() -> (GridController, SheetId, Pos, &'static str) {
         let csv_file = read_test_csv_file("simple.csv");
-        let mut grid_controller = GridController::test();
-        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
         let file_name = "simple.csv";
 
-        grid_controller
-            .import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
+        gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
             .unwrap();
 
-        (grid_controller, sheet_id, pos, file_name)
+        (gc, sheet_id, pos, file_name)
+    }
+
+    #[track_caller]
+    pub(crate) fn assert_simple_csv<'a>(
+        gc: &'a GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        file_name: &'a str,
+    ) -> (&'a GridController, SheetId, Pos, &'a str) {
+        let import = Import::new(file_name.into());
+        let cell_value = CellValue::Import(import);
+        assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
+
+        // data table should be at `pos`
+        assert_eq!(
+            gc.sheet(sheet_id).first_data_table_within(pos).unwrap(),
+            pos
+        );
+
+        let first_row = vec!["city", "region", "country", "population"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 0, first_row);
+
+        let last_row = vec!["Concord", "NH", "United States", "42605"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 10, last_row);
+
+        (gc, sheet_id, pos, file_name)
     }
 
     #[test]
     #[parallel]
     fn imports_a_simple_csv() {
-        let (grid_controller, sheet_id, pos, file_name) = simple_csv();
+        let (gc, sheet_id, pos, file_name) = simple_csv();
 
-        print_table(
-            &grid_controller,
-            sheet_id,
-            Rect::new_span(pos, Pos { x: 3, y: 10 }),
-        );
-
-        let import = Import::new(file_name.into());
-        let cell_value = CellValue::Import(import);
-        assert_display_cell_value(&grid_controller, sheet_id, 0, 0, &cell_value.to_string());
-
-        assert_data_table_cell_value_row(
-            &grid_controller,
-            sheet_id,
-            0,
-            3,
-            0,
-            vec!["city", "region", "country", "population"],
-        );
-
-        assert_data_table_cell_value_row(
-            &grid_controller,
-            sheet_id,
-            0,
-            3,
-            10,
-            vec!["Concord", "NH", "United States", "42605"],
-        );
+        assert_simple_csv(&gc, sheet_id, pos, file_name);
     }
 
     #[test]

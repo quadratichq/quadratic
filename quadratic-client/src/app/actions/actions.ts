@@ -135,4 +135,5 @@ export enum Action {
   DeleteRow = 'delete_row',
   DeleteColumn = 'delete_column',
   FlattenDataTable = 'flatten_data_table',
+  GridToDataTable = 'grid_to_data_table',
 }

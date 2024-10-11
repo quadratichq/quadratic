@@ -4,13 +4,16 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
+use std::cmp::Ordering;
+
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
-use anyhow::anyhow;
+use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use super::Sheet;
@@ -33,6 +36,12 @@ impl DataTableColumn {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum SortDirection {
+    Ascending,
+    Descending,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum DataTableKind {
     CodeRun(CodeRun),
     Import(Import),
@@ -43,6 +52,7 @@ pub struct DataTable {
     pub kind: DataTableKind,
     pub name: String,
     pub columns: Option<Vec<DataTableColumn>>,
+    pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
     pub readonly: bool,
     pub spill_error: bool,
@@ -83,6 +93,7 @@ impl DataTable {
             kind,
             name: name.into(),
             columns: None,
+            display_buffer: None,
             value,
             readonly,
             spill_error,
@@ -101,6 +112,7 @@ impl DataTable {
         kind: DataTableKind,
         name: &str,
         columns: Option<Vec<DataTableColumn>>,
+        display_buffer: Option<Vec<u64>>,
         value: Value,
         readonly: bool,
         spill_error: bool,
@@ -109,6 +121,7 @@ impl DataTable {
             kind,
             name: name.into(),
             columns,
+            display_buffer,
             value,
             readonly,
             spill_error,
@@ -202,6 +215,49 @@ impl DataTable {
             });
 
         Ok(())
+    }
+
+    pub fn sort(&mut self, column_index: usize, direction: SortDirection) -> Result<()> {
+        let values = self.value.clone().into_array()?;
+
+        let display_buffer = values
+            .col(column_index)
+            .enumerate()
+            .sorted_by(|a, b| match direction {
+                SortDirection::Ascending => a.1.cmp(b.1).unwrap_or(Ordering::Equal),
+                SortDirection::Descending => b.1.cmp(a.1).unwrap_or(Ordering::Equal),
+            })
+            .map(|(i, _)| i as u64)
+            .collect::<Vec<u64>>();
+
+        self.display_buffer = Some(display_buffer);
+
+        Ok(())
+    }
+
+    pub fn display_value_from_buffer(&self, display_buffer: &Vec<u64>) -> Result<Value> {
+        let value = self.value.to_owned().into_array()?;
+
+        let values = display_buffer
+            .iter()
+            .filter_map(|index| {
+                value
+                    .get_row(*index as usize)
+                    .map(|row| row.into_iter().cloned().collect::<Vec<CellValue>>())
+                    .ok()
+            })
+            .collect::<Vec<Vec<CellValue>>>();
+
+        let array = Array::from(values);
+
+        Ok(array.into())
+    }
+
+    pub fn display_value(&self) -> Result<Value> {
+        match self.display_buffer {
+            Some(ref display_buffer) => self.display_value_from_buffer(display_buffer),
+            None => Ok(self.value.to_owned()),
+        }
     }
 
     /// Helper functtion to get the CodeRun from the DataTable.
@@ -341,20 +397,72 @@ pub(crate) mod test {
     use super::*;
     use crate::{controller::GridController, grid::SheetId, Array};
     use serial_test::parallel;
+    use tabled::{
+        builder::Builder,
+        settings::{Color, Modify, Style},
+    };
 
-    pub fn new_data_table() -> (Sheet, DataTable) {
-        let sheet = GridController::test().grid().sheets()[0].clone();
-        let file_name = "test.csv";
-        let values = vec![
+    pub fn test_csv_values() -> Vec<Vec<&'static str>> {
+        vec![
             vec!["city", "region", "country", "population"],
             vec!["Southborough", "MA", "United States", "1000"],
             vec!["Denver", "CO", "United States", "10000"],
             vec!["Seattle", "WA", "United States", "100"],
-        ];
+        ]
+    }
+
+    pub fn new_data_table() -> (Sheet, DataTable) {
+        let sheet = GridController::test().grid().sheets()[0].clone();
+        let file_name = "test.csv";
+        let values = test_csv_values();
         let import = Import::new(file_name.into());
-        let data_table = DataTable::from((import.clone(), values.clone().into(), &sheet));
+        let array = Array::from_str_vec(values, true).unwrap();
+        let data_table = DataTable::from((import.clone(), array, &sheet));
 
         (sheet, data_table)
+    }
+
+    /// Util to print a data table when testing
+    #[track_caller]
+    pub fn print_data_table(data_table: &DataTable, title: Option<&str>, max: Option<usize>) {
+        let mut builder = Builder::default();
+        let array = data_table.display_value().unwrap().into_array().unwrap();
+        let max = max.unwrap_or(array.height() as usize);
+        let title = title.unwrap_or("Data Table");
+
+        if let Some(columns) = data_table.columns.as_ref() {
+            let columns = columns.iter().map(|c| c.name.clone()).collect::<Vec<_>>();
+            builder.set_header(columns);
+        }
+
+        for row in array.rows().take(max) {
+            let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+            builder.push_record(row);
+        }
+
+        let mut table = builder.build();
+        table.with(Style::modern());
+
+        // bold the headers if they exist
+        if let Some(columns) = data_table.columns.as_ref() {
+            columns.iter().enumerate().for_each(|(index, _)| {
+                table.with(Modify::new((0, index)).with(Color::BOLD));
+            });
+        }
+
+        println!("\nData Table: {title}\n{table}");
+    }
+
+    /// Assert a data table row matches the expected values
+    #[track_caller]
+    pub fn assert_data_table_row(data_table: &DataTable, row_index: usize, expected: Vec<&str>) {
+        let values = data_table.display_value().unwrap().into_array().unwrap();
+
+        values.get_row(row_index).unwrap().iter().enumerate().for_each(|(index, value)| {
+            let value = value.to_string();
+            let expected_value = expected[index];
+            assert_eq!(&value, expected_value, "Expected row {row_index} to be {expected_value} at col {index}, but got {value}");
+        });
     }
 
     #[test]
@@ -414,6 +522,31 @@ pub(crate) mod test {
         // test setting header display at index
         data_table.set_header_display_at(0, false).unwrap();
         assert_eq!(data_table.columns.as_ref().unwrap()[0].display, false);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_data_table_sort() {
+        let (_, mut data_table) = new_data_table();
+        data_table.apply_header_from_first_row();
+
+        let mut values = test_csv_values();
+        values.remove(0); // remove header row
+        print_data_table(&data_table, Some("Original Data Table"), None);
+
+        // sort by population city ascending
+        data_table.sort(0, SortDirection::Ascending).unwrap();
+        print_data_table(&data_table, Some("Sorted by City"), None);
+        assert_data_table_row(&data_table, 0, values[1].clone());
+        assert_data_table_row(&data_table, 1, values[2].clone());
+        assert_data_table_row(&data_table, 2, values[0].clone());
+
+        // sort by population descending
+        data_table.sort(3, SortDirection::Descending).unwrap();
+        print_data_table(&data_table, Some("Sorted by Population Descending"), None);
+        assert_data_table_row(&data_table, 0, values[1].clone());
+        assert_data_table_row(&data_table, 1, values[0].clone());
+        assert_data_table_row(&data_table, 2, values[2].clone());
     }
 
     #[test]

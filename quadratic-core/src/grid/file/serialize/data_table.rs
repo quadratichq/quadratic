@@ -176,6 +176,7 @@ pub(crate) fn import_data_table_builder(
                     })
                     .collect()
             }),
+            display_buffer: data_table.display_buffer,
         };
 
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
@@ -350,6 +351,7 @@ pub(crate) fn export_data_table_runs(
                 kind,
                 name: data_table.name,
                 columns,
+                display_buffer: data_table.display_buffer,
                 readonly: data_table.readonly,
                 last_modified: Some(data_table.last_modified),
                 spill_error: data_table.spill_error,

@@ -1,0 +1,2 @@
+const FIXTURES_PATH: &str = "/Users/daviddimaria/work/quadratic/quadratic/quadratic-rust-shared/fixtures";
+const DATA_PATH: &str = "/Users/daviddimaria/work/quadratic/quadratic/quadratic-rust-shared/data";

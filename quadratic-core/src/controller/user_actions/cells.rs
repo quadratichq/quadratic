@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
@@ -13,9 +13,7 @@ impl GridController {
         value: String,
         cursor: Option<String>,
     ) -> Result<()> {
-        let sheet = self
-            .try_sheet_mut(sheet_pos.sheet_id)
-            .ok_or_else(|| anyhow!("Sheet not found"))?;
+        let sheet = self.try_sheet_mut_result(sheet_pos.sheet_id)?;
 
         let cell_value = sheet
             .get_column(sheet_pos.x)
@@ -70,16 +68,6 @@ impl GridController {
             y += 1;
         }
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
-    }
-
-    pub fn set_data_table_value(
-        &mut self,
-        sheet_pos: SheetPos,
-        value: String,
-        cursor: Option<String>,
-    ) {
-        let ops = self.set_data_table_operations_at(sheet_pos, value);
-        self.start_user_transaction(ops, cursor, TransactionName::SetDataTableAt);
     }
 
     /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.

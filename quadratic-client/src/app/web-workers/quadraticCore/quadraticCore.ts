@@ -1166,6 +1166,14 @@ class QuadraticCore {
       cursor,
     });
   }
+
+  gridToDataTable(selection: Selection, cursor: string) {
+    this.send({
+      type: 'clientCoreGridToDataTable',
+      selection,
+      cursor,
+    });
+  }
   //#endregion
 }
 

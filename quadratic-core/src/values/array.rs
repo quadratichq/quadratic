@@ -1,4 +1,9 @@
-use std::{fmt, num::NonZeroU32};
+use std::{
+    fmt,
+    iter::{Skip, StepBy},
+    num::NonZeroU32,
+    slice::Iter,
+};
 
 use anyhow::{bail, Result};
 use bigdecimal::BigDecimal;
@@ -83,6 +88,7 @@ impl TryFrom<Value> for Vec<Array> {
     }
 }
 
+// TODO(ddimaria): this function makes a copy of the data, consider consuming the vec
 impl From<Vec<Vec<String>>> for Array {
     fn from(v: Vec<Vec<String>>) -> Self {
         let w = v[0].len();
@@ -98,6 +104,7 @@ impl From<Vec<Vec<String>>> for Array {
     }
 }
 
+// TODO(ddimaria): this function makes a copy of the data, consider consuming the vec
 impl From<Vec<Vec<&str>>> for Array {
     fn from(v: Vec<Vec<&str>>) -> Self {
         let w = v[0].len();
@@ -207,6 +214,13 @@ impl Array {
     pub fn rows(&self) -> std::slice::Chunks<'_, CellValue> {
         self.values.chunks(self.width() as usize)
     }
+    /// Returns an iterator over a single col of the array.
+    pub fn col(&self, index: usize) -> StepBy<Skip<Iter<'_, CellValue>>> {
+        self.values
+            .iter()
+            .skip(index)
+            .step_by(self.width() as usize)
+    }
     /// Remove the first row of the array and return it.
     pub fn shift(&mut self) -> Result<Vec<CellValue>> {
         let width = (self.width() as usize).min(self.values.len());
@@ -246,6 +260,13 @@ impl Array {
     pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         Ok(&self.values[i])
+    }
+    pub fn get_row(&self, index: usize) -> Result<&[CellValue], RunErrorMsg> {
+        let width = self.width() as usize;
+        let start = index * width;
+        let end = start + width;
+
+        Ok(&self.values[start..end])
     }
     /// Sets the value at a given 0-indexed position in an array. Returns an
     /// error if `x` or `y` is out of range.
@@ -313,6 +334,23 @@ impl Array {
             Some(e) => Err(e.clone()),
             None => Ok(self),
         }
+    }
+
+    // convert from a Vec<Vec<&str>> to an Array, auto-picking the type if selected
+    pub fn from_str_vec(array: Vec<Vec<&str>>, auto_pick_type: bool) -> anyhow::Result<Self> {
+        let w = array[0].len();
+        let h = array.len();
+        let size = ArraySize::new_or_err(w as u32, h as u32)?;
+        let values = array
+            .into_iter()
+            .flatten()
+            .map(|s| match auto_pick_type {
+                true => CellValue::parse_from_str(s),
+                false => CellValue::from(s),
+            })
+            .collect();
+
+        Ok(Array { size, values })
     }
 
     pub fn from_string_list(

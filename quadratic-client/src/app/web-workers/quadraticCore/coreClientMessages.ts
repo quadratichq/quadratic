@@ -1018,6 +1018,12 @@ export interface ClientCoreFlattenDataTable {
   cursor: string;
 }
 
+export interface ClientCoreGridToDataTable {
+  type: 'clientCoreGridToDataTable';
+  selection: Selection;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1097,7 +1103,8 @@ export type ClientCoreMessage =
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
-  | ClientCoreFlattenDataTable;
+  | ClientCoreFlattenDataTable
+  | ClientCoreGridToDataTable;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

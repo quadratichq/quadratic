@@ -351,6 +351,10 @@ export class PixiApp {
     return this.cellsSheets.isCursorOnCodeCell();
   }
 
+  isCursorOnCodeCellOutput(): boolean {
+    return this.cellsSheets.isCursorOnCodeCellOutput();
+  }
+
   // called when the viewport is loaded from the URL
   urlViewportLoad(sheetId: string) {
     const cellsSheet = sheets.getById(sheetId);

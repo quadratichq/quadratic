@@ -584,6 +584,10 @@ class CoreClient {
         core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
         return;
 
+      case 'clientCoreGridToDataTable':
+        core.gridToDataTable(e.data.selection, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

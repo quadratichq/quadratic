@@ -3,26 +3,34 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { PersonAddIcon } from '@/shared/components/Icons';
 import { sheets } from '../grid/controller/Sheets';
 import { ActionSpecRecord } from './actionsSpec';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 
-type DataTableSpec = Pick<ActionSpecRecord, Action.FlattenDataTable>;
+type DataTableSpec = Pick<ActionSpecRecord, Action.FlattenDataTable | Action.GridToDataTable>;
 
 export type DataTableActionArgs = {
   [Action.FlattenDataTable]: { name: string };
 };
 
-// const isColumnRowAvailable = ({ isAuthenticated }: ActionAvailabilityArgs) => {
-//   if (!sheets.sheet.cursor.hasOneColumnRowSelection(true)) return false;
-//   return !isEmbed && isAuthenticated;
-// };
+const isDataTable = (): boolean => {
+  return pixiApp.isCursorOnCodeCellOutput();
+};
 
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenDataTable]: {
     label: 'Flatten Data Table',
     Icon: PersonAddIcon,
-    isAvailable: () => true,
+    isAvailable: () => isDataTable(),
     run: async () => {
       const { x, y } = sheets.sheet.cursor.cursorPosition;
       quadraticCore.flattenDataTable(sheets.sheet.id, x, y, sheets.getCursorPosition());
+    },
+  },
+  [Action.GridToDataTable]: {
+    label: 'Convert to Data Table',
+    Icon: PersonAddIcon,
+    isAvailable: () => !isDataTable(),
+    run: async () => {
+      quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
     },
   },
 };

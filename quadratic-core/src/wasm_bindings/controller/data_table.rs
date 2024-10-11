@@ -1,3 +1,5 @@
+use selection::Selection;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -17,17 +19,32 @@ impl GridController {
         Ok(())
     }
 
-    /// Flattens a Data Table
+    /// Converts a selection on the grid to a Data Table
     #[wasm_bindgen(js_name = "gridToDataTable")]
     pub fn js_grid_to_data_table(
         &mut self,
-        sheet_id: String,
-        rect: String,
+        selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let rect = serde_json::from_str::<Rect>(&rect).map_err(|e| e.to_string())?;
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.grid_to_data_table(rect.to_sheet_rect(sheet_id), cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let sheet_rect = selection.rects.unwrap()[0].to_sheet_rect(selection.sheet_id);
+        self.grid_to_data_table(sheet_rect, cursor);
+
+        Ok(())
+    }
+
+    /// Flattens a Data Table
+    #[wasm_bindgen(js_name = "sortDataTable")]
+    pub fn js_sort_data_table(
+        &mut self,
+        selection: String,
+        column_index: u32,
+        sort_order: String,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let sheet_rect = selection.rects.unwrap()[0].to_sheet_rect(selection.sheet_id);
+        self.sort_data_table(sheet_rect, column_index, sort_order, cursor);
 
         Ok(())
     }

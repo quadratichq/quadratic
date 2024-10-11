@@ -281,4 +281,12 @@ export class CellsArray extends Container {
   isCodeCell(x: number, y: number): boolean {
     return this.codeCells.has(this.key(x, y));
   }
+
+  isCodeCellOutput(x: number, y: number): boolean {
+    return [...this.codeCells.values()].some((codeCell) => {
+      let rect = new Rectangle(codeCell.x, codeCell.y, codeCell.x + codeCell.w, codeCell.y + codeCell.h);
+
+      return rect.contains(x, y);
+    });
+  }
 }

@@ -84,6 +84,7 @@ export const GridContextMenu = () => {
         <MenuItemAction action={Action.DeleteRow} />
         <MenuDivider />
         {isDataTable && <MenuItemAction action={Action.FlattenDataTable} />}
+        {isDataTable && <MenuItemAction action={Action.GridToDataTable} />}
       </ControlledMenu>
     </div>
   );

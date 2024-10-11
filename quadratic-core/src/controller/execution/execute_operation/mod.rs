@@ -38,6 +38,12 @@ impl GridController {
                 Operation::FlattenDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_flatten_data_table(transaction, op),
                 ),
+                Operation::GridToDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_grid_to_data_table(transaction, op),
+                ),
+                Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_grid_to_data_table(transaction, op),
+                ),
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
                 Operation::SetCellFormatsSelection { .. } => {

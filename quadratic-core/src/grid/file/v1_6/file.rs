@@ -210,6 +210,7 @@ fn upgrade_code_runs(
                 kind: v1_7::DataTableKindSchema::CodeRun(new_code_run),
                 name: format!("Table {}", i),
                 columns: None,
+                display_buffer: None,
                 value,
                 readonly: true,
                 spill_error: code_run.spill_error,

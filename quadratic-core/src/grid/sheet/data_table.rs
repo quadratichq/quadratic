@@ -51,6 +51,11 @@ impl Sheet {
         self.data_tables.get(&pos)
     }
 
+    /// Returns a mutable DatatTable at a Pos
+    pub fn data_table_mut(&mut self, pos: Pos) -> Option<&mut DataTable> {
+        self.data_tables.get_mut(&pos)
+    }
+
     pub fn delete_data_table(&mut self, pos: Pos) -> Result<DataTable> {
         self.data_tables
             .swap_remove(&pos)

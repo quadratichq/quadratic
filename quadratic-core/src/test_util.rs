@@ -211,6 +211,7 @@ pub fn assert_cell_format_fill_color(
 }
 
 // Util to print a simple grid to assist in TDD
+#[track_caller]
 pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, rect: Rect) {
     let Some(sheet) = grid_controller.try_sheet(sheet_id) else {
         println!("Sheet not found");
@@ -220,6 +221,7 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, rect: Re
 }
 
 // Util to print a simple grid to assist in TDD
+#[track_caller]
 pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rect: Rect) {
     let Some(sheet) = grid_controller.try_sheet(sheet_id) else {
         println!("Sheet not found");
@@ -229,6 +231,7 @@ pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rec
 }
 
 /// Util to print the entire sheet
+#[track_caller]
 pub fn print_sheet(sheet: &Sheet) {
     let bounds = sheet.bounds(true);
     if let GridBounds::NonEmpty(rect) = bounds {
@@ -239,6 +242,7 @@ pub fn print_sheet(sheet: &Sheet) {
 }
 
 /// Util to print a simple grid to assist in TDD
+#[track_caller]
 pub fn print_table_sheet(sheet: &Sheet, rect: Rect, disply_cell_values: bool) {
     let mut vals = vec![];
     let mut builder = Builder::default();
@@ -271,7 +275,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, disply_cell_values: bool) {
                 true => sheet.cell_value(pos),
                 false => sheet
                     .data_table(rect.min)
-                    .unwrap()
+                    .expect(&format!("Data table not found at {:?}", rect.min))
                     .cell_value_at(x as u32, y as u32),
             };
 
