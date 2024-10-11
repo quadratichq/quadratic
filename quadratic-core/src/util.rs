@@ -260,6 +260,11 @@ pub fn round(number: f64, precision: i64) -> f64 {
     (number * y).round() / y
 }
 
+/// Returns a string suitable for case-insensitive comparison.
+pub fn case_fold(s: &str) -> String {
+    s.to_uppercase() // TODO: want proper Unicode case folding
+}
+
 #[cfg(test)]
 pub(crate) fn assert_f64_approx_eq(expected: f64, actual: &str) {
     const EPSILON: f64 = 0.0001;

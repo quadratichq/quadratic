@@ -47,6 +47,7 @@ pub enum ConnectionKind {
     Postgres,
     Mysql,
     Mssql,
+    Snowflake,
 }
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {

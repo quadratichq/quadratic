@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { ColumnRow, GridBounds, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -44,6 +45,19 @@ export class Sheet {
       this.validations = validations;
     }
   };
+
+  // Returns all validations that intersect with the given point.
+  getValidation(x: number, y: number): Validation[] | undefined {
+    return this.validations.filter((v) => {
+      const selection = v.selection;
+      return (
+        selection.all ||
+        selection.columns?.find((c) => Number(c) === x) ||
+        selection.rows?.find((r) => Number(r) === y) ||
+        selection.rects?.find((r) => intersects.rectPoint(r, { x, y }))
+      );
+    });
+  }
 
   static testSheet(): Sheet {
     return new Sheet(
@@ -114,8 +128,7 @@ export class Sheet {
     // this check is needed b/c offsets may be in a weird state during hmr
     if (!this.offsets.getCellOffsets) return new Rectangle();
 
-    const screenRectStringified = this.offsets.getCellOffsets(Number(column), Number(row));
-    const screenRect = JSON.parse(screenRectStringified);
+    const screenRect = this.offsets.getCellOffsets(Number(column), Number(row));
     return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
   }
 
@@ -149,10 +162,10 @@ export class Sheet {
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
   }
 
-  updateSheetOffsets(column: number | undefined, row: number | undefined, size: number) {
-    if (column !== undefined) {
+  updateSheetOffsets(column: number | null, row: number | null, size: number) {
+    if (column !== null) {
       this.offsets.setColumnWidth(column, size);
-    } else if (row !== undefined) {
+    } else if (row !== null) {
       this.offsets.setRowHeight(row, size);
     }
   }

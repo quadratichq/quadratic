@@ -42,7 +42,12 @@ impl GridController {
         sort_order: String,
         cursor: Option<String>,
     ) {
-        let ops = self.grid_to_data_table_operations(sheet_rect, cursor.to_owned());
+        let ops = self.sort_data_table_operations(
+            sheet_rect,
+            column_index,
+            sort_order,
+            cursor.to_owned(),
+        );
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
 }

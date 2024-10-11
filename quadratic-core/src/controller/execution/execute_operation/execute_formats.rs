@@ -86,7 +86,7 @@ impl GridController {
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
-                        self.add_dirty_hashes_from_sheet_rect(transaction, sheet_rect);
+                        transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
                         if matches!(
                             attr,
                             CellFmtArray::Wrap(_)

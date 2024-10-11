@@ -99,7 +99,7 @@ class RenderWebWorker {
     this.send(message);
   }
 
-  updateSheetOffsetsTransient(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
+  updateSheetOffsetsTransient(sheetId: string, column: number | null, row: number | null, delta: number) {
     this.send({
       type: 'clientRenderSheetOffsetsTransient',
       sheetId,

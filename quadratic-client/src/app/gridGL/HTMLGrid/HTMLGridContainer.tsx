@@ -7,12 +7,14 @@ import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { HoverTooltip } from '@/app/gridGL/HTMLGrid/hoverTooltip/HoverTooltip';
 import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
 import { InlineEditor } from '@/app/gridGL/HTMLGrid/inlineEditor/InlineEditor';
-import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
+import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MultiplayerCursors';
 import { MultiplayerCellEdits } from '@/app/gridGL/HTMLGrid/multiplayerInput/MultiplayerCellEdits';
 import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { HtmlValidations } from '@/app/gridGL/HTMLGrid/validations/HtmlValidations';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Following } from '@/app/ui/components/Following';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { SuggestionDropDown } from './SuggestionDropdown';
 
 interface Props {
   parent?: HTMLDivElement;
@@ -111,10 +113,13 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
               <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
               <HtmlValidations />
               <Annotations />
+              <SuggestionDropDown />
             </div>
           </div>
         </div>
       </div>
+
+      <Following />
 
       {/* This is positioned on the grid over the headings and not zoomed. It comes
           after the above, so it's above it on the grid. */}

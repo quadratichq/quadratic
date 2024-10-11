@@ -12,9 +12,10 @@ pub mod borders_get;
 pub mod borders_render;
 pub mod borders_set;
 pub mod borders_style;
-
 #[cfg(test)]
 pub mod borders_test;
+pub mod borders_toggle;
+pub(crate) mod sides;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Borders {

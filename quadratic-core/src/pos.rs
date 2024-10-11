@@ -4,6 +4,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
+use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -100,6 +101,7 @@ impl fmt::Display for Pos {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, ts_rs::TS)]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct ScreenRect {
     pub x: f64,
     pub y: f64,

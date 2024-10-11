@@ -16,20 +16,21 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
         CellValue::Code(cell_code) => current::CellValueSchema::Code(current::CodeCellSchema {
             code: cell_code.code,
             language: match cell_code.language {
-                CodeCellLanguage::Python => current::CodeCellLanguageSchema::Python,
-                CodeCellLanguage::Formula => current::CodeCellLanguageSchema::Formula,
-                CodeCellLanguage::Javascript => current::CodeCellLanguageSchema::Javascript,
+                CodeCellLanguage::Python => current::CodeCellLanguage::Python,
+                CodeCellLanguage::Formula => current::CodeCellLanguage::Formula,
+                CodeCellLanguage::Javascript => current::CodeCellLanguage::Javascript,
                 CodeCellLanguage::Connection { kind, id } => {
-                    current::CodeCellLanguageSchema::Connection {
+                    current::CodeCellLanguage::Connection {
                         kind: match kind {
                             ConnectionKind::Postgres => current::ConnectionKindSchema::Postgres,
                             ConnectionKind::Mysql => current::ConnectionKindSchema::Mysql,
                             ConnectionKind::Mssql => current::ConnectionKindSchema::Mssql,
+                            ConnectionKind::Snowflake => current::ConnectionKindSchema::Snowflake,
                         },
                         id,
                     }
                 }
-                CodeCellLanguage::Import => current::CodeCellLanguageSchema::Import,
+                CodeCellLanguage::Import => current::CodeCellLanguage::Import,
             },
         }),
         CellValue::Logical(logical) => current::CellValueSchema::Logical(logical),
@@ -69,20 +70,21 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::Code(code_cell) => CellValue::Code(CodeCellValue {
             code: code_cell.code,
             language: match code_cell.language {
-                current::CodeCellLanguageSchema::Python => CodeCellLanguage::Python,
-                current::CodeCellLanguageSchema::Formula => CodeCellLanguage::Formula,
-                current::CodeCellLanguageSchema::Javascript => CodeCellLanguage::Javascript,
-                current::CodeCellLanguageSchema::Connection { kind, id } => {
+                current::CodeCellLanguage::Python => CodeCellLanguage::Python,
+                current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
+                current::CodeCellLanguage::Javascript => CodeCellLanguage::Javascript,
+                current::CodeCellLanguage::Connection { kind, id } => {
                     CodeCellLanguage::Connection {
                         kind: match kind {
                             current::ConnectionKindSchema::Postgres => ConnectionKind::Postgres,
                             current::ConnectionKindSchema::Mysql => ConnectionKind::Mysql,
                             current::ConnectionKindSchema::Mssql => ConnectionKind::Mssql,
+                            current::ConnectionKindSchema::Snowflake => ConnectionKind::Snowflake,
                         },
                         id,
                     }
                 }
-                current::CodeCellLanguageSchema::Import => CodeCellLanguage::Import,
+                current::CodeCellLanguage::Import => CodeCellLanguage::Import,
             },
         }),
         current::CellValueSchema::Logical(logical) => CellValue::Logical(logical),

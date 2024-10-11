@@ -12,17 +12,17 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Link } from '@/app/gridGL/types/links';
+import { JsValidationWarning } from '@/app/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
+import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 import { CellsSheet, ErrorMarker, ErrorValidation } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
-import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -167,9 +167,9 @@ export class CellsLabels extends Container {
   // adjust headings for all cellsTextHashes impacted by headings changed except
   // for the CellsTextHash that needs to be resized (that will be handled by the
   // renderWebWorker)
-  adjustHeadings(column: number | undefined, row: number | undefined, delta: number) {
-    const hashX = column !== undefined ? Math.floor(column / sheetHashWidth) : undefined;
-    const hashY = row !== undefined ? Math.floor(row / sheetHashHeight) : undefined;
+  adjustHeadings(column: number | null, row: number | null, delta: number) {
+    const hashX = column !== null ? Math.floor(column / sheetHashWidth) : undefined;
+    const hashY = row !== null ? Math.floor(row / sheetHashHeight) : undefined;
     this.cellsTextHashes.children.forEach((cellsTextHash) => {
       cellsTextHash.adjust(hashX, hashY, delta);
     });

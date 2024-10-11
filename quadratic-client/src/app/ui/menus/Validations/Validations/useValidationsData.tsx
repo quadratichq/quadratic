@@ -1,5 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Validation } from '@/app/quadratic-core-types';
@@ -15,7 +15,7 @@ export interface ValidationsData {
 }
 
 export const useValidationsData = (): ValidationsData => {
-  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const readOnly = !hasPermissionToEditFile(permissions);
 
   const [sheetId, setSheetId] = useState(sheets.sheet.id);

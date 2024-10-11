@@ -17,7 +17,7 @@ pub(crate) fn import_run_error_msg_builder(
     run_error_msg: current::RunErrorMsgSchema,
 ) -> Result<RunErrorMsg> {
     let run_error_msg = match run_error_msg {
-        current::RunErrorMsgSchema::PythonError(msg) => RunErrorMsg::PythonError(msg),
+        current::RunErrorMsgSchema::CodeRunError(msg) => RunErrorMsg::CodeRunError(msg),
         current::RunErrorMsgSchema::Unexpected(msg) => RunErrorMsg::Unexpected(msg),
         current::RunErrorMsgSchema::Spill => RunErrorMsg::Spill,
         current::RunErrorMsgSchema::Unimplemented(msg) => RunErrorMsg::Unimplemented(msg),
@@ -187,7 +187,7 @@ pub(crate) fn import_data_table_builder(
 
 pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {
     match run_error_msg {
-        RunErrorMsg::PythonError(msg) => current::RunErrorMsgSchema::PythonError(msg),
+        RunErrorMsg::CodeRunError(msg) => current::RunErrorMsgSchema::CodeRunError(msg),
         RunErrorMsg::Unexpected(msg) => current::RunErrorMsgSchema::Unexpected(msg),
         RunErrorMsg::Spill => current::RunErrorMsgSchema::Spill,
         RunErrorMsg::Unimplemented(msg) => current::RunErrorMsgSchema::Unimplemented(msg),
@@ -228,8 +228,14 @@ pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunEr
         RunErrorMsg::NaN => current::RunErrorMsgSchema::NaN,
         RunErrorMsg::ExactArraySizeMismatch { expected, got } => {
             current::RunErrorMsgSchema::ExactArraySizeMismatch {
-                expected: (expected.w, expected.h).into(),
-                got: (got.w, got.h).into(),
+                expected: current::OutputSizeSchema {
+                    w: expected.w.get() as i64,
+                    h: expected.h.get() as i64,
+                },
+                got: current::OutputSizeSchema {
+                    w: got.w.get() as i64,
+                    h: got.h.get() as i64,
+                },
             }
         }
         RunErrorMsg::ExactArrayAxisMismatch {

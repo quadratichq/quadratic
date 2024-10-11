@@ -1134,7 +1134,7 @@ mod tests {
     fn render_bool_on_code_run() {
         clear_js_calls();
 
-        let mut gc = GridController::test();
+        let mut gc = GridController::test_with_viewport_buffer();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(

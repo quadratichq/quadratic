@@ -6,7 +6,7 @@ use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
 
-const F64_DECIMAL_PRECISION: u64 = 16; // just enough to not lose information
+const F64_DECIMAL_PRECISION: u64 = 14; // just enough to not lose information
 
 /*
  * CONVERSIONS (specific type -> Value)
@@ -319,10 +319,7 @@ where
 
 impl<'a> CoerceInto for Spanned<&'a CellValue> {
     fn into_non_error_value(self) -> CodeResult<&'a CellValue> {
-        match self.inner {
-            CellValue::Error(e) => Err((**e).clone()),
-            other => Ok(other),
-        }
+        self.inner.as_non_error_value()
     }
 }
 impl CoerceInto for Spanned<CellValue> {

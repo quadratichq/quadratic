@@ -4,8 +4,6 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
-use std::cmp::Ordering;
-
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::{
@@ -224,8 +222,8 @@ impl DataTable {
             .col(column_index)
             .enumerate()
             .sorted_by(|a, b| match direction {
-                SortDirection::Ascending => a.1.cmp(b.1).unwrap_or(Ordering::Equal),
-                SortDirection::Descending => b.1.cmp(a.1).unwrap_or(Ordering::Equal),
+                SortDirection::Ascending => a.1.total_cmp(b.1),
+                SortDirection::Descending => b.1.total_cmp(a.1),
             })
             .map(|(i, _)| i as u64)
             .collect::<Vec<u64>>();

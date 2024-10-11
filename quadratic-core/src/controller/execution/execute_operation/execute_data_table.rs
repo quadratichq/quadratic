@@ -3,8 +3,7 @@ use crate::{
     cellvalue::Import,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
-        operations::{data_table, operation::Operation},
-        GridController,
+        operations::operation::Operation, GridController,
     },
     grid::DataTable,
     ArraySize, CellValue, Pos, Rect, SheetRect,
@@ -20,7 +19,7 @@ impl GridController {
     ) -> Result<()> {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             self.send_updated_bounds_rect(&sheet_rect, false);
-            self.add_dirty_hashes_from_sheet_rect(transaction, *sheet_rect);
+            transaction.add_dirty_hashes_from_sheet_rect(*sheet_rect);
 
             if transaction.is_user() {
                 let sheet = self.try_sheet_result(sheet_rect.sheet_id)?;
@@ -284,54 +283,54 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::SortDataTable {
-            sheet_rect,
-            column_index,
-            sort_order,
-        } = op
-        {
-            // let sheet_id = sheet_pos.sheet_id;
-            // let pos = Pos::from(sheet_pos);
-            // let sheet = self.try_sheet_mut_result(sheet_id)?;
-            // let data_table_pos = sheet.first_data_table_within(pos)?;
-            // let mut data_table = sheet.data_table_mut(data_table_pos)?;
+        // if let Operation::SortDataTable {
+        //     sheet_rect,
+        //     column_index,
+        //     sort_order,
+        // } = op
+        // {
+        //     // let sheet_id = sheet_pos.sheet_id;
+        //     // let pos = Pos::from(sheet_pos);
+        //     // let sheet = self.try_sheet_mut_result(sheet_id)?;
+        //     // let data_table_pos = sheet.first_data_table_within(pos)?;
+        //     // let mut data_table = sheet.data_table_mut(data_table_pos)?;
 
-            // let sort_order = match sort_order.as_str() {
-            //     "asc" => SortOrder::Asc,
-            //     "desc" => SortOrder::Desc,
-            //     _ => bail!("Invalid sort order"),
-            // };
+        //     // let sort_order = match sort_order.as_str() {
+        //     //     "asc" => SortOrder::Asc,
+        //     //     "desc" => SortOrder::Desc,
+        //     //     _ => bail!("Invalid sort order"),
+        //     // };
 
-            // data_table.sort(column_index, sort_order);
+        //     // data_table.sort(column_index, sort_order);
 
-            // self.send_to_wasm(transaction, &sheet_rect)?;
+        //     // self.send_to_wasm(transaction, &sheet_rect)?;
 
-            // let forward_operations = vec![
-            //     Operation::SetCellValues {
-            //         sheet_pos,
-            //         values: CellValues::from(CellValue::Import(import)),
-            //     },
-            //     Operation::SetCodeRun {
-            //         sheet_pos,
-            //         code_run: Some(data_table),
-            //         index: 0,
-            //     },
-            // ];
+        //     // let forward_operations = vec![
+        //     //     Operation::SetCellValues {
+        //     //         sheet_pos,
+        //     //         values: CellValues::from(CellValue::Import(import)),
+        //     //     },
+        //     //     Operation::SetCodeRun {
+        //     //         sheet_pos,
+        //     //         code_run: Some(data_table),
+        //     //         index: 0,
+        //     //     },
+        //     // ];
 
-            // let reverse_operations = vec![Operation::SetCellValues {
-            //     sheet_pos,
-            //     values: CellValues::from(old_values),
-            // }];
+        //     // let reverse_operations = vec![Operation::SetCellValues {
+        //     //     sheet_pos,
+        //     //     values: CellValues::from(old_values),
+        //     // }];
 
-            // self.data_table_operations(
-            //     transaction,
-            //     &sheet_rect,
-            //     forward_operations,
-            //     reverse_operations,
-            // );
+        //     // self.data_table_operations(
+        //     //     transaction,
+        //     //     &sheet_rect,
+        //     //     forward_operations,
+        //     //     reverse_operations,
+        //     // );
 
-            return Ok(());
-        };
+        //     return Ok(());
+        // };
 
         bail!("Expected Operation::GridToDataTable in execute_grid_to_data_table");
     }

@@ -83,9 +83,7 @@ impl GridController {
             transaction.add_from_code_run(sheet_id, pos, &new_data_table);
 
             self.send_updated_bounds_rect(&sheet_rect, false);
-
-            self.add_dirty_hashes_from_sheet_rect(transaction, sheet_rect);
-
+            transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
             if transaction.is_user() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
@@ -255,7 +253,7 @@ impl GridController {
                 formatted_code_string: None,
                 error: Some(RunError {
                     span: None,
-                    msg: RunErrorMsg::PythonError(
+                    msg: RunErrorMsg::CodeRunError(
                         "Sheet was deleted before the async operation completed".into(),
                     ),
                 }),
@@ -305,7 +303,7 @@ impl GridController {
                 .std_err
                 .clone()
                 .unwrap_or_else(|| "Unknown Error".into());
-            let msg = RunErrorMsg::PythonError(error_msg.into());
+            let msg = RunErrorMsg::CodeRunError(error_msg.into());
             let span = js_code_result.line_number.map(|line_number| Span {
                 start: line_number,
                 end: line_number,

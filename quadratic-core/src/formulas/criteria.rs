@@ -27,22 +27,7 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
     type Error = RunError;
 
     fn try_from(value: Spanned<&CellValue>) -> Result<Self, Self::Error> {
-        match &value.inner {
-            CellValue::Blank
-            | CellValue::Number(_)
-            | CellValue::Html(_)
-            | CellValue::Code(_)
-            | CellValue::Import(_)
-            | CellValue::Logical(_)
-            | CellValue::Instant(_)
-            | CellValue::Date(_)
-            | CellValue::Time(_)
-            | CellValue::DateTime(_)
-            | CellValue::Image(_)
-            | CellValue::Duration(_) => Ok(Criterion::Compare {
-                compare_fn: CompareFn::Eql,
-                rhs: value.inner.clone(),
-            }),
+        match &value.inner.as_non_error_value()? {
             CellValue::Text(s) => {
                 let (compare_fn, rhs_string) =
                     strip_compare_fn_prefix(s).unwrap_or((CompareFn::Eql, s));
@@ -64,7 +49,11 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
 
                 Ok(Criterion::Compare { compare_fn, rhs })
             }
-            CellValue::Error(e) => Err((**e).clone()),
+
+            _ => Ok(Criterion::Compare {
+                compare_fn: CompareFn::Eql,
+                rhs: value.inner.clone(),
+            }),
         }
     }
 }

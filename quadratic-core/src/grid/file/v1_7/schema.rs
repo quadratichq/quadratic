@@ -25,7 +25,6 @@ pub type OutputSizeSchema = v1_6::OutputSize;
 pub type OutputValueValueSchema = v1_6::OutputValueValue;
 pub type NumericFormatKindSchema = v1_6::NumericFormatKind;
 pub type NumericFormatSchema = v1_6::NumericFormat;
-pub type CodeCellLanguageSchema = v1_6::CodeCellLanguage;
 pub type ConnectionKindSchema = v1_6::ConnectionKind;
 pub type CodeCellSchema = v1_6::CodeCell;
 pub type CellAlignSchema = v1_6::CellAlign;
@@ -93,6 +92,11 @@ pub struct OutputArraySchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Import {
+    pub file_name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CellValueSchema {
     Blank,
     Text(String),
@@ -107,6 +111,7 @@ pub enum CellValueSchema {
     Duration(String),
     Error(RunErrorSchema),
     Image(String),
+    Import(Import),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

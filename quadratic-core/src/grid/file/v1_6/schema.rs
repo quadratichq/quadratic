@@ -219,11 +219,6 @@ pub struct Column {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Import {
-    pub file_name: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CellValue {
     Blank,
     Text(String),
@@ -238,7 +233,6 @@ pub enum CellValue {
     Duration(String),
     Error(RunError),
     Image(String),
-    Import(Import),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -278,6 +272,7 @@ pub enum ConnectionKind {
     Postgres,
     Mysql,
     Mssql,
+    Snowflake,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -1,19 +1,18 @@
-import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
+import { ResizeControl } from '@/app/ui/components/ResizeControl';
+import { AIAssistant } from '@/app/ui/menus/AIAssistant/AIAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
-import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
-import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ResizeControl } from './ResizeControl';
 
-interface Props {
-  codeEditorPanelData: CodeEditorPanelData;
+interface CodeEditorPanelSideProps {
+  codeEditorRef: React.RefObject<HTMLDivElement>;
   schemaBrowser: React.ReactNode | undefined;
-  showAiAssistant: boolean;
+  showAIAssistant: boolean;
 }
 
-export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditorPanelData }: Props) {
-  const container = useCodeEditorContainer();
+export function CodeEditorPanelSide({ codeEditorRef, schemaBrowser, showAIAssistant }: CodeEditorPanelSideProps) {
+  const codeEditorPanelData = useCodeEditorPanelData();
   const minimizedSize = useMemo(() => {
     const minimizedSize = calculatePanelBoxMinimizedSize();
     return minimizedSize;
@@ -21,10 +20,10 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
 
   const [containerHeight, setContainerHeight] = useState(0);
   useEffect(() => {
-    if (container) {
-      setContainerHeight(container.getBoundingClientRect().height);
+    if (codeEditorRef.current) {
+      setContainerHeight(codeEditorRef.current.getBoundingClientRect().height);
     }
-  }, [container]);
+  }, [codeEditorRef]);
 
   const { panels, leftOverPercentage, adjustedContainerHeight } = useMemo(() => {
     let leftOverPercentage = 0;
@@ -64,12 +63,12 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
   // changes resize bar when dragging
   const changeResizeBar = useCallback(
     (e: MouseEvent, first: boolean) => {
-      if (!container) return;
+      if (!codeEditorRef.current) return;
 
       e.stopPropagation();
       e.preventDefault();
 
-      const containerRect = container.getBoundingClientRect();
+      const containerRect = codeEditorRef.current.getBoundingClientRect();
 
       // need to adjust the heights based on hidden content
       let containerHeight = containerRect.height;
@@ -103,7 +102,7 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
         }
       }
     },
-    [adjustedContainerHeight, codeEditorPanelData, container, leftOverPercentage, panels]
+    [adjustedContainerHeight, codeEditorPanelData, codeEditorRef, leftOverPercentage, panels]
   );
 
   return (
@@ -117,7 +116,7 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
       >
         <Console />
       </PanelBox>
-      {showAiAssistant && (
+      {showAIAssistant && (
         <>
           <ResizeControl
             style={{ top: panels[0].height }}
@@ -132,7 +131,7 @@ export function CodeEditorPanelSide({ schemaBrowser, showAiAssistant, codeEditor
             toggleOpen={panels[1].toggleOpen}
             height={panels[1].height}
           >
-            <AiAssistant />
+            <AIAssistant />
           </PanelBox>
         </>
       )}

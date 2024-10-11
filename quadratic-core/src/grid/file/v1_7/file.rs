@@ -1,193 +1,38 @@
 use anyhow::Result;
 
-use super::schema::{self as current};
-use crate::{
-    color::Rgba,
-    grid::{
-        file::{
-            serialize::borders::export_borders,
-            v1_8::schema::{self as v1_8},
-        },
-        sheet::borders::{BorderStyle, Borders, CellBorderLine},
-    },
+use crate::grid::file::{
+    v1_7::schema::{self as v1_7},
+    v1_8::schema::{self as v1_8},
 };
 
-// index for old borders enum
-// enum CellSide {
-//     Left = 0,
-//     Top = 1,
-//     Right = 2,
-//     Bottom = 3,
-// }
-
-fn upgrade_borders(borders: current::Borders) -> Result<v1_8::BordersSchema> {
-    fn convert_border_style(border_style: current::CellBorder) -> Result<BorderStyle> {
-        let mut color = Rgba::color_from_str(&border_style.color)?;
-
-        // the alpha was set incorrectly to 1; should be 255
-        color.alpha = 255;
-
-        let line = match border_style.line.as_str() {
-            "line1" => CellBorderLine::Line1,
-            "line2" => CellBorderLine::Line2,
-            "line3" => CellBorderLine::Line3,
-            "dotted" => CellBorderLine::Dotted,
-            "dashed" => CellBorderLine::Dashed,
-            "double" => CellBorderLine::Double,
-            _ => return Err(anyhow::anyhow!("Invalid border line style")),
-        };
-        Ok(BorderStyle { color, line })
+fn convert_cell_value(cell_value: v1_7::CellValueSchema) -> v1_8::CellValueSchema {
+    match cell_value {
+        v1_7::CellValueSchema::Blank => v1_8::CellValueSchema::Blank,
+        v1_7::CellValueSchema::Text(str) => v1_8::CellValueSchema::Text(str),
+        v1_7::CellValueSchema::Number(str) => v1_8::CellValueSchema::Number(str),
+        v1_7::CellValueSchema::Html(str) => v1_8::CellValueSchema::Html(str),
+        v1_7::CellValueSchema::Code(code_cell) => v1_8::CellValueSchema::Code(code_cell),
+        v1_7::CellValueSchema::Logical(bool) => v1_8::CellValueSchema::Logical(bool),
+        v1_7::CellValueSchema::Instant(str) => v1_8::CellValueSchema::Instant(str),
+        v1_7::CellValueSchema::Date(date) => v1_8::CellValueSchema::Date(date),
+        v1_7::CellValueSchema::Time(time) => v1_8::CellValueSchema::Time(time),
+        v1_7::CellValueSchema::DateTime(datetime) => v1_8::CellValueSchema::DateTime(datetime),
+        v1_7::CellValueSchema::Duration(str) => v1_8::CellValueSchema::Duration(str),
+        v1_7::CellValueSchema::Error(run_error) => v1_8::CellValueSchema::Error(run_error),
+        v1_7::CellValueSchema::Image(str) => v1_8::CellValueSchema::Image(str),
+        v1_7::CellValueSchema::Import(str) => v1_8::CellValueSchema::Import(str),
     }
-
-    let mut borders_new = Borders::default();
-    for (col_id, sheet_borders) in borders {
-        if sheet_borders.is_empty() {
-            continue;
-        }
-        let col: i64 = col_id
-            .parse::<i64>()
-            .expect("Failed to parse col_id as i64");
-        for (row, mut row_borders) in sheet_borders {
-            if let Some(left_old) = row_borders[0].take() {
-                if let Ok(style) = convert_border_style(left_old) {
-                    borders_new.set(col, row, None, None, Some(style), None);
-                }
-            }
-            if let Some(right_old) = row_borders[2].take() {
-                if let Ok(style) = convert_border_style(right_old) {
-                    borders_new.set(col, row, None, None, None, Some(style));
-                }
-            }
-            if let Some(top_old) = row_borders[1].take() {
-                if let Ok(style) = convert_border_style(top_old) {
-                    borders_new.set(col, row, Some(style), None, None, None);
-                }
-            }
-            if let Some(bottom_old) = row_borders[3].take() {
-                if let Ok(style) = convert_border_style(bottom_old) {
-                    borders_new.set(col, row, None, Some(style), None, None);
-                }
-            }
-        }
-    }
-
-    let borders = export_borders(borders_new);
-    Ok(borders)
 }
 
 fn upgrade_code_runs(
-    sheet: current::Sheet,
+    code_runs: Vec<(v1_7::PosSchema, v1_7::CodeRunSchema)>,
 ) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
-    sheet
-        .code_runs
+    code_runs
         .into_iter()
         .enumerate()
         .map(|(i, (pos, code_run))| {
-            let error = if let current::CodeRunResult::Err(error) = &code_run.result {
-                let new_error_msg = match error.msg.to_owned() {
-                    current::RunErrorMsg::PythonError(msg) => {
-                        v1_8::RunErrorMsgSchema::PythonError(msg)
-                    }
-                    current::RunErrorMsg::Unexpected(msg) => {
-                        v1_8::RunErrorMsgSchema::Unexpected(msg)
-                    }
-                    current::RunErrorMsg::Spill => v1_8::RunErrorMsgSchema::Spill,
-                    current::RunErrorMsg::Unimplemented(msg) => {
-                        v1_8::RunErrorMsgSchema::Unimplemented(msg)
-                    }
-                    current::RunErrorMsg::UnknownError => v1_8::RunErrorMsgSchema::UnknownError,
-                    current::RunErrorMsg::InternalError(msg) => {
-                        v1_8::RunErrorMsgSchema::InternalError(msg)
-                    }
-                    current::RunErrorMsg::Unterminated(msg) => {
-                        v1_8::RunErrorMsgSchema::Unterminated(msg)
-                    }
-                    current::RunErrorMsg::Expected { expected, got } => {
-                        v1_8::RunErrorMsgSchema::Expected { expected, got }
-                    }
-                    current::RunErrorMsg::TooManyArguments {
-                        func_name,
-                        max_arg_count,
-                    } => v1_8::RunErrorMsgSchema::TooManyArguments {
-                        func_name,
-                        max_arg_count,
-                    },
-                    current::RunErrorMsg::MissingRequiredArgument {
-                        func_name,
-                        arg_name,
-                    } => v1_8::RunErrorMsgSchema::MissingRequiredArgument {
-                        func_name,
-                        arg_name,
-                    },
-                    current::RunErrorMsg::BadFunctionName => {
-                        v1_8::RunErrorMsgSchema::BadFunctionName
-                    }
-                    current::RunErrorMsg::BadCellReference => {
-                        v1_8::RunErrorMsgSchema::BadCellReference
-                    }
-                    current::RunErrorMsg::BadNumber => v1_8::RunErrorMsgSchema::BadNumber,
-                    current::RunErrorMsg::BadOp {
-                        op,
-                        ty1,
-                        ty2,
-                        use_duration_instead,
-                    } => v1_8::RunErrorMsgSchema::BadOp {
-                        op,
-                        ty1,
-                        ty2,
-                        use_duration_instead,
-                    },
-                    current::RunErrorMsg::NaN => v1_8::RunErrorMsgSchema::NaN,
-                    current::RunErrorMsg::ExactArraySizeMismatch { expected, got } => {
-                        v1_8::RunErrorMsgSchema::ExactArraySizeMismatch { expected, got }
-                    }
-                    current::RunErrorMsg::ExactArrayAxisMismatch {
-                        axis,
-                        expected,
-                        got,
-                    } => v1_8::RunErrorMsgSchema::ExactArrayAxisMismatch {
-                        axis,
-                        expected,
-                        got,
-                    },
-                    current::RunErrorMsg::ArrayAxisMismatch {
-                        axis,
-                        expected,
-                        got,
-                    } => v1_8::RunErrorMsgSchema::ArrayAxisMismatch {
-                        axis,
-                        expected,
-                        got,
-                    },
-                    current::RunErrorMsg::EmptyArray => v1_8::RunErrorMsgSchema::EmptyArray,
-                    current::RunErrorMsg::NonRectangularArray => {
-                        v1_8::RunErrorMsgSchema::NonRectangularArray
-                    }
-                    current::RunErrorMsg::NonLinearArray => v1_8::RunErrorMsgSchema::NonLinearArray,
-                    current::RunErrorMsg::ArrayTooBig => v1_8::RunErrorMsgSchema::ArrayTooBig,
-                    current::RunErrorMsg::CircularReference => {
-                        v1_8::RunErrorMsgSchema::CircularReference
-                    }
-                    current::RunErrorMsg::Overflow => v1_8::RunErrorMsgSchema::Overflow,
-                    current::RunErrorMsg::DivideByZero => v1_8::RunErrorMsgSchema::DivideByZero,
-                    current::RunErrorMsg::NegativeExponent => {
-                        v1_8::RunErrorMsgSchema::NegativeExponent
-                    }
-                    current::RunErrorMsg::NotANumber => v1_8::RunErrorMsgSchema::NotANumber,
-                    current::RunErrorMsg::Infinity => v1_8::RunErrorMsgSchema::Infinity,
-                    current::RunErrorMsg::IndexOutOfBounds => {
-                        v1_8::RunErrorMsgSchema::IndexOutOfBounds
-                    }
-                    current::RunErrorMsg::NoMatch => v1_8::RunErrorMsgSchema::NoMatch,
-                    current::RunErrorMsg::InvalidArgument => {
-                        v1_8::RunErrorMsgSchema::InvalidArgument
-                    }
-                };
-                let new_error = v1_8::RunErrorSchema {
-                    span: None,
-                    msg: new_error_msg,
-                };
-                Some(new_error)
+            let error = if let v1_7::CodeRunResultSchema::Err(error) = &code_run.result {
+                Some(error.to_owned())
             } else {
                 None
             };
@@ -201,8 +46,21 @@ fn upgrade_code_runs(
                 line_number: code_run.line_number,
                 output_type: code_run.output_type,
             };
-            let value = if let current::CodeRunResult::Ok(value) = &code_run.result {
-                value.to_owned()
+            let value = if let v1_7::CodeRunResultSchema::Ok(value) = &code_run.result {
+                match value.to_owned() {
+                    v1_7::OutputValueSchema::Single(cell_value) => {
+                        v1_8::OutputValueSchema::Single(cell_value)
+                    }
+                    v1_7::OutputValueSchema::Array(array) => {
+                        v1_8::OutputValueSchema::Array(v1_8::OutputArraySchema {
+                            size: v1_8::OutputSizeSchema {
+                                w: array.size.w,
+                                h: array.size.h,
+                            },
+                            values: array.values,
+                        })
+                    }
+                }
             } else {
                 v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank)
             };
@@ -221,10 +79,7 @@ fn upgrade_code_runs(
         .collect::<Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>>>()
 }
 
-pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_8::SheetSchema> {
-    let data_tables = upgrade_code_runs(sheet.clone())?;
-    let borders = upgrade_borders(sheet.borders.clone())?;
-
+pub fn upgrade_sheet(sheet: v1_7::SheetSchema) -> Result<v1_8::SheetSchema> {
     Ok(v1_8::SheetSchema {
         id: sheet.id,
         name: sheet.name,
@@ -232,19 +87,19 @@ pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_8::SheetSchema> {
         order: sheet.order,
         offsets: sheet.offsets,
         columns: sheet.columns,
-        data_tables,
+        data_tables: upgrade_code_runs(sheet.code_runs)?,
         formats_all: sheet.formats_all,
         formats_columns: sheet.formats_columns,
         formats_rows: sheet.formats_rows,
         rows_resize: sheet.rows_resize,
         validations: sheet.validations,
-        borders,
+        borders: sheet.borders,
     })
 }
 
-pub fn upgrade(grid: current::GridSchema) -> Result<v1_8::GridSchema> {
+pub fn upgrade(grid: v1_7::GridSchema) -> Result<v1_8::GridSchema> {
     let new_grid = v1_8::GridSchema {
-        version: Some("1.8".to_string()),
+        version: Some("1.7".to_string()),
         sheets: grid
             .sheets
             .into_iter()
@@ -258,11 +113,13 @@ pub fn upgrade(grid: current::GridSchema) -> Result<v1_8::GridSchema> {
 mod tests {
     use serial_test::parallel;
 
-    use super::*;
-
     use crate::{
+        color::Rgba,
         controller::GridController,
-        grid::file::{export, import},
+        grid::{
+            file::{export, import},
+            CellBorderLine,
+        },
     };
 
     const V1_5_FILE: &[u8] =

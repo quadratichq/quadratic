@@ -54,8 +54,9 @@ class InlineEditorKeyboard {
   private handleArrowVertical = async (isDown: boolean, e: KeyboardEvent) => {
     // if dropdown is showing, then we let dropdown handle the vertical arrow keys
     if (pixiAppSettings.editorInteractionState.annotationState === 'dropdown') {
-      keyboardDropdown(e, pixiAppSettings.editorInteractionState);
+      keyboardDropdown(e);
       e.stopPropagation();
+      e.preventDefault();
       return;
     }
 
@@ -116,6 +117,16 @@ class InlineEditorKeyboard {
   // when on a different sheet, via window's keyDown listener).
   keyDown = async (e: KeyboardEvent) => {
     events.emit('hoverCell');
+
+    if (
+      inlineEditorMonaco.autocompleteShowingList &&
+      ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(e.key)
+    ) {
+      events.emit('suggestionDropdownKeyboard', e.key as 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab');
+      e.preventDefault();
+      return;
+    }
+
     if (inlineEditorHandler.cursorIsMoving) {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {
@@ -132,6 +143,11 @@ class InlineEditorKeyboard {
       } else {
         inlineEditorHandler.close(0, 0, true);
       }
+    }
+
+    // Space key
+    else if (matchShortcut(Action.GridPanMode, e)) {
+      e.stopPropagation();
     }
 
     // Enter key
@@ -153,10 +169,14 @@ class InlineEditorKeyboard {
 
     // Tab key
     else if (matchShortcut(Action.SaveInlineEditorMoveRight, e)) {
-      e.stopPropagation();
-      e.preventDefault();
-      if (!(await this.handleValidationError())) {
-        inlineEditorHandler.close(1, 0, false);
+      if (inlineEditorMonaco.autocompleteSuggestionShowing) {
+        inlineEditorMonaco.autocompleteSuggestionShowing = false;
+      } else {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close(1, 0, false);
+        }
       }
     }
 
@@ -296,10 +316,27 @@ class InlineEditorKeyboard {
       pixiAppSettings.setEditorInteractionState?.({
         ...pixiAppSettings.editorInteractionState,
         showCellTypeMenu: true,
-        selectedCell: { x: cursor.x, y: cursor.y },
-        selectedCellSheet: sheets.sheet.id,
       });
+      pixiAppSettings.setCodeEditorState?.({
+        ...pixiAppSettings.codeEditorState,
+        initialCode: '',
+        codeCell: {
+          sheetId: sheets.current,
+          pos: { x: cursor.x, y: cursor.y },
+          language: pixiAppSettings.codeEditorState.codeCell.language,
+        },
+      });
+    } else if (matchShortcut(Action.InsertToday, e)) {
+      const today = new Date();
+      // todo: this should be based on locale (maybe?)
+      const formattedDate = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+      inlineEditorMonaco.insertTextAtCursor(formattedDate);
+    } else if (matchShortcut(Action.InsertTodayTime, e)) {
+      const today = new Date();
+      const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+      inlineEditorMonaco.insertTextAtCursor(formattedTime);
     }
+
     // Fallback for all other keys (used to end cursorIsMoving and return
     // control to the formula box)
     else {
