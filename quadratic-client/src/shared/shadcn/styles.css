@@ -79,6 +79,10 @@
   }
 }
 
+::selection {
+  background-color: hsl(var(--primary) / 0.1);
+}
+
 /**
  * Themes
  */

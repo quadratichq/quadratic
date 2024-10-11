@@ -122,7 +122,7 @@ const useAccentColor = () => {
 
   useEffect(() => {
     // Set the current theme color via CSS
-    document.documentElement.setAttribute('data-theme', accentColor);
+    // document.documentElement.setAttribute('data-theme', accentColor);
 
     // Then figure out what that color is and set it in pixi
     // e.g. "200 10% 50%"
@@ -131,6 +131,8 @@ const useAccentColor = () => {
     const [h, s, l] = primaryColorHslString.split(' ').map((val) => Number(val.replace('%', '')));
     // [200, 10, 50] -> `#c81a7f`
     const hex = hslToHex(h, s, l).replace('#', '');
+
+    // REPLACE WITH GLOBAL EVENT CALL
     pixiApp.setAccentColor(hex);
   }, [accentColor]);
 

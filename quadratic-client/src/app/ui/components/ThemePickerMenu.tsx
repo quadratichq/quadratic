@@ -1,16 +1,22 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
+import { themeAccentColorAtom } from '@/shared/atoms/themeAccentColor';
 import { useFeatureFlag } from '@/shared/components/FeatureFlags';
 import { ThemeIcon } from '@/shared/components/Icons';
 import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export const ThemePickerMenu = () => {
   const [featureFlagThemeAccentColor] = useFeatureFlag('themeAccentColor');
   const [featureFlagThemeAppearanceMode] = useFeatureFlag('themeAppearanceMode');
   const [showThemeMenu, setShowThemeMenu] = useState(false);
+
+  // Have to put this here to initialize the effect so the app themes correctly
+  // when it first loads, as the others are hidden behind a popover
+  useRecoilValue(themeAccentColorAtom);
 
   if (!(featureFlagThemeAccentColor || featureFlagThemeAppearanceMode)) {
     return null;

@@ -1,8 +1,10 @@
+import { featureFlagSelector } from '@/shared/atoms/featureFlags';
 import { useFeatureFlag, type FeatureFlagKey } from '@/shared/components/FeatureFlags';
 import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
+import { useRecoilState } from 'recoil';
 
 type LabProps = {
   featureFlagKey: FeatureFlagKey;
@@ -40,6 +42,7 @@ export function Labs() {
 
 function LabToggle({ featureFlagKey, label, description, Component }: LabProps) {
   const [isOn, setIsOn] = useFeatureFlag(featureFlagKey);
+  const [, setFlags] = useRecoilState(featureFlagSelector);
 
   return (
     <div className="space-y-3 rounded-lg border p-3 shadow-sm">
@@ -51,7 +54,14 @@ function LabToggle({ featureFlagKey, label, description, Component }: LabProps) 
           <p className="text-muted-foreground">{description}</p>
         </div>
 
-        <Switch id={featureFlagKey} checked={isOn} onCheckedChange={setIsOn} />
+        <Switch
+          id={featureFlagKey}
+          checked={isOn}
+          onCheckedChange={(checked) => {
+            setFlags((prev) => ({ themeAccentColor: checked }));
+            setIsOn(checked);
+          }}
+        />
       </div>
       {isOn && (
         <div className="flex gap-2 border-t border-border pt-3">
