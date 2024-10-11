@@ -2,7 +2,9 @@ import { aiResearcherRefCellAtom } from '@/app/atoms/aiResearcherAtom';
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
+import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
@@ -34,6 +36,15 @@ export const AIResearcherInsertCellRef = () => {
 
     setRefCell(`${sheet}${a1Notation}`);
   }, [codeCell.sheetId, setRefCell]);
+
+  useEffect(() => {
+    if (refCell) {
+      const parsed = parseFormula(refCell, codeCell.pos.x, codeCell.pos.y);
+      pixiApp.cellHighlights.fromFormula(parsed, codeCell.pos, codeCell.sheetId);
+    } else {
+      pixiApp.cellHighlights.clear();
+    }
+  }, [codeCell.pos, codeCell.sheetId, refCell]);
 
   const [disabled, setDisabled] = useState(true);
   useEffect(() => {
