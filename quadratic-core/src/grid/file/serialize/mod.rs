@@ -1,7 +1,7 @@
 use anyhow::Result;
 use sheets::{export_sheet, import_sheet};
 
-pub use crate::grid::file::v1_7::schema::{self as current};
+pub use crate::grid::file::v1_8::schema::{self as current};
 use crate::grid::Grid;
 
 use super::CURRENT_VERSION;

@@ -6,7 +6,6 @@ use crate::{
     grid::{
         file::{
             serialize::borders::export_borders,
-            v1_7::schema::{self as v1_7},
             v1_8::schema::{self as v1_8},
         },
         sheet::borders::{BorderStyle, Borders, CellBorderLine},
@@ -21,7 +20,7 @@ use crate::{
 //     Bottom = 3,
 // }
 
-fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
+fn upgrade_borders(borders: current::Borders) -> Result<v1_8::BordersSchema> {
     fn convert_border_style(border_style: current::CellBorder) -> Result<BorderStyle> {
         let mut color = Rgba::color_from_str(&border_style.color)?;
 
@@ -78,7 +77,7 @@ fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
 
 fn upgrade_code_runs(
     sheet: current::Sheet,
-) -> Result<Vec<(v1_7::PosSchema, v1_8::DataTableSchema)>> {
+) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
     sheet
         .code_runs
         .into_iter()
@@ -87,66 +86,66 @@ fn upgrade_code_runs(
             let error = if let current::CodeRunResult::Err(error) = &code_run.result {
                 let new_error_msg = match error.msg.to_owned() {
                     current::RunErrorMsg::PythonError(msg) => {
-                        v1_7::RunErrorMsgSchema::PythonError(msg)
+                        v1_8::RunErrorMsgSchema::PythonError(msg)
                     }
                     current::RunErrorMsg::Unexpected(msg) => {
-                        v1_7::RunErrorMsgSchema::Unexpected(msg)
+                        v1_8::RunErrorMsgSchema::Unexpected(msg)
                     }
-                    current::RunErrorMsg::Spill => v1_7::RunErrorMsgSchema::Spill,
+                    current::RunErrorMsg::Spill => v1_8::RunErrorMsgSchema::Spill,
                     current::RunErrorMsg::Unimplemented(msg) => {
-                        v1_7::RunErrorMsgSchema::Unimplemented(msg)
+                        v1_8::RunErrorMsgSchema::Unimplemented(msg)
                     }
-                    current::RunErrorMsg::UnknownError => v1_7::RunErrorMsgSchema::UnknownError,
+                    current::RunErrorMsg::UnknownError => v1_8::RunErrorMsgSchema::UnknownError,
                     current::RunErrorMsg::InternalError(msg) => {
-                        v1_7::RunErrorMsgSchema::InternalError(msg)
+                        v1_8::RunErrorMsgSchema::InternalError(msg)
                     }
                     current::RunErrorMsg::Unterminated(msg) => {
-                        v1_7::RunErrorMsgSchema::Unterminated(msg)
+                        v1_8::RunErrorMsgSchema::Unterminated(msg)
                     }
                     current::RunErrorMsg::Expected { expected, got } => {
-                        v1_7::RunErrorMsgSchema::Expected { expected, got }
+                        v1_8::RunErrorMsgSchema::Expected { expected, got }
                     }
                     current::RunErrorMsg::TooManyArguments {
                         func_name,
                         max_arg_count,
-                    } => v1_7::RunErrorMsgSchema::TooManyArguments {
+                    } => v1_8::RunErrorMsgSchema::TooManyArguments {
                         func_name,
                         max_arg_count,
                     },
                     current::RunErrorMsg::MissingRequiredArgument {
                         func_name,
                         arg_name,
-                    } => v1_7::RunErrorMsgSchema::MissingRequiredArgument {
+                    } => v1_8::RunErrorMsgSchema::MissingRequiredArgument {
                         func_name,
                         arg_name,
                     },
                     current::RunErrorMsg::BadFunctionName => {
-                        v1_7::RunErrorMsgSchema::BadFunctionName
+                        v1_8::RunErrorMsgSchema::BadFunctionName
                     }
                     current::RunErrorMsg::BadCellReference => {
-                        v1_7::RunErrorMsgSchema::BadCellReference
+                        v1_8::RunErrorMsgSchema::BadCellReference
                     }
-                    current::RunErrorMsg::BadNumber => v1_7::RunErrorMsgSchema::BadNumber,
+                    current::RunErrorMsg::BadNumber => v1_8::RunErrorMsgSchema::BadNumber,
                     current::RunErrorMsg::BadOp {
                         op,
                         ty1,
                         ty2,
                         use_duration_instead,
-                    } => v1_7::RunErrorMsgSchema::BadOp {
+                    } => v1_8::RunErrorMsgSchema::BadOp {
                         op,
                         ty1,
                         ty2,
                         use_duration_instead,
                     },
-                    current::RunErrorMsg::NaN => v1_7::RunErrorMsgSchema::NaN,
+                    current::RunErrorMsg::NaN => v1_8::RunErrorMsgSchema::NaN,
                     current::RunErrorMsg::ExactArraySizeMismatch { expected, got } => {
-                        v1_7::RunErrorMsgSchema::ExactArraySizeMismatch { expected, got }
+                        v1_8::RunErrorMsgSchema::ExactArraySizeMismatch { expected, got }
                     }
                     current::RunErrorMsg::ExactArrayAxisMismatch {
                         axis,
                         expected,
                         got,
-                    } => v1_7::RunErrorMsgSchema::ExactArrayAxisMismatch {
+                    } => v1_8::RunErrorMsgSchema::ExactArrayAxisMismatch {
                         axis,
                         expected,
                         got,
@@ -155,36 +154,36 @@ fn upgrade_code_runs(
                         axis,
                         expected,
                         got,
-                    } => v1_7::RunErrorMsgSchema::ArrayAxisMismatch {
+                    } => v1_8::RunErrorMsgSchema::ArrayAxisMismatch {
                         axis,
                         expected,
                         got,
                     },
-                    current::RunErrorMsg::EmptyArray => v1_7::RunErrorMsgSchema::EmptyArray,
+                    current::RunErrorMsg::EmptyArray => v1_8::RunErrorMsgSchema::EmptyArray,
                     current::RunErrorMsg::NonRectangularArray => {
-                        v1_7::RunErrorMsgSchema::NonRectangularArray
+                        v1_8::RunErrorMsgSchema::NonRectangularArray
                     }
-                    current::RunErrorMsg::NonLinearArray => v1_7::RunErrorMsgSchema::NonLinearArray,
-                    current::RunErrorMsg::ArrayTooBig => v1_7::RunErrorMsgSchema::ArrayTooBig,
+                    current::RunErrorMsg::NonLinearArray => v1_8::RunErrorMsgSchema::NonLinearArray,
+                    current::RunErrorMsg::ArrayTooBig => v1_8::RunErrorMsgSchema::ArrayTooBig,
                     current::RunErrorMsg::CircularReference => {
-                        v1_7::RunErrorMsgSchema::CircularReference
+                        v1_8::RunErrorMsgSchema::CircularReference
                     }
-                    current::RunErrorMsg::Overflow => v1_7::RunErrorMsgSchema::Overflow,
-                    current::RunErrorMsg::DivideByZero => v1_7::RunErrorMsgSchema::DivideByZero,
+                    current::RunErrorMsg::Overflow => v1_8::RunErrorMsgSchema::Overflow,
+                    current::RunErrorMsg::DivideByZero => v1_8::RunErrorMsgSchema::DivideByZero,
                     current::RunErrorMsg::NegativeExponent => {
-                        v1_7::RunErrorMsgSchema::NegativeExponent
+                        v1_8::RunErrorMsgSchema::NegativeExponent
                     }
-                    current::RunErrorMsg::NotANumber => v1_7::RunErrorMsgSchema::NotANumber,
-                    current::RunErrorMsg::Infinity => v1_7::RunErrorMsgSchema::Infinity,
+                    current::RunErrorMsg::NotANumber => v1_8::RunErrorMsgSchema::NotANumber,
+                    current::RunErrorMsg::Infinity => v1_8::RunErrorMsgSchema::Infinity,
                     current::RunErrorMsg::IndexOutOfBounds => {
-                        v1_7::RunErrorMsgSchema::IndexOutOfBounds
+                        v1_8::RunErrorMsgSchema::IndexOutOfBounds
                     }
-                    current::RunErrorMsg::NoMatch => v1_7::RunErrorMsgSchema::NoMatch,
+                    current::RunErrorMsg::NoMatch => v1_8::RunErrorMsgSchema::NoMatch,
                     current::RunErrorMsg::InvalidArgument => {
-                        v1_7::RunErrorMsgSchema::InvalidArgument
+                        v1_8::RunErrorMsgSchema::InvalidArgument
                     }
                 };
-                let new_error = v1_7::RunErrorSchema {
+                let new_error = v1_8::RunErrorSchema {
                     span: None,
                     msg: new_error_msg,
                 };
@@ -192,7 +191,7 @@ fn upgrade_code_runs(
             } else {
                 None
             };
-            let new_code_run = v1_7::CodeRunSchema {
+            let new_code_run = v1_8::CodeRunSchema {
                 formatted_code_string: code_run.formatted_code_string,
                 std_out: code_run.std_out,
                 std_err: code_run.std_err,
@@ -205,10 +204,10 @@ fn upgrade_code_runs(
             let value = if let current::CodeRunResult::Ok(value) = &code_run.result {
                 value.to_owned()
             } else {
-                v1_7::OutputValueSchema::Single(v1_7::CellValueSchema::Blank)
+                v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank)
             };
-            let new_data_table = v1_7::DataTableSchema {
-                kind: v1_7::DataTableKindSchema::CodeRun(new_code_run),
+            let new_data_table = v1_8::DataTableSchema {
+                kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
                 name: format!("Table {}", i),
                 columns: None,
                 display_buffer: None,
@@ -217,16 +216,16 @@ fn upgrade_code_runs(
                 spill_error: code_run.spill_error,
                 last_modified: code_run.last_modified,
             };
-            Ok((v1_7::PosSchema::from(pos), new_data_table))
+            Ok((v1_8::PosSchema::from(pos), new_data_table))
         })
-        .collect::<Result<Vec<(v1_7::PosSchema, v1_7::DataTableSchema)>>>()
+        .collect::<Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>>>()
 }
 
-pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_7::SheetSchema> {
+pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_8::SheetSchema> {
     let data_tables = upgrade_code_runs(sheet.clone())?;
     let borders = upgrade_borders(sheet.borders.clone())?;
 
-    Ok(v1_7::SheetSchema {
+    Ok(v1_8::SheetSchema {
         id: sheet.id,
         name: sheet.name,
         color: sheet.color,
@@ -243,9 +242,9 @@ pub fn upgrade_sheet(sheet: current::Sheet) -> Result<v1_7::SheetSchema> {
     })
 }
 
-pub fn upgrade(grid: current::GridSchema) -> Result<v1_7::GridSchema> {
-    let new_grid = v1_7::GridSchema {
-        version: Some("1.7".to_string()),
+pub fn upgrade(grid: current::GridSchema) -> Result<v1_8::GridSchema> {
+    let new_grid = v1_8::GridSchema {
+        version: Some("1.8".to_string()),
         sheets: grid
             .sheets
             .into_iter()

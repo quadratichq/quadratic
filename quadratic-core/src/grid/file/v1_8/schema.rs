@@ -2,29 +2,27 @@ use std::collections::HashMap;
 
 use crate::grid::file::v1_6::schema as v1_6;
 use crate::grid::file::v1_6::schema_validation as v1_6_validation;
-use chrono::DateTime;
-use chrono::NaiveDate;
-use chrono::NaiveDateTime;
-use chrono::NaiveTime;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
-pub use super::run_error_schema::AxisSchema;
-pub use super::run_error_schema::RunErrorMsgSchema;
-pub use super::run_error_schema::RunErrorSchema;
 
 pub type IdSchema = v1_6::Id;
 pub type PosSchema = v1_6::Pos;
 pub type RectSchema = v1_6::Rect;
 pub type SheetRectSchema = v1_6::SheetRect;
 pub type OffsetsSchema = v1_6::Offsets;
+pub type RunErrorSchema = v1_6::RunError;
 pub type FormatSchema = v1_6::Format;
 pub type ValidationsSchema = v1_6_validation::Validations;
 pub type ResizeSchema = v1_6::Resize;
+pub type CodeRunResultSchema = v1_6::CodeRunResult;
+pub type OutputValueSchema = v1_6::OutputValue;
+pub type OutputArraySchema = v1_6::OutputArray;
 pub type OutputSizeSchema = v1_6::OutputSize;
 pub type OutputValueValueSchema = v1_6::OutputValueValue;
+pub type ColumnSchema = v1_6::Column;
 pub type NumericFormatKindSchema = v1_6::NumericFormatKind;
 pub type NumericFormatSchema = v1_6::NumericFormat;
+pub type CellValueSchema = v1_6::CellValue;
 pub type CodeCellLanguageSchema = v1_6::CodeCellLanguage;
 pub type ConnectionKindSchema = v1_6::ConnectionKind;
 pub type CodeCellSchema = v1_6::CodeCell;
@@ -34,7 +32,10 @@ pub type CellWrapSchema = v1_6::CellWrap;
 pub type CellBorderSchema = v1_6::CellBorder;
 pub type ColumnRepeatSchema<T> = v1_6::ColumnRepeat<T>;
 pub type RenderSizeSchema = v1_6::RenderSize;
+pub type RunErrorMsgSchema = v1_6::RunErrorMsg;
+pub type AxisSchema = v1_6::Axis;
 pub type SpanSchema = v1_6::Span;
+pub type ImportSchema = v1_6::Import;
 
 pub type SelectionSchema = v1_6_validation::Selection;
 
@@ -58,74 +59,6 @@ pub type NumberRangeSchema = v1_6_validation::NumberRange;
 pub struct GridSchema {
     pub sheets: Vec<SheetSchema>,
     pub version: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CodeRunSchema {
-    pub formatted_code_string: Option<String>,
-    pub std_out: Option<String>,
-    pub std_err: Option<String>,
-    pub cells_accessed: Vec<SheetRectSchema>,
-    pub result: CodeRunResultSchema,
-    pub return_type: Option<String>,
-    pub line_number: Option<u32>,
-    pub output_type: Option<String>,
-    pub spill_error: bool,
-    pub last_modified: Option<DateTime<Utc>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CodeRunResultSchema {
-    Ok(OutputValueSchema),
-    Err(RunErrorSchema),
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum OutputValueSchema {
-    Single(CellValueSchema),
-    Array(OutputArraySchema),
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct OutputArraySchema {
-    pub size: OutputSizeSchema,
-    pub values: Vec<CellValueSchema>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CellValueSchema {
-    Blank,
-    Text(String),
-    Number(String),
-    Html(String),
-    Code(CodeCellSchema),
-    Logical(bool),
-    Instant(String),
-    Date(NaiveDate),
-    Time(NaiveTime),
-    DateTime(NaiveDateTime),
-    Duration(String),
-    Error(RunErrorSchema),
-    Image(String),
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ColumnSchema {
-    pub values: HashMap<String, CellValueSchema>,
-    pub align: HashMap<String, ColumnRepeatSchema<CellAlignSchema>>,
-    pub vertical_align: HashMap<String, ColumnRepeatSchema<CellVerticalAlignSchema>>,
-    pub wrap: HashMap<String, ColumnRepeatSchema<CellWrapSchema>>,
-    pub numeric_format: HashMap<String, ColumnRepeatSchema<NumericFormatSchema>>,
-    pub numeric_decimals: HashMap<String, ColumnRepeatSchema<i16>>,
-    pub numeric_commas: HashMap<String, ColumnRepeatSchema<bool>>,
-    pub bold: HashMap<String, ColumnRepeatSchema<bool>>,
-    pub italic: HashMap<String, ColumnRepeatSchema<bool>>,
-    pub underline: HashMap<String, ColumnRepeatSchema<bool>>,
-    pub strike_through: HashMap<String, ColumnRepeatSchema<bool>>,
-    pub text_color: HashMap<String, ColumnRepeatSchema<String>>,
-    pub fill_color: HashMap<String, ColumnRepeatSchema<String>>,
-    pub render_size: HashMap<String, ColumnRepeatSchema<RenderSizeSchema>>,
-    pub date_time: HashMap<String, ColumnRepeatSchema<String>>,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -183,11 +116,67 @@ pub struct SheetSchema {
     pub order: String,
     pub offsets: OffsetsSchema,
     pub columns: Vec<(i64, ColumnSchema)>,
-    pub code_runs: Vec<(PosSchema, CodeRunSchema)>,
+    pub data_tables: Vec<(PosSchema, DataTableSchema)>,
     pub formats_all: Option<FormatSchema>,
     pub formats_columns: Vec<(i64, (FormatSchema, i64))>,
     pub formats_rows: Vec<(i64, (FormatSchema, i64))>,
     pub rows_resize: Vec<(i64, ResizeSchema)>,
     pub validations: ValidationsSchema,
     pub borders: BordersSchema,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CodeRunSchema {
+    pub formatted_code_string: Option<String>,
+    pub std_out: Option<String>,
+    pub std_err: Option<String>,
+    pub cells_accessed: Vec<SheetRectSchema>,
+    pub error: Option<RunErrorSchema>,
+    pub return_type: Option<String>,
+    pub line_number: Option<u32>,
+    pub output_type: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DataTableColumnSchema {
+    pub name: String,
+    pub display: bool,
+    pub value_index: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DataTableKindSchema {
+    CodeRun(CodeRunSchema),
+    Import(ImportSchema),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DataTableSchema {
+    pub kind: DataTableKindSchema,
+    pub name: String,
+    pub columns: Option<Vec<DataTableColumnSchema>>,
+    pub display_buffer: Option<Vec<u64>>,
+    pub value: OutputValueSchema,
+    pub readonly: bool,
+    pub spill_error: bool,
+    pub last_modified: Option<DateTime<Utc>>,
+}
+
+impl From<i8> for AxisSchema {
+    fn from(val: i8) -> Self {
+        match val {
+            0 => AxisSchema::X,
+            1 => AxisSchema::Y,
+            _ => panic!("Invalid Axis value: {}", val),
+        }
+    }
+}
+
+impl From<AxisSchema> for i8 {
+    fn from(val: AxisSchema) -> Self {
+        match val {
+            AxisSchema::X => 0,
+            AxisSchema::Y => 1,
+        }
+    }
 }
