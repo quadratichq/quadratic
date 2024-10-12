@@ -1084,6 +1084,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
   }
+
+  getCellsA1(transactionId: string, a1: string, lineNumber?: number) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.calculationGetCellsA1(transactionId, a1, lineNumber);
+  }
 }
 
 export const core = new Core();

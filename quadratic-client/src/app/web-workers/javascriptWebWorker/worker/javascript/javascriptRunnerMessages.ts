@@ -15,6 +15,12 @@ export interface RunnerJavascriptGetCellsLength {
   sheetName?: string;
 }
 
+export interface RunnerJavascriptGetA1CellsLength {
+  type: 'getA1CellsLength';
+  sharedBuffer: SharedArrayBuffer;
+  a1: string;
+}
+
 export interface RunnerJavascriptGetCellsData {
   type: 'getCellsData';
   id: number;
@@ -37,6 +43,7 @@ export interface RunnerJavascriptError {
 
 export type RunnerJavascriptMessage =
   | RunnerJavascriptGetCellsLength
+  | RunnerJavascriptGetA1CellsLength
   | RunnerJavascriptGetCellsData
   | RunnerJavascriptResults
   | RunnerJavascriptError;

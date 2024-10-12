@@ -2,6 +2,7 @@ use std::fs::create_dir_all;
 
 use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
 use crate::A1Error;
+use controller::execution::run_code::get_cells::CellA1Response;
 use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::formats::format::Format;
@@ -98,6 +99,7 @@ fn main() {
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
+        CellA1Response,
         JsGetCellResponse,
         JsHtmlOutput,
         JsNumber,

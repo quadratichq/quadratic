@@ -3,7 +3,7 @@
 
 export type A1Error = { "InvalidSheetId": string } | { "InvalidSheetMap": string } | { "InvalidColumn": string } | { "InvalidSheetName": string } | { "InvalidSheetNameMissingQuotes": string } | { "InvalidRange": string } | { "InvalidRow": string } | { "TooManySheets": string } | { "MismatchedQuotes": string } | { "WrongCellCount": string } | { "InvalidExclusion": string } | { "TranslateInvalid": string };
 export interface A1Cells { cells: A1CellsType, sheet_name: string | null, }
-export type A1CellsType = "All" | { "Columns": Array<bigint> } | { "Rows": Array<bigint> } | { "Rect": Rect } | { "PartialRect": [bigint, bigint, bigint] };
+export type A1CellsType = "All" | { "Columns": Array<bigint> } | { "Rows": Array<bigint> } | { "Rect": Rect };
 export interface ArraySize { w: number, h: number, }
 export type Axis = "X" | "Y";
 export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertical" | "left" | "top" | "right" | "bottom" | "clear";
@@ -32,6 +32,7 @@ export interface JsCellValue { value: string, kind: string, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<SheetRect> | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
+export interface CellA1Response { cells: Array<JsGetCellResponse>, x: bigint, y: bigint, w: bigint, h: bigint, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: string | null, h: string | null, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }

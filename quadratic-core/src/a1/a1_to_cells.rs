@@ -11,7 +11,8 @@ pub enum A1CellsType {
     Columns(Vec<u64>),
     Rows(Vec<u64>),
     Rect(Rect),
-    PartialRect(u64, u64, u64),
+    // todo...
+    // PartialRect,
 }
 
 /// Returned by a `cells` call in supported Quadratic languages.
@@ -61,7 +62,12 @@ impl A1 {
             })
         } else if let Some(pos) = A1Range::try_from_position(remaining) {
             Ok(A1Cells {
-                cells: A1CellsType::PartialRect(pos.x.index, pos.y.index, 0),
+                cells: A1CellsType::Rect(Rect::new(
+                    pos.x.index as i64,
+                    pos.y.index as i64,
+                    pos.x.index as i64,
+                    pos.y.index as i64,
+                )),
                 sheet_name,
             })
         } else {
@@ -81,6 +87,14 @@ mod tests {
     fn test_to_cells_all() {
         let result = A1::to_cells("*").unwrap();
         assert_eq!(result.cells, A1CellsType::All);
+        assert_eq!(result.sheet_name, None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_to_cells_position() {
+        let result = A1::to_cells("B2").unwrap();
+        assert_eq!(result.cells, A1CellsType::Rect(Rect::new(2, 2, 1, 1)));
         assert_eq!(result.sheet_name, None);
     }
 
@@ -121,14 +135,6 @@ mod tests {
     fn test_to_cells_rect() {
         let result = A1::to_cells("A1:C3").unwrap();
         assert_eq!(result.cells, A1CellsType::Rect(Rect::new(1, 1, 3, 3)));
-        assert_eq!(result.sheet_name, None);
-    }
-
-    #[test]
-    #[parallel]
-    fn test_to_cells_position() {
-        let result = A1::to_cells("B2").unwrap();
-        assert_eq!(result.cells, A1CellsType::PartialRect(2, 2, 0));
         assert_eq!(result.sheet_name, None);
     }
 

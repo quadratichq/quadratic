@@ -1,8 +1,5 @@
 // Generated file from ./compileJavascriptRunner.mjs
-export const javascriptLibraryForEditor = `// import { A1Cells } from '@/app/quadratic-core-types';
-// import { a1ToCells } from '@/app/quadratic-rust-client/quadratic_rust_client';
-
-declare var self: WorkerGlobalScope & typeof globalThis;
+export const javascriptLibraryForEditor = `declare var self: WorkerGlobalScope & typeof globalThis;
 
 declare global {
   /**
@@ -121,21 +118,8 @@ declare global {
   ): Record<string, number | string | boolean | undefined>[];
 }
 
-// const getCellsA1 = (a1: string): (number | string | boolean | Date | undefined)[][] => {
-//     const cellsStringified = a1ToCells(a1);
-//     try {
-//       const cells: A1Cells = JSON.parse(cellsStringified);
-//       console.log(cells);
-//       debugger;
-//       return [];
-//     } catch (e) {
-//       console.error(e);
-//       return [];
-//     }
-// };
-
 const getCellsDB = (
-  x0: number | string,
+  x0: number,
   y0: number,
   x1: number,
   y1?: number,
@@ -143,7 +127,7 @@ const getCellsDB = (
 ): (number | string | boolean | Date | undefined)[][] => {
   try {
     // This is a shared buffer that will be used to communicate with core
-    // The first 4 bytes are used to signal the python core that the data is ready
+    // The first 4 bytes are used to signal the javascript core that the data is ready
     // The second 4 bytes are used to signal the length of the data
     // The third 4 bytes are used to signal the id of the data
     // Length of the cells string is unknown at this point
@@ -337,4 +321,66 @@ export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, delt
 };
 
 export const rc = relCell;
+
+export const q = (a1: string): (number | string | boolean | Date | undefined)[][] | number | string | boolean | Date | undefined => {
+  if (typeof a1 !== 'string') {
+    const line = lineNumber();
+    throw new Error(
+      'q requires at least 1 argument, received q(' +
+        a1 +
+        ')' +
+        (line !== undefined ? ' at line ' + (line - 1) : '')
+    );
+  }
+
+  try {
+    let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
+    let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
+    Atomics.store(int32View, 0, 0);
+
+    self.postMessage({ type: 'getA1CellsLength', sharedBuffer, a1 });
+    let result = Atomics.wait(int32View, 0, 0);
+    const length = int32View[1];
+    if (result !== 'ok' || length === 0) return [];
+
+    const id = int32View[2];
+
+    // New shared buffer, which is sized to hold the cells string
+    sharedBuffer = new SharedArrayBuffer(4 + length);
+    int32View = new Int32Array(sharedBuffer, 0, 1);
+    Atomics.store(int32View, 0, 0);
+
+    self.postMessage({ type: 'getCellsData', id, sharedBuffer });
+    result = Atomics.wait(int32View, 0, 0);
+    if (result !== 'ok') return [];
+
+    let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
+
+    // Copy the data to a non-shared buffer, for decoding
+    const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);
+    const nonSharedView = new Uint8Array(nonSharedBuffer);
+    nonSharedView.set(uint8View);
+    sharedBuffer = undefined;
+    int32View = undefined;
+    uint8View = undefined;
+
+    const decoder = new TextDecoder();
+    const cellsStringified = decoder.decode(nonSharedView);
+    const cells = convertNullToUndefined(JSON.parse(cellsStringified) as (number | string | boolean | Date | null)[][]);
+    cells.forEach((row) => {
+      row.forEach((cell, i) => {
+        if (typeof cell === 'string' && cell.startsWith('___date___')) {
+          row[i] = new Date(parseInt(cell.substring('___date___'.length)));
+        }
+      });
+    });
+    if (cells.length === 1 && cells[0].length === 1) {
+      return cells[0][0];
+    }
+    return cells;
+  } catch (e) {
+    console.warn('[javascriptLibrary] q error', e);
+  }
+  return [];
+};
 `;

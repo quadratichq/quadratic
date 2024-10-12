@@ -3,8 +3,7 @@
 // (x,y) position with the code, so `pos()` and `relCell()` can be calculated
 // within the worker using getCells.
 
-import { a1ToCells } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { A1Cells, JsGetCellResponse } from '@/app/quadratic-core-types';
+import { JsGetCellResponse } from '@/app/quadratic-core-types';
 import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
 import { Javascript } from './javascript';
@@ -26,30 +25,42 @@ export class JavascriptAPI {
     return entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
   }
 
-  getCellsA1 = async (a1: string): Promise<CellType[][] | undefined> => {
-    const cellsStringified = a1ToCells(a1);
-    try {
-      const cells: A1Cells = JSON.parse(cellsStringified);
-      console.log(cells);
-      debugger;
-    } catch (e) {
-      console.error(e);
+  getCellsA1 = async (a1: string, lineNumber?: number): Promise<CellType[][] | undefined> => {
+    if (!this.javascript.transactionId) {
+      throw new Error('No transactionId in getCells');
+    }
+    const results = await javascriptCore.sendGetA1Cells(this.javascript.transactionId, a1, lineNumber);
+
+    // error was thrown while getting cells
+    if (!results) {
+      javascriptClient.sendState('ready');
       return undefined;
     }
+    const cells: CellType[][] = [];
+    for (let y = results.y; y < results.y + results.h; y++) {
+      const row: any[] = [];
+      for (let x = results.x; x < results.x + results.w; x++) {
+        const entry = results.cells?.find((r) => Number(r.x) === x && Number(r.y) === y);
+        if (entry) {
+          const typed = this.convertType(entry);
+          row.push(typed);
+        } else {
+          row.push(undefined);
+        }
+      }
+      cells.push(row);
+    }
+    return cells;
   };
 
   getCells = async (
-    x0: number | string,
+    x0: number,
     y0: number,
     x1: number,
     y1?: number,
     sheet?: string,
     lineNumber?: number
   ): Promise<CellType[][] | undefined> => {
-    debugger;
-    if (typeof x0 === 'string') {
-      return this.getCellsA1(x0);
-    }
     if (!this.javascript.transactionId) {
       throw new Error('No transactionId in getCells');
     }

@@ -14,6 +14,25 @@ impl GridController {
         }
     }
 
+    #[wasm_bindgen(js_name = "calculationGetCellsA1")]
+    pub fn cells_a1(
+        &mut self,
+        transaction_id: String,
+        a1: String,
+        line_number: Option<u32>,
+    ) -> Result<String, JsValue> {
+        match self.calculation_get_cells_a1(transaction_id, a1, line_number) {
+            Ok(response) => match serde_json::to_string(&response) {
+                Ok(json) => Ok(json),
+                Err(_) => {
+                    dbgjs!("calculationGetCellsA1: Failed to serialize calculation result");
+                    Err(JsValue::UNDEFINED)
+                }
+            },
+            Err(_) => Err(JsValue::UNDEFINED),
+        }
+    }
+
     #[wasm_bindgen(js_name = "calculationGetCells")]
     #[allow(clippy::too_many_arguments)]
     pub fn js_calculation_get_cells(
