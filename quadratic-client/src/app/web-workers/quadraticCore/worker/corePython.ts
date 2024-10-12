@@ -72,6 +72,10 @@ class CorePython {
         );
         break;
 
+      case 'pythonCoreGetCellsA1Length':
+        this.sendGetCellsA1Length(e.data.sharedBuffer, e.data.transactionId, e.data.a1, e.data.lineNumber);
+        break;
+
       case 'pythonCoreGetCellsData':
         this.sendGetCellsData(e.data.id, e.data.sharedBuffer);
         break;
@@ -110,6 +114,32 @@ class CorePython {
       if (length !== 0) {
         const id = this.id++;
         this.getCellsResponses[id] = cells;
+        Atomics.store(int32View, 2, id);
+      }
+      Atomics.store(int32View, 0, 1);
+    } catch (e) {
+      console.warn('[corePython] Error getting cells:', e);
+    }
+    Atomics.notify(int32View, 0, 1);
+  }
+
+  private sendGetCellsA1Length(
+    sharedBuffer: SharedArrayBuffer,
+    transactionId: string,
+    a1: string,
+    lineNumber?: number
+  ) {
+    const int32View = new Int32Array(sharedBuffer, 0, 3);
+    try {
+      const response = core.getCellsA1(transactionId, a1, lineNumber);
+
+      // need to get the bytes of the string (which covers unicode characters)
+      const length = new Blob([response]).size;
+
+      Atomics.store(int32View, 1, length);
+      if (length !== 0) {
+        const id = this.id++;
+        this.getCellsResponses[id] = response;
         Atomics.store(int32View, 2, id);
       }
       Atomics.store(int32View, 0, 1);

@@ -1,6 +1,8 @@
 from typing import Tuple
 
 import getCellsDB
+import getCellsA1
+
 from pandas import DataFrame, Series
 
 from ..utils import result_to_value, stack_line_number, to_python_type_df
@@ -73,6 +75,24 @@ def c(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
 
     return getCell(p_x, p_y, sheet)
 
+
+def q(a1: str, first_row_header: bool = False) -> DataFrame | int | float | str | bool | None:
+    """
+    Reference cells in the grid.
+
+    Args:
+        a1: A string representing a cell or range of cells.
+        first_row_header: If True the first row will be used as the header.
+
+    Returns:
+        For single returns: the value of the cell referenced. For multiple returns: A pandas DataFrame of the cells referenced.
+
+    Typical usage example:
+        c = q("A1:B5")
+    """
+    result = getCellsA1(a1, int(stack_line_number()))
+    print(result.x)
+    return None
 
 def getCells(
     p0: Tuple[int, int],

@@ -1,5 +1,4 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { JsGetCellResponse } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { PyodideInterface, loadPyodide } from 'pyodide';
@@ -7,6 +6,7 @@ import type { CorePythonRun } from '../pythonCoreMessages';
 import type { InspectPython, PythonError, PythonSuccess, outputType } from '../pythonTypes';
 import { pythonClient } from './pythonClient';
 import { pythonCore } from './pythonCore';
+import { JsGetCellResponse } from '@/app/quadratic-core-types';
 
 const TRY_AGAIN_TIMEOUT = 500;
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
@@ -29,6 +29,22 @@ class Python {
     this.state = 'loading';
     this.init();
   }
+
+  private getCellsA1 = (
+    a1: string,
+    lineNumber?: number
+  ): { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number } | undefined => {
+    if (!this.transactionId) {
+      throw new Error('No transactionId in getCellsA1');
+    }
+    const cells = pythonCore.sendGetCellsA1(this.transactionId, a1, lineNumber);
+    if (!cells) {
+      this.init();
+      pythonClient.sendPythonState('ready');
+    } else {
+      return cells;
+    }
+  };
 
   private getCells = (
     x0: number,
@@ -106,6 +122,7 @@ class Python {
     });
 
     this.pyodide.registerJsModule('getCellsDB', this.getCells);
+    this.pyodide.registerJsModule('getCellsA1', this.getCellsA1);
 
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
