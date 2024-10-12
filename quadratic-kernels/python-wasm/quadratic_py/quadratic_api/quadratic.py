@@ -91,8 +91,31 @@ def q(a1: str, first_row_header: bool = False) -> DataFrame | int | float | str 
         c = q("A1:B5")
     """
     result = getCellsA1(a1, int(stack_line_number()))
-    print(result.x)
-    return None
+
+    if result.w == 1 and result.h == 1:
+        return result_to_value(result.cells[0])
+
+    # Create empty df of the correct size
+    df = DataFrame(
+        index=range(result.h),
+        columns=range(result.w),
+    )
+
+    # Fill DF
+    x_offset = result.x
+    y_offset = result.y
+
+    for cell in result.cells:
+        value = to_python_type_df(cell.value, cell.type_name)
+        df.at[cell.y - y_offset, cell.x - x_offset] = value
+
+    # Move the first row to the header
+    if first_row_header:
+        df.rename(columns=df.iloc[0], inplace=True)
+        df.drop(df.index[0], inplace=True)
+        df.reset_index(drop=True, inplace=True)
+
+    return df
 
 def getCells(
     p0: Tuple[int, int],
