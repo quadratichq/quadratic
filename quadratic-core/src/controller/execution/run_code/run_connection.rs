@@ -5,7 +5,7 @@ use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, ConnectionKind, SheetId},
     selection::Selection,
-    Pos, RunError, RunErrorMsg, SheetPos, SheetRect,
+    A1RangeType, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, A1,
 };
 
 use lazy_static::lazy_static;
@@ -41,12 +41,25 @@ impl GridController {
             let replacement: Result<String, String> = (|| {
                 let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
 
-                let selection = Selection::from_a1(content, default_sheet_id, map.clone())?;
+                let (range_type, sheet_name) = A1::to_a1_range_type(content)?;
+
+                let sheet = if let Some(sheet_name) = sheet_name {
+                    self.grid.try_sheet_from_name(sheet_name).ok_or_else(|| {
+                        return Err(format!("InvalidSheetName: {}", sheet_name));
+                    })
+                } else {
+                    self.grid.try_sheet(default_sheet_id).ok_or_else(|| {
+                        return Err(format!("Can't find sheet"));
+                    })
+                };
+
+                if !matches!(range_type, A1RangeType::Pos) {
+                    return Err(format!("Invalid range type: {}", range_type));
+                }
 
                 // Gets the display value of the cell at the cursor position of
                 // the Selection (for now we only support 1 cell)
-                let value = self
-                    .try_sheet(selection.sheet_id)
+                let value = sheet
                     .map(|sheet| {
                         sheet
                             .display_value(Pos::new(selection.x, selection.y))
@@ -55,12 +68,10 @@ impl GridController {
                     })
                     .unwrap_or_default();
 
-                transaction.cells_accessed.insert(SheetRect::new(
-                    selection.x,
-                    selection.y,
-                    selection.x,
-                    selection.y,
+                transaction.cells_accessed.add_sheet_pos(SheetPos::new(
                     selection.sheet_id,
+                    selection.x,
+                    selection.y,
                 ));
                 Ok(value)
             })();

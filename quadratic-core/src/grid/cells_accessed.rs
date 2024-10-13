@@ -18,6 +18,21 @@ impl CellsAccessed {
         self.cells.entry(sheet_id).or_default().insert(range);
     }
 
+    /// Add a SheetPos to the set of cells accessed. This is a helper function
+    /// that adds a relative Pos to teh set of cells accessed. This should be
+    /// replaced with an A1Type and deprecated.
+    pub fn add_sheet_pos(&mut self, sheet_pos: SheetPos) {
+        self.add(
+            sheet_pos.sheet_id,
+            A1RangeType::Pos(RelPos::new(
+                sheet_pos.x as u64,
+                sheet_pos.y as u64,
+                true,
+                true,
+            )),
+        );
+    }
+
     /// Add a SheetRect to the set of cells accessed. This is a helper function
     /// that adds a relative Rect to the set of cells accessed. This should be
     /// replaced with an A1Type and deprecated (except for tests)
@@ -129,5 +144,14 @@ mod tests {
         cells.add(sheet_id, A1RangeType::All);
         cells.clear();
         assert_eq!(cells.cells.len(), 0);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_sheet_pos() {
+        let mut cells = CellsAccessed::default();
+        let sheet_id = SheetId::new();
+        cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 1));
+        assert!(cells.contains(SheetPos::new(sheet_id, 1, 1)));
     }
 }
