@@ -6,7 +6,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::{CopyFormats, Operation},
     },
-    grid::{formats::Formats, Sheet},
+    grid::{formats::Formats, GridBounds, Sheet},
     selection::Selection,
     Pos, Rect, SheetPos,
 };
@@ -197,6 +197,7 @@ impl Sheet {
                     transaction.fill_cells.insert(self.id);
                 }
                 self.columns.insert(col - 1, column_data);
+                updated_cols.insert(col);
                 updated_cols.insert(col - 1);
             }
         }
@@ -249,9 +250,16 @@ impl Sheet {
 
         // send the value hashes that have changed to the client
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
+        let last_row = self.bounds(true).last_row();
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
-                for y in start..=end {
+                for y in start..=end.max(last_row.unwrap_or(end)) {
+                    let mut pos = Pos { x: *col, y };
+                    pos.to_quadrant();
+                    dirty_hashes.insert(pos);
+                }
+            } else if let GridBounds::NonEmpty(rect) = self.bounds(true) {
+                for y in rect.y_range() {
                     let mut pos = Pos { x: *col, y };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);
@@ -384,9 +392,16 @@ impl Sheet {
 
         // signal client to update the hashes for changed columns
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
+        let last_row = self.bounds(true).last_row();
         updated_cols.iter().for_each(|col| {
             if let Some((start, end)) = self.column_bounds(*col, false) {
-                for y in start..=end {
+                for y in start..=end.max(last_row.unwrap_or(end)) {
+                    let mut pos = Pos { x: *col, y };
+                    pos.to_quadrant();
+                    dirty_hashes.insert(pos);
+                }
+            } else if let GridBounds::NonEmpty(rect) = self.bounds(true) {
+                for y in rect.y_range() {
                     let mut pos = Pos { x: *col, y };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);

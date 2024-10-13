@@ -305,9 +305,16 @@ impl Sheet {
 
         // send the value hashes that have changed to the client
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
+        let last_column = self.bounds(true).last_column();
         updated_rows.iter().for_each(|row| {
             if let Some((start, end)) = self.row_bounds(*row, false) {
-                for x in start..=end {
+                for x in start..=end.max(last_column.unwrap_or(end)) {
+                    let mut pos = Pos { x, y: *row };
+                    pos.to_quadrant();
+                    dirty_hashes.insert(pos);
+                }
+            } else if let GridBounds::NonEmpty(rect) = self.bounds(true) {
+                for x in rect.x_range() {
                     let mut pos = Pos { x, y: *row };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);
@@ -509,9 +516,16 @@ impl Sheet {
 
         // signal client to update the hashes for changed columns
         let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
+        let last_column = self.bounds(true).last_column();
         updated_rows.iter().for_each(|row| {
             if let Some((start, end)) = self.row_bounds(*row, false) {
-                for x in start..=end {
+                for x in start..=end.max(last_column.unwrap_or(end)) {
+                    let mut pos = Pos { x, y: *row };
+                    pos.to_quadrant();
+                    dirty_hashes.insert(pos);
+                }
+            } else if let GridBounds::NonEmpty(rect) = self.bounds(true) {
+                for x in rect.x_range() {
                     let mut pos = Pos { x, y: *row };
                     pos.to_quadrant();
                     dirty_hashes.insert(pos);
