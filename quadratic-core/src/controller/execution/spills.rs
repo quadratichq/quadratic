@@ -435,7 +435,7 @@ mod tests {
             output_type: None,
             spill_error: false,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             formatted_code_string: None,
         };
         let pos = Pos { x: 0, y: 0 };

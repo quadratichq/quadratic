@@ -258,6 +258,16 @@ impl Rect {
         // The rectangles can merge if they can merge horizontally, vertically, or if one contains the other
         horizontal_merge || vertical_merge || contains
     }
+
+    /// Returns whether a column is contained within the rectangle.
+    pub fn contains_col(&self, col: i64) -> bool {
+        col >= self.min.x && col <= self.max.x
+    }
+
+    /// Returns whether a row is contained within the rectangle.
+    pub fn contains_row(&self, row: i64) -> bool {
+        row >= self.min.y && row <= self.max.y
+    }
 }
 
 impl From<Pos> for Rect {
@@ -538,5 +548,21 @@ mod test {
         assert!(!rect.can_merge(&Rect::new(3, 3, 5, 5)));
         assert!(rect.can_merge(&Rect::new(1, 1, 3, 3)));
         assert!(rect.can_merge(&Rect::new(0, 0, 4, 4)));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_contains_col() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert!(rect.contains_col(2));
+        assert!(!rect.contains_col(1));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_contains_row() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert!(rect.contains_row(3));
+        assert!(!rect.contains_row(2));
     }
 }

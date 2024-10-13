@@ -24,6 +24,7 @@ use crate::{Array, Pos};
 mod block;
 mod borders;
 mod bounds;
+pub mod cells_accessed;
 mod code_run;
 mod column;
 pub mod file;
@@ -36,6 +37,8 @@ pub mod search;
 pub mod series;
 pub mod sheet;
 pub mod sheets;
+
+pub use cells_accessed::CellsAccessed;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]

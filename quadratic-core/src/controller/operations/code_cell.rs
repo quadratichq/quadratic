@@ -31,10 +31,7 @@ impl GridController {
 
     // Returns whether a code_cell is dependent on another code_cell.
     fn is_dependent_on(&self, current: &CodeRun, other_pos: SheetPos) -> bool {
-        current
-            .cells_accessed
-            .iter()
-            .any(|sheet_rect| sheet_rect.contains(other_pos))
+        current.cells_accessed.contains(other_pos)
     }
 
     /// Orders code cells to ensure earlier computes do not depend on later computes.

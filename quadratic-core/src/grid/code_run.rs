@@ -7,9 +7,10 @@
 use crate::{ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use strum_macros::Display;
 use wasm_bindgen::{convert::IntoWasmAbi, JsValue};
+
+use super::cells_accessed::CellsAccessed;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeRun {
@@ -18,7 +19,7 @@ pub struct CodeRun {
 
     pub std_out: Option<String>,
     pub std_err: Option<String>,
-    pub cells_accessed: HashSet<SheetRect>,
+    pub cells_accessed: CellsAccessed,
     pub result: CodeRunResult,
     pub return_type: Option<String>,
     pub spill_error: bool,
@@ -198,7 +199,7 @@ mod test {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(1.into()))),
             return_type: Some("number".into()),
             line_number: None,
@@ -223,7 +224,7 @@ mod test {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Array(Array::new_empty(
                 ArraySize::new(10, 11).unwrap(),
             ))),
@@ -256,7 +257,7 @@ mod test {
             formatted_code_string: None,
             std_out: None,
             std_err: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Array(Array::new_empty(
                 ArraySize::new(10, 11).unwrap(),
             ))),

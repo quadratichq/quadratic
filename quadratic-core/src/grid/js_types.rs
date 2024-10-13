@@ -7,7 +7,7 @@ use uuid::Uuid;
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
-use super::{CodeCellLanguage, NumericFormat};
+use super::{CellsAccessed, CodeCellLanguage, NumericFormat};
 use crate::{Pos, SheetRect};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -180,7 +180,7 @@ pub struct JsCodeCell {
     pub evaluation_result: Option<String>,
     pub spill_error: Option<Vec<Pos>>,
     pub return_info: Option<JsReturnInfo>,
-    pub cells_accessed: Option<Vec<SheetRect>>,
+    pub cells_accessed: Option<CellsAccessed>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
