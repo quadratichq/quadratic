@@ -1,5 +1,8 @@
+mod cells_accessed_schema;
+
 use crate::grid::file::v1_7::schema as v1_7;
 
+pub use cells_accessed_schema::{CellsAccessedSchema, CodeRunSchema};
 pub type IdSchema = v1_7::IdSchema;
 pub type PosSchema = v1_7::PosSchema;
 pub type RectSchema = v1_7::RectSchema;
@@ -9,7 +12,6 @@ pub type RunErrorSchema = v1_7::RunErrorSchema;
 pub type FormatSchema = v1_7::FormatSchema;
 pub type ValidationsSchema = v1_7::ValidationsSchema;
 pub type ResizeSchema = v1_7::ResizeSchema;
-pub type CodeRunSchema = v1_7::CodeRunSchema;
 pub type CodeRunResultSchema = v1_7::CodeRunResultSchema;
 pub type OutputValueSchema = v1_7::OutputValueSchema;
 pub type OutputArraySchema = v1_7::OutputArraySchema;

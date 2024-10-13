@@ -96,7 +96,7 @@ impl GridController {
 
         transaction
             .cells_accessed
-            .insert(rect.to_sheet_rect(sheet.id));
+            .add_sheet_rect(rect.to_sheet_rect(sheet.id));
 
         self.transactions.add_async_transaction(&mut transaction);
 
@@ -106,7 +106,7 @@ impl GridController {
     pub fn calculation_get_cells_a1(
         &mut self,
         transaction_id: String,
-        a1: String,
+        original_a1: String,
         line_number: Option<u32>,
     ) -> Result<CellA1Response, CoreError> {
         let transaction_id = Uuid::parse_str(&transaction_id)
@@ -124,7 +124,7 @@ impl GridController {
             ))?
             .sheet_id;
 
-        let a1 = A1::to_cells(&a1)?;
+        let a1 = A1::to_cells(&original_a1)?;
 
         // if sheet_name is None, use the sheet_id from the pos
         let sheet = if let Some(sheet_name) = a1.sheet_name.as_ref() {
@@ -167,12 +167,12 @@ impl GridController {
 
         let rect = sheet.a1_cells_rect(a1);
 
+        let a1_range_type = A1::to_a1_range_type(&original_a1)?;
+        transaction.cells_accessed.add(sheet.id, a1_range_type);
+
         let response = if let Some(rect) = rect {
             let cells = sheet.get_cells_response(rect);
 
-            transaction
-                .cells_accessed
-                .insert(rect.to_sheet_rect(sheet.id));
             CellA1Response {
                 cells,
                 x: rect.min.x as i64,

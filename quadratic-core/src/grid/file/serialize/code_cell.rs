@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 
 use crate::{
-    grid::{CodeRun, CodeRunResult},
+    grid::{CellsAccessed, CodeRun, CodeRunResult},
     Pos, Value,
 };
 
@@ -22,7 +22,7 @@ pub(crate) fn import_code_cell_builder(
         let cells_accessed = code_run
             .cells_accessed
             .into_iter()
-            .map(crate::SheetRect::from)
+            .map(CellsAccessed::from)
             .collect();
 
         let result = match code_run.result {

@@ -57,6 +57,11 @@ impl CellsAccessed {
             })
             .any(|ranges| ranges.iter().any(|range| range.contains(other_pos.into())))
     }
+
+    /// Clears the CellsAccessed.
+    pub fn clear(&mut self) {
+        self.cells.clear();
+    }
 }
 
 #[cfg(test)]
@@ -114,5 +119,15 @@ mod tests {
         cells.add(sheet_id, A1RangeType::Pos(RelPos::new(1, 1, true, true)));
         assert!(cells.contains(SheetPos::new(sheet_id, 1, 1)));
         assert!(!cells.contains(SheetPos::new(sheet_id, 2, 2)));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_clear() {
+        let mut cells = CellsAccessed::default();
+        let sheet_id = SheetId::new();
+        cells.add(sheet_id, A1RangeType::All);
+        cells.clear();
+        assert_eq!(cells.cells.len(), 0);
     }
 }

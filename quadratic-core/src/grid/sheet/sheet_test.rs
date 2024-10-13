@@ -66,7 +66,7 @@ impl Sheet {
                 std_out: None,
                 std_err: None,
                 formatted_code_string: None,
-                cells_accessed: std::collections::HashSet::new(),
+                cells_accessed: Default::default(),
                 result: crate::grid::CodeRunResult::Ok(crate::Value::Single(value)),
                 return_type: Some("number".into()),
                 line_number: None,
@@ -98,7 +98,7 @@ impl Sheet {
         };
         use bigdecimal::BigDecimal;
         use chrono::Utc;
-        use std::{collections::HashSet, str::FromStr};
+        use std::str::FromStr;
 
         let array_size = if vertical {
             ArraySize::new(1, n.len() as u32).unwrap()
@@ -133,7 +133,7 @@ impl Sheet {
                 std_out: None,
                 std_err: None,
                 formatted_code_string: None,
-                cells_accessed: HashSet::new(),
+                cells_accessed: Default::default(),
                 result: CodeRunResult::Ok(Value::Array(array)),
                 return_type: Some("number".into()),
                 line_number: None,
@@ -152,7 +152,7 @@ impl Sheet {
         };
         use bigdecimal::BigDecimal;
         use chrono::Utc;
-        use std::{collections::HashSet, str::FromStr};
+        use std::str::FromStr;
 
         self.set_cell_value(
             Pos { x, y },
@@ -181,7 +181,7 @@ impl Sheet {
                 std_out: None,
                 std_err: None,
                 formatted_code_string: None,
-                cells_accessed: HashSet::new(),
+                cells_accessed: Default::default(),
                 result: CodeRunResult::Ok(Value::Array(array)),
                 return_type: Some("number".into()),
                 line_number: None,

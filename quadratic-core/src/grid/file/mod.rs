@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use shift_negative_offsets::shift_negative_offsets;
 use std::fmt::Debug;
 use std::str;
-use v1_7_1::GridSchema as current;
+pub use v1_7_1::GridSchema as current;
 
 pub mod serialize;
 pub mod sheet_schema;
@@ -20,6 +20,8 @@ mod v1_5;
 mod v1_6;
 mod v1_7;
 pub mod v1_7_1;
+
+pub use v1_7_1::{CellsAccessedSchema, CodeRunSchema};
 
 pub static CURRENT_VERSION: &str = "1.7.1";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;

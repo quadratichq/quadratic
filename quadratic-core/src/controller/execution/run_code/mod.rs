@@ -324,8 +324,6 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use serial_test::{parallel, serial};
 
     use super::*;
@@ -367,7 +365,7 @@ mod test {
             line_number: None,
             output_type: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             spill_error: false,
         };
         gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);
@@ -396,7 +394,7 @@ mod test {
             line_number: None,
             output_type: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             spill_error: false,
         };
         gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);
