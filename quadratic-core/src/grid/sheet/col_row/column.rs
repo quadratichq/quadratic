@@ -335,6 +335,7 @@ impl Sheet {
             if let Some(mut column_data) = self.columns.remove(&col) {
                 column_data.x += 1;
                 self.columns.insert(col + 1, column_data);
+                updated_cols.insert(col);
                 updated_cols.insert(col + 1);
             }
         }
@@ -381,6 +382,7 @@ impl Sheet {
         for col in formats_to_update {
             if let Some(format) = self.formats_columns.remove(&col) {
                 self.formats_columns.insert(col + 1, format);
+                updated_cols.insert(col);
                 updated_cols.insert(col + 1);
             }
         }

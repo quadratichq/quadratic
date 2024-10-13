@@ -240,6 +240,7 @@ impl Sheet {
                 transaction.fill_cells.insert(self.id);
             }
             updated_rows.insert(row);
+            updated_rows.insert(row - 1);
         }
 
         // remove the column's borders from the sheet
@@ -510,6 +511,7 @@ impl Sheet {
         for row in formats_to_update {
             if let Some(format) = self.formats_rows.remove(&row) {
                 self.formats_rows.insert(row + 1, format);
+                updated_rows.insert(row);
                 updated_rows.insert(row + 1);
             }
         }
