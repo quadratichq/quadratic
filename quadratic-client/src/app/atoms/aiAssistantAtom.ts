@@ -27,7 +27,7 @@ export const defaultAIAssistantState: AIAssistantState = {
     quadraticDocs: true,
     connections: false,
     allSheets: false,
-    currentSheet: false,
+    currentSheet: true,
     visibleData: true,
     selection: undefined,
     codeCell: undefined,

@@ -30,7 +30,9 @@ The cell type is ${language}. The cell is located at ${x}, ${y}.\n
 ${
   schemaJsonForAi
     ? `The schema for the database is:
-\`\`\`json\n${schemaJsonForAi}\n\`\`\`
+\`\`\`json
+${schemaJsonForAi}
+\`\`\`
 ${
   language === 'POSTGRES'
     ? 'When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".'
@@ -44,6 +46,11 @@ ${
 ${
   language === 'MSSQL'
     ? 'When generating mssql queries, put schema and table names in square brackets, e.g. [schema].[TableName].'
+    : ''
+}
+${
+  language === 'SNOWFLAKE'
+    ? 'When generating Snowflake queries, put schema and table names in double quotes, e.g. "SCHEMA"."TABLE_NAME".'
     : ''
 }\n`
     : `Add imports to the top of the code cell and do not use any libraries or functions that are not listed in the Quadratic documentation.\n

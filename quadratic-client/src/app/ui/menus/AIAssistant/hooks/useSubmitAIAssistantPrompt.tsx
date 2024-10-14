@@ -80,17 +80,13 @@ export function useSubmitAIAssistantPrompt() {
         const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
         let updatedMessages: (UserMessage | AIMessage)[] = [];
         set(aiAssistantMessagesAtom, (prevMessages) => {
-          const lastQuadraticContext = prevMessages
-            .filter((message) => message.role === 'user' && message.contextType === 'quadraticDocs')
-            .at(-1);
-
-          const lastSheetContext = prevMessages
-            .filter((message) => message.role === 'user' && message.contextType === 'currentSheet')
-            .at(-1);
-
-          const lastVisibleContext = prevMessages
-            .filter((message) => message.role === 'user' && message.contextType === 'visibleData')
-            .at(-1);
+          prevMessages = prevMessages.filter(
+            (message) =>
+              message.contextType !== 'quadraticDocs' &&
+              message.contextType !== 'allSheets' &&
+              message.contextType !== 'currentSheet' &&
+              message.contextType !== 'visibleData'
+          );
 
           const lastSelectionContext = prevMessages
             .filter((message) => message.role === 'user' && message.contextType === 'selection')
@@ -101,27 +97,20 @@ export function useSubmitAIAssistantPrompt() {
             .at(-1);
 
           const newContextMessages: (UserMessage | AIMessage)[] = [
-            ...(!clearMessages && lastQuadraticContext?.content === quadraticContext?.[0]?.content
-              ? []
-              : quadraticContext),
-            ...(!clearMessages && lastSheetContext?.content === sheetContext?.[0]?.content ? [] : sheetContext),
-            ...(!clearMessages && lastVisibleContext?.content === visibleContext?.[0]?.content ? [] : visibleContext),
             ...(!clearMessages && lastSelectionContext?.content === selectionContext?.[0]?.content
               ? []
               : selectionContext),
             ...(!clearMessages && lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
           ];
 
-          updatedMessages = clearMessages
-            ? [
-                ...newContextMessages,
-                { role: 'user', content: userPrompt, internalContext: false, contextType: 'userPrompt' },
-              ]
-            : [
-                ...prevMessages,
-                ...newContextMessages,
-                { role: 'user', content: userPrompt, internalContext: false, contextType: 'userPrompt' },
-              ];
+          updatedMessages = [
+            ...quadraticContext,
+            ...sheetContext,
+            ...visibleContext,
+            ...(clearMessages ? [] : prevMessages),
+            ...newContextMessages,
+            { role: 'user', content: userPrompt, internalContext: false, contextType: 'userPrompt' },
+          ];
 
           return updatedMessages;
         });
@@ -148,7 +137,15 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
       },
-    [handleAIRequestToAPI, getQuadraticContext, getVisibleContext, getSelectionContext, getCodeCellContext, model]
+    [
+      handleAIRequestToAPI,
+      getQuadraticContext,
+      getCurrentSheetContext,
+      getVisibleContext,
+      getSelectionContext,
+      getCodeCellContext,
+      model,
+    ]
   );
 
   return { submitPrompt };

@@ -32,12 +32,12 @@ const Icon = (props: BaseIconProps) => {
 type IconProps = Omit<BaseIconProps, 'children'>;
 export type IconComponent = React.FC<IconProps>;
 
-export const AIIcon: IconComponent = (props) => {
-  return <Icon {...props}>auto_awesome</Icon>;
-};
-
 export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
+};
+
+export const AIIcon: IconComponent = (props) => {
+  return <Icon {...props}>auto_awesome</Icon>;
 };
 
 export const ApiIcon: IconComponent = (props) => {

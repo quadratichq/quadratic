@@ -51,18 +51,13 @@ export function useAISetCodeCellValue() {
         const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
         const setCodeCellValuePrompt = getSetCodeCellValuePrompt({ language, text, model });
 
-        const prevMessages = await snapshot.getPromise(aiAssistantMessagesAtom);
-        const lastQuadraticContext = prevMessages
-          .filter((message) => message.role === 'user' && message.contextType === 'quadraticDocs')
-          .at(-1);
-
-        const lastSheetContext = prevMessages
-          .filter((message) => message.role === 'user' && message.contextType === 'currentSheet')
-          .at(-1);
-
-        const lastVisibleContext = prevMessages
-          .filter((message) => message.role === 'user' && message.contextType === 'visibleData')
-          .at(-1);
+        const prevMessages = (await snapshot.getPromise(aiAssistantMessagesAtom)).filter(
+          (message) =>
+            message.contextType !== 'quadraticDocs' &&
+            message.contextType !== 'allSheets' &&
+            message.contextType !== 'currentSheet' &&
+            message.contextType !== 'visibleData'
+        );
 
         const lastSelectionContext = prevMessages
           .filter((message) => message.role === 'user' && message.contextType === 'selection')
@@ -73,14 +68,14 @@ export function useAISetCodeCellValue() {
           .at(-1);
 
         const newContextMessages: (UserMessage | AIMessage)[] = [
-          ...(lastQuadraticContext?.content === quadraticContext?.[0]?.content ? [] : quadraticContext),
-          ...(lastSheetContext?.content === sheetContext?.[0]?.content ? [] : sheetContext),
-          ...(lastVisibleContext?.content === visibleContext?.[0]?.content ? [] : visibleContext),
           ...(lastSelectionContext?.content === selectionContext?.[0]?.content ? [] : selectionContext),
           ...(lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
         ];
 
         const updatedMessages: (UserMessage | AIMessage)[] = [
+          ...quadraticContext,
+          ...sheetContext,
+          ...visibleContext,
           ...prevMessages,
           ...newContextMessages,
           setCodeCellValuePrompt,

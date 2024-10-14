@@ -278,7 +278,7 @@ impl Sheet {
                 rect_origin: rect.min.into(),
                 rect_width: rect.width(),
                 rect_height: rect.height(),
-                starting_rect_values: self.js_cell_value_pos_rect(rect, Some(5)),
+                starting_rect_values: self.js_cell_value_pos_rect(rect, Some(3)),
             };
             ai_context_rects.push(js_cell_value_pos_ai_context);
         }

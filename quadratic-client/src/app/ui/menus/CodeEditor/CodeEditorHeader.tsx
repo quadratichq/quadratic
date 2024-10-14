@@ -91,7 +91,6 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     return () => {
       events.off('changeSheet', updateSheetName);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // show when this cell is already in the execution queue

@@ -32,7 +32,7 @@ I am sharing current sheet data as an array of tabular data rectangles, each tab
   - rect_origin: This is a JSON object having x and y properties. x is the column index and y is the row index of the top left cell of the rectangle.\n
   - rect_width: This is the width of the rectangle in number of columns.\n
   - rect_height: This is the height of the rectangle in number of rows.\n
-  - starting_rect_values: This is a 2D array of cell values (json object format described below). This is the starting 5 rows of data in the rectangle. This includes headers, if present, and data.\n
+  - starting_rect_values: This is a 2D array of cell values (json object format described below). This is the starting 3 rows of data in the rectangle. This includes headers, if present, and data.\n
 
 Each cell value is a JSON object having the following properties:\n
   - value: The value of the cell. This is a string representation of the value in the cell.\n
