@@ -2,6 +2,7 @@ use std::io::Cursor;
 
 use anyhow::{anyhow, bail, Result};
 use chrono::{NaiveDate, NaiveTime};
+use csv_sniffer::Sniffer;
 
 use crate::{
     cell_values::CellValues,
@@ -43,13 +44,22 @@ impl GridController {
             }
         };
 
+        // auto detect the delimiter
+        let cursor = Cursor::new(&file);
+        let metadata = Sniffer::new()
+            .sniff_reader(cursor)
+            .map_err(|e| error(format!("Failed to detect CSV metadata: {}", e)))?;
+        let delimiter = metadata.dialect.delimiter;
+
         // first get the total number of lines so we can provide progress
         let mut reader = csv::ReaderBuilder::new()
+            .delimiter(delimiter)
             .has_headers(false)
             .from_reader(file);
         let height = reader.records().count() as u32;
 
         let mut reader = csv::ReaderBuilder::new()
+            .delimiter(delimiter)
             .has_headers(false)
             .flexible(true)
             .from_reader(file);
