@@ -592,8 +592,6 @@ impl Sheet {
 mod tests {
     use super::*;
 
-    use std::collections::HashSet;
-
     use chrono::Utc;
     use serial_test::{parallel, serial};
     use uuid::Uuid;

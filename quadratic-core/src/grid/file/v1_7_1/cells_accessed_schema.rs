@@ -1,10 +1,31 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    grid::{file::v1_7_1, CellsAccessed, SheetId},
-    A1RangeType,
-};
+use crate::grid::file::v1_7_1;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RelRectSchema {
+    pub min: RelPosSchema,
+    pub max: RelPosSchema,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RelPosSchema {
+    pub x: RelColRowSchema,
+    pub y: RelColRowSchema,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RelColRowSchema {
+    pub index: u64,
+    pub relative: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RelColRowRangeSchema {
+    pub min: RelColRowSchema,
+    pub max: RelColRowSchema,
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum A1RangeTypeSchema {
@@ -31,20 +52,4 @@ pub struct CodeRunSchema {
     pub output_type: Option<String>,
     pub spill_error: bool,
     pub last_modified: Option<DateTime<Utc>>,
-}
-
-impl From<CellsAccessedSchema> for CellsAccessed {
-    fn from(schema: CellsAccessedSchema) -> Self {
-        CellsAccessed {
-            cells: schema
-                .into_iter()
-                .map(|(id, ranges)| {
-                    (
-                        SheetId::from(id),
-                        ranges.into_iter().collect::<HashSet<A1RangeType>>(),
-                    )
-                })
-                .collect(),
-        }
-    }
 }

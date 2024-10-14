@@ -69,7 +69,7 @@ enum GridFile {
 }
 
 impl GridFile {
-    fn into_latest(self) -> Result<v1_7::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_7_1::GridSchema> {
         match self {
             GridFile::V1_7_1 { grid } => Ok(grid),
             GridFile::V1_7 { grid } => v1_7::upgrade(grid),
@@ -112,7 +112,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_6::file::upgrade(schema)?;
+            let schema = v1_7::upgrade(v1_6::file::upgrade(schema)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.7" => {
@@ -123,7 +123,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
                 data,
             )?;
             drop(file_contents);
-            Ok(serialize::import(schema)?)
+            Ok(serialize::import(v1_7::upgrade(schema)?)?)
         }
         "1.7.1" => {
             let schema = decompress_and_deserialize::<current>(

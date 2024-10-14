@@ -9,7 +9,7 @@ use ts_rs::TS;
 
 use crate::{grid::SheetId, Pos, Rect, A1};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, TS)]
 pub struct A1Range {
     pub sheet_id: SheetId,
     pub range: A1RangeType,
@@ -58,21 +58,21 @@ impl A1RangeType {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash, TS)]
 pub struct RelColRowRange {
-    pub from: RelColRow,
-    pub to: RelColRow,
+    pub min: RelColRow,
+    pub max: RelColRow,
 }
 
 impl RelColRowRange {
     pub fn iter(&self) -> impl Iterator<Item = u64> {
-        (self.from.index..=self.to.index).into_iter()
+        (self.min.index..=self.max.index).into_iter()
     }
 }
 
 impl From<RelColRowRange> for Vec<u64> {
     fn from(range: RelColRowRange) -> Self {
         let mut indices = Vec::new();
-        let mut current = range.from.index;
-        while current <= range.to.index {
+        let mut current = range.min.index;
+        while current <= range.max.index {
             indices.push(current);
             current += 1;
         }
@@ -245,14 +245,14 @@ mod tests {
         assert!(!a1_range.intersects(&sheet_rect));
 
         let a1_range = A1RangeType::ColumnRange(RelColRowRange {
-            from: RelColRow::new(1, true),
-            to: RelColRow::new(3, true),
+            min: RelColRow::new(1, true),
+            max: RelColRow::new(3, true),
         });
         assert!(a1_range.intersects(&sheet_rect));
 
         let a1_range = A1RangeType::RowRange(RelColRowRange {
-            from: RelColRow::new(1, true),
-            to: RelColRow::new(3, true),
+            min: RelColRow::new(1, true),
+            max: RelColRow::new(3, true),
         });
         assert!(a1_range.intersects(&sheet_rect));
 
@@ -276,14 +276,14 @@ mod tests {
         assert!(a1_range.contains(Pos::new(1, 1)));
 
         let a1_range = A1RangeType::ColumnRange(RelColRowRange {
-            from: RelColRow::new(1, true),
-            to: RelColRow::new(3, true),
+            min: RelColRow::new(1, true),
+            max: RelColRow::new(3, true),
         });
         assert!(a1_range.contains(Pos::new(1, 1)));
 
         let a1_range = A1RangeType::RowRange(RelColRowRange {
-            from: RelColRow::new(1, true),
-            to: RelColRow::new(3, true),
+            min: RelColRow::new(1, true),
+            max: RelColRow::new(3, true),
         });
         assert!(a1_range.contains(Pos::new(1, 1)));
 
@@ -297,22 +297,23 @@ mod tests {
         assert!(!a1_range.contains(Pos::new(1, 1)));
 
         let a1_range = A1RangeType::ColumnRange(RelColRowRange {
-            from: RelColRow::new(1, true),
-            to: RelColRow::new(3, true),
+            min: RelColRow::new(1, true),
+            max: RelColRow::new(3, true),
         });
-        assert!(!a1_range.contains(Pos::new(1, 1)));
+        assert!(!a1_range.contains(Pos::new(4, 1)));
 
         let a1_range = A1RangeType::RowRange(RelColRowRange {
-            from: RelColRow::new(1, true),
-            to: RelColRow::new(3, true),
+            min: RelColRow::new(1, true),
+            max: RelColRow::new(3, true),
         });
-        assert!(!a1_range.contains(Pos::new(1, 1)));
+        assert!(!a1_range.contains(Pos::new(1, 4)));
 
         let a1_range = A1RangeType::Rect(RelRect {
             min: RelPos::new(1, 1, true, true),
             max: RelPos::new(3, 3, true, true),
         });
-        assert!(!a1_range.contains(Pos::new(1, 1)));
+        assert!(!a1_range.contains(Pos::new(4, 1)));
+        assert!(!a1_range.contains(Pos::new(1, 4)));
 
         let a1_range = A1RangeType::Pos(RelPos::new(11, 11, true, true));
         assert!(!a1_range.contains(Pos::new(1, 1)));

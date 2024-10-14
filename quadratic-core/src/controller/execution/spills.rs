@@ -20,17 +20,23 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             if let Some((pos, run)) = sheet.code_runs.get_index_mut(index) {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
-                transaction.reverse_operations.push(Operation::SetCodeRun {
-                    sheet_pos,
-                    code_run: Some(run.clone()),
-                    index,
-                });
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetCodeRunVersion {
+                        sheet_pos,
+                        code_run: Some(run.clone()),
+                        index,
+                        version: 1,
+                    });
                 run.spill_error = spill_error;
-                transaction.forward_operations.push(Operation::SetCodeRun {
-                    sheet_pos,
-                    code_run: Some(run.to_owned()),
-                    index,
-                });
+                transaction
+                    .forward_operations
+                    .push(Operation::SetCodeRunVersion {
+                        sheet_pos,
+                        code_run: Some(run.to_owned()),
+                        index,
+                        version: 1,
+                    });
 
                 if (cfg!(target_family = "wasm") || cfg!(test))
                     && !transaction.is_server()
@@ -107,8 +113,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
     use chrono::Utc;
     use serial_test::{parallel, serial};
 

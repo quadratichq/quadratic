@@ -12,6 +12,50 @@ use wasm_bindgen::{convert::IntoWasmAbi, JsValue};
 
 use super::cells_accessed::CellsAccessed;
 
+// This is a deprecated version of CodeRun that is only used for file v1.7 and below.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CodeRunOld {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub formatted_code_string: Option<String>,
+
+    pub std_out: Option<String>,
+    pub std_err: Option<String>,
+    pub cells_accessed: Vec<SheetRect>,
+    pub result: CodeRunResult,
+    pub return_type: Option<String>,
+    pub spill_error: bool,
+    pub line_number: Option<u32>,
+    pub output_type: Option<String>,
+    pub last_modified: DateTime<Utc>,
+}
+
+impl From<Vec<SheetRect>> for CellsAccessed {
+    fn from(old: Vec<SheetRect>) -> Self {
+        let mut cells = CellsAccessed::default();
+        for rect in old {
+            cells.add_sheet_pos(SheetPos::new(rect.sheet_id, rect.min.x, rect.min.y));
+        }
+        cells
+    }
+}
+
+impl From<CodeRunOld> for CodeRun {
+    fn from(old: CodeRunOld) -> Self {
+        Self {
+            formatted_code_string: old.formatted_code_string,
+            std_out: old.std_out,
+            std_err: old.std_err,
+            cells_accessed: old.cells_accessed.into(),
+            result: old.result,
+            return_type: old.return_type,
+            spill_error: old.spill_error,
+            line_number: old.line_number,
+            output_type: old.output_type,
+            last_modified: old.last_modified,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeRun {
     #[serde(skip_serializing_if = "Option::is_none")]

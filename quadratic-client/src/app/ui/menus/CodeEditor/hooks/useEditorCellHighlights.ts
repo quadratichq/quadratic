@@ -3,7 +3,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
 import { getKey, StringId } from '@/app/helpers/getKey';
-import { parsePython as parseCellsAccessed } from '@/app/helpers/parseEditorPythonCell';
+import { parseCellsAccessed } from '@/app/ui/menus/CodeEditor/hooks/parseCellsAccessed';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
@@ -11,6 +11,7 @@ import { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 
 export function extractCellsFromParseFormula(
   parsedFormula: ParseFormulaReturnType,
@@ -88,7 +89,11 @@ export const useEditorCellHighlights = (
 
       const modelValue = editorInst.getValue();
       let parsed;
-      if (codeCell.language === 'Python' || codeCell.language === 'Javascript') {
+      if (
+        codeCell.language === 'Python' ||
+        codeCell.language === 'Javascript' ||
+        codeCellIsAConnection(codeCell.language)
+      ) {
         parsed = parseCellsAccessed(cellsAccessed) as ParseFormulaReturnType;
       } else if (codeCell.language === 'Formula') {
         parsed = (await parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;

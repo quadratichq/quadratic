@@ -68,7 +68,7 @@ impl A1Range {
                 (Some(a), None) => (a, a),
                 _ => return None,
             };
-            Some(RelColRowRange { from, to })
+            Some(RelColRowRange { min: from, max: to })
         })
     }
 
@@ -85,9 +85,9 @@ impl A1Range {
                 match (from, to) {
                     (Some(a), Some(b)) => {
                         let (from, to) = if a.index > b.index { (b, a) } else { (a, b) };
-                        Some(RelColRowRange { from, to })
+                        Some(RelColRowRange { min: from, max: to })
                     }
-                    (Some(a), None) => Some(RelColRowRange { from: a, to: a }),
+                    (Some(a), None) => Some(RelColRowRange { min: a, max: a }),
                     _ => None,
                 }
             })
@@ -263,8 +263,8 @@ mod tests {
         assert_eq!(
             A1Range::try_from_column_range("A:C"),
             Some(RelColRowRange {
-                from: RelColRow::new(1, true),
-                to: RelColRow::new(3, true),
+                min: RelColRow::new(1, true),
+                max: RelColRow::new(3, true),
             })
         );
         assert_eq!(A1Range::try_from_column_range("A1:B4"), None);
@@ -278,8 +278,8 @@ mod tests {
         assert_eq!(
             A1Range::try_from_row_range("1:3"),
             Some(RelColRowRange {
-                from: RelColRow::new(1, true),
-                to: RelColRow::new(3, true),
+                min: RelColRow::new(1, true),
+                max: RelColRow::new(3, true),
             })
         );
         assert_eq!(A1Range::try_from_row_range("A1:B4"), None);
@@ -322,8 +322,8 @@ mod tests {
             Ok(A1Range {
                 sheet_id,
                 range: A1RangeType::ColumnRange(RelColRowRange {
-                    from: RelColRow::new(1, true),
-                    to: RelColRow::new(3, true),
+                    min: RelColRow::new(1, true),
+                    max: RelColRow::new(3, true),
                 }),
             })
         );
@@ -338,8 +338,8 @@ mod tests {
             Ok(A1Range {
                 sheet_id,
                 range: A1RangeType::RowRange(RelColRowRange {
-                    from: RelColRow::new(1, true),
-                    to: RelColRow::new(3, true),
+                    min: RelColRow::new(1, true),
+                    max: RelColRow::new(3, true),
                 }),
             })
         );

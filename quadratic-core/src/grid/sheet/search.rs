@@ -230,8 +230,6 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use chrono::Utc;
 
     use crate::{

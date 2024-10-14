@@ -19,10 +19,12 @@ impl SheetSchema {
     pub fn into_latest(self) -> Result<Sheet> {
         match self {
             SheetSchema::V1_7_1(sheet) => super::serialize::sheets::import_sheet(sheet),
-            SheetSchema::V1_7(sheet) => super::serialize::sheets::import_sheet(sheet),
-            SheetSchema::V1_6(sheet) => {
-                super::serialize::sheets::import_sheet(v1_6::file::upgrade_sheet(sheet)?)
+            SheetSchema::V1_7(sheet) => {
+                super::serialize::sheets::import_sheet(v1_7::upgrade_sheet(sheet))
             }
+            SheetSchema::V1_6(sheet) => super::serialize::sheets::import_sheet(
+                v1_7::upgrade_sheet(v1_6::file::upgrade_sheet(sheet)?),
+            ),
         }
     }
 }

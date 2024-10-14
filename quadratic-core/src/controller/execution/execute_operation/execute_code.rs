@@ -87,7 +87,33 @@ impl GridController {
             index,
         } = op
         {
-            self.finalize_code_run(transaction, sheet_pos, code_run, Some(index));
+            let op = Operation::SetCodeRunVersion {
+                sheet_pos,
+                code_run: code_run.map(|code_run| code_run.into()),
+                index,
+                version: 1,
+            };
+            self.execute_set_code_run_version(transaction, op);
+        }
+    }
+
+    pub(super) fn execute_set_code_run_version(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetCodeRunVersion {
+            sheet_pos,
+            code_run,
+            index,
+            version,
+        } = op
+        {
+            if version == 1 {
+                self.finalize_code_run(transaction, sheet_pos, code_run, Some(index));
+            } else {
+                dbgjs!("Expected SetCodeRunVersion version to be 1");
+            }
         }
     }
 

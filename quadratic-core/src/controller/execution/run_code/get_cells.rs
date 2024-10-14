@@ -167,7 +167,8 @@ impl GridController {
 
         let rect = sheet.a1_cells_rect(a1);
 
-        let a1_range_type = A1::to_a1_range_type(&original_a1)?;
+        // we don't need the sheet_name from here because we already parsed it above
+        let (a1_range_type, _) = A1::to_a1_range_type(&original_a1)?;
         transaction.cells_accessed.add(sheet.id, a1_range_type);
 
         let response = if let Some(rect) = rect {

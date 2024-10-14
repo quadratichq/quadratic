@@ -1,15 +1,64 @@
+use serde::de::{MapAccess, Visitor};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{HashMap, HashSet};
-
-use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::str::FromStr;
 use ts_rs::TS;
 
+use super::SheetId;
 use crate::{A1RangeType, Rect, RelPos, RelRect, SheetPos, SheetRect};
 
-use super::SheetId;
-
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Debug, Clone, PartialEq, TS)]
 pub struct CellsAccessed {
     pub cells: HashMap<SheetId, HashSet<A1RangeType>>,
+}
+
+// todo: this is only needed b/c SheetId does not serialize directly to a String (it should)
+impl Serialize for CellsAccessed {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(self.cells.len()))?;
+        for (k, v) in &self.cells {
+            map.serialize_entry(&k.to_string(), v)?;
+        }
+        map.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for CellsAccessed {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct CellsAccessedVisitor;
+
+        impl<'de> Visitor<'de> for CellsAccessedVisitor {
+            type Value = CellsAccessed;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a map of SheetId to HashSet<A1RangeType>")
+            }
+
+            fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+            where
+                M: MapAccess<'de>,
+            {
+                let mut cells = HashMap::new();
+                while let Some((key, value)) =
+                    access.next_entry::<String, HashSet<A1RangeType>>()?
+                {
+                    let sheet_id = SheetId::from_str(&key).map_err(serde::de::Error::custom)?;
+                    cells.insert(sheet_id, value);
+                }
+                Ok(CellsAccessed { cells })
+            }
+        }
+
+        deserializer.deserialize_map(CellsAccessedVisitor)
+    }
 }
 
 impl CellsAccessed {
@@ -76,6 +125,15 @@ impl CellsAccessed {
     /// Clears the CellsAccessed.
     pub fn clear(&mut self) {
         self.cells.clear();
+    }
+
+    /// Returns the number of sheets that have been accessed.
+    pub fn len(&self, sheet_id: SheetId) -> Option<usize> {
+        self.cells.get(&sheet_id).map(|ranges| ranges.len())
+    }
+
+    pub fn sheet_iter(&self, sheet_id: SheetId) -> impl Iterator<Item = &A1RangeType> {
+        self.cells.get(&sheet_id).into_iter().flatten()
     }
 }
 
@@ -153,5 +211,26 @@ mod tests {
         let sheet_id = SheetId::new();
         cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 1));
         assert!(cells.contains(SheetPos::new(sheet_id, 1, 1)));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_len() {
+        let mut cells = CellsAccessed::default();
+        let sheet_id = SheetId::new();
+        cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 1));
+        cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 2));
+        assert_eq!(cells.len(sheet_id), Some(2));
+        assert_eq!(cells.len(SheetId::new()), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_sheet_iter() {
+        let mut cells = CellsAccessed::default();
+        let sheet_id = SheetId::new();
+        cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 1));
+        cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 2));
+        assert_eq!(cells.sheet_iter(sheet_id).count(), 2);
     }
 }

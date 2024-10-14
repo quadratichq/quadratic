@@ -5,7 +5,7 @@ use crate::{
     },
     formulas::{replace_cell_references_with, CellRefCoord},
     grid::{GridBounds, SheetId},
-    CellValue, CodeCellValue,
+    A1RangeType, CellValue, CodeCellValue,
 };
 
 impl GridController {
@@ -21,9 +21,23 @@ impl GridController {
         self.grid.sheets().iter().for_each(|sheet| {
             sheet.code_runs.iter().for_each(|(pos, code_run)| {
                 if let Some(column) = column {
-                    if code_run.cells_accessed.iter().any(|sheet_rect| {
+                    if code_run.cells_accessed.sheet_iter(sheet_id).any(|range| {
                         // if the cells accessed is beyond the column that was deleted
-                        sheet_rect.sheet_id == sheet_id && sheet_rect.max.x >= column
+                        match range {
+                            &A1RangeType::Pos(pos) => pos.x.index as i64 >= column,
+                            A1RangeType::Rect(rect) => {
+                                rect.min.x.index as i64 >= column
+                                    || rect.max.x.index as i64 >= column
+                            }
+                            A1RangeType::Column(col) => col.index as i64 >= column,
+                            A1RangeType::ColumnRange(col_range) => {
+                                col_range.min.index as i64 >= column
+                                    || col_range.max.index as i64 >= column
+                            }
+                            A1RangeType::All | A1RangeType::Row(_) | A1RangeType::RowRange(_) => {
+                                false
+                            }
+                        }
                     }) {
                         // only update formulas (for now)
                         if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {
@@ -69,9 +83,22 @@ impl GridController {
                         }
                     }
                 } else if let Some(row) = row {
-                    if code_run.cells_accessed.iter().any(|sheet_rect| {
+                    if code_run.cells_accessed.sheet_iter(sheet_id).any(|range| {
                         // if the cells accessed is beyond the row that was deleted
-                        sheet_rect.sheet_id == sheet_id && sheet_rect.max.y >= row
+                        match range {
+                            A1RangeType::Pos(pos) => pos.y.index as i64 >= row,
+                            A1RangeType::Rect(rect) => {
+                                rect.min.y.index as i64 >= row || rect.max.y.index as i64 >= row
+                            }
+                            A1RangeType::Row(rel_row) => rel_row.index as i64 >= row,
+                            A1RangeType::RowRange(row_range) => {
+                                row_range.min.index as i64 >= row
+                                    || row_range.max.index as i64 >= row
+                            }
+                            A1RangeType::All
+                            | A1RangeType::Column(_)
+                            | A1RangeType::ColumnRange(_) => false,
+                        }
                     }) {
                         // only update formulas (for now)
                         if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {

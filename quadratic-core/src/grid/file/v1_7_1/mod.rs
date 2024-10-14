@@ -2,7 +2,8 @@ mod cells_accessed_schema;
 
 use crate::grid::file::v1_7::schema as v1_7;
 
-pub use cells_accessed_schema::{CellsAccessedSchema, CodeRunSchema};
+pub use cells_accessed_schema::*;
+use serde::{Deserialize, Serialize};
 pub type IdSchema = v1_7::IdSchema;
 pub type PosSchema = v1_7::PosSchema;
 pub type RectSchema = v1_7::RectSchema;
@@ -47,10 +48,31 @@ pub type TextMatchSchema = v1_7::TextMatchSchema;
 pub type TextCaseSchema = v1_7::TextCaseSchema;
 pub type DateTimeRangeSchema = v1_7::DateTimeRangeSchema;
 pub type NumberRangeSchema = v1_7::NumberRangeSchema;
-pub type GridSchema = v1_7::GridSchema;
 pub type RgbaSchema = v1_7::RgbaSchema;
 pub type CellBorderLineSchema = v1_7::CellBorderLineSchema;
 pub type BorderStyleTimestampSchema = v1_7::BorderStyleTimestampSchema;
 pub type BorderStyleCellSchema = v1_7::BorderStyleCellSchema;
 pub type BordersSchema = v1_7::BordersSchema;
-pub type SheetSchema = v1_7::SheetSchema;
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SheetSchema {
+    pub id: IdSchema,
+    pub name: String,
+    pub color: Option<String>,
+    pub order: String,
+    pub offsets: OffsetsSchema,
+    pub columns: Vec<(i64, ColumnSchema)>,
+    pub code_runs: Vec<(PosSchema, CodeRunSchema)>,
+    pub formats_all: Option<FormatSchema>,
+    pub formats_columns: Vec<(i64, (FormatSchema, i64))>,
+    pub formats_rows: Vec<(i64, (FormatSchema, i64))>,
+    pub rows_resize: Vec<(i64, ResizeSchema)>,
+    pub validations: ValidationsSchema,
+    pub borders: BordersSchema,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GridSchema {
+    pub version: String,
+    pub sheets: Vec<SheetSchema>,
+}

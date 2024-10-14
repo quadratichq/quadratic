@@ -30,7 +30,7 @@ export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint
 export interface JsBordersSheet { all: BorderStyleCell | null, columns: Record<string, BorderStyleCell> | null, rows: Record<string, BorderStyleCell> | null, horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
 export interface JsCellValue { value: string, kind: string, }
 export interface JsClipboard { plainText: string, html: string, }
-export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<SheetRect> | null, }
+export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: CellsAccessed | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
 export interface CellA1Response { cells: Array<JsGetCellResponse>, x: bigint, y: bigint, w: bigint, h: bigint, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }

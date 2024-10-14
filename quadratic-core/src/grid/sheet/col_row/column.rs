@@ -76,10 +76,11 @@ impl Sheet {
             .enumerate()
             .for_each(|(index, (pos, code_run))| {
                 if pos.x == column {
-                    reverse_operations.push(Operation::SetCodeRun {
+                    reverse_operations.push(Operation::SetCodeRunVersion {
                         sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
                         code_run: Some(code_run.clone()),
                         index,
+                        version: 1,
                     });
                 }
             });

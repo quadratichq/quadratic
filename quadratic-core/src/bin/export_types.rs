@@ -30,7 +30,8 @@ use grid::sheet::validations::validation_rules::validation_text::{
 };
 use grid::sheet::validations::validation_rules::ValidationRule;
 use grid::{
-    CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
+    CellAlign, CellVerticalAlign, CellWrap, CellsAccessed, GridBounds, NumericFormat,
+    NumericFormatKind, SheetId,
 };
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
@@ -70,7 +71,7 @@ fn main() {
     s += &generate_type_declarations!(
         A1Error,
         A1Cells,
-        A1CellsType,
+        A1RangeType,
         ArraySize,
         Axis,
         BorderSelection,
@@ -78,6 +79,7 @@ fn main() {
         BorderStyleCell,
         BorderStyleTimestamp,
         CellAlign,
+        CellsAccessed,
         CellBorderLine,
         CellFormatSummary,
         CellRef,

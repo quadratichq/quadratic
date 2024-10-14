@@ -46,7 +46,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashSet, str::FromStr};
+    use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
     use serial_test::parallel;

@@ -555,7 +555,7 @@ mod test {
     fn test_contains_col() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert!(rect.contains_col(2));
-        assert!(!rect.contains_col(1));
+        assert!(!rect.contains_col(8));
     }
 
     #[test]
@@ -563,6 +563,6 @@ mod test {
     fn test_contains_row() {
         let rect = Rect::from_ranges(1..4, 2..5);
         assert!(rect.contains_row(3));
-        assert!(!rect.contains_row(2));
+        assert!(!rect.contains_row(8));
     }
 }

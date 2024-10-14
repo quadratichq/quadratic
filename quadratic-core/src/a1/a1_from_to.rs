@@ -153,8 +153,8 @@ mod tests {
                 ranges: vec![A1Range {
                     sheet_id,
                     range: A1RangeType::ColumnRange(RelColRowRange {
-                        from: RelColRow::new(1, true),
-                        to: RelColRow::new(3, true),
+                        min: RelColRow::new(1, true),
+                        max: RelColRow::new(3, true),
                     }),
                 }],
             }
@@ -175,8 +175,8 @@ mod tests {
                 ranges: vec![A1Range {
                     sheet_id,
                     range: A1RangeType::RowRange(RelColRowRange {
-                        from: RelColRow::new(1, true),
-                        to: RelColRow::new(3, true),
+                        min: RelColRow::new(1, true),
+                        max: RelColRow::new(3, true),
                     }),
                 }],
             }
