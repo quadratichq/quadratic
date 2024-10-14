@@ -8,7 +8,7 @@ export const Events = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) {
-        if (e.target && e.target instanceof Element && !e.target.closest('#quadratic-ui')) {
+        if (e.target && e.target instanceof Element && !e.target.closest('#quadratic-ui, .quadratic-popover')) {
           focusGrid();
         }
       }
