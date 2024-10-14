@@ -1,5 +1,5 @@
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
-use crate::grid::Grid;
+use crate::{grid::Grid, viewport::ViewportBuffer};
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;
 pub mod dependencies;
@@ -14,7 +14,6 @@ pub mod thumbnail;
 pub mod transaction;
 pub mod transaction_types;
 pub mod user_actions;
-pub mod viewport;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -25,6 +24,10 @@ pub struct GridController {
 
     // holds information about transactions in progress
     transactions: ActiveTransactions,
+
+    // the viewport buffer is a shared array buffer that is accessed by the render web worker and the controller
+    // contains current viewport position and sheet id, updated by render web worker on viewport change
+    viewport_buffer: Option<ViewportBuffer>,
 }
 
 impl GridController {
@@ -63,6 +66,13 @@ impl GridController {
     // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
+    }
+
+    // create a new gc for testing purposes with a viewport buffer
+    pub fn test_with_viewport_buffer() -> Self {
+        let mut gc = Self::from_grid(Grid::test(), 0);
+        gc.viewport_buffer = Some(ViewportBuffer::default());
+        gc
     }
 
     // get the last active transaction for testing purposes
