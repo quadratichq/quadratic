@@ -2,8 +2,13 @@
 // Do not modify it manually.
 
 export type A1Error = { "InvalidSheetId": string } | { "InvalidSheetMap": string } | { "InvalidColumn": string } | { "InvalidSheetName": string } | { "InvalidSheetNameMissingQuotes": string } | { "InvalidRange": string } | { "InvalidRow": string } | { "TooManySheets": string } | { "MismatchedQuotes": string } | { "WrongCellCount": string } | { "InvalidExclusion": string } | { "TranslateInvalid": string };
-export interface A1Cells { cells: A1CellsType, sheet_name: string | null, }
-export type A1CellsType = "All" | { "Columns": Array<bigint> } | { "Rows": Array<bigint> } | { "Rect": Rect };
+export interface A1Cells { cells: A1RangeType, sheet_name: string | null, }
+export type A1RangeType = "All" | { "Column": RelColRow } | { "Row": RelColRow } | { "ColumnRange": RelColRowRange } | { "RowRange": RelColRowRange } | { "Rect": RelRect } | { "Pos": RelPos };
+export interface RelColRow { index: bigint, relative: boolean, }
+export interface RelColRowRange { min: RelColRow, max: RelColRow, }
+export interface RelRect { min: RelPos, max: RelPos, }
+export interface RelPos { x: RelColRow, y: RelColRow, }
+export interface JsCellsAccessed { cells: Record<string, Array<A1RangeType>>, }
 export interface ArraySize { w: number, h: number, }
 export type Axis = "X" | "Y";
 export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertical" | "left" | "top" | "right" | "bottom" | "clear";
@@ -30,7 +35,7 @@ export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint
 export interface JsBordersSheet { all: BorderStyleCell | null, columns: Record<string, BorderStyleCell> | null, rows: Record<string, BorderStyleCell> | null, horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
 export interface JsCellValue { value: string, kind: string, }
 export interface JsClipboard { plainText: string, html: string, }
-export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: CellsAccessed | null, }
+export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: JsCellsAccessed | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
 export interface CellA1Response { cells: Array<JsGetCellResponse>, x: bigint, y: bigint, w: bigint, h: bigint, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }

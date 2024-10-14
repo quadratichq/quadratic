@@ -174,7 +174,7 @@ impl Sheet {
                             line_number: code_run.line_number,
                             output_type: code_run.output_type.clone(),
                         }),
-                        cells_accessed: Some(code_run.cells_accessed.clone()),
+                        cells_accessed: Some(code_run.cells_accessed.clone().into()),
                     })
                 } else {
                     Some(JsCodeCell {

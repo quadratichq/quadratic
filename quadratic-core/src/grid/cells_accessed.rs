@@ -9,9 +9,26 @@ use ts_rs::TS;
 use super::SheetId;
 use crate::{A1RangeType, Rect, RelPos, RelRect, SheetPos, SheetRect};
 
-#[derive(Default, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub struct JsCellsAccessed {
+    pub cells: HashMap<String, Vec<A1RangeType>>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct CellsAccessed {
     pub cells: HashMap<SheetId, HashSet<A1RangeType>>,
+}
+
+impl From<CellsAccessed> for JsCellsAccessed {
+    fn from(cells: CellsAccessed) -> Self {
+        let mut js_cells = JsCellsAccessed::default();
+        for (sheet_id, ranges) in cells.cells {
+            js_cells
+                .cells
+                .insert(sheet_id.to_string(), ranges.into_iter().collect());
+        }
+        js_cells
+    }
 }
 
 // todo: this is only needed b/c SheetId does not serialize directly to a String (it should)
@@ -232,5 +249,19 @@ mod tests {
         cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 1));
         cells.add_sheet_pos(SheetPos::new(sheet_id, 1, 2));
         assert_eq!(cells.sheet_iter(sheet_id).count(), 2);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_to_js() {
+        let mut cells = CellsAccessed::default();
+        let sheet_id = SheetId::new();
+        cells.add(sheet_id, A1RangeType::All);
+        let js_cells: JsCellsAccessed = cells.into();
+        assert_eq!(js_cells.cells.len(), 1);
+        assert_eq!(
+            js_cells.cells[&sheet_id.to_string()],
+            vec![A1RangeType::All]
+        );
     }
 }

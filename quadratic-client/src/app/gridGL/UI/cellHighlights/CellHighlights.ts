@@ -9,6 +9,7 @@ import { convertColorStringToTint } from '../../../helpers/convertColor';
 import { CellPosition, ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
 import { DASHED } from '../../generateTextures';
 import { drawDashedRectangle, drawDashedRectangleMarching } from './cellHighlightsDraw';
+import { A1RangeType, CellsAccessed } from '@/app/quadratic-core-types';
 
 // TODO: these files need to be cleaned up and properly typed. Lots of untyped
 // data passed around within the data.
@@ -204,6 +205,18 @@ export class CellHighlights extends Container {
           throw new Error('Unsupported cell-ref in fromFormula');
       }
     });
+    pixiApp.cellHighlights.dirty = true;
+  }
+
+  fromCellsAccessed(cellsAccessed: CellsAccessed, cell: Coordinate, sheet: string) {
+    this.highlightedCells = [];
+    for (const sheetId in cellsAccessed.cells) {
+      if (sheetId === sheet) {
+        cellsAccessed.cells[sheetId].forEach((cell: A1RangeType) => {
+
+        });
+      }
+    }
     pixiApp.cellHighlights.dirty = true;
   }
 
