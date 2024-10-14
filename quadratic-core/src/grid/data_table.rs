@@ -251,10 +251,30 @@ impl DataTable {
         Ok(array.into())
     }
 
+    pub fn display_value_from_buffer_at(
+        &self,
+        display_buffer: &Vec<u64>,
+        pos: Pos,
+    ) -> Result<&CellValue> {
+        let y = display_buffer
+            .get(pos.y as usize)
+            .ok_or_else(|| anyhow!("Y {} out of bounds: {}", pos.y, display_buffer.len()))?;
+        let cell_value = self.value.get(pos.x as u32, *y as u32)?;
+
+        Ok(cell_value)
+    }
+
     pub fn display_value(&self) -> Result<Value> {
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer(display_buffer),
             None => Ok(self.value.to_owned()),
+        }
+    }
+
+    pub fn display_value_at(&self, pos: Pos) -> Result<&CellValue> {
+        match self.display_buffer {
+            Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
+            None => Ok(self.value.get(pos.x as u32, pos.y as u32)?),
         }
     }
 
@@ -299,7 +319,7 @@ impl DataTable {
         if self.spill_error {
             None
         } else {
-            self.value.get(x, y).ok()
+            self.display_value_at((x, y).into()).ok()
         }
     }
 
@@ -422,7 +442,11 @@ pub(crate) mod test {
 
     /// Util to print a data table when testing
     #[track_caller]
-    pub fn print_data_table(data_table: &DataTable, title: Option<&str>, max: Option<usize>) {
+    pub fn pretty_print_data_table(
+        data_table: &DataTable,
+        title: Option<&str>,
+        max: Option<usize>,
+    ) {
         let mut builder = Builder::default();
         let array = data_table.display_value().unwrap().into_array().unwrap();
         let max = max.unwrap_or(array.height() as usize);
@@ -530,18 +554,18 @@ pub(crate) mod test {
 
         let mut values = test_csv_values();
         values.remove(0); // remove header row
-        print_data_table(&data_table, Some("Original Data Table"), None);
+        pretty_print_data_table(&data_table, Some("Original Data Table"), None);
 
         // sort by population city ascending
         data_table.sort(0, SortDirection::Ascending).unwrap();
-        print_data_table(&data_table, Some("Sorted by City"), None);
+        pretty_print_data_table(&data_table, Some("Sorted by City"), None);
         assert_data_table_row(&data_table, 0, values[1].clone());
         assert_data_table_row(&data_table, 1, values[2].clone());
         assert_data_table_row(&data_table, 2, values[0].clone());
 
         // sort by population descending
         data_table.sort(3, SortDirection::Descending).unwrap();
-        print_data_table(&data_table, Some("Sorted by Population Descending"), None);
+        pretty_print_data_table(&data_table, Some("Sorted by Population Descending"), None);
         assert_data_table_row(&data_table, 0, values[1].clone());
         assert_data_table_row(&data_table, 1, values[0].clone());
         assert_data_table_row(&data_table, 2, values[2].clone());

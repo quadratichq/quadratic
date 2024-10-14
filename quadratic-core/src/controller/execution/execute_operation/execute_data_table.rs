@@ -5,7 +5,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::DataTable,
+    grid::{DataTable, SortDirection},
     ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
@@ -283,56 +283,45 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        // if let Operation::SortDataTable {
-        //     sheet_rect,
-        //     column_index,
-        //     sort_order,
-        // } = op
-        // {
-        //     // let sheet_id = sheet_pos.sheet_id;
-        //     // let pos = Pos::from(sheet_pos);
-        //     // let sheet = self.try_sheet_mut_result(sheet_id)?;
-        //     // let data_table_pos = sheet.first_data_table_within(pos)?;
-        //     // let mut data_table = sheet.data_table_mut(data_table_pos)?;
+        if let Operation::SortDataTable {
+            sheet_rect,
+            column_index,
+            sort_order,
+        } = op.to_owned()
+        {
+            let sheet_id = sheet_rect.sheet_id;
+            // let rect = Rect::from(sheet_rect);
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            // let sheet_pos = sheet_rect.min.to_sheet_pos(sheet_id);
+            let data_table_pos = sheet.first_data_table_within(sheet_rect.min)?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
 
-        //     // let sort_order = match sort_order.as_str() {
-        //     //     "asc" => SortOrder::Asc,
-        //     //     "desc" => SortOrder::Desc,
-        //     //     _ => bail!("Invalid sort order"),
-        //     // };
+            let sort_order_enum = match sort_order.as_str() {
+                "asc" => SortDirection::Ascending,
+                "desc" => SortDirection::Descending,
+                _ => bail!("Invalid sort order"),
+            };
 
-        //     // data_table.sort(column_index, sort_order);
+            data_table.sort(column_index as usize, sort_order_enum)?;
 
-        //     // self.send_to_wasm(transaction, &sheet_rect)?;
+            self.send_to_wasm(transaction, &sheet_rect)?;
 
-        //     // let forward_operations = vec![
-        //     //     Operation::SetCellValues {
-        //     //         sheet_pos,
-        //     //         values: CellValues::from(CellValue::Import(import)),
-        //     //     },
-        //     //     Operation::SetCodeRun {
-        //     //         sheet_pos,
-        //     //         code_run: Some(data_table),
-        //     //         index: 0,
-        //     //     },
-        //     // ];
+            // TODO(ddimaria): remove this clone
+            let forward_operations = vec![op.clone()];
 
-        //     // let reverse_operations = vec![Operation::SetCellValues {
-        //     //     sheet_pos,
-        //     //     values: CellValues::from(old_values),
-        //     // }];
+            let reverse_operations = vec![op.clone()];
 
-        //     // self.data_table_operations(
-        //     //     transaction,
-        //     //     &sheet_rect,
-        //     //     forward_operations,
-        //     //     reverse_operations,
-        //     // );
+            self.data_table_operations(
+                transaction,
+                &sheet_rect,
+                forward_operations,
+                reverse_operations,
+            );
 
-        //     return Ok(());
-        // };
+            return Ok(());
+        };
 
-        bail!("Expected Operation::GridToDataTable in execute_grid_to_data_table");
+        bail!("Expected Operation::SortDataTable in execute_sort_data_table");
     }
 }
 
@@ -341,7 +330,9 @@ mod tests {
     use crate::{
         controller::user_actions::import::tests::{assert_simple_csv, simple_csv},
         grid::SheetId,
-        test_util::{assert_cell_value_row, print_data_table, print_table},
+        test_util::{
+            assert_cell_value_row, assert_data_table_cell_value_row, print_data_table, print_table,
+        },
         SheetPos,
     };
 
@@ -445,5 +436,42 @@ mod tests {
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 2));
 
         assert_simple_csv(&gc, sheet_id, pos, file_name);
+    }
+
+    #[test]
+    fn test_execute_sort_data_table() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        data_table.apply_header_from_first_row();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+
+        let max = Pos::new(3, 10);
+        let sheet_rect = SheetRect::new_pos_span(pos, max, sheet_id);
+        let op = Operation::SortDataTable {
+            sheet_rect,
+            column_index: 0,
+            sort_order: "asc".into(),
+        };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_sort_data_table(&mut transaction, op).unwrap();
+
+        // assert_eq!(transaction.forward_operations.len(), 1);
+        // assert_eq!(transaction.reverse_operations.len(), 2);
+
+        gc.finalize_transaction(transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+
+        let first_row = vec!["Concord", "NH", "United States", "42605"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 0, first_row);
+
+        let second_row = vec!["Marlborough", "MA", "United States", "38334"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 1, second_row);
+
+        let third_row = vec!["Northbridge", "MA", "United States", "14061"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 2, third_row);
+
+        let last_row = vec!["Westborough", "MA", "United States", "29313"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 9, last_row);
     }
 }

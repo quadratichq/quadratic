@@ -52,8 +52,10 @@ impl Sheet {
     }
 
     /// Returns a mutable DatatTable at a Pos
-    pub fn data_table_mut(&mut self, pos: Pos) -> Option<&mut DataTable> {
-        self.data_tables.get_mut(&pos)
+    pub fn data_table_mut(&mut self, pos: Pos) -> Result<&mut DataTable> {
+        self.data_tables
+            .get_mut(&pos)
+            .ok_or_else(|| anyhow!("Data table not found at {:?}", pos))
     }
 
     pub fn delete_data_table(&mut self, pos: Pos) -> Result<DataTable> {

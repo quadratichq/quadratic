@@ -42,7 +42,7 @@ impl GridController {
                     self.execute_grid_to_data_table(transaction, op),
                 ),
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
-                    self.execute_grid_to_data_table(transaction, op),
+                    self.execute_sort_data_table(transaction, op),
                 ),
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),

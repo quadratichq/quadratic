@@ -86,6 +86,14 @@ impl From<(i32, i32)> for Pos {
         }
     }
 }
+impl From<(u32, u32)> for Pos {
+    fn from(pos: (u32, u32)) -> Self {
+        Pos {
+            x: pos.0 as i64,
+            y: pos.1 as i64,
+        }
+    }
+}
 impl From<SheetPos> for Pos {
     fn from(sheet_pos: SheetPos) -> Self {
         Pos {
