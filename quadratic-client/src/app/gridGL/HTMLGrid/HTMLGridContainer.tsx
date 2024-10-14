@@ -14,6 +14,7 @@ import { MultiplayerCellEdits } from '@/app/gridGL/HTMLGrid/multiplayerInput/Mul
 import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { HtmlValidations } from '@/app/gridGL/HTMLGrid/validations/HtmlValidations';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Following } from '@/app/ui/components/Following';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { SuggestionDropDown } from './SuggestionDropdown';
 
@@ -121,6 +122,8 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
           </div>
         </div>
       </div>
+
+      <Following />
 
       {/* This is positioned on the grid over the headings and not zoomed. It comes
           after the above, so it's above it on the grid. */}

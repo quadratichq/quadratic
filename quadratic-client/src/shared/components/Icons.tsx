@@ -336,6 +336,10 @@ export const MoreVertIcon: IconComponent = (props) => {
   return <Icon {...props}>more_vert</Icon>;
 };
 
+export const MoreHorizIcon: IconComponent = (props) => {
+  return <Icon {...props}>more_horiz</Icon>;
+};
+
 export const Number123Icon: IconComponent = (props) => {
   // This icon is just too small, so we make it more readable within its container
   // by increasing its size and adjusting its position
@@ -389,6 +393,10 @@ export const SettingsIcon: IconComponent = (props) => {
 
 export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
+};
+
+export const StopCircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop_circle</Icon>;
 };
 
 export const VerticalAlignBottomIcon: IconComponent = (props) => {

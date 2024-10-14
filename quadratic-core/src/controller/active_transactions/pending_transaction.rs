@@ -14,11 +14,13 @@ use crate::{
     },
     grid::{sheet::validations::validation::Validation, CodeCellLanguage, CodeRun, SheetId},
     selection::Selection,
-    viewport::ViewportBuffer,
     Pos, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;
+
+// offsets modified ((column, row) -> new_size)
+type SheetOffsets = HashMap<(Option<i64>, Option<i64>), f64>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PendingTransaction {
@@ -70,8 +72,6 @@ pub struct PendingTransaction {
     // which hashes are dirty
     pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
 
-    pub viewport_buffer: Option<ViewportBuffer>,
-
     // sheets with updated borders
     pub sheet_borders: HashSet<SheetId>,
 
@@ -90,8 +90,8 @@ pub struct PendingTransaction {
     // sheets w/updated offsets
     pub sheet_info: HashSet<SheetId>,
 
-    // offsets modified (sheet_id, column, row, new_size)
-    pub offsets_modified: Vec<(SheetId, Option<i64>, Option<i64>, f64)>,
+    // offsets modified (sheet_id -> SheetOffsets)
+    pub offsets_modified: HashMap<SheetId, SheetOffsets>,
 }
 
 impl Default for PendingTransaction {
@@ -114,14 +114,13 @@ impl Default for PendingTransaction {
             validations: HashSet::new(),
             resize_rows: HashMap::new(),
             dirty_hashes: HashMap::new(),
-            viewport_buffer: None,
             sheet_borders: HashSet::new(),
             code_cells: HashMap::new(),
             html_cells: HashMap::new(),
             image_cells: HashMap::new(),
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
-            offsets_modified: Vec::new(),
+            offsets_modified: HashMap::new(),
         }
     }
 }
@@ -209,6 +208,30 @@ impl PendingTransaction {
 
     pub fn is_multiplayer(&self) -> bool {
         matches!(self.transaction_type, TransactionType::Multiplayer)
+    }
+
+    pub fn add_dirty_hashes_from_sheet_cell_positions(
+        &mut self,
+        sheet_id: SheetId,
+        positions: HashSet<Pos>,
+    ) {
+        let mut hashes = HashSet::new();
+        positions.iter().for_each(|pos| {
+            let quadrant = pos.quadrant();
+            hashes.insert(Pos {
+                x: quadrant.0,
+                y: quadrant.1,
+            });
+        });
+
+        let dirty_hashes = self.dirty_hashes.entry(sheet_id).or_default();
+        dirty_hashes.extend(hashes);
+    }
+
+    pub fn add_dirty_hashes_from_sheet_rect(&mut self, sheet_rect: SheetRect) {
+        let hashes = sheet_rect.to_hashes();
+        let dirty_hashes = self.dirty_hashes.entry(sheet_rect.sheet_id).or_default();
+        dirty_hashes.extend(hashes);
     }
 
     /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
@@ -341,6 +364,51 @@ mod tests {
             ..Default::default()
         };
         assert!(!transaction.is_user());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_dirty_hashes_from_sheet_cell_positions() {
+        let sheet_id = SheetId::new();
+        let positions: HashSet<Pos> = vec![Pos { x: 1, y: 1 }, Pos { x: 16, y: 2 }]
+            .into_iter()
+            .collect();
+        let mut transaction = PendingTransaction::default();
+        transaction.add_dirty_hashes_from_sheet_cell_positions(sheet_id, positions);
+        assert_eq!(transaction.dirty_hashes.len(), 1);
+        assert_eq!(transaction.dirty_hashes.get(&sheet_id).unwrap().len(), 2);
+        assert!(transaction
+            .dirty_hashes
+            .get(&sheet_id)
+            .unwrap()
+            .contains(&Pos { x: 0, y: 0 }));
+        assert!(transaction
+            .dirty_hashes
+            .get(&sheet_id)
+            .unwrap()
+            .contains(&Pos { x: 1, y: 0 }));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_dirty_hashes_from_sheet_rect() {
+        let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, SheetId::new());
+        let mut transaction = PendingTransaction::default();
+        transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
+        assert_eq!(transaction.dirty_hashes.len(), 1);
+        assert_eq!(
+            transaction
+                .dirty_hashes
+                .get(&sheet_rect.sheet_id)
+                .unwrap()
+                .len(),
+            1
+        );
+        assert!(transaction
+            .dirty_hashes
+            .get(&sheet_rect.sheet_id)
+            .unwrap()
+            .contains(&Pos { x: 0, y: 0 }),);
     }
 
     #[test]

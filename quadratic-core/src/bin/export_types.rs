@@ -6,8 +6,9 @@ use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::formats::format::Format;
 use grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
-    JsCodeCell, JsHtmlOutput, JsNumber, JsPos, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-    JsRenderCodeCellState, JsRenderFill, JsRowHeight, JsSheetFill, JsValidationWarning,
+    JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsPos, JsRenderCell, JsRenderCellSpecial,
+    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsRowHeight, JsSheetFill,
+    JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::validations::validation::{
@@ -96,6 +97,7 @@ fn main() {
         JsGetCellResponse,
         JsHtmlOutput,
         JsNumber,
+        JsOffset,
         JsPos,
         JsRenderCell,
         JsRenderCellSpecial,
@@ -117,6 +119,7 @@ fn main() {
         Rgba,
         RunError,
         RunErrorMsg,
+        ScreenRect,
         SearchOptions,
         Selection,
         SheetBounds,

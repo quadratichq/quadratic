@@ -180,9 +180,9 @@ export class CellsLabels extends Container {
   // adjust headings for all cellsTextHashes impacted by headings changed except
   // for the CellsTextHash that needs to be resized (that will be handled by the
   // renderWebWorker)
-  adjustHeadings(column: number | undefined, row: number | undefined, delta: number) {
-    const hashX = column !== undefined ? Math.floor(column / sheetHashWidth) : undefined;
-    const hashY = row !== undefined ? Math.floor(row / sheetHashHeight) : undefined;
+  adjustHeadings(column: number | null, row: number | null, delta: number) {
+    const hashX = column !== null ? Math.floor(column / sheetHashWidth) : undefined;
+    const hashY = row !== null ? Math.floor(row / sheetHashHeight) : undefined;
     this.cellsTextHashes.children.forEach((cellsTextHash) => {
       cellsTextHash.adjust(hashX, hashY, delta);
     });

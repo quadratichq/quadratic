@@ -119,7 +119,7 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   // adjust headings for all but the cellsTextHash that changes
-  adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
+  adjustHeadings(options: { sheetId: string; delta: number; row: number | null; column: number | null }): void {
     const { sheetId, delta, row, column } = options;
     const cellsSheet = this.getById(sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');

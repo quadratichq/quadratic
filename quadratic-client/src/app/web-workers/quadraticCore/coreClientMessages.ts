@@ -13,11 +13,11 @@ import {
   JsCellValuePosAIContext,
   JsCodeCell,
   JsHtmlOutput,
+  JsOffset,
   JsPos,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-  JsRowHeight,
   JsSheetFill,
   JsValidationWarning,
   MinMax,
@@ -629,9 +629,7 @@ export interface CoreClientSetCursor {
 export interface CoreClientSheetOffsets {
   type: 'coreClientSheetOffsets';
   sheetId: string;
-  column?: number;
-  row?: number;
-  size: number;
+  offsets: JsOffset[];
 }
 
 export interface CoreClientGenerateThumbnail {
@@ -654,12 +652,6 @@ export interface CoreClientSheetCodeCellRender {
   type: 'coreClientSheetCodeCellRender';
   sheetId: string;
   codeCells: JsRenderCodeCell[];
-}
-
-export interface CoreClientResizeRowHeights {
-  type: 'coreClientResizeRowHeights';
-  sheetId: string;
-  rowHeights: JsRowHeight[];
 }
 
 //#endregion
@@ -1246,11 +1238,9 @@ export type CoreClientMessage =
   | CoreClientGetValidations
   | CoreClientSheetValidations
   | CoreClientGetValidationFromPos
-  | CoreClientResizeRowHeights
   | CoreClientGetValidationList
   | CoreClientGetDisplayCell
   | CoreClientRenderValidationWarnings
-  | CoreClientResizeRowHeights
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
   | CoreClientGetCellValue

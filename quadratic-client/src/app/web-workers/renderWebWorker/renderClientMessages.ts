@@ -58,8 +58,8 @@ export interface RenderClientUnload {
 export interface ClientRenderSheetOffsetsTransient {
   type: 'clientRenderSheetOffsetsTransient';
   sheetId: string;
-  column?: number;
-  row?: number;
+  column: number | null;
+  row: number | null;
   delta: number;
 }
 

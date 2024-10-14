@@ -11,10 +11,10 @@ import {
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
+  JsOffset,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-  JsRowHeight,
   JsSheetFill,
   JsValidationWarning,
   Selection,
@@ -51,12 +51,7 @@ declare var self: WorkerGlobalScope &
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendSetCursor: (cursor: string) => void;
     sendSetCursorSelection: (selection: Selection) => void;
-    sendSheetOffsetsClient: (
-      sheetId: string,
-      column: bigint | undefined,
-      row: bigint | undefined,
-      size: number
-    ) => void;
+    sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
@@ -84,7 +79,6 @@ declare var self: WorkerGlobalScope &
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
-    sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
     sendRenderValidationWarnings: (
       sheetId: string,
       hashX: number,
@@ -124,7 +118,6 @@ class CoreClient {
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
     self.sendSheetValidations = coreClient.sendSheetValidations;
-    self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
     self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
@@ -687,13 +680,11 @@ class CoreClient {
     this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 
-  sendSheetOffsets = (sheetId: string, column: bigint | undefined, row: bigint | undefined, size: number) => {
+  sendSheetOffsets = (sheetId: string, offsets: JsOffset[]) => {
     this.send({
       type: 'coreClientSheetOffsets',
       sheetId,
-      column: column === undefined ? undefined : Number(column),
-      row: row === undefined ? undefined : Number(row),
-      size,
+      offsets,
     });
   };
 
@@ -782,15 +773,6 @@ class CoreClient {
 
   sendSheetValidations = (sheetId: string, validations: Validation[]) => {
     this.send({ type: 'coreClientSheetValidations', sheetId, validations });
-  };
-
-  sendResizeRowHeights = (sheetId: string, rowHeightsString: string) => {
-    try {
-      const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
-      this.send({ type: 'coreClientResizeRowHeights', sheetId, rowHeights });
-    } catch (e) {
-      console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
-    }
   };
 
   sendRenderValidationWarnings = (

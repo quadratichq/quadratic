@@ -13,21 +13,48 @@ export const openCodeEditor = async () => {
   }
 
   const { x, y } = sheets.sheet.cursor.cursorPosition;
-  const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
-  if (cell?.language) {
-    setCodeEditorState({
-      ...codeEditorState,
-      modifiedEditorContent: undefined,
-      waitingForEditorClose: {
-        codeCell: {
-          sheetId: sheets.current,
-          pos: { x, y },
-          language: cell.language,
-        },
-        showCellTypeMenu: false,
-        initialCode: '',
+  const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, x, y);
+  if (codeCell) {
+    const {
+      codeCell: {
+        pos: { x: openX, y: openY },
+        language: openLanguage,
+        sheetId: openSheetId,
       },
-    });
+    } = codeEditorState;
+
+    // check if the code editor is already open on the same cell
+    const closeCodeEditor =
+      codeEditorState.showCodeEditor &&
+      openX === x &&
+      openY === y &&
+      openLanguage === codeCell.language &&
+      openSheetId === sheets.current;
+
+    if (closeCodeEditor) {
+      // if the code editor is already open on the same cell, then close it
+      // this open save changes modal if there are unsaved changes
+      setCodeEditorState({
+        ...codeEditorState,
+        escapePressed: true,
+      });
+    } else {
+      // if the code editor is not already open on the same cell, then open it
+      // this will also open the save changes modal if there are unsaved changes
+      setCodeEditorState({
+        ...codeEditorState,
+        modifiedEditorContent: undefined,
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId: sheets.current,
+            pos: { x, y },
+            language: codeCell.language,
+          },
+          showCellTypeMenu: false,
+          initialCode: '',
+        },
+      });
+    }
   } else if (codeEditorState.showCodeEditor) {
     // code editor is already open, so check it for save before closing
     setCodeEditorState({
