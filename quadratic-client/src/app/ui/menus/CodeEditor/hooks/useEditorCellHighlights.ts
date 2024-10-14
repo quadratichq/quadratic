@@ -3,8 +3,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
 import { getKey, StringId } from '@/app/helpers/getKey';
-import { parseCellsAccessed } from '@/app/ui/menus/CodeEditor/hooks/parseCellsAccessed';
-import { A1RangeType, SheetRect } from '@/app/quadratic-core-types';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { Monaco } from '@monaco-editor/react';
@@ -63,7 +62,7 @@ export const useEditorCellHighlights = (
   isValidRef: boolean,
   editorInst: monaco.editor.IStandaloneCodeEditor | null,
   monacoInst: Monaco | null,
-  cellsAccessed?: A1RangeType[] | null
+  cellsAccessed?: SheetRect[] | null
 ) => {
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
@@ -93,10 +92,11 @@ export const useEditorCellHighlights = (
         codeCell.language === 'Javascript' ||
         codeCellIsAConnection(codeCell.language)
       ) {
-        const parsed = parseCellsAccessed(cellsAccessed);
-        if (parsed) {
-          pixiApp.cellHighlights.fromCellsAccessed(parsed, codeCell.pos, codeCell.sheetId);
-        }
+        // const parsed = parseCellsAccessed(cellsAccessed);
+        // if (parsed) {
+        //   pixiApp.cellHighlights.fromCellsAccessed(parsed, codeCell.pos, codeCell.sheetId);
+        // }
+        // todo...
       } else if (codeCell.language === 'Formula') {
         const parsed = (await parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
         if (parsed) {

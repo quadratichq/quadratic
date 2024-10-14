@@ -9,7 +9,7 @@ import { convertColorStringToTint } from '../../../helpers/convertColor';
 import { CellPosition, ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
 import { DASHED } from '../../generateTextures';
 import { drawDashedRectangle, drawDashedRectangleMarching } from './cellHighlightsDraw';
-import { A1RangeType, CellsAccessed } from '@/app/quadratic-core-types';
+import { A1RangeType, JsCellsAccessed } from '@/app/quadratic-core-types';
 
 // TODO: these files need to be cleaned up and properly typed. Lots of untyped
 // data passed around within the data.
@@ -208,12 +208,12 @@ export class CellHighlights extends Container {
     pixiApp.cellHighlights.dirty = true;
   }
 
-  fromCellsAccessed(cellsAccessed: CellsAccessed, cell: Coordinate, sheet: string) {
+  fromCellsAccessed(cellsAccessed: JsCellsAccessed, cell: Coordinate, sheet: string) {
     this.highlightedCells = [];
     for (const sheetId in cellsAccessed.cells) {
       if (sheetId === sheet) {
         cellsAccessed.cells[sheetId].forEach((cell: A1RangeType) => {
-
+          // todo...
         });
       }
     }
