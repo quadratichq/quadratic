@@ -79,10 +79,14 @@ export function AskAISelection() {
     clearTimeout(timeoutRef.current);
     setDisplayPos(undefined);
     setSheetRect(undefined);
-    setAIAssistantContext((prev) => ({
-      ...prev,
-      selection: undefined,
-    }));
+    setAIAssistantContext((prev) => {
+      if (!prev.selection) return prev;
+
+      return {
+        ...prev,
+        selection: undefined,
+      };
+    });
 
     timeoutRef.current = setTimeout(() => {
       showAskAISelection();
