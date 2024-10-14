@@ -354,7 +354,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                         .rem_euclid(24) as u32,
                     CellValue::DateTime(dt) => dt.hour(),
                     CellValue::Date(_d) => 0,
-                    CellValue::Time(t) => t.hour() as u32,
+                    CellValue::Time(t) => t.hour(),
                     CellValue::Duration(d) => d.subday_hours() as u32,
                     _ => {
                         return Err(RunErrorMsg::Expected {
