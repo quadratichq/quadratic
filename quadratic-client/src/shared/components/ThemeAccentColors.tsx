@@ -1,14 +1,13 @@
-import { themeAccentColorAtom } from '@/shared/atoms/themeAccentColor';
+import { themeAccentColorAtom, themeAccentColors } from '@/shared/atoms/themeAccentColor';
 import { CheckSmallIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { useRecoilState } from 'recoil';
-import { accentColors } from './Theme';
 
 export const ThemeAccentColors = () => {
   const [accentColor, setThemeAccentColor] = useRecoilState(themeAccentColorAtom);
 
-  return accentColors.map((c) => (
+  return themeAccentColors.map((c) => (
     <Button
       size="sm"
       variant="outline"

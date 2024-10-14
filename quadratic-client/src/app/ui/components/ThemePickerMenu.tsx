@@ -1,7 +1,7 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
+import { featureFlagState } from '@/shared/atoms/featureFlags';
 import { themeAccentColorAtom } from '@/shared/atoms/themeAccentColor';
-import { useFeatureFlag } from '@/shared/components/FeatureFlags';
 import { ThemeIcon } from '@/shared/components/Icons';
 import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
@@ -10,15 +10,14 @@ import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const ThemePickerMenu = () => {
-  const [featureFlagThemeAccentColor] = useFeatureFlag('themeAccentColor');
-  const [featureFlagThemeAppearanceMode] = useFeatureFlag('themeAppearanceMode');
+  const featureFlags = useRecoilValue(featureFlagState);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
 
   // Have to put this here to initialize the effect so the app themes correctly
   // when it first loads, as the others are hidden behind a popover
   useRecoilValue(themeAccentColorAtom);
 
-  if (!(featureFlagThemeAccentColor || featureFlagThemeAppearanceMode)) {
+  if (!(featureFlags.themeAccentColor || featureFlags.themeAppearanceMode)) {
     return null;
   }
 
@@ -44,7 +43,7 @@ export const ThemePickerMenu = () => {
         <h2 className="text-md font-semibold">Theme customization</h2>
         <p className="mb-4 text-xs text-muted-foreground">Pick a style that fits you</p>
 
-        {featureFlagThemeAccentColor && (
+        {featureFlags.themeAccentColor && (
           <>
             <h3 className="mb-1 text-xs font-semibold">Accent color</h3>
             <div className="grid grid-cols-3 gap-2">
@@ -52,7 +51,7 @@ export const ThemePickerMenu = () => {
             </div>
           </>
         )}
-        {featureFlagThemeAppearanceMode && (
+        {featureFlags.themeAppearanceMode && (
           <>
             <h3 className="mb-1 mt-4 text-xs font-semibold">Appearance</h3>
 

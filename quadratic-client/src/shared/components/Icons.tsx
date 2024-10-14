@@ -371,6 +371,10 @@ export const FileSharedWithMeIcon: IconComponent = (props) => {
   return <Icon {...props}>move_to_inbox</Icon>;
 };
 
+export const LabsIcon: IconComponent = (props) => {
+  return <Icon {...props}>experiment</Icon>;
+};
+
 export const PasteIcon: IconComponent = (props) => {
   return <Icon {...props}>content_paste</Icon>;
 };

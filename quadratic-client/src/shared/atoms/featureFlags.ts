@@ -1,19 +1,26 @@
+import { localStorageEffect } from '@/shared/utils/recoilHelpers';
 import { atom, DefaultValue, selector } from 'recoil';
 import { themeAccentColorAtom } from './themeAccentColor';
+import { themeAppearanceModeAtom } from './themeAppearanceMode';
 
 const flagAtom = atom({
   key: 'featureFlagAtom',
-  default: { themeAccentColor: true },
+  default: { themeAccentColor: false, themeAppearanceMode: false },
+  effects: [localStorageEffect('featureFlagAtom')],
 });
 
-export const featureFlagSelector = selector({
-  key: 'countSelector',
+export const featureFlagState = selector({
+  key: 'featureFlagState',
   get: ({ get }) => get(flagAtom),
-  set: ({ set }, flags) => {
+  set: ({ set, reset }, flags) => {
     if (flags instanceof DefaultValue) return;
 
     if (flags.themeAccentColor === false) {
-      set(themeAccentColorAtom, 'blue');
+      reset(themeAccentColorAtom);
+    }
+
+    if (flags.themeAppearanceMode === false) {
+      reset(themeAppearanceModeAtom);
     }
 
     set(flagAtom, flags);

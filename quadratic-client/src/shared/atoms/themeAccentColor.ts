@@ -1,36 +1,17 @@
 import { sharedEvents } from '@/shared/sharedEvents';
+import { localStorageEffect } from '@/shared/utils/recoilHelpers';
 import { atom, AtomEffect, DefaultValue } from 'recoil';
 
 const KEY = 'themeAccentColor';
 
-// TODO: note here about the styles in shadcn/styles.css
-// TODO: hook up to feature flags
-
+// Note: the colors here must match the ones in `@/shared/shadcn/styles.css`
 export const themeAccentColors = ['blue', 'violet', 'orange', 'green', 'rose', 'black'] as const;
 type ThemeAccentColor = (typeof themeAccentColors)[number];
-
 const defaultThemeAccentColor: ThemeAccentColor = 'blue';
 
-// const featureFlagEffect = ({ onSet }: any) => {
-//   onSet((featureFlag: any) => {
-//     console.log('feature flag', featureFlag);
-//   });
-// };
-
-const localStorageEffect: AtomEffect<ThemeAccentColor> = ({ setSelf, onSet }) => {
-  const savedValue = localStorage.getItem(KEY) as ThemeAccentColor | null;
-  if (savedValue != null) {
-    console.log('<recoil>: localStorage:initialize', savedValue);
-    setSelf(savedValue);
-  }
-
-  onSet((newValue, _, isReset) => {
-    console.log('<recoil>: localStorage:onChange', newValue);
-    isReset ? localStorage.removeItem(KEY) : localStorage.setItem(KEY, newValue);
-  });
-};
-
-// Set the current theme color via CSS, this handles styling on DOM elements
+/**
+ * Set the current theme color via CSS, this handles styling on DOM elements
+ */
 const setInDomEffect: AtomEffect<ThemeAccentColor> = ({ onSet, trigger, setSelf }) => {
   const setInDom = (accentColor: ThemeAccentColor) => {
     document.documentElement.setAttribute('data-theme', accentColor);
@@ -49,8 +30,10 @@ const setInDomEffect: AtomEffect<ThemeAccentColor> = ({ onSet, trigger, setSelf 
   });
 };
 
-// Figure out what that color is and set it in pixi, this handles styling
-// on the grid via pixi
+/**
+ * Figure out what that color is and set it in pixi, this handles styling
+ * on the grid via pixi
+ */
 const setInPixiEffect: AtomEffect<ThemeAccentColor> = ({ onSet, setSelf }) => {
   const setInPixi = () => {
     // e.g. "200 10% 50%"
@@ -74,26 +57,11 @@ const setInPixiEffect: AtomEffect<ThemeAccentColor> = ({ onSet, setSelf }) => {
   });
 };
 
-const syncToOtherTabsEffect: AtomEffect<ThemeAccentColor> = ({ onSet, setSelf }) => {
-  const handleStorageChange = (event: StorageEvent) => {
-    if (event.key === 'themeAccentColor') {
-      // Update Recoil state when localStorage changes
-      const newValue = (event.newValue ? event.newValue : defaultThemeAccentColor) as ThemeAccentColor;
-      setSelf(newValue);
-    }
-  };
-
-  window.addEventListener('storage', handleStorageChange);
-  return () => {
-    window.removeEventListener('storage', handleStorageChange);
-  };
-};
-
 // Add the otherEffect to the atom's effects
 export const themeAccentColorAtom = atom({
   key: KEY,
   default: defaultThemeAccentColor,
-  effects: [localStorageEffect, setInDomEffect, setInPixiEffect, syncToOtherTabsEffect],
+  effects: [localStorageEffect(KEY), setInDomEffect, setInPixiEffect],
 });
 
 /**
