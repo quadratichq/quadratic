@@ -230,8 +230,6 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use chrono::Utc;
 
     use crate::{
@@ -506,7 +504,7 @@ mod test {
             result: CodeRunResult::Ok(Value::Single("world".into())),
             std_out: None,
             std_err: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             spill_error: false,
             return_type: None,
             line_number: None,
@@ -548,7 +546,7 @@ mod test {
             ]))),
             std_out: None,
             std_err: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             spill_error: false,
             return_type: None,
             line_number: None,

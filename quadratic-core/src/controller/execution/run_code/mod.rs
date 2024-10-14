@@ -97,17 +97,23 @@ impl GridController {
         }
 
         if transaction.is_user_undo_redo() {
-            transaction.forward_operations.push(Operation::SetCodeRun {
-                sheet_pos,
-                code_run: new_code_run,
-                index,
-            });
+            transaction
+                .forward_operations
+                .push(Operation::SetCodeRunVersion {
+                    sheet_pos,
+                    code_run: new_code_run,
+                    index,
+                    version: 1,
+                });
 
-            transaction.reverse_operations.push(Operation::SetCodeRun {
-                sheet_pos,
-                code_run: old_code_run,
-                index,
-            });
+            transaction
+                .reverse_operations
+                .push(Operation::SetCodeRunVersion {
+                    sheet_pos,
+                    code_run: old_code_run,
+                    index,
+                    version: 1,
+                });
 
             if transaction.is_user() {
                 self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
@@ -324,8 +330,6 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use serial_test::{parallel, serial};
 
     use super::*;
@@ -367,7 +371,7 @@ mod test {
             line_number: None,
             output_type: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             spill_error: false,
         };
         gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);
@@ -396,7 +400,7 @@ mod test {
             line_number: None,
             output_type: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             spill_error: false,
         };
         gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);

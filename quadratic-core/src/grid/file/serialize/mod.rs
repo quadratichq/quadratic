@@ -27,7 +27,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
 
 pub fn export(grid: Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
-        version: Some(CURRENT_VERSION.into()),
+        version: CURRENT_VERSION.into(),
         sheets: grid.sheets.into_iter().map(export_sheet).collect(),
     })
 }

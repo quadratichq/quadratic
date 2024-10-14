@@ -592,8 +592,6 @@ impl Sheet {
 mod tests {
     use super::*;
 
-    use std::collections::HashSet;
-
     use chrono::Utc;
     use serial_test::{parallel, serial};
     use uuid::Uuid;
@@ -650,7 +648,7 @@ mod tests {
                 std_err: None,
                 std_out: None,
                 spill_error: false,
-                cells_accessed: HashSet::new(),
+                cells_accessed: Default::default(),
                 result: CodeRunResult::Ok(Value::Single(CellValue::Text("hello".to_string()))),
                 return_type: Some("text".into()),
                 line_number: None,
@@ -863,7 +861,7 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Array(
                 vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into(),
             )),
@@ -914,7 +912,7 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(1.into()))),
             return_type: Some("number".into()),
             spill_error: false,
@@ -1034,7 +1032,7 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(2.into()))),
             return_type: Some("number".into()),
             spill_error: false,
@@ -1079,7 +1077,7 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Image(image.clone()))),
             return_type: Some("image".into()),
             spill_error: false,

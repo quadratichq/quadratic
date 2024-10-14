@@ -5,6 +5,7 @@ use crate::A1Error;
 use controller::execution::run_code::get_cells::CellA1Response;
 use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
+use grid::cells_accessed::JsCellsAccessed;
 use grid::formats::format::Format;
 use grid::js_types::{
     CellFormatSummary, JsCellValue, JsClipboard, JsPos, JsRenderFill, JsRowHeight, JsSheetFill,
@@ -70,7 +71,12 @@ fn main() {
     s += &generate_type_declarations!(
         A1Error,
         A1Cells,
-        A1CellsType,
+        A1RangeType,
+        RelColRow,
+        RelColRowRange,
+        RelRect,
+        RelPos,
+        JsCellsAccessed,
         ArraySize,
         Axis,
         BorderSelection,

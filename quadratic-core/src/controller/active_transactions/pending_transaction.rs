@@ -12,10 +12,13 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{sheet::validations::validation::Validation, CodeCellLanguage, CodeRun, SheetId},
+    grid::{
+        sheet::validations::validation::Validation, CellsAccessed, CodeCellLanguage, CodeRun,
+        SheetId,
+    },
     selection::Selection,
     viewport::ViewportBuffer,
-    Pos, SheetPos, SheetRect,
+    Pos, SheetPos,
 };
 
 use super::transaction_name::TransactionName;
@@ -45,7 +48,7 @@ pub struct PendingTransaction {
     pub has_async: i64,
 
     // used by Code Cell execution to track dependencies
-    pub cells_accessed: HashSet<SheetRect>,
+    pub cells_accessed: CellsAccessed,
 
     // save code_cell info for async calls
     pub current_sheet_pos: Option<SheetPos>,
@@ -105,7 +108,7 @@ impl Default for PendingTransaction {
             reverse_operations: Vec::new(),
             forward_operations: Vec::new(),
             has_async: 0,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             current_sheet_pos: None,
             waiting_for_async: None,
             complete: false,
@@ -359,7 +362,7 @@ mod tests {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Html("html".to_string()))),
             return_type: None,
             line_number: None,
@@ -376,7 +379,7 @@ mod tests {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
             return_type: None,
             line_number: None,

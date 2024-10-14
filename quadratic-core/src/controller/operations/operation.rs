@@ -5,9 +5,12 @@ use uuid::Uuid;
 use crate::{
     cell_values::CellValues,
     grid::{
-        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
-        js_types::JsRowHeight, sheet::borders::BorderStyleCellUpdates,
-        sheet::validations::validation::Validation, CodeRun, Sheet, SheetBorders, SheetId,
+        file::sheet_schema::SheetSchema,
+        formats::Formats,
+        formatting::CellFmtArray,
+        js_types::JsRowHeight,
+        sheet::{borders::BorderStyleCellUpdates, validations::validation::Validation},
+        CodeRun, CodeRunOld, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -33,11 +36,22 @@ pub enum Operation {
         sheet_pos: SheetPos,
         values: CellValues,
     },
+
+    // Deprecated in favor of SetCodeRunVersion (this works for < v1.7)
     SetCodeRun {
+        sheet_pos: SheetPos,
+        code_run: Option<CodeRunOld>,
+        index: usize,
+    },
+    SetCodeRunVersion {
         sheet_pos: SheetPos,
         code_run: Option<CodeRun>,
         index: usize,
+
+        // this is a simple versioning for breaking changes to CodeRun
+        version: u16,
     },
+
     ComputeCode {
         sheet_pos: SheetPos,
     },
@@ -188,6 +202,16 @@ impl fmt::Display for Operation {
                 fmt,
                 "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} index: {} }}",
                 sheet_pos, run, index
+            ),
+            Operation::SetCodeRunVersion {
+                sheet_pos,
+                code_run: run,
+                index,
+                version,
+            } => write!(
+                fmt,
+                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} index: {} version: {} }}",
+                sheet_pos, run, index, version
             ),
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::SetCellFormatsSelection { selection, formats } => {

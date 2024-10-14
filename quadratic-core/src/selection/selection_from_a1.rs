@@ -56,7 +56,7 @@ impl Selection {
                     .push(row.index as i64);
             }
             A1RangeType::ColumnRange(range) => {
-                for col in range.from.index..=range.to.index {
+                for col in range.min.index..=range.max.index {
                     selection
                         .columns
                         .get_or_insert_with(Vec::new)
@@ -64,7 +64,7 @@ impl Selection {
                 }
             }
             A1RangeType::RowRange(range) => {
-                for row in range.from.index..=range.to.index {
+                for row in range.min.index..=range.max.index {
                     selection.rows.get_or_insert_with(Vec::new).push(row as i64);
                 }
             }
