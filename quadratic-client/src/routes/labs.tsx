@@ -36,7 +36,7 @@ export const Component = () => {
       <div className="max-w-xl">
         <DashboardHeader title="Labs" />
 
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           These are experimental features still under development by our team. To learn more about these features, visit
           our{' '}
           <a href="TODO:" className="underline hover:text-primary">
@@ -44,7 +44,7 @@ export const Component = () => {
           </a>
           .
         </p>
-        <p className="mt-2 text-muted-foreground">
+        <p className="mt-2 text-sm text-muted-foreground">
           <em>Please note: these preferences are stored in the browser and do not persist across devices.</em>
         </p>
 
