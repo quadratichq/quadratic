@@ -2,6 +2,7 @@
 
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -450,7 +451,10 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.keyDown(e.browserEvent);
     });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
+    this.editor.onMouseDown(() => {
+      inlineEditorKeyboard.resetKeyboardPosition();
+      pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, insertCellRef: false }));
+    });
     this.editor.onDidChangeModelContent(() => inlineEditorEvents.emit('valueChanged', this.get()));
   }
 

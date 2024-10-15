@@ -1,3 +1,4 @@
+import { ArrowMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { atom } from 'recoil';
 
@@ -7,6 +8,7 @@ export interface InlineEditorState {
   left: number;
   top: number;
   lineHeight: number;
+  insertCellRef: boolean;
 }
 
 export const defaultInlineEditor: InlineEditorState = {
@@ -15,6 +17,7 @@ export const defaultInlineEditor: InlineEditorState = {
   left: 0,
   top: 0,
   lineHeight: 19,
+  insertCellRef: true,
 };
 
 export const inlineEditorAtom = atom({
@@ -26,6 +29,7 @@ export const inlineEditorAtom = atom({
         if (newValue.visible) {
           inlineEditorMonaco.focus();
         }
+        inlineEditorKeyboard.arrowMode = newValue.insertCellRef ? ArrowMode.InsertCellRef : ArrowMode.NavigateText;
       });
     },
   ],

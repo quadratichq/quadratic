@@ -6,7 +6,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
-import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { ArrowMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -156,7 +156,7 @@ class InlineEditorHandler {
   };
 
   // Handler for the changeInput event.
-  private changeInput = async (input: boolean, initialValue?: string) => {
+  private changeInput = async (input: boolean, initialValue?: string, arrowMode?: ArrowMode) => {
     if (!input && !this.open) return;
 
     if (initialValue) {
@@ -182,7 +182,7 @@ class InlineEditorHandler {
       let changeToFormula = false;
       if (initialValue) {
         value = initialValue;
-        this.changeToFormula(value[0] === '=');
+        changeToFormula = value[0] === '=';
       } else {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
         if (formula?.language === 'Formula') {
@@ -190,8 +190,22 @@ class InlineEditorHandler {
           changeToFormula = true;
         } else {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
+          changeToFormula = false;
         }
       }
+
+      if (arrowMode === undefined) {
+        if (changeToFormula) {
+          arrowMode = value.length > 1 ? ArrowMode.NavigateText : ArrowMode.InsertCellRef;
+        } else {
+          arrowMode = value ? ArrowMode.NavigateText : ArrowMode.InsertCellRef;
+        }
+      }
+      pixiAppSettings.setInlineEditorState?.((prev) => ({
+        ...prev,
+        insertCellRef: arrowMode === ArrowMode.InsertCellRef,
+      }));
+
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,

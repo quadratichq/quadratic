@@ -15,17 +15,23 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
+export enum ArrowMode {
+  InsertCellRef,
+  NavigateText,
+}
+
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
+  arrowMode: ArrowMode = ArrowMode.InsertCellRef;
 
   private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
-    const target = isRight ? inlineEditorMonaco.getLastColumn() : 2;
+    // formula
     if (inlineEditorHandler.isEditingFormula()) {
       if (inlineEditorHandler.cursorIsMoving) {
         e.stopPropagation();
         e.preventDefault();
         keyboardPosition(e);
-      } else {
+      } else if (this.arrowMode === ArrowMode.InsertCellRef) {
         const column = inlineEditorMonaco.getCursorColumn();
         e.stopPropagation();
         e.preventDefault();
@@ -39,9 +45,10 @@ class InlineEditorKeyboard {
           inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
         }
       }
-    } else {
-      const column = inlineEditorMonaco.getCursorColumn();
-      if (column === target) {
+    }
+    // text
+    else {
+      if (this.arrowMode === ArrowMode.InsertCellRef) {
         e.stopPropagation();
         e.preventDefault();
         if (!(await this.handleValidationError())) {
@@ -60,12 +67,13 @@ class InlineEditorKeyboard {
       return;
     }
 
+    // formula
     if (inlineEditorHandler.isEditingFormula()) {
       e.stopPropagation();
       e.preventDefault();
       if (inlineEditorHandler.cursorIsMoving) {
         keyboardPosition(e);
-      } else {
+      } else if (this.arrowMode === ArrowMode.InsertCellRef) {
         // If we're not moving and the formula doesn't want a cell reference,
         // close the editor. We can't just use "is the formula syntactically
         // valid" because many formulas are syntactically valid even though
@@ -87,11 +95,15 @@ class InlineEditorKeyboard {
           return;
         }
       }
-    } else {
-      e.stopPropagation();
-      e.preventDefault();
-      if (!(await this.handleValidationError())) {
-        inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+    }
+    // text
+    else {
+      if (this.arrowMode === ArrowMode.InsertCellRef) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!(await this.handleValidationError())) {
+          inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+        }
       }
     }
   };
@@ -112,6 +124,13 @@ class InlineEditorKeyboard {
     }
     return false;
   }
+
+  toggleArrowMode = () => {
+    pixiAppSettings.setInlineEditorState?.((prev) => ({
+      ...prev,
+      insertCellRef: !prev.insertCellRef,
+    }));
+  };
 
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
   // when on a different sheet, via window's keyDown listener).
@@ -165,6 +184,12 @@ class InlineEditorKeyboard {
       if (!(await this.handleValidationError())) {
         inlineEditorHandler.close(0, -1, false);
       }
+    }
+
+    // toggle arrow mode
+    else if (matchShortcut(Action.ToggleArrowMode, e)) {
+      e.stopPropagation();
+      this.toggleArrowMode();
     }
 
     // Tab key

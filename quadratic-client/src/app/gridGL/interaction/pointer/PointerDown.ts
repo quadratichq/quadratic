@@ -85,7 +85,12 @@ export class PointerDown {
         event.preventDefault();
         const code = await quadraticCore.getCodeCell(sheet.id, column, row);
         if (code) {
-          doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+          doubleClickCell({
+            column: Number(code.x),
+            row: Number(code.y),
+            language: code.language,
+            cell: '',
+          });
         } else {
           const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
           doubleClickCell({ column, row, cell });
