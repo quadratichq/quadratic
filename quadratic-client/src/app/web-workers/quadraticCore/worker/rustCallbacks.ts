@@ -2,9 +2,10 @@
 
 import {
   ConnectionKind,
+  JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
-  JsRenderBorders,
+  JsOffset,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -37,7 +38,7 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
-    sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+    sendBordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
@@ -45,18 +46,8 @@ declare var self: WorkerGlobalScope &
     sendSetCursor: (cursor: string) => void;
     sendSetCursorSelection: (selection: Selection) => void;
     requestTransactions: (sequenceNum: number) => void;
-    sendSheetOffsetsClient: (
-      sheetId: string,
-      column: bigint | undefined,
-      row: bigint | undefined,
-      size: number
-    ) => void;
-    sendSheetOffsetsRender: (
-      sheetId: string,
-      column: bigint | undefined,
-      row: bigint | undefined,
-      size: number
-    ) => void;
+    sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
+    sendSheetOffsetsRender: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
@@ -88,8 +79,6 @@ declare var self: WorkerGlobalScope &
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
-    sendResizeRowHeightsClient: (sheetId: string, rowHeights: string) => void;
-    sendResizeRowHeightsRender: (sheetId: string, rowHeights: string) => void;
     sendRenderValidationWarnings: (
       sheetId: string,
       hashX: number | undefined,
@@ -98,8 +87,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendMultiplayerSynced: () => void;
     sendHashesDirty: (sheetId: string, hashes: string) => void;
-    sendSetViewportBuffer: (transactionId: string, buffer: SharedArrayBuffer) => void;
-    sendClearViewportBuffer: (transactionId: string) => void;
+    sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -159,14 +147,10 @@ export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
   self.sendSheetInfoUpdateRender(sheetInfo);
 };
 
-export const jsOffsetsModified = (
-  sheetId: string,
-  column: bigint | undefined,
-  row: bigint | undefined,
-  size: number
-) => {
-  self.sendSheetOffsetsClient(sheetId, column, row, size);
-  self.sendSheetOffsetsRender(sheetId, column, row, size);
+export const jsOffsetsModified = (sheetId: string, offsetsStringified: string) => {
+  const offsets = JSON.parse(offsetsStringified) as JsOffset[];
+  self.sendSheetOffsetsClient(sheetId, offsets);
+  self.sendSheetOffsetsRender(sheetId, offsets);
 };
 
 export const jsUpdateHtml = (htmlStringified: string) => {
@@ -196,9 +180,13 @@ export const jsGenerateThumbnail = () => {
   self.sendGenerateThumbnail();
 };
 
-export const jsSheetBorders = (sheetId: string, bordersStringified: string) => {
-  const borders = JSON.parse(bordersStringified) as JsRenderBorders;
-  self.sendSheetBorders(sheetId, borders);
+export const jsBordersSheet = (sheetId: string, bordersStringified: string) => {
+  if (bordersStringified) {
+    const borders = JSON.parse(bordersStringified) as JsBordersSheet;
+    self.sendBordersSheet(sheetId, borders);
+  } else {
+    self.sendBordersSheet(sheetId, undefined);
+  }
 };
 
 export const jsSheetCodeCell = (sheetId: string, codeCellsStringified: string) => {
@@ -279,11 +267,6 @@ export const jsRequestRowHeights = (transactionId: string, sheetId: string, rows
   self.sendRequestRowHeights(transactionId, sheetId, rows);
 };
 
-export const jsResizeRowHeights = (sheetId: string, rowHeights: string) => {
-  self.sendResizeRowHeightsClient(sheetId, rowHeights);
-  self.sendResizeRowHeightsRender(sheetId, rowHeights);
-};
-
 export const jsValidationWarning = (sheetId: string, warningsStringified: string) => {
   const warnings = JSON.parse(warningsStringified);
   self.sendRenderValidationWarnings(sheetId, undefined, undefined, warnings);
@@ -302,10 +285,6 @@ export const jsHashesDirty = (sheetId: string, hashes: string) => {
   self.sendHashesDirty(sheetId, hashes);
 };
 
-export const jsSendViewportBuffer = (transactionId: string, buffer: SharedArrayBuffer) => {
-  self.sendSetViewportBuffer(transactionId, buffer);
-};
-
-export const jsClearViewportBuffer = (transactionId: string) => {
-  self.sendClearViewportBuffer(transactionId);
+export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
+  self.sendViewportBuffer(buffer);
 };

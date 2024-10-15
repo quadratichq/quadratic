@@ -6,7 +6,6 @@ import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDi
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import { DateFormat } from '@/app/ui/components/DateFormat';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
-
 import {
   ArrowDropDownIcon,
   BorderAllIcon,
@@ -56,6 +55,8 @@ export const FormattingBar = () => {
 
       <FormatButton action={Action.ToggleBold} actionArgs={undefined} />
       <FormatButton action={Action.ToggleItalic} actionArgs={undefined} />
+      <FormatButton action={Action.ToggleUnderline} actionArgs={undefined} />
+      <FormatButton action={Action.ToggleStrikeThrough} actionArgs={undefined} />
       <FormatColorPickerButton action={Action.FormatTextColor} />
 
       <Separator />

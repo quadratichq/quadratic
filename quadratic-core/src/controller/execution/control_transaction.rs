@@ -6,11 +6,12 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
-use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::Result;
+use crate::grid::js_types::JsHtmlOutput;
 use crate::grid::{CodeRun, CodeRunResult};
 use crate::parquet::parquet_to_vec;
+use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{Pos, RunError, RunErrorMsg, Value};
 
 impl GridController {
@@ -24,8 +25,6 @@ impl GridController {
                 transaction_name,
             );
         }
-
-        self.send_viewport_buffer(transaction);
 
         loop {
             if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
@@ -46,6 +45,20 @@ impl GridController {
                 .next()
                 .map(|(&k, v)| (k, v.clone()))
             {
+                // TODO(ayush): consolidate these calls, when viewport buffer PR is merged
+                transaction.sheet_info.iter().for_each(|sheet_id| {
+                    self.send_sheet_info(*sheet_id);
+                });
+                transaction.sheet_info.clear();
+
+                transaction
+                    .offsets_modified
+                    .iter()
+                    .for_each(|(sheet_id, offsets)| {
+                        self.send_offsets_modified(*sheet_id, offsets);
+                    });
+                transaction.offsets_modified.clear();
+
                 transaction.resize_rows.remove(&sheet_id);
                 let resizing = self.start_auto_resize_row_heights(
                     transaction,
@@ -61,11 +74,10 @@ impl GridController {
 
         self.process_visible_dirty_hashes(transaction);
         self.process_remaining_dirty_hashes(transaction);
-        self.clear_viewport_buffer(transaction);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
-    pub(super) fn finalize_transaction(&mut self, transaction: PendingTransaction) {
+    pub(super) fn finalize_transaction(&mut self, mut transaction: PendingTransaction) {
         if transaction.has_async > 0 {
             self.transactions.update_async_transaction(&transaction);
             return;
@@ -108,15 +120,92 @@ impl GridController {
 
         transaction.send_transaction();
 
+        // TODO(ayush): consolidate these calls, when viewport buffer PR is merged
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             crate::wasm_bindings::js::jsUndoRedo(
                 !self.undo_stack.is_empty(),
                 !self.redo_stack.is_empty(),
             );
 
-            transaction.send_validations.iter().for_each(|sheet_id| {
+            transaction.sheet_info.iter().for_each(|sheet_id| {
+                self.send_sheet_info(*sheet_id);
+            });
+
+            transaction
+                .offsets_modified
+                .iter()
+                .for_each(|(sheet_id, offsets)| {
+                    self.send_offsets_modified(*sheet_id, offsets);
+                });
+
+            self.process_visible_dirty_hashes(&mut transaction);
+            self.process_remaining_dirty_hashes(&mut transaction);
+
+            transaction.validations.iter().for_each(|sheet_id| {
                 if let Some(sheet) = self.try_sheet(*sheet_id) {
                     sheet.send_all_validations();
+                    sheet.send_all_validation_warnings();
+                }
+            });
+
+            transaction.sheet_borders.iter().for_each(|sheet_id| {
+                if let Some(sheet) = self.try_sheet(*sheet_id) {
+                    sheet.borders.send_sheet_borders(*sheet_id);
+                }
+            });
+
+            // todo: this can be sent in less calls
+            transaction
+                .code_cells
+                .iter()
+                .for_each(|(sheet_id, positions)| {
+                    if let Some(sheet) = self.try_sheet(*sheet_id) {
+                        positions.iter().for_each(|pos| {
+                            sheet.send_code_cell(*pos);
+                        });
+                    }
+                });
+
+            // todo: this can be sent in less calls
+            transaction
+                .html_cells
+                .iter()
+                .for_each(|(sheet_id, positions)| {
+                    if let Some(sheet) = self.try_sheet(*sheet_id) {
+                        positions.iter().for_each(|pos| {
+                            let html = sheet.get_single_html_output(*pos).unwrap_or(JsHtmlOutput {
+                                sheet_id: sheet_id.to_string(),
+                                x: pos.x,
+                                y: pos.y,
+                                html: None,
+                                w: None,
+                                h: None,
+                            });
+                            if let Ok(html) = serde_json::to_string(&html) {
+                                crate::wasm_bindings::js::jsUpdateHtml(html);
+                            } else {
+                                dbgjs!(format!(
+                                    "Error serializing html in finalize_transaction for {:?}",
+                                    pos
+                                ));
+                            }
+                        });
+                    }
+                });
+
+            // todo: this can be sent in less calls
+            transaction
+                .image_cells
+                .iter()
+                .for_each(|(sheet_id, positions)| {
+                    positions.iter().for_each(|pos| {
+                        self.send_image(pos.to_sheet_pos(*sheet_id));
+                    });
+                });
+
+            transaction.fill_cells.iter().for_each(|sheet_id| {
+                if let Some(sheet) = self.try_sheet(*sheet_id) {
+                    sheet.resend_fills();
                 }
             });
         }
@@ -191,7 +280,7 @@ impl GridController {
             }
 
             let result = if let Some(error_msg) = &std_err {
-                let msg = RunErrorMsg::PythonError(error_msg.clone().into());
+                let msg = RunErrorMsg::CodeRunError(error_msg.clone().into());
                 CodeRunResult::Err(RunError { span: None, msg })
             } else {
                 CodeRunResult::Ok(Value::Array(array.into()))

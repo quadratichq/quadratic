@@ -1,4 +1,4 @@
-import { debugOffline } from '@/app/debugFlags';
+import { debugOffline, debugShowOfflineTransactions } from '@/app/debugFlags';
 import { core } from './core';
 import { coreClient } from './coreClient';
 
@@ -169,6 +169,9 @@ class Offline {
   // and a second time when the socket server connects.
   async loadTransactions() {
     const unsentTransactions = await this.load();
+    if (debugShowOfflineTransactions) {
+      console.log(JSON.stringify(unsentTransactions));
+    }
     if (debugOffline) {
       if (unsentTransactions?.length) {
         console.log(`[Offline] Loading ${unsentTransactions.length} unsent transactions from indexedDB.`);

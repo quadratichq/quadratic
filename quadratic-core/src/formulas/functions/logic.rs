@@ -4,12 +4,7 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
     include_in_completions: true,
     name: "Logic functions",
-    docs: "These functions treat `FALSE` and `0` as \
-           \"falsey\" and all other values are \"truthy.\"\
-           \n\n\
-           When used as a number, `TRUE` is equivalent \
-           to `1` and `FALSE` is equivalent to `0`.\
-           \n\n",
+    docs: Some(include_str!("logic_docs.md")),
     get_functions,
 };
 
@@ -46,6 +41,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns `TRUE` if given no values.
             #[examples("AND(A1:C1)", "AND(A1, B12)")]
             fn AND(booleans: (Iter<bool>)) {
+                // TODO: short-circuit
                 booleans.try_fold(true, |a, b| Ok(a & b?))
             }
         ),
@@ -56,6 +52,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns `FALSE` if given no values.
             #[examples("OR(A1:C1)", "OR(A1, B12)")]
             fn OR(booleans: (Iter<bool>)) {
+                // TODO: short-circuit
                 booleans.try_fold(false, |a, b| Ok(a | b?))
             }
         ),

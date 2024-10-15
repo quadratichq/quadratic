@@ -5,10 +5,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { zoomIn, zoomInOut, zoomOut, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { CodeIcon, GoToIcon } from '@/shared/components/Icons';
 
 type ViewActionSpec = Pick<
   ActionSpecRecord,
+  | Action.CmdClick
   | Action.ZoomIn
   | Action.ZoomOut
   | Action.ZoomToSelection
@@ -29,6 +31,10 @@ type ViewActionSpec = Pick<
 >;
 
 export const viewActionsSpec: ViewActionSpec = {
+  [Action.CmdClick]: {
+    label: `${KeyboardSymbols.Command}+click`,
+    run: () => {},
+  },
   [Action.ZoomIn]: {
     label: 'Zoom in',
     run: () => {
@@ -112,7 +118,6 @@ export const viewActionsSpec: ViewActionSpec = {
         pixiAppSettings.setEditorInteractionState((prev) => ({
           ...prev,
           showCellTypeMenu: false,
-          showCodeEditor: false,
           showCommandPalette: false,
           showConnectionsMenu: false,
           showGoToMenu: false,
@@ -122,7 +127,6 @@ export const viewActionsSpec: ViewActionSpec = {
           showShareFileMenu: false,
           showSearch: false,
           showValidation: false,
-          showAI: false,
         }));
       }
     },

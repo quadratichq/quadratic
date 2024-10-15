@@ -25,7 +25,7 @@ async fn get_connection(
     state: &State,
     claims: &Claims,
     connection_id: &Uuid,
-) -> Result<(MsSqlConnection, ApiConnection)> {
+) -> Result<(MsSqlConnection, ApiConnection<MsSqlConnection>)> {
     let connection = if cfg!(not(test)) {
         get_api_connection(state, "", &claims.sub, connection_id).await?
     } else {
@@ -35,7 +35,7 @@ async fn get_connection(
             r#type: "".into(),
             created_date: "".into(),
             updated_date: "".into(),
-            type_details: quadratic_rust_shared::quadratic_api::TypeDetails {
+            type_details: MsSqlConnection {
                 host: "0.0.0.0".into(),
                 port: Some("1433".into()),
                 username: Some("sa".into()),
@@ -45,15 +45,15 @@ async fn get_connection(
         }
     };
 
-    let pg_connection = MsSqlConnection::new(
+    let mssql_connection = MsSqlConnection::new(
         connection.type_details.username.to_owned(),
         connection.type_details.password.to_owned(),
         connection.type_details.host.to_owned(),
         connection.type_details.port.to_owned(),
-        Some(connection.type_details.database.to_owned()),
+        connection.type_details.database.to_owned(),
     );
 
-    Ok((pg_connection, connection))
+    Ok((mssql_connection, connection))
 }
 
 /// Query the database and return the results as a parquet file.

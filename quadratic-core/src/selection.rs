@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect};
 use serde::{Deserialize, Serialize};
@@ -20,6 +20,18 @@ pub struct Selection {
 }
 
 impl Selection {
+    pub fn new(sheet_id: SheetId) -> Self {
+        Selection {
+            all: false,
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: None,
+            rows: None,
+            columns: None,
+        }
+    }
+
     /// Creates a selection via a single sheet rect
     pub fn sheet_rect(sheet_rect: SheetRect) -> Self {
         Selection {
@@ -30,6 +42,45 @@ impl Selection {
             rows: None,
             columns: None,
             all: false,
+        }
+    }
+
+    /// Creates a selection for multiple rects
+    pub fn rects(rects: &[Rect], sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: rects[0].min.x,
+            y: rects[0].min.y,
+            rects: Some(rects.to_vec()),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
+    /// Creates a selection via a single sheet position
+    pub fn sheet_pos(sheet_pos: SheetPos) -> Self {
+        Selection {
+            sheet_id: sheet_pos.sheet_id,
+            x: sheet_pos.x,
+            y: sheet_pos.y,
+            rects: Some(vec![Rect::from_numbers(sheet_pos.x, sheet_pos.y, 1, 1)]),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
+    /// Creates a new selection with a single sheet position
+    pub fn new_sheet_pos(x: i64, y: i64, sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x,
+            y,
+            all: false,
+            rects: Some(vec![Rect::from_numbers(x, y, 1, 1)]),
+            rows: None,
+            columns: None,
         }
     }
 
@@ -109,6 +160,8 @@ impl Selection {
         }
     }
 
+    /// Counts the number of entries needed for the selection (includes both
+    /// sheet- and cell-based selections)
     pub fn count(&self) -> usize {
         if self.all {
             return 1;
@@ -126,6 +179,25 @@ impl Selection {
             count += sum;
         }
         count
+    }
+
+    /// Counts the number of (sheet-based parts, cell-based parts)
+    pub fn count_parts(&self) -> (usize, usize) {
+        if self.all {
+            return (1, 0);
+        }
+        let mut sheet_count = 0;
+        let mut cell_count = 0;
+        if let Some(columns) = self.columns.as_ref() {
+            sheet_count += columns.len();
+        }
+        if let Some(rows) = self.rows.as_ref() {
+            sheet_count += rows.len();
+        }
+        if let Some(ref rects) = self.rects {
+            cell_count = rects.iter().map(|rect| rect.count()).sum::<usize>();
+        }
+        (sheet_count, cell_count)
     }
 
     /// Gets the encompassing rect for selection.rects. Returns None if there are no rects.
@@ -274,7 +346,14 @@ impl Selection {
 
     /// Determines whether the Selection is empty.
     pub fn is_empty(&self) -> bool {
-        !self.all && self.columns.is_none() && self.rows.is_none() && self.rects.is_none()
+        !self.all
+            && (self.columns.is_none()
+                || self
+                    .columns
+                    .as_ref()
+                    .is_some_and(|columns| columns.is_empty()))
+            && (self.rows.is_none() || self.rows.as_ref().is_some_and(|rows| rows.is_empty()))
+            && (self.rects.is_none() || self.rects.as_ref().is_some_and(|rects| rects.is_empty()))
     }
 
     /// Finds intersection of two Selections. Note: x,y of the resulting
@@ -337,6 +416,184 @@ impl Selection {
         } else {
             Some(selection)
         }
+    }
+
+    /// Potentially grows the selection to include a new column.
+    pub fn inserted_column(&mut self, column: i64) -> bool {
+        let mut changed = false;
+        // increment any columns greater than the inserted column
+        self.columns = self.columns.as_mut().map(|column_in_vec| {
+            column_in_vec
+                .iter()
+                .map(|c| {
+                    if *c >= column {
+                        changed = true;
+                        *c + 1
+                    } else {
+                        *c
+                    }
+                })
+                .collect()
+        });
+
+        // insert the new column into any selection rects
+        if let Some(rects) = self.rects.as_mut() {
+            for rect in rects.iter_mut() {
+                if rect.min.x >= column {
+                    rect.min.x += 1;
+                    changed = true;
+                }
+                if rect.max.x >= column {
+                    rect.max.x += 1;
+                    changed = true;
+                }
+            }
+        }
+
+        changed
+    }
+
+    /// Potentially grows the selection to include a new row.
+    pub fn inserted_row(&mut self, row: i64) -> bool {
+        let mut changed = false;
+
+        // increment any rows greater than the inserted row
+        self.rows = self.rows.as_mut().map(|row_in_vec| {
+            row_in_vec
+                .iter()
+                .map(|r| {
+                    if *r >= row {
+                        changed = true;
+                        *r + 1
+                    } else {
+                        *r
+                    }
+                })
+                .collect()
+        });
+
+        // insert the new row into any selection rects
+        if let Some(rects) = self.rects.as_mut() {
+            for rect in rects.iter_mut() {
+                if rect.min.y >= row {
+                    rect.min.y += 1;
+                    changed = true;
+                }
+                if rect.max.y >= row {
+                    rect.max.y += 1;
+                    changed = true;
+                }
+            }
+        }
+
+        changed
+    }
+
+    /// Potentially shrinks a selection after the removal of a column.
+    pub fn removed_column(&mut self, column: i64) -> bool {
+        let mut changed = false;
+
+        // decrement any columns greater than the removed column
+        self.columns = self.columns.as_mut().map(|column_in_vec| {
+            column_in_vec
+                .iter()
+                .filter_map(|c| match c.cmp(&column) {
+                    std::cmp::Ordering::Equal => {
+                        changed = true;
+                        None
+                    }
+                    std::cmp::Ordering::Greater => {
+                        changed = true;
+                        Some(*c - 1)
+                    }
+                    std::cmp::Ordering::Less => Some(*c),
+                })
+                .collect()
+        });
+        if self
+            .columns
+            .as_ref()
+            .is_some_and(|columns| columns.is_empty())
+        {
+            self.columns = None;
+        }
+
+        // remove the column from any selection rects
+        if let Some(rects) = self.rects.as_mut() {
+            rects.retain_mut(|rect| {
+                if rect.min.x >= column {
+                    rect.min.x -= 1;
+                    changed = true;
+                }
+                if rect.max.x >= column {
+                    rect.max.x -= 1;
+                    changed = true;
+                }
+                rect.width() > 0 && rect.height() > 0
+            });
+        }
+
+        changed
+    }
+
+    /// Potentially shrinks a selection after the removal of a row.
+    pub fn removed_row(&mut self, row: i64) -> bool {
+        let mut changed = false;
+
+        // decrement any rows greater than the removed row
+        self.rows = self.rows.as_mut().map(|row_in_vec| {
+            row_in_vec
+                .iter()
+                .filter_map(|r| match r.cmp(&row) {
+                    std::cmp::Ordering::Equal => {
+                        changed = true;
+                        None
+                    }
+                    std::cmp::Ordering::Greater => {
+                        changed = true;
+                        Some(*r - 1)
+                    }
+                    std::cmp::Ordering::Less => Some(*r),
+                })
+                .collect()
+        });
+        if self.rows.as_ref().is_some_and(|rows| rows.is_empty()) {
+            self.rows = None;
+        }
+
+        // remove the row from any selection rects
+        if let Some(rects) = self.rects.as_mut() {
+            rects.retain_mut(|rect| {
+                if rect.min.y >= row {
+                    rect.min.y -= 1;
+                    changed = true;
+                }
+                if rect.max.y >= row {
+                    rect.max.y -= 1;
+                    changed = true;
+                }
+                rect.width() > 0 && rect.height() > 0
+            });
+        }
+
+        changed
+    }
+
+    /// Converts the rects in a selection to a set of quadrant positions.
+    pub fn rects_to_hashes(&self) -> HashSet<Pos> {
+        let mut hashes = HashSet::new();
+        if let Some(rects) = self.rects.as_ref() {
+            for rect in rects {
+                for x in rect.min.x..=rect.max.x {
+                    for y in rect.min.y..=rect.max.y {
+                        let mut pos = Pos { x, y };
+                        pos.to_quadrant();
+                        hashes.insert(pos);
+                    }
+                }
+            }
+        }
+        hashes
     }
 }
 
@@ -815,5 +1072,249 @@ mod test {
         };
         let intersection = selection1.intersection(&selection2);
         assert!(intersection.is_none());
+    }
+
+    #[test]
+    #[parallel]
+    fn count_parts() {
+        let sheet_id = SheetId::test();
+        let selection = Selection {
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+            columns: Some(vec![1, 2, 3]),
+            rows: Some(vec![4, 5, 6]),
+            all: false,
+        };
+        assert_eq!(selection.count_parts(), (6, 12));
+
+        let selection_all = Selection {
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: None,
+            columns: None,
+            rows: None,
+            all: true,
+        };
+        assert_eq!(selection_all.count_parts(), (1, 0));
+
+        let selection_only_rects = Selection {
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: Some(vec![
+                Rect::from_numbers(1, 2, 3, 4),
+                Rect::from_numbers(5, 6, 2, 2),
+            ]),
+            columns: None,
+            rows: None,
+            all: false,
+        };
+        assert_eq!(selection_only_rects.count_parts(), (0, 16));
+
+        let selection_empty = Selection {
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: None,
+            columns: None,
+            rows: None,
+            all: false,
+        };
+        assert_eq!(selection_empty.count_parts(), (0, 0));
+    }
+
+    #[test]
+    #[parallel]
+    fn selection_sheet_pos() {
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id: SheetId::test(),
+        };
+        let selection = Selection::sheet_pos(sheet_pos);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id: sheet_pos.sheet_id,
+                x: sheet_pos.x,
+                y: sheet_pos.y,
+                rects: Some(vec![Rect::from_numbers(sheet_pos.x, sheet_pos.y, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn new_sheet_pos() {
+        let sheet_id = SheetId::test();
+        let selection = Selection::new_sheet_pos(1, 1, sheet_id);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                x: 1,
+                y: 1,
+                rects: Some(vec![Rect::new(1, 1, 1, 1)]),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn new() {
+        let selection = Selection::new(SheetId::test());
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id: SheetId::test(),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn inserted_column() {
+        let sheet_id = SheetId::test();
+        let mut selection = Selection {
+            sheet_id,
+            columns: Some(vec![1, 2, 3]),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
+            ..Default::default()
+        };
+        assert!(selection.inserted_column(2));
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                columns: Some(vec![1, 3, 4]),
+                rects: Some(vec![Rect::new(1, 1, 4, 3), Rect::new(-10, -10, 1, 1)]),
+                ..Default::default()
+            }
+        );
+        assert!(!selection.inserted_column(10));
+    }
+
+    #[test]
+    #[parallel]
+    fn inserted_row() {
+        let sheet_id = SheetId::test();
+        let mut selection = Selection {
+            sheet_id,
+            rows: Some(vec![1, 2, 3]),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
+            ..Default::default()
+        };
+        selection.inserted_row(2);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                rows: Some(vec![1, 3, 4]),
+                rects: Some(vec![Rect::new(1, 1, 3, 4), Rect::new(-10, -10, 1, 1)]),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn removed_column() {
+        let sheet_id = SheetId::test();
+        let mut selection = Selection {
+            sheet_id,
+            columns: Some(vec![1, 2, 3]),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
+            ..Default::default()
+        };
+        selection.removed_column(2);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                columns: Some(vec![1, 2]),
+                rects: Some(vec![Rect::new(1, 1, 2, 3), Rect::new(-10, -10, 1, 1)]),
+                ..Default::default()
+            }
+        );
+
+        let mut selection = Selection {
+            sheet_id,
+            columns: Some(vec![1]),
+            ..Default::default()
+        };
+        selection.removed_column(1);
+        assert!(selection.columns.is_none());
+    }
+
+    #[test]
+    #[parallel]
+    fn removed_row() {
+        let sheet_id = SheetId::test();
+        let mut selection = Selection {
+            sheet_id,
+            rows: Some(vec![1, 2, 3]),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
+            ..Default::default()
+        };
+        selection.removed_row(2);
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                rows: Some(vec![1, 2]),
+                rects: Some(vec![Rect::new(1, 1, 3, 2), Rect::new(-10, -10, 1, 1)]),
+                ..Default::default()
+            }
+        );
+
+        let mut selection = Selection {
+            sheet_id,
+            rows: Some(vec![1]),
+            ..Default::default()
+        };
+        selection.removed_row(1);
+        assert!(selection.rows.is_none());
+    }
+
+    #[test]
+    #[parallel]
+    fn rects_to_hashes() {
+        let selection = Selection {
+            sheet_id: SheetId::test(),
+            rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-3, -3, -1, -1)]),
+            ..Default::default()
+        };
+        assert_eq!(
+            selection.rects_to_hashes(),
+            HashSet::from([Pos { x: -1, y: -1 }, Pos { x: 0, y: 0 }])
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_rects() {
+        let sheet_id = SheetId::test();
+        let rects = vec![
+            Rect::from_numbers(0, 0, 2, 2),
+            Rect::from_numbers(3, 3, 2, 2),
+        ];
+        let selection = Selection::rects(&rects, sheet_id);
+
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id,
+                rects: Some(rects.clone()),
+                ..Default::default()
+            }
+        );
     }
 }

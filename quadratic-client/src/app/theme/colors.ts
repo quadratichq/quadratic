@@ -54,7 +54,9 @@ export const colors = {
   languagePostgres: '#336791',
   languageMysql: '#00758f',
   languageMssql: '#cfd8dc',
+  languageSnowflake: '#249edc',
   languageJavascript: '#ca8a04',
+  link: '#2463eb',
 
   // todo: this can be change for dark background
   backgroundColor: 0xffffff,

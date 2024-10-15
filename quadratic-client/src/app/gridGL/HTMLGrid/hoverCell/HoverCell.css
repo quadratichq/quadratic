@@ -5,6 +5,13 @@
 
 .hover-cell-header {
   margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.hover-cell-header-buttons {
+  display: flex;
+  gap: 4px;
 }
 
 .hover-cell-header-space {
@@ -26,21 +33,6 @@
 
 .hover-cell-body > div:first-child {
   margin-bottom: 0.5rem;
-}
-
-.hover-cell-fade-in {
-  opacity: 1;
-  transition: opacity 150ms linear 500ms;
-}
-
-.hover-cell-fade-in-no-delay {
-  opacity: 1;
-  transition: opacity 150ms linear;
-}
-
-.hover-cell-fade-out {
-  opacity: 0;
-  transition: opacity 150ms linear;
 }
 
 .code-body {

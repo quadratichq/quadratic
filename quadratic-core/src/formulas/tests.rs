@@ -1,11 +1,12 @@
 use itertools::Itertools;
+use serial_test::parallel;
+use std::str::FromStr;
 
 pub(crate) use super::*;
 pub(crate) use crate::grid::Grid;
 pub(crate) use crate::values::*;
 pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
 use crate::{CoerceInto, Pos, SheetPos};
-use serial_test::parallel;
 
 #[track_caller]
 pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
@@ -60,6 +61,22 @@ pub(crate) fn assert_check_syntax_succeeds(grid: &Grid, s: &str) {
 #[track_caller]
 pub(crate) fn check_syntax_to_err(grid: &Grid, s: &str) -> RunError {
     try_check_syntax(grid, s).expect_err("expected error")
+}
+
+/// Parses a date from a string such as `2024-12-31`.
+#[track_caller]
+pub(crate) fn date(s: &str) -> CellValue {
+    CellValue::from(chrono::NaiveDate::from_str(s).unwrap())
+}
+/// Parses a time from a string such as `16:30:00`.
+#[track_caller]
+pub(crate) fn time(s: &str) -> CellValue {
+    CellValue::from(chrono::NaiveTime::from_str(s).unwrap())
+}
+/// Parses a datetime from a string such as `2024-12-31T16:30:00`.
+#[track_caller]
+pub(crate) fn datetime(s: &str) -> CellValue {
+    CellValue::from(chrono::NaiveDateTime::from_str(s).unwrap())
 }
 
 #[test]

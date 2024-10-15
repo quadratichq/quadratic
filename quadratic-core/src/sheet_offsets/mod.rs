@@ -38,15 +38,15 @@ pub type OffsetWidthHeight = (Vec<(i64, f64)>, Vec<(i64, f64)>);
 
 impl SheetOffsets {
     /// exports offsets to a GridFile
-    pub fn export(&self) -> OffsetWidthHeight {
+    pub fn export(self) -> OffsetWidthHeight {
         (
-            self.column_widths.iter_sizes().collect(),
-            self.row_heights.iter_sizes().collect(),
+            self.column_widths.into_iter_sizes().collect(),
+            self.row_heights.into_iter_sizes().collect(),
         )
     }
 
     /// import offsets from a GridFile
-    pub fn import(offsets: &OffsetWidthHeight) -> Self {
+    pub fn import(offsets: OffsetWidthHeight) -> Self {
         let mut offsets = SheetOffsets {
             column_widths: Offsets::from_iter(
                 crate::DEFAULT_COLUMN_WIDTH,
@@ -238,6 +238,40 @@ impl SheetOffsets {
 
     pub fn total_row_height(&self, start: i64, end: i64) -> f64 {
         self.row_heights.size(start, end)
+    }
+
+    /// Inserts a column offset at the given column index.
+    ///
+    /// Returns a vector of changes made to the offsets structure, where each change
+    /// is represented as a tuple (index, new_size).
+    pub fn insert_column(&mut self, column: i64) -> Vec<(i64, f64)> {
+        self.column_widths.insert(column)
+    }
+
+    /// Deletes a column offset at the given column index.
+    ///
+    /// Returns a tuple of (Vec<(i64, f64)>, Option<f64>), where the Vec contains
+    /// the changes made to the offsets structure, and the Option<f64> is the
+    /// old size of the removed offset, if it existed.
+    pub fn delete_column(&mut self, column: i64) -> (Vec<(i64, f64)>, Option<f64>) {
+        self.column_widths.delete(column)
+    }
+
+    /// Inserts a row offset at the given row index.
+    ///
+    /// Returns a vector of changes made to the offsets structure, where each change
+    /// is represented as a tuple (index, new_size).
+    pub fn insert_row(&mut self, row: i64) -> Vec<(i64, f64)> {
+        self.row_heights.insert(row)
+    }
+
+    /// Deletes a row offset at the given row index.
+    ///
+    /// Returns a tuple of (Vec<(i64, f64)>, Option<f64>), where the Vec contains
+    /// the changes made to the offsets structure, and the Option<f64> is the
+    /// old size of the removed offset, if it existed.
+    pub fn delete_row(&mut self, row: i64) -> (Vec<(i64, f64)>, Option<f64>) {
+        self.row_heights.delete(row)
     }
 }
 
