@@ -82,7 +82,10 @@ export const GridContextMenu = () => {
         <MenuDivider />
         <MenuItemAction action={Action.FlattenDataTable} />
         <MenuItemAction action={Action.GridToDataTable} />
-        <MenuItemAction action={Action.SortDataTable} />
+        <MenuItemAction action={Action.SortDataTableFirstColAsc} />
+        <MenuItemAction action={Action.SortDataTableFirstColDesc} />
+        <MenuItemAction action={Action.AddFirstRowAsHeaderDataTable} />
+        <MenuItemAction action={Action.RemoveFirstRowAsHeaderDataTable} />
       </ControlledMenu>
     </div>
   );

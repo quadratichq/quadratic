@@ -298,9 +298,11 @@ impl GridController {
             } else {
                 Value::Array(array.into())
             };
+
+            let sheet = self.try_sheet_result(current_sheet_pos.sheet_id)?;
             let data_table = DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "Table 1",
+                &sheet.next_data_table_name(),
                 value,
                 false,
                 false,

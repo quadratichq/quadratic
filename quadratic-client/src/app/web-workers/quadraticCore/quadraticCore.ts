@@ -1189,14 +1189,25 @@ class QuadraticCore {
     });
   }
 
-  sortDataTable(sheetId: string, x: number, y: number, column_index: number, sort_order: string, cursor: string) {
+  sortDataTable(sheetId: string, x: number, y: number, columnIndex: number, sortOrder: string, cursor: string) {
     this.send({
       type: 'clientCoreSortDataTable',
       sheetId,
       x,
       y,
-      column_index,
-      sort_order,
+      columnIndex,
+      sortOrder,
+      cursor,
+    });
+  }
+
+  dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
+    this.send({
+      type: 'clientCoreDataTableFirstRowAsHeader',
+      sheetId,
+      x,
+      y,
+      firstRowAsHeader,
       cursor,
     });
   }

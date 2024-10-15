@@ -56,6 +56,10 @@ pub enum Operation {
         column_index: u32,
         sort_order: String,
     },
+    DataTableFirstRowAsHeader {
+        sheet_pos: SheetPos,
+        first_row_is_header: bool,
+    },
     ComputeCode {
         sheet_pos: SheetPos,
     },
@@ -227,6 +231,16 @@ impl fmt::Display for Operation {
                     fmt,
                     "SortDataTable {{ sheet_pos: {}, column_index: {}, sort_order: {} }}",
                     sheet_pos, column_index, sort_order
+                )
+            }
+            Operation::DataTableFirstRowAsHeader {
+                sheet_pos,
+                first_row_is_header,
+            } => {
+                write!(
+                    fmt,
+                    "DataTableFirstRowAsHeader {{ sheet_pos: {}, first_row_is_header {} }}",
+                    sheet_pos, first_row_is_header
                 )
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),

@@ -33,7 +33,7 @@ impl GridController {
         Ok(())
     }
 
-    /// Flattens a Data Table
+    /// Sort a Data Table
     #[wasm_bindgen(js_name = "sortDataTable")]
     pub fn js_sort_data_table(
         &mut self,
@@ -46,6 +46,26 @@ impl GridController {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
         self.sort_data_table(pos.to_sheet_pos(sheet_id), column_index, sort_order, cursor);
+
+        Ok(())
+    }
+
+    /// Toggle applin the first row as head
+    #[wasm_bindgen(js_name = "dataTablefirstRowAsHeader")]
+    pub fn js_data_table_first_row_as_header(
+        &mut self,
+        sheet_id: String,
+        pos: String,
+        first_row_is_header: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+        self.data_table_first_row_as_header(
+            pos.to_sheet_pos(sheet_id),
+            first_row_is_header,
+            cursor,
+        );
 
         Ok(())
     }

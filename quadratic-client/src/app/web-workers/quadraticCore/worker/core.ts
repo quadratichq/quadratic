@@ -1129,6 +1129,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.sortDataTable(sheetId, posToPos(x, y), column_index, sort_order, cursor);
   }
+
+  dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.dataTablefirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
+  }
 }
 
 export const core = new Core();

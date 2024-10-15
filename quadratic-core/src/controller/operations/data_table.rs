@@ -31,6 +31,18 @@ impl GridController {
             sort_order,
         }]
     }
+
+    pub fn data_table_first_row_as_header_operations(
+        &self,
+        sheet_pos: SheetPos,
+        first_row_is_header: bool,
+        _cursor: Option<String>,
+    ) -> Vec<Operation> {
+        vec![Operation::DataTableFirstRowAsHeader {
+            sheet_pos,
+            first_row_is_header,
+        }]
+    }
 }
 
 #[cfg(test)]

@@ -13,6 +13,10 @@ use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use tabled::{
+    builder::Builder,
+    settings::{Color, Modify, Style},
+};
 
 use super::Sheet;
 
@@ -55,6 +59,7 @@ pub struct DataTableSortOrder {
 pub struct DataTable {
     pub kind: DataTableKind,
     pub name: String,
+    pub has_header: bool,
     pub columns: Option<Vec<DataTableColumn>>,
     pub sort: Option<Vec<DataTableSortOrder>>,
     pub display_buffer: Option<Vec<u64>>,
@@ -87,16 +92,17 @@ impl DataTable {
         name: &str,
         value: Value,
         spill_error: bool,
-        header: bool,
+        has_header: bool,
     ) -> Self {
         let readonly = match kind {
             DataTableKind::CodeRun(_) => true,
             DataTableKind::Import(_) => false,
         };
 
-        let mut data_table = DataTable {
+        let data_table = DataTable {
             kind,
             name: name.into(),
+            has_header,
             columns: None,
             sort: None,
             display_buffer: None,
@@ -106,9 +112,9 @@ impl DataTable {
             last_modified: Utc::now(),
         };
 
-        if header {
-            data_table.apply_header_from_first_row();
-        }
+        // if has_header {
+        //     data_table.apply_header_from_first_row();
+        // }
 
         data_table
     }
@@ -117,6 +123,7 @@ impl DataTable {
     pub fn new_raw(
         kind: DataTableKind,
         name: &str,
+        has_header: bool,
         columns: Option<Vec<DataTableColumn>>,
         sort: Option<Vec<DataTableSortOrder>>,
         display_buffer: Option<Vec<u64>>,
@@ -127,6 +134,7 @@ impl DataTable {
         DataTable {
             kind,
             name: name.into(),
+            has_header,
             columns,
             sort,
             display_buffer,
@@ -144,10 +152,10 @@ impl DataTable {
     }
 
     /// Takes the first row of the array and sets it as the column headings.
-    /// The source array is shifted up one in place.
-    pub fn apply_header_from_first_row(&mut self) {
+    pub fn apply_first_row_as_header(&mut self) {
         self.columns = match self.value {
-            Value::Array(ref mut array) => array.shift().ok().map(|array| {
+            // Value::Array(ref mut array) => array.shift().ok().map(|array| {
+            Value::Array(ref mut array) => array.get_row(0).ok().map(|array| {
                 array
                     .iter()
                     .enumerate()
@@ -156,6 +164,15 @@ impl DataTable {
             }),
             _ => None,
         };
+    }
+
+    pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
+        self.has_header = first_row_as_header;
+
+        match first_row_as_header {
+            true => self.apply_first_row_as_header(),
+            false => self.columns = None,
+        }
     }
 
     /// Apply default column headings to the DataTable.
@@ -227,16 +244,22 @@ impl DataTable {
 
     pub fn sort(&mut self, column_index: usize, direction: SortDirection) -> Result<()> {
         let values = self.value.clone().into_array()?;
+        let increment = |i| if self.has_header { i + 1 } else { i };
 
-        let display_buffer = values
+        let mut display_buffer = values
             .col(column_index)
+            .skip(increment(0))
             .enumerate()
             .sorted_by(|a, b| match direction {
                 SortDirection::Ascending => a.1.total_cmp(b.1),
                 SortDirection::Descending => b.1.total_cmp(a.1),
             })
-            .map(|(i, _)| i as u64)
+            .map(|(i, _)| increment(i) as u64)
             .collect::<Vec<u64>>();
+
+        if self.has_header {
+            display_buffer.insert(0, 0);
+        }
 
         self.display_buffer = Some(display_buffer);
 
@@ -416,6 +439,39 @@ impl DataTable {
             Rect::from_pos_and_size(pos, self.output_size())
         }
     }
+
+    pub fn pretty_print_data_table(
+        data_table: &DataTable,
+        title: Option<&str>,
+        max: Option<usize>,
+    ) -> String {
+        let mut builder = Builder::default();
+        let array = data_table.display_value().unwrap().into_array().unwrap();
+        let max = max.unwrap_or(array.height() as usize);
+        let title = title.unwrap_or("Data Table");
+
+        if let Some(columns) = data_table.columns.as_ref() {
+            let columns = columns.iter().map(|c| c.name.clone()).collect::<Vec<_>>();
+            builder.set_header(columns);
+        }
+
+        for row in array.rows().take(max) {
+            let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+            builder.push_record(row);
+        }
+
+        let mut table = builder.build();
+        table.with(Style::modern());
+
+        // bold the headers if they exist
+        if let Some(columns) = data_table.columns.as_ref() {
+            columns.iter().enumerate().for_each(|(index, _)| {
+                table.with(Modify::new((0, index)).with(Color::BOLD));
+            });
+        }
+
+        format!("\nData Table: {title}\n{table}")
+    }
 }
 
 #[cfg(test)]
@@ -425,10 +481,6 @@ pub mod test {
     use super::*;
     use crate::{controller::GridController, grid::SheetId, Array};
     use serial_test::parallel;
-    use tabled::{
-        builder::Builder,
-        settings::{Color, Modify, Style},
-    };
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {
         vec![
@@ -457,32 +509,8 @@ pub mod test {
         title: Option<&str>,
         max: Option<usize>,
     ) {
-        let mut builder = Builder::default();
-        let array = data_table.display_value().unwrap().into_array().unwrap();
-        let max = max.unwrap_or(array.height() as usize);
-        let title = title.unwrap_or("Data Table");
-
-        if let Some(columns) = data_table.columns.as_ref() {
-            let columns = columns.iter().map(|c| c.name.clone()).collect::<Vec<_>>();
-            builder.set_header(columns);
-        }
-
-        for row in array.rows().take(max) {
-            let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-            builder.push_record(row);
-        }
-
-        let mut table = builder.build();
-        table.with(Style::modern());
-
-        // bold the headers if they exist
-        if let Some(columns) = data_table.columns.as_ref() {
-            columns.iter().enumerate().for_each(|(index, _)| {
-                table.with(Modify::new((0, index)).with(Color::BOLD));
-            });
-        }
-
-        println!("\nData Table: {title}\n{table}");
+        let data_table = super::DataTable::pretty_print_data_table(data_table, title, max);
+        println!("{}", data_table);
     }
 
     /// Assert a data table row matches the expected values
@@ -560,7 +588,7 @@ pub mod test {
     #[parallel]
     fn test_data_table_sort() {
         let (_, mut data_table) = new_data_table();
-        data_table.apply_header_from_first_row();
+        data_table.apply_first_row_as_header();
 
         let mut values = test_csv_values();
         values.remove(0); // remove header row

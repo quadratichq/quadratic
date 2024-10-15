@@ -44,6 +44,11 @@ impl GridController {
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_sort_data_table(transaction, op),
                 ),
+                Operation::DataTableFirstRowAsHeader { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_data_table_first_row_as_header(transaction, op),
+                    )
+                }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
                 Operation::SetCellFormatsSelection { .. } => {

@@ -164,6 +164,7 @@ pub(crate) fn import_data_table_builder(
                 }
             },
             name: data_table.name,
+            has_header: data_table.has_header,
             readonly: data_table.readonly,
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             spill_error: data_table.spill_error,
@@ -379,6 +380,7 @@ pub(crate) fn export_data_tables(
             let data_table = current::DataTableSchema {
                 kind,
                 name: data_table.name,
+                has_header: data_table.has_header,
                 columns,
                 sort,
                 display_buffer: data_table.display_buffer,

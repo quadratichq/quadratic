@@ -291,9 +291,7 @@ impl GridController {
         } = op.to_owned()
         {
             let sheet_id = sheet_pos.sheet_id;
-            // let rect = Rect::from(sheet_rect);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            // let sheet_pos = sheet_rect.min.to_sheet_pos(sheet_id);
             let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
@@ -311,6 +309,7 @@ impl GridController {
             // TODO(ddimaria): remove this clone
             let forward_operations = vec![op.clone()];
 
+            // TODO(ddimaria): this is a placeholder, actually implement
             let reverse_operations = vec![op.clone()];
 
             self.data_table_operations(
@@ -324,6 +323,45 @@ impl GridController {
         };
 
         bail!("Expected Operation::SortDataTable in execute_sort_data_table");
+    }
+
+    pub(super) fn execute_data_table_first_row_as_header(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DataTableFirstRowAsHeader {
+            sheet_pos,
+            first_row_is_header,
+        } = op.to_owned()
+        {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+
+            data_table.toggle_first_row_as_header(first_row_is_header);
+
+            self.send_to_wasm(transaction, &sheet_rect)?;
+
+            // TODO(ddimaria): remove this clone
+            let forward_operations = vec![op.clone()];
+
+            // TODO(ddimaria): this is a placeholder, actually implement
+            let reverse_operations = vec![op.clone()];
+
+            self.data_table_operations(
+                transaction,
+                &sheet_rect,
+                forward_operations,
+                reverse_operations,
+            );
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DataTableFirstRowAsHeader in execute_data_table_first_row_as_header");
     }
 }
 
@@ -444,7 +482,7 @@ mod tests {
     fn test_execute_sort_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.apply_header_from_first_row();
+        data_table.apply_first_row_as_header();
 
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 

@@ -46,6 +46,20 @@ impl GridController {
             self.sort_data_table_operations(sheet_pos, column_index, sort_order, cursor.to_owned());
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
+
+    pub fn data_table_first_row_as_header(
+        &mut self,
+        sheet_pos: SheetPos,
+        first_row_is_header: bool,
+        cursor: Option<String>,
+    ) {
+        let ops = self.data_table_first_row_as_header_operations(
+            sheet_pos,
+            first_row_is_header,
+            cursor.to_owned(),
+        );
+        self.start_user_transaction(ops, cursor, TransactionName::DataTableFirstRowAsHeader);
+    }
 }
 
 #[cfg(test)]

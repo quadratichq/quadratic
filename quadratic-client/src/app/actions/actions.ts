@@ -139,7 +139,11 @@ export enum Action {
   InsertRowBelow = 'insert_row_below',
   DeleteRow = 'delete_row',
   DeleteColumn = 'delete_column',
+
   FlattenDataTable = 'flatten_data_table',
   GridToDataTable = 'grid_to_data_table',
-  SortDataTable = 'sort_data_table',
+  SortDataTableFirstColAsc = 'sort_data_table_first_col_asc',
+  SortDataTableFirstColDesc = 'sort_data_table_first_col_desc',
+  AddFirstRowAsHeaderDataTable = 'add_first_row_as_header_data_table',
+  RemoveFirstRowAsHeaderDataTable = 'remove_first_row_as_header_data_table',
 }

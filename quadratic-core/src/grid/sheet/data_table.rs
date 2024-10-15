@@ -21,7 +21,7 @@ impl Sheet {
         self.set_data_table(pos, Some(data_table))
     }
 
-    /// Sets or deletes a code run.
+    /// Sets or deletes a data table.
     ///
     /// Returns the old value if it was set.
     pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
