@@ -169,9 +169,8 @@ impl GridController {
             });
 
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-                let offsets_modified = transaction.offsets_modified.entry(sheet_id).or_default();
                 row_heights.iter().for_each(|&JsRowHeight { row, height }| {
-                    offsets_modified.insert((None, Some(row)), height);
+                    transaction.offsets_modified(sheet_id, None, Some(row), Some(height));
                 });
             }
 
