@@ -17,16 +17,16 @@ type LabProps = {
 
 const labFeatures = [
   {
-    featureFlagKey: 'themeAppearanceMode',
-    label: 'Appearance',
-    description: 'Choose light or dark mode (or use your system’s setting).',
-    Component: ThemeAppearanceModes,
-  },
-  {
     featureFlagKey: 'themeAccentColor',
     label: 'Accent color',
     description: 'Choose a custom accent color used throughout the app.',
     Component: ThemeAccentColors,
+  },
+  {
+    featureFlagKey: 'themeAppearanceMode',
+    label: 'Appearance',
+    description: 'Choose light or dark mode (or use your system’s setting).',
+    Component: ThemeAppearanceModes,
   },
 ] as const;
 

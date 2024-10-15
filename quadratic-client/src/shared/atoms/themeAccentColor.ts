@@ -19,13 +19,11 @@ const setInDomEffect: AtomEffect<ThemeAccentColor> = ({ onSet, trigger, setSelf 
 
   // This will run when the atom is initially set up
   setSelf((currentValue) => {
-    console.log('<recoil>: setInDom:initialize', currentValue);
     setInDom(currentValue instanceof DefaultValue ? defaultThemeAccentColor : currentValue);
     return currentValue;
   });
 
   onSet((accentColor: ThemeAccentColor) => {
-    console.log('<recoil>: setInDom:onChange', accentColor);
     setInDom(accentColor);
   });
 };
@@ -47,12 +45,10 @@ const setInPixiEffect: AtomEffect<ThemeAccentColor> = ({ onSet, setSelf }) => {
     sharedEvents.emit('changeThemeAccentColor', hexColorCode);
   };
   setSelf((currentValue) => {
-    console.log('<recoil>: setInPixi:initialize', currentValue);
     setInPixi();
     return currentValue;
   });
   onSet((accentColor: ThemeAccentColor) => {
-    console.log('<recoil>: setInPixi:onChange', accentColor);
     setInPixi();
   });
 };

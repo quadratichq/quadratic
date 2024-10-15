@@ -2,6 +2,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
 import { featureFlagState } from '@/shared/atoms/featureFlags';
 import { themeAccentColorAtom } from '@/shared/atoms/themeAccentColor';
+import { themeAppearanceModeAtom } from '@/shared/atoms/themeAppearanceMode';
 import { ThemeIcon } from '@/shared/components/Icons';
 import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
@@ -13,9 +14,10 @@ export const ThemePickerMenu = () => {
   const featureFlags = useRecoilValue(featureFlagState);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
 
-  // Have to put this here to initialize the effect so the app themes correctly
+  // Have to put these here to initialize the atoms so the app themes correctly
   // when it first loads, as the others are hidden behind a popover
   useRecoilValue(themeAccentColorAtom);
+  useRecoilValue(themeAppearanceModeAtom);
 
   if (!(featureFlags.themeAccentColor || featureFlags.themeAppearanceMode)) {
     return null;

@@ -103,7 +103,8 @@ export const QuadraticSidebar = () => {
             <ManageSearch />
           </SidebarToggle>
         </SidebarTooltip>
-
+      </div>
+      <div className="mb-2 mt-auto flex flex-col items-center justify-end gap-1">
         <ThemePickerMenu />
       </div>
     </nav>
