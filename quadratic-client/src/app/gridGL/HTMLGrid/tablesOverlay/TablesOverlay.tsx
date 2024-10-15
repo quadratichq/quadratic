@@ -35,6 +35,14 @@ export const TableOverlay = () => {
     };
   }, []);
 
+  // const [viewableRect, setViewableRect] = useState<Rectangle | undefined>(undefined);
+  // useEffect(() => {
+  //   const checkViewport = () => {
+
+  //   }
+  //   events.on('')
+  // }, [rect]);
+
   const [hoverTable, setHoverTable] = useState<JsRenderCodeCell | undefined>(undefined);
   const [hoverRect, setHoverRect] = useState<Rectangle | undefined>(undefined);
   const [hoverName, setHoverName] = useState<string | undefined>(undefined);
