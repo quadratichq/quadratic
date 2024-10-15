@@ -11,7 +11,7 @@ use super::{
     borders::{export_borders, import_borders},
     column::{export_column_builder, import_column_builder},
     current,
-    data_table::{export_data_table_runs, import_data_table_builder},
+    data_table::{export_data_tables, import_data_table_builder},
     format::{
         export_format, export_formats, export_rows_size, import_format, import_formats,
         import_rows_size,
@@ -60,7 +60,7 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
         validations: export_validations(sheet.validations),
         rows_resize: export_rows_size(sheet.rows_resize),
         borders: export_borders(sheet.borders),
-        data_tables: export_data_table_runs(sheet.data_tables),
+        data_tables: export_data_tables(sheet.data_tables),
         columns: export_column_builder(sheet.columns),
     }
 }

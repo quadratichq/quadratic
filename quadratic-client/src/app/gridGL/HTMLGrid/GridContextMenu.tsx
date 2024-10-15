@@ -34,7 +34,6 @@ export const GridContextMenu = () => {
   const ref = useRef<HTMLDivElement>(null);
 
   const isColumnRowAvailable = sheets.sheet.cursor.hasOneColumnRowSelection(true);
-  const isDataTable = sheets.sheet.cursor.hasDataTable(true);
 
   return (
     <div
@@ -79,6 +78,11 @@ export const GridContextMenu = () => {
             <MenuItemAction action={Action.DeleteRow} />
           </>
         )}
+
+        <MenuDivider />
+        <MenuItemAction action={Action.FlattenDataTable} />
+        <MenuItemAction action={Action.GridToDataTable} />
+        <MenuItemAction action={Action.SortDataTable} />
       </ControlledMenu>
     </div>
   );

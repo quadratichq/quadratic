@@ -37,14 +37,15 @@ impl GridController {
     #[wasm_bindgen(js_name = "sortDataTable")]
     pub fn js_sort_data_table(
         &mut self,
-        selection: String,
+        sheet_id: String,
+        pos: String,
         column_index: u32,
         sort_order: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        let sheet_rect = selection.rects.unwrap()[0].to_sheet_rect(selection.sheet_id);
-        self.sort_data_table(sheet_rect, column_index, sort_order, cursor);
+        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+        self.sort_data_table(pos.to_sheet_pos(sheet_id), column_index, sort_order, cursor);
 
         Ok(())
     }

@@ -5,7 +5,7 @@ import { sheets } from '../grid/controller/Sheets';
 import { ActionSpecRecord } from './actionsSpec';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 
-type DataTableSpec = Pick<ActionSpecRecord, Action.FlattenDataTable | Action.GridToDataTable>;
+type DataTableSpec = Pick<ActionSpecRecord, Action.FlattenDataTable | Action.GridToDataTable | Action.SortDataTable>;
 
 export type DataTableActionArgs = {
   [Action.FlattenDataTable]: { name: string };
@@ -31,6 +31,15 @@ export const dataTableSpec: DataTableSpec = {
     isAvailable: () => !isDataTable(),
     run: async () => {
       quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
+    },
+  },
+  [Action.SortDataTable]: {
+    label: 'Sort Data Table',
+    Icon: PersonAddIcon,
+    isAvailable: () => isDataTable(),
+    run: async () => {
+      const { x, y } = sheets.sheet.cursor.cursorPosition;
+      quadraticCore.sortDataTable(sheets.sheet.id, x, y, 0, 'asc', sheets.getCursorPosition());
     },
   },
 };

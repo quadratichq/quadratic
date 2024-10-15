@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 
 use crate::{
-    grid::{CodeRun, DataTable, DataTableColumn, DataTableKind},
+    grid::{CodeRun, DataTable, DataTableColumn, DataTableKind, DataTableSortOrder, SortDirection},
     ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
 };
 
@@ -176,6 +176,17 @@ pub(crate) fn import_data_table_builder(
                     })
                     .collect()
             }),
+            sort: data_table.sort.map(|sort| {
+                sort.into_iter()
+                    .map(|sort| DataTableSortOrder {
+                        column_index: sort.column_index,
+                        direction: match sort.direction {
+                            current::SortDirectionSchema::Ascending => SortDirection::Ascending,
+                            current::SortDirectionSchema::Descending => SortDirection::Descending,
+                        },
+                    })
+                    .collect()
+            }),
             display_buffer: data_table.display_buffer,
         };
 
@@ -301,7 +312,7 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     }
 }
 
-pub(crate) fn export_data_table_runs(
+pub(crate) fn export_data_tables(
     data_tables: IndexMap<Pos, DataTable>,
 ) -> Vec<(current::PosSchema, current::DataTableSchema)> {
     data_tables
@@ -341,6 +352,18 @@ pub(crate) fn export_data_table_runs(
                     .collect()
             });
 
+            let sort = data_table.sort.map(|sort| {
+                sort.into_iter()
+                    .map(|item| current::DataTableSortOrderSchema {
+                        column_index: item.column_index,
+                        direction: match item.direction {
+                            SortDirection::Ascending => current::SortDirectionSchema::Ascending,
+                            SortDirection::Descending => current::SortDirectionSchema::Descending,
+                        },
+                    })
+                    .collect()
+            });
+
             let kind = match data_table.kind {
                 DataTableKind::CodeRun(code_run) => {
                     let code_run = export_code_run(code_run);
@@ -357,6 +380,7 @@ pub(crate) fn export_data_table_runs(
                 kind,
                 name: data_table.name,
                 columns,
+                sort,
                 display_buffer: data_table.display_buffer,
                 readonly: data_table.readonly,
                 last_modified: Some(data_table.last_modified),

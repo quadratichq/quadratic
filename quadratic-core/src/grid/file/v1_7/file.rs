@@ -5,25 +5,6 @@ use crate::grid::file::{
     v1_8::schema::{self as v1_8},
 };
 
-fn convert_cell_value(cell_value: v1_7::CellValueSchema) -> v1_8::CellValueSchema {
-    match cell_value {
-        v1_7::CellValueSchema::Blank => v1_8::CellValueSchema::Blank,
-        v1_7::CellValueSchema::Text(str) => v1_8::CellValueSchema::Text(str),
-        v1_7::CellValueSchema::Number(str) => v1_8::CellValueSchema::Number(str),
-        v1_7::CellValueSchema::Html(str) => v1_8::CellValueSchema::Html(str),
-        v1_7::CellValueSchema::Code(code_cell) => v1_8::CellValueSchema::Code(code_cell),
-        v1_7::CellValueSchema::Logical(bool) => v1_8::CellValueSchema::Logical(bool),
-        v1_7::CellValueSchema::Instant(str) => v1_8::CellValueSchema::Instant(str),
-        v1_7::CellValueSchema::Date(date) => v1_8::CellValueSchema::Date(date),
-        v1_7::CellValueSchema::Time(time) => v1_8::CellValueSchema::Time(time),
-        v1_7::CellValueSchema::DateTime(datetime) => v1_8::CellValueSchema::DateTime(datetime),
-        v1_7::CellValueSchema::Duration(str) => v1_8::CellValueSchema::Duration(str),
-        v1_7::CellValueSchema::Error(run_error) => v1_8::CellValueSchema::Error(run_error),
-        v1_7::CellValueSchema::Image(str) => v1_8::CellValueSchema::Image(str),
-        v1_7::CellValueSchema::Import(str) => v1_8::CellValueSchema::Import(str),
-    }
-}
-
 fn upgrade_code_runs(
     code_runs: Vec<(v1_7::PosSchema, v1_7::CodeRunSchema)>,
 ) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
@@ -68,6 +49,7 @@ fn upgrade_code_runs(
                 kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
                 name: format!("Table {}", i),
                 columns: None,
+                sort: None,
                 display_buffer: None,
                 value,
                 readonly: true,

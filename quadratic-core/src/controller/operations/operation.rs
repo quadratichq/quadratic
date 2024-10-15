@@ -52,7 +52,7 @@ pub enum Operation {
         sheet_rect: SheetRect,
     },
     SortDataTable {
-        sheet_rect: SheetRect,
+        sheet_pos: SheetPos,
         column_index: u32,
         sort_order: String,
     },
@@ -219,14 +219,14 @@ impl fmt::Display for Operation {
                 write!(fmt, "GridToDataTable {{ sheet_rect: {} }}", sheet_rect)
             }
             Operation::SortDataTable {
-                sheet_rect,
+                sheet_pos,
                 column_index,
                 sort_order,
             } => {
                 write!(
                     fmt,
-                    "SortDataTable {{ sheet_rect: {}, column_index: {}, sort_order: {} }}",
-                    sheet_rect, column_index, sort_order
+                    "SortDataTable {{ sheet_pos: {}, column_index: {}, sort_order: {} }}",
+                    sheet_pos, column_index, sort_order
                 )
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),

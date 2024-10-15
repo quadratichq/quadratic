@@ -23,6 +23,12 @@ pub struct DataTableColumn {
     pub value_index: u32,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum DataTableKind {
+    CodeRun(CodeRun),
+    Import(Import),
+}
+
 impl DataTableColumn {
     pub fn new(name: String, display: bool, value_index: u32) -> Self {
         DataTableColumn {
@@ -40,9 +46,9 @@ pub enum SortDirection {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum DataTableKind {
-    CodeRun(CodeRun),
-    Import(Import),
+pub struct DataTableSortOrder {
+    pub column_index: usize,
+    pub direction: SortDirection,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -50,6 +56,7 @@ pub struct DataTable {
     pub kind: DataTableKind,
     pub name: String,
     pub columns: Option<Vec<DataTableColumn>>,
+    pub sort: Option<Vec<DataTableSortOrder>>,
     pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
     pub readonly: bool,
@@ -91,6 +98,7 @@ impl DataTable {
             kind,
             name: name.into(),
             columns: None,
+            sort: None,
             display_buffer: None,
             value,
             readonly,
@@ -110,6 +118,7 @@ impl DataTable {
         kind: DataTableKind,
         name: &str,
         columns: Option<Vec<DataTableColumn>>,
+        sort: Option<Vec<DataTableSortOrder>>,
         display_buffer: Option<Vec<u64>>,
         value: Value,
         readonly: bool,
@@ -119,6 +128,7 @@ impl DataTable {
             kind,
             name: name.into(),
             columns,
+            sort,
             display_buffer,
             value,
             readonly,
@@ -409,7 +419,7 @@ impl DataTable {
 }
 
 #[cfg(test)]
-pub(crate) mod test {
+pub mod test {
     use std::collections::HashSet;
 
     use super::*;

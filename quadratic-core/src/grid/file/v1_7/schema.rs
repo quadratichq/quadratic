@@ -27,6 +27,7 @@ pub type NumericFormatKindSchema = v1_6::NumericFormatKind;
 pub type NumericFormatSchema = v1_6::NumericFormat;
 pub type ConnectionKindSchema = v1_6::ConnectionKind;
 pub type CodeCellSchema = v1_6::CodeCell;
+pub type CodeCellLanguageSchema = v1_6::CodeCellLanguage;
 pub type CellAlignSchema = v1_6::CellAlign;
 pub type CellVerticalAlignSchema = v1_6::CellVerticalAlign;
 pub type CellWrapSchema = v1_6::CellWrap;

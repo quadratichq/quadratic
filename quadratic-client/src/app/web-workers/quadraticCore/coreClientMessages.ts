@@ -1030,6 +1030,16 @@ export interface ClientCoreGridToDataTable {
   cursor: string;
 }
 
+export interface ClientCoreSortDataTable {
+  type: 'clientCoreSortDataTable';
+  sheetId: string;
+  x: number;
+  y: number;
+  column_index: number;
+  sort_order: string;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1111,7 +1121,8 @@ export type ClientCoreMessage =
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
   | ClientCoreFlattenDataTable
-  | ClientCoreGridToDataTable;
+  | ClientCoreGridToDataTable
+  | ClientCoreSortDataTable;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

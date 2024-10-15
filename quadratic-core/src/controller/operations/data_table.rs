@@ -20,13 +20,13 @@ impl GridController {
 
     pub fn sort_data_table_operations(
         &self,
-        sheet_rect: SheetRect,
+        sheet_pos: SheetPos,
         column_index: u32,
         sort_order: String,
         _cursor: Option<String>,
     ) -> Vec<Operation> {
         vec![Operation::SortDataTable {
-            sheet_rect,
+            sheet_pos,
             column_index,
             sort_order,
         }]

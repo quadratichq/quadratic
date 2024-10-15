@@ -1188,6 +1188,18 @@ class QuadraticCore {
       cursor,
     });
   }
+
+  sortDataTable(sheetId: string, x: number, y: number, column_index: number, sort_order: string, cursor: string) {
+    this.send({
+      type: 'clientCoreSortDataTable',
+      sheetId,
+      x,
+      y,
+      column_index,
+      sort_order,
+      cursor,
+    });
+  }
   //#endregion
 }
 

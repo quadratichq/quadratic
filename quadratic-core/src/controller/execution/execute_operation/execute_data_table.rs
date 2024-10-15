@@ -166,7 +166,8 @@ impl GridController {
             // Pull out the data table via a swap, removing it from the sheet
             let data_table = sheet.delete_data_table(data_table_pos)?;
 
-            let values = data_table.value.to_owned().into_array()?;
+            let old_values = data_table.value.to_owned().into_array()?;
+            let values = data_table.display_value()?.into_array()?;
             let ArraySize { w, h } = values.size();
 
             let sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
@@ -176,7 +177,7 @@ impl GridController {
             };
             let sheet_rect = SheetRect::new_pos_span(data_table_pos, max, sheet_id);
 
-            let old_values = sheet.set_cell_values(sheet_rect.into(), &values);
+            let _ = sheet.set_cell_values(sheet_rect.into(), &values);
             let old_cell_values = CellValues::from(old_values);
             let cell_values = CellValues::from(values);
 
@@ -284,16 +285,17 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::SortDataTable {
-            sheet_rect,
+            sheet_pos,
             column_index,
             sort_order,
         } = op.to_owned()
         {
-            let sheet_id = sheet_rect.sheet_id;
+            let sheet_id = sheet_pos.sheet_id;
             // let rect = Rect::from(sheet_rect);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             // let sheet_pos = sheet_rect.min.to_sheet_pos(sheet_id);
-            let data_table_pos = sheet.first_data_table_within(sheet_rect.min)?;
+            let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
 
             let sort_order_enum = match sort_order.as_str() {
@@ -447,9 +449,9 @@ mod tests {
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
         let max = Pos::new(3, 10);
-        let sheet_rect = SheetRect::new_pos_span(pos, max, sheet_id);
+        let sheet_pos = SheetPos::from((pos, sheet_id));
         let op = Operation::SortDataTable {
-            sheet_rect,
+            sheet_pos,
             column_index: 0,
             sort_order: "asc".into(),
         };
