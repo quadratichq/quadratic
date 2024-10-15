@@ -1016,6 +1016,20 @@ export interface ClientCoreInsertRow {
   cursor: string;
 }
 
+export interface CoreClientRequestAIResearcherResult {
+  type: 'coreClientRequestAIResearcherResult';
+  transactionId: string;
+  prompt: string;
+  refCellValues: string;
+}
+
+export interface ClientCoreResponseAIResearcherResult {
+  type: 'clientCoreResponseAIResearcherResult';
+  transactionId: string;
+  result?: string;
+  error?: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1095,7 +1109,8 @@ export type ClientCoreMessage =
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
-  | ClientCoreInsertRow;
+  | ClientCoreInsertRow
+  | ClientCoreResponseAIResearcherResult;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1158,4 +1173,5 @@ export type CoreClientMessage =
   | CoreClientGetCellValue
   | CoreClientNeighborText
   | CoreClientBordersSheet
-  | CoreClientGetCellValue;
+  | CoreClientGetCellValue
+  | CoreClientRequestAIResearcherResult;

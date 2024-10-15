@@ -127,6 +127,8 @@ interface EventTypes {
   gridContextMenu: (world: Point, row: number | null, column: number | null) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
+
+  requestAIResearcherResult: (transactionId: string, prompt: string, refCellValues: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

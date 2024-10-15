@@ -9,6 +9,7 @@ use crate::grid::{CodeCellLanguage, CodeRun, CodeRunResult};
 use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
 
 pub mod get_cells;
+pub mod run_ai_researcher;
 pub mod run_connection;
 pub mod run_formula;
 pub mod run_javascript;

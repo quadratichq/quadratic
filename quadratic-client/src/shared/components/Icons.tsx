@@ -36,6 +36,10 @@ export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
 };
 
+export const AIIcon: IconComponent = (props) => {
+  return <Icon {...props}>auto_awesome</Icon>;
+};
+
 export const ApiIcon: IconComponent = (props) => {
   return <Icon {...props}>api</Icon>;
 };

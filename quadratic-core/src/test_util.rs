@@ -206,7 +206,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
 
             let cell_value = match sheet.cell_value(pos) {
                 Some(CellValue::Code(code_cell)) => match code_cell.language {
-                    CodeCellLanguage::Formula => {
+                    CodeCellLanguage::Formula | CodeCellLanguage::AIResearcher => {
                         replace_internal_cell_references(&code_cell.code.to_string(), pos)
                     }
                     CodeCellLanguage::Python => code_cell.code.to_string(),
