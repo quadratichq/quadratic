@@ -3,7 +3,7 @@
 //! There are two overlays: the first is the active table that the sheet cursor
 //! is in. The second is the table that the mouse is hovering over.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { events } from '@/app/events/events';
 import { Rectangle } from 'pixi.js';
@@ -11,6 +11,9 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
 export const TableOverlay = () => {
+  const tableRef = useRef<HTMLDivElement>(null);
+  const hoverTableRef = useRef<HTMLDivElement>(null);
+
   const [table, setTable] = useState<JsRenderCodeCell | undefined>(undefined);
   const [rect, setRect] = useState<Rectangle | undefined>(undefined);
   const [name, setName] = useState<string | undefined>(undefined);
@@ -69,11 +72,13 @@ export const TableOverlay = () => {
     if (table && rect && name !== undefined) {
       return (
         <div
+          ref={tableRef}
           className="tables-overlay absolute"
           style={{
             left: rect.x,
             top: rect.y,
-            transform: 'translateY(-100%)',
+            transformOrigin: 'bottom left',
+            transform: `translateY(-100%) scale(${1 / pixiApp.viewport.scale.x})`,
           }}
         >
           <div className="text-nowrap bg-primary px-1 text-sm text-primary-foreground">{name}</div>
@@ -86,11 +91,13 @@ export const TableOverlay = () => {
     if (hoverTable && hoverRect && hoverName !== undefined) {
       return (
         <div
+          ref={hoverTableRef}
           className="tables-overlay absolute"
           style={{
             left: hoverRect.x,
             top: hoverRect.y,
-            transform: 'translateY(-100%)',
+            transformOrigin: 'bottom left',
+            transform: `translateY(-100%) scale(${1 / pixiApp.viewport.scale.x})`,
           }}
         >
           <div className="text-nowrap bg-primary px-1 text-sm text-primary-foreground">{hoverName}</div>
@@ -99,7 +106,20 @@ export const TableOverlay = () => {
     }
   }, [hoverName, hoverRect, hoverTable]);
 
-  console.log(table, hoverTable);
+  useEffect(() => {
+    const updateViewport = () => {
+      if (table && tableRef.current) {
+        tableRef.current.style.transform = `translateY(-100%) scale(${1 / pixiApp.viewport.scale.x})`;
+      }
+      if (hoverTable && hoverTableRef.current) {
+        hoverTableRef.current.style.transform = `translateY(-100%) scale(${1 / pixiApp.viewport.scale.x})`;
+      }
+    };
+    events.on('viewportChanged', updateViewport);
+    return () => {
+      events.off('viewportChanged', updateViewport);
+    };
+  }, [table, tableRef, hoverTable, hoverTableRef]);
 
   if (!tableRender && !hoverTableRender) return null;
 
