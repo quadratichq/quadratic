@@ -153,6 +153,8 @@ impl DataTable {
 
     /// Takes the first row of the array and sets it as the column headings.
     pub fn apply_first_row_as_header(&mut self) {
+        self.has_header = true;
+
         self.columns = match self.value {
             // Value::Array(ref mut array) => array.shift().ok().map(|array| {
             Value::Array(ref mut array) => array.get_row(0).ok().map(|array| {
@@ -450,24 +452,27 @@ impl DataTable {
         let max = max.unwrap_or(array.height() as usize);
         let title = title.unwrap_or("Data Table");
 
-        if let Some(columns) = data_table.columns.as_ref() {
-            let columns = columns.iter().map(|c| c.name.clone()).collect::<Vec<_>>();
-            builder.set_header(columns);
-        }
-
-        for row in array.rows().take(max) {
+        for (index, row) in array.rows().take(max).enumerate() {
             let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-            builder.push_record(row);
+
+            if index == 0 && data_table.has_header {
+                builder.set_header(row);
+            } else {
+                builder.push_record(row);
+            }
         }
 
         let mut table = builder.build();
         table.with(Style::modern());
 
         // bold the headers if they exist
-        if let Some(columns) = data_table.columns.as_ref() {
-            columns.iter().enumerate().for_each(|(index, _)| {
-                table.with(Modify::new((0, index)).with(Color::BOLD));
-            });
+        if data_table.has_header {
+            [0..table.count_columns()]
+                .iter()
+                .enumerate()
+                .for_each(|(index, _)| {
+                    table.with(Modify::new((0, index)).with(Color::BOLD));
+                });
         }
 
         format!("\nData Table: {title}\n{table}")
@@ -556,10 +561,7 @@ pub mod test {
         let mut data_table = DataTable::new(kind.clone(), "Table 1", value, false, true)
             .with_last_modified(data_table.last_modified);
 
-        // array height should be 3 since we lift the first row as column headings
-        let expected_array_size = ArraySize::new(4, 3).unwrap();
-        assert_eq!(data_table.output_size(), expected_array_size);
-
+        data_table.apply_first_row_as_header();
         let expected_columns = vec![
             DataTableColumn::new("city".into(), true, 0),
             DataTableColumn::new("region".into(), true, 1),
@@ -568,8 +570,7 @@ pub mod test {
         ];
         assert_eq!(data_table.columns, Some(expected_columns));
 
-        let mut expected_values = values.clone();
-        expected_values.shift().unwrap();
+        let expected_values = values.clone();
         assert_eq!(
             data_table.value.clone().into_array().unwrap(),
             expected_values
@@ -590,23 +591,22 @@ pub mod test {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();
 
-        let mut values = test_csv_values();
-        values.remove(0); // remove header row
+        let values = test_csv_values();
         pretty_print_data_table(&data_table, Some("Original Data Table"), None);
 
         // sort by population city ascending
         data_table.sort(0, SortDirection::Ascending).unwrap();
         pretty_print_data_table(&data_table, Some("Sorted by City"), None);
-        assert_data_table_row(&data_table, 0, values[1].clone());
         assert_data_table_row(&data_table, 1, values[2].clone());
-        assert_data_table_row(&data_table, 2, values[0].clone());
+        assert_data_table_row(&data_table, 2, values[3].clone());
+        assert_data_table_row(&data_table, 3, values[1].clone());
 
         // sort by population descending
         data_table.sort(3, SortDirection::Descending).unwrap();
         pretty_print_data_table(&data_table, Some("Sorted by Population Descending"), None);
-        assert_data_table_row(&data_table, 0, values[1].clone());
-        assert_data_table_row(&data_table, 1, values[0].clone());
-        assert_data_table_row(&data_table, 2, values[2].clone());
+        assert_data_table_row(&data_table, 1, values[2].clone());
+        assert_data_table_row(&data_table, 2, values[1].clone());
+        assert_data_table_row(&data_table, 3, values[3].clone());
     }
 
     #[test]

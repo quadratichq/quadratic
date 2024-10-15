@@ -486,7 +486,6 @@ mod tests {
 
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
-        let max = Pos::new(3, 10);
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let op = Operation::SortDataTable {
             sheet_pos,
@@ -503,15 +502,15 @@ mod tests {
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
         let first_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 0, first_row);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 1, first_row);
 
         let second_row = vec!["Marlborough", "MA", "United States", "38334"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 1, second_row);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 2, second_row);
 
         let third_row = vec!["Northbridge", "MA", "United States", "14061"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 2, third_row);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 3, third_row);
 
         let last_row = vec!["Westborough", "MA", "United States", "29313"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 9, last_row);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 10, last_row);
     }
 }

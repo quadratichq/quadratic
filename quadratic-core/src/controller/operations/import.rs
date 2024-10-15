@@ -45,16 +45,25 @@ impl GridController {
                 &file
             }
         };
-        let reader = || {
+        let reader = |flexible| {
             csv::ReaderBuilder::new()
                 .has_headers(false)
-                .flexible(true)
+                .flexible(flexible)
                 .from_reader(file)
         };
 
         // first get the total number of lines so we can provide progress
-        let height = reader().records().count() as u32;
-        let width = reader().headers()?.len() as u32;
+        let height = reader(false).records().count() as u32;
+
+        // since the first row or more can be headers, look at the width of the last row
+        let width = reader(true)
+            .records()
+            .last()
+            .iter()
+            .flatten()
+            .next()
+            .map(|s| s.len())
+            .unwrap_or(0) as u32;
 
         if width == 0 {
             bail!("empty files cannot be processed");
@@ -65,7 +74,7 @@ impl GridController {
         let mut cell_values = Array::new_empty(array_size);
         let mut y: u32 = 0;
 
-        for entry in reader().records() {
+        for entry in reader(true).records() {
             match entry {
                 Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
                 Ok(record) => {
@@ -597,22 +606,23 @@ mod test {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
+        let data_table = sheet.data_table(pos).unwrap();
 
         // date
         assert_eq!(
-            sheet.data_table(pos).unwrap().cell_value_at(0, 1),
+            data_table.cell_value_at(0, 1),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            sheet.data_table(pos).unwrap().cell_value_at(0, 2),
+            data_table.cell_value_at(0, 2),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-22", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            sheet.data_table(pos).unwrap().cell_value_at(0, 3),
+            data_table.cell_value_at(0, 3),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-23", "%Y-%m-%d").unwrap()
             ))
@@ -620,19 +630,19 @@ mod test {
 
         // time
         assert_eq!(
-            sheet.cell_value((1, 1).into()),
+            data_table.cell_value_at(1, 1),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((1, 2).into()),
+            data_table.cell_value_at(1, 2),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("14:45:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((1, 3).into()),
+            data_table.cell_value_at(1, 3),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("16:30:00", "%H:%M:%S").unwrap()
             ))
@@ -640,7 +650,7 @@ mod test {
 
         // date time
         assert_eq!(
-            sheet.cell_value((2, 1).into()),
+            data_table.cell_value_at(2, 1),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 21)
                     .unwrap()
@@ -649,7 +659,7 @@ mod test {
             ))
         );
         assert_eq!(
-            sheet.cell_value((2, 2).into()),
+            data_table.cell_value_at(2, 2),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 22)
                     .unwrap()
@@ -658,7 +668,7 @@ mod test {
             ))
         );
         assert_eq!(
-            sheet.cell_value((2, 3).into()),
+            data_table.cell_value_at(2, 3),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 23)
                     .unwrap()

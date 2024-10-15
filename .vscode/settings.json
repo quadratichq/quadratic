@@ -55,13 +55,6 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
-  "rust-analyzer.linkedProjects": [
-    "./Cargo.toml",
-    "./quadratic-files/Cargo.toml",
-    "./quadratic-core/Cargo.toml",
-    "./quadratic-multiplayer/Cargo.toml",
-    "./quadratic-rust-client/Cargo.toml"
-  ],
   "rust-analyzer.checkOnSave": true,
   "rust-analyzer.cargo.unsetTest": true,
   // "rust-analyzer.checkOnSave.command": "clippy",

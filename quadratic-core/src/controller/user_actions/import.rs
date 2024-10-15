@@ -461,7 +461,7 @@ pub(crate) mod tests {
 
     #[test]
     #[parallel]
-    fn should_import_with_title_header() {
+    fn should_import_with_title_header_only() {
         let file_name = "title_row.csv";
         let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
