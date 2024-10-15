@@ -79,6 +79,10 @@ export class Update {
     if (dirty) {
       pixiApp.viewportChanged();
       this.sendRenderViewport();
+
+      // signals to react that the viewport has changed (so it can update any
+      // related positioning)
+      events.emit('viewportChangedReady');
     }
   }
 

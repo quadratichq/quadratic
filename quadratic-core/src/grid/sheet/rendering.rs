@@ -416,6 +416,7 @@ impl Sheet {
             },
             state,
             spill_error,
+            name: data_table.name.clone(),
         })
     }
 
@@ -458,6 +459,7 @@ impl Sheet {
                                 language: code_cell_value.language,
                                 state,
                                 spill_error,
+                                name: data_table.name.clone(),
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -1079,6 +1081,7 @@ mod tests {
                 language: CodeCellLanguage::Python,
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
+                name: "Table 1".to_string(),
             })
         );
     }

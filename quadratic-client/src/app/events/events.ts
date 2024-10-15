@@ -35,6 +35,7 @@ interface EventTypes {
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
+  hoverTable: (table?: JsRenderCodeCell) => void;
 
   zoom: (scale: number) => void;
 
@@ -127,6 +128,12 @@ interface EventTypes {
   gridContextMenu: (world: Point, row: number | null, column: number | null) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
+
+  // use this to set a drawing element to dirty
+  viewportChanged: () => void;
+
+  // use this only if you need to immediately get the viewport's value (ie, from React)
+  viewportChangedReady: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

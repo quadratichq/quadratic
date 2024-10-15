@@ -15,6 +15,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Following } from '@/app/ui/components/Following';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { SuggestionDropDown } from './SuggestionDropdown';
+import { TableOverlay } from './tablesOverlay/TablesOverlay';
 
 interface Props {
   parent?: HTMLDivElement;
@@ -130,6 +131,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
           pointerEvents: 'none',
         }}
       >
+        <TableOverlay />
         <GridContextMenu />
       </div>
     </>
