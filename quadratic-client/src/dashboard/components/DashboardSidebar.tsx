@@ -15,6 +15,7 @@ import {
   FilePrivateIcon,
   FileSharedWithMeIcon,
   GroupIcon,
+  LabsIcon,
   SettingsIcon,
 } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
@@ -150,6 +151,10 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </Badge>
           </SidebarNavLink>
         )}
+        <SidebarNavLink to="/labs">
+          <LabsIcon className={classNameIcons} />
+          Labs
+        </SidebarNavLink>
         <SidebarNavLink to={ROUTES.ACCOUNT}>
           <Avatar
             src={user?.picture}

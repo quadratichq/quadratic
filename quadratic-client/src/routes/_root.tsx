@@ -3,7 +3,6 @@ import { Empty } from '@/dashboard/components/Empty';
 import { FeatureFlags } from '@/shared/components/FeatureFlags';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
-import { Theme } from '@/shared/components/Theme';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { User } from '@auth0/auth0-spa-js';
@@ -32,13 +31,11 @@ export const Component = () => {
   // Feature flags needs to be at the root, because other descendants might use a feature flag
   return (
     <FeatureFlags>
-      <Theme>
-        <MuiTheme>
-          <GlobalSnackbarProvider>
-            <Outlet />
-          </GlobalSnackbarProvider>
-        </MuiTheme>
-      </Theme>
+      <MuiTheme>
+        <GlobalSnackbarProvider>
+          <Outlet />
+        </GlobalSnackbarProvider>
+      </MuiTheme>
     </FeatureFlags>
   );
 };

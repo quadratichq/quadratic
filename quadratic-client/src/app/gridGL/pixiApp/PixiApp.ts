@@ -32,6 +32,7 @@ import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { HEADING_SIZE } from '@/shared/constants/gridConstants';
+import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Rectangle, Renderer, utils } from 'pixi.js';
 import './pixiApp.css';
 
@@ -169,6 +170,7 @@ export class PixiApp {
   }
 
   private setupListeners() {
+    sharedEvents.on('changeThemeAccentColor', this.setAccentColor2);
     window.addEventListener('resize', this.resize);
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
@@ -176,6 +178,7 @@ export class PixiApp {
   }
 
   private removeListeners() {
+    sharedEvents.off('changeThemeAccentColor', this.setAccentColor2);
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
@@ -219,6 +222,17 @@ export class PixiApp {
     this.removeListeners();
     this.destroyed = true;
   }
+
+  setAccentColor2 = (accentColor: number): void => {
+    // if (!this.parent || this.destroyed) return;
+    this.accentColor = accentColor;
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
+    this.render();
+  };
 
   setAccentColor(newHexAccentColor: string): void {
     this.accentColor = Number(`0x${newHexAccentColor}`);
