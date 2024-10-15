@@ -170,7 +170,7 @@ export class PixiApp {
   }
 
   private setupListeners() {
-    sharedEvents.on('changeThemeAccentColor', this.setAccentColor2);
+    sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
     window.addEventListener('resize', this.resize);
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
@@ -178,7 +178,7 @@ export class PixiApp {
   }
 
   private removeListeners() {
-    sharedEvents.off('changeThemeAccentColor', this.setAccentColor2);
+    sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
@@ -223,8 +223,7 @@ export class PixiApp {
     this.destroyed = true;
   }
 
-  setAccentColor2 = (accentColor: number): void => {
-    // if (!this.parent || this.destroyed) return;
+  setAccentColor = (accentColor: number): void => {
     this.accentColor = accentColor;
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;
@@ -233,17 +232,6 @@ export class PixiApp {
     this.cellHighlights.dirty = true;
     this.render();
   };
-
-  setAccentColor(newHexAccentColor: string): void {
-    this.accentColor = Number(`0x${newHexAccentColor}`);
-    if (!this.parent || this.destroyed) return;
-    this.gridLines.dirty = true;
-    this.axesLines.dirty = true;
-    this.headings.dirty = true;
-    this.cursor.dirty = true;
-    this.cellHighlights.dirty = true;
-    this.render();
-  }
 
   resize = (): void => {
     if (!this.parent || this.destroyed) return;
