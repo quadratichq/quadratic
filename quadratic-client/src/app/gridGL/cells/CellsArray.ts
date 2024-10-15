@@ -21,6 +21,7 @@ const SPILL_FILL_ALPHA = 0.025;
 export class CellsArray extends Container {
   private cellsSheet: CellsSheet;
   private codeCells: Map<String, JsRenderCodeCell>;
+  private tables: Map<String, Rectangle>;
 
   private particles: ParticleContainer;
   // only used for the spill error indicators (lines are drawn using sprites in particles for performance)
@@ -34,6 +35,7 @@ export class CellsArray extends Container {
     this.cellsSheet = cellsSheet;
     this.lines = [];
     this.codeCells = new Map();
+    this.tables = new Map();
     events.on('renderCodeCells', this.renderCodeCells);
     events.on('sheetOffsets', this.sheetOffsets);
     events.on('updateCodeCell', this.updateCodeCell);
@@ -195,6 +197,15 @@ export class CellsArray extends Container {
     } else {
       this.drawBox(start, end, tint);
     }
+
+    // save the entire table for hover checks
+    if (!codeCell.spill_error) {
+      const endTable = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
+      this.tables.set(
+        this.key(codeCell.x, codeCell.y),
+        new Rectangle(start.x, start.y, endTable.x - start.x, endTable.y - start.y)
+      );
+    }
   }
 
   private drawBox(start: Rectangle, end: Rectangle, tint: number) {
@@ -286,5 +297,27 @@ export class CellsArray extends Container {
 
       return rect.contains(x, y);
     });
+  }
+
+  getCodeCellWorld(point: Point): JsRenderCodeCell | undefined {
+    for (const [index, tableRect] of this.tables.entries()) {
+      if (tableRect.contains(point.x, point.y)) {
+        return this.codeCells.get(index);
+      }
+    }
+  }
+
+  getTableCursor(point: Coordinate): JsRenderCodeCell | undefined {
+    for (const codeCell of this.codeCells.values()) {
+      if (
+        !codeCell.spill_error &&
+        codeCell.x <= point.x &&
+        codeCell.x + codeCell.w > point.x &&
+        codeCell.y <= point.y &&
+        codeCell.y + codeCell.h > point.y
+      ) {
+        return codeCell;
+      }
+    }
   }
 }

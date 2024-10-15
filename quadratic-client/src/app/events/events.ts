@@ -35,6 +35,7 @@ interface EventTypes {
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
+  hoverTable: (table?: JsRenderCodeCell) => void;
 
   zoom: (scale: number) => void;
 

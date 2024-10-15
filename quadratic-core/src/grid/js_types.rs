@@ -183,8 +183,7 @@ pub struct JsCodeCell {
     pub cells_accessed: Option<Vec<SheetRect>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsRenderCodeCell {
     pub x: i32,
     pub y: i32,
@@ -193,6 +192,7 @@ pub struct JsRenderCodeCell {
     pub language: CodeCellLanguage,
     pub state: JsRenderCodeCellState,
     pub spill_error: Option<Vec<Pos>>,
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
