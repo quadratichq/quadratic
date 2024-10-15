@@ -1,13 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 //! This draws the table heading and provides its context menu.
 //!
 //! There are two overlays: the first is the active table that the sheet cursor
 //! is in. The second is the table that the mouse is hovering over.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { events } from '@/app/events/events';
-import { Rectangle } from 'pixi.js';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { Rectangle } from 'pixi.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
 export const TableOverlay = () => {
@@ -38,13 +39,26 @@ export const TableOverlay = () => {
     };
   }, []);
 
-  // const [viewableRect, setViewableRect] = useState<Rectangle | undefined>(undefined);
-  // useEffect(() => {
-  //   const checkViewport = () => {
-
-  //   }
-  //   events.on('')
-  // }, [rect]);
+  useEffect(() => {
+    let tableTop = rect ? rect.y : 0;
+    const checkViewport = () => {
+      if (!rect || !tableRef.current) {
+        return;
+      }
+      const viewport = pixiApp.viewport;
+      const headingHeight = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+      if (rect.y < viewport.top + headingHeight) {
+        tableTop = rect.y + (viewport.top + headingHeight - rect.y);
+        tableRef.current.style.top = `${tableTop}px`;
+      } else {
+        tableRef.current.style.top = `${rect.y}px`;
+      }
+    };
+    events.on('viewportChanged', checkViewport);
+    return () => {
+      events.off('viewportChanged', checkViewport);
+    };
+  }, [rect]);
 
   const [hoverTable, setHoverTable] = useState<JsRenderCodeCell | undefined>(undefined);
   const [hoverRect, setHoverRect] = useState<Rectangle | undefined>(undefined);
