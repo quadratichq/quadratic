@@ -193,7 +193,7 @@ export class CellsSheets extends Container<CellsSheet> {
     return cellsSheet.cellsArray.isCodeCellOutput(cursor.x, cursor.y);
   }
 
-  update() {
-    this.current?.update();
+  update(dirtyViewport: boolean) {
+    this.current?.update(dirtyViewport);
   }
 }

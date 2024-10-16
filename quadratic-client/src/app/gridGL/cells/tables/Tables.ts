@@ -1,8 +1,13 @@
+//! Tables renders all pixi-based UI elements for tables. Right now that's the
+//! headings.
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { FONT_SIZE, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -13,8 +18,9 @@ interface Column {
   bounds: Rectangle;
 }
 
-interface TableHeading {
+interface Table {
   container: Container;
+  bounds: Rectangle;
   headingBounds: Rectangle;
   originalHeadingBounds: Rectangle;
   columns: Column[];
@@ -23,12 +29,13 @@ interface TableHeading {
 
 export class Tables extends Container {
   private cellsSheet: CellsSheet;
+  private headings: Table[];
 
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
+    this.headings = [];
     events.on('renderCodeCells', this.renderCodeCells);
-
     // todo: update code cells?
   }
 
@@ -40,12 +47,18 @@ export class Tables extends Container {
     return sheet;
   }
 
-  cull() {}
+  cull() {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    this.headings.forEach((heading) => {
+      heading.container.visible = intersects.rectangleRectangle(heading.bounds, bounds);
+    });
+  }
 
-  private renderHeadings = (codeCell: JsRenderCodeCell): TableHeading => {
+  private renderCodeCell = (codeCell: JsRenderCodeCell) => {
     const container = this.addChild(new Container());
-    console.log(codeCell.x);
-    const headingBounds = this.sheet.getScreenRectangle(codeCell.x, codeCell.y, codeCell.column_names.length - 1, 0);
+    const bounds = this.sheet.getScreenRectangle(codeCell.x, codeCell.y, codeCell.w - 1, codeCell.h - 1);
+    const headingHeight = this.sheet.offsets.getRowHeight(codeCell.y);
+    const headingBounds = new Rectangle(bounds.x, bounds.y, bounds.width, headingHeight);
     const originalHeadingBounds = headingBounds.clone();
     container.position.set(headingBounds.x, headingBounds.y);
 
@@ -73,19 +86,42 @@ export class Tables extends Container {
       return { heading, bounds };
     });
 
-    return {
+    this.headings.push({
       container,
+      bounds,
       headingBounds,
       originalHeadingBounds,
       columns,
       codeCell,
-    };
+    });
   };
 
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
-      codeCells.forEach((codeCell) => this.renderHeadings(codeCell));
+      this.headings = [];
+      codeCells.forEach((codeCell) => this.renderCodeCell(codeCell));
     }
   };
+
+  private headingPosition = () => {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    const gridHeading = pixiApp.headings.headingSize.height;
+    this.headings.forEach((heading) => {
+      if (heading.container.visible) {
+        if (heading.headingBounds.top < bounds.top + gridHeading) {
+          heading.container.y = bounds.top + gridHeading;
+        } else {
+          heading.container.y = heading.bounds.top;
+        }
+      }
+    });
+  };
+
+  update(dirtyViewport: boolean) {
+    if (dirtyViewport) {
+      this.cull();
+      this.headingPosition();
+    }
+  }
 }

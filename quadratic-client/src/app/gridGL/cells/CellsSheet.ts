@@ -105,9 +105,10 @@ export class CellsSheet extends Container {
     return this.cellsImages.children;
   }
 
-  update() {
+  update(dirtyViewport: boolean) {
     this.cellsFills.update();
     this.borders.update();
+    this.tables.update(dirtyViewport);
   }
 
   private renderValidations = (
