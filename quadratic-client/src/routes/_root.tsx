@@ -1,8 +1,10 @@
 import { authClient } from '@/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
-import { Theme } from '@/shared/components/Theme';
+import { MuiTheme } from '@/shared/components/MuiTheme';
 import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { ThemeAccentColorEffects } from '@/shared/hooks/useThemeAccentColor';
+import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMode';
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { User } from '@auth0/auth0-spa-js';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
@@ -28,11 +30,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<R
 
 export const Component = () => {
   return (
-    <Theme>
+    <MuiTheme>
       <GlobalSnackbarProvider>
-        <Outlet />
+        <>
+          <Outlet />
+          <ThemeAppearanceModeEffects />
+          <ThemeAccentColorEffects />
+        </>
       </GlobalSnackbarProvider>
-    </Theme>
+    </MuiTheme>
   );
 };
 

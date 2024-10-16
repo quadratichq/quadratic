@@ -51,7 +51,7 @@ export class BoxCells extends Graphics {
     this.dirty = false;
     this.clear();
     this.lineStyle({
-      color: colors.boxCellsColor,
+      color: pixiApp.accentColor,
       alpha: colors.boxCellsAlpha,
       width: thickness,
     });
@@ -60,7 +60,7 @@ export class BoxCells extends Graphics {
     this.moveTo(screenRectangle.x + screenRectangle.width, screenRectangle.y);
     this.lineTo(screenRectangle.x + screenRectangle.width, screenRectangle.y + screenRectangle.height);
     this.lineStyle({
-      color: colors.boxCellsColor,
+      color: pixiApp.accentColor,
       alpha: colors.boxCellsAlpha,
       width: thickness,
     });
