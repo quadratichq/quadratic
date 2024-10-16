@@ -78,7 +78,7 @@ defined, along with configuration information, in the `docker compose.yml` file.
 Services can talk to each other and can communicate with services in the user's host
 network.
 
-To pull up the Docker network with just the required depedencies (Redis, Postgres, Localstack):
+To pull up the Docker network with just the required dependencies (Redis, Postgres, Localstack):
 
 ```shell
 npm run docker:up
@@ -234,7 +234,7 @@ To run coverage and generate HTML reports, bring up the docker network
 npm run coverage
 ```
 
-Coverage infomration will be available in the generated `coverage` folder located at `coverage/html/index.html`.
+Coverage information will be available in the generated `coverage` folder located at `coverage/html/index.html`.
 
 ## Linting
 
