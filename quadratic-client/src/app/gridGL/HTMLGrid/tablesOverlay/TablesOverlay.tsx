@@ -3,14 +3,19 @@
 //! There are two overlays: the first is the active table that the sheet cursor
 //! is in. The second is the table that the mouse is hovering over.
 
+import { tableHeadingAtom } from '@/app/atoms/tableHeadingAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Rectangle } from 'pixi.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
 export const TableOverlay = () => {
+  const setTableContextMenu = useSetRecoilState(tableHeadingAtom);
+
   const tableRef = useRef<HTMLDivElement>(null);
   const hoverTableRef = useRef<HTMLDivElement>(null);
 
@@ -100,13 +105,26 @@ export const TableOverlay = () => {
             top: rect.y,
             transformOrigin: 'bottom left',
             transform: `translateY(-100%) scale(${1 / pixiApp.viewport.scale.x})`,
+            pointerEvents: 'auto',
+            cursor: 'default',
           }}
         >
-          <div className="text-nowrap bg-primary px-1 text-sm text-primary-foreground">{name}</div>
+          <div
+            onContextMenu={(e) => {
+              const world = pixiApp.viewport.toWorld(e.clientX, e.clientY);
+              setTableContextMenu({ world, row: table.x, column: table.y });
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            className="flex text-nowrap bg-primary px-1 text-sm text-primary-foreground"
+          >
+            {name}
+            <ArrowDropDownIcon />
+          </div>
         </div>
       );
     }
-  }, [name, rect, table]);
+  }, [name, rect, table, setTableContextMenu]);
 
   const hoverTableRender = useMemo(() => {
     if (hoverTable && hoverRect && hoverName !== undefined) {
