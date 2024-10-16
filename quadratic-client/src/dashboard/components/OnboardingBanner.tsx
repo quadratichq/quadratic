@@ -68,7 +68,7 @@ export function OnboardingBanner() {
     mixpanel.track('[OnboardingBanner].createConnection');
   };
   const tabContentClassName = 'flex flex-col gap-2';
-  const contentBtnClassName = 'min-w-40';
+  const contentBtnClassName = 'min-w-40 flex-shrink-0';
 
   const tabs = [
     {
@@ -132,7 +132,7 @@ export function OnboardingBanner() {
             </Button>
           </div> */}
           <p>Connect and pull data form your own external data source:</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
               <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'MYSQL')} onClick={trackCreateConnection}>
                 <LanguageIcon language="MYSQL" /> MySQL
