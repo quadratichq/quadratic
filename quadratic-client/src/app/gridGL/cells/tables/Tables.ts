@@ -24,6 +24,7 @@ interface Table {
   headingContainer: Container;
   bounds: Rectangle;
   outline: Graphics;
+  // headingLine: Graphics;
   headingBounds: Rectangle;
   originalHeadingBounds: Rectangle;
   columns: Column[];
@@ -46,6 +47,8 @@ export class Tables extends Container {
 
     events.on('cursorPosition', this.cursorPosition);
     events.on('hoverTable', this.setHoverTable);
+
+    events.on('sheetOffsets', this.sheetOffsets);
   }
 
   get sheet(): Sheet {
@@ -81,6 +84,12 @@ export class Tables extends Container {
     background.drawShape(new Rectangle(0, 0, headingBounds.width, headingBounds.height));
     background.endFill();
 
+    // // draw heading line
+    // const headingLine = headingContainer.addChild(new Graphics());
+    // headingLine.lineStyle({ color: getCSSVariableTint('primary'), width: 2, alignment: 0 });
+    // headingLine.moveTo(0, headingHeight).lineTo(headingBounds.width, headingHeight);
+    // headingLine.visible = false;
+
     let x = 0;
     const columns: Column[] = codeCell.column_names.map((column, index) => {
       const width = this.sheet.offsets.getColumnWidth(codeCell.x + index);
@@ -94,13 +103,18 @@ export class Tables extends Container {
           tint: colors.tableHeadingForeground,
         })
       );
+
+      // // draw heading line between columns
+      // if (index !== codeCell.column_names.length - 1) {
+      //   headingLine.moveTo(x + width, 0).lineTo(x + width, headingHeight);
+      // }
       x += width;
       return { heading, bounds };
     });
 
     // draw outline
     const outline = container.addChild(new Graphics());
-    outline.lineStyle({ color: getCSSVariableTint('primary'), width: 2 });
+    outline.lineStyle({ color: getCSSVariableTint('primary'), width: 2, alignment: 0 });
     outline.drawShape(new Rectangle(0, 0, bounds.width, bounds.height));
     outline.visible = false;
 
@@ -110,6 +124,7 @@ export class Tables extends Container {
       headingBounds,
       headingContainer,
       outline,
+      // headingLine,
       originalHeadingBounds,
       columns,
       codeCell,
@@ -152,6 +167,7 @@ export class Tables extends Container {
     }
     if (this.activeTable) {
       this.activeTable.outline.visible = false;
+      // this.activeTable.headingLine.visible = false;
       pixiApp.setViewportDirty();
     }
     const cursor = sheets.sheet.cursor.cursorPosition;
@@ -161,6 +177,7 @@ export class Tables extends Container {
     });
     if (this.activeTable) {
       this.activeTable.outline.visible = true;
+      // this.activeTable.headingLine.visible = true;
       pixiApp.setViewportDirty();
     }
   };
@@ -173,6 +190,7 @@ export class Tables extends Container {
       if (this.hoverTable) {
         if (this.hoverTable !== this.activeTable) {
           this.hoverTable.outline.visible = false;
+          // this.hoverTable.headingLine.visible = false;
           pixiApp.setViewportDirty();
         }
         this.hoverTable = undefined;
@@ -182,7 +200,18 @@ export class Tables extends Container {
     this.hoverTable = this.tables.find((table) => table.codeCell.x === codeCell.x && table.codeCell.y === codeCell.y);
     if (this.hoverTable) {
       this.hoverTable.outline.visible = true;
+      // this.hoverTable.headingLine.visible = true;
       pixiApp.setViewportDirty();
+    }
+  };
+
+  // Redraw the headings if the offsets change.
+  sheetOffsets = (sheetId: string) => {
+    if (sheetId === this.sheet.id) {
+      this.renderCodeCells(
+        sheetId,
+        this.tables.map((table) => table.codeCell)
+      );
     }
   };
 }

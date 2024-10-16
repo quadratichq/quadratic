@@ -95,6 +95,7 @@ export class CellsSheet extends Container {
 
   adjustOffsets() {
     this.borders.setDirty();
+    this.tables.sheetOffsets(this.sheetId);
   }
 
   updateCellsArray() {
