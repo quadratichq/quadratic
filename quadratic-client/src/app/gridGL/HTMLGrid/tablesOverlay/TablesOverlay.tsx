@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 //! This draws the table heading and provides its context menu.
 //!
 //! There are two overlays: the first is the active table that the sheet cursor
@@ -46,6 +45,14 @@ export const TableOverlay = () => {
         return;
       }
       const viewport = pixiApp.viewport;
+      const bounds = viewport.getVisibleBounds();
+      if (!bounds.intersects(rect)) {
+        tableRef.current.style.display = 'none';
+        return;
+      } else {
+        tableRef.current.style.display = 'block';
+      }
+
       const headingHeight = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
       if (rect.y < viewport.top + headingHeight) {
         tableTop = rect.y + (viewport.top + headingHeight - rect.y);
@@ -119,6 +126,37 @@ export const TableOverlay = () => {
       );
     }
   }, [hoverName, hoverRect, hoverTable]);
+
+  useEffect(() => {
+    let tableTop = hoverRect ? hoverRect.y : 0;
+    const checkViewport = () => {
+      if (!hoverRect || !hoverTableRef.current) {
+        return;
+      }
+      const viewport = pixiApp.viewport;
+      const bounds = viewport.getVisibleBounds();
+      if (!bounds.intersects(hoverRect)) {
+        hoverTableRef.current.style.display = 'none';
+        return;
+      } else {
+        hoverTableRef.current.style.display = 'block';
+      }
+
+      const headingHeight = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+      if (hoverRect.y < viewport.top + headingHeight) {
+        tableTop = hoverRect.y + (viewport.top + headingHeight - hoverRect.y);
+        hoverTableRef.current.style.top = `${tableTop}px`;
+      } else {
+        hoverTableRef.current.style.top = `${hoverRect.y}px`;
+      }
+    };
+    checkViewport();
+
+    events.on('viewportChanged', checkViewport);
+    return () => {
+      events.off('viewportChanged', checkViewport);
+    };
+  }, [hoverRect, hoverTable]);
 
   useEffect(() => {
     const updateViewport = () => {

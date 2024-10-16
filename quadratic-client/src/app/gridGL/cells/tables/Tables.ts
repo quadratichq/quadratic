@@ -8,6 +8,7 @@ import { Sheet } from '@/app/grid/sheet/Sheet';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { FONT_SIZE, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -20,7 +21,9 @@ interface Column {
 
 interface Table {
   container: Container;
+  headingContainer: Container;
   bounds: Rectangle;
+  outline: Graphics;
   headingBounds: Rectangle;
   originalHeadingBounds: Rectangle;
   columns: Column[];
@@ -29,14 +32,20 @@ interface Table {
 
 export class Tables extends Container {
   private cellsSheet: CellsSheet;
-  private headings: Table[];
+  private tables: Table[];
+
+  private activeTable: Table | undefined;
+  private hoverTable: Table | undefined;
 
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
-    this.headings = [];
+    this.tables = [];
     events.on('renderCodeCells', this.renderCodeCells);
     // todo: update code cells?
+
+    events.on('cursorPosition', this.cursorPosition);
+    events.on('hoverTable', this.setHoverTable);
   }
 
   get sheet(): Sheet {
@@ -49,31 +58,34 @@ export class Tables extends Container {
 
   cull() {
     const bounds = pixiApp.viewport.getVisibleBounds();
-    this.headings.forEach((heading) => {
+    this.tables.forEach((heading) => {
       heading.container.visible = intersects.rectangleRectangle(heading.bounds, bounds);
     });
   }
 
   private renderCodeCell = (codeCell: JsRenderCodeCell) => {
     const container = this.addChild(new Container());
+
     const bounds = this.sheet.getScreenRectangle(codeCell.x, codeCell.y, codeCell.w - 1, codeCell.h - 1);
     const headingHeight = this.sheet.offsets.getRowHeight(codeCell.y);
     const headingBounds = new Rectangle(bounds.x, bounds.y, bounds.width, headingHeight);
     const originalHeadingBounds = headingBounds.clone();
     container.position.set(headingBounds.x, headingBounds.y);
 
+    // draw individual headings
+    const headingContainer = container.addChild(new Container());
+
     // draw heading background
-    const background = container.addChild(new Graphics());
+    const background = headingContainer.addChild(new Graphics());
     background.beginFill(colors.tableHeadingBackground);
     background.drawShape(new Rectangle(0, 0, headingBounds.width, headingBounds.height));
     background.endFill();
 
-    // draw individual headings
     let x = 0;
     const columns: Column[] = codeCell.column_names.map((column, index) => {
       const width = this.sheet.offsets.getColumnWidth(codeCell.x + index);
       const bounds = new Rectangle(x, headingBounds.y, width, headingBounds.height);
-      const heading = container.addChild(new Container());
+      const heading = headingContainer.addChild(new Container());
       heading.position.set(x + OPEN_SANS_FIX.x, OPEN_SANS_FIX.y);
       heading.addChild(
         new BitmapText(column.name, {
@@ -86,10 +98,18 @@ export class Tables extends Container {
       return { heading, bounds };
     });
 
-    this.headings.push({
+    // draw outline
+    const outline = container.addChild(new Graphics());
+    outline.lineStyle({ color: getCSSVariableTint('primary'), width: 2 });
+    outline.drawShape(new Rectangle(0, 0, bounds.width, bounds.height));
+    outline.visible = false;
+
+    this.tables.push({
       container,
       bounds,
       headingBounds,
+      headingContainer,
+      outline,
       originalHeadingBounds,
       columns,
       codeCell,
@@ -99,20 +119,20 @@ export class Tables extends Container {
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
-      this.headings = [];
+      this.tables = [];
       codeCells.forEach((codeCell) => this.renderCodeCell(codeCell));
     }
   };
 
   private headingPosition = () => {
     const bounds = pixiApp.viewport.getVisibleBounds();
-    const gridHeading = pixiApp.headings.headingSize.height;
-    this.headings.forEach((heading) => {
+    const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scaled;
+    this.tables.forEach((heading) => {
       if (heading.container.visible) {
         if (heading.headingBounds.top < bounds.top + gridHeading) {
-          heading.container.y = bounds.top + gridHeading;
+          heading.headingContainer.y = bounds.top + gridHeading - heading.headingBounds.top;
         } else {
-          heading.container.y = heading.bounds.top;
+          heading.headingContainer.y = 0;
         }
       }
     });
@@ -124,4 +144,45 @@ export class Tables extends Container {
       this.headingPosition();
     }
   }
+
+  // Updates the active table when the cursor moves.
+  private cursorPosition = () => {
+    if (this.sheet.id !== sheets.sheet.id) {
+      return;
+    }
+    if (this.activeTable) {
+      this.activeTable.outline.visible = false;
+      pixiApp.setViewportDirty();
+    }
+    const cursor = sheets.sheet.cursor.cursorPosition;
+    this.activeTable = this.tables.find((table) => {
+      const rect = new Rectangle(table.codeCell.x, table.codeCell.y, table.codeCell.w - 1, table.codeCell.h - 1);
+      return intersects.rectanglePoint(rect, cursor);
+    });
+    if (this.activeTable) {
+      this.activeTable.outline.visible = true;
+      pixiApp.setViewportDirty();
+    }
+  };
+
+  private setHoverTable = (codeCell?: JsRenderCodeCell) => {
+    if (this.sheet.id !== sheets.sheet.id) {
+      return;
+    }
+    if (!codeCell) {
+      if (this.hoverTable) {
+        if (this.hoverTable !== this.activeTable) {
+          this.hoverTable.outline.visible = false;
+          pixiApp.setViewportDirty();
+        }
+        this.hoverTable = undefined;
+      }
+      return;
+    }
+    this.hoverTable = this.tables.find((table) => table.codeCell.x === codeCell.x && table.codeCell.y === codeCell.y);
+    if (this.hoverTable) {
+      this.hoverTable.outline.visible = true;
+      pixiApp.setViewportDirty();
+    }
+  };
 }
