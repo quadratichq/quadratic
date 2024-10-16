@@ -27,6 +27,7 @@ import { Update } from '@/app/gridGL/pixiApp/Update';
 import { Viewport } from '@/app/gridGL/pixiApp/Viewport';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Coordinate } from '@/app/gridGL/types/size';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -223,7 +224,9 @@ export class PixiApp {
     this.destroyed = true;
   }
 
-  setAccentColor = (accentColor: number): void => {
+  setAccentColor = (): void => {
+    // Pull the value from the current value as defined in CSS
+    const accentColor = getCSSVariableTint('primary');
     this.accentColor = accentColor;
     this.gridLines.dirty = true;
     this.axesLines.dirty = true;

@@ -1,11 +1,10 @@
-import { appearanceModes, themeAppearanceModeAtom } from '@/shared/atoms/themeAppearanceMode';
 import { AppearanceDarkModeIcon, AppearanceLightModeIcon, AppearanceSystemModeIcon } from '@/shared/components/Icons';
+import { appearanceModes, useThemeAppearanceMode } from '@/shared/hooks/useThemeAppearanceMode';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { useRecoilState } from 'recoil';
 
 export function ThemeAppearanceModes() {
-  const [appearanceMode, setAppearanceMode] = useRecoilState(themeAppearanceModeAtom);
+  const [appearanceMode, setAppearanceMode] = useThemeAppearanceMode();
   return appearanceModes.map((mode) => (
     <Button
       key={mode}

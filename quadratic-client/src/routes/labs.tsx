@@ -1,12 +1,10 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 
-import { featureFlagState } from '@/shared/atoms/featureFlags';
-import { type FeatureFlagKey } from '@/shared/components/FeatureFlags';
 import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
+import { useFeatureFlag, type FeatureFlagKey } from '@/shared/hooks/useFeatureFlag';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
-import { useRecoilState } from 'recoil';
 
 type LabProps = {
   featureFlagKey: FeatureFlagKey;
@@ -61,11 +59,7 @@ export const Component = () => {
 };
 
 function LabToggle({ featureFlagKey, label, description, Component }: LabProps) {
-  const [featureFlags, setFeatureFlags] = useRecoilState(featureFlagState);
-  const isOn = featureFlags[featureFlagKey];
-  const setIsOn = (value: boolean) => {
-    setFeatureFlags((prev) => ({ ...prev, [featureFlagKey]: value }));
-  };
+  const [featureFlag, setFeatureFlag] = useFeatureFlag(featureFlagKey);
 
   return (
     <div className="space-y-3 rounded-lg border p-3 shadow-sm">
@@ -79,13 +73,13 @@ function LabToggle({ featureFlagKey, label, description, Component }: LabProps) 
 
         <Switch
           id={featureFlagKey}
-          checked={isOn}
+          checked={featureFlag}
           onCheckedChange={(checked) => {
-            setIsOn(checked);
+            setFeatureFlag(checked);
           }}
         />
       </div>
-      {isOn && (
+      {featureFlag && (
         <div className="flex gap-2 border-t border-border pt-3">
           <Component />
         </div>

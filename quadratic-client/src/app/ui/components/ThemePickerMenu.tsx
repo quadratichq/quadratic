@@ -1,25 +1,18 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { SidebarToggle, SidebarTooltip } from '@/app/ui/QuadraticSidebar';
-import { featureFlagState } from '@/shared/atoms/featureFlags';
-import { themeAccentColorAtom } from '@/shared/atoms/themeAccentColor';
-import { themeAppearanceModeAtom } from '@/shared/atoms/themeAppearanceMode';
 import { ThemeIcon } from '@/shared/components/Icons';
 import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
+import { useFeatureFlag } from '@/shared/hooks/useFeatureFlag';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { useState } from 'react';
-import { useRecoilValue } from 'recoil';
 
 export const ThemePickerMenu = () => {
-  const featureFlags = useRecoilValue(featureFlagState);
+  const [featureFlagThemeAccentColor] = useFeatureFlag('themeAccentColor');
+  const [featureFlagThemeAppearanceMode] = useFeatureFlag('themeAppearanceMode');
   const [showThemeMenu, setShowThemeMenu] = useState(false);
 
-  // Have to put these here to initialize the atoms so the app themes correctly
-  // when it first loads, as the others are hidden behind a popover
-  useRecoilValue(themeAccentColorAtom);
-  useRecoilValue(themeAppearanceModeAtom);
-
-  if (!(featureFlags.themeAccentColor || featureFlags.themeAppearanceMode)) {
+  if (!(featureFlagThemeAccentColor || featureFlagThemeAppearanceMode)) {
     return null;
   }
 
@@ -45,7 +38,7 @@ export const ThemePickerMenu = () => {
         <h2 className="text-md font-semibold">Theme customization</h2>
         <p className="mb-4 text-xs text-muted-foreground">Pick a style that fits you</p>
 
-        {featureFlags.themeAccentColor && (
+        {featureFlagThemeAccentColor && (
           <>
             <h3 className="mb-1 text-xs font-semibold">Accent color</h3>
             <div className="grid grid-cols-3 gap-2">
@@ -53,7 +46,7 @@ export const ThemePickerMenu = () => {
             </div>
           </>
         )}
-        {featureFlags.themeAppearanceMode && (
+        {featureFlagThemeAppearanceMode && (
           <>
             <h3 className="mb-1 mt-4 text-xs font-semibold">Appearance</h3>
 
