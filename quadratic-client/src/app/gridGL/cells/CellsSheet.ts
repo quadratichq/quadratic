@@ -1,10 +1,11 @@
 import { events } from '@/app/events/events';
+import { Tables } from '@/app/gridGL/cells/tables/Tables';
 import { JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle, Sprite } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsArray } from './CellsArray';
 import { Borders } from './borders/Borders';
+import { CellsArray } from './CellsArray';
 import { CellsFills } from './CellsFills';
 import { CellsImage } from './cellsImages/CellsImage';
 import { CellsImages } from './cellsImages/CellsImages';
@@ -33,6 +34,8 @@ export class CellsSheet extends Container {
   cellsMarkers: CellsMarkers;
   cellsLabels: CellsLabels;
 
+  tables: Tables;
+
   sheetId: string;
 
   constructor(sheetId: string) {
@@ -44,7 +47,11 @@ export class CellsSheet extends Container {
     this.addChild(new CellsSearch(sheetId));
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
+    this.tables = this.addChild(new Tables(this));
+
+    // todo: this should go away...
     this.cellsArray = this.addChild(new CellsArray(this));
+
     this.borders = this.addChild(new Borders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
     this.cellsImages = new CellsImages(this);

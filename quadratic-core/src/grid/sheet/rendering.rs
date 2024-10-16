@@ -27,6 +27,7 @@ impl Sheet {
         column: Option<&Column>,
         value: &CellValue,
         language: Option<CodeCellLanguage>,
+        special: Option<JsRenderCellSpecial>,
     ) -> JsRenderCell {
         if let CellValue::Html(_) = value {
             return JsRenderCell {
@@ -68,12 +69,16 @@ impl Sheet {
         } else {
             None
         };
-        let special = self.validations.render_special_pos(Pos { x, y }).or({
-            if matches!(value, CellValue::Logical(_)) {
-                Some(JsRenderCellSpecial::Logical)
-            } else {
-                None
-            }
+        let special = special.or_else(|| {
+            self.validations
+                .render_special_pos(Pos { x, y })
+                .or_else(|| {
+                    if matches!(value, CellValue::Logical(_)) {
+                        Some(JsRenderCellSpecial::Logical)
+                    } else {
+                        None
+                    }
+                })
         });
 
         match column {
@@ -171,6 +176,7 @@ impl Sheet {
                         msg: RunErrorMsg::Spill,
                     })),
                     Some(code_cell_value.language),
+                    None,
                 ));
             } else if let Some(error) = data_table.get_error() {
                 cells.push(self.get_render_cell(
@@ -179,6 +185,7 @@ impl Sheet {
                     None,
                     &CellValue::Error(Box::new(error)),
                     Some(code_cell_value.language),
+                    None,
                 ));
             } else {
                 // find overlap of code_rect into rect
@@ -205,6 +212,11 @@ impl Sheet {
                 for x in x_start..=x_end {
                     let column = self.get_column(x);
                     for y in y_start..=y_end {
+                        // We skip rendering the heading row because we render it separately.
+                        // todo: we should not skip if headings are hidden
+                        if y == code_rect.min.y {
+                            continue;
+                        }
                         let value = data_table.cell_value_at(
                             (x - code_rect.min.x) as u32,
                             (y - code_rect.min.y) as u32,
@@ -215,7 +227,14 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            cells.push(self.get_render_cell(x, y, column, &value, language));
+                            let special = if y == code_rect.min.y {
+                                Some(JsRenderCellSpecial::TableHeading)
+                            } else {
+                                None
+                            };
+                            cells.push(
+                                self.get_render_cell(x, y, column, &value, language, special),
+                            );
                         }
                     }
                 }
@@ -239,7 +258,14 @@ impl Sheet {
                     if !matches!(value, CellValue::Code(_))
                         && !matches!(value, CellValue::Import(_))
                     {
-                        render_cells.push(self.get_render_cell(x, *y, Some(column), value, None));
+                        render_cells.push(self.get_render_cell(
+                            x,
+                            *y,
+                            Some(column),
+                            value,
+                            None,
+                            None,
+                        ));
                     }
                 });
             });
@@ -417,6 +443,7 @@ impl Sheet {
             state,
             spill_error,
             name: data_table.name.clone(),
+            column_names: data_table.send_columns(),
         })
     }
 
@@ -460,6 +487,7 @@ impl Sheet {
                                 state,
                                 spill_error,
                                 name: data_table.name.clone(),
+                                column_names: data_table.send_columns(),
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -618,7 +646,8 @@ mod tests {
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableKind, Italic, RenderSize,
+            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableColumn, DataTableKind, Italic,
+            RenderSize,
         },
         selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
@@ -1082,6 +1111,11 @@ mod tests {
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
                 name: "Table 1".to_string(),
+                column_names: vec![DataTableColumn {
+                    name: "Column 1".to_string(),
+                    display: true,
+                    value_index: 0,
+                }],
             })
         );
     }

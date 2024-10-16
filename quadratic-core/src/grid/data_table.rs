@@ -17,10 +17,11 @@ use tabled::{
     builder::Builder,
     settings::{Color, Modify, Style},
 };
+use ts_rs::TS;
 
 use super::Sheet;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct DataTableColumn {
     pub name: String,
     pub display: bool,
@@ -476,6 +477,20 @@ impl DataTable {
         }
 
         format!("\nData Table: {title}\n{table}")
+    }
+
+    /// Prepares the columns to be sent to the client. If no columns are set, it
+    /// will create default columns.
+    pub fn send_columns(&self) -> Vec<DataTableColumn> {
+        match self.columns.as_ref() {
+            Some(columns) => columns.clone(),
+            None => {
+                let size = self.output_size();
+                (0..size.w.get())
+                    .map(|i| DataTableColumn::new(format!("Column {}", i + 1), true, i))
+                    .collect::<Vec<DataTableColumn>>()
+            }
+        }
     }
 }
 

@@ -7,11 +7,10 @@ use uuid::Uuid;
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
-use super::{CodeCellLanguage, NumericFormat};
+use super::{CodeCellLanguage, DataTableColumn, NumericFormat};
 use crate::{Pos, SheetRect};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum JsRenderCellSpecial {
     Chart,
     SpillError,
@@ -19,9 +18,10 @@ pub enum JsRenderCellSpecial {
     Logical,
     Checkbox,
     List,
+    TableHeading,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ts_rs::TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsNumber {
     pub decimals: Option<i16>,
     pub commas: Option<bool>,
@@ -193,6 +193,7 @@ pub struct JsRenderCodeCell {
     pub state: JsRenderCodeCellState,
     pub spill_error: Option<Vec<Pos>>,
     pub name: String,
+    pub column_names: Vec<DataTableColumn>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
