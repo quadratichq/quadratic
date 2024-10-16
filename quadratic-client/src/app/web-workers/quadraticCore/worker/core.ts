@@ -478,6 +478,7 @@ class Core {
     sheetId,
     location,
     cursor,
+    csvDelimiter,
   }: ClientCoreImportFile): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
     if (cursor === undefined) {
       try {
@@ -488,7 +489,7 @@ class Core {
             gc = GridController.importExcel(new Uint8Array(file), fileName);
             break;
           case 'csv':
-            gc = GridController.importCsv(new Uint8Array(file), fileName);
+            gc = GridController.importCsv(new Uint8Array(file), fileName, csvDelimiter);
             break;
           case 'parquet':
             gc = GridController.importParquet(new Uint8Array(file), fileName);
@@ -523,7 +524,8 @@ class Core {
                   fileName,
                   sheetId,
                   posToPos(location.x, location.y),
-                  cursor
+                  cursor,
+                  csvDelimiter
                 );
                 break;
               case 'parquet':

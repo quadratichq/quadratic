@@ -27,6 +27,7 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         insert_at: Pos,
+        delimiter: Option<u8>,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let file: &[u8] = match String::from_utf8_lossy(&file) {
@@ -38,18 +39,23 @@ impl GridController {
                         utf.as_bytes().to_vec(),
                         file_name,
                         insert_at,
+                        delimiter,
                     );
                 }
                 &file
             }
         };
 
-        // auto detect the delimiter
-        let cursor = Cursor::new(&file);
-        let metadata = Sniffer::new()
-            .sniff_reader(cursor)
-            .map_err(|e| error(format!("Failed to detect CSV metadata: {}", e)))?;
-        let delimiter = metadata.dialect.delimiter;
+        let delimiter = match delimiter {
+            Some(d) => d,
+            None => {
+                // auto detect the delimiter, default to ',' if it fails
+                let cursor = Cursor::new(&file);
+                Sniffer::new()
+                    .sniff_reader(cursor)
+                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
+            }
+        };
 
         // first get the total number of lines so we can provide progress
         let mut reader = csv::ReaderBuilder::new()
@@ -434,6 +440,7 @@ mod test {
             SIMPLE_CSV.as_bytes().to_vec(),
             "smallpop.csv",
             pos,
+            Some(b','),
         );
         assert_eq!(ops.as_ref().unwrap().len(), 1);
         assert_eq!(
@@ -466,7 +473,13 @@ mod test {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc.import_csv_operations(sheet_id, csv.as_bytes().to_vec(), "long.csv", pos);
+        let ops = gc.import_csv_operations(
+            sheet_id,
+            csv.as_bytes().to_vec(),
+            "long.csv",
+            pos,
+            Some(b','),
+        );
         assert_eq!(ops.as_ref().unwrap().len(), 3);
 
         let first_pos = match ops.as_ref().unwrap()[0] {
@@ -506,8 +519,15 @@ mod test {
 
         let pos = Pos { x: 0, y: 0 };
         let csv = "2024-12-21,13:23:00,2024-12-21 13:23:00\n".to_string();
-        gc.import_csv(sheet_id, csv.as_bytes().to_vec(), "csv", pos, None)
-            .unwrap();
+        gc.import_csv(
+            sheet_id,
+            csv.as_bytes().to_vec(),
+            "csv",
+            pos,
+            None,
+            Some(b','),
+        )
+        .unwrap();
 
         assert_eq!(
             gc.sheet(sheet_id).cell_value((0, 0).into()),

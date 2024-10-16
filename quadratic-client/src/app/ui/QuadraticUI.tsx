@@ -8,6 +8,7 @@ import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
+import { ImportSettings } from '@/app/ui/components/ImportSettings';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
@@ -107,6 +108,7 @@ export default function QuadraticUI() {
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
       <UserMessage />
+      <ImportSettings />
     </div>
   );
 }

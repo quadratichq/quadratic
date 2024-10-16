@@ -16,8 +16,9 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
+        delimiter: Option<u8>,
     ) -> Result<()> {
-        let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
+        let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at, delimiter)?;
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
         } else {
@@ -119,6 +120,7 @@ mod tests {
             "smallpop.csv",
             pos,
             None,
+            Some(b','),
         );
 
         print_table(
@@ -153,8 +155,14 @@ mod tests {
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        let result =
-            grid_controller.import_csv(sheet_id, "".as_bytes().to_vec(), "smallpop.csv", pos, None);
+        let result = grid_controller.import_csv(
+            sheet_id,
+            "".as_bytes().to_vec(),
+            "smallpop.csv",
+            pos,
+            None,
+            Some(b','),
+        );
         assert!(result.is_err());
     }
 
@@ -176,6 +184,7 @@ mod tests {
             "large.csv",
             Pos { x: 0, y: 0 },
             None,
+            Some(b','),
         );
         assert!(result.is_ok());
         expect_js_call_count("jsImportProgress", 1, true);
@@ -192,6 +201,7 @@ mod tests {
                 csv.as_bytes().to_vec(),
                 "bad line",
                 Pos { x: 0, y: 0 },
+                Some(b','),
             )
             .unwrap();
         let op = &ops[0];
@@ -448,6 +458,7 @@ mod tests {
             "test.csv",
             pos,
             None,
+            Some(b','),
         )
         .expect("import_csv");
 
@@ -472,6 +483,7 @@ mod tests {
             "test.csv",
             pos,
             None,
+            Some(b','),
         )
         .expect("import_csv");
 
@@ -497,6 +509,7 @@ mod tests {
             "test.csv",
             pos,
             None,
+            Some(b','),
         )
         .expect("import_csv");
 

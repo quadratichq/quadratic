@@ -1,5 +1,6 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
+import { useGetCsvDelimiter } from '@/app/ui/hooks/useGetCsvDelimiter';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
@@ -16,6 +17,7 @@ export function useFileImport() {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
   const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
+  const { getCsvDelimiter } = useGetCsvDelimiter();
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
@@ -83,6 +85,7 @@ export function useFileImport() {
               severity: 'warning',
             }
           );
+          return false;
         }
         files = [files[0]];
       }
@@ -90,6 +93,12 @@ export function useFileImport() {
 
     files = Array.from(files);
     const totalFiles = files.length;
+
+    let csvDelimiter: number | undefined = undefined;
+    const filesHasCsv = files.some((file) => getFileType(file) === 'csv');
+    if (filesHasCsv) {
+      csvDelimiter = await getCsvDelimiter();
+    }
 
     setFilesImportProgressState(() => ({
       importing: true,
@@ -156,6 +165,7 @@ export function useFileImport() {
             cursor,
             sheetId,
             location: insertAt,
+            csvDelimiter,
           });
         } else {
           throw new Error(`Error importing ${fileName}: Unsupported file type`);
