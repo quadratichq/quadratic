@@ -48,18 +48,27 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
       const leftHeadingScaled = leftHeading / scale;
 
       if (side === 'vertical') {
+        // align left to cell left
         let left = offsets.left - (centerHorizontal ? offsetWidth / 2 : 0);
+        // make sure left does not go to the right of the viewport
         left = Math.min(left, bounds.right - offsetWidth);
+        // make sure left does not go to the left of the viewport
         left = Math.max(left, bounds.left + leftHeadingScaled);
         setLeft(left);
 
+        // align top to cell bottom
         let top = offsets.bottom;
+        // if the model is to be displayed above the cell
         if (forceTop) {
+          // align bottom to cell top
           top = offsets.top - offsetHeight;
+          // if it goes above the heading, switch to displaying below the cell
           if (top < bounds.top + topHeadingScaled) {
             top = offsets.bottom;
           }
         }
+        // make sure top does not go above the heading
+        top = Math.max(top, bounds.top + topHeadingScaled);
         setTop(top);
       } else {
         // checks whether the inline editor or dropdown is open; if so, always
@@ -77,14 +86,15 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
           setLeft(offsets.right);
         }
 
-        // only box going up if it doesn't fit.
-        if (offsets.top + offsetHeight < bounds.bottom) {
-          // box going down
-          setTop(offsets.top);
-        } else {
-          // box going up
-          setTop(offsets.bottom - offsetHeight);
+        // align top to cell top
+        let top = offsets.top;
+        // if the modal is too tall, align bottom to cell bottom
+        if (top + offsetHeight > bounds.bottom) {
+          top = offsets.bottom - offsetHeight;
         }
+        // make sure top does not go above the heading
+        top = Math.max(top, bounds.top + topHeadingScaled);
+        setTop(top);
       }
     };
 
