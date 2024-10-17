@@ -1,3 +1,4 @@
+import { ContextMenuType } from '@/app/atoms/contextMenuAtoms';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
@@ -65,9 +66,9 @@ export class PointerDown {
         });
         // hack to ensure that the context menu opens after the cursor changes
         // position (otherwise it may close immediately)
-        setTimeout(() => events.emit('gridContextMenu', world, column, row));
+        setTimeout(() => events.emit('contextMenu', ContextMenuType.Grid, world, column, row));
       } else {
-        events.emit('gridContextMenu', world, column, row);
+        events.emit('contextMenu', ContextMenuType.Grid, world, column, row);
       }
       return;
     }

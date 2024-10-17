@@ -2,6 +2,7 @@ import { PointerAutoComplete } from '@/app/gridGL/interaction/pointer/PointerAut
 import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
 import { PointerCursor } from '@/app/gridGL/interaction/pointer/pointerCursor';
 import { PointerDown } from '@/app/gridGL/interaction/pointer/PointerDown';
+import { PointerDownTable } from '@/app/gridGL/interaction/pointer/PointerDownTable';
 import { PointerHeading } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { PointerHtmlCells } from '@/app/gridGL/interaction/pointer/PointerHtmlCells';
 import { PointerImages } from '@/app/gridGL/interaction/pointer/PointerImages';
@@ -20,6 +21,7 @@ export class Pointer {
   private pointerCursor: PointerCursor;
   pointerDown: PointerDown;
   pointerCellMoving: PointerCellMoving;
+  private pointerDownTable: PointerDownTable;
   private pointerLink: PointerLink;
 
   constructor(viewport: Viewport) {
@@ -30,6 +32,7 @@ export class Pointer {
     this.pointerCursor = new PointerCursor();
     this.pointerHtmlCells = new PointerHtmlCells();
     this.pointerCellMoving = new PointerCellMoving();
+    this.pointerDownTable = new PointerDownTable();
     this.pointerLink = new PointerLink();
 
     viewport.on('pointerdown', this.handlePointerDown);
@@ -100,6 +103,7 @@ export class Pointer {
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerLink.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
+      this.pointerDownTable.pointerDown(world, event) ||
       this.pointerDown.pointerDown(world, event);
 
     this.updateCursor();
@@ -124,7 +128,7 @@ export class Pointer {
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world, event) ||
-      this.pointerCursor.pointerMove(world, event) ||
+      this.pointerCursor.pointerMove(world) ||
       this.pointerLink.pointerMove(world, event);
 
     this.updateCursor();

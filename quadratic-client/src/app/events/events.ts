@@ -1,3 +1,4 @@
+import { ContextMenuType } from '@/app/atoms/contextMenuAtoms';
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { SheetPosTS } from '@/app/gridGL/types/size';
@@ -124,11 +125,8 @@ interface EventTypes {
   // when validation changes state
   validation: (validation: string | boolean) => void;
 
-  // context menu opens on a grid heading
-  gridContextMenu: (world: Point, row: number | null, column: number | null) => void;
-
-  // context menu on a table
-  tableContextMenu: (world: Point, row: number | null, column: number | null) => void;
+  // trigger or clear a context menu
+  contextMenu: (type: ContextMenuType, world: Point, row: number | null, column: number | null) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 

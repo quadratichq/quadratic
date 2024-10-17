@@ -1,3 +1,4 @@
+import { ContextMenuType } from '@/app/atoms/contextMenuAtoms';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
@@ -146,7 +147,7 @@ export class PointerHeading {
           } else {
             if (columns.includes(column)) {
               if (isRightClick) {
-                events.emit('gridContextMenu', world, column, null);
+                events.emit('contextMenu', ContextMenuType.Grid, world, column, null);
               } else {
                 selectColumns(
                   columns.filter((c) => c !== column),
@@ -158,7 +159,7 @@ export class PointerHeading {
               if (isRightClick) {
                 selectColumns([column], undefined, true);
                 // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('gridContextMenu', world, column, null));
+                setTimeout(() => events.emit('contextMenu', ContextMenuType.Grid, world, column, null));
               } else {
                 selectColumns([...columns, column], undefined, true);
               }
@@ -181,7 +182,7 @@ export class PointerHeading {
           } else {
             if (rows.includes(row)) {
               if (isRightClick) {
-                events.emit('gridContextMenu', world, null, row);
+                events.emit('contextMenu', ContextMenuType.Grid, world, null, row);
               } else {
                 selectRows(
                   rows.filter((c) => c !== row),
@@ -193,7 +194,7 @@ export class PointerHeading {
               if (isRightClick) {
                 selectRows([row], undefined, true);
                 // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('gridContextMenu', world, null, row));
+                setTimeout(() => events.emit('contextMenu', ContextMenuType.Grid, world, null, row));
               } else {
                 selectRows([...rows, row], undefined, true);
               }

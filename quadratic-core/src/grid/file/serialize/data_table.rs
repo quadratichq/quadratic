@@ -136,7 +136,6 @@ pub(crate) fn import_data_table_builder(
     let mut new_data_tables = IndexMap::new();
 
     for (pos, data_table) in data_tables.into_iter() {
-        dbgjs!(format!("data_table: {:?}", &data_table));
         let value = match data_table.value {
             current::OutputValueSchema::Single(value) => {
                 Value::Single(import_cell_value(value.to_owned()))
@@ -320,7 +319,6 @@ pub(crate) fn export_data_tables(
     data_tables
         .into_iter()
         .map(|(pos, data_table)| {
-            dbgjs!(format!("data_table: {:?}", &data_table));
             let value = match data_table.value {
                 Value::Single(cell_value) => {
                     current::OutputValueSchema::Single(export_cell_value(cell_value))
