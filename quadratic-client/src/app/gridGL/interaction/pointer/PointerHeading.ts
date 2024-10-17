@@ -147,7 +147,7 @@ export class PointerHeading {
           } else {
             if (columns.includes(column)) {
               if (isRightClick) {
-                events.emit('contextMenu', ContextMenuType.Grid, world, column, null);
+                events.emit('contextMenu', { type: ContextMenuType.Grid, world, column });
               } else {
                 selectColumns(
                   columns.filter((c) => c !== column),
@@ -159,7 +159,7 @@ export class PointerHeading {
               if (isRightClick) {
                 selectColumns([column], undefined, true);
                 // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('contextMenu', ContextMenuType.Grid, world, column, null));
+                setTimeout(() => events.emit('contextMenu', { type: ContextMenuType.Grid, world, column }));
               } else {
                 selectColumns([...columns, column], undefined, true);
               }
@@ -182,7 +182,7 @@ export class PointerHeading {
           } else {
             if (rows.includes(row)) {
               if (isRightClick) {
-                events.emit('contextMenu', ContextMenuType.Grid, world, null, row);
+                events.emit('contextMenu', { type: ContextMenuType.Grid, world, row });
               } else {
                 selectRows(
                   rows.filter((c) => c !== row),
@@ -194,7 +194,7 @@ export class PointerHeading {
               if (isRightClick) {
                 selectRows([row], undefined, true);
                 // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('contextMenu', ContextMenuType.Grid, world, null, row));
+                setTimeout(() => events.emit('contextMenu', { type: ContextMenuType.Grid, world, row }));
               } else {
                 selectRows([...rows, row], undefined, true);
               }

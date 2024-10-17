@@ -1,23 +1,20 @@
 //! This shows the grid heading context menu.
 
 import { Action } from '@/app/actions/actions';
-import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtoms';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
-import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
-import { IconComponent } from '@/shared/components/Icons';
-import { ControlledMenu, MenuDivider, MenuItem } from '@szhsin/react-menu';
+import { ControlledMenu, MenuDivider } from '@szhsin/react-menu';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
-import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../../pixiApp/PixiApp';
 
 export const GridContextMenu = () => {
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const onClose = useCallback(() => {
-    setContextMenu({ type: undefined, world: undefined, column: null, row: null });
+    setContextMenu({});
     focusGrid();
   }, [setContextMenu]);
 
@@ -34,6 +31,7 @@ export const GridContextMenu = () => {
   const ref = useRef<HTMLDivElement>(null);
 
   const isColumnRowAvailable = sheets.sheet.cursor.hasOneColumnRowSelection(true);
+  const isMultiSelectOnly = sheets.sheet.cursor.hasOneMultiselect();
 
   return (
     <div
@@ -81,54 +79,8 @@ export const GridContextMenu = () => {
         )}
 
         <MenuDivider />
-        <MenuItemAction action={Action.FlattenDataTable} />
-        <MenuItemAction action={Action.GridToDataTable} />
-        <MenuItemAction action={Action.SortDataTableFirstColAsc} />
-        <MenuItemAction action={Action.SortDataTableFirstColDesc} />
-        <MenuItemAction action={Action.AddFirstRowAsHeaderDataTable} />
-        <MenuItemAction action={Action.RemoveFirstRowAsHeaderDataTable} />
+        {isMultiSelectOnly && <MenuItemAction action={Action.GridToDataTable} />}
       </ControlledMenu>
     </div>
   );
 };
-
-function MenuItemAction({ action }: { action: Action }) {
-  const { label, Icon, run, isAvailable } = defaultActionSpec[action];
-  const isAvailableArgs = useIsAvailableArgs();
-  const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
-
-  if (isAvailable && !isAvailable(isAvailableArgs)) {
-    return null;
-  }
-
-  return (
-    <MenuItemShadStyle Icon={Icon} onClick={run} keyboardShortcut={keyboardShortcut}>
-      {label}
-    </MenuItemShadStyle>
-  );
-}
-
-function MenuItemShadStyle({
-  children,
-  Icon,
-  onClick,
-  keyboardShortcut,
-}: {
-  children: string;
-  Icon?: IconComponent;
-  onClick: any;
-  keyboardShortcut?: string;
-}) {
-  const menuItemClassName =
-    'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50';
-  return (
-    <MenuItem className={menuItemClassName} onClick={onClick}>
-      <span className="mr-4 flex items-center">
-        {Icon && <Icon className="-ml-3 mr-4" />} {children}
-      </span>
-      {keyboardShortcut && (
-        <span className="ml-auto text-xs tracking-widest text-muted-foreground">{keyboardShortcut}</span>
-      )}
-    </MenuItem>
-  );
-}

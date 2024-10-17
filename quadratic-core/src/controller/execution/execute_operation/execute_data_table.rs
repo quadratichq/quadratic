@@ -12,7 +12,7 @@ use crate::{
 use anyhow::{bail, Result};
 
 impl GridController {
-    pub fn send_to_wasm(
+    fn send_to_wasm(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,
@@ -38,7 +38,7 @@ impl GridController {
         Ok(())
     }
 
-    pub fn data_table_operations(
+    fn data_table_operations(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,

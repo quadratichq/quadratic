@@ -188,12 +188,12 @@ export class Table extends Container {
     );
   }
 
-  intersectsTableName(world: Point): { table: Table; nameOrDropdown: 'name' | 'dropdown' } | undefined {
+  intersectsTableName(world: Point): { table: JsRenderCodeCell; nameOrDropdown: 'name' | 'dropdown' } | undefined {
     if (intersects.rectanglePoint(this.getScaledTableNameBounds(), world)) {
       if (world.x <= this.tableNameBounds.x + this.tableNameText.width / pixiApp.viewport.scaled) {
-        return { table: this, nameOrDropdown: 'name' };
+        return { table: this.codeCell, nameOrDropdown: 'name' };
       }
-      return { table: this, nameOrDropdown: 'dropdown' };
+      return { table: this.codeCell, nameOrDropdown: 'dropdown' };
     }
   }
 

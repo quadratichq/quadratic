@@ -294,4 +294,9 @@ export class SheetCursor {
   onlySingleSelection(): boolean {
     return !this.multiCursor?.length && !this.columnRow;
   }
+
+  // Returns true if there is one multiselect of > 1 size
+  hasOneMultiselect(): boolean {
+    return this.multiCursor?.length === 1 && (this.multiCursor[0].width > 1 || this.multiCursor[0].height > 1);
+  }
 }

@@ -66,9 +66,9 @@ export class PointerDown {
         });
         // hack to ensure that the context menu opens after the cursor changes
         // position (otherwise it may close immediately)
-        setTimeout(() => events.emit('contextMenu', ContextMenuType.Grid, world, column, row));
+        setTimeout(() => events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row }));
       } else {
-        events.emit('contextMenu', ContextMenuType.Grid, world, column, row);
+        events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row });
       }
       return;
     }

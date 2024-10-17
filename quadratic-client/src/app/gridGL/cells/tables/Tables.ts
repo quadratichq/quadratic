@@ -97,7 +97,7 @@ export class Tables extends Container<Table> {
     }
   }
 
-  pointerDown(world: Point): { table: Table; nameOrDropdown: 'name' | 'dropdown' } | undefined {
+  pointerDown(world: Point): { table: JsRenderCodeCell; nameOrDropdown: 'name' | 'dropdown' } | undefined {
     for (const table of this.children) {
       const result = table.intersectsTableName(world);
       if (result) {

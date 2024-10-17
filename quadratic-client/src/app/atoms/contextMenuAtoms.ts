@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Point } from 'pixi.js';
 import { atom } from 'recoil';
 
@@ -7,18 +8,28 @@ export enum ContextMenuType {
   Table = 'table',
 }
 
-interface ContextMenu {
+export interface ContextMenuState {
   type?: ContextMenuType;
   world?: Point;
-  column: number | null;
-  row: number | null;
+  column?: number;
+  row?: number;
+  table?: JsRenderCodeCell;
 }
 
-const defaultContextMenuState: ContextMenu = {
+export const defaultContextMenuState: ContextMenuState = {
   world: undefined,
-  column: null,
-  row: null,
+  column: undefined,
+  row: undefined,
+  table: undefined,
 };
+
+export interface ContextMenuOptions {
+  type?: ContextMenuType;
+  world?: Point;
+  column?: number;
+  row?: number;
+  table?: JsRenderCodeCell;
+}
 
 export const contextMenuAtom = atom({
   key: 'contextMenuState',
@@ -26,11 +37,11 @@ export const contextMenuAtom = atom({
   effects: [
     ({ setSelf }) => {
       const clear = () => {
-        setSelf(() => ({ type: undefined, world: undefined, column: null, row: null }));
+        setSelf(() => ({}));
       };
 
-      const set = (type: ContextMenuType, world: Point, column: number | null, row: number | null) => {
-        setSelf(() => ({ type, world, column, row }));
+      const set = (options: ContextMenuOptions) => {
+        setSelf(() => options);
       };
 
       events.on('cursorPosition', clear);

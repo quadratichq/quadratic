@@ -2,11 +2,11 @@ import { PointerAutoComplete } from '@/app/gridGL/interaction/pointer/PointerAut
 import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
 import { PointerCursor } from '@/app/gridGL/interaction/pointer/pointerCursor';
 import { PointerDown } from '@/app/gridGL/interaction/pointer/PointerDown';
-import { PointerDownTable } from '@/app/gridGL/interaction/pointer/PointerDownTable';
 import { PointerHeading } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { PointerHtmlCells } from '@/app/gridGL/interaction/pointer/PointerHtmlCells';
 import { PointerImages } from '@/app/gridGL/interaction/pointer/PointerImages';
 import { PointerLink } from '@/app/gridGL/interaction/pointer/PointerLink';
+import { PointerTable } from '@/app/gridGL/interaction/pointer/PointerTable';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -21,7 +21,7 @@ export class Pointer {
   private pointerCursor: PointerCursor;
   pointerDown: PointerDown;
   pointerCellMoving: PointerCellMoving;
-  private pointerDownTable: PointerDownTable;
+  private pointerTable: PointerTable;
   private pointerLink: PointerLink;
 
   constructor(viewport: Viewport) {
@@ -32,7 +32,7 @@ export class Pointer {
     this.pointerCursor = new PointerCursor();
     this.pointerHtmlCells = new PointerHtmlCells();
     this.pointerCellMoving = new PointerCellMoving();
-    this.pointerDownTable = new PointerDownTable();
+    this.pointerTable = new PointerTable();
     this.pointerLink = new PointerLink();
 
     viewport.on('pointerdown', this.handlePointerDown);
@@ -103,7 +103,7 @@ export class Pointer {
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerLink.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
-      this.pointerDownTable.pointerDown(world, event) ||
+      this.pointerTable.pointerDown(world, event) ||
       this.pointerDown.pointerDown(world, event);
 
     this.updateCursor();

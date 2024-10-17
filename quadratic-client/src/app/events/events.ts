@@ -126,7 +126,13 @@ interface EventTypes {
   validation: (validation: string | boolean) => void;
 
   // trigger or clear a context menu
-  contextMenu: (type: ContextMenuType, world: Point, row: number | null, column: number | null) => void;
+  contextMenu: (options: {
+    type?: ContextMenuType;
+    world?: Point;
+    row?: number;
+    column?: number;
+    table?: JsRenderCodeCell;
+  }) => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
