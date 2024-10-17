@@ -511,6 +511,7 @@ mod test {
             Value::Single("world".into()),
             false,
             false,
+            false,
         );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
 
@@ -556,6 +557,7 @@ mod test {
                 vec!["abc", "def", "ghi"],
                 vec!["jkl", "mno", "pqr"],
             ])),
+            false,
             false,
             false,
         );

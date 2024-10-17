@@ -81,6 +81,7 @@ impl From<(Import, Array, &Sheet)> for DataTable {
             Value::Array(cell_values),
             false,
             false,
+            true,
         )
     }
 }
@@ -94,7 +95,8 @@ impl DataTable {
         name: &str,
         value: Value,
         spill_error: bool,
-        has_header: bool,
+        header_is_first_row: bool,
+        show_header: bool,
     ) -> Self {
         let readonly = match kind {
             DataTableKind::CodeRun(_) => true,
@@ -104,8 +106,8 @@ impl DataTable {
         let data_table = DataTable {
             kind,
             name: name.into(),
-            header_is_first_row: has_header,
-            show_header: true,
+            header_is_first_row,
+            show_header,
             columns: None,
             sort: None,
             display_buffer: None,
@@ -559,7 +561,7 @@ pub mod test {
 
         let expected_values = Value::Array(values.clone().into());
         let expected_data_table =
-            DataTable::new(kind.clone(), "Table 1", expected_values, false, false)
+            DataTable::new(kind.clone(), "Table 1", expected_values, false, false, true)
                 .with_last_modified(data_table.last_modified);
         let expected_array_size = ArraySize::new(4, 4).unwrap();
         assert_eq!(data_table, expected_data_table);
@@ -577,7 +579,7 @@ pub mod test {
 
         // test column headings taken from first row
         let value = Value::Array(values.clone().into());
-        let mut data_table = DataTable::new(kind.clone(), "Table 1", value, false, true)
+        let mut data_table = DataTable::new(kind.clone(), "Table 1", value, false, true, true)
             .with_last_modified(data_table.last_modified);
 
         data_table.apply_first_row_as_header();
@@ -648,6 +650,7 @@ pub mod test {
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
+            true,
         );
 
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
@@ -680,6 +683,7 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             false,
             false,
+            true,
         );
 
         assert_eq!(data_table.output_size().w.get(), 10);
@@ -717,6 +721,7 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             true,
             false,
+            true,
         );
         let sheet_pos = SheetPos::from((1, 2, sheet_id));
 
@@ -737,7 +742,7 @@ pub mod test {
     fn test_headers_y() {
         let mut sheet = Sheet::test();
         let array = Array::from_str_vec(vec![vec!["first", "second"]], true).unwrap();
-        let t = DataTable {
+        let mut t = DataTable {
             kind: DataTableKind::Import(Import::new("test.csv".to_string())),
             name: "Table 1".into(),
             columns: None,
@@ -754,7 +759,13 @@ pub mod test {
             Pos { x: 1, y: 1 },
             Some(CellValue::Import(Import::new("test.csv".to_string()))),
         );
-        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(t));
+        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(t.clone()));
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("first".into()))
+        );
+
+        t.header_is_first_row = false;
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
     }
 }

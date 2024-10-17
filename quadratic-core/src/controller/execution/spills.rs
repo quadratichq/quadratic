@@ -441,6 +441,7 @@ mod tests {
             Value::Array(Array::from(vec![vec!["1"]])),
             false,
             false,
+            true,
         );
         let pos = Pos { x: 0, y: 0 };
         let sheet = gc.sheet_mut(sheet_id);

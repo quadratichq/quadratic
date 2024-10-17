@@ -704,6 +704,7 @@ mod tests {
                 Value::Single(CellValue::Text("hello".to_string())),
                 false,
                 false,
+                true,
             )),
         );
         assert!(sheet.has_render_cells(rect));
@@ -922,6 +923,7 @@ mod tests {
             Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
             false,
             false,
+            false,
         );
 
         // render rect is larger than code rect
@@ -975,6 +977,7 @@ mod tests {
             DataTableKind::CodeRun(code_run),
             "Table 1".into(),
             Value::Single(CellValue::Number(1.into())),
+            false,
             false,
             false,
         );
@@ -1102,6 +1105,7 @@ mod tests {
             Value::Single(CellValue::Number(2.into())),
             false,
             false,
+            false,
         );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -1158,6 +1162,7 @@ mod tests {
             DataTableKind::CodeRun(code_run),
             "Table 1".into(),
             Value::Single(CellValue::Image(image.clone())),
+            false,
             false,
             false,
         );

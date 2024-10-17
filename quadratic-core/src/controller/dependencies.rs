@@ -83,6 +83,7 @@ mod test {
                 Value::Single(CellValue::Text("test".to_string())),
                 false,
                 false,
+                true,
             )),
         );
         let sheet_pos_02 = SheetPos {

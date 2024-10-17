@@ -232,6 +232,7 @@ impl GridController {
             Value::Single(CellValue::Blank),
             false,
             false,
+            false,
         );
         transaction.waiting_for_async = None;
         self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
@@ -264,12 +265,15 @@ impl GridController {
                 std_err: None,
                 cells_accessed: transaction.cells_accessed.clone(),
             };
+            // todo: this should be true sometimes...
+            let show_header = false;
             return DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
                 false,
                 false,
+                show_header,
             );
         };
 
@@ -330,12 +334,15 @@ impl GridController {
             cells_accessed: transaction.cells_accessed.clone(),
         };
 
+        // todo: this should be true sometimes...
+        let show_header = false;
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
             value,
             false,
             false,
+            show_header,
         );
         transaction.cells_accessed.clear();
         data_table
@@ -394,6 +401,7 @@ mod test {
             Value::Single(CellValue::Text("delete me".to_string())),
             false,
             false,
+            true,
         );
         gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
@@ -428,6 +436,7 @@ mod test {
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
             false,
+            true,
         );
         gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);

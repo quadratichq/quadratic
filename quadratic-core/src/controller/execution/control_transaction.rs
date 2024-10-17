@@ -300,12 +300,16 @@ impl GridController {
             };
 
             let sheet = self.try_sheet_result(current_sheet_pos.sheet_id)?;
+
+            // todo: this should be true sometimes...
+            let show_header = false;
             let data_table = DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 &sheet.next_data_table_name(),
                 value,
                 false,
                 false,
+                show_header,
             );
 
             self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);

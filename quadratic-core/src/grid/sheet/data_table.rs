@@ -16,7 +16,7 @@ impl Sheet {
         header: bool,
     ) -> Option<DataTable> {
         let name = self.next_data_table_name();
-        let data_table = DataTable::new(kind, &name, value, spill_error, header);
+        let data_table = DataTable::new(kind, &name, value, spill_error, header, true);
 
         self.set_data_table(pos, Some(data_table))
     }
@@ -119,6 +119,7 @@ mod test {
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
             false,
+            true,
         );
         let old = sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(old, None);
@@ -149,6 +150,7 @@ mod test {
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
             false,
+            true,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(
