@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn test_python_array_output_variable_length() {
+    fn test_javascript_array_output_variable_length() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -309,7 +309,7 @@ mod tests {
                 y: 0,
                 sheet_id,
             },
-            CodeCellLanguage::Python,
+            CodeCellLanguage::Javascript,
             "create an array output".into(),
             None,
         );
@@ -334,10 +334,11 @@ mod tests {
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         let cells = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 3));
+        // println!("{:?}", cells);
         assert_eq!(cells.len(), 3);
         assert_eq!(
             cells[0],
-            JsRenderCell::new_number(0, 0, 1, Some(CodeCellLanguage::Python))
+            JsRenderCell::new_number(0, 0, 1, Some(CodeCellLanguage::Javascript))
         );
         assert_eq!(cells[1], JsRenderCell::new_number(0, 1, 2, None));
         assert_eq!(cells[2], JsRenderCell::new_number(0, 2, 3, None));
