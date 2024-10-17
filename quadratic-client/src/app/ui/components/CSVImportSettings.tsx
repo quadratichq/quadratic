@@ -94,6 +94,7 @@ export const CSVImportSettings = () => {
   return (
     <AlertDialog open={true}>
       <AlertDialogContent
+        className="select-none"
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
