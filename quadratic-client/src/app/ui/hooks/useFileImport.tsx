@@ -37,13 +37,11 @@ export function useFileImport() {
         isPrivate?: boolean;
         teamUuid?: string;
       }) => {
+        reset(newFileDialogAtom);
         quadraticCore.initWorker();
 
         if (!files) files = await uploadFile(supportedFileTypes);
         if (files.length === 0) {
-          reset(filesImportProgressAtom);
-          reset(filesImportProgressListAtom);
-          reset(newFileDialogAtom);
           return;
         }
 
@@ -61,9 +59,6 @@ export function useFileImport() {
             severity: 'warning',
           });
           files = [];
-          reset(filesImportProgressAtom);
-          reset(filesImportProgressListAtom);
-          reset(newFileDialogAtom);
           return;
         }
 
@@ -91,9 +86,6 @@ export function useFileImport() {
                   severity: 'warning',
                 }
               );
-              reset(filesImportProgressAtom);
-              reset(filesImportProgressListAtom);
-              reset(newFileDialogAtom);
               return;
             }
             files = [files[0]];
@@ -115,9 +107,6 @@ export function useFileImport() {
             if (!(e instanceof Error && e.message === 'Cancelled')) {
               console.error(e);
             }
-            reset(filesImportProgressAtom);
-            reset(filesImportProgressListAtom);
-            reset(newFileDialogAtom);
             return;
           }
         }
@@ -224,8 +213,8 @@ export function useFileImport() {
                 .then(({ file: { uuid } }) => {
                   updateCurrentFileState({ step: 'done', progress: 100, uuid, abortController: undefined });
                   if (openImportedFile) {
+                    reset(filesImportProgressAtom);
                     reset(filesImportProgressListAtom);
-                    reset(newFileDialogAtom);
                     window.location.href = ROUTES.FILE(uuid);
                   }
                 })
@@ -267,9 +256,7 @@ export function useFileImport() {
           navigate(isPrivate ? ROUTES.TEAM_FILES_PRIVATE(teamUuid) : ROUTES.TEAM_FILES(teamUuid));
         }
 
-        reset(filesImportProgressAtom);
-        reset(filesImportProgressListAtom);
-        reset(newFileDialogAtom);
+        set(filesImportProgressAtom, (prev) => ({ ...prev, importing: false }));
       },
     [addGlobalSnackbar, getCSVImportSettings, location.pathname, navigate]
   );
