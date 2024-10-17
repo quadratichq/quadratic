@@ -331,6 +331,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     "smallpop.csv",
                     pos,
                     None,
+                    Some(b','),
                 );
             },
             criterion::BatchSize::SmallInput,

@@ -1,4 +1,4 @@
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import initGridController, { GridControllerWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { filesImportSettingsAtom } from '@/dashboard/atoms/filesImportSettingsAtom';
 import {
   AlertDialog,
@@ -55,7 +55,8 @@ export const CSVImportSettings = () => {
         if (isNaN(delimiter)) return;
 
         const arrayBuffer = await csvFile.arrayBuffer();
-        const { preview } = await quadraticCore.getCSVPreview({ file: arrayBuffer, delimiter });
+        await initGridController();
+        const preview = GridControllerWasm.getCSVPreview(new Uint8Array(arrayBuffer), delimiter);
 
         if (!abortSignal.aborted) {
           setCsvPreview(preview);
