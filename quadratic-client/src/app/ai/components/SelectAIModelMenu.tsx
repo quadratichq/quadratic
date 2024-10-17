@@ -1,8 +1,7 @@
-import { aiAssistantLoadingAtom } from '@/app/atoms/aiAssistantAtom';
+import { useAIModel } from '@/app/ai/hooks/useAIModel';
+import { isAnthropicModel } from '@/app/ai/hooks/useAIRequestToAPI';
+import { MODEL_OPTIONS } from '@/app/ai/MODELS';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
-import { MODEL_OPTIONS } from '@/app/ui/menus/AIAssistant/MODELS';
-import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantModel';
-import { isAnthropicModel } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -11,14 +10,14 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo } from 'react';
-import { useRecoilValue } from 'recoil';
 
-interface AIAssistantSelectModelMenuProps {
+interface SelectAIModelMenuProps {
+  loading: boolean;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
 }
 
-export function AIAssistantSelectModelMenu({ textAreaRef }: AIAssistantSelectModelMenuProps) {
-  const [selectedMode, setSelectedModel] = useAIAssistantModel();
+export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuProps) {
+  const [selectedMode, setSelectedModel] = useAIModel();
   // If the model is not enabled, set the model to the first enabled model
   useEffect(() => {
     if (!MODEL_OPTIONS[selectedMode].enabled) {
@@ -29,8 +28,6 @@ export function AIAssistantSelectModelMenu({ textAreaRef }: AIAssistantSelectMod
       }
     }
   }, [selectedMode, setSelectedModel]);
-
-  const loading = useRecoilValue(aiAssistantLoadingAtom);
 
   const { displayName: selectedModelDisplayName } = useMemo(() => MODEL_OPTIONS[selectedMode], [selectedMode]);
 

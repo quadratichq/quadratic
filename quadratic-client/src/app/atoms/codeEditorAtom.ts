@@ -6,6 +6,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface ConsoleOutput {
@@ -14,6 +15,12 @@ export interface ConsoleOutput {
 }
 
 export interface CodeEditorState {
+  aiAssistant: {
+    abortController?: AbortController;
+    loading: boolean;
+    messages: (UserMessage | AIMessage)[];
+    prompt: string;
+  };
   showCodeEditor: boolean;
   escapePressed: boolean;
   loading: boolean;
@@ -38,6 +45,12 @@ export interface CodeEditorState {
 }
 
 export const defaultCodeEditorState: CodeEditorState = {
+  aiAssistant: {
+    abortController: undefined,
+    loading: false,
+    messages: [],
+    prompt: '',
+  },
   showCodeEditor: false,
   escapePressed: false,
   loading: false,
@@ -50,7 +63,7 @@ export const defaultCodeEditorState: CodeEditorState = {
   evaluationResult: undefined,
   consoleOutput: undefined,
   spillError: undefined,
-  panelBottomActiveTab: 'console',
+  panelBottomActiveTab: 'ai-assistant',
   showSnippetsPopover: false,
   initialCode: undefined,
   editorContent: undefined,
@@ -91,7 +104,25 @@ export const codeEditorAtom = atom<CodeEditorState>({
   ],
 });
 
-const createSelector = <T extends keyof CodeEditorState>(key: T) =>
+const createAIAssistantSelector = <T extends keyof CodeEditorState['aiAssistant']>(key: T) =>
+  selector<CodeEditorState['aiAssistant'][T]>({
+    key: `codeEditorAIAssistant${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
+    get: ({ get }) => get(codeEditorAtom).aiAssistant[key],
+    set: ({ set }, newValue) =>
+      set(codeEditorAtom, (prev) => ({
+        ...prev,
+        aiAssistant: {
+          ...prev.aiAssistant,
+          [key]: newValue instanceof DefaultValue ? prev.aiAssistant[key] : newValue,
+        },
+      })),
+  });
+export const aiAssistantAbortControllerAtom = createAIAssistantSelector('abortController');
+export const aiAssistantLoadingAtom = createAIAssistantSelector('loading');
+export const aiAssistantMessagesAtom = createAIAssistantSelector('messages');
+export const aiAssistantPromptAtom = createAIAssistantSelector('prompt');
+
+const createCodeEditorSelector = <T extends keyof CodeEditorState>(key: T) =>
   selector<CodeEditorState[T]>({
     key: `codeEditor${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
     get: ({ get }) => get(codeEditorAtom)[key],
@@ -101,22 +132,22 @@ const createSelector = <T extends keyof CodeEditorState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
-export const codeEditorShowCodeEditorAtom = createSelector('showCodeEditor');
-export const codeEditorEscapePressedAtom = createSelector('escapePressed');
-export const codeEditorLoadingAtom = createSelector('loading');
-export const codeEditorCodeCellAtom = createSelector('codeCell');
-export const codeEditorCodeStringAtom = createSelector('codeString');
-export const codeEditorEvaluationResultAtom = createSelector('evaluationResult');
-export const codeEditorConsoleOutputAtom = createSelector('consoleOutput');
-export const codeEditorSpillErrorAtom = createSelector('spillError');
-export const codeEditorPanelBottomActiveTabAtom = createSelector('panelBottomActiveTab');
-export const codeEditorShowSnippetsPopoverAtom = createSelector('showSnippetsPopover');
-export const codeEditorInitialCodeAtom = createSelector('initialCode');
-export const codeEditorEditorContentAtom = createSelector('editorContent');
-export const codeEditorModifiedEditorContentAtom = createSelector('modifiedEditorContent');
-export const codeEditorShowSaveChangesAlertAtom = createSelector('showSaveChangesAlert');
-export const codeEditorCellsAccessedAtom = createSelector('cellsAccessed');
-export const codeEditorWaitingForEditorClose = createSelector('waitingForEditorClose');
+export const codeEditorShowCodeEditorAtom = createCodeEditorSelector('showCodeEditor');
+export const codeEditorEscapePressedAtom = createCodeEditorSelector('escapePressed');
+export const codeEditorLoadingAtom = createCodeEditorSelector('loading');
+export const codeEditorCodeCellAtom = createCodeEditorSelector('codeCell');
+export const codeEditorCodeStringAtom = createCodeEditorSelector('codeString');
+export const codeEditorEvaluationResultAtom = createCodeEditorSelector('evaluationResult');
+export const codeEditorConsoleOutputAtom = createCodeEditorSelector('consoleOutput');
+export const codeEditorSpillErrorAtom = createCodeEditorSelector('spillError');
+export const codeEditorPanelBottomActiveTabAtom = createCodeEditorSelector('panelBottomActiveTab');
+export const codeEditorShowSnippetsPopoverAtom = createCodeEditorSelector('showSnippetsPopover');
+export const codeEditorInitialCodeAtom = createCodeEditorSelector('initialCode');
+export const codeEditorEditorContentAtom = createCodeEditorSelector('editorContent');
+export const codeEditorModifiedEditorContentAtom = createCodeEditorSelector('modifiedEditorContent');
+export const codeEditorShowSaveChangesAlertAtom = createCodeEditorSelector('showSaveChangesAlert');
+export const codeEditorCellsAccessedAtom = createCodeEditorSelector('cellsAccessed');
+export const codeEditorWaitingForEditorClose = createCodeEditorSelector('waitingForEditorClose');
 
 export const codeEditorShowDiffEditorAtom = selector<boolean>({
   key: 'codeEditorShowDiffEditorAtom',
@@ -145,5 +176,24 @@ export const codeEditorUnsavedChangesAtom = selector<boolean>({
     }
 
     return unsavedChanges;
+  },
+});
+
+export const showAIAssistantAtom = selector<boolean>({
+  key: 'showAIAssistantAtom',
+  get: ({ get }) => {
+    const codeEditorState = get(codeEditorAtom);
+    return codeEditorState.showCodeEditor && codeEditorState.panelBottomActiveTab === 'ai-assistant';
+  },
+  set: ({ set }, newValue) => {
+    if (newValue instanceof DefaultValue) {
+      return;
+    }
+
+    set(codeEditorAtom, (prev) => ({
+      ...prev,
+      showCodeEditor: newValue,
+      panelBottomActiveTab: newValue ? 'ai-assistant' : prev.panelBottomActiveTab,
+    }));
   },
 });

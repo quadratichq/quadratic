@@ -1,8 +1,8 @@
 import {
-  aiAssistantContextAtom,
-  aiAssistantLoadingAtom,
-  aiAssistantShowInternalContextAtom,
-} from '@/app/atoms/aiAssistantAtom';
+  aiAnalystContextAtom,
+  aiAnalystLoadingAtom,
+  aiAnalystShowInternalContextAtom,
+} from '@/app/atoms/aiAnalystAtom';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -11,10 +11,10 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-export function AIAssistantContextModelMenu() {
-  const [showInternalContext, setShowInternalContext] = useRecoilState(aiAssistantShowInternalContextAtom);
-  const [context, setContext] = useRecoilState(aiAssistantContextAtom);
-  const loading = useRecoilValue(aiAssistantLoadingAtom);
+export function AIAnalystSelectContextMenu() {
+  const [showInternalContext, setShowInternalContext] = useRecoilState(aiAnalystShowInternalContextAtom);
+  const [context, setContext] = useRecoilState(aiAnalystContextAtom);
+  const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
     <DropdownMenu>

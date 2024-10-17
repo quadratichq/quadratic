@@ -1,9 +1,10 @@
-import { codeEditorAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorAtom,
+  codeEditorCodeCellAtom,
+  codeEditorModifiedEditorContentAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
-import { useAISetCodeCellValue } from '@/app/ui/menus/AIAssistant/hooks/useAISetCodeCellValue';
-import { useGetCodeCell } from '@/app/ui/menus/AIAssistant/hooks/useGetCodeCell';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import Editor from '@monaco-editor/react';
@@ -11,7 +12,7 @@ import { ContentCopyOutlined, ContentPasteGoOutlined, PlayArrowOutlined } from '
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useState } from 'react';
-import { useRecoilCallback, useSetRecoilState } from 'recoil';
+import { useRecoilCallback } from 'recoil';
 
 interface CodeSnippetProps {
   code: string;
@@ -36,7 +37,6 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
         <div className="lowercase text-muted-foreground">{language}</div>
 
         <div className="flex items-center gap-1">
-          <CodeSnippetAIInsertButton text={code} language={language} />
           <CodeSnippetRunButton text={code} language={language} />
           <CodeSnippetInsertButton text={code} language={language} />
           <CodeSnippetCopyButton text={code} language={language} />
@@ -78,45 +78,43 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
   );
 }
 
-function CodeSnippetAIInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const { aiSetCodeCellValue } = useAISetCodeCellValue();
+// function CodeSnippetAIInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+//   const { aiSetCodeCellValue } = useAISetCodeCellValue();
 
-  const handleAIInsert = useCallback(async () => {
-    mixpanel.track('[AI].code.ai_insert_code_cell', { language });
-    const setCodeCellValueArgs = await aiSetCodeCellValue({ language, text });
+//   const handleAIInsert = useCallback(async () => {
+//     mixpanel.track('[AI].code.ai_insert_code_cell', { language });
+//     const setCodeCellValueArgs = await aiSetCodeCellValue({ language, text });
 
-    if (setCodeCellValueArgs) {
-      const { language, codeString, x, y, width, height } = setCodeCellValueArgs;
-      quadraticCore.setCodeCellValue({
-        sheetId: sheets.current,
-        x,
-        y,
-        codeString,
-        language,
-        cursor: sheets.getCursorPosition(),
-      });
+//     if (setCodeCellValueArgs) {
+//       const { language, codeString, x, y, width, height } = setCodeCellValueArgs;
+//       quadraticCore.setCodeCellValue({
+//         sheetId: sheets.current,
+//         x,
+//         y,
+//         codeString,
+//         language,
+//         cursor: sheets.getCursorPosition(),
+//       });
 
-      ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
-    }
-  }, [aiSetCodeCellValue, language, text]);
+//       ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
+//     }
+//   }, [aiSetCodeCellValue, language, text]);
 
-  return (
-    <TooltipHint title={'Ask AI to Save and Run Code'}>
-      <IconButton size="small" onClick={handleAIInsert}>
-        <PlayArrowOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
-      </IconButton>
-    </TooltipHint>
-  );
-}
+//   return (
+//     <TooltipHint title={'Ask AI to Save and Run Code'}>
+//       <IconButton size="small" onClick={handleAIInsert}>
+//         <PlayArrowOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
+//       </IconButton>
+//     </TooltipHint>
+//   );
+// }
 
 function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const { getCodeCell } = useGetCodeCell();
-
   const handleSaveAndRun = useRecoilCallback(
     ({ snapshot, set }) =>
       async () => {
         mixpanel.track('[AI].code.run', { language });
-        const codeCell = await getCodeCell();
+        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         quadraticCore.setCodeCellValue({
           sheetId: codeCell.sheetId,
           x: codeCell.pos.x,
@@ -130,7 +128,7 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
           set(codeEditorModifiedEditorContentAtom, undefined);
         }
       },
-    [language, text, getCodeCell]
+    [language, text]
   );
 
   return (
@@ -143,23 +141,24 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
 }
 
 function CodeSnippetInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const { getCodeCell } = useGetCodeCell();
-
-  const handleReplace = useCallback(async () => {
-    mixpanel.track('[AI].code.insert', { language });
-    const codeCell = await getCodeCell();
-    setCodeEditorState((prev) => ({
-      ...prev,
-      modifiedEditorContent: text,
-      waitingForEditorClose: {
-        codeCell,
-        showCellTypeMenu: false,
-        initialCode: '',
-        inlineEditor: false,
+  const handleReplace = useRecoilCallback(
+    ({ set, snapshot }) =>
+      async () => {
+        mixpanel.track('[AI].code.insert', { language });
+        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+        set(codeEditorAtom, (prev) => ({
+          ...prev,
+          modifiedEditorContent: text,
+          waitingForEditorClose: {
+            codeCell,
+            showCellTypeMenu: false,
+            initialCode: '',
+            inlineEditor: false,
+          },
+        }));
       },
-    }));
-  }, [getCodeCell, language, setCodeEditorState, text]);
+    [language, text]
+  );
 
   return (
     <TooltipHint title={'Open in code editor'}>

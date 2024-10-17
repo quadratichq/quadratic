@@ -1,17 +1,17 @@
-import { showAIAssistantAtom } from '@/app/atoms/aiAssistantAtom';
+import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
-import { AIAssistantContext } from '@/app/ui/menus/AIAssistant/AIAssistantContext';
-import { AIAssistantHeader } from '@/app/ui/menus/AIAssistant/AIAssistantHeader';
-import { AIAssistantMessages } from '@/app/ui/menus/AIAssistant/AIAssistantMessages';
-import { AIAssistantUserMessageForm } from '@/app/ui/menus/AIAssistant/AIAssistantUserMessageForm';
-import { useAIAssistantPanelWidth } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantPanelWidth';
+import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
+import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
+import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
+import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
-  const showAIAssistant = useRecoilValue(showAIAssistantAtom);
+export const AIAnalyst = ({ autoFocus }: { autoFocus?: boolean }) => {
+  const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
-  const { panelWidth, setPanelWidth } = useAIAssistantPanelWidth();
+  const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
 
   const handleResize = useCallback(
     (event: MouseEvent) => {
@@ -27,7 +27,7 @@ export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     [setPanelWidth]
   );
 
-  if (!showAIAssistant) {
+  if (!showAIAnalyst) {
     return null;
   }
 
@@ -40,10 +40,10 @@ export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     >
       <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
       <div className="grid h-full w-full grid-rows-[auto_1fr_auto_auto]">
-        <AIAssistantHeader />
-        <AIAssistantMessages />
-        <AIAssistantContext />
-        <AIAssistantUserMessageForm autoFocus={autoFocus} />
+        <AIAnalystHeader />
+        <AIAnalystMessages />
+        <AIAnalystContext />
+        <AIAnalystUserMessageForm autoFocus={autoFocus} />
       </div>
     </div>
   );

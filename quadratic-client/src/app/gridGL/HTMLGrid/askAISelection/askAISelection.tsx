@@ -1,4 +1,4 @@
-import { aiAssistantContextAtom } from '@/app/atoms/aiAssistantAtom';
+import { aiAnalystContextAtom } from '@/app/atoms/aiAnalystAtom';
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -6,7 +6,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
-import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/hooks/useSubmitAIAssistantPrompt';
+import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { AIIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
@@ -33,7 +33,7 @@ const SELECTION_PROMPTS: { label: string; prompt: string }[] = [
 const ASK_AI_SELECTION_DELAY = 500;
 
 export function AskAISelection() {
-  const setAIAssistantContext = useSetRecoilState(aiAssistantContextAtom);
+  const setAIAnalystContext = useSetRecoilState(aiAnalystContextAtom);
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
   const [currentSheet, setCurrentSheet] = useState(sheets.current);
   const [sheetRect, setSheetRect] = useState<SheetRect | undefined>();
@@ -41,7 +41,7 @@ export function AskAISelection() {
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | undefined>();
 
-  const { submitPrompt } = useSubmitAIAssistantPrompt();
+  const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const showAskAISelection = useCallback(() => {
     const selection = sheets.getRustSelection();
@@ -79,7 +79,7 @@ export function AskAISelection() {
     clearTimeout(timeoutRef.current);
     setDisplayPos(undefined);
     setSheetRect(undefined);
-    setAIAssistantContext((prev) => {
+    setAIAnalystContext((prev) => {
       if (!prev.selection) return prev;
 
       return {
@@ -91,7 +91,7 @@ export function AskAISelection() {
     timeoutRef.current = setTimeout(() => {
       showAskAISelection();
     }, ASK_AI_SELECTION_DELAY);
-  }, [setAIAssistantContext, showAskAISelection]);
+  }, [setAIAnalystContext, showAskAISelection]);
 
   const handleSubmitPrompt = useCallback(
     (prompt: string) => {

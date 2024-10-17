@@ -1,7 +1,7 @@
 import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { showAIAssistantAtom } from '@/app/atoms/aiAssistantAtom';
+import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCommandPaletteAtom,
@@ -37,7 +37,7 @@ const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
 
 export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
-  const [showAIAssistant, setShowAIAssistant] = useRecoilState(showAIAssistantAtom);
+  const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
@@ -73,7 +73,7 @@ export const QuadraticSidebar = () => {
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label="AI Assistant">
-            <SidebarToggle pressed={showAIAssistant} onPressedChange={() => setShowAIAssistant((prev) => !prev)}>
+            <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
               <AIIcon />
             </SidebarToggle>
           </SidebarTooltip>

@@ -1,11 +1,11 @@
-import { MODEL_OPTIONS } from '@/app/ui/menus/AIAssistant/MODELS';
+import { MODEL_OPTIONS } from '@/app/ai/MODELS';
 import {
   AI_TOOL_DEFINITIONS,
   anthropicTools,
   getAnthropicToolChoice,
   getOpenAIToolChoice,
   openAITools,
-} from '@/app/ui/menus/AIAssistant/TOOLS';
+} from '@/app/ai/TOOLS';
 import { authClient } from '@/auth';
 import { AI } from '@/shared/constants/routes';
 import {

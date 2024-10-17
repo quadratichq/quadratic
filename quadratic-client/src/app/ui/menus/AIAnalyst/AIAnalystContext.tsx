@@ -1,14 +1,14 @@
-import { aiAssistantContextAtom, aiAssistantLoadingAtom } from '@/app/atoms/aiAssistantAtom';
+import { aiAnalystContextAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetRect } from '@/app/quadratic-core-types';
-import { AIAssistantContextModelMenu } from '@/app/ui/menus/AIAssistant/AIAssistantSelectContextMenu';
+import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const AIAssistantContext = () => {
-  const context = useRecoilValue(aiAssistantContextAtom);
-  const loading = useRecoilValue(aiAssistantLoadingAtom);
+export const AIAnalystContext = () => {
+  const context = useRecoilValue(aiAnalystContextAtom);
+  const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
     <div
@@ -22,7 +22,7 @@ export const AIAssistantContext = () => {
       {!!context.allSheets && <span>{'[All sheets]'}</span>}
       {!!context.connections && <span>{'[Connections]'}</span>}
       {!!context.quadraticDocs && <span>{'[Quadratic docs]'}</span>}
-      <AIAssistantContextModelMenu />
+      <AIAnalystSelectContextMenu />
     </div>
   );
 };

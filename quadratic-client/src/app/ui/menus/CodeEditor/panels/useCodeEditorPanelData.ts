@@ -37,10 +37,10 @@ export const MIN_WIDTH_VISIBLE_GRID = 215;
 // maximum width for showing the editor
 const MAX_WIDTH = 1024;
 
+const HIDDEN_3 = [false, false, false];
 const HIDDEN_2 = [false, false];
-const HIDDEN_1 = [false];
+const HEIGHT_PERCENT_3 = [34, 33, 33];
 const HEIGHT_PERCENT_2 = [50, 50];
-const HEIGHT_PERCENT_1 = [100];
 
 export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
@@ -52,22 +52,22 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   // this stores the height when editor is in vertical mode
   const [editorHeightPercentage, setEditorHeightPercentage] = useLocalStorage<number>(`codeEditorHeightPercentage`, 75);
 
-  const type = useMemo(() => getLanguage(language), [language]);
+  const type = getLanguage(language);
 
   // this stores the width/height when editor is in horizontal mode
   const [panelWidth, setPanelWidth] = useLocalStorage('codeEditorPanelWidth', MIN_WIDTH_PANEL);
   const [panelHeightPercentage, setPanelHeightPercentage] = useLocalStorage<number>(
-    `codeEditorPanelHeightPercentage${type}`,
+    `codeEditorPanelHeightPercentage-${type}`,
     50
   );
   const [panelHidden, setPanelHidden] = useLocalStorage<boolean[]>(
-    `codeEditorPanelHidden${type}`,
-    type === 'Connection' ? HIDDEN_2 : HIDDEN_1
+    `codeEditorPanelHidden-${type}`,
+    type === 'Connection' ? HIDDEN_3 : HIDDEN_2
   );
-  // stores the heights when in horizontal mode (Connection has 2 panels, others have 1)
+  // stores the heights when in horizontal mode (Connection has 3 panels, others have 2)
   const [panelHeightPercentages, setPanelHeightPercentages] = useLocalStorage<number[]>(
-    `codeEditorPanelHeightPercentages${type}`,
-    type === 'Connection' ? HEIGHT_PERCENT_2 : HEIGHT_PERCENT_1
+    `codeEditorPanelHeightPercentages-${type}`,
+    type === 'Connection' ? HEIGHT_PERCENT_3 : HEIGHT_PERCENT_2
   );
   const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');
   const [bottomHidden, setBottomHidden] = useLocalStorage('codeEditorPanelBottom', false);

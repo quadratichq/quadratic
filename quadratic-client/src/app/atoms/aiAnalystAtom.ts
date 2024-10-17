@@ -4,8 +4,8 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { AIMessage, ContextType, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
-export interface AIAssistantState {
-  showAIAssistant: boolean;
+export interface AIAnalystState {
+  showAIAnalyst: boolean;
   showInternalContext: boolean;
   abortController?: AbortController;
   loading: boolean;
@@ -16,8 +16,8 @@ export interface AIAssistantState {
   } & { selection?: SheetRect; codeCell?: CodeCell };
 }
 
-export const defaultAIAssistantState: AIAssistantState = {
-  showAIAssistant: true,
+export const defaultAIAnalystState: AIAnalystState = {
+  showAIAnalyst: true,
   showInternalContext: false,
   abortController: undefined,
   loading: false,
@@ -34,9 +34,9 @@ export const defaultAIAssistantState: AIAssistantState = {
   },
 };
 
-export const aiAssistantAtom = atom<AIAssistantState>({
-  key: 'aiAssistantAtom',
-  default: defaultAIAssistantState,
+export const aiAnalystAtom = atom<AIAnalystState>({
+  key: 'aiAnalystAtom',
+  default: defaultAIAnalystState,
   effects: [
     ({ onSet }) => {
       onSet((newValue, oldValue) => {
@@ -44,7 +44,7 @@ export const aiAssistantAtom = atom<AIAssistantState>({
           return;
         }
 
-        if (oldValue.showAIAssistant && !newValue.showAIAssistant) {
+        if (oldValue.showAIAnalyst && !newValue.showAIAnalyst) {
           focusGrid();
         }
       });
@@ -67,25 +67,25 @@ export const aiAssistantAtom = atom<AIAssistantState>({
   ],
 });
 
-const createSelector = <T extends keyof AIAssistantState>(key: T) =>
-  selector<AIAssistantState[T]>({
-    key: `aiAssistant${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
-    get: ({ get }) => get(aiAssistantAtom)[key],
+const createSelector = <T extends keyof AIAnalystState>(key: T) =>
+  selector<AIAnalystState[T]>({
+    key: `aiAnalyst${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
+    get: ({ get }) => get(aiAnalystAtom)[key],
     set: ({ set }, newValue) =>
-      set(aiAssistantAtom, (prev) => ({
+      set(aiAnalystAtom, (prev) => ({
         ...prev,
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
-export const showAIAssistantAtom = createSelector('showAIAssistant');
-export const aiAssistantShowInternalContextAtom = createSelector('showInternalContext');
-export const aiAssistantAbortControllerAtom = createSelector('abortController');
-export const aiAssistantLoadingAtom = createSelector('loading');
-export const aiAssistantMessagesAtom = createSelector('messages');
-export const aiAssistantPromptAtom = createSelector('prompt');
-export const aiAssistantContextAtom = createSelector('context');
+export const showAIAnalystAtom = createSelector('showAIAnalyst');
+export const aiAnalystShowInternalContextAtom = createSelector('showInternalContext');
+export const aiAnalystAbortControllerAtom = createSelector('abortController');
+export const aiAnalystLoadingAtom = createSelector('loading');
+export const aiAnalystMessagesAtom = createSelector('messages');
+export const aiAnalystPromptAtom = createSelector('prompt');
+export const aiAnalystContextAtom = createSelector('context');
 
-export const aiAssistantMessagesCountAtom = selector<number>({
-  key: 'aiAssistantMessagesCountAtom',
-  get: ({ get }) => get(aiAssistantMessagesAtom).length,
+export const aiAnalystMessagesCountAtom = selector<number>({
+  key: 'aiAnalystMessagesCountAtom',
+  get: ({ get }) => get(aiAnalystMessagesAtom).length,
 });

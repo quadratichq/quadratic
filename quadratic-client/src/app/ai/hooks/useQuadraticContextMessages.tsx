@@ -1,9 +1,9 @@
+import { ConnectionDocs } from '@/app/ai/docs/ConnectionDocs';
+import { FormulaDocs } from '@/app/ai/docs/FormulaDocs';
+import { JavascriptDocs } from '@/app/ai/docs/JavascriptDocs';
+import { PythonDocs } from '@/app/ai/docs/PythonDocs';
+import { QuadraticDocs } from '@/app/ai/docs/QuadraticDocs';
 import { CodeCellType } from '@/app/helpers/codeCellLanguage';
-import { ConnectionDocs } from '@/app/ui/menus/AIAssistant/docs/ConnectionDocs';
-import { FormulaDocs } from '@/app/ui/menus/AIAssistant/docs/FormulaDocs';
-import { JavascriptDocs } from '@/app/ui/menus/AIAssistant/docs/JavascriptDocs';
-import { PythonDocs } from '@/app/ui/menus/AIAssistant/docs/PythonDocs';
-import { QuadraticDocs } from '@/app/ui/menus/AIAssistant/docs/QuadraticDocs';
 import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 

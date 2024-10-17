@@ -1,12 +1,8 @@
-import {
-  aiAssistantAbortControllerAtom,
-  aiAssistantLoadingAtom,
-  aiAssistantPromptAtom,
-} from '@/app/atoms/aiAssistantAtom';
+import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
+import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom, aiAnalystPromptAtom } from '@/app/atoms/aiAnalystAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { AIAssistantSelectModelMenu } from '@/app/ui/menus/AIAssistant/AIAssistantSelectModelMenu';
-import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/AIAssistant/hooks/useSubmitAIAssistantPrompt';
+import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -15,16 +11,16 @@ import { CircularProgress } from '@mui/material';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-type AIAssistantUserMessageFormProps = {
+type AIAnalystUserMessageFormProps = {
   autoFocus?: boolean;
 };
 
-export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessageFormProps) {
-  const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
-  const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
-  const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
+export function AIAnalystUserMessageForm({ autoFocus }: AIAnalystUserMessageFormProps) {
+  const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
+  const [prompt, setPrompt] = useRecoilState(aiAnalystPromptAtom);
+  const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
 
-  const { submitPrompt } = useSubmitAIAssistantPrompt();
+  const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const abortPrompt = useCallback(() => {
     abortController?.abort();
@@ -73,7 +69,7 @@ export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessage
           textareaRef.current?.focus();
         }}
       >
-        <AIAssistantSelectModelMenu textAreaRef={textareaRef} />
+        <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
         {loading ? (
           <div className="flex items-center gap-2">

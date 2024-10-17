@@ -1,21 +1,22 @@
+import { useAIModel } from '@/app/ai/hooks/useAIModel';
+import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
+import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
+import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
+import { useSetCodeCellValueMessages } from '@/app/ai/hooks/useSetCodeCellValueMessages';
+import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
+import { AI_TOOL_DEFINITIONS } from '@/app/ai/TOOLS';
 import {
-  aiAssistantAbortControllerAtom,
-  aiAssistantContextAtom,
-  aiAssistantLoadingAtom,
-  aiAssistantMessagesAtom,
-  aiAssistantPromptAtom,
-  AIAssistantState,
-} from '@/app/atoms/aiAssistantAtom';
+  aiAnalystAbortControllerAtom,
+  aiAnalystContextAtom,
+  aiAnalystLoadingAtom,
+  aiAnalystMessagesAtom,
+  aiAnalystPromptAtom,
+  AIAnalystState,
+} from '@/app/atoms/aiAnalystAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantModel';
-import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
-import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useCodeCellContextMessages';
-import { useCurrentSheetContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useCurrentSheetContextMessages';
-import { useQuadraticContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useQuadraticContextMessages';
-import { useSelectionContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useSelectionContextMessages';
-import { useSetCodeCellValueMessages } from '@/app/ui/menus/AIAssistant/hooks/useSetCodeCellValueMessages';
-import { useVisibleContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useVisibleContextMessages';
-import { AI_TOOL_DEFINITIONS } from '@/app/ui/menus/AIAssistant/TOOLS';
+
 import { AIMessage, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
@@ -27,19 +28,19 @@ export function useAISetCodeCellValue() {
   const { getSelectionContext } = useSelectionContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
   const { getSetCodeCellValuePrompt } = useSetCodeCellValueMessages();
-  const [model] = useAIAssistantModel();
+  const [model] = useAIModel();
 
   const aiSetCodeCellValue = useRecoilCallback(
     ({ set, snapshot }) =>
       async ({ language, text }: { language: string; text: string }) => {
-        const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
+        const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);
         if (previousLoading) return;
-        set(aiAssistantLoadingAtom, true);
+        set(aiAnalystLoadingAtom, true);
 
         const abortController = new AbortController();
-        set(aiAssistantAbortControllerAtom, abortController);
+        set(aiAnalystAbortControllerAtom, abortController);
 
-        const aiContext: AIAssistantState['context'] = await snapshot.getPromise(aiAssistantContextAtom);
+        const aiContext: AIAnalystState['context'] = await snapshot.getPromise(aiAnalystContextAtom);
 
         const quadraticContext = getQuadraticContext(getLanguage(aiContext.codeCell?.language), model);
         const sheetContext = await getCurrentSheetContext({ model });
@@ -51,7 +52,7 @@ export function useAISetCodeCellValue() {
         const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
         const setCodeCellValuePrompt = getSetCodeCellValuePrompt({ language, text, model });
 
-        const prevMessages = (await snapshot.getPromise(aiAssistantMessagesAtom)).filter(
+        const prevMessages = (await snapshot.getPromise(aiAnalystMessagesAtom)).filter(
           (message) =>
             message.contextType !== 'quadraticDocs' &&
             message.contextType !== 'allSheets' &&
@@ -81,7 +82,7 @@ export function useAISetCodeCellValue() {
           setCodeCellValuePrompt,
         ];
 
-        set(aiAssistantPromptAtom, '');
+        set(aiAnalystPromptAtom, '');
 
         const messagesToSend: PromptMessage[] = [
           ...updatedMessages.map((message) => ({
@@ -99,8 +100,8 @@ export function useAISetCodeCellValue() {
           toolChoice: 'SetCodeCellValue',
         });
 
-        set(aiAssistantAbortControllerAtom, undefined);
-        set(aiAssistantLoadingAtom, false);
+        set(aiAnalystAbortControllerAtom, undefined);
+        set(aiAnalystLoadingAtom, false);
 
         const responseSchema = AI_TOOL_DEFINITIONS['SetCodeCellValue'].responseSchema;
 

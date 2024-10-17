@@ -1,34 +1,34 @@
+import { useAIModel } from '@/app/ai/hooks/useAIModel';
+import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
+import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
+import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
+import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import {
-  aiAssistantAbortControllerAtom,
-  aiAssistantContextAtom,
-  aiAssistantLoadingAtom,
-  aiAssistantMessagesAtom,
-  aiAssistantPromptAtom,
-  AIAssistantState,
-  defaultAIAssistantState,
-  showAIAssistantAtom,
-} from '@/app/atoms/aiAssistantAtom';
+  aiAnalystAbortControllerAtom,
+  aiAnalystContextAtom,
+  aiAnalystLoadingAtom,
+  aiAnalystMessagesAtom,
+  aiAnalystPromptAtom,
+  AIAnalystState,
+  defaultAIAnalystState,
+  showAIAnalystAtom,
+} from '@/app/atoms/aiAnalystAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { SheetRect } from '@/app/quadratic-core-types';
-import { useAIAssistantModel } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantModel';
-import { useAIRequestToAPI } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
-import { useCodeCellContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useCodeCellContextMessages';
-import { useCurrentSheetContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useCurrentSheetContextMessages';
-import { useQuadraticContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useQuadraticContextMessages';
-import { useSelectionContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useSelectionContextMessages';
-import { useVisibleContextMessages } from '@/app/ui/menus/AIAssistant/hooks/useVisibleContextMessages';
 import { AIMessage, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
-export function useSubmitAIAssistantPrompt() {
+export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getQuadraticContext } = useQuadraticContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getSelectionContext } = useSelectionContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
-  const [model] = useAIAssistantModel();
+  const [model] = useAIModel();
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
@@ -43,25 +43,25 @@ export function useSubmitAIAssistantPrompt() {
         codeCell?: CodeCell;
         selectionSheetRect?: SheetRect;
       }) => {
-        set(showAIAssistantAtom, true);
+        set(showAIAnalystAtom, true);
 
-        const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
+        const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);
         if (previousLoading) return;
-        set(aiAssistantLoadingAtom, true);
+        set(aiAnalystLoadingAtom, true);
 
         const abortController = new AbortController();
-        set(aiAssistantAbortControllerAtom, abortController);
+        set(aiAnalystAbortControllerAtom, abortController);
 
-        let aiContext: AIAssistantState['context'] = await snapshot.getPromise(aiAssistantContextAtom);
-        set(aiAssistantContextAtom, (prev) => {
+        let aiContext: AIAnalystState['context'] = await snapshot.getPromise(aiAnalystContextAtom);
+        set(aiAnalystContextAtom, (prev) => {
           aiContext = !!codeCell
             ? {
-                ...defaultAIAssistantState['context'],
+                ...defaultAIAnalystState['context'],
                 codeCell: codeCell,
               }
             : !!selectionSheetRect
             ? {
-                ...defaultAIAssistantState['context'],
+                ...defaultAIAnalystState['context'],
                 selection: selectionSheetRect,
               }
             : prev;
@@ -79,7 +79,7 @@ export function useSubmitAIAssistantPrompt() {
         });
         const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
         let updatedMessages: (UserMessage | AIMessage)[] = [];
-        set(aiAssistantMessagesAtom, (prevMessages) => {
+        set(aiAnalystMessagesAtom, (prevMessages) => {
           prevMessages = prevMessages.filter(
             (message) =>
               message.contextType !== 'quadraticDocs' &&
@@ -115,7 +115,7 @@ export function useSubmitAIAssistantPrompt() {
           return updatedMessages;
         });
 
-        set(aiAssistantPromptAtom, '');
+        set(aiAnalystPromptAtom, '');
 
         const messagesToSend: PromptMessage[] = [
           ...updatedMessages.map((message) => ({
@@ -127,15 +127,15 @@ export function useSubmitAIAssistantPrompt() {
           await handleAIRequestToAPI({
             model,
             messages: messagesToSend,
-            setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
+            setMessages: (updater) => set(aiAnalystMessagesAtom, updater),
             signal: abortController.signal,
           });
         } catch (error) {
           console.error(error);
         }
 
-        set(aiAssistantAbortControllerAtom, undefined);
-        set(aiAssistantLoadingAtom, false);
+        set(aiAnalystAbortControllerAtom, undefined);
+        set(aiAnalystLoadingAtom, false);
       },
     [
       handleAIRequestToAPI,

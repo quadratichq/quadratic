@@ -1,17 +1,17 @@
-import { aiAssistantMessagesAtom, aiAssistantShowInternalContextAtom } from '@/app/atoms/aiAssistantAtom';
+import { isAnthropicModel } from '@/app/ai/hooks/useAIRequestToAPI';
+import { aiAnalystMessagesAtom, aiAnalystShowInternalContextAtom } from '@/app/atoms/aiAnalystAtom';
 import { colors } from '@/app/theme/colors';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
-import { AICodeBlockParser } from '@/app/ui/menus/AIAssistant/AICodeBlockParser';
-import { isAnthropicModel } from '@/app/ui/menus/AIAssistant/hooks/useAIRequestToAPI';
+import { AICodeBlockParser } from '@/app/ui/menus/AIAnalyst/AICodeBlockParser';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import './AIAssistantMessages.css';
+import './AIAnalystMessages.css';
 
-export function AIAssistantMessages() {
-  const showInternalContext = useRecoilValue(aiAssistantShowInternalContextAtom);
-  const messages = useRecoilValue(aiAssistantMessagesAtom);
+export function AIAnalystMessages() {
+  const showInternalContext = useRecoilValue(aiAnalystShowInternalContextAtom);
+  const messages = useRecoilValue(aiAnalystMessagesAtom);
   const { loggedInUser: user } = useRootRouteLoaderData();
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);

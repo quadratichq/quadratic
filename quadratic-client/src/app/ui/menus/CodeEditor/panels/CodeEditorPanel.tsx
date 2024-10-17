@@ -49,6 +49,8 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
       />
     ) : undefined;
 
+  const showAIAssistant = Boolean(isAuthenticated);
+
   return (
     <>
       {/* Panel position (left/bottom) control */}
@@ -60,8 +62,16 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
         </TooltipHint>
       </div>
 
-      {panelPosition === 'left' && <CodeEditorPanelSide codeEditorRef={codeEditorRef} schemaBrowser={schemaBrowser} />}
-      {panelPosition === 'bottom' && <CodeEditorPanelBottom schemaBrowser={schemaBrowser} />}
+      {panelPosition === 'left' && (
+        <CodeEditorPanelSide
+          codeEditorRef={codeEditorRef}
+          schemaBrowser={schemaBrowser}
+          showAIAssistant={showAIAssistant}
+        />
+      )}
+      {panelPosition === 'bottom' && (
+        <CodeEditorPanelBottom schemaBrowser={schemaBrowser} showAIAssistant={showAIAssistant} />
+      )}
     </>
   );
 });
