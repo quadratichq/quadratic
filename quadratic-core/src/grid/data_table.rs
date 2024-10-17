@@ -60,7 +60,8 @@ pub struct DataTableSortOrder {
 pub struct DataTable {
     pub kind: DataTableKind,
     pub name: String,
-    pub has_header: bool,
+    pub header_is_first_row: bool,
+    pub show_header: bool,
     pub columns: Option<Vec<DataTableColumn>>,
     pub sort: Option<Vec<DataTableSortOrder>>,
     pub display_buffer: Option<Vec<u64>>,
@@ -103,7 +104,8 @@ impl DataTable {
         let data_table = DataTable {
             kind,
             name: name.into(),
-            has_header,
+            header_is_first_row: has_header,
+            show_header: true,
             columns: None,
             sort: None,
             display_buffer: None,
@@ -120,11 +122,12 @@ impl DataTable {
         data_table
     }
 
-    /// Direcly creates a new DataTable with the given kind, value, spill_error, and columns.
+    /// Directly creates a new DataTable with the given kind, value, spill_error, and columns.
     pub fn new_raw(
         kind: DataTableKind,
         name: &str,
-        has_header: bool,
+        header_is_first_row: bool,
+        show_header: bool,
         columns: Option<Vec<DataTableColumn>>,
         sort: Option<Vec<DataTableSortOrder>>,
         display_buffer: Option<Vec<u64>>,
@@ -135,7 +138,8 @@ impl DataTable {
         DataTable {
             kind,
             name: name.into(),
-            has_header,
+            header_is_first_row,
+            show_header,
             columns,
             sort,
             display_buffer,
@@ -154,7 +158,7 @@ impl DataTable {
 
     /// Takes the first row of the array and sets it as the column headings.
     pub fn apply_first_row_as_header(&mut self) {
-        self.has_header = true;
+        self.header_is_first_row = true;
 
         self.columns = match self.value {
             // Value::Array(ref mut array) => array.shift().ok().map(|array| {
@@ -170,7 +174,7 @@ impl DataTable {
     }
 
     pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
-        self.has_header = first_row_as_header;
+        self.header_is_first_row = first_row_as_header;
 
         match first_row_as_header {
             true => self.apply_first_row_as_header(),
@@ -247,7 +251,7 @@ impl DataTable {
 
     pub fn sort(&mut self, column_index: usize, direction: SortDirection) -> Result<()> {
         let values = self.value.clone().into_array()?;
-        let increment = |i| if self.has_header { i + 1 } else { i };
+        let increment = |i| if self.header_is_first_row { i + 1 } else { i };
 
         let mut display_buffer = values
             .col(column_index)
@@ -260,7 +264,7 @@ impl DataTable {
             .map(|(i, _)| increment(i) as u64)
             .collect::<Vec<u64>>();
 
-        if self.has_header {
+        if self.header_is_first_row {
             display_buffer.insert(0, 0);
         }
 
@@ -292,6 +296,14 @@ impl DataTable {
         display_buffer: &Vec<u64>,
         pos: Pos,
     ) -> Result<&CellValue> {
+        let pos = if self.show_header && !self.header_is_first_row {
+            Pos {
+                x: pos.x,
+                y: pos.y + 1,
+            }
+        } else {
+            pos
+        };
         let y = display_buffer
             .get(pos.y as usize)
             .ok_or_else(|| anyhow!("Y {} out of bounds: {}", pos.y, display_buffer.len()))?;
@@ -308,13 +320,21 @@ impl DataTable {
     }
 
     pub fn display_value_at(&self, pos: Pos) -> Result<&CellValue> {
+        let pos = if self.show_header && !self.header_is_first_row {
+            Pos {
+                x: pos.x,
+                y: pos.y + 1,
+            }
+        } else {
+            pos
+        };
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
             None => Ok(self.value.get(pos.x as u32, pos.y as u32)?),
         }
     }
 
-    /// Helper functtion to get the CodeRun from the DataTable.
+    /// Helper function to get the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run(&self) -> Option<&CodeRun> {
         match self.kind {
@@ -323,7 +343,7 @@ impl DataTable {
         }
     }
 
-    /// Helper functtion to deterime if the DataTable's CodeRun has an error.
+    /// Helper function to determine if the DataTable's CodeRun has an error.
     /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
     pub fn has_error(&self) -> bool {
         match self.kind {
@@ -332,7 +352,7 @@ impl DataTable {
         }
     }
 
-    /// Helper functtion to get the error in the CodeRun from the DataTable.
+    /// Helper function to get the error in the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun or if there is no error.
     pub fn get_error(&self) -> Option<RunError> {
         self.code_run()
@@ -342,6 +362,11 @@ impl DataTable {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
+        let y = if self.show_header && !self.header_is_first_row {
+            y + 1
+        } else {
+            y
+        };
         if self.spill_error {
             Some(CellValue::Blank)
         } else {
@@ -456,7 +481,7 @@ impl DataTable {
         for (index, row) in array.rows().take(max).enumerate() {
             let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
 
-            if index == 0 && data_table.has_header {
+            if index == 0 && data_table.header_is_first_row {
                 builder.set_header(row);
             } else {
                 builder.push_record(row);
@@ -467,7 +492,7 @@ impl DataTable {
         table.with(Style::modern());
 
         // bold the headers if they exist
-        if data_table.has_header {
+        if data_table.header_is_first_row {
             [0..table.count_columns()]
                 .iter()
                 .enumerate()

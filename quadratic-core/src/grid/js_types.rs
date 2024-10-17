@@ -195,6 +195,7 @@ pub struct JsRenderCodeCell {
     pub name: String,
     pub column_names: Vec<DataTableColumn>,
     pub first_row_header: bool,
+    pub show_header: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

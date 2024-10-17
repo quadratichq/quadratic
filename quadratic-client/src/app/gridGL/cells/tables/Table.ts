@@ -102,7 +102,7 @@ export class Table extends Container {
     this.outline.visible = false;
 
     // draw table name
-
+    console.log(codeCell.name);
     if (sheets.sheet.id === this.sheet.id) {
       pixiApp.overHeadings.addChild(this.tableName);
     }

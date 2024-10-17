@@ -122,7 +122,8 @@ pub struct DataTableSortOrderSchema {
 pub struct DataTableSchema {
     pub kind: DataTableKindSchema,
     pub name: String,
-    pub has_header: bool,
+    pub header_is_first_row: bool,
+    pub show_header: bool,
     pub columns: Option<Vec<DataTableColumnSchema>>,
     pub sort: Option<Vec<DataTableSortOrderSchema>>,
     pub display_buffer: Option<Vec<u64>>,

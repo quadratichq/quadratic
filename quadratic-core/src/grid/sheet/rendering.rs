@@ -213,8 +213,7 @@ impl Sheet {
                     let column = self.get_column(x);
                     for y in y_start..=y_end {
                         // We skip rendering the heading row because we render it separately.
-                        // todo: we should not skip if headings are hidden
-                        if y == code_rect.min.y {
+                        if y == code_rect.min.y && data_table.show_header {
                             continue;
                         }
                         let value = data_table.cell_value_at(
@@ -444,7 +443,8 @@ impl Sheet {
             spill_error,
             name: data_table.name.clone(),
             column_names: data_table.send_columns(),
-            first_row_header: data_table.has_header,
+            first_row_header: data_table.header_is_first_row,
+            show_header: data_table.show_header,
         })
     }
 
@@ -489,7 +489,8 @@ impl Sheet {
                                 spill_error,
                                 name: data_table.name.clone(),
                                 column_names: data_table.send_columns(),
-                                first_row_header: data_table.has_header,
+                                first_row_header: data_table.header_is_first_row,
+                                show_header: data_table.show_header,
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -1119,6 +1120,7 @@ mod tests {
                     value_index: 0,
                 }],
                 first_row_header: false,
+                show_header: true,
             })
         );
     }

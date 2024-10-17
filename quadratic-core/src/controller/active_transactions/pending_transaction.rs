@@ -12,7 +12,9 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{sheet::validations::validation::Validation, CodeCellLanguage, DataTable, SheetId},
+    grid::{
+        sheet::validations::validation::Validation, CodeCellLanguage, DataTable, Sheet, SheetId,
+    },
     selection::Selection,
     Pos, SheetPos, SheetRect,
 };
