@@ -1,14 +1,14 @@
 import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { generatePresignedUrl } from '../../aws/s3';
 import dbClient from '../../dbClient';
+import { licenseClient } from '../../licenseClient';
 import { getFile } from '../../middleware/getFile';
 import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { getFileUrl } from '../../storage/storage';
 import { RequestWithOptionalUser } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
 
 export default [
   validateRequestSchema(
@@ -23,17 +23,14 @@ export default [
   handler,
 ];
 
-async function handler(
-  req: RequestWithOptionalUser,
-  res: Response<ApiTypes['/v0/files/:uuid.GET.response'] | ResponseError>
-) {
+async function handler(req: RequestWithOptionalUser, res: Response<any>) {
   const userId = req.user?.id;
   const {
     file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerUserId, ownerTeam },
     userMakingRequest: { filePermissions, fileRole, teamRole, teamPermissions },
   } = await getFile({ uuid: req.params.uuid, userId });
 
-  const thumbnailSignedUrl = thumbnail ? await generatePresignedUrl(thumbnail) : null;
+  const thumbnailSignedUrl = thumbnail ? await getFileUrl(thumbnail) : null;
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
@@ -44,10 +41,11 @@ async function handler(
       sequenceNumber: 'desc',
     },
   });
+
   if (!checkpoint) {
     return res.status(500).json({ error: { message: 'No Checkpoints exist for this file' } });
   }
-  const lastCheckpointDataUrl = await generatePresignedUrl(checkpoint.s3Key);
+  const lastCheckpointDataUrl = await getFileUrl(checkpoint.s3Key);
 
   // Privacy of the file as it relates to the user making the request.
   // `undefined` means it was shared _somehow_, e.g. direct invite or public link,
@@ -59,6 +57,14 @@ async function handler(
     fileTeamPrivacy = 'PRIVATE_TO_SOMEONE_ELSE';
   } else if (ownerUserId === null && teamRole) {
     fileTeamPrivacy = 'PUBLIC_TO_TEAM';
+  }
+
+  console.log('a');
+  const license = await licenseClient.check();
+  console.log('b');
+
+  if (license === null) {
+    return res.status(500).json({ error: { message: 'Unable to retrieve license' } });
   }
 
   const data = {
@@ -83,6 +89,7 @@ async function handler(
       teamRole,
       teamPermissions,
     },
+    license,
   };
 
   return res.status(200).json(data);

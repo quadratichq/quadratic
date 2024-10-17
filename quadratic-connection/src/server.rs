@@ -8,11 +8,11 @@ use axum::{
     routing::{any, get, post},
     Extension, Json, Router,
 };
-use jsonwebtoken::jwk::JwkSet;
-use quadratic_rust_shared::{auth::jwt::get_jwks, sql::Connection};
+use quadratic_rust_shared::auth::jwt::get_jwks;
+use quadratic_rust_shared::sql::Connection;
 use serde::{Deserialize, Serialize};
 use std::{iter::once, time::Duration};
-use tokio::{sync::OnceCell, time};
+use tokio::time;
 use tower_http::{
     cors::{Any, CorsLayer},
     sensitive_headers::SetSensitiveHeadersLayer,
@@ -36,21 +36,6 @@ use crate::{
 };
 
 const HEALTHCHECK_INTERVAL_S: u64 = 5;
-
-static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
-
-/// Get the constant JWKS for use throughout the application
-/// The panics are intentional and will happen at startup
-pub(crate) async fn get_const_jwks() -> &'static JwkSet {
-    JWKS.get_or_init(|| async {
-        let config = config().expect("Invalid config");
-
-        get_jwks(&config.auth0_jwks_uri)
-            .await
-            .expect("Unable to get JWKS")
-    })
-    .await
-}
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SqlQuery {
@@ -167,7 +152,7 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
-    let jwks = get_const_jwks().await;
+    let jwks = get_jwks(&config.auth0_jwks_uri).await?;
     let state = State::new(&config, Some(jwks.clone()))?;
     let app = app(state.clone())?;
 

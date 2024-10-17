@@ -23,6 +23,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
     user: { id: userId },
   } = req;
 
+  const jwt = req.header('Authorization');
+
+  if (!jwt) {
+    throw new ApiError(403, 'User does not have a valid JWT.');
+  }
+
   // Check that the team exists and the user can create in it
   const {
     team: { id: teamId },
@@ -42,7 +48,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
   }
 
   // Ok, create it!
-  const dbFile = await createFile({ name, userId, teamId, contents, version, isPrivate });
+  const dbFile = await createFile({ name, userId, teamId, contents, version, isPrivate, jwt });
   return res.status(201).json({
     file: { uuid: dbFile.uuid, name: dbFile.name },
     team: {

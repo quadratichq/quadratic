@@ -13,7 +13,7 @@ import {
   createRoutesFromElements,
   redirect,
 } from 'react-router-dom';
-import { protectedRouteLoaderWrapper } from './auth';
+import { protectedRouteLoaderWrapper } from './auth/auth';
 import * as RootRoute from './routes/_root';
 
 export const router = createBrowserRouter(

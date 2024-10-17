@@ -1,9 +1,9 @@
 import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { generatePresignedUrl } from '../../aws/s3';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { getFileUrl } from '../../storage/storage';
 import { RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 
@@ -44,7 +44,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.G
   await Promise.all(
     dbFiles.map(async (file) => {
       if (file.thumbnail) {
-        file.thumbnail = await generatePresignedUrl(file.thumbnail);
+        file.thumbnail = await getFileUrl(file.thumbnail);
       }
     })
   );

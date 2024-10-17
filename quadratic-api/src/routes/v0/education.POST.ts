@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { getUsersFromAuth0 } from '../../auth0/profile';
+import { getUsers } from '../../auth/auth';
 import universityDomains from '../../data/universityDomains';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
@@ -19,7 +19,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
   // and save that state to the DB.
 
   // Get info about the user
-  const userById = await getUsersFromAuth0([{ id, auth0Id }]);
+  const userById = await getUsers([{ id, auth0Id }]);
   const email = userById[id].email;
 
   const enrollUser = async () => {
