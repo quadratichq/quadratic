@@ -48,6 +48,7 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('checkbox-icon', '/images/checkbox.png');
     addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
     addResourceOnce('dropdown-icon', '/images/dropdown.png');
+    addResourceOnce('dropdown-white-icon', '/images/dropdown-white.png');
 
     // Wait until pixi fonts are loaded before resolving
     Loader.shared.load(() => {

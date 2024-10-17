@@ -194,6 +194,7 @@ pub struct JsRenderCodeCell {
     pub spill_error: Option<Vec<Pos>>,
     pub name: String,
     pub column_names: Vec<DataTableColumn>,
+    pub first_row_header: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

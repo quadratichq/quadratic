@@ -4,16 +4,7 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: true,
     include_in_completions: true,
     name: "Logic functions",
-    docs: "- `FALSE`, `\"false\"` (case-insensitive), \
-             and `0` are all considered \"falsey\"\n\
-           - `TRUE`, `\"true\"` (case-insensitive), and \
-             all nonzero numbers are considered \"truthy\"\n\
-           - Other values produce an error when \
-             used in a place expecting a boolean\n\
-           \n\
-           When used as a number, `TRUE` is equivalent \
-           to `1` and `FALSE` is equivalent to `0`.\n\
-           \n",
+    docs: Some(include_str!("logic_docs.md")),
     get_functions,
 };
 

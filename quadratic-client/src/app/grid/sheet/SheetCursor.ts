@@ -268,7 +268,9 @@ export class SheetCursor {
     }
     if (this.multiCursor) {
       for (const rect of this.multiCursor) {
-        columns.add(rect.x);
+        for (let x = rect.x; x < rect.x + rect.width; x++) {
+          columns.add(x);
+        }
       }
     }
     columns.add(this.cursorPosition.x);
@@ -283,7 +285,9 @@ export class SheetCursor {
     }
     if (this.multiCursor) {
       for (const rect of this.multiCursor) {
-        rows.add(rect.y);
+        for (let y = rect.y; y < rect.y + rect.height; y++) {
+          rows.add(y);
+        }
       }
     }
     rows.add(this.cursorPosition.y);
@@ -293,5 +297,10 @@ export class SheetCursor {
   // Returns true if the cursor is only selecting a single cell
   onlySingleSelection(): boolean {
     return !this.multiCursor?.length && !this.columnRow;
+  }
+
+  // Returns true if there is one multiselect of > 1 size
+  hasOneMultiselect(): boolean {
+    return this.multiCursor?.length === 1 && (this.multiCursor[0].width > 1 || this.multiCursor[0].height > 1);
   }
 }

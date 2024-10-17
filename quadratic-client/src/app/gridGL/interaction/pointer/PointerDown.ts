@@ -1,7 +1,9 @@
+import { ContextMenuType } from '@/app/atoms/contextMenuAtoms';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { isLinux } from '@/shared/utils/isLinux';
 import { isMac } from '@/shared/utils/isMac';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
@@ -45,6 +47,13 @@ export class PointerDown {
   }
 
   async pointerDown(world: Point, event: PointerEvent) {
+    const isMiddleClick = event.button === 1;
+    // to prevent default paste behavior on middle click, in Linux
+    if (isLinux && isMiddleClick) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return;
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
@@ -65,9 +74,9 @@ export class PointerDown {
         });
         // hack to ensure that the context menu opens after the cursor changes
         // position (otherwise it may close immediately)
-        setTimeout(() => events.emit('gridContextMenu', world, column, row));
+        setTimeout(() => events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row }));
       } else {
-        events.emit('gridContextMenu', world, column, row);
+        events.emit('contextMenu', { type: ContextMenuType.Grid, world, column, row });
       }
       return;
     }
@@ -268,7 +277,14 @@ export class PointerDown {
     }
   }
 
-  pointerUp(): void {
+  pointerUp(event?: PointerEvent): void {
+    const isMiddleClick = event && event.button === 1;
+    // to prevent default paste behavior on middle click, in Linux
+    if (isLinux && isMiddleClick) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
     if (this.afterShowInput) {
       window.setTimeout(() => this.pointerUp(), 0);
       this.afterShowInput = false;

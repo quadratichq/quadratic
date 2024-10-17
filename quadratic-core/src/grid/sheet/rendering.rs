@@ -444,6 +444,7 @@ impl Sheet {
             spill_error,
             name: data_table.name.clone(),
             column_names: data_table.send_columns(),
+            first_row_header: data_table.has_header,
         })
     }
 
@@ -488,6 +489,7 @@ impl Sheet {
                                 spill_error,
                                 name: data_table.name.clone(),
                                 column_names: data_table.send_columns(),
+                                first_row_header: data_table.has_header,
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -1116,6 +1118,7 @@ mod tests {
                     display: true,
                     value_index: 0,
                 }],
+                first_row_header: false,
             })
         );
     }

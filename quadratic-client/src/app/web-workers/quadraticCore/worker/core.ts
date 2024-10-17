@@ -1132,7 +1132,7 @@ class Core {
 
   dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.dataTablefirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
+    this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
   }
 }
 

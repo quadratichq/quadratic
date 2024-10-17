@@ -51,7 +51,7 @@ impl GridController {
     }
 
     /// Toggle applin the first row as head
-    #[wasm_bindgen(js_name = "dataTablefirstRowAsHeader")]
+    #[wasm_bindgen(js_name = "dataTableFirstRowAsHeader")]
     pub fn js_data_table_first_row_as_header(
         &mut self,
         sheet_id: String,

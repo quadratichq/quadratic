@@ -54,6 +54,10 @@ export class PixiApp {
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
+
+  // this is used to display content over the headings (eg, table name when off
+  // the screen)
+  overHeadings: Container;
   cellMoving!: UICellMoving;
   headings!: GridHeadings;
   boxCells!: BoxCells;
@@ -84,6 +88,7 @@ export class PixiApp {
     this.cellsSheets = new CellsSheets();
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
+    this.overHeadings = new Container();
     this.viewport = new Viewport();
   }
 
@@ -156,6 +161,7 @@ export class PixiApp {
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.validations = this.viewportContents.addChild(this.validations);
     this.headings = this.viewportContents.addChild(new GridHeadings());
+    this.viewportContents.addChild(this.overHeadings);
 
     this.reset();
 

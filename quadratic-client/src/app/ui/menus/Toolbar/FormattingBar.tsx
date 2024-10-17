@@ -6,7 +6,6 @@ import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDi
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import { DateFormat } from '@/app/ui/components/DateFormat';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
-
 import {
   ArrowDropDownIcon,
   BorderAllIcon,
