@@ -1,20 +1,25 @@
-import { codeEditorCodeCellAtom, codeEditorWaitingForEditorClose } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorAtom,
+  codeEditorCodeCellAtom,
+  codeEditorModifiedEditorContentAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import Editor from '@monaco-editor/react';
-import { ContentCopyOutlined, ContentPasteGoOutlined } from '@mui/icons-material';
+import { ContentCopyOutlined, ContentPasteGoOutlined, PlayArrowOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilCallback } from 'recoil';
 
-interface Props {
+interface CodeSnippetProps {
   code: string;
-  language?: string;
+  language: string;
 }
 
-export function CodeSnippet({ code, language = 'plaintext' }: Props) {
+export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) {
   let syntax = language.toLowerCase();
   if (syntax === 'postgres') {
     syntax = 'sql';
@@ -32,10 +37,12 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
         <div className="lowercase text-muted-foreground">{language}</div>
 
         <div className="flex items-center gap-1">
+          <CodeSnippetRunButton text={code} language={language} />
           <CodeSnippetInsertButton text={code} language={language} />
           <CodeSnippetCopyButton text={code} language={language} />
         </div>
       </div>
+
       <div
         className="relative pt-2"
         style={{
@@ -71,22 +78,87 @@ export function CodeSnippet({ code, language = 'plaintext' }: Props) {
   );
 }
 
-function CodeSnippetInsertButton({ language, text }: { language: Props['language']; text: string }) {
-  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
-  const setWaitingForEditorClose = useSetRecoilState(codeEditorWaitingForEditorClose);
-  const handleReplace = useCallback(() => {
-    mixpanel.track('[AI].code.replace', { language });
-    setWaitingForEditorClose({
-      codeCell: {
-        sheetId: codeCell.sheetId ? codeCell.sheetId : sheets.current,
-        pos: codeCell.pos,
-        language: codeCell.language,
+// function CodeSnippetAIInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+//   const { aiSetCodeCellValue } = useAISetCodeCellValue();
+
+//   const handleAIInsert = useCallback(async () => {
+//     mixpanel.track('[AI].code.ai_insert_code_cell', { language });
+//     const setCodeCellValueArgs = await aiSetCodeCellValue({ language, text });
+
+//     if (setCodeCellValueArgs) {
+//       const { language, codeString, x, y, width, height } = setCodeCellValueArgs;
+//       quadraticCore.setCodeCellValue({
+//         sheetId: sheets.current,
+//         x,
+//         y,
+//         codeString,
+//         language,
+//         cursor: sheets.getCursorPosition(),
+//       });
+
+//       ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
+//     }
+//   }, [aiSetCodeCellValue, language, text]);
+
+//   return (
+//     <TooltipHint title={'Ask AI to Save and Run Code'}>
+//       <IconButton size="small" onClick={handleAIInsert}>
+//         <PlayArrowOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
+//       </IconButton>
+//     </TooltipHint>
+//   );
+// }
+
+function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+  const handleSaveAndRun = useRecoilCallback(
+    ({ snapshot, set }) =>
+      async () => {
+        mixpanel.track('[AI].code.run', { language });
+        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+        quadraticCore.setCodeCellValue({
+          sheetId: codeCell.sheetId,
+          x: codeCell.pos.x,
+          y: codeCell.pos.y,
+          codeString: text ?? '',
+          language: codeCell.language,
+          cursor: sheets.getCursorPosition(),
+        });
+        const modifiedEditorContent = await snapshot.getPromise(codeEditorModifiedEditorContentAtom);
+        if (modifiedEditorContent) {
+          set(codeEditorModifiedEditorContentAtom, undefined);
+        }
       },
-      showCellTypeMenu: false,
-      inlineEditor: false,
-      initialCode: text,
-    });
-  }, [codeCell.language, codeCell.pos, codeCell.sheetId, language, setWaitingForEditorClose, text]);
+    [language, text]
+  );
+
+  return (
+    <TooltipHint title={'Save and run code (CodeEditor / Cursor Position)'}>
+      <IconButton size="small" onClick={handleSaveAndRun}>
+        <PlayArrowOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
+      </IconButton>
+    </TooltipHint>
+  );
+}
+
+function CodeSnippetInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+  const handleReplace = useRecoilCallback(
+    ({ set, snapshot }) =>
+      async () => {
+        mixpanel.track('[AI].code.insert', { language });
+        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+        set(codeEditorAtom, (prev) => ({
+          ...prev,
+          modifiedEditorContent: text,
+          waitingForEditorClose: {
+            codeCell,
+            showCellTypeMenu: false,
+            initialCode: '',
+            inlineEditor: false,
+          },
+        }));
+      },
+    [language, text]
+  );
 
   return (
     <TooltipHint title={'Open in code editor'}>
@@ -97,7 +169,7 @@ function CodeSnippetInsertButton({ language, text }: { language: Props['language
   );
 }
 
-function CodeSnippetCopyButton({ language, text }: { language: Props['language']; text: string }) {
+function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
   const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
   const handleCopy = useCallback(() => {
     mixpanel.track('[AI].code.copy', { language });

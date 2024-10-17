@@ -223,27 +223,28 @@ mod test {
             None,
         )
         .unwrap();
-
         set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
-        gc.set_cell_underline(
-            SheetRect {
+        gc.set_underline_selection(
+            Selection::sheet_rect(SheetRect {
                 min: Pos { x: 5, y: 3 },
                 max: Pos { x: 5, y: 3 },
                 sheet_id,
-            },
-            Some(true),
+            }),
+            true,
             None,
-        );
+        )
+        .unwrap();
         set_cell_value(&mut gc, sheet_id, "strike through", 7, 4);
-        gc.set_cell_strike_through(
-            SheetRect {
+        gc.set_strike_through_selection(
+            Selection::sheet_rect(SheetRect {
                 min: Pos { x: 7, y: 4 },
                 max: Pos { x: 7, y: 4 },
                 sheet_id,
-            },
-            Some(true),
+            }),
+            true,
             None,
-        );
+        )
+        .unwrap();
 
         let rect = Rect {
             min: Pos { x: 1, y: 1 },

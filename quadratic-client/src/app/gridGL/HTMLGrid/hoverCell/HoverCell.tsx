@@ -1,4 +1,4 @@
-import { codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -7,17 +7,18 @@ import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMes
 import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { ArrowDoubleDown, ArrowDoubleRight, ArrowDown, ArrowRight } from '@/shared/components/Icons';
+import { AIIcon, ArrowDoubleDown, ArrowDoubleRight, ArrowDown, ArrowRight, CodeIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import './HoverCell.css';
 
 export const HOVER_CELL_FADE_IN_OUT_DELAY = 500;
@@ -113,7 +114,7 @@ export function HoverCell() {
           if (renderCodeCell.state === 'RunError') {
             setOnlyCode(false);
             if (codeCell) {
-              setText(<HoverCellRunError codeCell={codeCell} />);
+              setText(<HoverCellRunError codeCell={codeCell} onClick={hideHoverCell} />);
             }
           } else {
             setOnlyCode(true);
@@ -213,22 +214,69 @@ export function HoverCell() {
   );
 }
 
-function HoverCellRunError({ codeCell }: { codeCell: JsCodeCell }) {
-  const language = getLanguage(codeCell.language);
+function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCodeCell; onClick: () => void }) {
+  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
+  const language = getLanguage(codeCellCore.language);
+  const x = Number(codeCellCore.x);
+  const y = Number(codeCellCore.y);
+
+  const codeCell: CodeCell = useMemo(
+    () => ({
+      sheetId: sheets.current,
+      pos: { x, y },
+      language: codeCellCore.language,
+    }),
+    [codeCellCore.language, x, y]
+  );
 
   return (
     <>
       <div className="hover-cell-header">
         <span>Run Error</span>
+
+        <div className="hover-cell-header-buttons">
+          <TooltipPopover label={'Ask AI to fix error'}>
+            <Button
+              size="sm"
+              onClick={() => {
+                events.emit('askAICodeCell', codeCell);
+                onClick();
+              }}
+            >
+              <AIIcon />
+            </Button>
+          </TooltipPopover>
+
+          <TooltipPopover label={'Open in code editor'}>
+            <Button
+              size="sm"
+              onClick={() => {
+                setCodeEditorState((prev) => ({
+                  ...prev,
+                  modifiedEditorContent: undefined,
+                  waitingForEditorClose: {
+                    codeCell,
+                    showCellTypeMenu: false,
+                    inlineEditor: false,
+                    initialCode: codeCellCore.code_string,
+                  },
+                }));
+                onClick();
+              }}
+            >
+              <CodeIcon />
+            </Button>
+          </TooltipPopover>
+        </div>
       </div>
 
       <div className="hover-cell-body">
         <div>There was an error running the code in this cell.</div>
-        <div className="hover-cell-error-msg">{codeCell.std_err}</div>
+        <div className="hover-cell-error-msg">{codeCellCore.std_err}</div>
       </div>
 
       <div className="hover-cell-header-space">{language} Code</div>
-      <div className="code-body">{codeCell.code_string}</div>
+      <div className="code-body">{codeCellCore.code_string}</div>
     </>
   );
 }

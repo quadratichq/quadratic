@@ -21,12 +21,6 @@ export const MODEL_OPTIONS: {
     stream: true,
     enabled: true,
   },
-  'gpt-4o-2024-08-06': {
-    displayName: 'OpenAI: gpt-4o-2024-08-06',
-    temperature: 0,
-    stream: true,
-    enabled: debug,
-  },
   'o1-preview': {
     displayName: 'OpenAI: o1-preview',
     temperature: 1, // only temperature 1 is supported for o1-preview

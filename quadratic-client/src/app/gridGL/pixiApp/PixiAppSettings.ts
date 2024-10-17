@@ -1,5 +1,5 @@
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultEditorInteractionState, EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
 import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
@@ -40,7 +40,7 @@ class PixiAppSettings {
   gridSettings = defaultGridSettings;
   setGridSettings?: SetterOrUpdater<GridSettings>;
 
-  editorInteractionState = editorInteractionStateDefault;
+  editorInteractionState = defaultEditorInteractionState;
   setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
 
   addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
