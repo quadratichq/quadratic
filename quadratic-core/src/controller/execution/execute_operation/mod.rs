@@ -107,6 +107,7 @@ impl GridController {
 pub fn execute_reverse_operations(gc: &mut GridController, transaction: &PendingTransaction) {
     let mut undo_transaction = PendingTransaction::default();
     undo_transaction.operations = transaction.reverse_operations.clone().into();
+    println!("reverse_operations: {:?}", undo_transaction.operations);
     gc.execute_operation(&mut undo_transaction);
 }
 

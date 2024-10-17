@@ -4,6 +4,8 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
+use std::fmt::{Display, Formatter};
+
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::{
@@ -48,10 +50,21 @@ impl DataTableColumn {
 pub enum SortDirection {
     Ascending,
     Descending,
+    None,
+}
+
+impl Display for SortDirection {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SortDirection::Ascending => write!(f, "asc"),
+            SortDirection::Descending => write!(f, "desc"),
+            SortDirection::None => write!(f, "none"),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct DataTableSortOrder {
+pub struct DataTableSort {
     pub column_index: usize,
     pub direction: SortDirection,
 }
@@ -62,7 +75,7 @@ pub struct DataTable {
     pub name: String,
     pub has_header: bool,
     pub columns: Option<Vec<DataTableColumn>>,
-    pub sort: Option<Vec<DataTableSortOrder>>,
+    pub sort: Option<Vec<DataTableSort>>,
     pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
     pub readonly: bool,
@@ -126,7 +139,7 @@ impl DataTable {
         name: &str,
         has_header: bool,
         columns: Option<Vec<DataTableColumn>>,
-        sort: Option<Vec<DataTableSortOrder>>,
+        sort: Option<Vec<DataTableSort>>,
         display_buffer: Option<Vec<u64>>,
         value: Value,
         readonly: bool,
@@ -245,28 +258,65 @@ impl DataTable {
         Ok(())
     }
 
-    pub fn sort(&mut self, column_index: usize, direction: SortDirection) -> Result<()> {
-        let values = self.value.clone().into_array()?;
+    pub fn sort_column(
+        &mut self,
+        column_index: usize,
+        direction: SortDirection,
+    ) -> Result<Option<DataTableSort>> {
+        let old = self.prepend_sort(column_index, direction.clone());
         let increment = |i| if self.has_header { i + 1 } else { i };
 
-        let mut display_buffer = values
-            .col(column_index)
-            .skip(increment(0))
-            .enumerate()
-            .sorted_by(|a, b| match direction {
-                SortDirection::Ascending => a.1.total_cmp(b.1),
-                SortDirection::Descending => b.1.total_cmp(a.1),
-            })
-            .map(|(i, _)| increment(i) as u64)
-            .collect::<Vec<u64>>();
+        if let Some(ref mut sort) = self.sort.to_owned() {
+            for sort in sort.iter().rev() {
+                let mut display_buffer = self
+                    .display_value()?
+                    .into_array()?
+                    .col(sort.column_index)
+                    .skip(increment(0))
+                    .enumerate()
+                    .sorted_by(|a, b| match direction {
+                        SortDirection::Ascending => a.1.total_cmp(b.1),
+                        SortDirection::Descending => b.1.total_cmp(a.1),
+                        SortDirection::None => std::cmp::Ordering::Equal,
+                    })
+                    .map(|(i, _)| increment(i) as u64)
+                    .collect::<Vec<u64>>();
 
-        if self.has_header {
-            display_buffer.insert(0, 0);
+                if self.has_header {
+                    display_buffer.insert(0, 0);
+                }
+
+                self.display_buffer = Some(display_buffer);
+            }
         }
 
-        self.display_buffer = Some(display_buffer);
+        Ok(old)
+    }
 
-        Ok(())
+    pub fn prepend_sort(
+        &mut self,
+        column_index: usize,
+        direction: SortDirection,
+    ) -> Option<DataTableSort> {
+        let data_table_sort = DataTableSort {
+            column_index,
+            direction,
+        };
+
+        let old = self.sort.as_mut().and_then(|sort| {
+            let index = sort
+                .iter()
+                .position(|sort| sort.column_index == column_index);
+
+            index.and_then(|index| Some(sort.remove(index)))
+        });
+
+        match self.sort {
+            Some(ref mut sort) => sort.insert(0, data_table_sort),
+            None => self.sort = Some(vec![data_table_sort]),
+        }
+
+        old
     }
 
     pub fn display_value_from_buffer(&self, display_buffer: &Vec<u64>) -> Result<Value> {
@@ -610,14 +660,18 @@ pub mod test {
         pretty_print_data_table(&data_table, Some("Original Data Table"), None);
 
         // sort by population city ascending
-        data_table.sort(0, SortDirection::Ascending).unwrap();
+        data_table.sort_column(0, SortDirection::Ascending).unwrap();
+        println!("{:?}", data_table.sort);
         pretty_print_data_table(&data_table, Some("Sorted by City"), None);
         assert_data_table_row(&data_table, 1, values[2].clone());
         assert_data_table_row(&data_table, 2, values[3].clone());
         assert_data_table_row(&data_table, 3, values[1].clone());
 
         // sort by population descending
-        data_table.sort(3, SortDirection::Descending).unwrap();
+        data_table
+            .sort_column(3, SortDirection::Descending)
+            .unwrap();
+        println!("{:?}", data_table.sort);
         pretty_print_data_table(&data_table, Some("Sorted by Population Descending"), None);
         assert_data_table_row(&data_table, 1, values[2].clone());
         assert_data_table_row(&data_table, 2, values[1].clone());

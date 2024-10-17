@@ -110,6 +110,7 @@ pub enum DataTableKindSchema {
 pub enum SortDirectionSchema {
     Ascending,
     Descending,
+    None,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

@@ -12,7 +12,9 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{sheet::validations::validation::Validation, CodeCellLanguage, DataTable, SheetId},
+    grid::{
+        sheet::validations::validation::Validation, CodeCellLanguage, DataTable, Sheet, SheetId,
+    },
     selection::Selection,
     Pos, SheetPos, SheetRect,
 };
@@ -358,7 +360,7 @@ impl PendingTransaction {
 mod tests {
     use crate::{
         controller::operations::operation::Operation,
-        grid::{CodeRun, DataTableKind, SheetId},
+        grid::{CodeRun, DataTableKind, Sheet, SheetId},
         CellValue, Value,
     };
 

@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 
 use crate::{
-    grid::{CodeRun, DataTable, DataTableColumn, DataTableKind, DataTableSortOrder, SortDirection},
+    grid::{CodeRun, DataTable, DataTableColumn, DataTableKind, DataTableSort, SortDirection},
     ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
 };
 
@@ -179,11 +179,12 @@ pub(crate) fn import_data_table_builder(
             }),
             sort: data_table.sort.map(|sort| {
                 sort.into_iter()
-                    .map(|sort| DataTableSortOrder {
+                    .map(|sort| DataTableSort {
                         column_index: sort.column_index,
                         direction: match sort.direction {
                             current::SortDirectionSchema::Ascending => SortDirection::Ascending,
                             current::SortDirectionSchema::Descending => SortDirection::Descending,
+                            current::SortDirectionSchema::None => SortDirection::None,
                         },
                     })
                     .collect()
@@ -360,6 +361,7 @@ pub(crate) fn export_data_tables(
                         direction: match item.direction {
                             SortDirection::Ascending => current::SortDirectionSchema::Ascending,
                             SortDirection::Descending => current::SortDirectionSchema::Descending,
+                            SortDirection::None => current::SortDirectionSchema::None,
                         },
                     })
                     .collect()

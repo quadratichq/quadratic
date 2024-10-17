@@ -273,18 +273,24 @@ impl GridController {
             let sort_order_enum = match sort_order.as_str() {
                 "asc" => SortDirection::Ascending,
                 "desc" => SortDirection::Descending,
+                "none" => SortDirection::None,
                 _ => bail!("Invalid sort order"),
             };
 
-            data_table.sort(column_index as usize, sort_order_enum)?;
+            let old_value = data_table.sort_column(column_index as usize, sort_order_enum)?;
 
             self.send_to_wasm(transaction, &sheet_rect)?;
 
-            // TODO(ddimaria): remove this clone
-            let forward_operations = vec![op.clone()];
+            let forward_operations = vec![op];
 
-            // TODO(ddimaria): this is a placeholder, actually implement
-            let reverse_operations = vec![op.clone()];
+            let reverse_operations = vec![Operation::SortDataTable {
+                sheet_pos,
+                column_index,
+                sort_order: old_value
+                    .map(|v| v.direction)
+                    .unwrap_or(SortDirection::None)
+                    .to_string(),
+            }];
 
             self.data_table_operations(
                 transaction,
@@ -319,11 +325,12 @@ impl GridController {
 
             self.send_to_wasm(transaction, &sheet_rect)?;
 
-            // TODO(ddimaria): remove this clone
-            let forward_operations = vec![op.clone()];
+            let forward_operations = vec![op];
 
-            // TODO(ddimaria): this is a placeholder, actually implement
-            let reverse_operations = vec![op.clone()];
+            let reverse_operations = vec![Operation::DataTableFirstRowAsHeader {
+                sheet_pos,
+                first_row_is_header: !first_row_is_header,
+            }];
 
             self.data_table_operations(
                 transaction,
@@ -515,14 +522,17 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.execute_sort_data_table(&mut transaction, op).unwrap();
 
-        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
-
         assert_sorted_data_table(&gc, sheet_id, pos, "simple.csv");
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
         // undo, the value should be a data table again
         execute_reverse_operations(&mut gc, &transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_simple_csv(&gc, sheet_id, pos, "simple.csv");
 
         // redo, the value should be on the grid
         execute_forward_operations(&mut gc, &mut transaction);
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        assert_sorted_data_table(&gc, sheet_id, pos, "simple.csv");
     }
 }
