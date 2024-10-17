@@ -78,6 +78,22 @@ impl From<(i64, i64)> for Pos {
         Pos { x: pos.0, y: pos.1 }
     }
 }
+impl From<(i32, i32)> for Pos {
+    fn from(pos: (i32, i32)) -> Self {
+        Pos {
+            x: pos.0 as i64,
+            y: pos.1 as i64,
+        }
+    }
+}
+impl From<(u32, u32)> for Pos {
+    fn from(pos: (u32, u32)) -> Self {
+        Pos {
+            x: pos.0 as i64,
+            y: pos.1 as i64,
+        }
+    }
+}
 impl From<SheetPos> for Pos {
     fn from(sheet_pos: SheetPos) -> Self {
         Pos {
@@ -119,6 +135,16 @@ impl fmt::Display for SheetPos {
 impl From<(i64, i64, SheetId)> for SheetPos {
     fn from((x, y, sheet_id): (i64, i64, SheetId)) -> Self {
         Self { x, y, sheet_id }
+    }
+}
+
+impl From<(Pos, SheetId)> for SheetPos {
+    fn from((pos, sheet_id): (Pos, SheetId)) -> Self {
+        Self {
+            x: pos.x,
+            y: pos.y,
+            sheet_id,
+        }
     }
 }
 

@@ -40,6 +40,7 @@ export type ActionSpec<ActionArgsType> = {
   // return `<Icon className="custom-style-class" />`
   // ```
   Icon?: IconComponent;
+  checkbox?: boolean | (() => boolean);
   isAvailable?: (args: ActionAvailabilityArgs) => boolean;
   // Used for command palette search
   keywords?: string[];

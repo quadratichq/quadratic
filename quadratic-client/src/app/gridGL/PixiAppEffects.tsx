@@ -1,4 +1,5 @@
 import { codeEditorAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { contextMenuAtom } from '@/app/atoms/contextMenuAtoms';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
 import { gridSettingsAtom, presentationModeAtom, showHeadingsAtom } from '@/app/atoms/gridSettingsAtom';
@@ -57,6 +58,11 @@ export const PixiAppEffects = () => {
   useEffect(() => {
     pixiAppSettings.updateGridPanMode(gridPanMode, setGridPanMode);
   }, [gridPanMode, setGridPanMode]);
+
+  const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
+  useEffect(() => {
+    pixiAppSettings.updateContextMenu(contextMenu, setContextMenu);
+  }, [contextMenu, setContextMenu]);
 
   useEffect(() => {
     const handleMouseUp = () => {

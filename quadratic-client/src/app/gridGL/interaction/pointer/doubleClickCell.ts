@@ -22,6 +22,7 @@ export async function doubleClickCell(options: {
   // Open the correct code editor
   if (language) {
     const formula = language === 'Formula';
+    const file_import = language === 'Import';
 
     if (pixiAppSettings.codeEditorState.showCodeEditor) {
       pixiAppSettings.setCodeEditorState({
@@ -46,7 +47,8 @@ export async function doubleClickCell(options: {
         if (cursor.x !== column || cursor.y !== row) {
           sheets.sheet.cursor.changePosition({ cursorPosition: { x: column, y: row } });
         }
-
+        pixiAppSettings.changeInput(true, cell);
+      } else if (hasPermission && file_import) {
         pixiAppSettings.changeInput(true, cell);
       } else {
         pixiAppSettings.setCodeEditorState({

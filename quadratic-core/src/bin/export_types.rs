@@ -28,7 +28,8 @@ use grid::sheet::validations::validation_rules::validation_text::{
 };
 use grid::sheet::validations::validation_rules::ValidationRule;
 use grid::{
-    CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
+    CellAlign, CellVerticalAlign, CellWrap, DataTableColumn, GridBounds, NumericFormat,
+    NumericFormatKind, SheetId,
 };
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
@@ -82,6 +83,7 @@ fn main() {
         CodeCellLanguage,
         ColumnRow,
         ConnectionKind,
+        DataTableColumn,
         DateTimeRange,
         Duration,
         Format,

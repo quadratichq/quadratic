@@ -1,4 +1,5 @@
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
+import { ContextMenuOptions, ContextMenuState, defaultContextMenuState } from '@/app/atoms/contextMenuAtoms';
 import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
@@ -50,6 +51,9 @@ class PixiAppSettings {
 
   codeEditorState = defaultCodeEditorState;
   setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
+
+  contextMenu = defaultContextMenuState;
+  setContextMenu?: SetterOrUpdater<ContextMenuOptions>;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -213,6 +217,11 @@ class PixiAppSettings {
 
   get panMode() {
     return this._panMode;
+  }
+
+  updateContextMenu(contextMenu: ContextMenuState, setContextMenu: SetterOrUpdater<ContextMenuOptions>) {
+    this.contextMenu = contextMenu;
+    this.setContextMenu = setContextMenu;
   }
 }
 

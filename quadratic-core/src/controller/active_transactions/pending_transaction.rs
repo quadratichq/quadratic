@@ -12,7 +12,9 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{sheet::validations::validation::Validation, CodeCellLanguage, CodeRun, Sheet, SheetId},
+    grid::{
+        sheet::validations::validation::Validation, CodeCellLanguage, DataTable, Sheet, SheetId,
+    },
     selection::Selection,
     Pos, SheetPos, SheetRect,
 };
@@ -275,13 +277,20 @@ impl PendingTransaction {
     }
 
     /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
-    pub fn add_from_code_run(&mut self, sheet_id: SheetId, pos: Pos, code_run: &Option<CodeRun>) {
-        if let Some(code_run) = &code_run {
+    pub fn add_from_code_run(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        data_table: &Option<DataTable>,
+    ) {
+        if let Some(data_table) = &data_table {
             self.add_code_cell(sheet_id, pos);
-            if code_run.is_html() {
+
+            if data_table.is_html() {
                 self.add_html_cell(sheet_id, pos);
             }
-            if code_run.is_image() {
+
+            if data_table.is_image() {
                 self.add_image_cell(sheet_id, pos);
             }
         }
@@ -351,12 +360,11 @@ impl PendingTransaction {
 mod tests {
     use crate::{
         controller::operations::operation::Operation,
-        grid::{CodeRunResult, SheetId},
+        grid::{CodeRun, DataTableKind, Sheet, SheetId},
         CellValue, Value,
     };
 
     use super::*;
-    use chrono::Utc;
     use serial_test::parallel;
 
     #[test]
@@ -485,14 +493,21 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Html("html".to_string()))),
+            error: None,
             return_type: None,
             line_number: None,
             output_type: None,
-            spill_error: false,
-            last_modified: Utc::now(),
         };
-        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Single(CellValue::Html("html".to_string())),
+            false,
+            false,
+            false,
+        );
+        transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 0);
@@ -502,14 +517,21 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
+            error: None,
             return_type: None,
             line_number: None,
             output_type: None,
-            spill_error: false,
-            last_modified: Utc::now(),
         };
-        transaction.add_from_code_run(sheet_id, pos, &Some(code_run));
+
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Single(CellValue::Image("image".to_string())),
+            false,
+            false,
+            false,
+        );
+        transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 1);

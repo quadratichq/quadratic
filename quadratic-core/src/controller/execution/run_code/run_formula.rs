@@ -1,10 +1,9 @@
-use chrono::Utc;
 use itertools::Itertools;
 
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     formulas::{parse_formula, Ctx},
-    grid::{CodeRun, CodeRunResult},
+    grid::{CodeRun, DataTable, DataTableKind},
     SheetPos,
 };
 
@@ -27,15 +26,21 @@ impl GridController {
                     std_err: (!errors.is_empty())
                         .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
                     formatted_code_string: None,
-                    spill_error: false,
-                    last_modified: Utc::now(),
                     cells_accessed: transaction.cells_accessed.clone(),
-                    result: CodeRunResult::Ok(output.inner),
+                    error: None,
                     return_type: None,
                     line_number: None,
                     output_type: None,
                 };
-                self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
+                let new_data_table = DataTable::new(
+                    DataTableKind::CodeRun(new_code_run),
+                    "Table 1",
+                    output.inner,
+                    false,
+                    false,
+                    false,
+                );
+                self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
             }
             Err(error) => {
                 let _ = self.code_cell_sheet_error(transaction, &error);
@@ -62,7 +67,7 @@ mod test {
             transaction_types::JsCodeResult,
             GridController,
         },
-        grid::{CodeCellLanguage, CodeRun, CodeRunResult},
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         Array, ArraySize, CellValue, CodeCellValue, Pos, SheetPos, Value,
     };
 
@@ -246,20 +251,27 @@ mod test {
 
         // need the result to ensure last_modified is the same
         let result = gc.js_code_result_to_code_cell_value(&mut transaction, result, sheet_pos);
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            error: None,
+        };
         assert_eq!(
             result,
-            CodeRun {
-                std_out: None,
-                std_err: None,
-                formatted_code_string: None,
-                last_modified: result.last_modified,
-                result: CodeRunResult::Ok(Value::Single(CellValue::Number(12.into()))),
-                return_type: Some("number".into()),
-                line_number: None,
-                output_type: None,
-                cells_accessed: HashSet::new(),
-                spill_error: false,
-            },
+            DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table 1",
+                Value::Single(CellValue::Number(12.into())),
+                false,
+                false,
+                false
+            )
+            .with_last_modified(result.last_modified),
         );
     }
 
@@ -311,20 +323,27 @@ mod test {
         let _ = array.set(1, 1, CellValue::Text("Hello".into()));
 
         let result = gc.js_code_result_to_code_cell_value(&mut transaction, result, sheet_pos);
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            error: None,
+            return_type: Some("array".into()),
+            line_number: None,
+            output_type: None,
+            cells_accessed: HashSet::new(),
+        };
         assert_eq!(
             result,
-            CodeRun {
-                std_out: None,
-                std_err: None,
-                formatted_code_string: None,
-                result: CodeRunResult::Ok(Value::Array(array)),
-                return_type: Some("array".into()),
-                line_number: None,
-                output_type: None,
-                cells_accessed: HashSet::new(),
-                spill_error: false,
-                last_modified: result.last_modified,
-            }
+            DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table 1",
+                Value::Array(array),
+                false,
+                false,
+                false
+            )
+            .with_last_modified(result.last_modified),
         );
     }
 
@@ -371,7 +390,7 @@ mod test {
         );
         assert!(
             gc.sheet(sheet_id)
-                .code_run(Pos { x: 1, y: 0 })
+                .data_table(Pos { x: 1, y: 0 })
                 .unwrap()
                 .spill_error
         );
@@ -392,7 +411,7 @@ mod test {
         gc.redo(None);
         assert!(
             gc.sheet(sheet_id)
-                .code_run(Pos { x: 1, y: 0 })
+                .data_table(Pos { x: 1, y: 0 })
                 .unwrap()
                 .spill_error
         );
@@ -431,9 +450,9 @@ mod test {
                 code: "this shouldn't work".into(),
             }))
         );
-        let result = sheet.code_run(pos).unwrap();
+        let result = sheet.data_table(pos).unwrap();
         assert!(!result.spill_error);
-        assert!(result.std_err.is_some());
+        assert!(result.code_run().unwrap().std_err.is_some());
 
         gc.set_code_cell(
             sheet_pos,
@@ -449,8 +468,8 @@ mod test {
                 code: "{0,1/0;2/0,0}".into(),
             }))
         );
-        let result = sheet.code_run(pos).unwrap();
+        let result = sheet.data_table(pos).unwrap();
         assert!(!result.spill_error);
-        assert!(result.std_err.is_some());
+        assert!(result.code_run().unwrap().std_err.is_some());
     }
 }

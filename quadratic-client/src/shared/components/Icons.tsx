@@ -96,6 +96,10 @@ export const BorderColorIcon: IconComponent = (props) => {
   return <Icon {...props}>border_color</Icon>;
 };
 
+export const CheckBoxEmptyIcon: IconComponent = (props) => {
+  return <Icon {...props}>check_box_outline_blank</Icon>;
+};
+
 export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };

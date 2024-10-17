@@ -1016,6 +1016,39 @@ export interface ClientCoreInsertRow {
   cursor: string;
 }
 
+export interface ClientCoreFlattenDataTable {
+  type: 'clientCoreFlattenDataTable';
+  sheetId: string;
+  x: number;
+  y: number;
+  cursor: string;
+}
+
+export interface ClientCoreGridToDataTable {
+  type: 'clientCoreGridToDataTable';
+  selection: Selection;
+  cursor: string;
+}
+
+export interface ClientCoreSortDataTable {
+  type: 'clientCoreSortDataTable';
+  sheetId: string;
+  x: number;
+  y: number;
+  columnIndex: number;
+  sortOrder: string;
+  cursor: string;
+}
+
+export interface ClientCoreDataTableFirstRowAsHeader {
+  type: 'clientCoreDataTableFirstRowAsHeader';
+  sheetId: string;
+  x: number;
+  y: number;
+  firstRowAsHeader: boolean;
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1095,7 +1128,11 @@ export type ClientCoreMessage =
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
-  | ClientCoreInsertRow;
+  | ClientCoreInsertRow
+  | ClientCoreFlattenDataTable
+  | ClientCoreGridToDataTable
+  | ClientCoreSortDataTable
+  | ClientCoreDataTableFirstRowAsHeader;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

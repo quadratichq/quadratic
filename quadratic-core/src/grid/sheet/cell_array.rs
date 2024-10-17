@@ -130,7 +130,7 @@ impl Sheet {
         }
 
         // then check code runs
-        for (pos, code_run) in &self.code_runs {
+        for (pos, code_run) in &self.data_tables {
             // once we reach the code_pos, no later code runs can be the cause of the spill error
             if pos == &code_pos {
                 break;
@@ -283,7 +283,7 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let run = sheet.code_run(Pos { x: 0, y: 0 }).unwrap();
+        let run = sheet.data_table(Pos { x: 0, y: 0 }).unwrap();
         assert!(run.spill_error);
         let reasons = sheet.find_spill_error_reasons(
             &run.output_rect(Pos { x: 0, y: 0 }, true),
