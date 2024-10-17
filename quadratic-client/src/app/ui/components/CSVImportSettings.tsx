@@ -8,12 +8,13 @@ import {
   AlertDialogTitle,
 } from '@/shared/shadcn/ui/alert-dialog';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Input } from '@/shared/shadcn/ui/input';
+import { Label } from '@/shared/shadcn/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/shared/shadcn/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/shadcn/ui/table';
 import { useCallback, useEffect, useState } from 'react';
-import { useRecoilCallback, useRecoilValue } from 'recoil';
+import { useRecoilCallback, useRecoilValue, useResetRecoilState } from 'recoil';
 
 export const CSVImportSettings = () => {
   const [csvDelimiter, setCsvDelimiter] = useState<string>(',');
@@ -39,6 +40,8 @@ export const CSVImportSettings = () => {
       },
     [csvDelimiter, customCsvDelimiter, hasHeading, setCsvDelimiter, setCustomCsvDelimiter]
   );
+
+  const handleCancel = useResetRecoilState(filesImportSettingsAtom);
 
   const inputRef = useCallback((node: HTMLInputElement) => {
     if (node) {
@@ -83,10 +86,8 @@ export const CSVImportSettings = () => {
           <AlertDialogTitle>Import settings</AlertDialogTitle>
         </AlertDialogHeader>
 
-        <div className="flex flex-row items-center justify-between gap-12">
-          <div className="w-1/2 text-sm font-semibold">CSV delimiter</div>
-
-          <div className="flex w-1/2 flex-row items-center gap-2">
+        <Row label="CSV delimiter">
+          <>
             <Select
               defaultValue={csvDelimiter}
               value={csvDelimiter}
@@ -141,53 +142,67 @@ export const CSVImportSettings = () => {
                 }}
               />
             )}
-          </div>
-        </div>
+          </>
+        </Row>
 
-        <div className="flex flex-row items-center gap-2">
-          <Checkbox
-            checked={hasHeading}
-            onCheckedChange={(checked) => {
-              if (checked === 'indeterminate') {
-                setHasHeading(false);
-              } else {
-                setHasHeading(checked);
-              }
+        <Row label="First row contains headings?">
+          <RadioGroup
+            onValueChange={(value) => {
+              setHasHeading(value === 'yes');
             }}
-          />
-          <span className="text-sm font-semibold">First row contains headings</span>
-        </div>
+            value={hasHeading ? 'yes' : 'no'}
+            className="flex flex-row items-center gap-6"
+          >
+            <Label className="flex flex-row items-center gap-2 py-2">
+              <RadioGroupItem value="yes" id="yes" />
+              Yes
+            </Label>
+
+            <Label htmlFor="no" className="flex flex-row items-center gap-2 py-2">
+              <RadioGroupItem value="no" id="no" /> No
+            </Label>
+          </RadioGroup>
+        </Row>
 
         {csvPreview && (
-          <Table>
-            <TableCaption>CSV preview</TableCaption>
-
-            {hasHeading && csvPreview.length > 0 && (
-              <TableHeader>
-                <TableRow>
-                  {csvPreview[0].map((cell, i) => (
-                    <TableHead key={`header-${i}-${cell}`}>{cell}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-            )}
-
-            <TableBody>
-              {csvPreview.length > 0 &&
-                csvPreview.slice(hasHeading ? 1 : 0).map((row, i) => (
-                  <TableRow key={`row-${i}-${row[0]}`}>
-                    {row.map((cell, j) => (
-                      <TableCell key={`cell-${j}-${cell}`}>{cell}</TableCell>
+          <div className="overflow-hidden rounded border border-border">
+            <p className="border-b border-border bg-accent py-1 text-center text-xs text-muted-foreground">
+              CSV preview
+            </p>
+            <Table>
+              {hasHeading && csvPreview.length > 0 && (
+                <TableHeader>
+                  <TableRow>
+                    {csvPreview[0].map((cell, i) => (
+                      <TableHead key={`header-${i}-${cell}`}>{cell}</TableHead>
                     ))}
                   </TableRow>
-                ))}
-            </TableBody>
-          </Table>
+                </TableHeader>
+              )}
+
+              <TableBody>
+                {csvPreview.length > 0 &&
+                  csvPreview.slice(hasHeading ? 1 : 0).map((row, i) => (
+                    <TableRow key={`row-${i}-${row[0]}`}>
+                      {row.map((cell, j) => (
+                        <TableCell key={`cell-${j}-${cell}`}>{cell}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
 
         <AlertDialogFooter>
           <Button
-            variant="default"
+            variant="outline"
+            onClick={() => handleCancel()}
+            disabled={csvDelimiter === 'custom' && customCsvDelimiter.length !== 1}
+          >
+            Cancel
+          </Button>
+          <Button
             onClick={() => handleSubmit()}
             disabled={csvDelimiter === 'custom' && customCsvDelimiter.length !== 1}
           >
@@ -198,3 +213,13 @@ export const CSVImportSettings = () => {
     </AlertDialog>
   );
 };
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-row items-center justify-between gap-12">
+      <div className="w-1/2 text-sm font-semibold">{label}</div>
+
+      <div className="flex w-1/2 flex-row items-center gap-2">{children}</div>
+    </div>
+  );
+}
