@@ -446,6 +446,7 @@ export interface ClientCoreImportFile {
   cursor?: string;
   id: number;
   csvDelimiter?: number;
+  hasHeader?: boolean;
 }
 
 export interface CoreClientImportFile {
@@ -460,6 +461,20 @@ export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
   selection: Selection;
   cursor?: string;
+}
+
+export interface ClientCoreGetCSVPreview {
+  type: 'clientCoreGetCSVPreview';
+  file: ArrayBuffer;
+  delimiter: number;
+  id: number;
+}
+
+export interface CoreClientGetCSVPreview {
+  type: 'coreClientGetCSVPreview';
+  id: number;
+  preview?: string[][];
+  error?: string;
 }
 
 export interface ClientCoreSetCodeCellValue {
@@ -1044,6 +1059,7 @@ export type ClientCoreMessage =
   | ClientCoreGetRenderCell
   | ClientCoreSetCommas
   | ClientCoreImportFile
+  | ClientCoreGetCSVPreview
   | ClientCoreDeleteCellValues
   | ClientCoreSetCodeCellValue
   | ClientCoreAddSheet
@@ -1106,6 +1122,7 @@ export type CoreClientMessage =
   | CoreClientSummarizeSelection
   | CoreClientGetRenderCell
   | CoreClientImportFile
+  | CoreClientGetCSVPreview
   | CoreClientAddSheet
   | CoreClientSheetInfo
   | CoreClientSheetFills

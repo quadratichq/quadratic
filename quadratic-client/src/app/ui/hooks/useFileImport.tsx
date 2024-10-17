@@ -94,10 +94,13 @@ export function useFileImport() {
     files = Array.from(files);
     const totalFiles = files.length;
 
-    let csvDelimiter: number | undefined = undefined;
-    const filesHasCsv = files.some((file) => getFileType(file) === 'csv');
-    if (filesHasCsv) {
-      csvDelimiter = await getCsvDelimiter();
+    let csvDelimiter: number | undefined = ','.charCodeAt(0);
+    let hasHeader: boolean | undefined = true;
+    const firstCSVFile = files.find((file) => getFileType(file) === 'csv');
+    if (firstCSVFile) {
+      const importSettings = await getCsvDelimiter(firstCSVFile);
+      csvDelimiter = importSettings.csvDelimiter;
+      hasHeader = importSettings.hasHeader;
     }
 
     setFilesImportProgressState(() => ({
@@ -166,6 +169,7 @@ export function useFileImport() {
             sheetId,
             location: insertAt,
             csvDelimiter,
+            hasHeader,
           });
         } else {
           throw new Error(`Error importing ${fileName}: Unsupported file type`);

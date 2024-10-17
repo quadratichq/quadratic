@@ -34,6 +34,7 @@ import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
+  ClientCoreGetCSVPreview,
   ClientCoreGetDisplayCell,
   ClientCoreGetEditCell,
   ClientCoreGetRenderCell,
@@ -46,6 +47,7 @@ import {
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
+  CoreClientGetCSVPreview,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetJwt,
@@ -532,6 +534,18 @@ class QuadraticCore {
       );
     });
   };
+
+  getCSVPreview(
+    args: Omit<ClientCoreGetCSVPreview, 'type' | 'id'>
+  ): Promise<Omit<CoreClientGetCSVPreview, 'type' | 'id'>> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = ({ preview, error }: CoreClientGetCSVPreview) => {
+        resolve({ preview, error });
+      };
+      this.send({ type: 'clientCoreGetCSVPreview', id, ...args }, args.file);
+    });
+  }
 
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);

@@ -20,6 +20,54 @@ use super::operation::Operation;
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
 impl GridController {
+    pub fn get_csv_preview(
+        &mut self,
+        file: Vec<u8>,
+        delimiter: Option<u8>,
+    ) -> Result<Vec<Vec<String>>> {
+        let error = |message: String| anyhow!("Error parsing CSV file: {}", message);
+        let file: &[u8] = match String::from_utf8_lossy(&file) {
+            std::borrow::Cow::Borrowed(_) => &file,
+            std::borrow::Cow::Owned(_) => {
+                if let Some(utf) = read_utf16(&file) {
+                    return self.get_csv_preview(utf.as_bytes().to_vec(), delimiter);
+                }
+                &file
+            }
+        };
+
+        let delimiter = match delimiter {
+            Some(d) => d,
+            None => {
+                // auto detect the delimiter, default to ',' if it fails
+                let cursor = Cursor::new(&file);
+                Sniffer::new()
+                    .sniff_reader(cursor)
+                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
+            }
+        };
+
+        let mut reader = csv::ReaderBuilder::new()
+            .delimiter(delimiter)
+            .has_headers(false)
+            .flexible(true)
+            .from_reader(file);
+
+        let mut preview = vec![];
+        for (i, entry) in reader.records().enumerate() {
+            // limit to 5 lines of preview
+            if i >= 5 {
+                break;
+            }
+            match entry {
+                Err(e) => return Err(error(format!("line {}: {}", i + 1, e))),
+                Ok(record) => preview.push(record.iter().map(|s| s.to_string()).collect()),
+            }
+        }
+
+        Ok(preview)
+    }
+
     /// Imports a CSV file into the grid.
     pub fn import_csv_operations(
         &mut self,
