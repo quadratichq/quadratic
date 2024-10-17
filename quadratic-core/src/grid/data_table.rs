@@ -296,14 +296,6 @@ impl DataTable {
         display_buffer: &Vec<u64>,
         pos: Pos,
     ) -> Result<&CellValue> {
-        let pos = if self.show_header && !self.header_is_first_row {
-            Pos {
-                x: pos.x,
-                y: pos.y + 1,
-            }
-        } else {
-            pos
-        };
         let y = display_buffer
             .get(pos.y as usize)
             .ok_or_else(|| anyhow!("Y {} out of bounds: {}", pos.y, display_buffer.len()))?;
@@ -320,14 +312,6 @@ impl DataTable {
     }
 
     pub fn display_value_at(&self, pos: Pos) -> Result<&CellValue> {
-        let pos = if self.show_header && !self.header_is_first_row {
-            Pos {
-                x: pos.x,
-                y: pos.y + 1,
-            }
-        } else {
-            pos
-        };
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
             None => Ok(self.value.get(pos.x as u32, pos.y as u32)?),
@@ -362,11 +346,6 @@ impl DataTable {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
-        let y = if self.show_header && !self.header_is_first_row {
-            y + 1
-        } else {
-            y
-        };
         if self.spill_error {
             Some(CellValue::Blank)
         } else {
@@ -751,5 +730,31 @@ pub mod test {
             data_table.output_sheet_rect(sheet_pos, true),
             SheetRect::from_numbers(1, 2, 10, 11, sheet_id)
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_headers_y() {
+        let mut sheet = Sheet::test();
+        let array = Array::from_str_vec(vec![vec!["first", "second"]], true).unwrap();
+        let t = DataTable {
+            kind: DataTableKind::Import(Import::new("test.csv".to_string())),
+            name: "Table 1".into(),
+            columns: None,
+            sort: None,
+            display_buffer: None,
+            value: Value::Array(array),
+            readonly: false,
+            spill_error: false,
+            last_modified: Utc::now(),
+            show_header: true,
+            header_is_first_row: true,
+        };
+        sheet.set_cell_value(
+            Pos { x: 1, y: 1 },
+            Some(CellValue::Import(Import::new("test.csv".to_string()))),
+        );
+        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(t));
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
     }
 }

@@ -213,7 +213,10 @@ impl Sheet {
                     let column = self.get_column(x);
                     for y in y_start..=y_end {
                         // We skip rendering the heading row because we render it separately.
-                        if y == code_rect.min.y && data_table.show_header {
+                        if y == code_rect.min.y
+                            && data_table.show_header
+                            && data_table.header_is_first_row
+                        {
                             continue;
                         }
                         let value = data_table.cell_value_at(
