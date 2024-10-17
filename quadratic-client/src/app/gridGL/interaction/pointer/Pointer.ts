@@ -145,12 +145,14 @@ export class Pointer {
 
   private pointerUp = (e: InteractionEvent): void => {
     if (this.isMoreThanOneTouch(e)) return;
+    const event = e.data.originalEvent as PointerEvent;
+
     this.pointerHtmlCells.pointerUp(e) ||
       this.pointerImages.pointerUp() ||
       this.pointerCellMoving.pointerUp() ||
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||
-      this.pointerDown.pointerUp();
+      this.pointerDown.pointerUp(event);
 
     this.updateCursor();
   };

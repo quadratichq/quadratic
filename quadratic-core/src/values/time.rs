@@ -438,6 +438,35 @@ impl Duration {
         (self.seconds / Self::DAY.seconds).fract() == 0.0
     }
 
+    /// Returns the number of years, rounded down to an integer.
+    pub fn years(self) -> i32 {
+        self.months.div_euclid(12)
+    }
+    /// Returns the number of months as an integer between `0` and `11`
+    /// (inclusive).
+    pub fn subyear_months(self) -> i32 {
+        self.months.rem_euclid(12)
+    }
+    /// Returns the number of days as an integer.
+    pub fn days(self) -> i64 {
+        (self.seconds / 86_400.0).floor() as i64
+    }
+    /// Returns the number of hours as an integer between `0` and `23`
+    /// (inclusive).
+    pub fn subday_hours(self) -> i32 {
+        ((self.seconds / 3_600.0).floor() as i32).rem_euclid(24)
+    }
+    /// Returns the number of minutes as an integer between `0` and `59`
+    /// (inclusive).
+    pub fn subhour_minutes(self) -> i32 {
+        ((self.seconds / 60.0).floor() as i32).rem_euclid(60)
+    }
+    /// Returns the number of seconds as a floating-point number between `0`
+    /// (inclusive) and `60.0` (exclusive).
+    pub fn subminute_seconds(self) -> f64 {
+        self.seconds.rem_euclid(60.0)
+    }
+
     /// Returns the largest unit that is still smaller than this duration, or
     /// `None` if the duration is zero. If the duration is less than the
     /// smallest known unit (one attosecond, at time of writing), then that
