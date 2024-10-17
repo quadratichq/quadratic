@@ -218,6 +218,7 @@ mod test {
                 Value::Single(CellValue::Image("image".to_string())),
                 false,
                 false,
+                true,
             )),
         );
 

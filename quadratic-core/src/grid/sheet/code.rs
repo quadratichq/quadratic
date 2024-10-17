@@ -285,6 +285,7 @@ mod test {
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
             false,
+            true,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(
@@ -324,6 +325,7 @@ mod test {
             Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
             false,
             false,
+            true,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(
@@ -416,6 +418,7 @@ mod test {
             Value::Array(Array::from(vec![vec!["1"], vec!["2"], vec!["3"]])),
             false,
             false,
+            true,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
@@ -452,6 +455,7 @@ mod test {
             Value::Array(Array::from(vec![vec!["1", "2", "3'"]])),
             false,
             false,
+            true,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));

@@ -223,10 +223,10 @@ impl Sheet {
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y));
 
-        // if CellValue::Code, then we need to get the value from data_tables
+        // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
         if let Some(cell_value) = cell_value {
             match cell_value {
-                CellValue::Code(_) => self
+                CellValue::Code(_) | CellValue::Import(_) => self
                     .data_tables
                     .get(&pos)
                     .and_then(|run| run.cell_value_at(0, 0)),

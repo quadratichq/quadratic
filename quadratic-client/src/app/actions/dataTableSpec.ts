@@ -20,7 +20,6 @@ const isDataTable = (): boolean => {
 };
 
 const isFirstRowHeader = (): boolean => {
-  console.log(pixiAppSettings.contextMenu.table);
   return !!pixiAppSettings.contextMenu.table?.first_row_header;
 };
 
@@ -65,8 +64,13 @@ export const dataTableSpec: DataTableSpec = {
     run: async () => {
       const table = pixiAppSettings.contextMenu?.table;
       if (table) {
-        console.log(table, 'remove first row to header');
-        quadraticCore.dataTableFirstRowAsHeader(sheets.sheet.id, table.x, table.y, true, sheets.getCursorPosition());
+        quadraticCore.dataTableFirstRowAsHeader(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          !isFirstRowHeader(),
+          sheets.getCursorPosition()
+        );
       }
     },
   },

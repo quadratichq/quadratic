@@ -5,7 +5,7 @@ import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtoms';
 import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { ControlledMenu } from '@szhsin/react-menu';
+import { ControlledMenu, MenuDivider } from '@szhsin/react-menu';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -28,7 +28,7 @@ export const TableContextMenu = () => {
   }, [onClose]);
 
   const ref = useRef<HTMLDivElement>(null);
-  console.log(contextMenu);
+
   return (
     <div
       className="absolute"
@@ -48,8 +48,9 @@ export const TableContextMenu = () => {
         menuStyle={{ padding: '0', color: 'inherit' }}
         menuClassName="bg-background"
       >
-        <MenuItemAction action={Action.FlattenDataTable} />
         <MenuItemAction action={Action.ToggleFirstRowAsHeaderDataTable} />
+        <MenuDivider />
+        <MenuItemAction action={Action.FlattenDataTable} />
       </ControlledMenu>
     </div>
   );

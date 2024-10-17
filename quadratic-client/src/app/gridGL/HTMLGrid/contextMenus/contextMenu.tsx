@@ -50,7 +50,6 @@ function MenuItemShadStyle({
     } else {
       checked = checkbox === true;
     }
-    console.log(checked);
     if (checked) {
       checkboxElement = <CheckBoxIcon className="-ml-3 mr-4" />;
     } else {

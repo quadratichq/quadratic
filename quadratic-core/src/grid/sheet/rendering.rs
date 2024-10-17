@@ -213,8 +213,10 @@ impl Sheet {
                     let column = self.get_column(x);
                     for y in y_start..=y_end {
                         // We skip rendering the heading row because we render it separately.
-                        // todo: we should not skip if headings are hidden
-                        if y == code_rect.min.y {
+                        if y == code_rect.min.y
+                            && data_table.show_header
+                            && data_table.header_is_first_row
+                        {
                             continue;
                         }
                         let value = data_table.cell_value_at(
@@ -227,7 +229,7 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            let special = if y == code_rect.min.y {
+                            let special = if y == code_rect.min.y && data_table.show_header {
                                 Some(JsRenderCellSpecial::TableHeading)
                             } else {
                                 None
@@ -444,7 +446,8 @@ impl Sheet {
             spill_error,
             name: data_table.name.clone(),
             column_names: data_table.send_columns(),
-            first_row_header: data_table.has_header,
+            first_row_header: data_table.header_is_first_row,
+            show_header: data_table.show_header,
         })
     }
 
@@ -489,7 +492,8 @@ impl Sheet {
                                 spill_error,
                                 name: data_table.name.clone(),
                                 column_names: data_table.send_columns(),
-                                first_row_header: data_table.has_header,
+                                first_row_header: data_table.header_is_first_row,
+                                show_header: data_table.show_header,
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -700,6 +704,7 @@ mod tests {
                 Value::Single(CellValue::Text("hello".to_string())),
                 false,
                 false,
+                true,
             )),
         );
         assert!(sheet.has_render_cells(rect));
@@ -918,6 +923,7 @@ mod tests {
             Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
             false,
             false,
+            false,
         );
 
         // render rect is larger than code rect
@@ -971,6 +977,7 @@ mod tests {
             DataTableKind::CodeRun(code_run),
             "Table 1".into(),
             Value::Single(CellValue::Number(1.into())),
+            false,
             false,
             false,
         );
@@ -1098,6 +1105,7 @@ mod tests {
             Value::Single(CellValue::Number(2.into())),
             false,
             false,
+            false,
         );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -1119,6 +1127,7 @@ mod tests {
                     value_index: 0,
                 }],
                 first_row_header: false,
+                show_header: true,
             })
         );
     }
@@ -1153,6 +1162,7 @@ mod tests {
             DataTableKind::CodeRun(code_run),
             "Table 1".into(),
             Value::Single(CellValue::Image(image.clone())),
+            false,
             false,
             false,
         );

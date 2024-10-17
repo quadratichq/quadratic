@@ -38,6 +38,7 @@ impl GridController {
                     output.inner,
                     false,
                     false,
+                    false,
                 );
                 self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
             }
@@ -267,6 +268,7 @@ mod test {
                 "Table 1",
                 Value::Single(CellValue::Number(12.into())),
                 false,
+                false,
                 false
             )
             .with_last_modified(result.last_modified),
@@ -337,6 +339,7 @@ mod test {
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
                 Value::Array(array),
+                false,
                 false,
                 false
             )

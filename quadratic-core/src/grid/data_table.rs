@@ -73,7 +73,8 @@ pub struct DataTableSort {
 pub struct DataTable {
     pub kind: DataTableKind,
     pub name: String,
-    pub has_header: bool,
+    pub header_is_first_row: bool,
+    pub show_header: bool,
     pub columns: Option<Vec<DataTableColumn>>,
     pub sort: Option<Vec<DataTableSort>>,
     pub display_buffer: Option<Vec<u64>>,
@@ -93,6 +94,7 @@ impl From<(Import, Array, &Sheet)> for DataTable {
             Value::Array(cell_values),
             false,
             false,
+            true,
         )
     }
 }
@@ -106,7 +108,8 @@ impl DataTable {
         name: &str,
         value: Value,
         spill_error: bool,
-        has_header: bool,
+        header_is_first_row: bool,
+        show_header: bool,
     ) -> Self {
         let readonly = match kind {
             DataTableKind::CodeRun(_) => true,
@@ -116,7 +119,8 @@ impl DataTable {
         let data_table = DataTable {
             kind,
             name: name.into(),
-            has_header,
+            header_is_first_row,
+            show_header,
             columns: None,
             sort: None,
             display_buffer: None,
@@ -133,11 +137,12 @@ impl DataTable {
         data_table
     }
 
-    /// Direcly creates a new DataTable with the given kind, value, spill_error, and columns.
+    /// Directly creates a new DataTable with the given kind, value, spill_error, and columns.
     pub fn new_raw(
         kind: DataTableKind,
         name: &str,
-        has_header: bool,
+        header_is_first_row: bool,
+        show_header: bool,
         columns: Option<Vec<DataTableColumn>>,
         sort: Option<Vec<DataTableSort>>,
         display_buffer: Option<Vec<u64>>,
@@ -148,7 +153,8 @@ impl DataTable {
         DataTable {
             kind,
             name: name.into(),
-            has_header,
+            header_is_first_row,
+            show_header,
             columns,
             sort,
             display_buffer,
@@ -167,7 +173,7 @@ impl DataTable {
 
     /// Takes the first row of the array and sets it as the column headings.
     pub fn apply_first_row_as_header(&mut self) {
-        self.has_header = true;
+        self.header_is_first_row = true;
 
         self.columns = match self.value {
             // Value::Array(ref mut array) => array.shift().ok().map(|array| {
@@ -183,7 +189,7 @@ impl DataTable {
     }
 
     pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
-        self.has_header = first_row_as_header;
+        self.header_is_first_row = first_row_as_header;
 
         match first_row_as_header {
             true => self.apply_first_row_as_header(),
@@ -264,7 +270,7 @@ impl DataTable {
         direction: SortDirection,
     ) -> Result<Option<DataTableSort>> {
         let old = self.prepend_sort(column_index, direction.clone());
-        let increment = |i| if self.has_header { i + 1 } else { i };
+        let increment = |i| if self.header_is_first_row { i + 1 } else { i };
 
         if let Some(ref mut sort) = self.sort.to_owned() {
             for sort in sort.iter().rev() {
@@ -282,7 +288,7 @@ impl DataTable {
                     .map(|(i, _)| increment(i) as u64)
                     .collect::<Vec<u64>>();
 
-                if self.has_header {
+                if self.header_is_first_row {
                     display_buffer.insert(0, 0);
                 }
 
@@ -364,7 +370,7 @@ impl DataTable {
         }
     }
 
-    /// Helper functtion to get the CodeRun from the DataTable.
+    /// Helper function to get the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun.
     pub fn code_run(&self) -> Option<&CodeRun> {
         match self.kind {
@@ -373,7 +379,7 @@ impl DataTable {
         }
     }
 
-    /// Helper functtion to deterime if the DataTable's CodeRun has an error.
+    /// Helper function to determine if the DataTable's CodeRun has an error.
     /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
     pub fn has_error(&self) -> bool {
         match self.kind {
@@ -382,7 +388,7 @@ impl DataTable {
         }
     }
 
-    /// Helper functtion to get the error in the CodeRun from the DataTable.
+    /// Helper function to get the error in the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun or if there is no error.
     pub fn get_error(&self) -> Option<RunError> {
         self.code_run()
@@ -506,7 +512,7 @@ impl DataTable {
         for (index, row) in array.rows().take(max).enumerate() {
             let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
 
-            if index == 0 && data_table.has_header {
+            if index == 0 && data_table.header_is_first_row {
                 builder.set_header(row);
             } else {
                 builder.push_record(row);
@@ -517,7 +523,7 @@ impl DataTable {
         table.with(Style::modern());
 
         // bold the headers if they exist
-        if data_table.has_header {
+        if data_table.header_is_first_row {
             [0..table.count_columns()]
                 .iter()
                 .enumerate()
@@ -605,7 +611,7 @@ pub mod test {
 
         let expected_values = Value::Array(values.clone().into());
         let expected_data_table =
-            DataTable::new(kind.clone(), "Table 1", expected_values, false, false)
+            DataTable::new(kind.clone(), "Table 1", expected_values, false, false, true)
                 .with_last_modified(data_table.last_modified);
         let expected_array_size = ArraySize::new(4, 4).unwrap();
         assert_eq!(data_table, expected_data_table);
@@ -623,7 +629,7 @@ pub mod test {
 
         // test column headings taken from first row
         let value = Value::Array(values.clone().into());
-        let mut data_table = DataTable::new(kind.clone(), "Table 1", value, false, true)
+        let mut data_table = DataTable::new(kind.clone(), "Table 1", value, false, true, true)
             .with_last_modified(data_table.last_modified);
 
         data_table.apply_first_row_as_header();
@@ -698,6 +704,7 @@ pub mod test {
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
+            true,
         );
 
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
@@ -730,6 +737,7 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             false,
             false,
+            true,
         );
 
         assert_eq!(data_table.output_size().w.get(), 10);
@@ -767,6 +775,7 @@ pub mod test {
             Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
             true,
             false,
+            true,
         );
         let sheet_pos = SheetPos::from((1, 2, sheet_id));
 
@@ -780,5 +789,37 @@ pub mod test {
             data_table.output_sheet_rect(sheet_pos, true),
             SheetRect::from_numbers(1, 2, 10, 11, sheet_id)
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_headers_y() {
+        let mut sheet = Sheet::test();
+        let array = Array::from_str_vec(vec![vec!["first", "second"]], true).unwrap();
+        let mut t = DataTable {
+            kind: DataTableKind::Import(Import::new("test.csv".to_string())),
+            name: "Table 1".into(),
+            columns: None,
+            sort: None,
+            display_buffer: None,
+            value: Value::Array(array),
+            readonly: false,
+            spill_error: false,
+            last_modified: Utc::now(),
+            show_header: true,
+            header_is_first_row: true,
+        };
+        sheet.set_cell_value(
+            Pos { x: 1, y: 1 },
+            Some(CellValue::Import(Import::new("test.csv".to_string()))),
+        );
+        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(t.clone()));
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("first".into()))
+        );
+
+        t.header_is_first_row = false;
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
     }
 }
