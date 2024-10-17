@@ -196,14 +196,14 @@ class InlineEditorHandler {
 
       if (arrowMode === undefined) {
         if (changeToFormula) {
-          arrowMode = value.length > 1 ? ArrowMode.NavigateText : ArrowMode.InsertCellRef;
+          arrowMode = value.length > 1 ? ArrowMode.NavigateText : ArrowMode.SelectCell;
         } else {
-          arrowMode = value ? ArrowMode.NavigateText : ArrowMode.InsertCellRef;
+          arrowMode = value ? ArrowMode.NavigateText : ArrowMode.SelectCell;
         }
       }
       pixiAppSettings.setInlineEditorState?.((prev) => ({
         ...prev,
-        insertCellRef: arrowMode === ArrowMode.InsertCellRef,
+        navigateText: arrowMode === ArrowMode.NavigateText,
       }));
 
       this.formatSummary = await quadraticCore.getCellFormatSummary(

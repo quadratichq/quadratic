@@ -1,6 +1,7 @@
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { ArrowMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isLinux } from '@/shared/utils/isLinux';
 import { isMac } from '@/shared/utils/isMac';
@@ -101,7 +102,7 @@ export class PointerDown {
           });
         } else {
           const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
-          doubleClickCell({ column, row, cell });
+          doubleClickCell({ column, row, cell, arrowMode: cell ? ArrowMode.NavigateText : ArrowMode.SelectCell });
         }
         this.active = false;
         return;

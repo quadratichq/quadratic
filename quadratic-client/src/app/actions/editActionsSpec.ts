@@ -175,7 +175,12 @@ export const editActionsSpec: EditActionSpec = {
             });
           } else {
             quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
-              doubleClickCell({ column: x, row: y, cell });
+              doubleClickCell({
+                column: x,
+                row: y,
+                cell,
+                arrowMode: cell ? ArrowMode.NavigateText : ArrowMode.SelectCell,
+              });
             });
           }
         });

@@ -88,7 +88,12 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
           });
         } else {
           quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
-            doubleClickCell({ column: x, row: y, cell });
+            doubleClickCell({
+              column: x,
+              row: y,
+              cell,
+              arrowMode: cell ? ArrowMode.NavigateText : ArrowMode.SelectCell,
+            });
           });
         }
       });
@@ -170,7 +175,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
           cell: '',
         });
       } else {
-        pixiAppSettings.changeInput(true, event.key);
+        pixiAppSettings.changeInput(true, event.key, ArrowMode.SelectCell);
       }
     });
     return true;

@@ -8,7 +8,7 @@ export interface InlineEditorState {
   left: number;
   top: number;
   lineHeight: number;
-  insertCellRef: boolean;
+  navigateText: boolean;
 }
 
 export const defaultInlineEditor: InlineEditorState = {
@@ -17,7 +17,7 @@ export const defaultInlineEditor: InlineEditorState = {
   left: 0,
   top: 0,
   lineHeight: 19,
-  insertCellRef: true,
+  navigateText: false,
 };
 
 export const inlineEditorAtom = atom({
@@ -29,7 +29,7 @@ export const inlineEditorAtom = atom({
         if (newValue.visible) {
           inlineEditorMonaco.focus();
         }
-        inlineEditorKeyboard.arrowMode = newValue.insertCellRef ? ArrowMode.InsertCellRef : ArrowMode.NavigateText;
+        inlineEditorKeyboard.arrowMode = newValue.navigateText ? ArrowMode.NavigateText : ArrowMode.SelectCell;
       });
     },
   ],

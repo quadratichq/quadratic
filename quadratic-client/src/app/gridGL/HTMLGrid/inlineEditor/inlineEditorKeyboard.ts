@@ -16,13 +16,13 @@ import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export enum ArrowMode {
-  InsertCellRef,
+  SelectCell,
   NavigateText,
 }
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
-  arrowMode: ArrowMode = ArrowMode.InsertCellRef;
+  arrowMode: ArrowMode = ArrowMode.SelectCell;
 
   private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
     // formula
@@ -31,7 +31,7 @@ class InlineEditorKeyboard {
         e.stopPropagation();
         e.preventDefault();
         keyboardPosition(e);
-      } else if (this.arrowMode === ArrowMode.InsertCellRef) {
+      } else if (this.arrowMode === ArrowMode.SelectCell) {
         const column = inlineEditorMonaco.getCursorColumn();
         e.stopPropagation();
         e.preventDefault();
@@ -48,7 +48,7 @@ class InlineEditorKeyboard {
     }
     // text
     else {
-      if (this.arrowMode === ArrowMode.InsertCellRef) {
+      if (this.arrowMode === ArrowMode.SelectCell) {
         e.stopPropagation();
         e.preventDefault();
         if (!(await this.handleValidationError())) {
@@ -73,7 +73,7 @@ class InlineEditorKeyboard {
       e.preventDefault();
       if (inlineEditorHandler.cursorIsMoving) {
         keyboardPosition(e);
-      } else if (this.arrowMode === ArrowMode.InsertCellRef) {
+      } else if (this.arrowMode === ArrowMode.SelectCell) {
         // If we're not moving and the formula doesn't want a cell reference,
         // close the editor. We can't just use "is the formula syntactically
         // valid" because many formulas are syntactically valid even though
@@ -98,7 +98,7 @@ class InlineEditorKeyboard {
     }
     // text
     else {
-      if (this.arrowMode === ArrowMode.InsertCellRef) {
+      if (this.arrowMode === ArrowMode.SelectCell) {
         e.stopPropagation();
         e.preventDefault();
         if (!(await this.handleValidationError())) {
@@ -128,7 +128,7 @@ class InlineEditorKeyboard {
   toggleArrowMode = () => {
     pixiAppSettings.setInlineEditorState?.((prev) => ({
       ...prev,
-      insertCellRef: !prev.insertCellRef,
+      navigateText: !prev.navigateText,
     }));
   };
 
@@ -150,6 +150,14 @@ class InlineEditorKeyboard {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {
       this.escapeBackspacePressed = false;
+    }
+
+    const position = inlineEditorMonaco.getPosition();
+    if (e.code === 'Equal' && position.lineNumber === 1 && position.column === 1) {
+      pixiAppSettings.setInlineEditorState?.((prev) => ({
+        ...prev,
+        navigateText: false,
+      }));
     }
 
     // Escape key

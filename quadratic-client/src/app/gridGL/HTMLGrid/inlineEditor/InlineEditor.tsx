@@ -26,7 +26,7 @@ export const InlineEditor = () => {
   // fix its positioning problem. There's probably a workaround, but it was too
   // much work.
 
-  const { visible, formula, left, top, insertCellRef } = useRecoilValue(inlineEditorAtom);
+  const { visible, formula, left, top, navigateText } = useRecoilValue(inlineEditorAtom);
 
   return (
     <div
@@ -61,7 +61,7 @@ export const InlineEditor = () => {
             }}
             onClick={(e) => inlineEditorHandler.openCodeEditor(e)}
           >
-            <SubtitlesOutlined sx={{ width: '18px', height: '18px', color: insertCellRef ? 'white' : 'black' }} />
+            <SubtitlesOutlined sx={{ width: '18px', height: '18px', color: navigateText ? 'black' : 'white' }} />
           </Button>
         </Tooltip>
       ) : null}
