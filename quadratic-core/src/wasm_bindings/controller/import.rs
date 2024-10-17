@@ -9,17 +9,6 @@ use crate::Pos;
 
 #[wasm_bindgen]
 impl GridController {
-    #[wasm_bindgen(js_name = "getCSVPreview")]
-    pub fn js_get_csv_preview(file: Vec<u8>, delimiter: Option<u8>) -> Result<JsValue, JsValue> {
-        match Self::get_csv_preview(file, delimiter) {
-            Ok(preview) => Ok(serde_wasm_bindgen::to_value(&preview)?),
-            Err(e) => Err(JsValue::from_str(&e.to_string())),
-        }
-    }
-}
-
-#[wasm_bindgen]
-impl GridController {
     #[wasm_bindgen(js_name = "importCsv")]
     pub fn js_import_csv(
         file: Vec<u8>,

@@ -557,21 +557,6 @@ class Core {
     }
   }
 
-  getCSVPreview(file: ArrayBuffer, delimiter: number): Promise<{ preview?: string[][]; error?: string }> {
-    return new Promise((resolve) => {
-      this.clientQueue.push(async () => {
-        try {
-          await initCore();
-          const preview = GridController.getCSVPreview(new Uint8Array(file), delimiter);
-          resolve({ preview });
-        } catch (error: unknown) {
-          console.error(error);
-          resolve({ error: error as string });
-        }
-      });
-    });
-  }
-
   deleteCellValues(selection: Selection, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
