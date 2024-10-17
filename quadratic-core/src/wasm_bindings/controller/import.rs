@@ -10,14 +10,18 @@ use crate::Pos;
 #[wasm_bindgen]
 impl GridController {
     #[wasm_bindgen(js_name = "importCsv")]
-    pub fn js_import_csv(file: Vec<u8>, file_name: &str) -> Result<GridController, JsValue> {
+    pub fn js_import_csv(
+        file: Vec<u8>,
+        file_name: &str,
+        delimiter: Option<u8>,
+    ) -> Result<GridController, JsValue> {
         let mut grid = Grid::new_blank();
         let sheet_id = grid.add_sheet(None);
         let insert_at = Pos { x: 0, y: 0 };
 
         let mut grid_controller = GridController::from_grid(grid, 0);
         grid_controller
-            .import_csv(sheet_id, file, file_name, insert_at, None)
+            .import_csv(sheet_id, file, file_name, insert_at, None, delimiter)
             .map_err(|e| e.to_string())?;
 
         Ok(grid_controller)
@@ -34,10 +38,11 @@ impl GridController {
         sheet_id: &str,
         insert_at: &str,
         cursor: Option<String>,
+        delimiter: Option<u8>,
     ) -> Result<(), JsValue> {
         let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
         let insert_at = serde_json::from_str::<Pos>(insert_at).map_err(|e| e.to_string())?;
-        self.import_csv(sheet_id, file, file_name, insert_at, cursor)
+        self.import_csv(sheet_id, file, file_name, insert_at, cursor, delimiter)
             .map_err(|e| e.to_string())?;
 
         Ok(())

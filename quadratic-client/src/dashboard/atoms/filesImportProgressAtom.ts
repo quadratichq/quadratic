@@ -36,7 +36,7 @@ export const filesImportProgressAtom = atom({
   key: 'filesImportProgress',
   default: defaultFilesImportProgressState,
   effects: [
-    ({ onSet, setSelf, getLoadable }) => {
+    ({ onSet, setSelf, getLoadable, resetSelf }) => {
       onSet((newValue, oldValue) => {
         if (oldValue instanceof DefaultValue) return;
 
@@ -122,12 +122,7 @@ export const filesImportProgressAtom = atom({
 
           // reset state
           if (!filesImportProgressListState.contents.show) {
-            setSelf({
-              importing: false,
-              currentFileIndex: undefined,
-              createNewFile: false,
-              files: [],
-            });
+            resetSelf();
           }
         }
       });

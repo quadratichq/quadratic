@@ -445,6 +445,8 @@ export interface ClientCoreImportFile {
   location?: Coordinate;
   cursor?: string;
   id: number;
+  csvDelimiter?: number;
+  hasHeading?: boolean;
 }
 
 export interface CoreClientImportFile {
