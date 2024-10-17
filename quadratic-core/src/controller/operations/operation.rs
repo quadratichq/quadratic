@@ -54,6 +54,7 @@ pub enum Operation {
     SortDataTable {
         sheet_pos: SheetPos,
         column_index: u32,
+        // TODO(ddimarai): rename this to `direction`
         sort_order: String,
     },
     DataTableFirstRowAsHeader {

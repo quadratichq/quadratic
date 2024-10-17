@@ -53,6 +53,7 @@ pub enum SortDirection {
     None,
 }
 
+// TODO(ddimarai): implement strum and remove this impl
 impl Display for SortDirection {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -272,6 +273,7 @@ impl DataTable {
         let old = self.prepend_sort(column_index, direction.clone());
         let increment = |i| if self.header_is_first_row { i + 1 } else { i };
 
+        // TODO(ddimaria): skip this if SortDirection::None
         if let Some(ref mut sort) = self.sort.to_owned() {
             for sort in sort.iter().rev() {
                 let mut display_buffer = self
