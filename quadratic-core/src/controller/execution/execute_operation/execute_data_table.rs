@@ -166,7 +166,6 @@ impl GridController {
             // Pull out the data table via a swap, removing it from the sheet
             let data_table = sheet.delete_data_table(data_table_pos)?;
 
-            let old_values = data_table.value.to_owned().into_array()?;
             let values = data_table.display_value()?.into_array()?;
             let ArraySize { w, h } = values.size();
 
@@ -178,8 +177,6 @@ impl GridController {
             let sheet_rect = SheetRect::new_pos_span(data_table_pos, max, sheet_id);
 
             let _ = sheet.set_cell_values(sheet_rect.into(), &values);
-            let old_cell_values = CellValues::from(old_values);
-            let cell_values = CellValues::from(values);
 
             // let the client know that the code cell changed to remove the styles
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
@@ -188,22 +185,9 @@ impl GridController {
 
             self.send_to_wasm(transaction, &sheet_rect)?;
 
-            let forward_operations = vec![Operation::SetCellValues {
-                sheet_pos,
-                values: cell_values,
-            }];
+            let forward_operations = vec![Operation::FlattenDataTable { sheet_pos }];
 
-            let reverse_operations = vec![
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_cell_values,
-                },
-                Operation::SetCodeRun {
-                    sheet_pos,
-                    code_run: Some(data_table),
-                    index: 0,
-                },
-            ];
+            let reverse_operations = vec![Operation::GridToDataTable { sheet_rect }];
 
             self.data_table_operations(
                 transaction,
@@ -249,17 +233,7 @@ impl GridController {
 
             self.send_to_wasm(transaction, &sheet_rect)?;
 
-            let forward_operations = vec![
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: CellValues::from(CellValue::Import(import)),
-                },
-                Operation::SetCodeRun {
-                    sheet_pos,
-                    code_run: Some(data_table),
-                    index: 0,
-                },
-            ];
+            let forward_operations = vec![Operation::GridToDataTable { sheet_rect }];
 
             let reverse_operations = vec![Operation::SetCellValues {
                 sheet_pos,
@@ -368,10 +342,16 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::user_actions::import::tests::{assert_simple_csv, simple_csv},
+        controller::{
+            execution::execute_operation::{
+                execute_forward_operations, execute_reverse_operations,
+            },
+            user_actions::import::tests::{assert_simple_csv, simple_csv},
+        },
         grid::SheetId,
         test_util::{
-            assert_cell_value_row, assert_data_table_cell_value_row, print_data_table, print_table,
+            assert_cell_value_row, assert_data_table_cell_value, assert_data_table_cell_value_row,
+            print_data_table, print_table,
         },
         SheetPos,
     };
@@ -383,7 +363,7 @@ mod tests {
         sheet_id: SheetId,
         pos: Pos,
         file_name: &'a str,
-    ) {
+    ) -> PendingTransaction {
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let op = Operation::FlattenDataTable { sheet_pos };
         let mut transaction = PendingTransaction::default();
@@ -393,15 +373,15 @@ mod tests {
         gc.execute_flatten_data_table(&mut transaction, op).unwrap();
 
         assert_eq!(transaction.forward_operations.len(), 1);
-        assert_eq!(transaction.reverse_operations.len(), 2);
-
-        gc.finalize_transaction(transaction);
+        assert_eq!(transaction.reverse_operations.len(), 1);
 
         assert!(gc.sheet(sheet_id).first_data_table_within(pos).is_err());
 
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
 
         print_table(&gc, sheet_id, Rect::new(0, 0, 2, 2));
+
+        transaction
     }
 
     #[track_caller]
@@ -423,26 +403,54 @@ mod tests {
         (gc, sheet_id, pos, file_name)
     }
 
+    #[track_caller]
+    pub(crate) fn assert_sorted_data_table<'a>(
+        gc: &'a GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        file_name: &'a str,
+    ) -> (&'a GridController, SheetId, Pos, &'a str) {
+        let first_row = vec!["Concord", "NH", "United States", "42605"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 1, first_row);
+
+        let second_row = vec!["Marlborough", "MA", "United States", "38334"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 2, second_row);
+
+        let third_row = vec!["Northbridge", "MA", "United States", "14061"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 3, third_row);
+
+        let last_row = vec!["Westborough", "MA", "United States", "29313"];
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 10, last_row);
+        (gc, sheet_id, pos, file_name)
+    }
+
     #[test]
     fn test_execute_set_data_table_at() {
-        let (mut gc, sheet_id, pos, _) = simple_csv();
-        let change_val_pos = Pos::new(1, 1);
+        let (mut gc, sheet_id, _, _) = simple_csv();
+        let x = 1;
+        let y = 1;
+        let change_val_pos = Pos::new(x, y);
         let sheet_pos = SheetPos::from((change_val_pos, sheet_id));
 
         let values = CellValue::Number(1.into()).into();
         let op = Operation::SetDataTableAt { sheet_pos, values };
         let mut transaction = PendingTransaction::default();
 
+        // the initial value from the csv
+        assert_data_table_cell_value(&gc, sheet_id, x, y, "MA");
+
         gc.execute_set_data_table_at(&mut transaction, op).unwrap();
 
-        assert_eq!(transaction.forward_operations.len(), 1);
-        assert_eq!(transaction.reverse_operations.len(), 1);
+        // expect the value to be "1"
+        assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
 
-        gc.finalize_transaction(transaction);
+        // undo, the value should be "MA" again
+        execute_reverse_operations(&mut gc, &transaction);
+        assert_data_table_cell_value(&gc, sheet_id, x, y, "MA");
 
-        let data_table = gc.sheet(sheet_id).data_table(pos).unwrap();
-        let expected = CellValue::Number(1.into());
-        assert_eq!(data_table.get_cell_for_formula(1, 1), expected);
+        // redo, the value should be "1" again
+        execute_forward_operations(&mut gc, &mut transaction);
+        assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
     }
 
     #[test]
@@ -451,9 +459,17 @@ mod tests {
 
         assert_simple_csv(&gc, sheet_id, pos, file_name);
 
-        flatten_data_table(&mut gc, sheet_id, pos, file_name);
+        let mut transaction = flatten_data_table(&mut gc, sheet_id, pos, file_name);
         print_table(&gc, sheet_id, Rect::new(0, 0, 2, 2));
 
+        assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
+
+        // undo, the value should be a data table again
+        execute_reverse_operations(&mut gc, &transaction);
+        assert_simple_csv(&gc, sheet_id, pos, file_name);
+
+        // redo, the value should be on the grid
+        execute_forward_operations(&mut gc, &mut transaction);
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
     }
 
@@ -469,12 +485,16 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.execute_grid_to_data_table(&mut transaction, op).unwrap();
 
-        // assert_eq!(transaction.forward_operations.len(), 1);
-        // assert_eq!(transaction.reverse_operations.len(), 2);
-
-        gc.finalize_transaction(transaction);
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 2));
 
+        assert_simple_csv(&gc, sheet_id, pos, file_name);
+
+        // undo, the value should be a data table again
+        execute_reverse_operations(&mut gc, &transaction);
+        assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
+
+        // redo, the value should be on the grid
+        execute_forward_operations(&mut gc, &mut transaction);
         assert_simple_csv(&gc, sheet_id, pos, file_name);
     }
 
@@ -495,22 +515,14 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.execute_sort_data_table(&mut transaction, op).unwrap();
 
-        // assert_eq!(transaction.forward_operations.len(), 1);
-        // assert_eq!(transaction.reverse_operations.len(), 2);
-
-        gc.finalize_transaction(transaction);
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
-        let first_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 1, first_row);
+        assert_sorted_data_table(&gc, sheet_id, pos, "simple.csv");
 
-        let second_row = vec!["Marlborough", "MA", "United States", "38334"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 2, second_row);
+        // undo, the value should be a data table again
+        execute_reverse_operations(&mut gc, &transaction);
 
-        let third_row = vec!["Northbridge", "MA", "United States", "14061"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 3, third_row);
-
-        let last_row = vec!["Westborough", "MA", "United States", "29313"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 10, last_row);
+        // redo, the value should be on the grid
+        execute_forward_operations(&mut gc, &mut transaction);
     }
 }

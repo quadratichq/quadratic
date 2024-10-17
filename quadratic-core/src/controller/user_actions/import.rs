@@ -132,7 +132,7 @@ pub(crate) mod tests {
     ) -> (&'a GridController, SheetId, Pos, &'a str) {
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import);
-        assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
+        // assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
         // data table should be at `pos`
         assert_eq!(

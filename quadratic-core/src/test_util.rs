@@ -226,7 +226,7 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, rect: Re
 pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rect: Rect) {
     if let Some(sheet) = grid_controller.try_sheet(sheet_id) {
         let data_table = sheet.data_table(rect.min).unwrap();
-        println!("Data table: {:?}", data_table);
+
         let max = rect.max.y - rect.min.y;
         crate::grid::data_table::test::pretty_print_data_table(
             data_table,
