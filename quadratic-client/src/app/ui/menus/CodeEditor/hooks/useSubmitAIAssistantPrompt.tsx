@@ -8,6 +8,7 @@ import {
   aiAssistantMessagesAtom,
   aiAssistantPromptAtom,
   codeEditorCodeCellAtom,
+  codeEditorWaitingForEditorClose,
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
@@ -42,7 +43,12 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, abortController);
 
         if (codeCell) {
-          set(codeEditorCodeCellAtom, codeCell);
+          set(codeEditorWaitingForEditorClose, {
+            codeCell,
+            showCellTypeMenu: false,
+            initialCode: '',
+            inlineEditor: false,
+          });
         } else {
           codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         }
