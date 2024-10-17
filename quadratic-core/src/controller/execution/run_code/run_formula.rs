@@ -269,7 +269,7 @@ mod test {
                 Value::Single(CellValue::Number(12.into())),
                 false,
                 false,
-                true
+                false
             )
             .with_last_modified(result.last_modified),
         );
@@ -341,7 +341,7 @@ mod test {
                 Value::Array(array),
                 false,
                 false,
-                true
+                false
             )
             .with_last_modified(result.last_modified),
         );
