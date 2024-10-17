@@ -25,7 +25,7 @@ import {
 } from '@/app/quadratic-core-types';
 import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
-import { ClientCoreGetJwt, ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
+import { ClientCoreGetJwt, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreJavascript } from './coreJavascript';
 import { coreMultiplayer } from './coreMultiplayer';
@@ -136,11 +136,11 @@ class CoreClient {
 
     switch (e.data.type) {
       case 'clientCoreLoad':
-        offline.init(e.data.fileId);
+        await offline.init(e.data.fileId);
         this.send({
           type: 'coreClientLoad',
           id: e.data.id,
-          ...(await core.loadFile(e.data as ClientCoreLoad, e.ports[0])),
+          ...(await core.loadFile(e.data, e.ports[0])),
         });
         return;
 

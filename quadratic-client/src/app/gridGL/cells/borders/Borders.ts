@@ -177,6 +177,8 @@ export class Borders extends Container {
     this.cellLines.removeChildren();
     this.sheetLines.removeChildren();
 
+    pixiApp.viewport.dirty = true;
+
     const borders = this.borders;
     if (!borders) return;
 

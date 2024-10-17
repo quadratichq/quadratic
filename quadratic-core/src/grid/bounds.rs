@@ -92,6 +92,24 @@ impl GridBounds {
             GridBounds::NonEmpty(rect) => rect.extend_y(y),
         }
     }
+
+    pub fn first_column(&self) -> Option<i64> {
+        self.to_bounds_rect().map(|rect| rect.x)
+    }
+
+    pub fn last_column(&self) -> Option<i64> {
+        self.to_bounds_rect()
+            .map(|rect| rect.x + rect.width as i64 - 1)
+    }
+
+    pub fn first_row(&self) -> Option<i64> {
+        self.to_bounds_rect().map(|rect| rect.y)
+    }
+
+    pub fn last_row(&self) -> Option<i64> {
+        self.to_bounds_rect()
+            .map(|rect| rect.y + rect.height as i64 - 1)
+    }
 }
 
 #[cfg(test)]
@@ -133,5 +151,45 @@ mod test {
         let mut grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
         grid_bounds.extend_y(5);
         assert_eq!(grid_bounds, GridBounds::NonEmpty(Rect::new(1, 2, 3, 5)));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_first_column() {
+        let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
+        assert_eq!(grid_bounds.first_column(), Some(1));
+
+        let empty_bounds = GridBounds::Empty;
+        assert_eq!(empty_bounds.first_column(), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_last_column() {
+        let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
+        assert_eq!(grid_bounds.last_column(), Some(3));
+
+        let empty_bounds = GridBounds::Empty;
+        assert_eq!(empty_bounds.last_column(), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_first_row() {
+        let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
+        assert_eq!(grid_bounds.first_row(), Some(2));
+
+        let empty_bounds = GridBounds::Empty;
+        assert_eq!(empty_bounds.first_row(), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_last_row() {
+        let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
+        assert_eq!(grid_bounds.last_row(), Some(4));
+
+        let empty_bounds = GridBounds::Empty;
+        assert_eq!(empty_bounds.last_row(), None);
     }
 }
