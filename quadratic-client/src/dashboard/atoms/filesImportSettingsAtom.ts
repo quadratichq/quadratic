@@ -2,7 +2,7 @@ import { atom } from 'recoil';
 
 export interface FileImportSettings {
   csvDelimiter?: number;
-  hasHeader?: boolean;
+  hasHeading?: boolean;
 }
 
 interface FilesImportSettingsState {

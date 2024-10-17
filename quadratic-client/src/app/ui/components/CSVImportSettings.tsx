@@ -15,11 +15,11 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
-export const ImportSettings = () => {
+export const CSVImportSettings = () => {
   const [csvDelimiter, setCsvDelimiter] = useState<string>(',');
   const [customCsvDelimiter, setCustomCsvDelimiter] = useState<string>('');
   const [csvPreview, setCsvPreview] = useState<string[][] | undefined>(undefined);
-  const [hasHeader, setHasHeader] = useState<boolean>(true);
+  const [hasHeading, setHasHeading] = useState<boolean>(true);
   const { csvFile, callbackFn } = useRecoilValue(filesImportSettingsAtom);
 
   const handleSubmit = useRecoilCallback(
@@ -29,7 +29,7 @@ export const ImportSettings = () => {
           const delimiter = csvDelimiter === 'custom' ? customCsvDelimiter : csvDelimiter;
           prev.callbackFn?.({
             csvDelimiter: delimiter.length === 1 ? delimiter.charCodeAt(0) : undefined,
-            hasHeader,
+            hasHeading,
           });
 
           return {
@@ -37,7 +37,7 @@ export const ImportSettings = () => {
           };
         });
       },
-    [csvDelimiter, customCsvDelimiter, hasHeader, setCsvDelimiter, setCustomCsvDelimiter]
+    [csvDelimiter, customCsvDelimiter, hasHeading, setCsvDelimiter, setCustomCsvDelimiter]
   );
 
   const inputRef = useCallback((node: HTMLInputElement) => {
@@ -146,12 +146,12 @@ export const ImportSettings = () => {
 
         <div className="flex flex-row items-center gap-2">
           <Checkbox
-            checked={hasHeader}
+            checked={hasHeading}
             onCheckedChange={(checked) => {
               if (checked === 'indeterminate') {
-                setHasHeader(false);
+                setHasHeading(false);
               } else {
-                setHasHeader(checked);
+                setHasHeading(checked);
               }
             }}
           />
@@ -161,7 +161,8 @@ export const ImportSettings = () => {
         {csvPreview && (
           <Table>
             <TableCaption>CSV preview</TableCaption>
-            {hasHeader && csvPreview.length > 0 && (
+
+            {hasHeading && csvPreview.length > 0 && (
               <TableHeader>
                 <TableRow>
                   {csvPreview[0].map((cell, i) => (
@@ -170,14 +171,16 @@ export const ImportSettings = () => {
                 </TableRow>
               </TableHeader>
             )}
+
             <TableBody>
-              {csvPreview.slice(hasHeader ? 1 : 0).map((row, i) => (
-                <TableRow key={`row-${i}-${row[0]}`}>
-                  {row.map((cell, j) => (
-                    <TableCell key={`cell-${j}-${cell}`}>{cell}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
+              {csvPreview.length > 0 &&
+                csvPreview.slice(hasHeading ? 1 : 0).map((row, i) => (
+                  <TableRow key={`row-${i}-${row[0]}`}>
+                    {row.map((cell, j) => (
+                      <TableCell key={`cell-${j}-${cell}`}>{cell}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         )}

@@ -559,8 +559,9 @@ class Core {
 
   getCSVPreview(file: ArrayBuffer, delimiter: number): Promise<{ preview?: string[][]; error?: string }> {
     return new Promise((resolve) => {
-      this.clientQueue.push(() => {
+      this.clientQueue.push(async () => {
         try {
+          await initCore();
           const preview = GridController.getCSVPreview(new Uint8Array(file), delimiter);
           resolve({ preview });
         } catch (error: unknown) {

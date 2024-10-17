@@ -1,4 +1,4 @@
-import { ImportSettings } from '@/app/ui/components/ImportSettings';
+import { CSVImportSettings } from '@/app/ui/components/CSVImportSettings';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
@@ -231,7 +231,7 @@ export const Component = () => {
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
         <NewFileDialogWrapper />
-        <ImportSettings />
+        <CSVImportSettings />
         <ImportProgressList />
       </TooltipProvider>
     </RecoilRoot>

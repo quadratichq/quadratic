@@ -446,7 +446,7 @@ export interface ClientCoreImportFile {
   cursor?: string;
   id: number;
   csvDelimiter?: number;
-  hasHeader?: boolean;
+  hasHeading?: boolean;
 }
 
 export interface CoreClientImportFile {

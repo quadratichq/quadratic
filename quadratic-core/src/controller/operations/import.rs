@@ -468,6 +468,53 @@ mod test {
 
     #[test]
     #[parallel]
+    fn test_get_csv_preview_with_valid_csv() {
+        let mut controller = GridController::new();
+        let csv_data = b"header1,header2\nvalue1,value2\nvalue3,value4";
+        let result = controller.get_csv_preview(csv_data.to_vec(), Some(b','));
+        assert!(result.is_ok());
+        let preview = result.unwrap();
+        assert_eq!(preview.len(), 3);
+        assert_eq!(preview[0], vec!["header1", "header2"]);
+        assert_eq!(preview[1], vec!["value1", "value2"]);
+        assert_eq!(preview[2], vec!["value3", "value4"]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_csv_preview_with_auto_delimiter() {
+        let mut controller = GridController::new();
+        let csv_data = b"header1\theader2\nvalue1\tvalue2\nvalue3\tvalue4";
+        let result = controller.get_csv_preview(csv_data.to_vec(), None);
+        assert!(result.is_ok());
+        let preview = result.unwrap();
+        assert_eq!(preview.len(), 3);
+        assert_eq!(preview[0], vec!["header1", "header2"]);
+        assert_eq!(preview[1], vec!["value1", "value2"]);
+        assert_eq!(preview[2], vec!["value3", "value4"]);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_get_csv_preview_with_utf16() {
+        let mut controller = GridController::new();
+        let utf16_data: Vec<u8> = vec![
+            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
+            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
+            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
+            0x65, 0x00, 0x32, 0x00,
+        ];
+        let result = controller.get_csv_preview(utf16_data, Some(b','));
+        assert!(result.is_ok());
+        let preview = result.unwrap();
+        assert_eq!(preview.len(), 2);
+        assert_eq!(preview[0], vec!["header1", "header2"]);
+        assert_eq!(preview[1], vec!["value1", "value2"]);
+    }
+
+    #[test]
+    #[parallel]
     fn transmute_u8_to_u16() {
         let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
         assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
