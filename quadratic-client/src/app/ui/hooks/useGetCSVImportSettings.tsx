@@ -1,21 +1,24 @@
 import { FileImportSettings, filesImportSettingsAtom } from '@/dashboard/atoms/filesImportSettingsAtom';
 import { useRecoilCallback } from 'recoil';
 
-export const useGetCsvDelimiter = () => {
-  const getCsvDelimiter = useRecoilCallback(
+export const useGetCSVImportSettings = () => {
+  const getCSVImportSettings = useRecoilCallback(
     ({ set }) =>
       (csvFile: File): Promise<FileImportSettings> => {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           set(filesImportSettingsAtom, () => ({
-            callbackFn: (settings) => {
+            csvFile: csvFile,
+            submitFn: (settings) => {
               resolve(settings);
             },
-            csvFile: csvFile,
+            cancelFn: () => {
+              reject(new Error('Cancelled'));
+            },
           }));
         });
       },
     []
   );
 
-  return { getCsvDelimiter };
+  return { getCSVImportSettings };
 };

@@ -1,6 +1,6 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
-import { useGetCsvDelimiter } from '@/app/ui/hooks/useGetCsvDelimiter';
+import { useGetCSVImportSettings } from '@/app/ui/hooks/useGetCSVImportSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
@@ -17,7 +17,7 @@ export function useFileImport() {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
   const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
-  const { getCsvDelimiter } = useGetCsvDelimiter();
+  const { getCSVImportSettings } = useGetCSVImportSettings();
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
@@ -98,9 +98,16 @@ export function useFileImport() {
     let hasHeading: boolean | undefined = true;
     const firstCSVFile = files.find((file) => getFileType(file) === 'csv');
     if (firstCSVFile) {
-      const importSettings = await getCsvDelimiter(firstCSVFile);
-      csvDelimiter = importSettings.csvDelimiter;
-      hasHeading = importSettings.hasHeading;
+      try {
+        const importSettings = await getCSVImportSettings(firstCSVFile);
+        csvDelimiter = importSettings.csvDelimiter;
+        hasHeading = importSettings.hasHeading;
+      } catch (e) {
+        if (!(e instanceof Error && e.message === 'Cancelled')) {
+          console.error(e);
+        }
+        return;
+      }
     }
 
     setFilesImportProgressState(() => ({

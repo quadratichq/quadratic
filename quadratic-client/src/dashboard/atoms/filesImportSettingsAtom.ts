@@ -6,13 +6,15 @@ export interface FileImportSettings {
 }
 
 interface FilesImportSettingsState {
-  callbackFn?: (settings: FileImportSettings) => void;
   csvFile?: File;
+  submitFn?: (settings: FileImportSettings) => void;
+  cancelFn?: () => void;
 }
 
 const defaultFilesImportSettingsState: FilesImportSettingsState = {
-  callbackFn: undefined,
   csvFile: undefined,
+  submitFn: undefined,
+  cancelFn: undefined,
 };
 
 export const filesImportSettingsAtom = atom({

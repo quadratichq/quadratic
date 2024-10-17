@@ -14,34 +14,46 @@ import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/shadcn/ui/table';
 import { useCallback, useEffect, useState } from 'react';
-import { useRecoilCallback, useRecoilValue, useResetRecoilState } from 'recoil';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 export const CSVImportSettings = () => {
   const [csvDelimiter, setCsvDelimiter] = useState<string>(',');
   const [customCsvDelimiter, setCustomCsvDelimiter] = useState<string>('');
   const [csvPreview, setCsvPreview] = useState<string[][] | undefined>(undefined);
   const [hasHeading, setHasHeading] = useState<boolean>(true);
-  const { csvFile, callbackFn } = useRecoilValue(filesImportSettingsAtom);
+  const { csvFile, submitFn } = useRecoilValue(filesImportSettingsAtom);
 
   const handleSubmit = useRecoilCallback(
     ({ set }) =>
       () => {
         set(filesImportSettingsAtom, (prev) => {
           const delimiter = csvDelimiter === 'custom' ? customCsvDelimiter : csvDelimiter;
-          prev.callbackFn?.({
+          prev.submitFn?.({
             csvDelimiter: delimiter.length === 1 ? delimiter.charCodeAt(0) : undefined,
             hasHeading,
           });
 
           return {
-            callbackFn: undefined,
+            csvFile: undefined,
+            submitFn: undefined,
+            cancelFn: undefined,
           };
         });
       },
     [csvDelimiter, customCsvDelimiter, hasHeading, setCsvDelimiter, setCustomCsvDelimiter]
   );
 
-  const handleCancel = useResetRecoilState(filesImportSettingsAtom);
+  const handleCancel = useRecoilCallback(({ set }) => () => {
+    set(filesImportSettingsAtom, (prev) => {
+      prev.cancelFn?.();
+
+      return {
+        csvFile: undefined,
+        submitFn: undefined,
+        cancelFn: undefined,
+      };
+    });
+  });
 
   const inputRef = useCallback((node: HTMLInputElement) => {
     if (node) {
@@ -77,11 +89,23 @@ export const CSVImportSettings = () => {
     return () => abortController.abort();
   }, [getPreview]);
 
-  if (!callbackFn) return null;
+  if (!submitFn) return null;
 
   return (
     <AlertDialog open={true}>
-      <AlertDialogContent>
+      <AlertDialogContent
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            handleSubmit();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            handleCancel();
+          }
+        }}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle>Import settings</AlertDialogTitle>
         </AlertDialogHeader>
@@ -94,15 +118,7 @@ export const CSVImportSettings = () => {
               required={true}
               onValueChange={(value) => setCsvDelimiter(value)}
             >
-              <SelectTrigger
-                autoFocus={csvDelimiter !== 'custom'}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSubmit();
-                  }
-                }}
-              >
+              <SelectTrigger autoFocus={csvDelimiter !== 'custom'}>
                 <SelectValue placeholder="Select a delimiter" />
               </SelectTrigger>
               <SelectContent>
