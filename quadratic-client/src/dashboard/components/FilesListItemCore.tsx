@@ -9,7 +9,9 @@ import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
 export function FilesListItemCore({
   name,
   description,
+  filterMatch,
   filterValue,
+  setFilterValue,
   creator,
   hasNetworkError,
   isShared,
@@ -18,14 +20,16 @@ export function FilesListItemCore({
 }: {
   name: string;
   description: string;
+  filterMatch?: 'name' | 'creator';
   filterValue: string;
+  setFilterValue: Function;
   viewPreferences: ViewPreferences;
   creator?: { name?: string; picture?: string };
   hasNetworkError?: boolean;
   isShared?: boolean;
   actions?: ReactNode;
 }) {
-  const __html = filterValue ? highlightMatchingString(name, filterValue) : name;
+  const __html = filterMatch === 'name' ? highlightMatchingString(name, filterValue) : name;
   const isGrid = viewPreferences.layout === Layout.Grid;
 
   return (
@@ -52,9 +56,22 @@ export function FilesListItemCore({
         </div>
         {creator && creator.name && (
           <TooltipPopover label={`Created by ${creator.name}`}>
-            <Avatar alt={creator.name} src={creator.picture}>
-              {creator.name[0]}
-            </Avatar>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setFilterValue(creator.name);
+              }}
+              className={cn(
+                'relative mr-[2px]',
+                filterMatch === 'creator' &&
+                  "after:absolute after:left-0 after:top-0 after:h-full after:w-full after:rounded-full  after:outline after:outline-4 after:outline-yellow-200 after:content-['']"
+              )}
+            >
+              <Avatar alt={creator.name} src={creator.picture}>
+                {creator.name[0]}
+              </Avatar>
+            </button>
           </TooltipPopover>
         )}
       </div>
