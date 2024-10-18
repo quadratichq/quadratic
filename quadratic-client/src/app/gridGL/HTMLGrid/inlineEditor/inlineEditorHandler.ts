@@ -357,8 +357,8 @@ class InlineEditorHandler {
     pixiAppSettings.setInlineEditorState((prev) => ({
       ...prev,
       left: this.x,
-      top: this.y + OPEN_SANS_FIX.y / 3,
-      lineHeight: this.height,
+      top: this.y,
+      height: this.height,
     }));
 
     pixiApp.cursor.dirty = true;
@@ -501,8 +501,7 @@ class InlineEditorHandler {
   };
 
   // Handler for the click for the expand code editor button.
-  openCodeEditor = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    e.stopPropagation();
+  openCodeEditor = () => {
     if (!pixiAppSettings.setCodeEditorState) {
       throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
     }

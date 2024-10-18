@@ -16,6 +16,7 @@ export const FILL_ALPHA = 0.1;
 const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
+const INLINE_NAVIGATE_TEXT_INDICATOR_SIZE = 6;
 
 export type CursorCell = { x: number; y: number; width: number; height: number };
 const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
@@ -97,8 +98,8 @@ export class Cursor extends Container {
       if (inlineShowing) {
         x = inlineEditorHandler.x - CURSOR_THICKNESS;
         y = inlineEditorHandler.y - CURSOR_THICKNESS;
-        width = inlineEditorHandler.width + CURSOR_THICKNESS * 2;
-        height = inlineEditorHandler.height + CURSOR_THICKNESS * 2;
+        width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * 2, width);
+        height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * 2, height);
       } else {
         // we have to wait until react renders #cell-edit to properly calculate the width
         setTimeout(() => (this.dirty = true), 0);
@@ -205,11 +206,27 @@ export class Cursor extends Container {
     const inlineShowing = inlineEditorHandler.getShowing();
     if (inlineEditorHandler.formula && inlineShowing && sheets.sheet.id === inlineShowing.sheetId) {
       color = colors.cellColorUserFormula;
-      offsets = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
-      offsets.x = inlineEditorHandler.x - CURSOR_THICKNESS * 0.5;
-      offsets.y = inlineEditorHandler.y - CURSOR_THICKNESS * 0.5;
-      offsets.width = inlineEditorHandler.width + CURSOR_THICKNESS;
-      offsets.height = inlineEditorHandler.height + CURSOR_THICKNESS;
+      const { width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
+      offsets = {
+        x: inlineEditorHandler.x - CURSOR_THICKNESS * 0.5,
+        y: inlineEditorHandler.y - CURSOR_THICKNESS * 0.5,
+        width: Math.max(inlineEditorHandler.width + CURSOR_THICKNESS, width),
+        height: Math.max(inlineEditorHandler.height + CURSOR_THICKNESS, height),
+      };
+
+      this.graphics.lineStyle({
+        width: CURSOR_THICKNESS * 1.5,
+        color,
+        alpha: CURSOR_INPUT_ALPHA,
+        alignment: 1,
+      });
+      this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
+
+      const indicatorHalfSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE / 2;
+      this.graphics.moveTo(offsets.x + offsets.width + indicatorHalfSize, offsets.y);
+      this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize + 20, offsets.y);
+      this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize + 20, offsets.y + offsets.height);
+      this.graphics.lineTo(offsets.x + offsets.width + indicatorHalfSize, offsets.y + offsets.height);
     } else {
       const { codeEditorState } = pixiAppSettings;
       const codeCell = codeEditorState.codeCell;
@@ -226,13 +243,43 @@ export class Cursor extends Container {
           ? colors.cellColorUserJavascript
           : colors.independence;
     }
+
     if (!color || !offsets) return;
     this.graphics.lineStyle({
-      width: CURSOR_THICKNESS * 1,
+      width: CURSOR_THICKNESS,
       color,
-      alignment: 0.5,
+      alignment: 0,
     });
     this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
+  }
+
+  private drawInlineNavigateTextModeIndicator() {
+    const inlineShowing = inlineEditorHandler.getShowing();
+    if (!inlineShowing) return;
+
+    const { visible, navigateText, formula } = pixiAppSettings.inlineEditorState;
+    if (!visible || !navigateText) return;
+
+    const sheet = sheets.sheet;
+    const cell = sheet.cursor.cursorPosition;
+    let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
+    width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
+    height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
+    const color = formula ? colors.cellColorUserFormula : colors.cursorCell;
+    const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
+    const halfSize = indicatorSize / 2;
+    const corners = [
+      { x: x - halfSize, y: y - halfSize },
+      { x: x + width - halfSize, y: y - halfSize },
+      { x: x - halfSize, y: y + height - halfSize },
+      { x: x + width - halfSize, y: y + height - halfSize },
+    ];
+    this.graphics.lineStyle(0);
+    this.graphics.beginFill(color);
+    corners.forEach((corner) => {
+      this.graphics.drawRect(corner.x, corner.y, indicatorSize, indicatorSize);
+    });
+    this.graphics.endFill();
   }
 
   // Besides the dirty flag, we also need to update the cursor when the viewport
@@ -251,6 +298,8 @@ export class Cursor extends Container {
         this.drawCursor();
       }
       this.drawCodeCursor();
+
+      this.drawInlineNavigateTextModeIndicator();
 
       if (!pixiAppSettings.input.show) {
         this.drawMultiCursor();

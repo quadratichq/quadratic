@@ -3,11 +3,13 @@
 //! in inlineEditorHandler.ts.
 
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { colors } from '@/app/theme/colors';
+import { SubtitlesIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { SubtitlesOutlined } from '@mui/icons-material';
-import { Tooltip } from '@mui/material';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 import './inlineEditorStyles.scss';
@@ -21,12 +23,12 @@ export const InlineEditor = () => {
     }
   }, []);
 
-  // Note: I switched to using material's Tooltip because radix-ui's Tooltip did
-  // not keep position during viewport changes. Even forcing a remount did not
-  // fix its positioning problem. There's probably a workaround, but it was too
-  // much work.
-
-  const { visible, formula, left, top, navigateText } = useRecoilValue(inlineEditorAtom);
+  let { visible, formula, left, top, height } = useRecoilValue(inlineEditorAtom);
+  height += CURSOR_THICKNESS * 1.5;
+  const inlineShowing = inlineEditorHandler.getShowing();
+  if (inlineShowing) {
+    height = Math.max(height, sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y).height);
+  }
 
   return (
     <div
@@ -44,26 +46,28 @@ export const InlineEditor = () => {
       <div id="cell-edit"></div>
 
       {visible && formula ? (
-        <Tooltip title="Open Formula in multi-line code editor">
+        <TooltipPopover label="Open Formula in multi-line code editor">
           <Button
             variant="ghost"
             style={{
+              boxSizing: 'content-box',
               position: 'absolute',
               display: 'flex',
               alignItems: 'center',
               borderRadius: '0',
               padding: '0',
-              marginTop: '-0.23px',
-              width: '23px',
-              height: '23.23px',
+              height: `${height}px`,
               right: '-24px',
               backgroundColor: colors.languageFormula,
             }}
-            onClick={(e) => inlineEditorHandler.openCodeEditor(e)}
+            onClick={(e) => {
+              e.stopPropagation();
+              inlineEditorHandler.openCodeEditor();
+            }}
           >
-            <SubtitlesOutlined sx={{ width: '18px', height: '18px', color: navigateText ? 'black' : 'white' }} />
+            <SubtitlesIcon style={{ color: 'white' }} />
           </Button>
-        </Tooltip>
+        </TooltipPopover>
       ) : null}
     </div>
   );
