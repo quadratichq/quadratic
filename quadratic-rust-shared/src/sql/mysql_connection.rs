@@ -181,12 +181,8 @@ impl Connection for MySqlConnection {
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
+            "TEXT" | "VARCHAR" | "VARBINARY" | "CHAR" | "ENUM" => {
                 ArrowType::Utf8(convert_mysql_type!(String, row, index))
-            }
-            "VARBINARY" => {
-                let bytes: Vec<u8> = convert_mysql_type!(Vec<u8>, row, index);
-                ArrowType::Utf8(String::from_utf8_lossy(&bytes).into_owned())
             }
             "TINYINT" => ArrowType::Int8(convert_mysql_type!(i8, row, index)),
             "SMALLINT" => ArrowType::Int16(convert_mysql_type!(i16, row, index)),
