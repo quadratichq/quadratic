@@ -9,7 +9,7 @@ import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { Container, Point } from 'pixi.js';
+import { Container, Point, Rectangle } from 'pixi.js';
 
 export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
@@ -198,5 +198,10 @@ export class Tables extends Container<Table> {
       width: table.tableNameBounds.width,
       height: table.tableNameBounds.height,
     };
+  }
+
+  // Intersects a column/row rectangle
+  intersects(rectangle: Rectangle): boolean {
+    return this.children.some((table) => table.intersects(rectangle));
   }
 }

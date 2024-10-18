@@ -34,12 +34,11 @@ export const GridContextMenu = () => {
   const ref = useRef<HTMLDivElement>(null);
 
   const [columnRowAvailable, setColumnRowAvailable] = useState(false);
-  const [multiSelectOnly, setMultiSelectOnly] = useState(false);
-
+  const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
   useEffect(() => {
     const updateCursor = () => {
       setColumnRowAvailable(sheets.sheet.cursor.hasOneColumnRowSelection(true));
-      setMultiSelectOnly(sheets.sheet.cursor.hasOneMultiselect());
+      setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
     };
 
     updateCursor();
@@ -95,8 +94,8 @@ export const GridContextMenu = () => {
           </>
         )}
 
-        {multiSelectOnly && <MenuDivider />}
-        {multiSelectOnly && <MenuItemAction action={Action.GridToDataTable} />}
+        {canConvertToDataTable && <MenuDivider />}
+        {canConvertToDataTable && <MenuItemAction action={Action.GridToDataTable} />}
       </ControlledMenu>
     </div>
   );
