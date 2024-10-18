@@ -1,10 +1,14 @@
+import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { VERSION } from '@/shared/constants/appConstants';
+import { useRecoilValue } from 'recoil';
 import { debugShowFPS } from '../../../debugFlags';
 import BottomBarItem from './BottomBarItem';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
 
 export const BottomBar = () => {
+  const inlineEditorState = useRecoilValue(inlineEditorAtom);
+
   return (
     <div
       onContextMenu={(event) => {
@@ -19,6 +23,14 @@ export const BottomBar = () => {
             You, {formatDistance(Date.parse(selectedCell.last_modified), new Date(), { addSuffix: true })}
           </BottomBarItem>
         )} */}
+
+        {inlineEditorState.visible && (
+          <BottomBarItem className="hidden lg:block">
+            <a href="https://docs.quadratichq.com/TODO:" target="_blank" rel="noopener noreferrer">
+              {inlineEditorState.navigateText ? 'Edit' : 'Enter'} (F2)
+            </a>
+          </BottomBarItem>
+        )}
 
         {debugShowFPS && (
           <BottomBarItem>
