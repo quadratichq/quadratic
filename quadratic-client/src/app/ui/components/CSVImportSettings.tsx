@@ -16,11 +16,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
+const DEFAULT_CSV_DELIMITER = ',';
+const DEFAULT_CUSTOM_CSV_DELIMITER = '';
+const DEFAULT_HAS_HEADING = true;
+const DEFAULT_CSV_PREVIEW = undefined;
+
 export const CSVImportSettings = () => {
-  const [csvDelimiter, setCsvDelimiter] = useState<string>(',');
-  const [customCsvDelimiter, setCustomCsvDelimiter] = useState<string>('');
-  const [csvPreview, setCsvPreview] = useState<string[][] | undefined>(undefined);
-  const [hasHeading, setHasHeading] = useState<boolean>(true);
+  const [csvDelimiter, setCsvDelimiter] = useState<string>(DEFAULT_CSV_DELIMITER);
+  const [customCsvDelimiter, setCustomCsvDelimiter] = useState<string>(DEFAULT_CUSTOM_CSV_DELIMITER);
+  const [csvPreview, setCsvPreview] = useState<string[][] | undefined>(DEFAULT_CSV_PREVIEW);
+  const [hasHeading, setHasHeading] = useState<boolean>(DEFAULT_HAS_HEADING);
   const { csvFile, submitFn } = useRecoilValue(filesImportSettingsAtom);
 
   const handleSubmit = useRecoilCallback(
@@ -46,6 +51,12 @@ export const CSVImportSettings = () => {
   const handleCancel = useRecoilCallback(({ set }) => () => {
     set(filesImportSettingsAtom, (prev) => {
       prev.cancelFn?.();
+
+      // Reset local state
+      setCsvDelimiter(DEFAULT_CSV_DELIMITER);
+      setCustomCsvDelimiter(DEFAULT_CUSTOM_CSV_DELIMITER);
+      setHasHeading(DEFAULT_HAS_HEADING);
+      setCsvPreview(DEFAULT_CSV_PREVIEW);
 
       return {
         csvFile: undefined,
@@ -94,7 +105,7 @@ export const CSVImportSettings = () => {
   return (
     <AlertDialog open={true}>
       <AlertDialogContent
-        className="select-none"
+        className="max-w-[80%] select-none"
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -182,41 +193,37 @@ export const CSVImportSettings = () => {
         </Row>
 
         {csvPreview && (
-          <div className="overflow-hidden rounded border border-border">
-            <p className="border-b border-border bg-accent py-1 text-center text-xs text-muted-foreground">
-              CSV preview
-            </p>
-            <Table>
-              {hasHeading && csvPreview.length > 0 && (
-                <TableHeader>
-                  <TableRow>
-                    {csvPreview[0].map((cell, i) => (
-                      <TableHead key={`header-${i}-${cell}`}>{cell}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-              )}
-
-              <TableBody>
-                {csvPreview.length > 0 &&
-                  csvPreview.slice(hasHeading ? 1 : 0).map((row, i) => (
-                    <TableRow key={`row-${i}-${row[0]}`}>
-                      {row.map((cell, j) => (
-                        <TableCell key={`cell-${j}-${cell}`}>{cell}</TableCell>
+          <>
+            <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">CSV preview</p>
+            <div className="overflow-hidden rounded border border-border">
+              <Table>
+                {hasHeading && csvPreview.length > 0 && (
+                  <TableHeader>
+                    <TableRow>
+                      {csvPreview[0].map((cell, i) => (
+                        <TableHead key={`header-${i}-${cell}`}>{cell}</TableHead>
                       ))}
                     </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
-          </div>
+                  </TableHeader>
+                )}
+
+                <TableBody>
+                  {csvPreview.length > 0 &&
+                    csvPreview.slice(hasHeading ? 1 : 0).map((row, i) => (
+                      <TableRow key={`row-${i}-${row[0]}`}>
+                        {row.map((cell, j) => (
+                          <TableCell key={`cell-${j}-${cell}`}>{cell}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
 
         <AlertDialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => handleCancel()}
-            disabled={csvDelimiter === 'custom' && customCsvDelimiter.length !== 1}
-          >
+          <Button variant="outline" onClick={() => handleCancel()}>
             Cancel
           </Button>
           <Button
@@ -233,10 +240,10 @@ export const CSVImportSettings = () => {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-row items-center justify-between gap-12">
-      <div className="w-1/2 text-sm font-semibold">{label}</div>
+    <div className="flex flex-row items-center gap-12">
+      <div className="w-52 text-sm font-semibold">{label}</div>
 
-      <div className="flex w-1/2 flex-row items-center gap-2">{children}</div>
+      <div className="flex max-w-52 flex-grow flex-row items-center gap-2">{children}</div>
     </div>
   );
 }
