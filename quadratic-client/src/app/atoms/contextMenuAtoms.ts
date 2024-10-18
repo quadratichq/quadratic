@@ -38,6 +38,7 @@ export const contextMenuAtom = atom({
     ({ setSelf }) => {
       const clear = () => {
         setSelf(() => ({}));
+        events.emit('contextMenuClose');
       };
 
       const set = (options: ContextMenuOptions) => {

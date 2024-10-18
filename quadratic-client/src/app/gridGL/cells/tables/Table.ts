@@ -18,7 +18,6 @@ const DROPDOWN_PADDING = 10;
 
 export class Table extends Container {
   private sheet: Sheet;
-  private codeCell: JsRenderCodeCell;
   private headingHeight = 0;
   private tableName: Container;
   private tableNameText: BitmapText;
@@ -31,6 +30,8 @@ export class Table extends Container {
   private tableNameBounds: Rectangle;
   private headingBounds: Rectangle;
   private columns: Column[];
+
+  codeCell: JsRenderCodeCell;
 
   constructor(sheet: Sheet, codeCell: JsRenderCodeCell) {
     super();

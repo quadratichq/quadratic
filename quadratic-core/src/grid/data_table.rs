@@ -821,7 +821,7 @@ pub mod test {
             Some(CellValue::Text("first".into()))
         );
 
-        t.header_is_first_row = false;
+        t.toggle_first_row_as_header(false);
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
     }
 }

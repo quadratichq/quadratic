@@ -1,6 +1,7 @@
 //! Tables renders all pixi-based UI elements for tables. Right now that's the
 //! headings.
 
+import { ContextMenuType } from '@/app/atoms/contextMenuAtoms';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
@@ -15,6 +16,7 @@ export class Tables extends Container<Table> {
 
   private activeTable: Table | undefined;
   private hoverTable: Table | undefined;
+  private contextMenuTable: Table | undefined;
 
   constructor(cellsSheet: CellsSheet) {
     super();
@@ -25,6 +27,9 @@ export class Tables extends Container<Table> {
     events.on('cursorPosition', this.cursorPosition);
     events.on('sheetOffsets', this.sheetOffsets);
     events.on('changeSheet', this.changeSheet);
+
+    events.on('contextMenu', this.contextMenu);
+    events.on('contextMenuClose', this.contextMenu);
   }
 
   get sheet(): Sheet {
@@ -36,6 +41,7 @@ export class Tables extends Container<Table> {
   }
 
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
+    console.log(codeCells);
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
       codeCells.forEach((codeCell) => this.addChild(new Table(this.sheet, codeCell)));
@@ -86,6 +92,9 @@ export class Tables extends Container<Table> {
   // Checks if the mouse cursor is hovering over a table or table heading.
   checkHover(world: Point) {
     const hover = this.children.find((table) => table.checkHover(world));
+    if (hover === this.contextMenuTable || hover === this.activeTable) {
+      return;
+    }
     if (hover !== this.hoverTable) {
       if (this.hoverTable) {
         this.hoverTable.hideActive();
@@ -105,4 +114,31 @@ export class Tables extends Container<Table> {
       }
     }
   }
+
+  // track and activate a table whose context menu is open (this handles the
+  // case where you hover a table and open the context menu; we want to keep
+  // that table active while the context menu is open)
+  contextMenu = (options?: { type?: ContextMenuType; table?: JsRenderCodeCell }) => {
+    if (!options) {
+      if (this.contextMenuTable) {
+        this.contextMenuTable.hideActive();
+        this.contextMenuTable = undefined;
+      }
+      return;
+    }
+    if (this.contextMenuTable) {
+      this.contextMenuTable.hideActive();
+      this.contextMenuTable = undefined;
+    }
+    if (options.type === ContextMenuType.Table && options.table) {
+      this.contextMenuTable = this.children.find((table) => table.codeCell === options.table);
+      if (this.contextMenuTable) {
+        this.contextMenuTable.showActive();
+        if (this.hoverTable === this.contextMenuTable) {
+          this.hoverTable = undefined;
+        }
+      }
+    }
+    pixiApp.setViewportDirty();
+  };
 }

@@ -2,6 +2,7 @@
 
 import { Action } from '@/app/actions/actions';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtoms';
+import { events } from '@/app/events/events';
 import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -14,6 +15,7 @@ export const TableContextMenu = () => {
 
   const onClose = useCallback(() => {
     setContextMenu({});
+    events.emit('contextMenuClose');
     focusGrid();
   }, [setContextMenu]);
 
