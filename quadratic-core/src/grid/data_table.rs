@@ -875,6 +875,10 @@ pub mod test {
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("first".into()))
-        )
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 3 }),
+            Some(CellValue::Text("second".into()))
+        );
     }
 }
