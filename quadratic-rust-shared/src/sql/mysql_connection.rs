@@ -152,24 +152,26 @@ impl Connection for MySqlConnection {
         };
 
         for row in rows.into_iter() {
-            let table_name = row.get::<String, usize>(2);
+            let row_get = |row: &MySqlRow, index: usize| {
+                let bytes: Vec<u8> = row.get::<Vec<u8>, usize>(index);
+                String::from_utf8_lossy(&bytes).into_owned()
+            };
+
+            let table_name = row_get(&row, 2);
 
             schema
                 .tables
                 .entry(table_name.to_owned())
                 .or_insert_with(|| SchemaTable {
                     name: table_name,
-                    schema: row.get::<String, usize>(1),
+                    schema: row_get(&row, 1),
                     columns: vec![],
                 })
                 .columns
                 .push(SchemaColumn {
-                    name: row.get::<String, usize>(3),
-                    r#type: row.get::<String, usize>(4),
-                    is_nullable: matches!(
-                        row.get::<String, usize>(5).to_lowercase().as_str(),
-                        "yes"
-                    ),
+                    name: row_get(&row, 3),
+                    r#type: row_get(&row, 4),
+                    is_nullable: matches!(row_get(&row, 5).to_lowercase().as_str(), "yes"),
                 });
         }
 
@@ -179,8 +181,12 @@ impl Connection for MySqlConnection {
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "VARBINARY" | "CHAR" | "ENUM" => {
+            "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
                 ArrowType::Utf8(convert_mysql_type!(String, row, index))
+            }
+            "VARBINARY" => {
+                let bytes: Vec<u8> = convert_mysql_type!(Vec<u8>, row, index);
+                ArrowType::Utf8(String::from_utf8_lossy(&bytes).into_owned())
             }
             "TINYINT" => ArrowType::Int8(convert_mysql_type!(i8, row, index)),
             "SMALLINT" => ArrowType::Int16(convert_mysql_type!(i16, row, index)),

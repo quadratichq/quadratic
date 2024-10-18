@@ -439,7 +439,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_mysql_schema() {
+    async fn test_mssql_schema() {
         let connection = new_mssql_connection();
         let mut client = connection.connect().await.unwrap();
         let schema = connection.schema(&mut client).await.unwrap();
