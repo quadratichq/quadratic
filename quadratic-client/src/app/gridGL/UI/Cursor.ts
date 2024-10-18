@@ -258,9 +258,7 @@ export class Cursor extends Container {
     const { visible, navigateText, formula } = pixiAppSettings.inlineEditorState;
     if (!visible || !navigateText) return;
 
-    const sheet = sheets.sheet;
-    const cell = sheet.cursor.cursorPosition;
-    let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
+    let { x, y, width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
     height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
     const color = formula ? colors.cellColorUserFormula : colors.cursorCell;
