@@ -43,7 +43,7 @@ export const contextMenuAtom = atom({
 
       const set = (options: ContextMenuOptions) => {
         setSelf(() => options);
-        if (!options.table) {
+        if (!options.type) {
           events.emit('contextMenuClose');
         }
       };

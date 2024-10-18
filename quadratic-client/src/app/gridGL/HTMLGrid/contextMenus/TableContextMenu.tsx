@@ -14,6 +14,7 @@ export const TableContextMenu = () => {
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const onClose = useCallback(() => {
+    console.log('onClose');
     setContextMenu({});
     events.emit('contextMenuClose');
     focusGrid();

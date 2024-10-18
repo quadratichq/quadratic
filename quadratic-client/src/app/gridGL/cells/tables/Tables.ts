@@ -56,6 +56,9 @@ export class Tables extends Container<Table> {
           table.destroy();
         } else {
           table.updateCodeCell(renderCodeCell);
+          if (table === this.activeTable || table === this.hoverTable || table === this.contextMenuTable) {
+            table.showActive();
+          }
         }
       } else if (renderCodeCell) {
         this.addChild(new Table(this.sheet, renderCodeCell));
@@ -64,7 +67,6 @@ export class Tables extends Container<Table> {
   };
 
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
-    console.log(codeCells);
     if (sheetId === this.cellsSheet.sheetId) {
       this.removeChildren();
       codeCells.forEach((codeCell) => this.addChild(new Table(this.sheet, codeCell)));
@@ -143,7 +145,9 @@ export class Tables extends Container<Table> {
   // that table active while the context menu is open)
   contextMenu = (options?: { type?: ContextMenuType; table?: JsRenderCodeCell }) => {
     if (this.contextMenuTable) {
-      this.contextMenuTable.hideActive();
+      // we keep the former context menu table active after the context
+      // menu closes until the cursor moves again.
+      this.hoverTable = this.contextMenuTable;
       this.contextMenuTable = undefined;
     }
     if (!options?.type) {

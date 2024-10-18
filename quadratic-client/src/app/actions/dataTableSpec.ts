@@ -20,7 +20,6 @@ const isDataTable = (): boolean => {
 };
 
 const isFirstRowHeader = (): boolean => {
-  console.log('running isFirstRowHeader', pixiAppSettings.contextMenu);
   return !!pixiAppSettings.contextMenu.table?.first_row_header;
 };
 
@@ -62,7 +61,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.ToggleFirstRowAsHeaderDataTable]: {
     label: 'First row as column headings',
     checkbox: isFirstRowHeader,
-    run: async () => {
+    run: () => {
       const table = pixiAppSettings.contextMenu?.table;
       if (table) {
         quadraticCore.dataTableFirstRowAsHeader(
