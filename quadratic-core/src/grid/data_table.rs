@@ -378,7 +378,7 @@ impl DataTable {
         // println!("pos: {:?}", pos);
         // println!("self.columns: {:?}", self.columns);
 
-        if pos.y == 0 {
+        if pos.y == 0 && self.show_header {
             if let Some(columns) = &self.columns {
                 // println!("columns: {:?}", columns);
                 if let Some(column) = columns.get(pos.x as usize) {
@@ -646,6 +646,13 @@ pub mod test {
         let expected_array_size = ArraySize::new(4, 4).unwrap();
         assert_eq!(data_table, expected_data_table);
         assert_eq!(data_table.output_size(), expected_array_size);
+
+        pretty_print_data_table(&data_table, None, None);
+
+        println!(
+            "Data Table: {:?}",
+            data_table.display_value_at((0, 1).into()).unwrap()
+        );
 
         // test default column headings
         data_table.apply_default_header();
