@@ -33,8 +33,10 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Flatten data table',
     Icon: TableConvertIcon,
     run: async () => {
-      const { x, y } = sheets.sheet.cursor.cursorPosition;
-      quadraticCore.flattenDataTable(sheets.sheet.id, x, y, sheets.getCursorPosition());
+      const table = pixiAppSettings.contextMenu?.table;
+      if (table) {
+        quadraticCore.flattenDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+      }
     },
   },
   [Action.GridToDataTable]: {
