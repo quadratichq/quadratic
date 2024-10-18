@@ -49,7 +49,6 @@ impl GridController {
             transaction.forward_operations.extend(forward_operations);
 
             if transaction.is_user() {
-                // self.check_deleted_data_tables(transaction, sheet_rect);
                 self.add_compute_operations(transaction, sheet_rect, None);
                 self.check_all_spills(transaction, sheet_rect.sheet_id, true);
             }
@@ -184,6 +183,7 @@ impl GridController {
             }
 
             self.send_to_wasm(transaction, &sheet_rect)?;
+            transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![Operation::FlattenDataTable { sheet_pos }];
 
@@ -195,6 +195,7 @@ impl GridController {
                 forward_operations,
                 reverse_operations,
             );
+            self.check_deleted_data_tables(transaction, &sheet_rect);
 
             return Ok(());
         };
@@ -235,10 +236,7 @@ impl GridController {
 
             let forward_operations = vec![Operation::GridToDataTable { sheet_rect }];
 
-            let reverse_operations = vec![Operation::SetCellValues {
-                sheet_pos,
-                values: CellValues::from(old_values),
-            }];
+            let reverse_operations = vec![Operation::FlattenDataTable { sheet_pos }];
 
             self.data_table_operations(
                 transaction,
