@@ -4,12 +4,20 @@ import {
   codeEditorModifiedEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import {
+  CopyIcon,
+  DiffIcon,
+  ExpandCircleDownIcon,
+  ExpandCircleUpIcon,
+  IconComponent,
+  SaveAndRunIcon,
+} from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import Editor from '@monaco-editor/react';
-import { ContentCopyOutlined, ContentPasteGoOutlined, PlayArrowOutlined } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
@@ -30,51 +38,87 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
   } else if (syntax === 'snowflake') {
     syntax = 'sql';
   }
+  const numberOfLines = code.split('\n').length;
+  const showAsCollapsed = numberOfLines > 10;
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
-    <div style={codeEditorBaseStyles} className="overflow-hidden rounded border shadow-sm">
-      <div className="flex flex-row items-center justify-between gap-2 bg-accent px-3 py-1">
-        <div className="lowercase text-muted-foreground">{language}</div>
+    <TooltipProvider>
+      <div className="relative">
+        <div className="overflow-hidden rounded border shadow-sm">
+          <div className="flex flex-row items-center justify-between gap-2 bg-accent px-3 py-1">
+            <div className="lowercase text-muted-foreground">{language}</div>
 
-        <div className="flex items-center gap-1">
-          <CodeSnippetRunButton text={code} language={language} />
-          <CodeSnippetInsertButton text={code} language={language} />
-          <CodeSnippetCopyButton text={code} language={language} />
+            <div className="flex items-center gap-1">
+              <CodeSnippetRunButton text={code} language={language} />
+              <CodeSnippetInsertButton text={code} language={language} />
+              <CodeSnippetCopyButton text={code} language={language} />
+            </div>
+          </div>
+
+          <div
+            className="relative pt-2"
+            style={{
+              ...codeEditorBaseStyles,
+              // calculate height based on number of lines
+              height: `${Math.ceil(numberOfLines) * 19 + 16}px`,
+              maxHeight: collapsed ? '148px' : '100%',
+            }}
+          >
+            <Editor
+              language={syntax}
+              value={code}
+              height="100%"
+              width="100%"
+              options={{
+                readOnly: true,
+                minimap: { enabled: false },
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
+                overviewRulerBorder: false,
+                scrollbar: {
+                  vertical: 'hidden',
+                  handleMouseWheel: false,
+                },
+                scrollBeyondLastLine: false,
+                wordWrap: 'off',
+                lineNumbers: 'off',
+                automaticLayout: true,
+                folding: false,
+                renderLineHighlightOnlyWhenFocus: true,
+              }}
+            />
+          </div>
         </div>
+        {showAsCollapsed && (
+          <div
+            className={cn(
+              ' flex  flex-col items-center justify-end rounded bg-gradient-to-t from-white from-50% pb-1',
+              collapsed ? 'absolute bottom-[1px] left-[1px] right-[1px] h-16' : ''
+            )}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1 text-muted-foreground"
+              onClick={() => setCollapsed((prev) => !prev)}
+            >
+              {collapsed ? (
+                <>
+                  <ExpandCircleDownIcon />
+                  Show code ({numberOfLines} lines)
+                </>
+              ) : (
+                <>
+                  <ExpandCircleUpIcon />
+                  Collapse code
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
-
-      <div
-        className="relative pt-2"
-        style={{
-          // calculate height based on number of lines
-          height: `${Math.ceil(code.split('\n').length) * 19 + 16}px`,
-        }}
-      >
-        <Editor
-          language={syntax}
-          value={code}
-          height="100%"
-          width="100%"
-          options={{
-            readOnly: true,
-            minimap: { enabled: false },
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            overviewRulerBorder: false,
-            scrollbar: {
-              vertical: 'hidden',
-              handleMouseWheel: false,
-            },
-            scrollBeyondLastLine: false,
-            wordWrap: 'off',
-            lineNumbers: 'off',
-            automaticLayout: true,
-            folding: false,
-            renderLineHighlightOnlyWhenFocus: true,
-          }}
-        />
-      </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
@@ -131,13 +175,7 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
     [language, text]
   );
 
-  return (
-    <TooltipHint title={'Save and run code (CodeEditor / Cursor Position)'}>
-      <IconButton size="small" onClick={handleSaveAndRun}>
-        <PlayArrowOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
-      </IconButton>
-    </TooltipHint>
-  );
+  return <CodeSnippetButton onClick={handleSaveAndRun} Icon={SaveAndRunIcon} label="Save & run" />;
 }
 
 function CodeSnippetInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
@@ -160,13 +198,7 @@ function CodeSnippetInsertButton({ language, text }: { language: CodeSnippetProp
     [language, text]
   );
 
-  return (
-    <TooltipHint title={'Open in code editor'}>
-      <IconButton size="small" onClick={handleReplace} disabled={!language}>
-        <ContentPasteGoOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
-      </IconButton>
-    </TooltipHint>
-  );
+  return <CodeSnippetButton onClick={handleReplace} Icon={DiffIcon} label="Apply diff" disabled={!language} />;
 }
 
 function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
@@ -180,11 +212,34 @@ function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps[
     }, 2000);
   }, [language, text]);
 
+  return <CodeSnippetButton onClick={handleCopy} Icon={CopyIcon} label={tooltipMsg} />;
+}
+
+function CodeSnippetButton({
+  onClick,
+  Icon,
+  label,
+  disabled,
+}: {
+  onClick: () => void;
+  Icon: IconComponent;
+  label: string;
+  disabled?: boolean;
+}) {
   return (
-    <TooltipHint title={tooltipMsg}>
-      <IconButton onClick={handleCopy} size="small">
-        <ContentCopyOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
-      </IconButton>
-    </TooltipHint>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="text-muted-foreground hover:text-foreground"
+          onClick={onClick}
+          disabled={disabled}
+        >
+          <Icon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }

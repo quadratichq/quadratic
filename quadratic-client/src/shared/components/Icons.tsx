@@ -188,6 +188,10 @@ export const DeleteIcon: IconComponent = (props) => {
   return <Icon {...props}>delete</Icon>;
 };
 
+export const DiffIcon: IconComponent = (props) => {
+  return <Icon {...props}>difference</Icon>;
+};
+
 export const DownloadIcon: IconComponent = (props) => {
   return <Icon {...props}>download</Icon>;
 };
@@ -206,6 +210,14 @@ export const EducationIcon: IconComponent = (props) => {
 
 export const ExamplesIcon: IconComponent = (props) => {
   return <Icon {...props}>view_carousel</Icon>;
+};
+
+export const ExpandCircleDownIcon: IconComponent = (props) => {
+  return <Icon {...props}>expand_circle_down</Icon>;
+};
+
+export const ExpandCircleUpIcon: IconComponent = (props) => {
+  return <Icon {...props}>expand_circle_up</Icon>;
 };
 
 export const ExternalLinkIcon: IconComponent = (props) => {
@@ -381,6 +393,10 @@ export const RedoIcon: IconComponent = (props) => {
 
 export const RefreshIcon: IconComponent = (props) => {
   return <Icon {...props}>refresh</Icon>;
+};
+
+export const SaveAndRunIcon: IconComponent = (props) => {
+  return <Icon {...props}>play_circle</Icon>;
 };
 
 export const ScientificIcon: IconComponent = (props) => {
