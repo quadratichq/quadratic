@@ -1,4 +1,11 @@
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
+import {
+  ContextMenuOptions,
+  ContextMenuSpecial,
+  ContextMenuState,
+  ContextMenuType,
+  defaultContextMenuState,
+} from '@/app/atoms/contextMenuAtom';
 import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
@@ -51,6 +58,9 @@ class PixiAppSettings {
   codeEditorState = defaultCodeEditorState;
   setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
 
+  contextMenu = defaultContextMenuState;
+  setContextMenu?: SetterOrUpdater<ContextMenuOptions>;
+
   constructor() {
     const settings = localStorage.getItem('viewSettings');
     if (settings) {
@@ -60,6 +70,7 @@ class PixiAppSettings {
     }
     this.lastSettings = this.settings;
     events.on('gridSettings', this.getSettings);
+    events.on('contextMenu', this.getContextSettings);
     this._input = { show: false };
     this._panMode = PanMode.Disabled;
   }
@@ -213,6 +224,21 @@ class PixiAppSettings {
 
   get panMode() {
     return this._panMode;
+  }
+
+  updateContextMenu(contextMenu: ContextMenuState, setContextMenu: SetterOrUpdater<ContextMenuOptions>) {
+    this.contextMenu = contextMenu;
+    this.setContextMenu = setContextMenu;
+  }
+
+  // We need this to ensure contextMenu is updated immediately to the state. The
+  // above function waits a tick.
+  private getContextSettings = (contextMenu: ContextMenuState) => {
+    this.contextMenu = contextMenu;
+  };
+
+  isRenamingTable(): boolean {
+    return this.contextMenu.type === ContextMenuType.Table && this.contextMenu.special === ContextMenuSpecial.rename;
   }
 }
 

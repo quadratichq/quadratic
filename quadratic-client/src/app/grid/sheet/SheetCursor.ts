@@ -298,4 +298,19 @@ export class SheetCursor {
   onlySingleSelection(): boolean {
     return !this.multiCursor?.length && !this.columnRow;
   }
+
+  // Returns true if there is one multiselect of > 1 size
+  canConvertToDataTable(): boolean {
+    const tables = pixiApp.cellsSheets.current?.tables;
+    if (!tables) return false;
+    if (
+      !this.multiCursor ||
+      this.multiCursor?.length !== 1 ||
+      (this.multiCursor[0].width === 1 && this.multiCursor[0].height === 1)
+    ) {
+      return false;
+    }
+
+    return !tables.intersects(this.multiCursor[0]);
+  }
 }

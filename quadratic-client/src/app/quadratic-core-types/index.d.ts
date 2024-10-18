@@ -14,7 +14,7 @@ export interface CellRef { sheet: string | null, x: CellRefCoord, y: CellRefCoor
 export type CellRefCoord = { "type": "Relative", "coord": bigint } | { "type": "Absolute", "coord": bigint };
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
-export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript";
+export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
 export interface ColumnRow { column: number, row: number, }
 export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE";
 export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };
@@ -29,14 +29,15 @@ export interface JsCellValue { value: string, kind: string, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<SheetRect> | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
+export interface JsDataTableColumn { name: string, display: boolean, valueIndex: number, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: string | null, h: string | null, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
 export interface JsOffset { column: number | null, row: number | null, size: number, }
 export interface JsPos { x: bigint, y: bigint, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special?: JsRenderCellSpecial, number?: JsNumber, underline?: boolean, strikeThrough?: boolean, }
-export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List";
-export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, }
+export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List" | "TableHeading";
+export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, column_names: Array<JsDataTableColumn>, first_row_header: boolean, show_header: boolean, }
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success";
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
 export interface JsRowHeight { row: bigint, height: number, }
@@ -66,7 +67,7 @@ export interface Span { start: number, end: number, }
 export interface SummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
-export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";
+export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "GridToDataTable" | "DataTableFirstRowAsHeader" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";
 export interface TransientResize { row: bigint | null, column: bigint | null, old_size: number, new_size: number, }
 export interface Validation { id: string, selection: Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, }
 export interface ValidationDateTime { ignore_blank: boolean, require_date: boolean, require_time: boolean, prohibit_date: boolean, prohibit_time: boolean, ranges: Array<DateTimeRange>, }

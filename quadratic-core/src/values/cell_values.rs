@@ -1,7 +1,7 @@
 //! CellValues is a 2D array of CellValue used for Operation::SetCellValues.
 //! The width and height may grow as needed.
 
-use crate::CellValue;
+use crate::{Array, ArraySize, CellValue};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -42,6 +42,26 @@ impl CellValues {
             .and_then(|col| col.get(&(y as u64)))
     }
 
+    pub fn safe_get(&self, x: u32, y: u32) -> anyhow::Result<&CellValue> {
+        if !(x < self.w && y < self.h) {
+            anyhow::bail!(
+                "CellValues::safe_get out of bounds: w={}, h={}, x={}, y={}",
+                self.w,
+                self.h,
+                x,
+                y
+            );
+        }
+
+        let cell_value = self
+            .columns
+            .get(x as usize)
+            .and_then(|col| col.get(&(y as u64)))
+            .ok_or_else(|| anyhow::anyhow!("No value found at ({x}, {y})"))?;
+
+        Ok(cell_value)
+    }
+
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
         if y >= self.h {
             self.h = y + 1;
@@ -70,7 +90,9 @@ impl CellValues {
     pub fn from_flat_array(w: u32, h: u32, values: Vec<CellValue>) -> Self {
         assert!(
             w * h == values.len() as u32,
-            "CellValues::flat_array size mismatch"
+            "CellValues::flat_array size mismatch, expected {}, got {}",
+            w * h,
+            values.len()
         );
         let mut columns = vec![BTreeMap::new(); w as usize];
         for (i, value) in values.into_iter().enumerate() {
@@ -169,6 +191,15 @@ impl From<CellValue> for CellValues {
             c.set(0, 0, value);
         }
         c
+    }
+}
+
+impl From<Array> for CellValues {
+    fn from(array: Array) -> Self {
+        let ArraySize { w, h } = array.size();
+        let cell_values_vec = array.into_cell_values_vec().into_vec();
+
+        CellValues::from_flat_array(w.get(), h.get(), cell_values_vec)
     }
 }
 

@@ -21,25 +21,29 @@ export class PointerCursor {
       return;
     }
 
+    let foundCodeCell = false;
     const codeCell = pixiApp.cellsSheets.current.cellsMarkers.intersectsCodeInfo(world);
     if (codeCell) {
       if (this.lastInfo?.x !== codeCell.x || this.lastInfo?.y !== codeCell.y) {
         events.emit('hoverCell', codeCell);
         this.lastInfo = codeCell;
       }
-      return;
+      foundCodeCell = true;
     }
 
+    pixiApp.cellsSheets.current.tables.checkHover(world);
+
+    let foundValidation = false;
     const validation = pixiApp.cellsSheets.current.cellsLabels.intersectsErrorMarkerValidation(world);
     if (validation) {
       if (this.lastInfo?.x !== validation.x || this.lastInfo?.y !== validation.y) {
         events.emit('hoverCell', validation);
         this.lastInfo = validation;
       }
-      return;
+      foundValidation = true;
     }
 
-    if (this.lastInfo) {
+    if (!foundCodeCell && !foundValidation && this.lastInfo) {
       events.emit('hoverCell');
       this.lastInfo = undefined;
     }

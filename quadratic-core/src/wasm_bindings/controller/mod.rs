@@ -10,6 +10,8 @@ pub mod bounds;
 pub mod cells;
 pub mod clipboard;
 pub mod code;
+pub mod col_row;
+pub mod data_table;
 pub mod export;
 pub mod formatting;
 pub mod import;
@@ -22,7 +24,6 @@ pub mod summarize;
 pub mod transactions;
 pub mod validation;
 pub mod worker;
-pub mod col_row;
 
 #[wasm_bindgen]
 impl GridController {

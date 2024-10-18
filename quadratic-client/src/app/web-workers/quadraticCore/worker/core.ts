@@ -1114,6 +1114,26 @@ class Core {
       this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
     });
   }
+
+  flattenDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.flattenDataTable(sheetId, posToPos(x, y), cursor);
+  }
+
+  gridToDataTable(selection: Selection, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.gridToDataTable(JSON.stringify(selection, bigIntReplacer), cursor);
+  }
+
+  sortDataTable(sheetId: string, x: number, y: number, column_index: number, sort_order: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.sortDataTable(sheetId, posToPos(x, y), column_index, sort_order, cursor);
+  }
+
+  dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
+  }
 }
 
 export const core = new Core();

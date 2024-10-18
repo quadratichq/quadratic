@@ -581,6 +581,22 @@ class CoreClient {
         core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
         return;
 
+      case 'clientCoreFlattenDataTable':
+        core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        return;
+
+      case 'clientCoreGridToDataTable':
+        core.gridToDataTable(e.data.selection, e.data.cursor);
+        return;
+
+      case 'clientCoreSortDataTable':
+        core.sortDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.columnIndex, e.data.sortOrder, e.data.cursor);
+        return;
+
+      case 'clientCoreDataTableFirstRowAsHeader':
+        core.dataTableFirstRowAsHeader(e.data.sheetId, e.data.x, e.data.y, e.data.firstRowAsHeader, e.data.cursor);
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

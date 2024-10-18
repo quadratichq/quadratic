@@ -30,7 +30,7 @@ export const useKeyboard = (): {
   onKeyUp: (event: React.KeyboardEvent<HTMLElement>) => void;
 } => {
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
+    if ((pixiAppSettings.input.show && inlineEditorHandler.isOpen()) || pixiAppSettings.isRenamingTable()) return;
     if (
       keyboardPanMode(event) ||
       keyboardLink(event) ||

@@ -8,6 +8,7 @@ import { insertActionsSpec } from '@/app/actions/insertActionsSpec';
 import { selectionActionsSpec } from '@/app/actions/selectionActionsSpec';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import { columnRowSpec } from './columnRowSpec';
+import { dataTableSpec } from './dataTableSpec';
 
 export const defaultActionSpec: ActionSpecRecord = {
   ...fileActionsSpec,
@@ -19,4 +20,5 @@ export const defaultActionSpec: ActionSpecRecord = {
   ...selectionActionsSpec,
   ...codeActionsSpec,
   ...columnRowSpec,
+  ...dataTableSpec,
 };

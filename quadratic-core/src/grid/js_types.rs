@@ -7,11 +7,10 @@ use uuid::Uuid;
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
-use super::{CodeCellLanguage, NumericFormat};
+use super::{CodeCellLanguage, DataTableColumn, NumericFormat};
 use crate::{Pos, SheetRect};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum JsRenderCellSpecial {
     Chart,
     SpillError,
@@ -19,9 +18,10 @@ pub enum JsRenderCellSpecial {
     Logical,
     Checkbox,
     List,
+    TableHeading,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ts_rs::TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsNumber {
     pub decimals: Option<i16>,
     pub commas: Option<bool>,
@@ -183,8 +183,7 @@ pub struct JsCodeCell {
     pub cells_accessed: Option<Vec<SheetRect>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsRenderCodeCell {
     pub x: i32,
     pub y: i32,
@@ -193,6 +192,10 @@ pub struct JsRenderCodeCell {
     pub language: CodeCellLanguage,
     pub state: JsRenderCodeCellState,
     pub spill_error: Option<Vec<Pos>>,
+    pub name: String,
+    pub column_names: Vec<JsDataTableColumn>,
+    pub first_row_header: bool,
+    pub show_header: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -231,6 +234,25 @@ pub struct JsValidationSheet {
 
     // validation errors that will be displayed
     errors: Vec<(Pos, String)>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct JsDataTableColumn {
+    pub name: String,
+    pub display: bool,
+    pub value_index: u32,
+}
+
+impl From<DataTableColumn> for JsDataTableColumn {
+    fn from(column: DataTableColumn) -> Self {
+        JsDataTableColumn {
+            name: column.name.to_string(),
+            display: column.display,
+            value_index: column.value_index,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
