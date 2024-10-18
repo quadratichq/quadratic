@@ -170,9 +170,7 @@ pub(crate) mod tests {
     fn import_large_csv() {
         clear_js_calls();
         let mut gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
         let mut csv = String::new();
-        let file_name = "large.csv";
 
         for _ in 0..10000 {
             for x in 0..10 {
@@ -189,10 +187,6 @@ pub(crate) mod tests {
             None,
         )
         .unwrap();
-
-        let import = Import::new(file_name.into());
-        let cell_value = CellValue::Import(import);
-        assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
         expect_js_call_count("jsImportProgress", 1, true);
     }
@@ -361,10 +355,6 @@ pub(crate) mod tests {
         let file: Vec<u8> = std::fs::read(PARQUET_FILE).expect("Failed to read file");
         let _result = grid_controller.import_parquet(sheet_id, file, file_name, pos, None);
 
-        let import = Import::new(file_name.into());
-        let cell_value = CellValue::Import(import);
-        assert_display_cell_value(&grid_controller, sheet_id, 0, 0, &cell_value.to_string());
-
         assert_data_table_cell_value_row(
             &grid_controller,
             sheet_id,
@@ -495,10 +485,6 @@ pub(crate) mod tests {
 
         print_data_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
 
-        let import = Import::new(file_name.into());
-        let cell_value = CellValue::Import(import);
-        assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
-
         assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["Sample report ", "", ""]);
         assert_data_table_cell_value_row(
             &gc,
@@ -525,10 +511,6 @@ pub(crate) mod tests {
             .unwrap();
 
         print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
-
-        let import = Import::new(file_name.into());
-        let cell_value = CellValue::Import(import);
-        assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
         assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["issue", " test", " value"]);
         assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 1, vec!["0", " 1", " Invalid"]);

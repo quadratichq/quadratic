@@ -95,7 +95,7 @@ pub struct CodeRunSchema {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataTableColumnSchema {
-    pub name: String,
+    pub name: CellValueSchema,
     pub display: bool,
     pub value_index: u32,
 }

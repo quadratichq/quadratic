@@ -229,7 +229,7 @@ impl Sheet {
                 CellValue::Code(_) | CellValue::Import(_) => self
                     .data_tables
                     .get(&pos)
-                    .and_then(|run| run.cell_value_at(0, 0)),
+                    .and_then(|data_table| data_table.cell_value_at(0, 0)),
                 CellValue::Blank => self.get_code_cell_value(pos),
                 _ => Some(cell_value.clone()),
             }

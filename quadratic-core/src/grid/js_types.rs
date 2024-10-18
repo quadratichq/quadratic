@@ -193,7 +193,7 @@ pub struct JsRenderCodeCell {
     pub state: JsRenderCodeCellState,
     pub spill_error: Option<Vec<Pos>>,
     pub name: String,
-    pub column_names: Vec<DataTableColumn>,
+    pub column_names: Vec<JsDataTableColumn>,
     pub first_row_header: bool,
     pub show_header: bool,
 }
@@ -234,6 +234,25 @@ pub struct JsValidationSheet {
 
     // validation errors that will be displayed
     errors: Vec<(Pos, String)>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct JsDataTableColumn {
+    pub name: String,
+    pub display: bool,
+    pub value_index: u32,
+}
+
+impl From<DataTableColumn> for JsDataTableColumn {
+    fn from(column: DataTableColumn) -> Self {
+        JsDataTableColumn {
+            name: column.name.to_string(),
+            display: column.display,
+            value_index: column.value_index,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]

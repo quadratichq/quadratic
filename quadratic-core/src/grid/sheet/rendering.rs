@@ -645,15 +645,14 @@ mod tests {
         grid::{
             formats::{format::Format, format_update::FormatUpdate, Formats},
             js_types::{
-                JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-                JsSheetFill, JsValidationWarning,
+                JsDataTableColumn, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial,
+                JsRenderCodeCell, JsSheetFill, JsValidationWarning,
             },
             sheet::validations::{
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableColumn, DataTableKind, Italic,
-            RenderSize,
+            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableKind, Italic, RenderSize,
         },
         selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
@@ -1105,7 +1104,7 @@ mod tests {
             Value::Single(CellValue::Number(2.into())),
             false,
             false,
-            false,
+            true,
         );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -1121,8 +1120,8 @@ mod tests {
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
                 name: "Table 1".to_string(),
-                column_names: vec![DataTableColumn {
-                    name: "Column 1".to_string(),
+                column_names: vec![JsDataTableColumn {
+                    name: "Column 1".into(),
                     display: true,
                     value_index: 0,
                 }],
@@ -1219,6 +1218,10 @@ mod tests {
         ];
         let sheet = gc.sheet(sheet_id);
         let expected = sheet.get_render_cells(Rect::new(0, 0, 2, 0));
+
+        println!("{:?}", expected);
+        println!("{:?}", cells);
+
         assert_eq!(expected.len(), cells.len());
         assert!(expected.iter().all(|cell| cells.contains(cell)));
 

@@ -173,8 +173,14 @@ pub(crate) fn import_data_table_builder(
             columns: data_table.columns.map(|columns| {
                 columns
                     .into_iter()
-                    .map(|column| {
-                        DataTableColumn::new(column.name, column.display, column.value_index)
+                    .enumerate()
+                    .map(|(index, column)| {
+                        let column_name = match column.name {
+                            current::CellValueSchema::Text(text) => text,
+                            _ => format!("Column {}", index + 1),
+                        };
+
+                        DataTableColumn::new(column_name, column.display, column.value_index)
                     })
                     .collect()
             }),
@@ -348,7 +354,7 @@ pub(crate) fn export_data_tables(
                 columns
                     .into_iter()
                     .map(|column| current::DataTableColumnSchema {
-                        name: column.name,
+                        name: current::CellValueSchema::Text(column.name.to_string()),
                         display: column.display,
                         value_index: column.value_index,
                     })

@@ -387,7 +387,7 @@ impl GridController {
             .ok_or_else(|| anyhow!("Sheet {sheet_id} not found"))?;
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
         let mut data_table = DataTable::from((import.to_owned(), cell_values, sheet));
-        data_table.header_is_first_row = true;
+        data_table.apply_first_row_as_header();
 
         // this operation must be before the SetCodeRun operations
         ops.push(Operation::SetCellValues {
