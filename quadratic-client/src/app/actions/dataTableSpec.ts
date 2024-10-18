@@ -2,13 +2,13 @@ import { Action } from '@/app/actions/actions';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { PersonAddIcon } from '@/shared/components/Icons';
+import { FileRenameIcon, PersonAddIcon } from '@/shared/components/Icons';
 import { sheets } from '../grid/controller/Sheets';
 import { ActionSpecRecord } from './actionsSpec';
 
 type DataTableSpec = Pick<
   ActionSpecRecord,
-  Action.FlattenDataTable | Action.GridToDataTable | Action.ToggleFirstRowAsHeaderDataTable
+  Action.FlattenDataTable | Action.GridToDataTable | Action.ToggleFirstRowAsHeaderDataTable | Action.RenameDataTable
 >;
 
 export type DataTableActionArgs = {
@@ -72,6 +72,15 @@ export const dataTableSpec: DataTableSpec = {
           sheets.getCursorPosition()
         );
       }
+    },
+  },
+  [Action.RenameDataTable]: {
+    label: 'Rename data table',
+    defaultOption: true,
+    Icon: FileRenameIcon,
+    run: async () => {
+      // const { x, y } = sheets.sheet.cursor.cursorPosition;
+      // quadraticCore.renameDataTable(sheets.sheet.id, x, y, sheets.getCursorPosition());
     },
   },
 };

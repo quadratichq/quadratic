@@ -10,7 +10,7 @@ interface Props {
 }
 
 export const MenuItemAction = (props: Props): JSX.Element | null => {
-  const { label, Icon, run, isAvailable, checkbox } = defaultActionSpec[props.action];
+  const { label, Icon, run, isAvailable, checkbox, defaultOption } = defaultActionSpec[props.action];
   const isAvailableArgs = useIsAvailableArgs();
   const keyboardShortcut = keyboardShortcutEnumToDisplay(props.action);
 
@@ -20,7 +20,7 @@ export const MenuItemAction = (props: Props): JSX.Element | null => {
 
   return (
     <MenuItemShadStyle Icon={Icon} onClick={run} keyboardShortcut={keyboardShortcut} checkbox={checkbox}>
-      {label}
+      <span className={defaultOption ? 'font-bold' : ''}>{label}</span>
     </MenuItemShadStyle>
   );
 };
@@ -32,7 +32,7 @@ function MenuItemShadStyle({
   onClick,
   keyboardShortcut,
 }: {
-  children: string;
+  children: JSX.Element;
   Icon?: IconComponent;
   onClick: any;
   checkbox?: boolean | (() => boolean);

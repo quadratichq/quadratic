@@ -14,7 +14,6 @@ export const TableContextMenu = () => {
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const onClose = useCallback(() => {
-    console.log('onClose');
     setContextMenu({});
     events.emit('contextMenuClose');
     focusGrid();
@@ -51,6 +50,7 @@ export const TableContextMenu = () => {
         menuStyle={{ padding: '0', color: 'inherit' }}
         menuClassName="bg-background"
       >
+        <MenuItemAction action={Action.RenameDataTable} />
         <MenuItemAction action={Action.ToggleFirstRowAsHeaderDataTable} />
         <MenuDivider />
         <MenuItemAction action={Action.FlattenDataTable} />

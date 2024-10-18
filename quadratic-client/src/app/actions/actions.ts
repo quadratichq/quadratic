@@ -143,4 +143,5 @@ export enum Action {
   FlattenDataTable = 'flatten_data_table',
   GridToDataTable = 'grid_to_data_table',
   ToggleFirstRowAsHeaderDataTable = 'toggle_first_row_as_header_data_table',
+  RenameDataTable = 'rename_data_table',
 }

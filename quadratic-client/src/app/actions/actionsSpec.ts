@@ -40,7 +40,14 @@ export type ActionSpec<ActionArgsType> = {
   // return `<Icon className="custom-style-class" />`
   // ```
   Icon?: IconComponent;
+
+  // use a checkbox instead of an Icon
   checkbox?: boolean | (() => boolean);
+
+  // defaultOption will bold the name (this is usually used to indicate that
+  // double clicking will trigger the action)
+  defaultOption?: boolean;
+
   isAvailable?: (args: ActionAvailabilityArgs) => boolean;
   // Used for command palette search
   keywords?: string[];
