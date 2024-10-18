@@ -1,7 +1,7 @@
 //! Tables renders all pixi-based UI elements for tables. Right now that's the
 //! headings.
 
-import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuSpecial, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
@@ -17,6 +17,7 @@ export class Tables extends Container<Table> {
   private activeTable: Table | undefined;
   private hoverTable: Table | undefined;
   private contextMenuTable: Table | undefined;
+  private renameDataTable: Table | undefined;
 
   constructor(cellsSheet: CellsSheet) {
     super();
@@ -52,7 +53,7 @@ export class Tables extends Container<Table> {
       const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
       if (table) {
         if (!renderCodeCell) {
-          table.removeTableNames();
+          table.hideTableName();
           table.destroy();
         } else {
           table.updateCodeCell(renderCodeCell);
@@ -105,11 +106,11 @@ export class Tables extends Container<Table> {
   private changeSheet = (sheetId: string) => {
     if (sheetId === this.sheet.id) {
       this.children.forEach((table) => {
-        table.addTableNames();
+        table.showTableName();
       });
     } else {
       this.children.forEach((table) => {
-        table.removeTableNames();
+        table.hideTableName();
       });
     }
   };
@@ -117,7 +118,8 @@ export class Tables extends Container<Table> {
   // Checks if the mouse cursor is hovering over a table or table heading.
   checkHover(world: Point) {
     const hover = this.children.find((table) => table.checkHover(world));
-    if (hover && (hover === this.contextMenuTable || hover === this.activeTable)) {
+    // if we already have the active table open, then don't show hover
+    if (hover && (hover === this.contextMenuTable || hover === this.activeTable || hover === this.renameDataTable)) {
       return;
     }
     if (hover !== this.hoverTable) {
@@ -143,7 +145,14 @@ export class Tables extends Container<Table> {
   // track and activate a table whose context menu is open (this handles the
   // case where you hover a table and open the context menu; we want to keep
   // that table active while the context menu is open)
-  contextMenu = (options?: { type?: ContextMenuType; table?: JsRenderCodeCell }) => {
+  contextMenu = (options?: { type?: ContextMenuType; table?: JsRenderCodeCell; special?: ContextMenuSpecial }) => {
+    // we keep the former context menu table active after the rename finishes
+    // until the cursor moves again.
+    if (this.renameDataTable) {
+      this.renameDataTable.showTableName();
+      this.hoverTable = this.renameDataTable;
+      this.renameDataTable = undefined;
+    }
     if (this.contextMenuTable) {
       // we keep the former context menu table active after the context
       // menu closes until the cursor moves again.
@@ -155,14 +164,36 @@ export class Tables extends Container<Table> {
       return;
     }
     if (options.type === ContextMenuType.Table && options.table) {
-      this.contextMenuTable = this.children.find((table) => table.codeCell === options.table);
-      if (this.contextMenuTable) {
-        this.contextMenuTable.showActive();
-        if (this.hoverTable === this.contextMenuTable) {
+      if (options.special === ContextMenuSpecial.rename) {
+        this.renameDataTable = this.children.find((table) => table.codeCell === options.table);
+        if (this.renameDataTable) {
+          this.renameDataTable.showActive();
+          this.renameDataTable.hideTableName();
           this.hoverTable = undefined;
+        }
+      } else {
+        this.contextMenuTable = this.children.find((table) => table.codeCell === options.table);
+        if (this.contextMenuTable) {
+          this.contextMenuTable.showActive();
+          if (this.hoverTable === this.contextMenuTable) {
+            this.hoverTable = undefined;
+          }
         }
       }
     }
     pixiApp.setViewportDirty();
   };
+
+  getTableNamePosition(x: number, y: number): { x: number; y: number; width: number; height: number } {
+    const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+    if (!table) {
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
+    return {
+      x: table.tableNameBounds.x,
+      y: table.tableNameBounds.y,
+      width: table.tableNameBounds.width,
+      height: table.tableNameBounds.height,
+    };
+  }
 }

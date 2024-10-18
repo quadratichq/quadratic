@@ -15,6 +15,7 @@ interface Column {
 }
 
 const DROPDOWN_PADDING = 10;
+export const TABLE_NAME_PADDING = 4;
 
 export class Table extends Container {
   private sheet: Sheet;
@@ -27,10 +28,10 @@ export class Table extends Container {
 
   private outline: Graphics;
   private tableBounds: Rectangle;
-  private tableNameBounds: Rectangle;
   private headingBounds: Rectangle;
   private columns: Column[];
 
+  tableNameBounds: Rectangle;
   codeCell: JsRenderCodeCell;
 
   constructor(sheet: Sheet, codeCell: JsRenderCodeCell) {
@@ -111,7 +112,7 @@ export class Table extends Container {
     this.tableName.visible = false;
     const text = this.tableName.addChild(this.tableNameText);
     this.tableNameText.text = codeCell.name;
-    text.position.set(OPEN_SANS_FIX.x, OPEN_SANS_FIX.y - this.headingBounds.height);
+    text.position.set(OPEN_SANS_FIX.x + TABLE_NAME_PADDING, OPEN_SANS_FIX.y - this.headingBounds.height);
 
     const dropdown = this.tableName.addChild(this.drawDropdown());
     dropdown.position.set(text.width + OPEN_SANS_FIX.x + DROPDOWN_PADDING, -this.headingHeight / 2);
@@ -200,8 +201,10 @@ export class Table extends Container {
   update(bounds: Rectangle, gridHeading: number) {
     this.visible = intersects.rectangleRectangle(this.tableBounds, bounds);
     this.headingPosition(bounds, gridHeading);
-    this.tableNamePosition(bounds, gridHeading);
-    this.tableName.scale.set(1 / pixiApp.viewport.scale.x);
+    if (this.isShowingTableName()) {
+      this.tableName.scale.set(1 / pixiApp.viewport.scale.x);
+      this.tableNamePosition(bounds, gridHeading);
+    }
   }
 
   hideActive() {
@@ -216,11 +219,15 @@ export class Table extends Container {
     pixiApp.setViewportDirty();
   }
 
-  addTableNames() {
+  showTableName() {
     pixiApp.overHeadings.addChild(this.tableName);
   }
 
-  removeTableNames() {
+  hideTableName() {
     pixiApp.overHeadings.removeChild(this.tableName);
+  }
+
+  private isShowingTableName(): boolean {
+    return this.tableName.parent !== undefined;
   }
 }

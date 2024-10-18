@@ -1,5 +1,11 @@
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-import { ContextMenuOptions, ContextMenuState, defaultContextMenuState } from '@/app/atoms/contextMenuAtom';
+import {
+  ContextMenuOptions,
+  ContextMenuSpecial,
+  ContextMenuState,
+  ContextMenuType,
+  defaultContextMenuState,
+} from '@/app/atoms/contextMenuAtom';
 import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
@@ -230,6 +236,10 @@ class PixiAppSettings {
   private getContextSettings = (contextMenu: ContextMenuState) => {
     this.contextMenu = contextMenu;
   };
+
+  isRenamingTable(): boolean {
+    return this.contextMenu.type === ContextMenuType.Table && this.contextMenu.special === ContextMenuSpecial.rename;
+  }
 }
 
 export const pixiAppSettings = new PixiAppSettings();

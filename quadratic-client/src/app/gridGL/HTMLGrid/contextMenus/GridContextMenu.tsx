@@ -14,9 +14,11 @@ export const GridContextMenu = () => {
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const onClose = useCallback(() => {
-    setContextMenu({});
-    focusGrid();
-  }, [setContextMenu]);
+    if (contextMenu.type === ContextMenuType.Grid) {
+      setContextMenu({});
+      focusGrid();
+    }
+  }, [contextMenu.type, setContextMenu]);
 
   useEffect(() => {
     pixiApp.viewport.on('moved', onClose);

@@ -1,4 +1,6 @@
 import { Action } from '@/app/actions/actions';
+import { ContextMenuSpecial } from '@/app/atoms/contextMenuAtom';
+import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -79,8 +81,13 @@ export const dataTableSpec: DataTableSpec = {
     defaultOption: true,
     Icon: FileRenameIcon,
     run: async () => {
-      // const { x, y } = sheets.sheet.cursor.cursorPosition;
-      // quadraticCore.renameDataTable(sheets.sheet.id, x, y, sheets.getCursorPosition());
+      const contextMenu = pixiAppSettings.contextMenu;
+      if (contextMenu) {
+        setTimeout(() => {
+          pixiAppSettings.setContextMenu?.({ ...contextMenu, special: ContextMenuSpecial.rename });
+          events.emit('contextMenu', { ...contextMenu, special: ContextMenuSpecial.rename });
+        }, 0);
+      }
     },
   },
 };
