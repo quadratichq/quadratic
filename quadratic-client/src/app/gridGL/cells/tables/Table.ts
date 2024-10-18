@@ -59,6 +59,10 @@ export class Table extends Container {
   }
 
   updateCodeCell = (codeCell: JsRenderCodeCell) => {
+    this.removeChildren();
+    pixiApp.overHeadings.removeChild(this.tableName);
+    this.tableName.removeChildren();
+
     this.codeCell = codeCell;
     this.tableBounds = this.sheet.getScreenRectangle(codeCell.x, codeCell.y, codeCell.w - 1, codeCell.h - 1);
     this.headingHeight = this.sheet.offsets.getRowHeight(codeCell.y);
@@ -71,6 +75,7 @@ export class Table extends Container {
     this.position.set(this.headingBounds.x, this.headingBounds.y);
 
     this.addChild(this.headingContainer);
+    this.headingContainer.removeChildren();
 
     // draw heading background
     const background = this.headingContainer.addChild(new Graphics());
@@ -105,6 +110,7 @@ export class Table extends Container {
 
     // draw outline around entire table
     this.addChild(this.outline);
+    this.outline.clear();
     this.outline.lineStyle({ color: getCSSVariableTint('primary'), width: 2, alignment: 0 });
     this.outline.drawShape(new Rectangle(0, 0, this.tableBounds.width, this.tableBounds.height));
     this.outline.visible = false;
@@ -113,6 +119,7 @@ export class Table extends Container {
     if (sheets.sheet.id === this.sheet.id) {
       pixiApp.overHeadings.addChild(this.tableName);
     }
+    this.tableName.removeChildren();
     this.tableName.position.set(this.tableBounds.x, this.tableBounds.y);
     const nameBackground = this.tableName.addChild(new Graphics());
     this.tableName.visible = false;

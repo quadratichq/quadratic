@@ -117,7 +117,7 @@ impl DataTable {
             DataTableKind::Import(_) => false,
         };
 
-        let data_table = DataTable {
+        let mut data_table = DataTable {
             kind,
             name: name.into(),
             header_is_first_row,
@@ -131,9 +131,9 @@ impl DataTable {
             last_modified: Utc::now(),
         };
 
-        // if has_header {
-        //     data_table.apply_header_from_first_row();
-        // }
+        if header_is_first_row {
+            data_table.apply_first_row_as_header();
+        }
 
         data_table
     }
