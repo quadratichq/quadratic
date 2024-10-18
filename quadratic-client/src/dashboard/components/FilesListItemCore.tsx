@@ -22,7 +22,7 @@ export function FilesListItemCore({
   description: string;
   filterMatch?: 'name' | 'creator';
   filterValue: string;
-  setFilterValue: Function;
+  setFilterValue?: Function;
   viewPreferences: ViewPreferences;
   creator?: { name?: string; picture?: string };
   hasNetworkError?: boolean;
@@ -54,7 +54,7 @@ export function FilesListItemCore({
             </p>
           )}
         </div>
-        {creator && creator.name && (
+        {creator && creator.name && setFilterValue && (
           <TooltipPopover label={`Created by ${creator.name}`}>
             <button
               onClick={(e) => {
