@@ -2,11 +2,12 @@
 
 import { Action } from '@/app/actions/actions';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { ControlledMenu, MenuDivider } from '@szhsin/react-menu';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
@@ -32,8 +33,22 @@ export const GridContextMenu = () => {
 
   const ref = useRef<HTMLDivElement>(null);
 
-  const isColumnRowAvailable = sheets.sheet.cursor.hasOneColumnRowSelection(true);
-  const isMultiSelectOnly = sheets.sheet.cursor.hasOneMultiselect();
+  const [columnRowAvailable, setColumnRowAvailable] = useState(false);
+  const [multiSelectOnly, setMultiSelectOnly] = useState(false);
+
+  useEffect(() => {
+    const updateCursor = () => {
+      setColumnRowAvailable(sheets.sheet.cursor.hasOneColumnRowSelection(true));
+      setMultiSelectOnly(sheets.sheet.cursor.hasOneMultiselect());
+    };
+
+    updateCursor();
+    events.on('cursorPosition', updateCursor);
+
+    return () => {
+      events.off('cursorPosition', updateCursor);
+    };
+  }, []);
 
   return (
     <div
@@ -65,23 +80,23 @@ export const GridContextMenu = () => {
         {contextMenu.column === null ? null : (
           <>
             <MenuDivider />
-            {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnLeft} />}
-            {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnRight} />}
+            {columnRowAvailable && <MenuItemAction action={Action.InsertColumnLeft} />}
+            {columnRowAvailable && <MenuItemAction action={Action.InsertColumnRight} />}
             <MenuItemAction action={Action.DeleteColumn} />
           </>
         )}
 
         {contextMenu.row === null ? null : (
           <>
-            {isColumnRowAvailable && <MenuDivider />}
-            {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowAbove} />}
-            {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowBelow} />}
+            {columnRowAvailable && <MenuDivider />}
+            {columnRowAvailable && <MenuItemAction action={Action.InsertRowAbove} />}
+            {columnRowAvailable && <MenuItemAction action={Action.InsertRowBelow} />}
             <MenuItemAction action={Action.DeleteRow} />
           </>
         )}
 
-        <MenuDivider />
-        {isMultiSelectOnly && <MenuItemAction action={Action.GridToDataTable} />}
+        {multiSelectOnly && <MenuDivider />}
+        {multiSelectOnly && <MenuItemAction action={Action.GridToDataTable} />}
       </ControlledMenu>
     </div>
   );

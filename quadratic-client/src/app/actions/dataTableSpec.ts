@@ -1,7 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { ContextMenuSpecial } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileRenameIcon, TableConvertIcon } from '@/shared/components/Icons';
@@ -21,16 +20,12 @@ export type DataTableActionArgs = {
   [Action.FlattenDataTable]: { name: string };
 };
 
-const isDataTable = (): boolean => {
-  return pixiApp.isCursorOnCodeCellOutput();
-};
-
 const isFirstRowHeader = (): boolean => {
-  return !!pixiAppSettings.contextMenu.table?.first_row_header;
+  return !!pixiAppSettings.contextMenu?.table?.first_row_header;
 };
 
 const isHeadingShowing = (): boolean => {
-  return !!pixiAppSettings.contextMenu.table?.show_header;
+  return !!pixiAppSettings.contextMenu?.table?.show_header;
 };
 
 export const dataTableSpec: DataTableSpec = {
@@ -45,7 +40,6 @@ export const dataTableSpec: DataTableSpec = {
   [Action.GridToDataTable]: {
     label: 'Convert values to data table',
     Icon: TableConvertIcon,
-    isAvailable: () => !isDataTable(),
     run: async () => {
       quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
     },
