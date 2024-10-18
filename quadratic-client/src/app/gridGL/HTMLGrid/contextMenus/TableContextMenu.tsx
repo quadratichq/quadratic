@@ -1,7 +1,7 @@
 //! This shows the table context menu.
 
 import { Action } from '@/app/actions/actions';
-import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtoms';
+import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';

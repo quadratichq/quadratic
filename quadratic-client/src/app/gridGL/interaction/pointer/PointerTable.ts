@@ -1,4 +1,4 @@
-import { ContextMenuType } from '@/app/atoms/contextMenuAtoms';
+import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { isMac } from '@/shared/utils/isMac';

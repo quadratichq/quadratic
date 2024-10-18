@@ -1,7 +1,7 @@
 //! This shows the grid heading context menu.
 
 import { Action } from '@/app/actions/actions';
-import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtoms';
+import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';

@@ -1,5 +1,5 @@
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-import { ContextMenuOptions, ContextMenuState, defaultContextMenuState } from '@/app/atoms/contextMenuAtoms';
+import { ContextMenuOptions, ContextMenuState, defaultContextMenuState } from '@/app/atoms/contextMenuAtom';
 import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';

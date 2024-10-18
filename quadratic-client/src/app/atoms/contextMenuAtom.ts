@@ -43,6 +43,9 @@ export const contextMenuAtom = atom({
 
       const set = (options: ContextMenuOptions) => {
         setSelf(() => options);
+        if (!options.table) {
+          events.emit('contextMenuClose');
+        }
       };
 
       events.on('cursorPosition', clear);
