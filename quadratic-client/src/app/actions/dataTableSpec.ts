@@ -20,6 +20,7 @@ const isDataTable = (): boolean => {
 };
 
 const isFirstRowHeader = (): boolean => {
+  console.log('running isFirstRowHeader', pixiAppSettings.contextMenu);
   return !!pixiAppSettings.contextMenu.table?.first_row_header;
 };
 

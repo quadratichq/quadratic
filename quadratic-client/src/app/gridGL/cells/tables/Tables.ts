@@ -8,7 +8,7 @@ import { Sheet } from '@/app/grid/sheet/Sheet';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point } from 'pixi.js';
 
 export class Tables extends Container<Table> {
@@ -22,7 +22,7 @@ export class Tables extends Container<Table> {
     super();
     this.cellsSheet = cellsSheet;
     events.on('renderCodeCells', this.renderCodeCells);
-    // todo: update code cells?
+    events.on('updateCodeCell', this.updateCodeCell);
 
     events.on('cursorPosition', this.cursorPosition);
     events.on('sheetOffsets', this.sheetOffsets);
@@ -39,6 +39,29 @@ export class Tables extends Container<Table> {
     }
     return sheet;
   }
+
+  private updateCodeCell = (options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    codeCell?: JsCodeCell;
+    renderCodeCell?: JsRenderCodeCell;
+  }) => {
+    const { sheetId, x, y, renderCodeCell } = options;
+    if (sheetId === this.cellsSheet.sheetId) {
+      const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+      if (table) {
+        if (!renderCodeCell) {
+          table.removeTableNames();
+          table.destroy();
+        } else {
+          table.updateCodeCell(renderCodeCell);
+        }
+      } else if (renderCodeCell) {
+        this.addChild(new Table(this.sheet, renderCodeCell));
+      }
+    }
+  };
 
   private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
     console.log(codeCells);

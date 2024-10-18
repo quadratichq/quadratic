@@ -320,10 +320,14 @@ impl GridController {
             let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
+            let data_table_rect = data_table
+                .output_rect(sheet_pos.into(), true)
+                .to_sheet_rect(sheet_id);
 
             data_table.toggle_first_row_as_header(first_row_is_header);
 
-            self.send_to_wasm(transaction, &sheet_rect)?;
+            self.send_to_wasm(transaction, &data_table_rect)?;
+            transaction.add_code_cell(sheet_id, sheet_pos.into());
 
             let forward_operations = vec![op];
 

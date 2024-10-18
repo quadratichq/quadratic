@@ -64,6 +64,7 @@ class PixiAppSettings {
     }
     this.lastSettings = this.settings;
     events.on('gridSettings', this.getSettings);
+    events.on('contextMenu', this.getContextSettings);
     this._input = { show: false };
     this._panMode = PanMode.Disabled;
   }
@@ -223,6 +224,12 @@ class PixiAppSettings {
     this.contextMenu = contextMenu;
     this.setContextMenu = setContextMenu;
   }
+
+  // We need this to ensure contextMenu is updated immediately to the state. The
+  // above function waits a tick.
+  private getContextSettings = (contextMenu: ContextMenuState) => {
+    this.contextMenu = contextMenu;
+  };
 }
 
 export const pixiAppSettings = new PixiAppSettings();
