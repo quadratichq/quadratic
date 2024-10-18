@@ -96,8 +96,6 @@ export class Cursor extends Container {
     const inlineShowing = inlineEditorHandler.getShowing();
     if (showInput) {
       if (inlineShowing) {
-        x = inlineEditorHandler.x - CURSOR_THICKNESS;
-        y = inlineEditorHandler.y - CURSOR_THICKNESS;
         width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * 2, width);
         height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * 2, height);
       } else {
