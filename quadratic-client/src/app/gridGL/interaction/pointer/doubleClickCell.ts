@@ -1,6 +1,7 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { ArrowMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -11,8 +12,9 @@ export async function doubleClickCell(options: {
   row: number;
   language?: CodeCellLanguage;
   cell?: string;
+  arrowMode?: ArrowMode;
 }) {
-  const { language, cell, column, row } = options;
+  const { language, cell, column, row, arrowMode } = options;
 
   if (inlineEditorHandler.isEditingFormula()) return;
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
@@ -47,7 +49,7 @@ export async function doubleClickCell(options: {
           sheets.sheet.cursor.changePosition({ cursorPosition: { x: column, y: row } });
         }
 
-        pixiAppSettings.changeInput(true, cell);
+        pixiAppSettings.changeInput(true, cell, arrowMode);
       } else {
         pixiAppSettings.setCodeEditorState({
           ...pixiAppSettings.codeEditorState,
@@ -78,6 +80,6 @@ export async function doubleClickCell(options: {
         annotationState: `calendar${value.kind === 'date time' ? '-time' : ''}`,
       });
     }
-    pixiAppSettings.changeInput(true, cell);
+    pixiAppSettings.changeInput(true, cell, arrowMode);
   }
 }

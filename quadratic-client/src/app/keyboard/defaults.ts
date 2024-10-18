@@ -306,8 +306,12 @@ export const defaultShortcuts: ActionShortcut = {
     windows: [[WindowsModifiers.Shift, Keys.Tab]],
   },
   [Action.EditCell]: {
-    mac: [[Keys.Enter], [MacModifiers.Shift, Keys.Enter], [Keys.F2]],
-    windows: [[Keys.Enter], [WindowsModifiers.Shift, Keys.Enter], [Keys.F2]],
+    mac: [[Keys.Enter], [MacModifiers.Shift, Keys.Enter]],
+    windows: [[Keys.Enter], [WindowsModifiers.Shift, Keys.Enter]],
+  },
+  [Action.ToggleArrowMode]: {
+    mac: [[Keys.F2]],
+    windows: [[Keys.F2]],
   },
   [Action.DeleteCell]: {
     mac: [[Keys.Backspace], [Keys.Delete]],
