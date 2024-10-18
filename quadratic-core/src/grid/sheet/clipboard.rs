@@ -94,13 +94,13 @@ impl Sheet {
 
                     if bold
                         || italic
+                        || underline
+                        || strike_through
                         || text_color.is_some()
                         || fill_color.is_some()
                         || cell_align.is_some()
                         || cell_vertical_align.is_some()
                         || cell_wrap.is_some()
-                        || underline
-                        || strike_through
                     {
                         style.push_str("style=\"");
 
@@ -109,6 +109,13 @@ impl Sheet {
                         }
                         if italic {
                             style.push_str("font-style:italic;");
+                        }
+                        if underline && !strike_through {
+                            style.push_str("text-decoration:underline;");
+                        } else if !underline && strike_through {
+                            style.push_str("text-decoration:line-through;");
+                        } else if underline && strike_through {
+                            style.push_str("text-decoration:underline line-through;");
                         }
                         if let Some(text_color) = text_color {
                             if let Ok(text_color) = Rgba::from_css_str(text_color.as_str()) {

@@ -1,5 +1,7 @@
 import { events } from '@/app/events/events';
 import { Annotations } from '@/app/gridGL/HTMLGrid/annotations/Annotations';
+import { AskAICodeCell } from '@/app/gridGL/HTMLGrid/askAICodeCell/AskAICodeCell';
+import { AskAISelection } from '@/app/gridGL/HTMLGrid/askAISelection/askAISelection';
 import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
 import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
 import { GridContextMenu } from '@/app/gridGL/HTMLGrid/GridContextMenu';
@@ -110,6 +112,8 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
               <CodeRunning />
               <HoverCell />
               <HoverTooltip />
+              <AskAISelection />
+              <AskAICodeCell />
               <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
               <HtmlValidations />
               <Annotations />

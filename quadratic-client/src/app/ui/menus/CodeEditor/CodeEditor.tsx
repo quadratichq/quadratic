@@ -33,6 +33,8 @@ export const CodeEditor = () => {
     <>
       <CodeEditorEffects />
 
+      <CodeEditorEscapeEffect editorInst={editorInst} />
+
       {showCodeEditor && (
         <div
           ref={codeEditorRef}
@@ -78,8 +80,6 @@ export const CodeEditor = () => {
             <CodeEditorEmptyState editorInst={editorInst} />
 
             <ReturnTypeInspector />
-
-            <CodeEditorEscapeEffect editorInst={editorInst} />
           </div>
 
           <div

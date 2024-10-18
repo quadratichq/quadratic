@@ -79,7 +79,7 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current.show(bounds);
   }
 
-  private getById(id: string): CellsSheet | undefined {
+  getById(id: string): CellsSheet | undefined {
     return this.children.find((search) => search.sheetId === id);
   }
 
@@ -99,6 +99,8 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     const key = `${message.hashX},${message.hashY}`;
     sheet.gridOverflowLines.updateHash(key, message.overflowGridLines);
+
+    events.emit('hashContentChanged', message.sheetId, message.hashX, message.hashY);
   }
 
   labelMeshEntry(message: RenderClientLabelMeshEntry) {

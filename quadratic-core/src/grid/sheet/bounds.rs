@@ -463,6 +463,59 @@ impl Sheet {
         }
     }
 
+    pub fn find_tabular_data_rects(&self, rect: Rect) -> Vec<Rect> {
+        let mut rects = Vec::new();
+
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+
+                let is_visited = rects.iter().any(|rect: &Rect| rect.contains(pos));
+                if is_visited {
+                    continue;
+                }
+
+                let has_value = self.display_value(pos).is_some();
+                if !has_value {
+                    continue;
+                }
+
+                let header_row = self
+                    .find_next_row(pos.y - 1, pos.x, true, false)
+                    .unwrap_or(pos.y - 1)
+                    + 1;
+                let footer_row = self
+                    .find_next_row(pos.y + 1, pos.x, false, false)
+                    .unwrap_or(pos.y + 1)
+                    - 1;
+
+                let rect_start_col = [pos.y, header_row, footer_row]
+                    .iter()
+                    .map(|&y| {
+                        self.find_next_column(pos.x - 1, y, true, false)
+                            .map_or(pos.x, |x| x + 1)
+                    })
+                    .max()
+                    .unwrap();
+
+                let rect_end_col = [pos.y, header_row, footer_row]
+                    .iter()
+                    .map(|&y| {
+                        self.find_next_column(pos.x + 1, y, false, false)
+                            .map_or(pos.x, |x| x - 1)
+                    })
+                    .min()
+                    .unwrap();
+
+                let tabular_data_rect =
+                    Rect::new(rect_start_col, header_row, rect_end_col, footer_row);
+                rects.push(tabular_data_rect);
+            }
+        }
+
+        rects
+    }
+
     /// Returns the bounds of the sheet.
     ///
     /// Returns `(data_bounds, format_bounds)`.
