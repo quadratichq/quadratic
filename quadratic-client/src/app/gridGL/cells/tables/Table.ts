@@ -155,7 +155,7 @@ export class Table extends Container {
   private tableNamePosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
       if (this.tableBounds.y < bounds.top + gridHeading) {
-        this.tableName.y = bounds.top + gridHeading - this.tableBounds.top;
+        this.tableName.y = bounds.top + gridHeading;
       } else {
         this.tableName.y = this.tableBounds.top;
       }
