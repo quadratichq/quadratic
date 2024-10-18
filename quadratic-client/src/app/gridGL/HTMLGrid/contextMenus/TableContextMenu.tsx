@@ -54,6 +54,7 @@ export const TableContextMenu = () => {
         menuClassName="bg-background"
       >
         <MenuItemAction action={Action.RenameDataTable} />
+        <MenuDivider />
         <MenuItemAction action={Action.ToggleHeaderDataTable} />
         <MenuItemAction action={Action.ToggleFirstRowAsHeaderDataTable} />
         <MenuDivider />
