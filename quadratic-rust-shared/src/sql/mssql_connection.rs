@@ -7,6 +7,7 @@ use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::{StreamExt, TryStreamExt};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use tiberius::xml::XmlData;
 use tiberius::ColumnData;
@@ -235,9 +236,11 @@ ORDER BY
                 ColumnData::I64(_) => convert_mssql_type::<i64, _>(column_data, ArrowType::Int64),
                 ColumnData::F32(_) => convert_mssql_type::<f32, _>(column_data, ArrowType::Float32),
                 ColumnData::F64(_) => convert_mssql_type::<f64, _>(column_data, ArrowType::Float64),
-                ColumnData::Numeric(_) => convert_mssql_type::<&str, _>(column_data, |s| {
-                    ArrowType::BigDecimal(BigDecimal::from_str(s).unwrap_or_default())
-                }),
+                ColumnData::Numeric(_) => {
+                    convert_mssql_type::<Decimal, _>(column_data, |decimal| {
+                        ArrowType::BigDecimal(BigDecimal::from_str(&decimal.to_string()).unwrap())
+                    })
+                }
                 ColumnData::Guid(_) => convert_mssql_type::<Uuid, _>(column_data, ArrowType::Uuid),
                 ColumnData::String(_) => {
                     convert_mssql_type_owned::<String, _>(column_data.to_owned(), ArrowType::Utf8)
