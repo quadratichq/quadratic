@@ -430,3 +430,11 @@ export const ZoomInIcon: IconComponent = (props) => {
 export const ZoomOutIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_out</Icon>;
 };
+
+export const TableEditIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_edit</Icon>;
+};
+
+export const TableConvertIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_convert</Icon>;
+};

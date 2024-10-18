@@ -129,7 +129,8 @@ export class Pointer {
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world, event) ||
       this.pointerCursor.pointerMove(world) ||
-      this.pointerLink.pointerMove(world, event);
+      this.pointerLink.pointerMove(world, event) ||
+      this.pointerTable.pointerMove();
 
     this.updateCursor();
   };

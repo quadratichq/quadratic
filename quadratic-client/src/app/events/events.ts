@@ -1,4 +1,4 @@
-import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuSpecial, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { SheetPosTS } from '@/app/gridGL/types/size';
@@ -132,6 +132,7 @@ interface EventTypes {
     row?: number;
     column?: number;
     table?: JsRenderCodeCell;
+    special?: ContextMenuSpecial;
   }) => void;
   contextMenuClose: () => void;
 

@@ -1,7 +1,7 @@
 //! This shows the table context menu.
 
 import { Action } from '@/app/actions/actions';
-import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { contextMenuAtom, ContextMenuSpecial, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -14,10 +14,13 @@ export const TableContextMenu = () => {
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const onClose = useCallback(() => {
+    if (contextMenu.type === ContextMenuType.Table && contextMenu.special === ContextMenuSpecial.rename) {
+      return;
+    }
     setContextMenu({});
     events.emit('contextMenuClose');
     focusGrid();
-  }, [setContextMenu]);
+  }, [contextMenu.special, contextMenu.type, setContextMenu]);
 
   useEffect(() => {
     pixiApp.viewport.on('moved', onClose);
@@ -40,7 +43,7 @@ export const TableContextMenu = () => {
         top: contextMenu.world?.y ?? 0,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
         pointerEvents: 'auto',
-        display: contextMenu.type === ContextMenuType.Table ? 'block' : 'none',
+        display: contextMenu.type === ContextMenuType.Table && !contextMenu.special ? 'block' : 'none',
       }}
     >
       <ControlledMenu
@@ -51,6 +54,8 @@ export const TableContextMenu = () => {
         menuClassName="bg-background"
       >
         <MenuItemAction action={Action.RenameDataTable} />
+        <MenuDivider />
+        <MenuItemAction action={Action.ToggleHeaderDataTable} />
         <MenuItemAction action={Action.ToggleFirstRowAsHeaderDataTable} />
         <MenuDivider />
         <MenuItemAction action={Action.FlattenDataTable} />
