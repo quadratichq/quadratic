@@ -267,10 +267,10 @@ export class Cursor extends Container {
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
     const halfSize = indicatorSize / 2;
     const corners = [
-      { x: x - halfSize, y: y - halfSize },
-      { x: x + width - halfSize, y: y - halfSize },
-      { x: x - halfSize, y: y + height - halfSize },
-      { x: x + width - halfSize, y: y + height - halfSize },
+      { x: x - halfSize + 1, y: y - halfSize + 1 },
+      { x: x + width - halfSize - 1, y: y - halfSize + 1 },
+      { x: x - halfSize + 1, y: y + height - halfSize - 1 },
+      { x: x + width - halfSize - 1, y: y + height - halfSize - 1 },
     ];
     this.graphics.lineStyle(0);
     this.graphics.beginFill(color);
