@@ -79,23 +79,29 @@ export class Table extends Container {
     background.endFill();
 
     // create column headings
-    let x = 0;
-    this.columns = codeCell.column_names.map((column, index) => {
-      const width = this.sheet.offsets.getColumnWidth(codeCell.x + index);
-      const bounds = new Rectangle(x, this.headingBounds.y, width, this.headingBounds.height);
-      const heading = this.headingContainer.addChild(new Container());
-      heading.position.set(x + OPEN_SANS_FIX.x, OPEN_SANS_FIX.y);
-      heading.addChild(
-        new BitmapText(column.name, {
-          fontName: 'OpenSans-Bold',
-          fontSize: FONT_SIZE,
-          tint: colors.tableHeadingForeground,
-        })
-      );
+    if (codeCell.show_header) {
+      this.headingContainer.visible = true;
+      let x = 0;
+      this.columns = codeCell.column_names.map((column, index) => {
+        const width = this.sheet.offsets.getColumnWidth(codeCell.x + index);
+        const bounds = new Rectangle(x, this.headingBounds.y, width, this.headingBounds.height);
+        const heading = this.headingContainer.addChild(new Container());
+        heading.position.set(x + OPEN_SANS_FIX.x, OPEN_SANS_FIX.y);
+        heading.addChild(
+          new BitmapText(column.name, {
+            fontName: 'OpenSans-Bold',
+            fontSize: FONT_SIZE,
+            tint: colors.tableHeadingForeground,
+          })
+        );
 
-      x += width;
-      return { heading, bounds };
-    });
+        x += width;
+        return { heading, bounds };
+      });
+    } else {
+      this.columns = [];
+      this.headingContainer.visible = false;
+    }
 
     // draw outline around entire table
     this.addChild(this.outline);
@@ -115,14 +121,17 @@ export class Table extends Container {
     text.position.set(OPEN_SANS_FIX.x + TABLE_NAME_PADDING, OPEN_SANS_FIX.y - this.headingBounds.height);
 
     const dropdown = this.tableName.addChild(this.drawDropdown());
-    dropdown.position.set(text.width + OPEN_SANS_FIX.x + DROPDOWN_PADDING, -this.headingHeight / 2);
+    dropdown.position.set(
+      text.width + OPEN_SANS_FIX.x + DROPDOWN_PADDING + TABLE_NAME_PADDING,
+      -this.headingHeight / 2
+    );
 
     nameBackground.beginFill(getCSSVariableTint('primary'));
     nameBackground.drawShape(
       new Rectangle(
         0,
         -this.headingBounds.height,
-        text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING,
+        text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING + TABLE_NAME_PADDING,
         this.headingBounds.height
       )
     );
@@ -130,7 +139,7 @@ export class Table extends Container {
     this.tableNameBounds = new Rectangle(
       this.tableBounds.x,
       this.tableBounds.y - this.headingHeight,
-      text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING,
+      text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING + TABLE_NAME_PADDING,
       this.headingBounds.height
     );
   };

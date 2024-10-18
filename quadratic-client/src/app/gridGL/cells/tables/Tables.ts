@@ -94,6 +94,9 @@ export class Tables extends Container<Table> {
     }
     const cursor = sheets.sheet.cursor.cursorPosition;
     this.activeTable = this.children.find((table) => table.intersectsCursor(cursor.x, cursor.y));
+    if (this.hoverTable === this.activeTable) {
+      this.hoverTable = undefined;
+    }
   };
 
   // Redraw the headings if the offsets change.
