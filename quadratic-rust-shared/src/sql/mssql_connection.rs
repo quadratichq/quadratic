@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
@@ -9,11 +10,10 @@ use futures_util::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use tiberius::xml::XmlData;
 use tiberius::ColumnData;
-use uuid::Uuid;
-
 use tiberius::{AuthMethod, Client, Column, Config, FromSql, FromSqlOwned, Row};
 use tokio::net::TcpStream;
 use tokio_util::compat::{Compat, TokioAsyncWriteCompatExt};
+use uuid::Uuid;
 
 use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError, Sql};
@@ -235,9 +235,9 @@ ORDER BY
                 ColumnData::I64(_) => convert_mssql_type::<i64, _>(column_data, ArrowType::Int64),
                 ColumnData::F32(_) => convert_mssql_type::<f32, _>(column_data, ArrowType::Float32),
                 ColumnData::F64(_) => convert_mssql_type::<f64, _>(column_data, ArrowType::Float64),
-                ColumnData::Numeric(_) => {
-                    convert_mssql_type::<BigDecimal, _>(column_data, ArrowType::BigDecimal)
-                }
+                ColumnData::Numeric(_) => convert_mssql_type::<&str, _>(column_data, |s| {
+                    ArrowType::BigDecimal(BigDecimal::from_str(s).unwrap_or_default())
+                }),
                 ColumnData::Guid(_) => convert_mssql_type::<Uuid, _>(column_data, ArrowType::Uuid),
                 ColumnData::String(_) => {
                     convert_mssql_type_owned::<String, _>(column_data.to_owned(), ArrowType::Utf8)
