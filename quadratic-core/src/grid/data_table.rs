@@ -820,7 +820,6 @@ pub mod test {
             sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("first".into()))
         );
-
         t.toggle_first_row_as_header(false);
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
     }
