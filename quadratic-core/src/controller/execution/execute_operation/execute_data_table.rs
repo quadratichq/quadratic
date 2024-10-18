@@ -103,12 +103,19 @@ impl GridController {
     ) -> Result<()> {
         if let Operation::SetDataTableAt { sheet_pos, values } = op {
             let sheet_id = sheet_pos.sheet_id;
-            let pos = Pos::from(sheet_pos);
+            let mut pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(pos)?;
 
             // TODO(ddimaria): handle multiple values
             if values.size() != 1 {
                 bail!("Only single values are supported for now");
+            }
+
+            let data_table = sheet.data_table_result(data_table_pos)?;
+
+            if data_table.show_header && !data_table.header_is_first_row {
+                pos.y -= 1;
             }
 
             let value = values.safe_get(0, 0).cloned()?;

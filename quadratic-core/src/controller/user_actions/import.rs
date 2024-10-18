@@ -78,11 +78,9 @@ pub(crate) mod tests {
     use std::str::FromStr;
 
     use crate::{
-        cellvalue::Import,
         grid::CodeCellLanguage,
         test_util::{
-            assert_cell_value_row, assert_data_table_cell_value_row, assert_display_cell_value,
-            print_data_table, print_table,
+            assert_cell_value_row, assert_data_table_cell_value_row, print_data_table, print_table,
         },
         wasm_bindings::js::clear_js_calls,
         CellValue, CodeCellValue, Rect, RunError, RunErrorMsg, Span,
@@ -119,6 +117,11 @@ pub(crate) mod tests {
 
         gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
             .unwrap();
+
+        let sheet = gc.sheet_mut(sheet_id);
+        let data_table_pos = sheet.first_data_table_within(pos).unwrap();
+        let data_table = sheet.data_table_mut(data_table_pos).unwrap();
+        data_table.apply_first_row_as_header();
 
         (gc, sheet_id, pos, file_name)
     }

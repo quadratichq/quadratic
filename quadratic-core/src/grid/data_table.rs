@@ -133,6 +133,8 @@ impl DataTable {
 
         if header_is_first_row {
             data_table.apply_first_row_as_header();
+        } else if show_header {
+            data_table.apply_default_header();
         }
 
         // data_table.toggle_first_row_as_header(header_is_first_row);
@@ -374,7 +376,7 @@ impl DataTable {
         }
     }
 
-    pub fn display_value_at(&self, pos: Pos) -> Result<&CellValue> {
+    pub fn display_value_at(&self, mut pos: Pos) -> Result<&CellValue> {
         // println!("pos: {:?}", pos);
         // println!("self.columns: {:?}", self.columns);
 
@@ -388,7 +390,9 @@ impl DataTable {
             }
         }
 
-        // pos.y = self.adjust_for_header(pos.y as usize) as i64;
+        if !self.header_is_first_row && self.show_header {
+            pos.y = pos.y - 1;
+        }
 
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
@@ -861,7 +865,9 @@ pub mod test {
         let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
         data_table.toggle_first_row_as_header(false);
 
-        pretty_print_data_table(&data_table, Some("Data Table"), None);
+        println!("data_table: {:?}", data_table);
+
+        pretty_print_data_table(&data_table, None, None);
         assert_eq!(
             sheet.display_value(pos),
             Some(CellValue::Text("Column 1".into()))

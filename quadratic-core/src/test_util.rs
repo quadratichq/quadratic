@@ -69,8 +69,18 @@ pub fn assert_data_table_cell_value(
     value: &str,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
+    let mut pos = Pos { x, y };
+    let data_table_pos = sheet.first_data_table_within(pos).unwrap();
+    let data_table = sheet.data_table_result(data_table_pos).unwrap();
+
+    println!("Data table at {:?}", data_table);
+
+    if data_table.show_header && !data_table.header_is_first_row {
+        pos.y += 1;
+    }
+
     let cell_value = sheet
-        .get_code_cell_value(Pos { x, y })
+        .get_code_cell_value(pos)
         .map_or_else(|| CellValue::Blank, |v| CellValue::Text(v.to_string()));
     let expected_text_or_blank =
         |v: &CellValue| v == &CellValue::Text(value.into()) || v == &CellValue::Blank;

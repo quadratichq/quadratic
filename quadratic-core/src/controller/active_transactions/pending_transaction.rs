@@ -505,7 +505,7 @@ mod tests {
             Value::Single(CellValue::Html("html".to_string())),
             false,
             false,
-            false,
+            true,
         );
         transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
         assert_eq!(transaction.code_cells.len(), 1);
@@ -529,7 +529,7 @@ mod tests {
             Value::Single(CellValue::Image("image".to_string())),
             false,
             false,
-            false,
+            true,
         );
         transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
         assert_eq!(transaction.code_cells.len(), 1);

@@ -526,7 +526,7 @@ mod test {
         };
         assert_eq!(sheet_pos.x, 1);
         assert_eq!(
-            data_table.cell_value_ref_at(0, 0),
+            data_table.cell_value_ref_at(0, 1),
             Some(&CellValue::Text("city0".into()))
         );
     }

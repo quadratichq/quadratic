@@ -134,7 +134,7 @@ impl Sheet {
                 Value::Array(array),
                 false,
                 false,
-                true,
+                false,
             )),
         );
     }
@@ -180,7 +180,7 @@ impl Sheet {
                 Value::Array(array),
                 false,
                 false,
-                true,
+                false,
             )),
         );
     }

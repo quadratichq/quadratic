@@ -51,6 +51,13 @@ impl Sheet {
         self.data_tables.get(&pos)
     }
 
+    /// Returns a DatatTable at a Pos
+    pub fn data_table_result(&self, pos: Pos) -> Result<&DataTable> {
+        self.data_tables
+            .get(&pos)
+            .ok_or_else(|| anyhow!("Data table not found at {:?}", pos))
+    }
+
     /// Returns a mutable DatatTable at a Pos
     pub fn data_table_mut(&mut self, pos: Pos) -> Result<&mut DataTable> {
         self.data_tables
