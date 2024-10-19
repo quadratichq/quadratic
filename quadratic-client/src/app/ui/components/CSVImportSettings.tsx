@@ -20,6 +20,7 @@ const DEFAULT_CSV_DELIMITER = ',';
 const DEFAULT_CUSTOM_CSV_DELIMITER = '';
 const DEFAULT_HAS_HEADING = true;
 const DEFAULT_CSV_PREVIEW = undefined;
+const DEFAULT_MAX_ROWS = 6; // 1 header + 5 rows
 
 export const CSVImportSettings = () => {
   const [csvDelimiter, setCsvDelimiter] = useState<string>(DEFAULT_CSV_DELIMITER);
@@ -83,7 +84,7 @@ export const CSVImportSettings = () => {
         if (isNaN(delimiter)) return;
 
         const arrayBuffer = await csvFile.arrayBuffer();
-        const preview = GridControllerWasm.getCSVPreview(new Uint8Array(arrayBuffer), delimiter);
+        const preview = GridControllerWasm.getCSVPreview(new Uint8Array(arrayBuffer), DEFAULT_MAX_ROWS, delimiter);
 
         if (!abortSignal.aborted) {
           setCsvPreview(preview);
@@ -211,7 +212,7 @@ export const CSVImportSettings = () => {
 
                 <TableBody>
                   {csvPreview.length > 0 &&
-                    csvPreview.slice(hasHeading ? 1 : 0).map((row, i) => (
+                    csvPreview.slice(hasHeading ? 1 : 0, DEFAULT_MAX_ROWS + (hasHeading ? 0 : -1)).map((row, i) => (
                       <TableRow key={`row-${i}-${row[0]}`}>
                         {row.map((cell, j) => (
                           <TableCell key={`cell-${j}-${cell}`}>{cell}</TableCell>

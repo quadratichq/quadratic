@@ -20,13 +20,17 @@ use super::operation::Operation;
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
 impl GridController {
-    pub fn get_csv_preview(file: Vec<u8>, delimiter: Option<u8>) -> Result<Vec<Vec<String>>> {
+    pub fn get_csv_preview(
+        file: Vec<u8>,
+        max_rows: u32,
+        delimiter: Option<u8>,
+    ) -> Result<Vec<Vec<String>>> {
         let error = |message: String| anyhow!("Error parsing CSV file: {}", message);
         let file: &[u8] = match String::from_utf8_lossy(&file) {
             std::borrow::Cow::Borrowed(_) => &file,
             std::borrow::Cow::Owned(_) => {
                 if let Some(utf) = read_utf16(&file) {
-                    return Self::get_csv_preview(utf.as_bytes().to_vec(), delimiter);
+                    return Self::get_csv_preview(utf.as_bytes().to_vec(), max_rows, delimiter);
                 }
                 &file
             }
@@ -51,8 +55,7 @@ impl GridController {
 
         let mut preview = vec![];
         for (i, entry) in reader.records().enumerate() {
-            // limit to 5 lines of preview
-            if i >= 5 {
+            if i >= max_rows as usize {
                 break;
             }
             match entry {
@@ -466,7 +469,7 @@ mod test {
     #[parallel]
     fn test_get_csv_preview_with_valid_csv() {
         let csv_data = b"header1,header2\nvalue1,value2\nvalue3,value4";
-        let result = GridController::get_csv_preview(csv_data.to_vec(), Some(b','));
+        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, Some(b','));
         assert!(result.is_ok());
         let preview = result.unwrap();
         assert_eq!(preview.len(), 3);
@@ -479,7 +482,7 @@ mod test {
     #[parallel]
     fn test_get_csv_preview_with_auto_delimiter() {
         let csv_data = b"header1\theader2\nvalue1\tvalue2\nvalue3\tvalue4";
-        let result = GridController::get_csv_preview(csv_data.to_vec(), None);
+        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, None);
         assert!(result.is_ok());
         let preview = result.unwrap();
         assert_eq!(preview.len(), 3);
@@ -498,7 +501,7 @@ mod test {
             0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
             0x65, 0x00, 0x32, 0x00,
         ];
-        let result = GridController::get_csv_preview(utf16_data, Some(b','));
+        let result = GridController::get_csv_preview(utf16_data, 6, Some(b','));
         assert!(result.is_ok());
         let preview = result.unwrap();
         assert_eq!(preview.len(), 2);

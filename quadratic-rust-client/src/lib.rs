@@ -32,8 +32,12 @@ pub struct GridControllerWasm {}
 #[wasm_bindgen]
 impl GridControllerWasm {
     #[wasm_bindgen(js_name = "getCSVPreview")]
-    pub fn js_get_csv_preview(file: Vec<u8>, delimiter: Option<u8>) -> Result<JsValue, JsValue> {
-        let preview = GridController::get_csv_preview(file, delimiter);
+    pub fn js_get_csv_preview(
+        file: Vec<u8>,
+        max_rows: u32,
+        delimiter: Option<u8>,
+    ) -> Result<JsValue, JsValue> {
+        let preview = GridController::get_csv_preview(file, max_rows, delimiter);
         match preview {
             Ok(preview) => Ok(serde_wasm_bindgen::to_value(&preview)?),
             Err(e) => Err(JsValue::from_str(&e.to_string())),
