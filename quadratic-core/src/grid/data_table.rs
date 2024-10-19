@@ -21,6 +21,7 @@ use tabled::{
     builder::Builder,
     settings::{Color, Modify, Style},
 };
+use ts_rs::TS;
 
 use super::Sheet;
 
@@ -47,7 +48,7 @@ impl DataTableColumn {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum SortDirection {
     Ascending,
     Descending,
@@ -65,7 +66,7 @@ impl Display for SortDirection {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct DataTableSort {
     pub column_index: usize,
     pub direction: SortDirection,

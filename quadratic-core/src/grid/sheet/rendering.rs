@@ -448,6 +448,7 @@ impl Sheet {
             column_names: data_table.send_columns(),
             first_row_header: data_table.header_is_first_row,
             show_header: data_table.show_header,
+            sort: data_table.sort.clone(),
         })
     }
 
@@ -494,6 +495,7 @@ impl Sheet {
                                 column_names: data_table.send_columns(),
                                 first_row_header: data_table.header_is_first_row,
                                 show_header: data_table.show_header,
+                                sort: data_table.sort.clone(),
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -1127,6 +1129,7 @@ mod tests {
                 }],
                 first_row_header: false,
                 show_header: true,
+                sort: None,
             })
         );
     }

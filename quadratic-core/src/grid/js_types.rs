@@ -7,7 +7,7 @@ use uuid::Uuid;
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
-use super::{CodeCellLanguage, DataTableColumn, NumericFormat};
+use super::{CodeCellLanguage, DataTableColumn, DataTableSort, NumericFormat};
 use crate::{Pos, SheetRect};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -196,6 +196,7 @@ pub struct JsRenderCodeCell {
     pub column_names: Vec<JsDataTableColumn>,
     pub first_row_header: bool,
     pub show_header: bool,
+    pub sort: Option<Vec<DataTableSort>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

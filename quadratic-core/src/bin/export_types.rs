@@ -28,7 +28,8 @@ use grid::sheet::validations::validation_rules::validation_text::{
 };
 use grid::sheet::validations::validation_rules::ValidationRule;
 use grid::{
-    CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
+    CellAlign, CellVerticalAlign, CellWrap, DataTableSort, GridBounds, NumericFormat,
+    NumericFormatKind, SheetId, SortDirection,
 };
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
@@ -128,6 +129,8 @@ fn main() {
         SheetInfo,
         SheetPos,
         SheetRect,
+        SortDirection,
+        DataTableSort,
         Span,
         SummarizeSelectionResult,
         TextCase,
