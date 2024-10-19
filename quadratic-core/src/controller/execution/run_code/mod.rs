@@ -141,6 +141,7 @@ impl GridController {
                         transaction,
                         result,
                         current_sheet_pos,
+                        waiting_for_async.clone(),
                     );
 
                     transaction.waiting_for_async = None;
@@ -252,7 +253,14 @@ impl GridController {
         transaction: &mut PendingTransaction,
         js_code_result: JsCodeResult,
         start: SheetPos,
+        language: CodeCellLanguage,
     ) -> DataTable {
+        let table_name = match language {
+            CodeCellLanguage::Formula => "Formula 1",
+            CodeCellLanguage::Javascript => "JavaScript 1",
+            CodeCellLanguage::Python => "Python 1",
+            _ => "Table 1",
+        };
         let Some(sheet) = self.try_sheet_mut(start.sheet_id) else {
             // todo: this is probably not the best place to handle this
             // sheet may have been deleted before the async operation completed
@@ -275,7 +283,7 @@ impl GridController {
             let show_header = false;
             return DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "JavaScript 1",
+                table_name,
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
                 false,
                 false,
@@ -344,7 +352,7 @@ impl GridController {
         let show_header = false;
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
-            "JavaScript 1",
+            table_name,
             value,
             false,
             false,

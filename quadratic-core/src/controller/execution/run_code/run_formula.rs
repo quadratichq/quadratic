@@ -250,7 +250,12 @@ mod test {
         };
 
         // need the result to ensure last_modified is the same
-        let result = gc.js_code_result_to_code_cell_value(&mut transaction, result, sheet_pos);
+        let result = gc.js_code_result_to_code_cell_value(
+            &mut transaction,
+            result,
+            sheet_pos,
+            CodeCellLanguage::Javascript,
+        );
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
@@ -322,7 +327,12 @@ mod test {
         let _ = array.set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()));
         let _ = array.set(1, 1, CellValue::Text("Hello".into()));
 
-        let result = gc.js_code_result_to_code_cell_value(&mut transaction, result, sheet_pos);
+        let result = gc.js_code_result_to_code_cell_value(
+            &mut transaction,
+            result,
+            sheet_pos,
+            CodeCellLanguage::Javascript,
+        );
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
