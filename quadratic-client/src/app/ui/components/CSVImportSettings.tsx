@@ -24,8 +24,8 @@ const DEFAULT_CSV_PREVIEW = undefined;
 export const CSVImportSettings = () => {
   const [csvDelimiter, setCsvDelimiter] = useState<string>(DEFAULT_CSV_DELIMITER);
   const [customCsvDelimiter, setCustomCsvDelimiter] = useState<string>(DEFAULT_CUSTOM_CSV_DELIMITER);
-  const [csvPreview, setCsvPreview] = useState<string[][] | undefined>(DEFAULT_CSV_PREVIEW);
   const [hasHeading, setHasHeading] = useState<boolean>(DEFAULT_HAS_HEADING);
+  const [csvPreview, setCsvPreview] = useState<string[][] | undefined>(DEFAULT_CSV_PREVIEW);
   const { csvFile, submitFn } = useRecoilValue(filesImportSettingsAtom);
 
   const handleSubmit = useRecoilCallback(
@@ -37,6 +37,8 @@ export const CSVImportSettings = () => {
             csvDelimiter: delimiter.length === 1 ? delimiter.charCodeAt(0) : undefined,
             hasHeading,
           });
+
+          setCsvPreview(undefined);
 
           return {
             csvFile: undefined,
