@@ -226,9 +226,15 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             },
         };
+        let table_name = match code_cell_value.language {
+            CodeCellLanguage::Formula => "Formula 1",
+            CodeCellLanguage::Javascript => "JavaScript 1",
+            CodeCellLanguage::Python => "Python 1",
+            _ => "Table 1",
+        };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table 1",
+            table_name,
             Value::Single(CellValue::Blank),
             false,
             false,
@@ -269,7 +275,7 @@ impl GridController {
             let show_header = false;
             return DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "Table 1",
+                "JavaScript 1",
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
                 false,
                 false,
@@ -338,7 +344,7 @@ impl GridController {
         let show_header = false;
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
-            "Table 1",
+            "JavaScript 1",
             value,
             false,
             false,

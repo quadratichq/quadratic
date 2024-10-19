@@ -5,6 +5,7 @@
 //! performed yet).
 
 use std::fmt::{Display, Formatter};
+use std::num::NonZeroU32;
 
 use crate::cellvalue::Import;
 use crate::grid::js_types::JsDataTableColumn;
@@ -490,7 +491,13 @@ impl DataTable {
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
         match &self.value {
-            Value::Array(a) => a.size(),
+            Value::Array(a) => {
+                let mut size = a.size();
+                if self.show_header && !self.header_is_first_row {
+                    size.h = NonZeroU32::new(size.h.get() + 1).unwrap();
+                }
+                size
+            }
             Value::Single(_) | Value::Tuple(_) => ArraySize::_1X1,
         }
     }
@@ -864,10 +871,6 @@ pub mod test {
 
         let data_table = sheet.data_table_mut((1, 1).into()).unwrap();
         data_table.toggle_first_row_as_header(false);
-
-        println!("data_table: {:?}", data_table);
-
-        pretty_print_data_table(&data_table, None, None);
         assert_eq!(
             sheet.display_value(pos),
             Some(CellValue::Text("Column 1".into()))
