@@ -654,7 +654,7 @@ pub mod test {
         let expected_data_table =
             DataTable::new(kind.clone(), "Table 1", expected_values, false, false, true)
                 .with_last_modified(data_table.last_modified);
-        let expected_array_size = ArraySize::new(4, 4).unwrap();
+        let expected_array_size = ArraySize::new(4, 5).unwrap();
         assert_eq!(data_table, expected_data_table);
         assert_eq!(data_table.output_size(), expected_array_size);
 
@@ -790,7 +790,7 @@ pub mod test {
         );
 
         assert_eq!(data_table.output_size().w.get(), 10);
-        assert_eq!(data_table.output_size().h.get(), 11);
+        assert_eq!(data_table.output_size().h.get(), 12);
         assert_eq!(
             data_table.output_sheet_rect(
                 SheetPos {
@@ -800,7 +800,7 @@ pub mod test {
                 },
                 false
             ),
-            SheetRect::from_numbers(1, 2, 10, 11, sheet_id)
+            SheetRect::new(1, 2, 10, 13, sheet_id)
         );
     }
 
@@ -829,14 +829,14 @@ pub mod test {
         let sheet_pos = SheetPos::from((1, 2, sheet_id));
 
         assert_eq!(data_table.output_size().w.get(), 10);
-        assert_eq!(data_table.output_size().h.get(), 11);
+        assert_eq!(data_table.output_size().h.get(), 12);
         assert_eq!(
             data_table.output_sheet_rect(sheet_pos, false),
-            SheetRect::from_numbers(1, 2, 1, 1, sheet_id)
+            SheetRect::new(1, 2, 1, 2, sheet_id)
         );
         assert_eq!(
             data_table.output_sheet_rect(sheet_pos, true),
-            SheetRect::from_numbers(1, 2, 10, 11, sheet_id)
+            SheetRect::new(1, 2, 10, 13, sheet_id)
         );
     }
 
