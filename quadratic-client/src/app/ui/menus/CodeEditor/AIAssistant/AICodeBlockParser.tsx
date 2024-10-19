@@ -1,5 +1,5 @@
-import { CodeSnippet } from '@/app/ui/components/CodeSnippet';
 import { Markdown } from '@/app/ui/components/Markdown';
+import { CodeSnippet } from '@/app/ui/menus/CodeEditor/AIAssistant/CodeSnippet';
 
 // Regular expression to match code blocks
 const CODE_BLOCK_REGEX = /```([a-zA-Z]+)?\n([\s\S]+?)(?:\n*```|$)/g;

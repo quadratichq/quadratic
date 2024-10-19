@@ -74,33 +74,28 @@ export function AIAssistantMessages() {
               }}
             >
               {message.role === 'user' ? (
-                <>
-                  <Avatar
-                    src={user?.picture}
-                    alt={user?.name}
-                    style={{
-                      backgroundColor: colors.quadraticSecondary,
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    {user?.name}
-                  </Avatar>
-                  <AICodeBlockParser input={message.content} />
-                </>
+                <Avatar
+                  src={user?.picture}
+                  alt={user?.name}
+                  style={{
+                    backgroundColor: colors.quadraticSecondary,
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  {user?.name}
+                </Avatar>
               ) : (
-                <>
-                  <Avatar
-                    alt="AI Assistant"
-                    style={{
-                      backgroundColor: 'white',
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
-                  </Avatar>
-                  <AICodeBlockParser input={message.content} />
-                </>
+                <Avatar
+                  alt="AI Assistant"
+                  style={{
+                    backgroundColor: 'white',
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
+                </Avatar>
               )}
+              <AICodeBlockParser input={message.content} />
             </div>
           ))}
         <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />

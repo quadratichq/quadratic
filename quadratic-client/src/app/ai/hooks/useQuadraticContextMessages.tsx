@@ -16,17 +16,10 @@ export function useQuadraticContextMessages() {
 You are a helpful assistant inside of a spreadsheet application called Quadratic.\n
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}\n\n
-${
-  language === 'Python'
-    ? PythonDocs
-    : language === 'Javascript'
-    ? JavascriptDocs
-    : language === 'Formula'
-    ? FormulaDocs
-    : language === 'Connection'
-    ? ConnectionDocs
-    : PythonDocs
-}\n
+${language === 'Python' || language === undefined ? PythonDocs : ''}\n
+${language === 'Javascript' || language === undefined ? JavascriptDocs : ''}\n
+${language === 'Formula' || language === undefined ? FormulaDocs : ''}\n
+${language === 'Connection' || language === undefined ? ConnectionDocs : ''}\n
 Provide your response in ${
           language ?? 'Python'
         } language. Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.

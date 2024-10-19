@@ -1,8 +1,8 @@
 import { isAnthropicModel } from '@/app/ai/hooks/useAIRequestToAPI';
 import { aiAnalystMessagesAtom, aiAnalystShowInternalContextAtom } from '@/app/atoms/aiAnalystAtom';
 import { colors } from '@/app/theme/colors';
+import { Markdown } from '@/app/ui/components/Markdown';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
-import { AICodeBlockParser } from '@/app/ui/menus/AIAnalyst/AICodeBlockParser';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { useCallback, useEffect, useState } from 'react';
@@ -85,12 +85,15 @@ export function AIAnalystMessages() {
                   >
                     {user?.name}
                   </Avatar>
-                  <AICodeBlockParser input={message.content} />
+
+                  <div className="flex select-text flex-col gap-2 whitespace-normal break-words">
+                    <Markdown>{message.content}</Markdown>
+                  </div>
                 </>
               ) : (
                 <>
                   <Avatar
-                    alt="AI Assistant"
+                    alt="AI Analyst"
                     style={{
                       backgroundColor: 'white',
                       marginBottom: '0.5rem',
@@ -98,7 +101,10 @@ export function AIAnalystMessages() {
                   >
                     {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
                   </Avatar>
-                  <AICodeBlockParser input={message.content} />
+
+                  <div className="flex select-text flex-col gap-2 whitespace-normal break-words">
+                    <Markdown>{message.content}</Markdown>
+                  </div>
                 </>
               )}
             </div>

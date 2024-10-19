@@ -52,6 +52,10 @@ export const ArrowDropDownCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down_circle</Icon>;
 };
 
+export const BackspaceIcon: IconComponent = (props) => {
+  return <Icon {...props}>backspace</Icon>;
+};
+
 export const BorderAllIcon: IconComponent = (props) => {
   return <Icon {...props}>border_all</Icon>;
 };

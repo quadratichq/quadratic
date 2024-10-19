@@ -19,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shar
 import { cn } from '@/shared/shadcn/utils';
 import Editor from '@monaco-editor/react';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 
 interface CodeSnippetProps {
@@ -28,18 +28,15 @@ interface CodeSnippetProps {
 }
 
 export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) {
-  let syntax = language.toLowerCase();
-  if (syntax === 'postgres') {
-    syntax = 'sql';
-  } else if (syntax === 'mysql') {
-    syntax = 'sql';
-  } else if (syntax === 'mssql') {
-    syntax = 'sql';
-  } else if (syntax === 'snowflake') {
-    syntax = 'sql';
-  }
-  const numberOfLines = code.split('\n').length;
-  const showAsCollapsed = numberOfLines > 10;
+  const syntax = useMemo(() => {
+    const lowerCaseLanguage = language.toLowerCase();
+    if (lowerCaseLanguage === 'postgres' || lowerCaseLanguage === 'mysql' || lowerCaseLanguage === 'mssql' || lowerCaseLanguage === 'snowflake') {
+      return 'sql';
+    }
+    return lowerCaseLanguage;
+  }, [language]);
+  const numberOfLines = useMemo(() => code.split('\n').length, [code]);
+  const showAsCollapsed = useMemo(() => numberOfLines > 10, [numberOfLines]);
   const [collapsed, setCollapsed] = useState(true);
 
   return (
