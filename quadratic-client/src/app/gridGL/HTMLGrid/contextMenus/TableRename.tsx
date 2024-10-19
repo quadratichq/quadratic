@@ -2,7 +2,7 @@
 
 import { contextMenuAtom, ContextMenuSpecial, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
-import { TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/Table';
+import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/Table';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -105,10 +105,10 @@ export const TableRename = () => {
       ref={ref}
       className="pointer-events-auto absolute rounded-none border-none bg-primary px-0 text-primary-foreground outline-none"
       style={{
-        paddingLeft: TABLE_NAME_PADDING,
+        paddingLeft: TABLE_NAME_PADDING[0],
         left: position.x,
         top: position.y,
-        fontSize: FONT_SIZE,
+        fontSize: TABLE_NAME_FONT_SIZE,
         width: position.width,
         height: position.height,
         transformOrigin: 'bottom left',

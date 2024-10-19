@@ -15,7 +15,8 @@ interface Column {
 }
 
 const DROPDOWN_PADDING = 10;
-export const TABLE_NAME_PADDING = 4;
+export const TABLE_NAME_FONT_SIZE = 12;
+export const TABLE_NAME_PADDING = [4, 2];
 
 export class Table extends Container {
   private sheet: Sheet;
@@ -40,8 +41,8 @@ export class Table extends Container {
     this.sheet = sheet;
     this.tableName = new Container();
     this.tableNameText = new BitmapText(codeCell.name, {
-      fontName: 'OpenSans',
-      fontSize: FONT_SIZE,
+      fontName: 'OpenSans-Bold',
+      fontSize: TABLE_NAME_FONT_SIZE,
       tint: getCSSVariableTint('primary-foreground'),
     });
     this.headingContainer = new Container();
@@ -125,11 +126,11 @@ export class Table extends Container {
     this.tableName.visible = false;
     const text = this.tableName.addChild(this.tableNameText);
     this.tableNameText.text = codeCell.name;
-    text.position.set(OPEN_SANS_FIX.x + TABLE_NAME_PADDING, OPEN_SANS_FIX.y - this.headingBounds.height);
+    text.position.set(TABLE_NAME_PADDING[0], -this.headingHeight);
 
     const dropdown = this.tableName.addChild(this.drawDropdown());
     dropdown.position.set(
-      text.width + OPEN_SANS_FIX.x + DROPDOWN_PADDING + TABLE_NAME_PADDING,
+      text.width + OPEN_SANS_FIX.x + DROPDOWN_PADDING + TABLE_NAME_PADDING[0],
       -this.headingHeight / 2
     );
 
@@ -138,7 +139,7 @@ export class Table extends Container {
       new Rectangle(
         0,
         -this.headingBounds.height,
-        text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING + TABLE_NAME_PADDING,
+        text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING + TABLE_NAME_PADDING[0],
         this.headingBounds.height
       )
     );
@@ -146,7 +147,7 @@ export class Table extends Container {
     this.tableNameBounds = new Rectangle(
       this.tableBounds.x,
       this.tableBounds.y - this.headingHeight,
-      text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING + TABLE_NAME_PADDING,
+      text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING + TABLE_NAME_PADDING[0],
       this.headingBounds.height
     );
   };
