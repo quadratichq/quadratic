@@ -27,7 +27,7 @@ export const BottomBar = () => {
         {inlineEditorState.visible && (
           <BottomBarItem className="hidden lg:block">
             <a href="https://docs.quadratichq.com/TODO:" target="_blank" rel="noopener noreferrer">
-              {inlineEditorState.navigateText ? 'Edit' : 'Enter'} (F2)
+              {inlineEditorState.editMode ? 'Edit' : 'Enter'} (F2)
             </a>
           </BottomBarItem>
         )}

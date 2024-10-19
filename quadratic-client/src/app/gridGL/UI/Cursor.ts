@@ -251,12 +251,12 @@ export class Cursor extends Container {
     this.graphics.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
   }
 
-  private drawInlineNavigateTextModeIndicator() {
+  private drawInlineCursorModeIndicator() {
     const inlineShowing = inlineEditorHandler.getShowing();
     if (!inlineShowing) return;
 
-    const { visible, navigateText, formula } = pixiAppSettings.inlineEditorState;
-    if (!visible || !navigateText) return;
+    const { visible, editMode, formula } = pixiAppSettings.inlineEditorState;
+    if (!visible || editMode) return;
 
     let { x, y, width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
@@ -295,7 +295,7 @@ export class Cursor extends Container {
       }
       this.drawCodeCursor();
 
-      this.drawInlineNavigateTextModeIndicator();
+      this.drawInlineCursorModeIndicator();
 
       if (!pixiAppSettings.input.show) {
         this.drawMultiCursor();

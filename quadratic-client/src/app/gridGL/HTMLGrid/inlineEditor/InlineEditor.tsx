@@ -7,7 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { colors } from '@/app/theme/colors';
-import { SubtitlesIcon } from '@/shared/components/Icons';
+import { SidebarRightIcon } from '@/app/ui/icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { useCallback } from 'react';
@@ -65,7 +65,7 @@ export const InlineEditor = () => {
               inlineEditorHandler.openCodeEditor();
             }}
           >
-            <SubtitlesIcon style={{ color: 'white' }} />
+            <SidebarRightIcon style={{ color: 'white', width: '20px', height: '20px' }} />
           </Button>
         </TooltipPopover>
       ) : null}

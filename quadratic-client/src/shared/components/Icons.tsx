@@ -395,10 +395,6 @@ export const StopCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>stop_circle</Icon>;
 };
 
-export const SubtitlesIcon: IconComponent = (props) => {
-  return <Icon {...props}>subtitles</Icon>;
-};
-
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_bottom</Icon>;
 };

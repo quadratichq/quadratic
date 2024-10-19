@@ -6,7 +6,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
-import { ArrowMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -156,7 +156,7 @@ class InlineEditorHandler {
   };
 
   // Handler for the changeInput event.
-  private changeInput = async (input: boolean, initialValue?: string, arrowMode?: ArrowMode) => {
+  private changeInput = async (input: boolean, initialValue?: string, cursorMode?: CursorMode) => {
     if (!input && !this.open) return;
 
     if (initialValue) {
@@ -194,16 +194,16 @@ class InlineEditorHandler {
         }
       }
 
-      if (arrowMode === undefined) {
+      if (cursorMode === undefined) {
         if (changeToFormula) {
-          arrowMode = value.length > 1 ? ArrowMode.NavigateText : ArrowMode.SelectCell;
+          cursorMode = value.length > 1 ? CursorMode.Edit : CursorMode.Enter;
         } else {
-          arrowMode = value ? ArrowMode.NavigateText : ArrowMode.SelectCell;
+          cursorMode = value ? CursorMode.Edit : CursorMode.Enter;
         }
       }
       pixiAppSettings.setInlineEditorState?.((prev) => ({
         ...prev,
-        navigateText: arrowMode === ArrowMode.NavigateText,
+        editMode: cursorMode === CursorMode.Edit,
       }));
 
       this.formatSummary = await quadraticCore.getCellFormatSummary(

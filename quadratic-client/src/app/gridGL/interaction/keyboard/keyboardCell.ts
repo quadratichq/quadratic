@@ -6,7 +6,7 @@ import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { ArrowMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -92,7 +92,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
               column: x,
               row: y,
               cell,
-              arrowMode: cell ? ArrowMode.NavigateText : ArrowMode.SelectCell,
+              cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
             });
           });
         }
@@ -112,11 +112,11 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
             row: Number(code.y),
             language: code.language,
             cell: '',
-            arrowMode: ArrowMode.NavigateText,
+            cursorMode: CursorMode.Edit,
           });
         } else {
           quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
-            doubleClickCell({ column: x, row: y, cell, arrowMode: ArrowMode.NavigateText });
+            doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
           });
         }
       });
@@ -175,7 +175,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
           cell: '',
         });
       } else {
-        pixiAppSettings.changeInput(true, event.key, ArrowMode.SelectCell);
+        pixiAppSettings.changeInput(true, event.key, CursorMode.Enter);
       }
     });
     return true;

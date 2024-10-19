@@ -15,14 +15,14 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
-export enum ArrowMode {
-  SelectCell,
-  NavigateText,
+export enum CursorMode {
+  Enter,
+  Edit,
 }
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
-  arrowMode: ArrowMode = ArrowMode.SelectCell;
+  cursorMode: CursorMode = CursorMode.Enter;
 
   private handleArrowHorizontal = async (isRight: boolean, e: KeyboardEvent) => {
     // formula
@@ -31,7 +31,7 @@ class InlineEditorKeyboard {
         e.stopPropagation();
         e.preventDefault();
         keyboardPosition(e);
-      } else if (this.arrowMode === ArrowMode.SelectCell) {
+      } else if (this.cursorMode === CursorMode.Enter) {
         const column = inlineEditorMonaco.getCursorColumn();
         e.stopPropagation();
         e.preventDefault();
@@ -48,7 +48,7 @@ class InlineEditorKeyboard {
     }
     // text
     else {
-      if (this.arrowMode === ArrowMode.SelectCell) {
+      if (this.cursorMode === CursorMode.Enter) {
         e.stopPropagation();
         e.preventDefault();
         if (!(await this.handleValidationError())) {
@@ -73,7 +73,7 @@ class InlineEditorKeyboard {
       e.preventDefault();
       if (inlineEditorHandler.cursorIsMoving) {
         keyboardPosition(e);
-      } else if (this.arrowMode === ArrowMode.SelectCell) {
+      } else if (this.cursorMode === CursorMode.Enter) {
         // If we're not moving and the formula doesn't want a cell reference,
         // close the editor. We can't just use "is the formula syntactically
         // valid" because many formulas are syntactically valid even though
@@ -98,7 +98,7 @@ class InlineEditorKeyboard {
     }
     // text
     else {
-      if (this.arrowMode === ArrowMode.SelectCell) {
+      if (this.cursorMode === CursorMode.Enter) {
         e.stopPropagation();
         e.preventDefault();
         if (!(await this.handleValidationError())) {
@@ -128,7 +128,7 @@ class InlineEditorKeyboard {
   toggleArrowMode = () => {
     pixiAppSettings.setInlineEditorState?.((prev) => ({
       ...prev,
-      navigateText: !prev.navigateText,
+      editMode: !prev.editMode,
     }));
   };
 
@@ -156,7 +156,7 @@ class InlineEditorKeyboard {
     if (e.code === 'Equal' && position.lineNumber === 1 && position.column === 1) {
       pixiAppSettings.setInlineEditorState?.((prev) => ({
         ...prev,
-        navigateText: false,
+        editMode: false,
       }));
     }
 

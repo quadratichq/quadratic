@@ -1,4 +1,4 @@
-import { ArrowMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
@@ -10,7 +10,7 @@ export interface InlineEditorState {
   left: number;
   top: number;
   height: number;
-  navigateText: boolean;
+  editMode: boolean;
 }
 
 export const defaultInlineEditor: InlineEditorState = {
@@ -19,7 +19,7 @@ export const defaultInlineEditor: InlineEditorState = {
   left: 0,
   top: 0,
   height: LINE_HEIGHT,
-  navigateText: false,
+  editMode: false,
 };
 
 export const inlineEditorAtom = atom({
@@ -31,7 +31,7 @@ export const inlineEditorAtom = atom({
         if (newValue.visible) {
           inlineEditorMonaco.focus();
         }
-        inlineEditorKeyboard.arrowMode = newValue.navigateText ? ArrowMode.NavigateText : ArrowMode.SelectCell;
+        inlineEditorKeyboard.cursorMode = newValue.editMode ? CursorMode.Edit : CursorMode.Enter;
         pixiApp.cursor.dirty = true;
       });
     },

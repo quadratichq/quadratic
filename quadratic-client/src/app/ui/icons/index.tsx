@@ -211,3 +211,31 @@ export const BoxIcon = (props: SvgIconProps) => (
     <path d="M8 17.425V10.575L2 7.1V13.95L8 17.425ZM10 17.425L16 13.95V7.1L10 10.575V17.425ZM9 8.85L14.925 5.425L9 2L3.075 5.425L9 8.85ZM1 15.7C0.683333 15.5167 0.4375 15.275 0.2625 14.975C0.0875 14.675 0 14.3417 0 13.975V6.025C0 5.65833 0.0875 5.325 0.2625 5.025C0.4375 4.725 0.683333 4.48333 1 4.3L8 0.275C8.31667 0.0916667 8.65 0 9 0C9.35 0 9.68333 0.0916667 10 0.275L17 4.3C17.3167 4.48333 17.5625 4.725 17.7375 5.025C17.9125 5.325 18 5.65833 18 6.025V13.975C18 14.3417 17.9125 14.675 17.7375 14.975C17.5625 15.275 17.3167 15.5167 17 15.7L10 19.725C9.68333 19.9083 9.35 20 9 20C8.65 20 8.31667 19.9083 8 19.725L1 15.7Z" />
   </SvgIcon>
 );
+
+export const SidebarRightIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect
+        width="18"
+        height="18"
+        rx="3"
+        transform="matrix(-1 0 0 1 21 3)"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <line
+        x1="1"
+        y1="-1"
+        x2="17"
+        y2="-1"
+        transform="matrix(4.37114e-08 1 1 -4.37114e-08 16 3)"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </SvgIcon>
+);
