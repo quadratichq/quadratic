@@ -287,6 +287,7 @@ export const ErrorBoundary = () => {
           description="Reach out to the team owner for permission to access this team."
           Icon={InfoCircledIcon}
           actions={actions}
+          showLoggedInUser
         />
       );
     if (error.status === 404 || error.status === 400)
@@ -296,6 +297,7 @@ export const ErrorBoundary = () => {
           description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
           Icon={ExclamationTriangleIcon}
           actions={actions}
+          showLoggedInUser
         />
       );
   }
@@ -313,6 +315,7 @@ export const ErrorBoundary = () => {
         </Button>
       }
       severity="error"
+      showLoggedInUser
     />
   );
 };
