@@ -33,7 +33,7 @@ const isHeadingShowing = (): boolean => {
 
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenDataTable]: {
-    label: 'Flatten data table',
+    label: 'Flatten table',
     Icon: TableConvertIcon,
     run: async () => {
       const table = pixiAppSettings.contextMenu?.table;
@@ -43,7 +43,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.GridToDataTable]: {
-    label: 'Convert values to data table',
+    label: 'Convert values to table',
     Icon: TableConvertIcon,
     run: async () => {
       quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
@@ -84,7 +84,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.RenameDataTable]: {
-    label: 'Rename data table',
+    label: 'Rename table',
     defaultOption: true,
     Icon: FileRenameIcon,
     run: async () => {
@@ -106,7 +106,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.DeleteDataTable]: {
-    label: 'Delete data table',
+    label: 'Delete table',
     Icon: DeleteIcon,
     run: async () => {
       const table = pixiAppSettings.contextMenu?.table;
