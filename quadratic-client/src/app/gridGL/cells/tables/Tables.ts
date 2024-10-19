@@ -204,4 +204,8 @@ export class Tables extends Container<Table> {
   intersects(rectangle: Rectangle): boolean {
     return this.children.some((table) => table.intersects(rectangle));
   }
+
+  isCursorOnDataTable(): boolean {
+    return this.children.some((table) => table.isCursorOnDataTable());
+  }
 }

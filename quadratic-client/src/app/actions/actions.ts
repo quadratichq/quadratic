@@ -145,4 +145,5 @@ export enum Action {
   ToggleFirstRowAsHeaderDataTable = 'toggle_first_row_as_header_data_table',
   RenameDataTable = 'rename_data_table',
   ToggleHeaderDataTable = 'toggle_header_data_table',
+  DeleteDataTable = 'delete_data_table',
 }

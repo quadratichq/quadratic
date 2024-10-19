@@ -18,6 +18,7 @@ import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
+import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
@@ -372,6 +373,13 @@ export class PixiApp {
         scaleY: this.viewport.scale.y,
       };
     }
+  }
+
+  cellSheet(): CellsSheet {
+    if (!this.cellsSheets.current) {
+      throw new Error('cellSheet not found in pixiApp');
+    }
+    return this.cellsSheets.current;
   }
 }
 

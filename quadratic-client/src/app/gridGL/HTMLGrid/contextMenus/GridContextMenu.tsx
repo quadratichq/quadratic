@@ -5,8 +5,9 @@ import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
+import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { ControlledMenu, MenuDivider } from '@szhsin/react-menu';
+import { ControlledMenu, MenuDivider, SubMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -35,10 +36,12 @@ export const GridContextMenu = () => {
 
   const [columnRowAvailable, setColumnRowAvailable] = useState(false);
   const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
+  const [isDataTable, setIsDataTable] = useState(false);
   useEffect(() => {
     const updateCursor = () => {
       setColumnRowAvailable(sheets.sheet.cursor.hasOneColumnRowSelection(true));
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
+      setIsDataTable(pixiApp.cellSheet().isCursorOnDataTable());
     };
 
     updateCursor();
@@ -96,6 +99,13 @@ export const GridContextMenu = () => {
 
         {canConvertToDataTable && <MenuDivider />}
         {canConvertToDataTable && <MenuItemAction action={Action.GridToDataTable} />}
+
+        {isDataTable && <MenuDivider />}
+        {isDataTable && (
+          <SubMenu label="Table">
+            <TableMenu />
+          </SubMenu>
+        )}
       </ControlledMenu>
     </div>
   );

@@ -1,12 +1,11 @@
 //! This shows the table context menu.
 
-import { Action } from '@/app/actions/actions';
 import { contextMenuAtom, ContextMenuSpecial, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
-import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
+import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { ControlledMenu, MenuDivider } from '@szhsin/react-menu';
+import { ControlledMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -53,12 +52,7 @@ export const TableContextMenu = () => {
         menuStyle={{ padding: '0', color: 'inherit' }}
         menuClassName="bg-background"
       >
-        <MenuItemAction action={Action.RenameDataTable} />
-        <MenuDivider />
-        <MenuItemAction action={Action.ToggleHeaderDataTable} />
-        <MenuItemAction action={Action.ToggleFirstRowAsHeaderDataTable} />
-        <MenuDivider />
-        <MenuItemAction action={Action.FlattenDataTable} />
+        <TableMenu />
       </ControlledMenu>
     </div>
   );

@@ -254,4 +254,13 @@ export class Table extends Container {
       rectangle
     );
   }
+
+  // Checks whether the cursor is on the table
+  isCursorOnDataTable(): boolean {
+    const cursor = sheets.sheet.cursor.cursorPosition;
+    return intersects.rectanglePoint(
+      new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1),
+      cursor
+    );
+  }
 }

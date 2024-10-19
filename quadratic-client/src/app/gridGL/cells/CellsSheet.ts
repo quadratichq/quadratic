@@ -134,4 +134,8 @@ export class CellsSheet extends Container {
   getErrorMarkerValidation(x: number, y: number): boolean {
     return this.cellsLabels.getErrorMarker(x, y) !== undefined;
   }
+
+  isCursorOnDataTable(): boolean {
+    return this.tables.isCursorOnDataTable();
+  }
 }

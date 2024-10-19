@@ -1,9 +1,11 @@
 import { Action } from '@/app/actions/actions';
 import { ContextMenuSpecial } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
+import { createSelection } from '@/app/grid/sheet/selection';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { FileRenameIcon, TableConvertIcon } from '@/shared/components/Icons';
+import { DeleteIcon, FileRenameIcon, TableConvertIcon } from '@/shared/components/Icons';
+import { Rectangle } from 'pixi.js';
 import { sheets } from '../grid/controller/Sheets';
 import { ActionSpecRecord } from './actionsSpec';
 
@@ -14,6 +16,7 @@ type DataTableSpec = Pick<
   | Action.ToggleFirstRowAsHeaderDataTable
   | Action.RenameDataTable
   | Action.ToggleHeaderDataTable
+  | Action.DeleteDataTable
 >;
 
 export type DataTableActionArgs = {
@@ -100,6 +103,17 @@ export const dataTableSpec: DataTableSpec = {
     run: async () => {
       // const { x, y } = sheets.sheet.cursor.cursorPosition;
       // quadraticCore.dataTableShowHeadings(sheets.sheet.id, x, y, sheets.getCursorPosition());
+    },
+  },
+  [Action.DeleteDataTable]: {
+    label: 'Delete data table',
+    Icon: DeleteIcon,
+    run: async () => {
+      const table = pixiAppSettings.contextMenu?.table;
+      if (table) {
+        const selection = createSelection({ sheetId: sheets.sheet.id, rects: [new Rectangle(table.x, table.y, 1, 1)] });
+        quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
+      }
     },
   },
 };
