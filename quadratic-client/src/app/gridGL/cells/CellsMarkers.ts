@@ -1,8 +1,9 @@
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { convertColorStringToTint } from '@/app/helpers/convertColor';
+import { CodeCellLanguage, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { generatedTextures } from '../generateTextures';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { ErrorMarker } from './CellsSheet';
 
 const INDICATOR_SIZE = 4;
@@ -16,6 +17,48 @@ interface Marker {
   triangle?: Sprite;
   symbol?: Sprite;
 }
+
+export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean): Sprite | undefined => {
+  const symbol = new Sprite();
+  if (language === 'Python') {
+    symbol.texture = Texture.from('/images/python-icon.png');
+    symbol.tint = isError ? 0xffffff : colors.cellColorUserPython;
+    return symbol;
+  } else if (language === 'Formula') {
+    symbol.texture = Texture.from('/images/formula-fx-icon.png');
+    symbol.tint = isError ? 0xffffff : colors.cellColorUserFormula;
+    return symbol;
+  } else if (language === 'Javascript') {
+    symbol.texture = Texture.from('/images/javascript-icon.png');
+    symbol.tint = isError ? colors.cellColorError : colors.cellColorUserJavascript;
+    return symbol;
+  } else if (typeof language === 'object') {
+    switch (language.Connection?.kind) {
+      case 'MSSQL':
+        symbol.texture = Texture.from('/images/mssql-icon.png');
+        symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageMssql);
+        return symbol;
+
+      case 'POSTGRES':
+        symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languagePostgres);
+        symbol.texture = Texture.from('/images/postgres-icon.png');
+        return symbol;
+
+      case 'MYSQL':
+        symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageMysql);
+        symbol.texture = Texture.from('/images/mysql-icon.png');
+        return symbol;
+
+      case 'SNOWFLAKE':
+        symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageSnowflake);
+        symbol.texture = Texture.from('/images/snowflake-icon.png');
+        return symbol;
+
+      default:
+        console.log(`Unknown connection kind: ${language.Connection?.kind} in getLanguageSymbol`);
+    }
+  }
+};
 
 export class CellsMarkers extends Container {
   private markers: Marker[] = [];
@@ -35,33 +78,25 @@ export class CellsMarkers extends Container {
       triangle.tint = colors.cellColorError;
     }
 
-    let symbol: Sprite | undefined;
     if (isError || selected || pixiAppSettings.showCellTypeOutlines) {
-      symbol = this.addChild(new Sprite());
-      symbol.height = INDICATOR_SIZE;
-      symbol.width = INDICATOR_SIZE;
-      symbol.position.set(box.x + 1.25, box.y + 1.25);
-      if (codeCell.language === 'Python') {
-        symbol.texture = Texture.from('/images/python-icon.png');
-        symbol.tint = isError ? 0xffffff : colors.cellColorUserPython;
-      } else if (codeCell.language === 'Formula') {
-        symbol.texture = Texture.from('/images/formula-fx-icon.png');
-        symbol.tint = isError ? 0xffffff : colors.cellColorUserFormula;
-      } else if (codeCell.language === 'Javascript') {
-        symbol.texture = Texture.from('/images/javascript-icon.png');
-        symbol.tint = isError ? colors.cellColorError : colors.cellColorUserJavascript;
+      const symbol = getLanguageSymbol(codeCell.language, isError);
+      if (symbol) {
+        this.addChild(symbol);
+        symbol.height = INDICATOR_SIZE;
+        symbol.width = INDICATOR_SIZE;
+        symbol.position.set(box.x + 1.25, box.y + 1.25);
         if (isError) {
           symbol.x -= 1;
           symbol.y -= 1;
         }
+        this.markers.push({
+          bounds: new Rectangle(box.x, box.y, box.width, box.height),
+          codeCell,
+          triangle,
+          symbol,
+        });
       }
     }
-    this.markers.push({
-      bounds: new Rectangle(box.x, box.y, box.width, box.height),
-      codeCell,
-      triangle,
-      symbol,
-    });
   }
 
   intersectsCodeInfo(point: Point): JsRenderCodeCell | undefined {

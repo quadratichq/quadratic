@@ -1,6 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
@@ -15,6 +16,9 @@ interface Column {
 }
 
 const DROPDOWN_PADDING = 10;
+const SYMBOL_SCALE = 0.5;
+const SYMBOL_PADDING = 5;
+
 export const TABLE_NAME_FONT_SIZE = 12;
 export const TABLE_NAME_PADDING = [4, 2];
 
@@ -124,13 +128,32 @@ export class Table extends Container {
     this.tableName.position.set(this.tableBounds.x, this.tableBounds.y);
     const nameBackground = this.tableName.addChild(new Graphics());
     this.tableName.visible = false;
+    let symbol: Sprite | undefined;
+    if (codeCell.language !== 'Import') {
+      symbol = getLanguageSymbol(codeCell.language, false);
+      if (symbol) {
+        this.tableName.addChild(symbol);
+        symbol.width = this.headingBounds.height * SYMBOL_SCALE;
+        symbol.scale.y = symbol.scale.x;
+        symbol.anchor.set(0, 0.5);
+        symbol.y = -this.headingHeight / 2;
+        symbol.x = SYMBOL_PADDING;
+        if (codeCell.language === 'Formula' || codeCell.language === 'Python') {
+          symbol.tint = 0xffffff;
+        }
+      }
+    }
     const text = this.tableName.addChild(this.tableNameText);
     this.tableNameText.text = codeCell.name;
-    text.position.set(TABLE_NAME_PADDING[0], -this.headingHeight);
+    text.position.set(TABLE_NAME_PADDING[0] + (symbol ? SYMBOL_PADDING + symbol.width : 0), -this.headingHeight);
 
     const dropdown = this.tableName.addChild(this.drawDropdown());
     dropdown.position.set(
-      text.width + OPEN_SANS_FIX.x + DROPDOWN_PADDING + TABLE_NAME_PADDING[0],
+      text.width +
+        OPEN_SANS_FIX.x +
+        DROPDOWN_PADDING +
+        TABLE_NAME_PADDING[0] +
+        (symbol ? SYMBOL_PADDING + symbol.width : 0),
       -this.headingHeight / 2
     );
 
@@ -139,7 +162,12 @@ export class Table extends Container {
       new Rectangle(
         0,
         -this.headingBounds.height,
-        text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING + TABLE_NAME_PADDING[0],
+        text.width +
+          OPEN_SANS_FIX.x +
+          dropdown.width +
+          DROPDOWN_PADDING +
+          TABLE_NAME_PADDING[0] +
+          (symbol ? SYMBOL_PADDING + symbol.width : 0),
         this.headingBounds.height
       )
     );
@@ -147,7 +175,12 @@ export class Table extends Container {
     this.tableNameBounds = new Rectangle(
       this.tableBounds.x,
       this.tableBounds.y - this.headingHeight,
-      text.width + OPEN_SANS_FIX.x + dropdown.width + DROPDOWN_PADDING + TABLE_NAME_PADDING[0],
+      text.width +
+        OPEN_SANS_FIX.x +
+        dropdown.width +
+        DROPDOWN_PADDING +
+        TABLE_NAME_PADDING[0] +
+        (symbol ? SYMBOL_PADDING + symbol.width : 0),
       this.headingBounds.height
     );
   };
