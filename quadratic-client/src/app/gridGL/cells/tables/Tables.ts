@@ -119,7 +119,11 @@ export class Tables extends Container<Table> {
   };
 
   // Checks if the mouse cursor is hovering over a table or table heading.
-  checkHover(world: Point) {
+  checkHover(world: Point, event: PointerEvent) {
+    // only allow hover when the mouse is over the canvas (and not menus)
+    if (event.target !== pixiApp.canvas) {
+      return;
+    }
     const hover = this.children.find((table) => table.checkHover(world));
     // if we already have the active table open, then don't show hover
     if (hover && (hover === this.contextMenuTable || hover === this.activeTable || hover === this.renameDataTable)) {
