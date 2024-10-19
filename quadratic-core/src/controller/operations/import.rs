@@ -117,7 +117,8 @@ impl GridController {
         let sheet = self
             .try_sheet(sheet_id)
             .ok_or_else(|| anyhow!("Sheet {sheet_id} not found"))?;
-        let data_table = DataTable::from((import.to_owned(), cell_values, sheet));
+        let mut data_table = DataTable::from((import.to_owned(), cell_values, sheet));
+        data_table.name = file_name.to_string();
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
         // this operation must be before the SetCodeRun operations
@@ -480,7 +481,8 @@ mod test {
             _ => panic!("Expected SetCodeRun operation"),
         };
         expected_data_table.last_modified = data_table.last_modified;
-
+        expected_data_table.name = file_name.to_string();
+        
         let expected = Operation::SetCodeRun {
             sheet_pos: SheetPos {
                 x: 0,
