@@ -102,7 +102,7 @@ export class Tables extends Container<Table> {
   // Redraw the headings if the offsets change.
   sheetOffsets = (sheetId: string) => {
     if (sheetId === this.sheet.id) {
-      this.children.map((table) => table.redraw());
+      this.children.map((table) => table.updateCodeCell());
     }
   };
 
@@ -196,12 +196,7 @@ export class Tables extends Container<Table> {
     if (!table) {
       return { x: 0, y: 0, width: 0, height: 0 };
     }
-    return {
-      x: table.tableNameBounds.x,
-      y: table.tableNameBounds.y,
-      width: table.tableNameBounds.width,
-      height: table.tableNameBounds.height,
-    };
+    return table.getTableNameBounds();
   }
 
   // Intersects a column/row rectangle

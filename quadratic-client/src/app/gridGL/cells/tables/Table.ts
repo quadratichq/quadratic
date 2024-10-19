@@ -1,197 +1,49 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
-import { DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
-import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
+import { TableColumnHeaders } from '@/app/gridGL/cells/tables/TableColumnHeaders';
+import { TableName } from '@/app/gridGL/cells/tables/TableName';
+import { TableOutline } from '@/app/gridGL/cells/tables/TableOutline';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
-import { FONT_SIZE, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
-import { BitmapText, Container, Graphics, Point, Rectangle, Sprite, Texture } from 'pixi.js';
-
-interface Column {
-  heading: Container;
-  bounds: Rectangle;
-}
-
-const DROPDOWN_PADDING = 10;
-const SYMBOL_SCALE = 0.5;
-const SYMBOL_PADDING = 5;
-
-export const TABLE_NAME_FONT_SIZE = 12;
-export const TABLE_NAME_PADDING = [4, 2];
+import { Container, Point, Rectangle } from 'pixi.js';
 
 export class Table extends Container {
-  private sheet: Sheet;
-  private headingHeight = 0;
-  private tableName: Container;
-  private tableNameText: BitmapText;
+  private tableName: TableName;
+  private outline: TableOutline;
+  private columnHeaders: TableColumnHeaders;
 
-  // holds all headings
-  private headingContainer: Container;
-
-  private outline: Graphics;
-  private tableBounds: Rectangle;
-  private headingBounds: Rectangle;
-  private columns: Column[];
-
-  tableNameBounds: Rectangle;
+  sheet: Sheet;
+  tableBounds: Rectangle;
   codeCell: JsRenderCodeCell;
 
   constructor(sheet: Sheet, codeCell: JsRenderCodeCell) {
     super();
     this.codeCell = codeCell;
     this.sheet = sheet;
-    this.tableName = new Container();
-    this.tableNameText = new BitmapText(codeCell.name, {
-      fontName: 'OpenSans-Bold',
-      fontSize: TABLE_NAME_FONT_SIZE,
-      tint: getCSSVariableTint('primary-foreground'),
-    });
-    this.headingContainer = new Container();
-    this.outline = new Graphics();
+    this.tableName = new TableName(this);
+    this.columnHeaders = this.addChild(new TableColumnHeaders(this));
+    this.outline = this.addChild(new TableOutline(this));
     this.tableBounds = new Rectangle();
-    this.headingBounds = new Rectangle();
-    this.tableNameBounds = new Rectangle();
-    this.columns = [];
     this.updateCodeCell(codeCell);
   }
 
-  redraw() {
-    this.removeChildren();
-    this.updateCodeCell(this.codeCell);
-  }
-
-  updateCodeCell = (codeCell: JsRenderCodeCell) => {
-    this.removeChildren();
-    pixiApp.overHeadings.removeChild(this.tableName);
-    this.tableName.removeChildren();
-
-    this.codeCell = codeCell;
-    this.tableBounds = this.sheet.getScreenRectangle(codeCell.x, codeCell.y, codeCell.w - 1, codeCell.h - 1);
-    this.headingHeight = this.sheet.offsets.getRowHeight(codeCell.y);
-    this.headingBounds = new Rectangle(
-      this.tableBounds.x,
-      this.tableBounds.y,
-      this.tableBounds.width,
-      this.headingHeight
-    );
-    this.position.set(this.headingBounds.x, this.headingBounds.y);
-
-    this.addChild(this.headingContainer);
-    this.headingContainer.removeChildren();
-
-    // draw heading background
-    const background = this.headingContainer.addChild(new Graphics());
-    background.beginFill(colors.tableHeadingBackground);
-    background.drawShape(new Rectangle(0, 0, this.headingBounds.width, this.headingBounds.height));
-    background.endFill();
-
-    // create column headings
-    if (codeCell.show_header) {
-      this.headingContainer.visible = true;
-      let x = 0;
-      this.columns = codeCell.column_names.map((column, index) => {
-        const width = this.sheet.offsets.getColumnWidth(codeCell.x + index);
-        const bounds = new Rectangle(x, this.headingBounds.y, width, this.headingBounds.height);
-        const heading = this.headingContainer.addChild(new Container());
-        heading.position.set(x + OPEN_SANS_FIX.x, OPEN_SANS_FIX.y);
-        heading.addChild(
-          new BitmapText(column.name, {
-            fontName: 'OpenSans-Bold',
-            fontSize: FONT_SIZE,
-            tint: colors.tableHeadingForeground,
-          })
-        );
-
-        x += width;
-        return { heading, bounds };
-      });
-    } else {
-      this.columns = [];
-      this.headingContainer.visible = false;
+  updateCodeCell = (codeCell?: JsRenderCodeCell) => {
+    if (codeCell) {
+      this.codeCell = codeCell;
     }
-
-    // draw outline around entire table
-    this.addChild(this.outline);
-    this.outline.clear();
-    this.outline.lineStyle({ color: getCSSVariableTint('primary'), width: 2, alignment: 0 });
-    this.outline.drawShape(new Rectangle(0, 0, this.tableBounds.width, this.tableBounds.height));
-    this.outline.visible = false;
-
-    // draw table name
-    if (sheets.sheet.id === this.sheet.id) {
-      pixiApp.overHeadings.addChild(this.tableName);
-    }
-    this.tableName.removeChildren();
-    this.tableName.position.set(this.tableBounds.x, this.tableBounds.y);
-    const nameBackground = this.tableName.addChild(new Graphics());
-    this.tableName.visible = false;
-    let symbol: Sprite | undefined;
-    if (codeCell.language !== 'Import') {
-      symbol = getLanguageSymbol(codeCell.language, false);
-      if (symbol) {
-        this.tableName.addChild(symbol);
-        symbol.width = this.headingBounds.height * SYMBOL_SCALE;
-        symbol.scale.y = symbol.scale.x;
-        symbol.anchor.set(0, 0.5);
-        symbol.y = -this.headingHeight / 2;
-        symbol.x = SYMBOL_PADDING;
-        if (codeCell.language === 'Formula' || codeCell.language === 'Python') {
-          symbol.tint = 0xffffff;
-        }
-      }
-    }
-    const text = this.tableName.addChild(this.tableNameText);
-    this.tableNameText.text = codeCell.name;
-    text.position.set(TABLE_NAME_PADDING[0] + (symbol ? SYMBOL_PADDING + symbol.width : 0), -this.headingHeight);
-
-    const dropdown = this.tableName.addChild(this.drawDropdown());
-    dropdown.position.set(
-      text.width +
-        OPEN_SANS_FIX.x +
-        DROPDOWN_PADDING +
-        TABLE_NAME_PADDING[0] +
-        (symbol ? SYMBOL_PADDING + symbol.width : 0),
-      -this.headingHeight / 2
+    this.tableBounds = this.sheet.getScreenRectangle(
+      this.codeCell.x,
+      this.codeCell.y,
+      this.codeCell.w - 1,
+      this.codeCell.h - 1
     );
+    this.position.set(this.tableBounds.x, this.tableBounds.y);
 
-    nameBackground.beginFill(getCSSVariableTint('primary'));
-    nameBackground.drawShape(
-      new Rectangle(
-        0,
-        -this.headingBounds.height,
-        text.width +
-          OPEN_SANS_FIX.x +
-          dropdown.width +
-          DROPDOWN_PADDING +
-          TABLE_NAME_PADDING[0] +
-          (symbol ? SYMBOL_PADDING + symbol.width : 0),
-        this.headingBounds.height
-      )
-    );
-    nameBackground.endFill();
-    this.tableNameBounds = new Rectangle(
-      this.tableBounds.x,
-      this.tableBounds.y - this.headingHeight,
-      text.width +
-        OPEN_SANS_FIX.x +
-        dropdown.width +
-        DROPDOWN_PADDING +
-        TABLE_NAME_PADDING[0] +
-        (symbol ? SYMBOL_PADDING + symbol.width : 0),
-      this.headingBounds.height
-    );
+    this.tableName.update();
+    this.columnHeaders.update();
+    this.outline.update();
   };
-
-  private drawDropdown() {
-    const dropdown = new Sprite(Texture.from('/images/dropdown-white.png'));
-    dropdown.width = DROPDOWN_SIZE[0];
-    dropdown.height = DROPDOWN_SIZE[1];
-    dropdown.anchor.set(0.5);
-    return dropdown;
-  }
 
   private tableNamePosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
@@ -205,43 +57,36 @@ export class Table extends Container {
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
-      if (this.headingBounds.top < bounds.top + gridHeading) {
-        this.headingContainer.y = bounds.top + gridHeading - this.headingBounds.top;
+      if (this.tableBounds.top < bounds.top + gridHeading) {
+        this.columnHeaders.y = bounds.top + gridHeading - this.tableBounds.top;
       } else {
-        this.headingContainer.y = 0;
+        this.columnHeaders.y = 0;
       }
     }
   };
 
   intersectsCursor(x: number, y: number) {
     const rect = new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1);
-    if (intersects.rectanglePoint(rect, { x, y }) || intersects.rectangleRectangle(rect, this.headingBounds)) {
+    if (
+      intersects.rectanglePoint(rect, { x, y }) ||
+      intersects.rectangleRectangle(rect, this.tableName.tableNameBounds)
+    ) {
       this.showActive();
       return true;
     }
     return false;
   }
 
-  // Returns the table name bounds scaled to the viewport.
-  private getScaledTableNameBounds() {
-    const scaled = this.tableNameBounds.clone();
-    scaled.width /= pixiApp.viewport.scaled;
-    scaled.height /= pixiApp.viewport.scaled;
-    scaled.y -= scaled.height - this.tableNameBounds.height;
-    return scaled;
-  }
-
   // Checks whether the mouse cursor is hovering over the table or the table name
   checkHover(world: Point): boolean {
     return (
-      intersects.rectanglePoint(this.tableBounds, world) ||
-      intersects.rectanglePoint(this.getScaledTableNameBounds(), world)
+      intersects.rectanglePoint(this.tableBounds, world) || intersects.rectanglePoint(this.tableName.getScaled(), world)
     );
   }
 
   intersectsTableName(world: Point): { table: JsRenderCodeCell; nameOrDropdown: 'name' | 'dropdown' } | undefined {
-    if (intersects.rectanglePoint(this.getScaledTableNameBounds(), world)) {
-      if (world.x <= this.tableNameBounds.x + this.tableNameText.width / pixiApp.viewport.scaled) {
+    if (intersects.rectanglePoint(this.tableName.getScaled(), world)) {
+      if (world.x <= this.tableName.x + this.tableName.getScaledTextWidth()) {
         return { table: this.codeCell, nameOrDropdown: 'name' };
       }
       return { table: this.codeCell, nameOrDropdown: 'dropdown' };
@@ -296,5 +141,10 @@ export class Table extends Container {
       new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1),
       cursor
     );
+  }
+
+  // Gets the table name bounds
+  getTableNameBounds(): Rectangle {
+    return this.tableName.tableNameBounds;
   }
 }
