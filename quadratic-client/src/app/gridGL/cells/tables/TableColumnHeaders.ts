@@ -3,7 +3,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeader } from '@/app/gridGL/cells/tables/TableColumnHeader';
-import { SortDirection } from '@/app/quadratic-core-types';
+import { JsDataTableColumn, SortDirection } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
@@ -30,6 +30,60 @@ export class TableColumnHeaders extends Container {
     this.background.endFill();
   }
 
+  private onSortPressed(column: JsDataTableColumn) {
+    // todo: once Rust is fixed, this should be the SortDirection enum
+    const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
+      (s) => s.column_index === column.valueIndex
+    )?.direction;
+    let newOrder: 'asc' | 'desc' | 'none' = 'none';
+    switch (sortOrder) {
+      case undefined:
+      case 'None':
+        newOrder = 'asc';
+        break;
+      case 'Ascending':
+        newOrder = 'desc';
+        break;
+      case 'Descending':
+        newOrder = 'none';
+        break;
+    }
+    if (!newOrder) {
+      throw new Error('Unknown sort order in onSortPressed');
+    }
+    const table = this.table.codeCell;
+    quadraticCore.sortDataTable(
+      sheets.sheet.id,
+      table.x,
+      table.y,
+      column.valueIndex,
+      newOrder,
+      sheets.getCursorPosition()
+    );
+
+    // todo: once Rust is fixed, this should be the SortDirection enum
+    // todo: not sure if this is worthwhile
+    // let newOrderRust: SortDirection;
+    // switch (newOrder) {
+    //   case 'asc':
+    //     newOrderRust = 'Ascending';
+    //     break;
+    //   case 'desc':
+    //     newOrderRust = 'Descending';
+    //     break;
+    //   case 'none':
+    //     newOrderRust = 'None';
+    //     break;
+    // }
+
+    // // we optimistically update the Sort array while we wait for core to finish the sort
+    // table.sort = table.sort
+    //   ? table.sort.map((s) => (s.column_index === column.valueIndex ? { ...s, direction: newOrderRust } : s))
+    //   : null;
+    // this.createColumnHeaders();
+    // pixiApp.setViewportDirty();
+  }
+
   private createColumnHeaders() {
     this.columns.removeChildren();
     if (!this.table.codeCell.show_header) {
@@ -49,38 +103,7 @@ export class TableColumnHeaders extends Container {
           height: this.headerHeight,
           name: column.name,
           sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
-          onSortPressed: () => {
-            // todo: once Rust is fixed, this should be the SortDirection enum
-            const sortOrder: SortDirection | undefined = codeCell.sort?.find(
-              (s) => s.column_index === column.valueIndex
-            )?.direction;
-            let newOrder: 'asc' | 'desc' | 'none' = 'none';
-            switch (sortOrder) {
-              case undefined:
-              case 'None':
-                newOrder = 'asc';
-                break;
-              case 'Ascending':
-                newOrder = 'desc';
-                break;
-              case 'Descending':
-                newOrder = 'none';
-                break;
-            }
-            if (!newOrder) {
-              throw new Error('Unknown sort order in onSortPressed');
-            }
-            console.log(sortOrder, newOrder);
-            const table = this.table.codeCell;
-            quadraticCore.sortDataTable(
-              sheets.sheet.id,
-              table.x,
-              table.y,
-              column.valueIndex,
-              newOrder,
-              sheets.getCursorPosition()
-            );
-          },
+          onSortPressed: () => this.onSortPressed(column),
         })
       );
       x += width;

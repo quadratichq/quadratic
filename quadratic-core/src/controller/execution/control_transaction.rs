@@ -137,6 +137,18 @@ impl GridController {
                     self.send_offsets_modified(*sheet_id, offsets);
                 });
 
+            // todo: this can be sent in less calls
+            transaction
+                .code_cells
+                .iter()
+                .for_each(|(sheet_id, positions)| {
+                    if let Some(sheet) = self.try_sheet(*sheet_id) {
+                        positions.iter().for_each(|pos| {
+                            sheet.send_code_cell(*pos);
+                        });
+                    }
+                });
+
             self.process_visible_dirty_hashes(&mut transaction);
             self.process_remaining_dirty_hashes(&mut transaction);
 
@@ -152,18 +164,6 @@ impl GridController {
                     sheet.borders.send_sheet_borders(*sheet_id);
                 }
             });
-
-            // todo: this can be sent in less calls
-            transaction
-                .code_cells
-                .iter()
-                .for_each(|(sheet_id, positions)| {
-                    if let Some(sheet) = self.try_sheet(*sheet_id) {
-                        positions.iter().for_each(|pos| {
-                            sheet.send_code_cell(*pos);
-                        });
-                    }
-                });
 
             // todo: this can be sent in less calls
             transaction
