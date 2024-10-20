@@ -46,7 +46,6 @@ export class TableColumnHeaders extends Container {
     if (this.table.codeCell.show_header) {
       this.visible = true;
       this.headerHeight = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
-      console.log(this.headerHeight);
       this.drawBackground();
       this.createColumns();
     } else {

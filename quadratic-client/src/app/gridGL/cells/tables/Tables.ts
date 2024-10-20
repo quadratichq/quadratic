@@ -157,7 +157,9 @@ export class Tables extends Container<Table> {
     // until the cursor moves again.
     if (this.renameDataTable) {
       this.renameDataTable.showTableName();
-      this.hoverTable = this.renameDataTable;
+      if (this.activeTable !== this.renameDataTable) {
+        this.renameDataTable.hideActive();
+      }
       this.renameDataTable = undefined;
     }
     if (this.contextMenuTable) {
@@ -191,10 +193,10 @@ export class Tables extends Container<Table> {
     pixiApp.setViewportDirty();
   };
 
-  getTableNamePosition(x: number, y: number): { x: number; y: number; width: number; height: number } {
+  getTableNamePosition(x: number, y: number): Rectangle | undefined {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
     if (!table) {
-      return { x: 0, y: 0, width: 0, height: 0 };
+      return;
     }
     return table.getTableNameBounds();
   }

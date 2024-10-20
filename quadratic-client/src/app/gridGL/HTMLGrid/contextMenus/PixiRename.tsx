@@ -1,0 +1,118 @@
+import { events } from '@/app/events/events';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { Input } from '@/shared/shadcn/ui/input';
+import { cn } from '@/shared/shadcn/utils';
+import { Rectangle } from 'pixi.js';
+import { KeyboardEvent, useCallback, useEffect, useRef } from 'react';
+
+interface Props {
+  position?: Rectangle;
+  defaultValue?: string;
+
+  // the class name of the input
+  className?: string;
+  styles?: React.CSSProperties;
+  onClose: () => void;
+  onSave: (value: string) => void;
+
+  // if true, the input will be the same scale as the app; otherwise it will
+  // scale with the viewport
+  noScale?: boolean;
+}
+
+export const PixiRename = (props: Props) => {
+  const { position, defaultValue, className, styles, onClose, onSave, noScale } = props;
+
+  // ensure we can wait a tick for the rename to close to avoid a conflict
+  // between Escape and Blur
+  const closed = useRef(false);
+
+  const close = useCallback(() => {
+    closed.current = true;
+    onClose();
+    focusGrid();
+  }, [onClose]);
+
+  const saveAndClose = useCallback(() => {
+    if (closed.current === true) return;
+    onClose();
+    onSave(ref.current?.value ?? '');
+  }, [onClose, onSave]);
+
+  const ref = useRef<HTMLInputElement>(null);
+
+  // focus the input after the position is set
+  useEffect(() => {
+    if (position) {
+      setTimeout(() => {
+        if (ref.current) {
+          ref.current.select();
+          ref.current.focus();
+        }
+      }, 0);
+    }
+  }, [position]);
+
+  useEffect(() => {
+    const viewportChanged = () => {
+      if (ref.current) {
+        ref.current.style.transform = `scale(${1 / pixiApp.viewport.scaled})`;
+      }
+    };
+    if (noScale) {
+      viewportChanged();
+      events.on('viewportChanged', viewportChanged);
+    }
+  }, [noScale]);
+
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Escape') {
+        close();
+        e.stopPropagation();
+        e.preventDefault();
+      } else if (e.key === 'Enter') {
+        saveAndClose();
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    },
+    [close, saveAndClose]
+  );
+
+  const onChange = useCallback(() => {
+    if (ref.current) {
+      // need to calculate the width of the input using a span with the same css as the input
+      const span = document.createElement('span');
+      span.className = className ?? '';
+      span.style.visibility = 'hidden';
+      span.style.whiteSpace = 'pre';
+      span.innerText = ref.current.value;
+      document.body.appendChild(span);
+      ref.current.style.width = `${span.offsetWidth}px`;
+      document.body.removeChild(span);
+    }
+  }, [className]);
+
+  if (!position) return null;
+
+  return (
+    <Input
+      ref={ref}
+      className={cn('pointer-events-auto absolute rounded-none border-none outline-none', className)}
+      style={{
+        left: position.x,
+        top: position.y,
+        width: position.width,
+        height: position.height,
+        transform: noScale ? `scale(${1 / pixiApp.viewport.scaled})` : undefined,
+        ...styles,
+      }}
+      onKeyDown={onKeyDown}
+      onBlur={saveAndClose}
+      onChange={onChange}
+      defaultValue={defaultValue}
+    />
+  );
+};
