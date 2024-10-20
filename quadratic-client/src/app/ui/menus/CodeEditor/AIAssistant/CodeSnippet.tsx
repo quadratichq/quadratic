@@ -30,7 +30,12 @@ interface CodeSnippetProps {
 export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) {
   const syntax = useMemo(() => {
     const lowerCaseLanguage = language.toLowerCase();
-    if (lowerCaseLanguage === 'postgres' || lowerCaseLanguage === 'mysql' || lowerCaseLanguage === 'mssql' || lowerCaseLanguage === 'snowflake') {
+    if (
+      lowerCaseLanguage === 'postgres' ||
+      lowerCaseLanguage === 'mysql' ||
+      lowerCaseLanguage === 'mssql' ||
+      lowerCaseLanguage === 'snowflake'
+    ) {
       return 'sql';
     }
     return lowerCaseLanguage;

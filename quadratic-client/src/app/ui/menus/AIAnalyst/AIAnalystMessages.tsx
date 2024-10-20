@@ -102,8 +102,8 @@ export function AIAnalystMessages() {
                     {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
                   </Avatar>
 
-                  <div className="flex select-text flex-col gap-2 whitespace-normal break-words">
-                    <Markdown>{message.content}</Markdown>
+                  <div className="flex select-text flex-col gap-2 whitespace-pre-wrap break-words">
+                    <Markdown className="whitespace-pre-wrap break-words">{message.content}</Markdown>
                   </div>
                 </>
               )}
