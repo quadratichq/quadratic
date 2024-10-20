@@ -32,6 +32,8 @@ export const CSVImportSettings = () => {
   const handleSubmit = useRecoilCallback(
     ({ set }) =>
       () => {
+        if (csvDelimiter === 'custom' && customCsvDelimiter.length !== 1) return;
+
         set(filesImportSettingsAtom, (prev) => {
           const delimiter = csvDelimiter === 'custom' ? customCsvDelimiter : csvDelimiter;
           prev.submitFn?.({
