@@ -69,7 +69,7 @@ export function useSubmitAIAnalystPrompt() {
         });
 
         const quadraticContext = aiContext.quadraticDocs
-          ? getQuadraticContext(getLanguage(aiContext.codeCell?.language), model)
+          ? getQuadraticContext(aiContext.codeCell ? getLanguage(aiContext.codeCell.language) : undefined, model)
           : [];
         const sheetContext = aiContext.currentSheet ? await getCurrentSheetContext({ model }) : [];
         const visibleContext = aiContext.visibleData ? await getVisibleContext({ model }) : [];
