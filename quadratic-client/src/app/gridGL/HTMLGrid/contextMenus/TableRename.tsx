@@ -41,6 +41,7 @@ export const TableRename = () => {
         }
       }}
       onClose={() => events.emit('contextMenu', {})}
+      noScale
     />
   );
 };

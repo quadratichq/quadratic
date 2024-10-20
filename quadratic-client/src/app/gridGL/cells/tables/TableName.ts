@@ -95,12 +95,8 @@ export class TableName extends Container {
         DROPDOWN_PADDING +
         TABLE_NAME_PADDING[0] +
         (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0),
-      -this.getTableHeight() / 2
+      -TABLE_NAME_HEIGHT / 2
     );
-  }
-
-  getTableHeight() {
-    return TABLE_NAME_HEIGHT / pixiApp.viewport.scaled;
   }
 
   update() {

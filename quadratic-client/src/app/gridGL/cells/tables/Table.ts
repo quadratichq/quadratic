@@ -16,6 +16,7 @@ export class Table extends Container {
   sheet: Sheet;
   tableBounds: Rectangle;
   codeCell: JsRenderCodeCell;
+  tableCursor: string | undefined;
 
   constructor(sheet: Sheet, codeCell: JsRenderCodeCell) {
     super();
@@ -146,5 +147,22 @@ export class Table extends Container {
   // Gets the table name bounds
   getTableNameBounds(): Rectangle {
     return this.tableName.tableNameBounds;
+  }
+
+  pointerMove(world: Point): boolean {
+    const result = this.columnHeaders.pointerMove(world);
+    if (result) {
+      this.tableCursor = this.columnHeaders.tableCursor;
+    } else {
+      this.tableCursor = undefined;
+    }
+    return result;
+  }
+
+  pointerDown(world: Point): boolean {
+    if (intersects.rectanglePoint(this.tableName.getScaled(), world)) {
+      return true;
+    }
+    return this.columnHeaders.pointerDown(world);
   }
 }

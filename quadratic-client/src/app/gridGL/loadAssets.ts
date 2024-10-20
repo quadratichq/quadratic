@@ -53,6 +53,8 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('postgres-icon', '/images/postgres-icon.svg');
     addResourceOnce('mysql-icon', '/images/mysql-icon.svg');
     addResourceOnce('snowflake-icon', '/images/snowflake-icon.svg');
+    addResourceOnce('arrow-up', '/images/arrow-up.svg');
+    addResourceOnce('arrow-down', '/images/arrow-down.svg');
 
     // Wait until pixi fonts are loaded before resolving
     Loader.shared.load(() => {

@@ -19,6 +19,8 @@ export class Tables extends Container<Table> {
   private contextMenuTable: Table | undefined;
   private renameDataTable: Table | undefined;
 
+  tableCursor: string | undefined;
+
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
@@ -140,13 +142,29 @@ export class Tables extends Container<Table> {
     }
   }
 
-  pointerDown(world: Point): { table: JsRenderCodeCell; nameOrDropdown: 'name' | 'dropdown' } | undefined {
+  // Returns true if the pointer down as handled (eg, a column header was
+  // clicked). Otherwise it handles TableName.
+  pointerDown(world: Point): { table: JsRenderCodeCell; nameOrDropdown: 'name' | 'dropdown' } | boolean {
     for (const table of this.children) {
       const result = table.intersectsTableName(world);
       if (result) {
         return result;
       }
+      if (table.pointerDown(world)) {
+        return true;
+      }
     }
+    return false;
+  }
+
+  pointerMove(world: Point): boolean {
+    for (const table of this.children) {
+      if (table.pointerMove(world)) {
+        this.tableCursor = table.tableCursor;
+        return true;
+      }
+    }
+    return false;
   }
 
   // track and activate a table whose context menu is open (this handles the

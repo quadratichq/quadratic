@@ -274,6 +274,12 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
 
+            // DSF: this would be better if we used the enum directly. TS will
+            // send it as a string (using the export_types definition) and it's
+            // easy to parse. Additionally, we probably don't need the "None"
+            // value as we should use Option<SortDirection> so we can set the
+            // entire table's sort value to None if there are no remaining sort
+            // orders.
             let sort_order_enum = match sort_order.as_str() {
                 "asc" => SortDirection::Ascending,
                 "desc" => SortDirection::Descending,
@@ -284,6 +290,7 @@ impl GridController {
             let old_value = data_table.sort_column(column_index as usize, sort_order_enum)?;
 
             self.send_to_wasm(transaction, &sheet_rect)?;
+            transaction.add_code_cell(sheet_id, data_table_pos.into());
 
             let forward_operations = vec![op];
 

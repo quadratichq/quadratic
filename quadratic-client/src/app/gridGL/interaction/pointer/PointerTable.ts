@@ -10,12 +10,14 @@ import { Point } from 'pixi.js';
 // todo: dragging on double click
 
 export class PointerTable {
+  cursor: string | undefined;
+
   private doubleClickTimeout: number | undefined;
 
   pointerDown(world: Point, event: PointerEvent): boolean {
-    const result = pixiApp.cellsSheets.current?.tables.pointerDown(world);
-    if (!result) {
-      return false;
+    const result = pixiApp.cellSheet().tables.pointerDown(world);
+    if (typeof result === 'boolean') {
+      return result;
     }
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
       events.emit('contextMenu', {
@@ -54,11 +56,13 @@ export class PointerTable {
     return true;
   }
 
-  pointerMove(): boolean {
+  pointerMove(world: Point): boolean {
     if (this.doubleClickTimeout) {
       clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
     }
-    return false;
+    const result = pixiApp.cellSheet().tables.pointerMove(world);
+    this.cursor = pixiApp.cellSheet().tables.tableCursor;
+    return result;
   }
 }

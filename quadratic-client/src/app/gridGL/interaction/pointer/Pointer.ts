@@ -130,7 +130,7 @@ export class Pointer {
       this.pointerDown.pointerMove(world, event) ||
       this.pointerCursor.pointerMove(world, event) ||
       this.pointerLink.pointerMove(world, event) ||
-      this.pointerTable.pointerMove();
+      this.pointerTable.pointerMove(world);
 
     this.updateCursor();
   };
@@ -143,7 +143,8 @@ export class Pointer {
       this.pointerImages.cursor ??
       this.pointerHeading.cursor ??
       this.pointerAutoComplete.cursor ??
-      this.pointerLink.cursor;
+      this.pointerLink.cursor ??
+      this.pointerTable.cursor;
 
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   }

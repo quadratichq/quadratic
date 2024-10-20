@@ -37,7 +37,7 @@ export interface JsOffset { column: number | null, row: number | null, size: num
 export interface JsPos { x: bigint, y: bigint, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special?: JsRenderCellSpecial, number?: JsNumber, underline?: boolean, strikeThrough?: boolean, }
 export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List" | "TableHeading";
-export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, column_names: Array<JsDataTableColumn>, first_row_header: boolean, show_header: boolean, }
+export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, column_names: Array<JsDataTableColumn>, first_row_header: boolean, show_header: boolean, sort: Array<DataTableSort> | null, }
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success";
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
 export interface JsRowHeight { row: bigint, height: number, }
