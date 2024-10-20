@@ -6,23 +6,30 @@ import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSe
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const AIAnalystContext = () => {
+export const AIAnalystContext = ({ onClick }: { onClick?: (e: React.MouseEvent) => void }) => {
   const context = useRecoilValue(aiAnalystContextAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
     <div
-      className={`z-10 mx-3 mt-2 flex select-none flex-wrap items-center gap-2 text-xs ${loading ? 'opacity-60' : ''} `}
+      className={`z-10 mx-2 mt-2 flex select-none flex-wrap items-center gap-2 text-xs ${loading ? 'opacity-60' : ''} `}
+      onClick={onClick}
     >
-      <span>{'Context: '}</span>
-      <CodeCellContext codeCell={context.codeCell} />
-      <SelectionContext sheetRect={context.selection} />
-      {!!context.visibleData && <span>{'[Visible data]'}</span>}
-      {!!context.currentSheet && <span>{'[Current sheet]'}</span>}
-      {!!context.allSheets && <span>{'[All sheets]'}</span>}
-      {!!context.connections && <span>{'[Connections]'}</span>}
-      {!!context.quadraticDocs && <span>{'[Quadratic docs]'}</span>}
       <AIAnalystSelectContextMenu />
+
+      <CodeCellContext codeCell={context.codeCell} />
+
+      <SelectionContext sheetRect={context.selection} />
+
+      {!!context.visibleData && <span>{'[Visible data]'}</span>}
+
+      {!!context.currentSheet && <span>{'[Current sheet]'}</span>}
+
+      {!!context.allSheets && <span>{'[All sheets]'}</span>}
+
+      {!!context.connections && <span>{'[Connections]'}</span>}
+
+      {!!context.quadraticDocs && <span>{'[Quadratic docs]'}</span>}
     </div>
   );
 };

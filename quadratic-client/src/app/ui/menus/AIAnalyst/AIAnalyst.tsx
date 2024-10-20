@@ -1,6 +1,5 @@
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
-import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
@@ -8,7 +7,7 @@ import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnal
 import { useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const AIAnalyst = ({ autoFocus }: { autoFocus?: boolean }) => {
+export const AIAnalyst = () => {
   const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
@@ -39,11 +38,13 @@ export const AIAnalyst = ({ autoFocus }: { autoFocus?: boolean }) => {
       style={{ width: `${panelWidth}px` }}
     >
       <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
+
       <div className="grid h-full w-full grid-rows-[auto_1fr_auto_auto]">
         <AIAnalystHeader />
+
         <AIAnalystMessages />
-        <AIAnalystContext />
-        <AIAnalystUserMessageForm autoFocus={autoFocus} />
+
+        <AIAnalystUserMessageForm autoFocus={true} />
       </div>
     </div>
   );

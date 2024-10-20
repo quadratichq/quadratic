@@ -2,6 +2,7 @@ import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom, aiAnalystPromptAtom } from '@/app/atoms/aiAnalystAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
+import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
@@ -39,6 +40,8 @@ export function AIAnalystUserMessageForm({ autoFocus }: AIAnalystUserMessageForm
 
   return (
     <form className="z-10 mx-3 mb-3 mt-1 rounded-lg bg-slate-100" onSubmit={(e) => e.preventDefault()}>
+      <AIAnalystContext onClick={() => textareaRef.current?.focus()} />
+
       <Textarea
         ref={textareaRef}
         id="prompt-input"

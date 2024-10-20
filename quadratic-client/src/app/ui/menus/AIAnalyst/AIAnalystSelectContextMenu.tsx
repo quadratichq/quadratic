@@ -19,7 +19,7 @@ export function AIAnalystSelectContextMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={loading}>
-        <span>{'[...]'}</span>
+        <span>{'[+]'}</span>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" alignOffset={-4}>
