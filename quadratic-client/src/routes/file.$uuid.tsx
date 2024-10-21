@@ -159,7 +159,15 @@ export const ErrorBoundary = () => {
       title = 'Failed to load file';
       description = 'There was an error retrieving and loading this file.';
     }
-    return <Empty title={title} description={description} Icon={ExclamationTriangleIcon} actions={actions} />;
+    return (
+      <Empty
+        title={title}
+        description={description}
+        Icon={ExclamationTriangleIcon}
+        actions={actions}
+        showLoggedInUser
+      />
+    );
   }
 
   // If we reach here, it's an error we don't know how to handle.
@@ -172,6 +180,7 @@ export const ErrorBoundary = () => {
       Icon={ExclamationTriangleIcon}
       actions={actions}
       severity="error"
+      showLoggedInUser
     />
   );
 };
