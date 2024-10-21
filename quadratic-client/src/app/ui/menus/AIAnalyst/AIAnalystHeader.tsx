@@ -9,14 +9,18 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
-export function AIAnalystHeader() {
+type AIAnalystHeaderProps = {
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
+};
+
+export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const setMessages = useSetRecoilState(aiAnalystMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
-    <div className="flex items-center justify-between p-2">
+    <div className="flex items-center justify-between p-3">
       <span className="text-sm font-bold">Chat</span>
 
       <div className="flex items-center gap-2">
@@ -26,7 +30,10 @@ export function AIAnalystHeader() {
             size="icon-sm"
             className="text-muted-foreground hover:text-foreground"
             disabled={loading || messagesCount === 0}
-            onClick={() => setMessages([])}
+            onClick={() => {
+              setMessages([]);
+              textareaRef.current?.focus();
+            }}
           >
             <BackspaceIcon />
           </Button>

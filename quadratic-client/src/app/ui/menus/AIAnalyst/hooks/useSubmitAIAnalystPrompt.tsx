@@ -10,7 +10,6 @@ import {
   aiAnalystContextAtom,
   aiAnalystLoadingAtom,
   aiAnalystMessagesAtom,
-  aiAnalystPromptAtom,
   AIAnalystState,
   defaultAIAnalystState,
   showAIAnalystAtom,
@@ -34,11 +33,13 @@ export function useSubmitAIAnalystPrompt() {
     ({ set, snapshot }) =>
       async ({
         userPrompt,
+        messageIndex,
         clearMessages,
         codeCell,
         selectionSheetRect,
       }: {
         userPrompt: string;
+        messageIndex?: number;
         clearMessages?: boolean;
         codeCell?: CodeCell;
         selectionSheetRect?: SheetRect;
@@ -80,6 +81,10 @@ export function useSubmitAIAnalystPrompt() {
         const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
         let updatedMessages: (UserMessage | AIMessage)[] = [];
         set(aiAnalystMessagesAtom, (prevMessages) => {
+          if (messageIndex !== undefined) {
+            prevMessages = prevMessages.slice(0, messageIndex);
+          }
+
           prevMessages = prevMessages.filter(
             (message) =>
               message.contextType !== 'quadraticDocs' &&
@@ -115,8 +120,6 @@ export function useSubmitAIAnalystPrompt() {
           return updatedMessages;
         });
 
-        set(aiAnalystPromptAtom, '');
-
         const messagesToSend: PromptMessage[] = [
           ...updatedMessages.map((message) => ({
             role: message.role,
@@ -124,12 +127,17 @@ export function useSubmitAIAnalystPrompt() {
           })),
         ];
         try {
-          await handleAIRequestToAPI({
+          const response = await handleAIRequestToAPI({
             model,
             messages: messagesToSend,
             setMessages: (updater) => set(aiAnalystMessagesAtom, updater),
             signal: abortController.signal,
+            useStream: true,
+            useTools: true,
           });
+
+          console.log('response', response);
+          // TODO(ayush): Handle response
         } catch (error) {
           console.error(error);
         }

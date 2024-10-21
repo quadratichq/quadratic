@@ -10,7 +10,6 @@ export interface AIAnalystState {
   abortController?: AbortController;
   loading: boolean;
   messages: (UserMessage | AIMessage)[];
-  prompt: string;
   context: {
     [key in Exclude<ContextType, 'selection' | 'codeCell' | 'userPrompt'>]: boolean;
   } & { selection?: SheetRect; codeCell?: CodeCell };
@@ -22,7 +21,6 @@ export const defaultAIAnalystState: AIAnalystState = {
   abortController: undefined,
   loading: false,
   messages: [],
-  prompt: '',
   context: {
     quadraticDocs: true,
     connections: false,
@@ -82,10 +80,9 @@ export const aiAnalystShowInternalContextAtom = createSelector('showInternalCont
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
 export const aiAnalystLoadingAtom = createSelector('loading');
 export const aiAnalystMessagesAtom = createSelector('messages');
-export const aiAnalystPromptAtom = createSelector('prompt');
 export const aiAnalystContextAtom = createSelector('context');
 
 export const aiAnalystMessagesCountAtom = selector<number>({
   key: 'aiAnalystMessagesCountAtom',
-  get: ({ get }) => get(aiAnalystMessagesAtom).length,
+  get: ({ get }) => get(aiAnalystMessagesAtom).filter((message) => !message.internalContext).length,
 });

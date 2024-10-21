@@ -6,7 +6,6 @@ import {
   aiAssistantAbortControllerAtom,
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
-  aiAssistantPromptAtom,
   codeEditorCodeCellAtom,
   codeEditorWaitingForEditorClose,
   showAIAssistantAtom,
@@ -75,8 +74,6 @@ export function useSubmitAIAssistantPrompt() {
 
           return updatedMessages;
         });
-
-        set(aiAssistantPromptAtom, '');
 
         const messagesToSend: PromptMessage[] = [
           ...updatedMessages.map((message) => ({

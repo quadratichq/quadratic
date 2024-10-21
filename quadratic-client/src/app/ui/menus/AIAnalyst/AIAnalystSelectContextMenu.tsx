@@ -11,18 +11,30 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-export function AIAnalystSelectContextMenu() {
+type AIAnalystSelectContextMenuProps = {
+  disabled: boolean;
+  onClose: () => void;
+};
+
+export function AIAnalystSelectContextMenu({ disabled, onClose }: AIAnalystSelectContextMenuProps) {
   const [showInternalContext, setShowInternalContext] = useRecoilState(aiAnalystShowInternalContextAtom);
   const [context, setContext] = useRecoilState(aiAnalystContextAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild disabled={loading}>
+      <DropdownMenuTrigger asChild disabled={disabled || loading}>
         <span>{'[+]'}</span>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start" alignOffset={-4}>
+      <DropdownMenuContent
+        align="start"
+        alignOffset={-4}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+      >
         <DropdownMenuCheckboxItem
           key={'internal context'}
           checked={showInternalContext}

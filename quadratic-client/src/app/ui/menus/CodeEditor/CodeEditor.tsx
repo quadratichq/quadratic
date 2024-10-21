@@ -49,6 +49,9 @@ export const CodeEditor = () => {
             }px`,
             borderLeft: '1px solid black',
           }}
+          onCopy={(e) => e.stopPropagation()}
+          onCut={(e) => e.stopPropagation()}
+          onPaste={(e) => e.stopPropagation()}
         >
           <div
             id="QuadraticCodeEditorID"

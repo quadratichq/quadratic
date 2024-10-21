@@ -12,7 +12,6 @@ import {
   aiAnalystContextAtom,
   aiAnalystLoadingAtom,
   aiAnalystMessagesAtom,
-  aiAnalystPromptAtom,
   AIAnalystState,
 } from '@/app/atoms/aiAnalystAtom';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
@@ -81,8 +80,6 @@ export function useAISetCodeCellValue() {
           ...newContextMessages,
           setCodeCellValuePrompt,
         ];
-
-        set(aiAnalystPromptAtom, '');
 
         const messagesToSend: PromptMessage[] = [
           ...updatedMessages.map((message) => ({

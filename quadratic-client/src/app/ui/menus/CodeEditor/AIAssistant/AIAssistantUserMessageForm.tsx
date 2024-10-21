@@ -7,121 +7,127 @@ import {
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
+import { ArrowUpwardIcon, StopIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { ArrowUpward, Stop } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
-import { useCallback, useEffect, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 type AIAssistantUserMessageFormProps = {
   autoFocus?: boolean;
 };
 
-export function AIAssistantUserMessageForm({ autoFocus }: AIAssistantUserMessageFormProps) {
-  const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
-  const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
-  const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
+export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssistantUserMessageFormProps>(
+  ({ autoFocus }: AIAssistantUserMessageFormProps, ref) => {
+    const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
+    const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
+    const [prompt, setPrompt] = useRecoilState(aiAssistantPromptAtom);
 
-  const { submitPrompt } = useSubmitAIAssistantPrompt();
+    const { submitPrompt } = useSubmitAIAssistantPrompt();
 
-  const abortPrompt = useCallback(() => {
-    abortController?.abort();
-    setLoading(false);
-  }, [abortController, setLoading]);
+    const abortPrompt = useCallback(() => {
+      abortController?.abort();
+      setLoading(false);
+    }, [abortController, setLoading]);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Focus the input when relevant & the tab comes into focus
-  useEffect(() => {
-    if (autoFocus) {
-      window.requestAnimationFrame(() => {
-        textareaRef.current?.focus();
-      });
-    }
-  }, [autoFocus]);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    useImperativeHandle(ref, () => textareaRef.current!);
 
-  return (
-    <form className="z-10 mx-3 mb-3 mt-1 rounded-lg bg-slate-100" onSubmit={(e) => e.preventDefault()}>
-      <Textarea
-        ref={textareaRef}
-        id="prompt-input"
-        value={prompt}
-        className="min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0"
-        onChange={(event) => setPrompt(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            if (event.ctrlKey || event.shiftKey) return;
-            event.preventDefault();
-            if (prompt.trim().length === 0) return;
-
-            submitPrompt({
-              userPrompt: prompt,
-            });
-            event.currentTarget.focus();
-          }
-        }}
-        autoComplete="off"
-        placeholder="Ask a question..."
-        autoHeight={true}
-        maxHeight="120px"
-      />
-
-      <div
-        className="flex w-full select-none items-center justify-between px-2 pb-1 @container"
-        onClick={() => {
+    // Focus the input when relevant & the tab comes into focus
+    useEffect(() => {
+      if (autoFocus) {
+        window.requestAnimationFrame(() => {
           textareaRef.current?.focus();
-        }}
+        });
+      }
+    }, [autoFocus]);
+
+    return (
+      <form
+        className="z-10 m-2 mt-1 rounded-lg bg-slate-100"
+        onSubmit={(e) => e.preventDefault()}
+        onClick={() => textareaRef.current?.focus()}
       >
-        <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+        <Textarea
+          ref={textareaRef}
+          value={prompt}
+          className="min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0"
+          onChange={(event) => setPrompt(event.target.value)}
+          onKeyDown={(event) => {
+            event.stopPropagation();
 
-        {loading ? (
-          <div className="flex items-center gap-2">
-            <CircularProgress size="0.8125rem" />
+            if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+              event.preventDefault();
 
-            <TooltipPopover label="Stop generating">
-              <Button
-                size="icon-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  abortPrompt();
-                }}
+              if (prompt.trim().length === 0) return;
+
+              submitPrompt({
+                userPrompt: prompt,
+              });
+
+              setPrompt('');
+              event.currentTarget.focus();
+            }
+          }}
+          autoComplete="off"
+          placeholder="Ask a question..."
+          autoHeight={true}
+          maxHeight="120px"
+        />
+
+        <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
+          <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <CircularProgress size="0.8125rem" />
+
+              <TooltipPopover label="Stop generating">
+                <Button
+                  size="icon-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    abortPrompt();
+                  }}
+                >
+                  <StopIcon />
+                </Button>
+              </TooltipPopover>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <span className="hidden @sm:block">
+                {KeyboardSymbols.Shift}
+                {KeyboardSymbols.Enter} new line
+              </span>
+
+              <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
+
+              <ConditionalWrapper
+                condition={prompt.length !== 0}
+                Wrapper={({ children }) => (
+                  <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                    {children as React.ReactElement}
+                  </TooltipPopover>
+                )}
               >
-                <Stop fontSize="small" />
-              </Button>
-            </TooltipPopover>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span className="hidden @sm:block">
-              {KeyboardSymbols.Shift}
-              {KeyboardSymbols.Enter} new line
-            </span>
-
-            <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
-
-            <ConditionalWrapper
-              condition={prompt.length !== 0}
-              Wrapper={({ children }) => (
-                <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-                  {children as React.ReactElement}
-                </TooltipPopover>
-              )}
-            >
-              <Button
-                size="icon-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  submitPrompt({ userPrompt: prompt });
-                }}
-                disabled={prompt.length === 0}
-              >
-                <ArrowUpward fontSize="small" />
-              </Button>
-            </ConditionalWrapper>
-          </div>
-        )}
-      </div>
-    </form>
-  );
-}
+                <Button
+                  size="icon-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    submitPrompt({ userPrompt: prompt });
+                  }}
+                  disabled={prompt.length === 0}
+                >
+                  <ArrowUpwardIcon />
+                </Button>
+              </ConditionalWrapper>
+            </div>
+          )}
+        </div>
+      </form>
+    );
+  }
+);

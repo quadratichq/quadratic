@@ -10,6 +10,7 @@ import { useRecoilValue } from 'recoil';
 export const AIAnalyst = () => {
   const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
 
   const handleResize = useCallback(
@@ -20,7 +21,7 @@ export const AIAnalyst = () => {
       event.preventDefault();
 
       const containerRect = panel.getBoundingClientRect();
-      const newPanelWidth = event.x - containerRect.left;
+      const newPanelWidth = event.x - (containerRect.left - 2);
       setPanelWidth(newPanelWidth);
     },
     [setPanelWidth]
@@ -36,15 +37,18 @@ export const AIAnalyst = () => {
       ref={aiPanelRef}
       className="relative hidden h-full shrink-0 overflow-hidden lg:block"
       style={{ width: `${panelWidth}px` }}
+      onCopy={(e) => e.stopPropagation()}
+      onCut={(e) => e.stopPropagation()}
+      onPaste={(e) => e.stopPropagation()}
     >
       <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
 
-      <div className="grid h-full w-full grid-rows-[auto_1fr_auto_auto]">
-        <AIAnalystHeader />
+      <div className="grid h-full w-full grid-rows-[auto_1fr_auto]">
+        <AIAnalystHeader textareaRef={textareaRef} />
 
-        <AIAnalystMessages />
+        <AIAnalystMessages textareaRef={textareaRef} />
 
-        <AIAnalystUserMessageForm autoFocus={true} />
+        <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
       </div>
     </div>
   );

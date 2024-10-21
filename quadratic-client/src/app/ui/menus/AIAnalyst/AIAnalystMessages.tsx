@@ -1,18 +1,22 @@
-import { isAnthropicModel } from '@/app/ai/hooks/useAIRequestToAPI';
-import { aiAnalystMessagesAtom, aiAnalystShowInternalContextAtom } from '@/app/atoms/aiAnalystAtom';
+import {
+  aiAnalystMessagesAtom,
+  aiAnalystMessagesCountAtom,
+  aiAnalystShowInternalContextAtom,
+} from '@/app/atoms/aiAnalystAtom';
 import { colors } from '@/app/theme/colors';
 import { Markdown } from '@/app/ui/components/Markdown';
-import { Anthropic, OpenAI } from '@/app/ui/icons';
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { Avatar } from '@/shared/components/Avatar';
+import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import './AIAnalystMessages.css';
 
-export function AIAnalystMessages() {
+type AIAnalystMessagesProps = {
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
+};
+
+export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   const showInternalContext = useRecoilValue(aiAnalystShowInternalContextAtom);
   const messages = useRecoilValue(aiAnalystMessagesAtom);
-  const { loggedInUser: user } = useRootRouteLoaderData();
+  const messagesCount = useRecoilValue(aiAnalystMessagesCountAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement | null) => {
@@ -24,7 +28,7 @@ export function AIAnalystMessages() {
   }, []);
 
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
-  const handleScroll = useCallback(() => {
+  const handleUserInteraction = useCallback(() => {
     if (!div) return;
     const isScrolledToBottom = div.scrollHeight - div.scrollTop === div.clientHeight;
     setShouldAutoScroll(isScrolledToBottom);
@@ -37,14 +41,25 @@ export function AIAnalystMessages() {
       behavior: 'smooth',
     });
   }, [div, shouldAutoScroll]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  useEffect(() => {
+    if (messagesCount === 0) {
+      setShouldAutoScroll(true);
+    }
+  }, [messagesCount]);
+
+  if (messagesCount === 0) {
+    return null;
+  }
+
   return (
     <div
       ref={ref}
-      className="select-text overflow-y-auto whitespace-pre-wrap px-2 text-sm outline-none"
+      className="select-text overflow-y-auto outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -53,64 +68,53 @@ export function AIAnalystMessages() {
           e.preventDefault();
         }
       }}
-      onScroll={handleScroll}
+      onWheel={handleUserInteraction}
+      onPointerDown={handleUserInteraction}
       // Disable Grammarly
       data-gramm="false"
       data-gramm_editor="false"
       data-enable-grammarly="false"
     >
-      <div id="ai-streaming-output" className="pb-2">
-        {messages
-          .filter((message) => showInternalContext || !message.internalContext)
-          .map((message, index) => (
-            <div
-              key={index}
-              style={{
-                borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
-                marginTop: '1rem',
-                paddingTop: index !== 0 ? '1rem' : '0',
-                backgroundColor: message.internalContext ? colors.lightGray : 'white',
-                borderRadius: '0.5rem',
-              }}
-            >
-              {message.role === 'user' ? (
-                <>
-                  <Avatar
-                    src={user?.picture}
-                    alt={user?.name}
-                    style={{
-                      backgroundColor: colors.quadraticSecondary,
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    {user?.name}
-                  </Avatar>
+      {messages.map((message, index) => {
+        if (!showInternalContext && message.internalContext) {
+          return null;
+        }
 
-                  <div className="flex select-text flex-col gap-2 whitespace-normal break-words">
-                    <Markdown>{message.content}</Markdown>
-                  </div>
-                </>
+        return (
+          <div
+            key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
+            style={{
+              backgroundColor: message.internalContext ? colors.lightGray : 'white',
+              borderRadius: '0.5rem',
+            }}
+          >
+            {message.role === 'user' ? (
+              message.contextType === 'userPrompt' ? (
+                <AIAnalystUserMessageForm
+                  key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
+                  initialPrompt={message.content}
+                  messageIndex={index}
+                  textareaRef={textareaRef}
+                />
               ) : (
-                <>
-                  <Avatar
-                    alt="AI Analyst"
-                    style={{
-                      backgroundColor: 'white',
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
-                  </Avatar>
-
-                  <div className="flex select-text flex-col gap-2 whitespace-pre-wrap break-words">
-                    <Markdown className="whitespace-pre-wrap break-words">{message.content}</Markdown>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-        <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
-      </div>
+                <Markdown
+                  key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
+                  className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
+                >
+                  {message.content}
+                </Markdown>
+              )
+            ) : (
+              <Markdown
+                key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
+                className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
+              >
+                {message.content}
+              </Markdown>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

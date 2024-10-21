@@ -52,6 +52,10 @@ export const ArrowDropDownCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down_circle</Icon>;
 };
 
+export const ArrowUpwardIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_upward</Icon>;
+};
+
 export const BackspaceIcon: IconComponent = (props) => {
   return <Icon {...props}>backspace</Icon>;
 };
@@ -413,6 +417,10 @@ export const SettingsIcon: IconComponent = (props) => {
 
 export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
+};
+
+export const StopIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop</Icon>;
 };
 
 export const StopCircleIcon: IconComponent = (props) => {

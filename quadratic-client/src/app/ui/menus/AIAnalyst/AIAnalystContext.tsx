@@ -6,16 +6,22 @@ import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSe
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const AIAnalystContext = ({ onClick }: { onClick?: (e: React.MouseEvent) => void }) => {
+type AIAnalystContextProps = {
+  disabled: boolean;
+  textAreaRef: React.RefObject<HTMLTextAreaElement>;
+};
+
+export const AIAnalystContext = ({ disabled, textAreaRef }: AIAnalystContextProps) => {
   const context = useRecoilValue(aiAnalystContextAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
     <div
-      className={`z-10 mx-2 mt-2 flex select-none flex-wrap items-center gap-2 text-xs ${loading ? 'opacity-60' : ''} `}
-      onClick={onClick}
+      className={`z-10 ml-2 flex select-none flex-wrap items-center gap-2 text-xs ${
+        disabled || loading ? 'opacity-60' : ''
+      } `}
     >
-      <AIAnalystSelectContextMenu />
+      <AIAnalystSelectContextMenu onClose={() => textAreaRef.current?.focus()} disabled={disabled} />
 
       <CodeCellContext codeCell={context.codeCell} />
 

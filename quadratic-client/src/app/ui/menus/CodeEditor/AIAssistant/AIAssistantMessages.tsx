@@ -8,7 +8,6 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { Avatar } from '@/shared/components/Avatar';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import './AIAssistantMessages.css';
 
 export function AIAssistantMessages() {
   const messages = useRecoilValue(aiAssistantMessagesAtom);
@@ -59,47 +58,44 @@ export function AIAssistantMessages() {
       data-gramm_editor="false"
       data-enable-grammarly="false"
     >
-      <div id="ai-streaming-output" className="pb-2">
-        {messages
-          .filter((message) => debugShowAIAssistantInternalContext || !message.internalContext)
-          .map((message, index) => (
-            <div
-              key={index}
-              style={{
-                borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
-                marginTop: '1rem',
-                paddingTop: index !== 0 ? '1rem' : '0',
-                backgroundColor: message.internalContext ? colors.lightGray : 'white',
-                borderRadius: '0.5rem',
-              }}
-            >
-              {message.role === 'user' ? (
-                <Avatar
-                  src={user?.picture}
-                  alt={user?.name}
-                  style={{
-                    backgroundColor: colors.quadraticSecondary,
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  {user?.name}
-                </Avatar>
-              ) : (
-                <Avatar
-                  alt="AI Assistant"
-                  style={{
-                    backgroundColor: 'white',
-                    marginBottom: '0.5rem',
-                  }}
-                >
-                  {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
-                </Avatar>
-              )}
-              <AICodeBlockParser input={message.content} />
-            </div>
-          ))}
-        <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
-      </div>
+      {messages
+        .filter((message) => debugShowAIAssistantInternalContext || !message.internalContext)
+        .map((message, index) => (
+          <div
+            key={index}
+            style={{
+              borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
+              marginTop: '1rem',
+              paddingTop: index !== 0 ? '1rem' : '0',
+              backgroundColor: message.internalContext ? colors.lightGray : 'white',
+              borderRadius: '0.5rem',
+            }}
+          >
+            {message.role === 'user' ? (
+              <Avatar
+                src={user?.picture}
+                alt={user?.name}
+                style={{
+                  backgroundColor: colors.quadraticSecondary,
+                  marginBottom: '0.5rem',
+                }}
+              >
+                {user?.name}
+              </Avatar>
+            ) : (
+              <Avatar
+                alt="AI Assistant"
+                style={{
+                  backgroundColor: 'white',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
+              </Avatar>
+            )}
+            <AICodeBlockParser input={message.content} />
+          </div>
+        ))}
     </div>
   );
 }

@@ -1,126 +1,163 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom, aiAnalystPromptAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { ArrowUpwardIcon, EditIcon, StopIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { ArrowUpward, Stop } from '@mui/icons-material';
+import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
-import { useCallback, useEffect, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 type AIAnalystUserMessageFormProps = {
+  initialPrompt?: string;
+  messageIndex?: number;
   autoFocus?: boolean;
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
-export function AIAnalystUserMessageForm({ autoFocus }: AIAnalystUserMessageFormProps) {
-  const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
-  const [prompt, setPrompt] = useRecoilState(aiAnalystPromptAtom);
-  const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
+export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalystUserMessageFormProps>(
+  ({ initialPrompt, messageIndex, autoFocus, textareaRef: bottomTextareaRef }: AIAnalystUserMessageFormProps, ref) => {
+    const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
+    const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
 
-  const { submitPrompt } = useSubmitAIAnalystPrompt();
+    const [edit, setEdit] = useState(!initialPrompt);
+    const [prompt, setPrompt] = useState(initialPrompt ?? '');
+    const { submitPrompt } = useSubmitAIAnalystPrompt();
 
-  const abortPrompt = useCallback(() => {
-    abortController?.abort();
-    setLoading(false);
-  }, [abortController, setLoading]);
+    const abortPrompt = useCallback(() => {
+      abortController?.abort();
+      setLoading(false);
+    }, [abortController, setLoading]);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Focus the input when relevant & the tab comes into focus
-  useEffect(() => {
-    if (autoFocus) {
-      window.requestAnimationFrame(() => {
-        textareaRef.current?.focus();
-      });
-    }
-  }, [autoFocus]);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    useImperativeHandle(ref, () => textareaRef.current!);
 
-  return (
-    <form className="z-10 mx-3 mb-3 mt-1 rounded-lg bg-slate-100" onSubmit={(e) => e.preventDefault()}>
-      <AIAnalystContext onClick={() => textareaRef.current?.focus()} />
-
-      <Textarea
-        ref={textareaRef}
-        id="prompt-input"
-        value={prompt}
-        className="min-h-14 rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0"
-        onChange={(event) => setPrompt(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            if (event.ctrlKey || event.shiftKey) return;
-            event.preventDefault();
-            if (prompt.trim().length === 0) return;
-
-            submitPrompt({
-              userPrompt: prompt,
-            });
-            event.currentTarget.focus();
-          }
-        }}
-        autoComplete="off"
-        placeholder="Ask a question..."
-        autoHeight={true}
-        maxHeight="120px"
-      />
-
-      <div
-        className="flex w-full select-none items-center justify-between px-2 pb-1 @container"
-        onClick={() => {
+    // Focus the input when relevant & the tab comes into focus
+    useEffect(() => {
+      if (autoFocus) {
+        window.requestAnimationFrame(() => {
           textareaRef.current?.focus();
-        }}
+        });
+      }
+    }, [autoFocus, textareaRef]);
+
+    return (
+      <form
+        className={cn('z-10 m-2 h-min rounded-lg bg-slate-100 pt-1', edit ? '' : 'pointer-events-none')}
+        onSubmit={(e) => e.preventDefault()}
+        onClick={() => textareaRef.current?.focus()}
       >
-        <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+        <div className="flex flex-row items-start justify-between">
+          <AIAnalystContext textAreaRef={textareaRef} disabled={!edit} />
 
-        {loading ? (
-          <div className="flex items-center gap-2">
-            <CircularProgress size="0.8125rem" />
-
-            <TooltipPopover label="Stop generating">
+          {!edit && (
+            <TooltipPopover label="Edit">
               <Button
-                size="icon-sm"
+                className="pointer-events-auto h-4 pr-2"
+                variant="ghost"
                 onClick={(e) => {
                   e.stopPropagation();
-                  abortPrompt();
+                  setEdit(true);
+                  textareaRef.current?.focus();
                 }}
               >
-                <Stop fontSize="small" />
+                <EditIcon />
               </Button>
             </TooltipPopover>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span className="hidden @sm:block">
-              {KeyboardSymbols.Shift}
-              {KeyboardSymbols.Enter} new line
-            </span>
+          )}
+        </div>
 
-            <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
+        <Textarea
+          ref={textareaRef}
+          value={prompt}
+          className={cn(
+            'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+            edit ? 'min-h-14' : 'h-fit min-h-fit'
+          )}
+          onChange={(event) => setPrompt(event.target.value)}
+          onKeyDown={(event) => {
+            event.stopPropagation();
 
-            <ConditionalWrapper
-              condition={prompt.length !== 0}
-              Wrapper={({ children }) => (
-                <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-                  {children as React.ReactElement}
+            if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+              event.preventDefault();
+
+              if (prompt.trim().length === 0) return;
+
+              submitPrompt({ userPrompt: prompt, messageIndex });
+
+              if (initialPrompt === undefined) {
+                setPrompt('');
+                textareaRef.current?.focus();
+              } else {
+                setEdit(false);
+                bottomTextareaRef.current?.focus();
+              }
+            }
+          }}
+          autoComplete="off"
+          placeholder="Ask a question..."
+          autoHeight={edit}
+          maxHeight={edit ? '120px' : 'unset'}
+        />
+
+        {edit && (
+          <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
+            <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <CircularProgress size="0.8125rem" />
+
+                <TooltipPopover label="Stop generating">
+                  <Button
+                    size="icon-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      abortPrompt();
+                    }}
+                  >
+                    <StopIcon />
+                  </Button>
                 </TooltipPopover>
-              )}
-            >
-              <Button
-                size="icon-sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  submitPrompt({ userPrompt: prompt });
-                }}
-                disabled={prompt.length === 0}
-              >
-                <ArrowUpward fontSize="small" />
-              </Button>
-            </ConditionalWrapper>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 text-xs text-slate-500">
+                <span className="hidden @sm:block">
+                  {KeyboardSymbols.Shift}
+                  {KeyboardSymbols.Enter} new line
+                </span>
+
+                <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
+
+                <ConditionalWrapper
+                  condition={prompt.length !== 0}
+                  Wrapper={({ children }) => (
+                    <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
+                      {children as React.ReactElement}
+                    </TooltipPopover>
+                  )}
+                >
+                  <Button
+                    size="icon-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      submitPrompt({ userPrompt: prompt, messageIndex });
+                    }}
+                    disabled={prompt.length === 0}
+                  >
+                    <ArrowUpwardIcon />
+                  </Button>
+                </ConditionalWrapper>
+              </div>
+            )}
           </div>
         )}
-      </div>
-    </form>
-  );
-}
+      </form>
+    );
+  }
+);
