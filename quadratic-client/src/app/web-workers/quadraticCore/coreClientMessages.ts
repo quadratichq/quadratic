@@ -1024,6 +1024,14 @@ export interface ClientCoreFlattenDataTable {
   cursor: string;
 }
 
+export interface ClientCoreCodeDataTableToDataTable {
+  type: 'clientCoreCodeDataTableToDataTable';
+  sheetId: string;
+  x: number;
+  y: number;
+  cursor: string;
+}
+
 export interface ClientCoreGridToDataTable {
   type: 'clientCoreGridToDataTable';
   selection: Selection;
@@ -1139,6 +1147,7 @@ export type ClientCoreMessage =
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
   | ClientCoreFlattenDataTable
+  | ClientCoreCodeDataTableToDataTable
   | ClientCoreGridToDataTable
   | ClientCoreUpdateDataTableName
   | ClientCoreSortDataTable

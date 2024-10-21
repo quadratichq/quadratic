@@ -1191,6 +1191,16 @@ class QuadraticCore {
     });
   }
 
+  codeDataTableToDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    this.send({
+      type: 'clientCoreCodeDataTableToDataTable',
+      sheetId,
+      x,
+      y,
+      cursor,
+    });
+  }
+
   gridToDataTable(selection: Selection, cursor: string) {
     this.send({
       type: 'clientCoreGridToDataTable',

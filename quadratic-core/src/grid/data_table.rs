@@ -4,7 +4,6 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
-use std::fmt::{Display, Formatter};
 use std::num::NonZeroU32;
 
 use crate::cellvalue::Import;
@@ -18,6 +17,7 @@ use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 use tabled::{
     builder::Builder,
     settings::{Color, Modify, Style},
@@ -76,7 +76,7 @@ pub struct DataTableColumn {
     pub value_index: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display)]
 pub enum DataTableKind {
     CodeRun(CodeRun),
     Import(Import),
@@ -92,22 +92,14 @@ impl DataTableColumn {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS, Display, EnumString)]
 pub enum SortDirection {
+    #[strum(serialize = "asc")]
     Ascending,
+    #[strum(serialize = "desc")]
     Descending,
+    #[strum(serialize = "none")]
     None,
-}
-
-// TODO(ddimarai): implement strum and remove this impl
-impl Display for SortDirection {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SortDirection::Ascending => write!(f, "asc"),
-            SortDirection::Descending => write!(f, "desc"),
-            SortDirection::None => write!(f, "none"),
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

@@ -17,6 +17,7 @@ pub enum TransactionName {
     SetCode,
     RunCode,
     FlattenDataTable,
+    SwitchDataTableKind,
     GridToDataTable,
     UpdateDataTableName,
     DataTableFirstRowAsHeader,

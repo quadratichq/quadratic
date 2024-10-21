@@ -1,5 +1,10 @@
 use super::operation::Operation;
-use crate::{controller::GridController, SheetPos, SheetRect};
+use crate::{
+    cellvalue::Import, controller::GridController, grid::DataTableKind, CellValue, SheetPos,
+    SheetRect,
+};
+
+use anyhow::Result;
 
 impl GridController {
     pub fn flatten_data_table_operations(
@@ -8,6 +13,27 @@ impl GridController {
         _cursor: Option<String>,
     ) -> Vec<Operation> {
         vec![Operation::FlattenDataTable { sheet_pos }]
+    }
+
+    pub fn code_data_table_to_data_table_operations(
+        &self,
+        sheet_pos: SheetPos,
+        _cursor: Option<String>,
+    ) -> Result<Vec<Operation>> {
+        let import = Import::new("".into());
+        let kind = DataTableKind::Import(import.to_owned());
+        let name = self.grid.next_data_table_name();
+        // let cell_value = CellValue::Import(import);
+
+        Ok(vec![
+            Operation::SwitchDataTableKind { sheet_pos, kind },
+            Operation::UpdateDataTableName { sheet_pos, name },
+            // TODO(ddimaria): add this back in
+            // Operation::SetCellValues {
+            //     sheet_pos,
+            //     values: cell_value.into(),
+            // },
+        ])
     }
 
     pub fn grid_to_data_table_operations(

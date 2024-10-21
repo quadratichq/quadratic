@@ -4,7 +4,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{DataTable, SortDirection},
+    grid::{DataTable, DataTableKind, SortDirection},
     ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
@@ -101,7 +101,11 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::SetDataTableAt { sheet_pos, values } = op {
+        if let Operation::SetDataTableAt {
+            sheet_pos,
+            ref values,
+        } = op
+        {
             let sheet_id = sheet_pos.sheet_id;
             let mut pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
@@ -134,11 +138,7 @@ impl GridController {
 
             self.send_to_wasm(transaction, &data_table_rect)?;
 
-            let forward_operations = vec![Operation::SetDataTableAt {
-                sheet_pos,
-                values: value.into(),
-            }];
-
+            let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SetDataTableAt {
                 sheet_pos,
                 values: old_value.into(),
@@ -174,7 +174,6 @@ impl GridController {
             let values = data_table.display_value()?.into_array()?;
             let ArraySize { w, h } = values.size();
 
-            let sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
             let max = Pos {
                 x: data_table_pos.x - 1 + w.get() as i64,
                 y: data_table_pos.y - 1 + h.get() as i64,
@@ -191,9 +190,72 @@ impl GridController {
             self.send_to_wasm(transaction, &sheet_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos);
 
-            let forward_operations = vec![Operation::FlattenDataTable { sheet_pos }];
+            let forward_operations = vec![op];
+            let reverse_operations = vec![
+                Operation::GridToDataTable { sheet_rect },
+                Operation::SwitchDataTableKind {
+                    sheet_pos,
+                    kind: data_table.kind,
+                },
+            ];
 
-            let reverse_operations = vec![Operation::GridToDataTable { sheet_rect }];
+            self.data_table_operations(
+                transaction,
+                &sheet_rect,
+                forward_operations,
+                reverse_operations,
+            );
+            self.check_deleted_data_tables(transaction, &sheet_rect);
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::FlattenDataTable in execute_flatten_data_table");
+    }
+
+    pub(super) fn execute_code_data_table_to_data_table(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::SwitchDataTableKind {
+            sheet_pos,
+            ref kind,
+        } = op
+        {
+            let sheet_id = sheet_pos.sheet_id;
+            let pos = Pos::from(sheet_pos);
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(pos)?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            let old_data_table_kind = data_table.kind.to_owned();
+            let old_data_table_name = data_table.name.to_owned();
+            let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
+
+            data_table.kind = match old_data_table_kind {
+                DataTableKind::CodeRun(_) => match kind {
+                    DataTableKind::CodeRun(_) => kind.to_owned(),
+                    DataTableKind::Import(import) => DataTableKind::Import(import.to_owned()),
+                },
+                DataTableKind::Import(_) => match kind {
+                    DataTableKind::CodeRun(code_run) => DataTableKind::CodeRun(code_run.to_owned()),
+                    DataTableKind::Import(_) => kind.to_owned(),
+                },
+            };
+
+            // let the client know that the code cell changed to remove the styles
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+                transaction.add_code_cell(sheet_id, data_table_pos);
+            }
+
+            self.send_to_wasm(transaction, &sheet_rect)?;
+            transaction.add_code_cell(sheet_id, data_table_pos);
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![Operation::SwitchDataTableKind {
+                sheet_pos,
+                kind: old_data_table_kind,
+            }];
 
             self.data_table_operations(
                 transaction,
@@ -241,8 +303,7 @@ impl GridController {
 
             self.send_to_wasm(transaction, &sheet_rect)?;
 
-            let forward_operations = vec![Operation::GridToDataTable { sheet_rect }];
-
+            let forward_operations = vec![op];
             let reverse_operations = vec![Operation::FlattenDataTable { sheet_pos }];
 
             self.data_table_operations(
@@ -284,7 +345,6 @@ impl GridController {
             transaction.add_code_cell(sheet_id, data_table_pos.into());
 
             let forward_operations = vec![op];
-
             let reverse_operations = vec![Operation::UpdateDataTableName {
                 sheet_pos,
                 name: old_name,
@@ -341,7 +401,6 @@ impl GridController {
             transaction.add_code_cell(sheet_id, data_table_pos.into());
 
             let forward_operations = vec![op];
-
             let reverse_operations = vec![Operation::SortDataTable {
                 sheet_pos,
                 column_index,
@@ -388,7 +447,6 @@ impl GridController {
             transaction.add_code_cell(sheet_id, sheet_pos.into());
 
             let forward_operations = vec![op];
-
             let reverse_operations = vec![Operation::DataTableFirstRowAsHeader {
                 sheet_pos,
                 first_row_is_header: !first_row_is_header,

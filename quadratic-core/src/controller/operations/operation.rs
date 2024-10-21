@@ -10,7 +10,7 @@ use crate::{
         formatting::CellFmtArray,
         js_types::JsRowHeight,
         sheet::{borders::BorderStyleCellUpdates, validations::validation::Validation},
-        DataTable, Sheet, SheetBorders, SheetId,
+        DataTable, DataTableKind, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -47,6 +47,10 @@ pub enum Operation {
     },
     FlattenDataTable {
         sheet_pos: SheetPos,
+    },
+    SwitchDataTableKind {
+        sheet_pos: SheetPos,
+        kind: DataTableKind,
     },
     GridToDataTable {
         sheet_rect: SheetRect,
@@ -223,6 +227,13 @@ impl fmt::Display for Operation {
             ),
             Operation::FlattenDataTable { sheet_pos } => {
                 write!(fmt, "FlattenDataTable {{ sheet_pos: {} }}", sheet_pos)
+            }
+            Operation::SwitchDataTableKind { sheet_pos, kind } => {
+                write!(
+                    fmt,
+                    "SwitchDataTableKind {{ sheet_pos: {}, kind: {} }}",
+                    sheet_pos, kind
+                )
             }
             Operation::GridToDataTable { sheet_rect } => {
                 write!(fmt, "GridToDataTable {{ sheet_rect: {} }}", sheet_rect)

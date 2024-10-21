@@ -33,6 +33,21 @@ impl GridController {
         Ok(())
     }
 
+    /// Converts a DataTableKind::CodeRun to DataTableKind::Import
+    #[wasm_bindgen(js_name = "codeDataTableToDataTable")]
+    pub fn js_code_data_table_to_data_table(
+        &mut self,
+        sheet_id: String,
+        pos: String,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+        self.code_data_table_to_data_table(pos.to_sheet_pos(sheet_id), cursor);
+
+        Ok(())
+    }
+
     /// Sort a Data Table
     #[wasm_bindgen(js_name = "sortDataTable")]
     pub fn js_sort_data_table(
@@ -50,7 +65,7 @@ impl GridController {
         Ok(())
     }
 
-    /// Toggle applin the first row as head
+    /// Toggle appling the first row as head
     #[wasm_bindgen(js_name = "dataTableFirstRowAsHeader")]
     pub fn js_data_table_first_row_as_header(
         &mut self,
@@ -69,7 +84,7 @@ impl GridController {
 
         Ok(())
     }
-    /// Flattens a Data Table
+    /// Update a Data Table's name
     #[wasm_bindgen(js_name = "updateDataTableName")]
     pub fn js_update_data_table_name(
         &mut self,

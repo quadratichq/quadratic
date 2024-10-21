@@ -1120,6 +1120,11 @@ class Core {
     this.gridController.flattenDataTable(sheetId, posToPos(x, y), cursor);
   }
 
+  codeDataTableToDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.codeDataTableToDataTable(sheetId, posToPos(x, y), cursor);
+  }
+
   gridToDataTable(selection: Selection, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.gridToDataTable(JSON.stringify(selection, bigIntReplacer), cursor);

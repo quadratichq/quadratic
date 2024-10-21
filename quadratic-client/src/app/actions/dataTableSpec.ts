@@ -93,8 +93,6 @@ export const dataTableSpec: DataTableSpec = {
         setTimeout(() => {
           const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
           pixiAppSettings.setContextMenu?.(newContextMenu);
-          console.log('newContextMenu', newContextMenu);
-          console.log('table', table);
           events.emit('contextMenu', newContextMenu);
         }, 0);
       }
@@ -125,7 +123,7 @@ export const dataTableSpec: DataTableSpec = {
     run: async () => {
       const table = getTable();
       if (table) {
-        // quadraticCore.codeToDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+        quadraticCore.codeDataTableToDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
       }
     },
   },

@@ -585,6 +585,10 @@ class CoreClient {
         core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
         return;
 
+      case 'clientCoreCodeDataTableToDataTable':
+        core.codeDataTableToDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        return;
+
       case 'clientCoreGridToDataTable':
         core.gridToDataTable(e.data.selection, e.data.cursor);
         return;

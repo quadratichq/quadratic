@@ -467,7 +467,6 @@ mod test {
         ];
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
-        let sheet = gc.try_sheet(sheet_id).unwrap();
         let mut expected_data_table = DataTable::from((import, values.into(), &gc.grid));
         assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
