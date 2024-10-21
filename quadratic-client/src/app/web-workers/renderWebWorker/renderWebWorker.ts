@@ -1,5 +1,6 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { Rectangle } from 'pixi.js';
 import { prepareBitmapFontInformation } from './renderBitmapFonts';
 import {
@@ -32,6 +33,7 @@ class RenderWebWorker {
     const message: ClientRenderInit = {
       type: 'clientRenderInit',
       bitmapFonts: prepareBitmapFontInformation(),
+      tableColumnHeaderForeground: getCSSVariableTint('table-column-header-foreground'),
     };
     this.worker.postMessage(message, [coreMessagePort]);
     if (debugWebWorkers) console.log('[renderWebWorker] initialized.');

@@ -4,7 +4,7 @@ import { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-cor
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { convertColorStringToTint } from '../../helpers/convertColor';
+import { convertColorStringToTint, getCSSVariableTint } from '../../helpers/convertColor';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
@@ -207,13 +207,14 @@ export class CellsFills extends Container {
 
   private drawAlternatingColors = () => {
     this.alternatingColorsGraphics.clear();
+    const color = getCSSVariableTint('table-alternating-background');
     this.alternatingColors.forEach((table) => {
       const bounds = this.sheet.getScreenRectangle(table.x, table.y + 1, table.w - 1, table.y);
       let yOffset = bounds.y;
       for (let y = 0; y < table.h - 1; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
         if (y % 2 !== 0) {
-          this.alternatingColorsGraphics.beginFill(colors.tableAlternatingBackground);
+          this.alternatingColorsGraphics.beginFill(color);
           this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
           this.alternatingColorsGraphics.endFill();
         }
