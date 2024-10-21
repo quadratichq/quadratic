@@ -36,6 +36,10 @@ export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
 };
 
+export const AIIcon: IconComponent = (props) => {
+  return <Icon {...props}>auto_awesome</Icon>;
+};
+
 export const ApiIcon: IconComponent = (props) => {
   return <Icon {...props}>api</Icon>;
 };
@@ -46,6 +50,14 @@ export const ArrowDropDownIcon: IconComponent = (props) => {
 
 export const ArrowDropDownCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down_circle</Icon>;
+};
+
+export const ArrowUpwardIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_upward</Icon>;
+};
+
+export const BackspaceIcon: IconComponent = (props) => {
+  return <Icon {...props}>backspace</Icon>;
 };
 
 export const BorderAllIcon: IconComponent = (props) => {
@@ -184,6 +196,10 @@ export const DeleteIcon: IconComponent = (props) => {
   return <Icon {...props}>delete</Icon>;
 };
 
+export const DiffIcon: IconComponent = (props) => {
+  return <Icon {...props}>difference</Icon>;
+};
+
 export const DownloadIcon: IconComponent = (props) => {
   return <Icon {...props}>download</Icon>;
 };
@@ -202,6 +218,14 @@ export const EducationIcon: IconComponent = (props) => {
 
 export const ExamplesIcon: IconComponent = (props) => {
   return <Icon {...props}>view_carousel</Icon>;
+};
+
+export const ExpandCircleDownIcon: IconComponent = (props) => {
+  return <Icon {...props}>expand_circle_down</Icon>;
+};
+
+export const ExpandCircleUpIcon: IconComponent = (props) => {
+  return <Icon {...props}>expand_circle_up</Icon>;
 };
 
 export const ExternalLinkIcon: IconComponent = (props) => {
@@ -379,6 +403,10 @@ export const RefreshIcon: IconComponent = (props) => {
   return <Icon {...props}>refresh</Icon>;
 };
 
+export const SaveAndRunIcon: IconComponent = (props) => {
+  return <Icon {...props}>play_circle</Icon>;
+};
+
 export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
@@ -389,6 +417,10 @@ export const SettingsIcon: IconComponent = (props) => {
 
 export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
+};
+
+export const StopIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop</Icon>;
 };
 
 export const StopCircleIcon: IconComponent = (props) => {

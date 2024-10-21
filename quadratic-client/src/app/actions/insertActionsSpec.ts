@@ -42,6 +42,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        modifiedEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -63,6 +64,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        modifiedEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -84,6 +86,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        modifiedEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -105,6 +108,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        modifiedEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -126,6 +130,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        modifiedEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -147,6 +152,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        modifiedEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -168,6 +174,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        modifiedEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,

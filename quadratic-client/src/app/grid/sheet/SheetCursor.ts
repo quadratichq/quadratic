@@ -58,6 +58,7 @@ export class SheetCursor {
   set viewport(save: IViewportTransformState) {
     this._viewport = save;
   }
+
   get viewport(): IViewportTransformState {
     if (!this._viewport) {
       const { x, y } = pixiApp.getStartingViewport();

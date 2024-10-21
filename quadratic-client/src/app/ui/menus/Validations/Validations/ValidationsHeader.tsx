@@ -9,12 +9,12 @@ import { useSetRecoilState } from 'recoil';
 
 export const ValidationsHeader = () => {
   const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
+  const [sheetName, setSheetName] = useState(` - ${sheets.sheet.name}`);
 
   const close = useCallback(() => {
     setShowValidation(false);
   }, [setShowValidation]);
 
-  const [sheetName, setSheetName] = useState(` - ${sheets.sheet.name}`);
   useEffect(() => {
     const updateSheetName = () => setSheetName(` - ${sheets.sheet.name}`);
     events.on('changeSheet', updateSheetName);

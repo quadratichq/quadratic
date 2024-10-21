@@ -1,8 +1,0 @@
-#ai-streaming-output * {
-  overflow-anchor: none;
-}
-
-#ai-streaming-output-anchor {
-  overflow-anchor: auto;
-  height: 1px;
-}

@@ -176,12 +176,12 @@ pub(crate) fn import_column_builder(
             set_column_format_bool(&mut col.numeric_commas, column.numeric_commas);
             set_column_format_bool(&mut col.bold, column.bold);
             set_column_format_bool(&mut col.italic, column.italic);
+            set_column_format_bool(&mut col.underline, column.underline);
+            set_column_format_bool(&mut col.strike_through, column.strike_through);
             set_column_format_string(&mut col.text_color, column.text_color);
             set_column_format_string(&mut col.fill_color, column.fill_color);
             set_column_format_render_size(&mut col.render_size, column.render_size);
             set_column_format_string(&mut col.date_time, column.date_time);
-            set_column_format_bool(&mut col.underline, column.underline);
-            set_column_format_bool(&mut col.strike_through, column.strike_through);
 
             // todo: there's probably a better way of doing this
             for (y, value) in column.values.into_iter() {
@@ -387,13 +387,13 @@ pub(crate) fn export_column_builder(
                     numeric_commas: export_column_data_bool(column.numeric_commas),
                     bold: export_column_data_bool(column.bold),
                     italic: export_column_data_bool(column.italic),
+                    underline: export_column_data_bool(column.underline),
+                    strike_through: export_column_data_bool(column.strike_through),
                     text_color: export_column_data_string(column.text_color),
                     fill_color: export_column_data_string(column.fill_color),
                     render_size: export_column_data_render_size(column.render_size),
                     date_time: export_column_data_string(column.date_time),
                     values: export_values(column.values),
-                    underline: export_column_data_bool(column.underline),
-                    strike_through: export_column_data_bool(column.strike_through),
                 },
             )
         })
