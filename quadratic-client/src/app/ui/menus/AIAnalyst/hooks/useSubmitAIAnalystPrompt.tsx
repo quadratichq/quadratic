@@ -4,7 +4,9 @@ import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMes
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
+import { useToolUseMessages } from '@/app/ai/hooks/useToolUseMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
+import { AI_TOOLS, AITool } from '@/app/ai/tools/aiTools';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystContextAtom,
@@ -25,6 +27,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getQuadraticContext } = useQuadraticContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
+  const { getToolUsePrompt } = useToolUseMessages();
   const { getSelectionContext } = useSelectionContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
   const [model] = useAIModel();
@@ -74,6 +77,7 @@ export function useSubmitAIAnalystPrompt() {
           : [];
         const sheetContext = aiContext.currentSheet ? await getCurrentSheetContext({ model }) : [];
         const visibleContext = aiContext.visibleData ? await getVisibleContext({ model }) : [];
+        const toolUsePrompt = aiContext.toolUse ? getToolUsePrompt({ model }) : [];
         const selectionContext = await getSelectionContext({
           sheetRect: aiContext.selection,
           model,
@@ -90,7 +94,8 @@ export function useSubmitAIAnalystPrompt() {
               message.contextType !== 'quadraticDocs' &&
               message.contextType !== 'allSheets' &&
               message.contextType !== 'currentSheet' &&
-              message.contextType !== 'visibleData'
+              message.contextType !== 'visibleData' &&
+              message.contextType !== 'toolUse'
           );
 
           const lastSelectionContext = prevMessages
@@ -112,6 +117,7 @@ export function useSubmitAIAnalystPrompt() {
             ...quadraticContext,
             ...sheetContext,
             ...visibleContext,
+            ...toolUsePrompt,
             ...(clearMessages ? [] : prevMessages),
             ...newContextMessages,
             { role: 'user', content: userPrompt, internalContext: false, contextType: 'userPrompt' },
@@ -136,8 +142,16 @@ export function useSubmitAIAnalystPrompt() {
             useTools: true,
           });
 
-          console.log('response', response);
-          // TODO(ayush): Handle response
+          if (response.functionCalls && response.functionCalls.length > 0) {
+            for (const functionCall of response.functionCalls) {
+              if (Object.values(AITool).includes(functionCall.name as AITool)) {
+                const aiTool = functionCall.name as AITool;
+                const argsObject = JSON.parse(functionCall.arguments);
+                const args = AI_TOOLS[aiTool].responseSchema.parse(argsObject);
+                await AI_TOOLS[aiTool].action(args);
+              }
+            }
+          }
         } catch (error) {
           console.error(error);
         }
@@ -150,6 +164,7 @@ export function useSubmitAIAnalystPrompt() {
       getQuadraticContext,
       getCurrentSheetContext,
       getVisibleContext,
+      getToolUsePrompt,
       getSelectionContext,
       getCodeCellContext,
       model,

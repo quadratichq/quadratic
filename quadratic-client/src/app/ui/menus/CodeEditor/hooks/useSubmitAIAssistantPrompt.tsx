@@ -1,7 +1,9 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
+import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
+import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantLoadingAtom,
@@ -18,6 +20,8 @@ import { useRecoilCallback } from 'recoil';
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getQuadraticContext } = useQuadraticContextMessages();
+  const { getCurrentSheetContext } = useCurrentSheetContextMessages();
+  const { getVisibleContext } = useVisibleContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
   const [model] = useAIModel();
 
@@ -52,10 +56,19 @@ export function useSubmitAIAssistantPrompt() {
           codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         }
         const quadraticContext = getQuadraticContext(getLanguage(codeCell.language), model);
+        const sheetContext = await getCurrentSheetContext({ model });
+        const visibleContext = await getVisibleContext({ model });
         const codeContext = await getCodeCellContext({ codeCell, model });
         let updatedMessages: (UserMessage | AIMessage)[] = [];
         set(aiAssistantMessagesAtom, (prevMessages) => {
-          prevMessages = prevMessages.filter((message) => message.contextType !== 'quadraticDocs');
+          prevMessages = prevMessages.filter(
+            (message) =>
+              message.contextType !== 'quadraticDocs' &&
+              message.contextType !== 'allSheets' &&
+              message.contextType !== 'currentSheet' &&
+              message.contextType !== 'visibleData' &&
+              message.contextType !== 'toolUse'
+          );
 
           const lastCodeContext = prevMessages
             .filter((message) => message.role === 'user' && message.contextType === 'codeCell')
@@ -67,6 +80,8 @@ export function useSubmitAIAssistantPrompt() {
 
           updatedMessages = [
             ...quadraticContext,
+            ...sheetContext,
+            ...visibleContext,
             ...(clearMessages ? [] : prevMessages),
             ...newContextMessages,
             { role: 'user', content: userPrompt, internalContext: false, contextType: 'userPrompt' },
@@ -95,7 +110,7 @@ export function useSubmitAIAssistantPrompt() {
         set(aiAssistantAbortControllerAtom, undefined);
         set(aiAssistantLoadingAtom, false);
       },
-    [handleAIRequestToAPI, getQuadraticContext, getCodeCellContext, model]
+    [handleAIRequestToAPI, getQuadraticContext, getCurrentSheetContext, getVisibleContext, getCodeCellContext, model]
   );
 
   return { submitPrompt };
