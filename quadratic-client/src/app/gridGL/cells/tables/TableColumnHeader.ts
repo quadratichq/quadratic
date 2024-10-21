@@ -20,10 +20,11 @@ export class TableColumnHeader extends Container {
   private index: number;
 
   private columnName: BitmapText;
-  private sortButton?: Graphics;
   private sortIcon?: Sprite;
 
   private sortButtonStart = 0;
+
+  sortButton?: Graphics;
   columnHeaderBounds: Rectangle;
 
   private onSortPressed: Function;

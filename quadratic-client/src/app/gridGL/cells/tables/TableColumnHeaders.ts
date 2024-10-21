@@ -4,6 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeader } from '@/app/gridGL/cells/tables/TableColumnHeader';
 import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsDataTableColumn, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -132,6 +133,16 @@ export class TableColumnHeaders extends Container {
     } else {
       this.tableCursor = found.tableCursor;
     }
+
+    // ensure we clear the sort button on any other column header
+    this.columns.children.forEach((column) => {
+      if (column !== found) {
+        if (column.sortButton?.visible) {
+          column.sortButton.visible = false;
+          pixiApp.setViewportDirty();
+        }
+      }
+    });
     return !!found;
   }
 
