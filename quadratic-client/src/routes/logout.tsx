@@ -1,22 +1,19 @@
 import { authClient } from '@/auth';
 import { LoaderFunctionArgs, redirect } from 'react-router-dom';
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // We don't allow logout via a normal GET, as browsers can optimistically
-  // do gets on requests like that and accidentally log people out.
-  // But we'll allow you to manually logout via a `?force=true` search param
-  const url = new URL(request.url);
-  const force = url.searchParams.get('force');
-  if (force !== null) {
-    await authClient.logout();
-    return redirect('/');
-  }
+// Note: for user-initiatied logouts, don’t do `<a href="/logout">` in code.
+// Instead, do `<form action="/logout" method="POST">...</form>` as browsers
+// may optimistically prefetch routes they think you'll visit
+// (e.g. hover `<a href="/logout">` and you get logged out).
+//
+// But we'll still allow manually visiting `/logout` if you want to do that.
 
-  // Otherwise, just redirect home
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  await authClient.logout();
   return redirect('/');
 };
 
-// We log out in a "resource route" that we can hit from a fetcher.Form
+// If the user clicks log out, we do that via a "resource route" we can hit from a fetcher.Form
 export const action = async () => {
   await authClient.logout();
   return redirect('/');
