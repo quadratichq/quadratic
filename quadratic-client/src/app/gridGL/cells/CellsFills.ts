@@ -207,10 +207,10 @@ export class CellsFills extends Container {
 
   private drawAlternatingColors = () => {
     this.alternatingColorsGraphics.clear();
-    this.alternatingColors.forEach((table, key) => {
+    this.alternatingColors.forEach((table) => {
       const bounds = this.sheet.getScreenRectangle(table.x, table.y + 1, table.w - 1, table.y);
       let yOffset = bounds.y;
-      for (let y = 0; y < table.h; y++) {
+      for (let y = 0; y < table.h - 1; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
         if (y % 2 !== 0) {
           this.alternatingColorsGraphics.beginFill(colors.tableAlternatingBackground);
