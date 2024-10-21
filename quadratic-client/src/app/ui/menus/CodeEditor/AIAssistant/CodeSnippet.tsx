@@ -11,7 +11,6 @@ import {
   DiffIcon,
   ExpandCircleDownIcon,
   ExpandCircleUpIcon,
-  IconComponent,
   SaveAndRunIcon,
 } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -177,7 +176,21 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
     [language, text]
   );
 
-  return <CodeSnippetButton onClick={handleSaveAndRun} Icon={SaveAndRunIcon} label="Save & run" />;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="text-muted-foreground hover:text-foreground"
+          onClick={handleSaveAndRun}
+        >
+          <SaveAndRunIcon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Save & run</TooltipContent>
+    </Tooltip>
+  );
 }
 
 function CodeSnippetInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
@@ -200,34 +213,6 @@ function CodeSnippetInsertButton({ language, text }: { language: CodeSnippetProp
     [language, text]
   );
 
-  return <CodeSnippetButton onClick={handleReplace} Icon={DiffIcon} label="Apply diff" disabled={!language} />;
-}
-
-function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
-  const handleCopy = useCallback(() => {
-    mixpanel.track('[AI].code.copy', { language });
-    navigator.clipboard.writeText(text);
-    setTooltipMsg('Copied!');
-    setTimeout(() => {
-      setTooltipMsg('Copy');
-    }, 2000);
-  }, [language, text]);
-
-  return <CodeSnippetButton onClick={handleCopy} Icon={CopyIcon} label={tooltipMsg} />;
-}
-
-function CodeSnippetButton({
-  onClick,
-  Icon,
-  label,
-  disabled,
-}: {
-  onClick: () => void;
-  Icon: IconComponent;
-  label: string;
-  disabled?: boolean;
-}) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -235,13 +220,52 @@ function CodeSnippetButton({
           variant="ghost"
           size="icon-sm"
           className="text-muted-foreground hover:text-foreground"
-          onClick={onClick}
-          disabled={disabled}
+          onClick={handleReplace}
+          disabled={!language}
         >
-          <Icon />
+          <DiffIcon />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
+      <TooltipContent>Apply diff</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+  const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
+
+  const handleCopy = useCallback(
+    (e: any) => {
+      e.preventDefault();
+      mixpanel.track('[AI].code.copy', { language });
+      navigator.clipboard.writeText(text);
+      setTooltipMsg('Copied!');
+      setTimeout(() => {
+        setTooltipMsg('Copy');
+      }, 2000);
+    },
+    [language, text]
+  );
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="text-muted-foreground hover:text-foreground"
+          onClick={handleCopy}
+        >
+          <CopyIcon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent
+        onPointerDownOutside={(event) => {
+          event.preventDefault();
+        }}
+      >
+        {tooltipMsg}
+      </TooltipContent>
     </Tooltip>
   );
 }
