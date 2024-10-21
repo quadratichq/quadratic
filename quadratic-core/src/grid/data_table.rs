@@ -85,6 +85,7 @@ pub struct DataTable {
     pub readonly: bool,
     pub spill_error: bool,
     pub last_modified: DateTime<Utc>,
+    pub alternating_colors: bool,
 }
 
 impl From<(Import, Array, &Sheet)> for DataTable {
@@ -130,6 +131,7 @@ impl DataTable {
             value,
             readonly,
             spill_error,
+            alternating_colors: true,
             last_modified: Utc::now(),
         };
 
@@ -169,6 +171,7 @@ impl DataTable {
             readonly,
             spill_error,
             last_modified: Utc::now(),
+            alternating_colors: true,
         }
     }
 
@@ -870,6 +873,7 @@ pub mod test {
             last_modified: Utc::now(),
             show_header: true,
             header_is_first_row: true,
+            alternating_colors: true,
         };
         sheet.set_cell_value(
             pos,

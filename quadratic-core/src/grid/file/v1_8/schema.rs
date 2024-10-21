@@ -132,6 +132,7 @@ pub struct DataTableSchema {
     pub readonly: bool,
     pub spill_error: bool,
     pub last_modified: Option<DateTime<Utc>>,
+    pub alternating_colors: bool,
 }
 
 impl From<i8> for AxisSchema {
