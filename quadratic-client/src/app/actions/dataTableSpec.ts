@@ -28,6 +28,7 @@ type DataTableSpec = Pick<
   | Action.DeleteDataTable
   | Action.CodeToDataTable
   | Action.SortTable
+  | Action.ToggleTableAlternatingColors
 >;
 
 const isFirstRowHeader = (): boolean => {
@@ -40,6 +41,10 @@ const isHeadingShowing = (): boolean => {
 
 const getTable = (): JsRenderCodeCell | undefined => {
   return pixiAppSettings.contextMenu?.table ?? pixiApp.cellSheet().cursorOnDataTable();
+};
+
+const isAlternatingColorsShowing = (): boolean => {
+  return !!pixiAppSettings.contextMenu?.table?.alternating_colors;
 };
 
 export const dataTableSpec: DataTableSpec = {
@@ -129,6 +134,14 @@ export const dataTableSpec: DataTableSpec = {
     Icon: SortIcon,
     run: async () => {
       // open table sort dialog...
+    },
+  },
+  [Action.ToggleTableAlternatingColors]: {
+    label: 'Toggle alternating colors',
+    checkbox: isAlternatingColorsShowing,
+    run: async () => {
+      console.log('TODO: toggle alternating colors');
+      // quadraticCore.dataTableToggleAlternatingColors(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
     },
   },
 };

@@ -45,6 +45,15 @@ export class Table extends Container {
     this.tableName.update();
     this.columnHeaders.update();
     this.outline.update();
+
+    const cellsSheet = pixiApp.cellsSheets.getById(this.sheet.id);
+    if (cellsSheet) {
+      cellsSheet.cellsFills.updateAlternatingColors(
+        this.codeCell.x,
+        this.codeCell.y,
+        this.codeCell.alternating_colors ? this.codeCell : undefined
+      );
+    }
   };
 
   private tableNamePosition = (bounds: Rectangle, gridHeading: number) => {

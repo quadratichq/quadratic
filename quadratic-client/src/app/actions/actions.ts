@@ -148,4 +148,5 @@ export enum Action {
   DeleteDataTable = 'delete_table',
   CodeToDataTable = 'code_to_data_table',
   SortTable = 'table_sort',
+  ToggleTableAlternatingColors = 'toggle_table_alternating_colors',
 }

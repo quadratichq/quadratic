@@ -22,6 +22,8 @@ import { renderText } from './renderText';
 declare var self: WorkerGlobalScope & typeof globalThis;
 
 class RenderClient {
+  tableColumnHeaderForeground = 0;
+
   constructor() {
     self.onmessage = this.handleMessage;
   }
@@ -35,6 +37,7 @@ class RenderClient {
       case 'clientRenderInit':
         renderText.clientInit(e.data.bitmapFonts);
         renderCore.init(e.ports[0]);
+        this.tableColumnHeaderForeground = e.data.tableColumnHeaderForeground;
         return;
 
       case 'clientRenderViewport':
@@ -68,7 +71,10 @@ class RenderClient {
         return;
 
       default:
-        console.warn('[renderClient] Unhandled message type', e.data);
+        // ignore messages from react dev tools
+        if (!(e.data as any)?.source) {
+          console.warn('[renderClient] Unhandled message type', e.data);
+        }
     }
   };
 

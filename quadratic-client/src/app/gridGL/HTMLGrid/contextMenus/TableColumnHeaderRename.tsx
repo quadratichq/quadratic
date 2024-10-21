@@ -2,8 +2,6 @@ import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { convertTintToHex } from '@/app/helpers/convertColor';
-import { colors } from '@/app/theme/colors';
 import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -50,8 +48,8 @@ export const TableColumnHeaderRename = () => {
       className="origin-bottom-left border-none p-0 text-sm font-bold text-primary-foreground outline-none"
       styles={{
         fontSize: FONT_SIZE,
-        color: convertTintToHex(colors.tableColumnHeaderForeground),
-        backgroundColor: convertTintToHex(colors.tableColumnHeaderBackground),
+        color: 'var(--table-column-header-foreground)',
+        backgroundColor: 'var(--table-column-header-background)',
       }}
       onSave={() => {
         if (contextMenu.table) {

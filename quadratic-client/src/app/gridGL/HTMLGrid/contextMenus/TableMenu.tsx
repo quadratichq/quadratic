@@ -17,6 +17,7 @@ export const TableMenu = (props: Props) => {
       <MenuDivider />
       <MenuItemAction action={Action.ToggleHeaderTable} />
       <MenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
+      <MenuItemAction action={Action.ToggleTableAlternatingColors} />
       <MenuDivider />
       {isCodeTable && <MenuItemAction action={Action.CodeToDataTable} />}
       <MenuItemAction action={Action.FlattenTable} />

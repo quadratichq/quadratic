@@ -7,6 +7,10 @@ import type { RenderSpecial } from './worker/cellsLabel/CellsTextHashSpecial';
 export interface ClientRenderInit {
   type: 'clientRenderInit';
   bitmapFonts: RenderBitmapFonts;
+
+  // this is taken from the CSS variable (which is not accessible in the
+  // worker): --table-column-header-foreground
+  tableColumnHeaderForeground: number;
 }
 
 // also includes sending the data as transferable ArrayBuffers

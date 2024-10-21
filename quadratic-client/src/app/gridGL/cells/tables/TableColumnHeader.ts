@@ -5,8 +5,8 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { DataTableSort } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
 import { FONT_SIZE, OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { BitmapText, Container, Graphics, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 
@@ -20,10 +20,11 @@ export class TableColumnHeader extends Container {
   private index: number;
 
   private columnName: BitmapText;
-  private sortButton?: Graphics;
   private sortIcon?: Sprite;
 
   private sortButtonStart = 0;
+
+  sortButton?: Graphics;
   columnHeaderBounds: Rectangle;
 
   private onSortPressed: Function;
@@ -48,11 +49,12 @@ export class TableColumnHeader extends Container {
     this.columnHeaderBounds = new Rectangle(table.tableBounds.x + x, table.tableBounds.y, width, height);
     this.position.set(x, 0);
 
+    const tint = getCSSVariableTint('table-column-header-foreground');
     this.columnName = this.addChild(
       new BitmapText(name, {
         fontName: 'OpenSans-Bold',
         fontSize: FONT_SIZE,
-        tint: colors.tableColumnHeaderForeground,
+        tint,
       })
     );
     this.clipName(name, width);
@@ -63,7 +65,7 @@ export class TableColumnHeader extends Container {
   // tests the width of the text and clips it if it is too wide
   private clipName(name: string, width: number) {
     let clippedName = name;
-    while (clippedName.length > 0 && this.columnName.width > width) {
+    while (clippedName.length > 0 && this.columnName.width + SORT_BUTTON_RADIUS * 2 + SORT_BUTTON_PADDING > width) {
       clippedName = clippedName.slice(0, -1);
       this.columnName.text = clippedName;
     }

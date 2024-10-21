@@ -20,14 +20,9 @@ export const colors = {
   cursorCell: 0x2463eb,
   searchCell: 0x50c878,
 
-  // todo: this is new and should be reviewed
   movingCells: 0x2463eb,
 
   gridBackground: 0xffffff,
-
-  // table column headings
-  tableColumnHeaderForeground: 0,
-  tableColumnHeaderBackground: 0xe3eafc,
 
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,

@@ -1,10 +1,10 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
+import { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { convertColorStringToTint } from '../../helpers/convertColor';
+import { convertColorStringToTint, getCSSVariableTint } from '../../helpers/convertColor';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
@@ -24,8 +24,10 @@ export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   private cells: JsRenderFill[] = [];
   private metaFill?: JsSheetFill;
+  private alternatingColors: Map<string, JsRenderCodeCell> = new Map();
 
   private cellsContainer: ParticleContainer;
+  private alternatingColorsGraphics: Graphics;
   private meta: Graphics;
 
   private dirty = false;
@@ -37,6 +39,8 @@ export class CellsFills extends Container {
     this.cellsContainer = this.addChild(
       new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
     );
+
+    this.alternatingColorsGraphics = this.addChild(new Graphics());
 
     events.on('sheetFills', (sheetId, fills) => {
       if (sheetId === this.cellsSheet.sheetId) {
@@ -128,6 +132,7 @@ export class CellsFills extends Container {
     if (this.dirty) {
       this.dirty = false;
       this.drawMeta();
+      this.drawAlternatingColors();
     }
   };
 
@@ -184,5 +189,37 @@ export class CellsFills extends Container {
       });
       pixiApp.setViewportDirty();
     }
+  };
+
+  // this is called by Table.ts
+  updateAlternatingColors = (x: number, y: number, table?: JsRenderCodeCell) => {
+    const key = `${x},${y}`;
+    if (table) {
+      this.alternatingColors.set(key, table);
+      this.setDirty();
+    } else {
+      if (this.alternatingColors.has(key)) {
+        this.alternatingColors.delete(key);
+        this.setDirty();
+      }
+    }
+  };
+
+  private drawAlternatingColors = () => {
+    this.alternatingColorsGraphics.clear();
+    const color = getCSSVariableTint('table-alternating-background');
+    this.alternatingColors.forEach((table) => {
+      const bounds = this.sheet.getScreenRectangle(table.x, table.y + 1, table.w - 1, table.y);
+      let yOffset = bounds.y;
+      for (let y = table.show_header ? 1 : 0; y < table.h - 1; y++) {
+        let height = this.sheet.offsets.getRowHeight(y + table.y);
+        if (y % 2 === 0) {
+          this.alternatingColorsGraphics.beginFill(color);
+          this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
+          this.alternatingColorsGraphics.endFill();
+        }
+        yOffset += height;
+      }
+    });
   };
 }
