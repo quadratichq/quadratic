@@ -1,8 +1,10 @@
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
-import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/TableName';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { convertTintToHex } from '@/app/helpers/convertColor';
+import { colors } from '@/app/theme/colors';
+import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -45,8 +47,12 @@ export const TableColumnHeaderRename = () => {
     <PixiRename
       defaultValue={originalHeaderName}
       position={position}
-      className="origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
-      styles={{ fontSize: TABLE_NAME_FONT_SIZE, paddingLeft: TABLE_NAME_PADDING[0] }}
+      className="origin-bottom-left border-none p-0 text-sm font-bold text-primary-foreground outline-none"
+      styles={{
+        fontSize: FONT_SIZE,
+        color: convertTintToHex(colors.tableColumnHeaderForeground),
+        backgroundColor: convertTintToHex(colors.tableColumnHeaderBackground),
+      }}
       onSave={() => {
         if (contextMenu.table) {
           console.log('TODO: rename table');
@@ -54,7 +60,6 @@ export const TableColumnHeaderRename = () => {
         }
       }}
       onClose={() => events.emit('contextMenu', {})}
-      noScale
     />
   );
 };

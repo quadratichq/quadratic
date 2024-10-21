@@ -124,6 +124,14 @@ export class Table extends Container {
     pixiApp.overHeadings.removeChild(this.tableName);
   }
 
+  hideColumnHeaders(index: number) {
+    this.columnHeaders.hide(index);
+  }
+
+  showColumnHeaders() {
+    this.columnHeaders.show();
+  }
+
   private isShowingTableName(): boolean {
     return this.tableName.parent !== undefined;
   }
