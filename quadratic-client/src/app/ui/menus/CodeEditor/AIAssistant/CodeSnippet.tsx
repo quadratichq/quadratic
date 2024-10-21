@@ -14,7 +14,7 @@ import {
   SaveAndRunIcon,
 } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import Editor from '@monaco-editor/react';
 import mixpanel from 'mixpanel-browser';
@@ -44,82 +44,80 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
   const [collapsed, setCollapsed] = useState(true);
 
   return (
-    <TooltipProvider>
-      <div className="relative">
-        <div className="overflow-hidden rounded border shadow-sm">
-          <div className="flex flex-row items-center justify-between gap-2 bg-accent px-3 py-1">
-            <div className="lowercase text-muted-foreground">{language}</div>
+    <div className="relative">
+      <div className="overflow-hidden rounded border shadow-sm">
+        <div className="flex flex-row items-center justify-between gap-2 bg-accent px-3 py-1">
+          <div className="lowercase text-muted-foreground">{language}</div>
 
-            <div className="flex items-center gap-1">
-              <CodeSnippetRunButton text={code} language={language} />
-              <CodeSnippetInsertButton text={code} language={language} />
-              <CodeSnippetCopyButton text={code} language={language} />
-            </div>
-          </div>
-
-          <div
-            className="relative pt-2"
-            style={{
-              ...codeEditorBaseStyles,
-              // calculate height based on number of lines
-              height: `${Math.ceil(numberOfLines) * 19 + 16}px`,
-              maxHeight: collapsed ? '148px' : '100%',
-            }}
-          >
-            <Editor
-              language={syntax}
-              value={code}
-              height="100%"
-              width="100%"
-              options={{
-                readOnly: true,
-                minimap: { enabled: false },
-                overviewRulerLanes: 0,
-                hideCursorInOverviewRuler: true,
-                overviewRulerBorder: false,
-                scrollbar: {
-                  vertical: 'hidden',
-                  handleMouseWheel: false,
-                },
-                scrollBeyondLastLine: false,
-                wordWrap: 'off',
-                lineNumbers: 'off',
-                automaticLayout: true,
-                folding: false,
-                renderLineHighlightOnlyWhenFocus: true,
-              }}
-            />
+          <div className="flex items-center gap-1">
+            <CodeSnippetRunButton text={code} language={language} />
+            <CodeSnippetInsertButton text={code} language={language} />
+            <CodeSnippetCopyButton text={code} language={language} />
           </div>
         </div>
-        {showAsCollapsed && (
-          <div
-            className={cn(
-              ' flex  flex-col items-center justify-end rounded bg-gradient-to-t from-white from-50% pb-1',
-              collapsed ? 'absolute bottom-[1px] left-[1px] right-[1px] h-16' : ''
-            )}
-          >
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1 text-muted-foreground"
-              onClick={() => setCollapsed((prev) => !prev)}
-            >
-              {collapsed ? (
-                <>
-                  <ExpandCircleDownIcon />
-                  Show code ({numberOfLines} lines)
-                </>
-              ) : (
-                <>
-                  <ExpandCircleUpIcon />
-                  Collapse code
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+
+        <div
+          className="relative pt-2"
+          style={{
+            ...codeEditorBaseStyles,
+            // calculate height based on number of lines
+            height: `${Math.ceil(numberOfLines) * 19 + 16}px`,
+            maxHeight: collapsed ? '148px' : '100%',
+          }}
+        >
+          <Editor
+            language={syntax}
+            value={code}
+            height="100%"
+            width="100%"
+            options={{
+              readOnly: true,
+              minimap: { enabled: false },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              scrollbar: {
+                vertical: 'hidden',
+                handleMouseWheel: false,
+              },
+              scrollBeyondLastLine: false,
+              wordWrap: 'off',
+              lineNumbers: 'off',
+              automaticLayout: true,
+              folding: false,
+              renderLineHighlightOnlyWhenFocus: true,
+            }}
+          />
+        </div>
       </div>
-    </TooltipProvider>
+      {showAsCollapsed && (
+        <div
+          className={cn(
+            ' flex  flex-col items-center justify-end rounded bg-gradient-to-t from-white from-50% pb-1',
+            collapsed ? 'absolute bottom-[1px] left-[1px] right-[1px] h-16' : ''
+          )}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-muted-foreground"
+            onClick={() => setCollapsed((prev) => !prev)}
+          >
+            {collapsed ? (
+              <>
+                <ExpandCircleDownIcon />
+                Show code ({numberOfLines} lines)
+              </>
+            ) : (
+              <>
+                <ExpandCircleUpIcon />
+                Collapse code
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
 
