@@ -1,25 +1,33 @@
 import { Action } from '@/app/actions/actions';
-import { ContextMenuSpecial, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { createSelection } from '@/app/grid/sheet/selection';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { DeleteIcon, FileRenameIcon, FlattenTableIcon, TableConvertIcon, TableIcon } from '@/shared/components/Icons';
+import {
+  DeleteIcon,
+  FileRenameIcon,
+  FlattenTableIcon,
+  SortIcon,
+  TableConvertIcon,
+  TableIcon,
+} from '@/shared/components/Icons';
 import { Rectangle } from 'pixi.js';
 import { sheets } from '../grid/controller/Sheets';
 import { ActionSpecRecord } from './actionsSpec';
 
 type DataTableSpec = Pick<
   ActionSpecRecord,
-  | Action.FlattenDataTable
+  | Action.FlattenTable
   | Action.GridToDataTable
-  | Action.ToggleFirstRowAsHeaderDataTable
-  | Action.RenameDataTable
-  | Action.ToggleHeaderDataTable
+  | Action.ToggleFirstRowAsHeaderTable
+  | Action.RenameTable
+  | Action.ToggleHeaderTable
   | Action.DeleteDataTable
   | Action.CodeToDataTable
+  | Action.SortTable
 >;
 
 const isFirstRowHeader = (): boolean => {
@@ -35,8 +43,8 @@ const getTable = (): JsRenderCodeCell | undefined => {
 };
 
 export const dataTableSpec: DataTableSpec = {
-  [Action.FlattenDataTable]: {
-    label: 'Flatten table',
+  [Action.FlattenTable]: {
+    label: 'Flatten table to grid',
     Icon: FlattenTableIcon,
     run: async () => {
       const table = getTable();
@@ -46,13 +54,13 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.GridToDataTable]: {
-    label: 'Convert values to table',
+    label: 'Convert values to data table',
     Icon: TableConvertIcon,
     run: async () => {
       quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
     },
   },
-  [Action.ToggleFirstRowAsHeaderDataTable]: {
+  [Action.ToggleFirstRowAsHeaderTable]: {
     label: 'First row as column headings',
     checkbox: isFirstRowHeader,
     run: () => {
@@ -68,7 +76,7 @@ export const dataTableSpec: DataTableSpec = {
       }
     },
   },
-  [Action.RenameDataTable]: {
+  [Action.RenameTable]: {
     label: 'Rename table',
     defaultOption: true,
     Icon: FileRenameIcon,
@@ -77,13 +85,14 @@ export const dataTableSpec: DataTableSpec = {
       const contextMenu = pixiAppSettings.contextMenu;
       if (contextMenu) {
         setTimeout(() => {
-          pixiAppSettings.setContextMenu?.({ type: ContextMenuType.Table, special: ContextMenuSpecial.rename, table });
-          events.emit('contextMenu', { type: ContextMenuType.Table, special: ContextMenuSpecial.rename, table });
+          const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
+          pixiAppSettings.setContextMenu?.(newContextMenu);
+          events.emit('contextMenu', newContextMenu);
         }, 0);
       }
     },
   },
-  [Action.ToggleHeaderDataTable]: {
+  [Action.ToggleHeaderTable]: {
     label: 'Show column headings',
     checkbox: isHeadingShowing,
     run: async () => {
@@ -110,6 +119,13 @@ export const dataTableSpec: DataTableSpec = {
       if (table) {
         // quadraticCore.codeToDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
       }
+    },
+  },
+  [Action.SortTable]: {
+    label: 'Sort table (coming soon)',
+    Icon: SortIcon,
+    run: async () => {
+      // open table sort dialog...
     },
   },
 };

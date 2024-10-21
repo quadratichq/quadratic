@@ -1,4 +1,4 @@
-import { ContextMenuSpecial, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuOptions } from '@/app/atoms/contextMenuAtom';
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { SheetPosTS } from '@/app/gridGL/types/size';
@@ -126,14 +126,7 @@ interface EventTypes {
   validation: (validation: string | boolean) => void;
 
   // trigger a context menu
-  contextMenu: (options: {
-    type?: ContextMenuType;
-    world?: Point;
-    row?: number;
-    column?: number;
-    table?: JsRenderCodeCell;
-    special?: ContextMenuSpecial;
-  }) => void;
+  contextMenu: (options: ContextMenuOptions) => void;
   contextMenuClose: () => void;
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;

@@ -1,7 +1,6 @@
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
 import {
   ContextMenuOptions,
-  ContextMenuSpecial,
   ContextMenuState,
   ContextMenuType,
   defaultContextMenuState,
@@ -238,7 +237,7 @@ class PixiAppSettings {
   };
 
   isRenamingTable(): boolean {
-    return this.contextMenu.type === ContextMenuType.Table && this.contextMenu.special === ContextMenuSpecial.rename;
+    return !!(this.contextMenu.type === ContextMenuType.Table && this.contextMenu.rename);
   }
 }
 

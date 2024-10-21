@@ -230,7 +230,7 @@ impl Sheet {
                                 None
                             };
                             let special = if y == code_rect.min.y && data_table.show_header {
-                                Some(JsRenderCellSpecial::TableHeading)
+                                Some(JsRenderCellSpecial::TableColumnHeader)
                             } else {
                                 None
                             };

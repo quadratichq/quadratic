@@ -12,13 +12,14 @@ export const TableMenu = (props: Props) => {
 
   return (
     <>
-      <MenuItemAction action={Action.RenameDataTable} overrideDefaultOption={defaultRename} />
+      <MenuItemAction action={Action.RenameTable} overrideDefaultOption={defaultRename} />
+      <MenuItemAction action={Action.SortTable} />
       <MenuDivider />
-      <MenuItemAction action={Action.ToggleHeaderDataTable} />
-      <MenuItemAction action={Action.ToggleFirstRowAsHeaderDataTable} />
+      <MenuItemAction action={Action.ToggleHeaderTable} />
+      <MenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
       <MenuDivider />
       {isCodeTable && <MenuItemAction action={Action.CodeToDataTable} />}
-      <MenuItemAction action={Action.FlattenDataTable} />
+      <MenuItemAction action={Action.FlattenTable} />
       <MenuItemAction action={Action.DeleteDataTable} />
     </>
   );

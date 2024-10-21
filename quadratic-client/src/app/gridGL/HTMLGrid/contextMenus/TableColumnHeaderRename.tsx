@@ -6,7 +6,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const TableRename = () => {
+export const TableColumnHeaderRename = () => {
   const contextMenu = useRecoilValue(contextMenuAtom);
 
   const position = useMemo(() => {
@@ -14,20 +14,36 @@ export const TableRename = () => {
       contextMenu.type !== ContextMenuType.Table ||
       !contextMenu.rename ||
       !contextMenu.table ||
-      contextMenu.selectedColumn !== undefined
+      contextMenu.selectedColumn === undefined
     ) {
       return;
     }
-    return pixiApp.cellsSheets.current?.tables.getTableNamePosition(contextMenu.table.x, contextMenu.table.y);
+    return pixiApp.cellsSheets.current?.tables.getTableColumnHeaderPosition(
+      contextMenu.table.x,
+      contextMenu.table.y,
+      contextMenu.selectedColumn
+    );
   }, [contextMenu]);
 
-  if (contextMenu.type !== ContextMenuType.Table || !contextMenu.rename || !contextMenu.table) {
+  const originalHeaderName = useMemo(() => {
+    if (!contextMenu.table || contextMenu.selectedColumn === undefined) {
+      return;
+    }
+    return contextMenu.table.column_names[contextMenu.selectedColumn].name;
+  }, [contextMenu.selectedColumn, contextMenu.table]);
+
+  if (
+    contextMenu.type !== ContextMenuType.Table ||
+    !contextMenu.rename ||
+    !contextMenu.table ||
+    contextMenu.selectedColumn === undefined
+  ) {
     return null;
   }
 
   return (
     <PixiRename
-      defaultValue={contextMenu.table.name}
+      defaultValue={originalHeaderName}
       position={position}
       className="origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
       styles={{ fontSize: TABLE_NAME_FONT_SIZE, paddingLeft: TABLE_NAME_PADDING[0] }}

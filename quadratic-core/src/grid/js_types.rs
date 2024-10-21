@@ -18,7 +18,7 @@ pub enum JsRenderCellSpecial {
     Logical,
     Checkbox,
     List,
-    TableHeading,
+    TableColumnHeader,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]

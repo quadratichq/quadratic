@@ -446,3 +446,7 @@ export const FlattenTableIcon: IconComponent = (props) => {
 export const TableIcon: IconComponent = (props) => {
   return <Icon {...props}>table</Icon>;
 };
+
+export const SortIcon: IconComponent = (props) => {
+  return <Icon {...props}>sort</Icon>;
+};

@@ -1,7 +1,7 @@
 //! Tables renders all pixi-based UI elements for tables. Right now that's the
 //! headings.
 
-import { ContextMenuSpecial, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuOptions, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
@@ -10,6 +10,12 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point, Rectangle } from 'pixi.js';
+
+export interface TablePointerDownResult {
+  table: JsRenderCodeCell;
+  type: 'table-name' | 'dropdown' | 'column-name' | 'sort';
+  column?: number;
+}
 
 export class Tables extends Container<Table> {
   private cellsSheet: CellsSheet;
@@ -144,17 +150,17 @@ export class Tables extends Container<Table> {
 
   // Returns true if the pointer down as handled (eg, a column header was
   // clicked). Otherwise it handles TableName.
-  pointerDown(world: Point): { table: JsRenderCodeCell; nameOrDropdown: 'name' | 'dropdown' } | boolean {
+  pointerDown(world: Point): TablePointerDownResult | undefined {
     for (const table of this.children) {
       const result = table.intersectsTableName(world);
       if (result) {
         return result;
       }
-      if (table.pointerDown(world)) {
-        return true;
+      const columnName = table.pointerDown(world);
+      if (columnName) {
+        return columnName;
       }
     }
-    return false;
   }
 
   pointerMove(world: Point): boolean {
@@ -170,7 +176,7 @@ export class Tables extends Container<Table> {
   // track and activate a table whose context menu is open (this handles the
   // case where you hover a table and open the context menu; we want to keep
   // that table active while the context menu is open)
-  contextMenu = (options?: { type?: ContextMenuType; table?: JsRenderCodeCell; special?: ContextMenuSpecial }) => {
+  contextMenu = (options?: ContextMenuOptions) => {
     // we keep the former context menu table active after the rename finishes
     // until the cursor moves again.
     if (this.renameDataTable) {
@@ -191,7 +197,7 @@ export class Tables extends Container<Table> {
       return;
     }
     if (options.type === ContextMenuType.Table && options.table) {
-      if (options.special === ContextMenuSpecial.rename) {
+      if (options.rename) {
         this.renameDataTable = this.children.find((table) => table.codeCell === options.table);
         if (this.renameDataTable) {
           this.renameDataTable.showActive();
@@ -217,6 +223,14 @@ export class Tables extends Container<Table> {
       return;
     }
     return table.getTableNameBounds();
+  }
+
+  getTableColumnHeaderPosition(x: number, y: number, index: number): Rectangle | undefined {
+    const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+    if (!table) {
+      return;
+    }
+    return table.getColumnHeaderBounds(index);
   }
 
   // Intersects a column/row rectangle
