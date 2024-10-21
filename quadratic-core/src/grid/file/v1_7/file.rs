@@ -47,7 +47,7 @@ fn upgrade_code_runs(
             };
             let new_data_table = v1_8::DataTableSchema {
                 kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
-                name: format!("Table {}", i),
+                name: format!("Table{}", i),
                 header_is_first_row: false,
                 show_header: false,
                 columns: None,

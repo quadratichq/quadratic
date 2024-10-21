@@ -114,10 +114,7 @@ impl GridController {
         }
 
         // finally add the final operation
-        let sheet = self
-            .try_sheet(sheet_id)
-            .ok_or_else(|| anyhow!("Sheet {sheet_id} not found"))?;
-        let mut data_table = DataTable::from((import.to_owned(), cell_values, sheet));
+        let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid));
         data_table.name = file_name.to_string();
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
@@ -383,11 +380,9 @@ impl GridController {
                 }
             }
         }
-        let sheet = self
-            .try_sheet(sheet_id)
-            .ok_or_else(|| anyhow!("Sheet {sheet_id} not found"))?;
+
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
-        let mut data_table = DataTable::from((import.to_owned(), cell_values, sheet));
+        let mut data_table = DataTable::from((import.to_owned(), cell_values, &self.grid));
         data_table.apply_first_row_as_header();
 
         // this operation must be before the SetCodeRun operations
@@ -473,7 +468,7 @@ mod test {
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let mut expected_data_table = DataTable::from((import, values.into(), sheet));
+        let mut expected_data_table = DataTable::from((import, values.into(), &gc.grid));
         assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
         let data_table = match ops[1].clone() {
@@ -482,7 +477,7 @@ mod test {
         };
         expected_data_table.last_modified = data_table.last_modified;
         expected_data_table.name = file_name.to_string();
-        
+
         let expected = Operation::SetCodeRun {
             sheet_pos: SheetPos {
                 x: 0,

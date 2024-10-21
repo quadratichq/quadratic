@@ -24,10 +24,10 @@ use tabled::{
 };
 use ts_rs::TS;
 
-use super::{Grid, Sheet};
+use super::Grid;
 
 impl Grid {
-    pub fn unique_data_table_name(&mut self, name: &str) -> Result<String> {
+    pub fn unique_data_table_name(&self, name: &str) -> String {
         let re = Regex::new(r"\d+$").unwrap();
         let base = re.replace(&name, "");
 
@@ -50,17 +50,22 @@ impl Grid {
             num += 1;
         }
 
-        Ok(name)
+        name
     }
 
     pub fn update_data_table_name(&mut self, sheet_pos: SheetPos, name: &str) -> Result<()> {
+        let unique_name = self.unique_data_table_name(name);
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
             .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
 
-        sheet.update_table_name(sheet_pos.into(), name)?;
+        sheet.update_table_name(sheet_pos.into(), &unique_name)?;
 
         Ok(())
+    }
+
+    pub fn next_data_table_name(&self) -> String {
+        self.unique_data_table_name("Table")
     }
 }
 
@@ -127,9 +132,9 @@ pub struct DataTable {
     pub alternating_colors: bool,
 }
 
-impl From<(Import, Array, &Sheet)> for DataTable {
-    fn from((import, cell_values, sheet): (Import, Array, &Sheet)) -> Self {
-        let name = sheet.next_data_table_name();
+impl From<(Import, Array, &Grid)> for DataTable {
+    fn from((import, cell_values, grid): (Import, Array, &Grid)) -> Self {
+        let name = grid.unique_data_table_name(&import.file_name);
 
         DataTable::new(
             DataTableKind::Import(import),
@@ -647,7 +652,11 @@ pub mod test {
     use std::collections::HashSet;
 
     use super::*;
-    use crate::{controller::GridController, grid::SheetId, Array};
+    use crate::{
+        controller::GridController,
+        grid::{Sheet, SheetId},
+        Array,
+    };
     use serial_test::parallel;
 
     pub fn test_csv_values() -> Vec<Vec<&'static str>> {
@@ -660,12 +669,14 @@ pub mod test {
     }
 
     pub fn new_data_table() -> (Sheet, DataTable) {
-        let sheet = GridController::test().grid().sheets()[0].clone();
+        let gc = GridController::test();
+        let grid = gc.grid();
+        let sheet = grid.sheets()[0].clone();
         let file_name = "test.csv";
         let values = test_csv_values();
         let import = Import::new(file_name.into());
         let array = Array::from_str_vec(values, true).unwrap();
-        let data_table = DataTable::from((import.clone(), array, &sheet));
+        let data_table = DataTable::from((import.clone(), array, grid));
 
         (sheet, data_table)
     }

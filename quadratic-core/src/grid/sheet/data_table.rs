@@ -1,26 +1,9 @@
 use super::Sheet;
-use crate::{
-    grid::{data_table::DataTable, DataTableKind},
-    Pos, Value,
-};
+use crate::{grid::data_table::DataTable, Pos};
 
 use anyhow::{anyhow, bail, Result};
 
 impl Sheet {
-    pub fn new_data_table(
-        &mut self,
-        pos: Pos,
-        kind: DataTableKind,
-        value: Value,
-        spill_error: bool,
-        header: bool,
-    ) -> Option<DataTable> {
-        let name = self.next_data_table_name();
-        let data_table = DataTable::new(kind, &name, value, spill_error, header, true);
-
-        self.set_data_table(pos, Some(data_table))
-    }
-
     /// Sets or deletes a data table.
     ///
     /// Returns the old value if it was set.
@@ -29,20 +12,6 @@ impl Sheet {
             self.data_tables.insert(pos, data_table)
         } else {
             self.data_tables.shift_remove(&pos)
-        }
-    }
-
-    pub fn next_data_table_name(&self) -> String {
-        let mut i = self.data_tables.len() + 1;
-
-        loop {
-            let name = format!("Table {}", i);
-
-            if !self.data_tables.values().any(|table| table.name == name) {
-                return name;
-            }
-
-            i += 1;
         }
     }
 
@@ -105,7 +74,11 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{controller::GridController, grid::CodeRun, CellValue, Value};
+    use crate::{
+        controller::GridController,
+        grid::{CodeRun, DataTableKind},
+        CellValue, Value,
+    };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
     use std::{collections::HashSet, vec};

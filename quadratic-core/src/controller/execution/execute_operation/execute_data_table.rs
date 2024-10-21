@@ -223,7 +223,8 @@ impl GridController {
             let old_values = sheet.cell_values_in_rect(&rect, false)?;
 
             let import = Import::new("simple.csv".into());
-            let data_table = DataTable::from((import.to_owned(), old_values.to_owned(), sheet));
+            let data_table =
+                DataTable::from((import.to_owned(), old_values.to_owned(), &self.grid));
             let cell_value = CellValue::Import(import.to_owned());
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
