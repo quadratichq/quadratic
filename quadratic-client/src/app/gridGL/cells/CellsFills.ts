@@ -211,9 +211,9 @@ export class CellsFills extends Container {
     this.alternatingColors.forEach((table) => {
       const bounds = this.sheet.getScreenRectangle(table.x, table.y + 1, table.w - 1, table.y);
       let yOffset = bounds.y;
-      for (let y = 0; y < table.h - 1; y++) {
+      for (let y = table.show_header ? 1 : 0; y < table.h - 1; y++) {
         let height = this.sheet.offsets.getRowHeight(y + table.y);
-        if (y % 2 !== 0) {
+        if (y % 2 === 0) {
           this.alternatingColorsGraphics.beginFill(color);
           this.alternatingColorsGraphics.drawRect(bounds.x, yOffset, bounds.width, height);
           this.alternatingColorsGraphics.endFill();
