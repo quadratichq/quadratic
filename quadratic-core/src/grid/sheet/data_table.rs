@@ -46,6 +46,12 @@ impl Sheet {
         }
     }
 
+    pub fn update_table_name(&mut self, pos: Pos, name: &str) -> Result<()> {
+        self.data_table_mut(pos)?.update_table_name(name);
+
+        Ok(())
+    }
+
     /// Returns a DatatTable at a Pos
     pub fn data_table(&self, pos: Pos) -> Option<&DataTable> {
         self.data_tables.get(&pos)

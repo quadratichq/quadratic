@@ -18,6 +18,7 @@ pub enum TransactionName {
     RunCode,
     FlattenDataTable,
     GridToDataTable,
+    UpdateDataTableName,
     DataTableFirstRowAsHeader,
     Import,
 

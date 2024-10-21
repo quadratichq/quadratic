@@ -3,6 +3,7 @@ import { events } from '@/app/events/events';
 import { TABLE_NAME_FONT_SIZE, TABLE_NAME_PADDING } from '@/app/gridGL/cells/tables/TableName';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -31,10 +32,22 @@ export const TableRename = () => {
       position={position}
       className="origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
       styles={{ fontSize: TABLE_NAME_FONT_SIZE, paddingLeft: TABLE_NAME_PADDING[0] }}
-      onSave={() => {
-        if (contextMenu.table) {
-          console.log('TODO: rename table');
-          // quadraticCore.renameDataTable(contextMenu.table.id, contextMenu.table.name);
+      onSave={(value: string) => {
+        if (contextMenu.table && pixiApp.cellsSheets.current) {
+          console.log(
+            'TbleRename.tsx: onSave()',
+            pixiApp.cellsSheets.current?.sheetId,
+            contextMenu.table.x,
+            contextMenu.table.y,
+            value
+          );
+          quadraticCore.updateDataTableName(
+            pixiApp.cellsSheets.current?.sheetId,
+            contextMenu.table.x,
+            contextMenu.table.y,
+            value,
+            ''
+          );
         }
       }}
       onClose={() => events.emit('contextMenu', {})}

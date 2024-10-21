@@ -1199,6 +1199,17 @@ class QuadraticCore {
     });
   }
 
+  updateDataTableName(sheetId: string, x: number, y: number, name: string, cursor: string) {
+    this.send({
+      type: 'clientCoreUpdateDataTableName',
+      sheetId,
+      x,
+      y,
+      name,
+      cursor,
+    });
+  }
+
   sortDataTable(sheetId: string, x: number, y: number, columnIndex: number, sortOrder: string, cursor: string) {
     this.send({
       type: 'clientCoreSortDataTable',

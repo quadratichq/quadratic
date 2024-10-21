@@ -18,6 +18,15 @@ impl GridController {
         vec![Operation::GridToDataTable { sheet_rect }]
     }
 
+    pub fn update_data_table_name_operations(
+        &self,
+        sheet_pos: SheetPos,
+        name: String,
+        _cursor: Option<String>,
+    ) -> Vec<Operation> {
+        vec![Operation::UpdateDataTableName { sheet_pos, name }]
+    }
+
     pub fn sort_data_table_operations(
         &self,
         sheet_pos: SheetPos,

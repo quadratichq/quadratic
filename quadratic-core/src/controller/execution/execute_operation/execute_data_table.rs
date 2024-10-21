@@ -257,6 +257,51 @@ impl GridController {
         bail!("Expected Operation::GridToDataTable in execute_grid_to_data_table");
     }
 
+    pub(super) fn execute_update_data_table_name(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::UpdateDataTableName {
+            sheet_pos,
+            ref name,
+        } = op
+        {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+
+            let old_name = data_table.name.to_owned();
+            data_table.name = name.to_owned();
+
+            let data_table_rect = data_table
+                .output_rect(sheet_pos.into(), true)
+                .to_sheet_rect(sheet_id);
+
+            self.send_to_wasm(transaction, &data_table_rect)?;
+            transaction.add_code_cell(sheet_id, data_table_pos.into());
+
+            let forward_operations = vec![op];
+
+            let reverse_operations = vec![Operation::UpdateDataTableName {
+                sheet_pos,
+                name: old_name,
+            }];
+
+            self.data_table_operations(
+                transaction,
+                &data_table_rect,
+                forward_operations,
+                reverse_operations,
+            );
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::UpdateDataTableName in execute_update_data_table_name");
+    }
+
     pub(super) fn execute_sort_data_table(
         &mut self,
         transaction: &mut PendingTransaction,

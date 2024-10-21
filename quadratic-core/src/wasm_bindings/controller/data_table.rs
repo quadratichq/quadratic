@@ -69,4 +69,20 @@ impl GridController {
 
         Ok(())
     }
+    /// Flattens a Data Table
+    #[wasm_bindgen(js_name = "updateDataTableName")]
+    pub fn js_update_data_table_name(
+        &mut self,
+        sheet_id: String,
+        pos: String,
+        name: String,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+
+        self.update_data_table_name(pos.to_sheet_pos(sheet_id), name, cursor);
+
+        Ok(())
+    }
 }

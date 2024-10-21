@@ -16,6 +16,7 @@ use crate::{
 use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tabled::{
     builder::Builder,
@@ -23,7 +24,45 @@ use tabled::{
 };
 use ts_rs::TS;
 
-use super::Sheet;
+use super::{Grid, Sheet};
+
+impl Grid {
+    pub fn unique_data_table_name(&mut self, name: &str) -> Result<String> {
+        let re = Regex::new(r"\d+$").unwrap();
+        let base = re.replace(&name, "");
+
+        let all_names = self
+            .sheets()
+            .iter()
+            .flat_map(|sheet| sheet.data_tables.values().map(|table| &table.name))
+            .collect::<Vec<_>>();
+
+        let mut num = 1;
+        let mut name = String::from("");
+
+        while name == "" {
+            let new_name = format!("{}{}", base, num);
+
+            if !all_names.contains(&&new_name) {
+                name = new_name;
+            }
+
+            num += 1;
+        }
+
+        Ok(name)
+    }
+
+    pub fn update_data_table_name(&mut self, sheet_pos: SheetPos, name: &str) -> Result<()> {
+        let sheet = self
+            .try_sheet_mut(sheet_pos.sheet_id)
+            .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
+
+        sheet.update_table_name(sheet_pos.into(), name)?;
+
+        Ok(())
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DataTableColumn {
@@ -280,6 +319,10 @@ impl DataTable {
         } else {
             index
         }
+    }
+
+    pub fn update_table_name(&mut self, name: &str) {
+        self.name = name.into();
     }
 
     pub fn sort_column(

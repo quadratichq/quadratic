@@ -55,7 +55,7 @@ export const TableColumnHeaderRename = () => {
       }}
       onSave={() => {
         if (contextMenu.table) {
-          console.log('TODO: rename table');
+          console.log('TODO: rename column heading');
           // quadraticCore.renameDataTable(contextMenu.table.id, contextMenu.table.name);
         }
       }}

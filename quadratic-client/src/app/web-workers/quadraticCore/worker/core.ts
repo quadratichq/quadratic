@@ -1125,6 +1125,11 @@ class Core {
     this.gridController.gridToDataTable(JSON.stringify(selection, bigIntReplacer), cursor);
   }
 
+  updateDataTableName(sheetId: string, x: number, y: number, name: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.updateDataTableName(sheetId, posToPos(x, y), name, cursor);
+  }
+
   sortDataTable(sheetId: string, x: number, y: number, column_index: number, sort_order: string, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.sortDataTable(sheetId, posToPos(x, y), column_index, sort_order, cursor);

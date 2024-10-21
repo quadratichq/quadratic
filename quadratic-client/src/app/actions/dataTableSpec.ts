@@ -83,10 +83,13 @@ export const dataTableSpec: DataTableSpec = {
     run: async () => {
       const table = getTable();
       const contextMenu = pixiAppSettings.contextMenu;
+      console.log('contextMenu', contextMenu);
       if (contextMenu) {
         setTimeout(() => {
           const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
           pixiAppSettings.setContextMenu?.(newContextMenu);
+          console.log('newContextMenu', newContextMenu);
+          console.log('table', table);
           events.emit('contextMenu', newContextMenu);
         }, 0);
       }

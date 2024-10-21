@@ -41,6 +41,9 @@ impl GridController {
                 Operation::GridToDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_grid_to_data_table(transaction, op),
                 ),
+                Operation::UpdateDataTableName { .. } => Self::handle_execution_operation_result(
+                    self.execute_update_data_table_name(transaction, op),
+                ),
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_sort_data_table(transaction, op),
                 ),
@@ -107,7 +110,6 @@ impl GridController {
 pub fn execute_reverse_operations(gc: &mut GridController, transaction: &PendingTransaction) {
     let mut undo_transaction = PendingTransaction::default();
     undo_transaction.operations = transaction.reverse_operations.clone().into();
-    println!("reverse_operations: {:?}", undo_transaction.operations);
     gc.execute_operation(&mut undo_transaction);
 }
 

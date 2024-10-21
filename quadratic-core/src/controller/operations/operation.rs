@@ -51,6 +51,10 @@ pub enum Operation {
     GridToDataTable {
         sheet_rect: SheetRect,
     },
+    UpdateDataTableName {
+        sheet_pos: SheetPos,
+        name: String,
+    },
     SortDataTable {
         sheet_pos: SheetPos,
         column_index: u32,
@@ -222,6 +226,13 @@ impl fmt::Display for Operation {
             }
             Operation::GridToDataTable { sheet_rect } => {
                 write!(fmt, "GridToDataTable {{ sheet_rect: {} }}", sheet_rect)
+            }
+            Operation::UpdateDataTableName { sheet_pos, name } => {
+                write!(
+                    fmt,
+                    "UpdateDataTableName {{ sheet_pos: {} name: {} }}",
+                    sheet_pos, name
+                )
             }
             Operation::SortDataTable {
                 sheet_pos,

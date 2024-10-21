@@ -35,6 +35,16 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
 
+    pub fn update_data_table_name(
+        &mut self,
+        sheet_pos: SheetPos,
+        name: String,
+        cursor: Option<String>,
+    ) {
+        let ops = self.update_data_table_name_operations(sheet_pos, name, cursor.to_owned());
+        self.start_user_transaction(ops, cursor, TransactionName::UpdateDataTableName);
+    }
+
     pub fn sort_data_table(
         &mut self,
         sheet_pos: SheetPos,
