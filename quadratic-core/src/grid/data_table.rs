@@ -288,7 +288,15 @@ impl DataTable {
 
         // TODO(ddimaria): skip this if SortDirection::None
         if let Some(ref mut sort) = self.sort.to_owned() {
-            for sort in sort.iter().rev() {
+            for sort in sort
+                .iter()
+                .rev()
+                .filter(|s| s.direction != SortDirection::None)
+            {
+                dbgjs!(format!(
+                    "sorting index {} {}",
+                    sort.column_index, sort.direction
+                ));
                 let mut display_buffer = self
                     .display_value()?
                     .into_array()?
@@ -310,6 +318,8 @@ impl DataTable {
                 self.display_buffer = Some(display_buffer);
             }
         }
+
+        dbgjs!(format!("sorts: {:?}", self.sort));
 
         Ok(old)
     }
