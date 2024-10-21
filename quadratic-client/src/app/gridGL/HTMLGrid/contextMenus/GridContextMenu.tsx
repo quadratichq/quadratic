@@ -37,11 +37,14 @@ export const GridContextMenu = () => {
   const [columnRowAvailable, setColumnRowAvailable] = useState(false);
   const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
   const [isDataTable, setIsDataTable] = useState(false);
+  const [tableType, setTableType] = useState('');
   useEffect(() => {
     const updateCursor = () => {
       setColumnRowAvailable(sheets.sheet.cursor.hasOneColumnRowSelection(true));
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
-      setIsDataTable(pixiApp.cellSheet().isCursorOnDataTable());
+      const codeCell = pixiApp.cellSheet().cursorOnDataTable();
+      setIsDataTable(!!codeCell);
+      setTableType(codeCell?.language === 'Import' ? 'Data' : 'Code');
     };
 
     updateCursor();
@@ -102,8 +105,8 @@ export const GridContextMenu = () => {
 
         {isDataTable && <MenuDivider />}
         {isDataTable && (
-          <SubMenu label="Table">
-            <TableMenu />
+          <SubMenu label={`${tableType} Table`}>
+            <TableMenu isCodeTable={tableType === 'Code'} defaultRename={false} />
           </SubMenu>
         )}
       </ControlledMenu>

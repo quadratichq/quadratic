@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { Tables } from '@/app/gridGL/cells/tables/Tables';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
+import { JsRenderCodeCell, JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle, Sprite } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -135,7 +135,8 @@ export class CellsSheet extends Container {
     return this.cellsLabels.getErrorMarker(x, y) !== undefined;
   }
 
-  isCursorOnDataTable(): boolean {
-    return this.tables.isCursorOnDataTable();
+  // Returns the table that the cursor is on, or undefined if the cursor is not on a table.
+  cursorOnDataTable(): JsRenderCodeCell | undefined {
+    return this.tables.cursorOnDataTable();
   }
 }

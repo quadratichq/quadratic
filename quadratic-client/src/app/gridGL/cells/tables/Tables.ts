@@ -224,7 +224,8 @@ export class Tables extends Container<Table> {
     return this.children.some((table) => table.intersects(rectangle));
   }
 
-  isCursorOnDataTable(): boolean {
-    return this.children.some((table) => table.isCursorOnDataTable());
+  // Returns the table that the cursor is on, or undefined if the cursor is not on a table.
+  cursorOnDataTable(): JsRenderCodeCell | undefined {
+    return this.children.find((table) => table.isCursorOnDataTable())?.codeCell;
   }
 }

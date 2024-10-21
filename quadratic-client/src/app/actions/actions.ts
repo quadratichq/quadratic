@@ -146,4 +146,5 @@ export enum Action {
   RenameDataTable = 'rename_data_table',
   ToggleHeaderDataTable = 'toggle_header_data_table',
   DeleteDataTable = 'delete_data_table',
+  CodeToDataTable = 'code_to_data_table',
 }

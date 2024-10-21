@@ -7,9 +7,13 @@ import { MenuItem } from '@szhsin/react-menu';
 
 interface Props {
   action: Action;
+
+  // allows overriding of the default option (which sets the menu item to bold)
+  overrideDefaultOption?: boolean;
 }
 
 export const MenuItemAction = (props: Props): JSX.Element | null => {
+  const { overrideDefaultOption } = props;
   const { label, Icon, run, isAvailable, checkbox, defaultOption } = defaultActionSpec[props.action];
   const isAvailableArgs = useIsAvailableArgs();
   const keyboardShortcut = keyboardShortcutEnumToDisplay(props.action);
@@ -20,7 +24,7 @@ export const MenuItemAction = (props: Props): JSX.Element | null => {
 
   return (
     <MenuItemShadStyle Icon={Icon} onClick={run} keyboardShortcut={keyboardShortcut} checkbox={checkbox}>
-      <span className={defaultOption ? 'font-bold' : ''}>{label}</span>
+      <span className={overrideDefaultOption ?? defaultOption ? 'font-bold' : ''}>{label}</span>
     </MenuItemShadStyle>
   );
 };

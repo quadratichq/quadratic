@@ -52,7 +52,7 @@ export const TableContextMenu = () => {
         menuStyle={{ padding: '0', color: 'inherit' }}
         menuClassName="bg-background"
       >
-        <TableMenu />
+        <TableMenu isCodeTable={contextMenu.table?.language !== 'Import'} />
       </ControlledMenu>
     </div>
   );

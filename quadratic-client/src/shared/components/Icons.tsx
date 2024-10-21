@@ -438,3 +438,11 @@ export const TableEditIcon: IconComponent = (props) => {
 export const TableConvertIcon: IconComponent = (props) => {
   return <Icon {...props}>table_convert</Icon>;
 };
+
+export const FlattenTableIcon: IconComponent = (props) => {
+  return <Icon {...props}>view_compact</Icon>;
+};
+
+export const TableIcon: IconComponent = (props) => {
+  return <Icon {...props}>table</Icon>;
+};
