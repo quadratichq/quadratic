@@ -21,9 +21,6 @@ impl GridController {
             transaction.add_dirty_hashes_from_sheet_rect(*sheet_rect);
 
             if transaction.is_user() {
-                self.add_compute_operations(transaction, &sheet_rect, None);
-                self.check_all_spills(transaction, sheet_rect.sheet_id, true);
-
                 let sheet = self.try_sheet_result(sheet_rect.sheet_id)?;
                 let rows = sheet.get_rows_with_wrap_in_rect(&(*sheet_rect).into());
 
@@ -127,7 +124,7 @@ impl GridController {
             // sen the new value
             sheet.set_code_cell_value(pos, value.to_owned());
 
-            let sheet_rect = SheetRect::from_numbers(
+            let data_table_rect = SheetRect::from_numbers(
                 sheet_pos.x,
                 sheet_pos.y,
                 values.w as i64,
@@ -135,7 +132,7 @@ impl GridController {
                 sheet_id,
             );
 
-            self.send_to_wasm(transaction, &sheet_rect)?;
+            self.send_to_wasm(transaction, &data_table_rect)?;
 
             let forward_operations = vec![Operation::SetDataTableAt {
                 sheet_pos,
@@ -149,7 +146,7 @@ impl GridController {
 
             self.data_table_operations(
                 transaction,
-                &sheet_rect,
+                &data_table_rect,
                 forward_operations,
                 reverse_operations,
             );
@@ -275,7 +272,7 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
-            let sheet_rect = data_table
+            let data_table_sheet_rect = data_table
                 .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
@@ -294,7 +291,7 @@ impl GridController {
 
             let old_value = data_table.sort_column(column_index as usize, sort_order_enum)?;
 
-            self.send_to_wasm(transaction, &sheet_rect)?;
+            self.send_to_wasm(transaction, &data_table_sheet_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos.into());
 
             let forward_operations = vec![op];
@@ -310,7 +307,7 @@ impl GridController {
 
             self.data_table_operations(
                 transaction,
-                &sheet_rect,
+                &data_table_sheet_rect,
                 forward_operations,
                 reverse_operations,
             );
@@ -333,7 +330,6 @@ impl GridController {
         {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let data_table_rect = data_table
@@ -354,7 +350,7 @@ impl GridController {
 
             self.data_table_operations(
                 transaction,
-                &sheet_rect,
+                &data_table_rect,
                 forward_operations,
                 reverse_operations,
             );
