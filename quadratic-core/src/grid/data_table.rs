@@ -285,6 +285,7 @@ impl DataTable {
         direction: SortDirection,
     ) -> Result<Option<DataTableSort>> {
         let old = self.prepend_sort(column_index, direction.clone());
+        self.display_buffer = None;
 
         // TODO(ddimaria): skip this if SortDirection::None
         if let Some(ref mut sort) = self.sort.to_owned() {
