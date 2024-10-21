@@ -123,37 +123,6 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
   );
 }
 
-// function CodeSnippetAIInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-//   const { aiSetCodeCellValue } = useAISetCodeCellValue();
-
-//   const handleAIInsert = useCallback(async () => {
-//     mixpanel.track('[AI].code.ai_insert_code_cell', { language });
-//     const setCodeCellValueArgs = await aiSetCodeCellValue({ language, text });
-
-//     if (setCodeCellValueArgs) {
-//       const { language, codeString, x, y, width, height } = setCodeCellValueArgs;
-//       quadraticCore.setCodeCellValue({
-//         sheetId: sheets.current,
-//         x,
-//         y,
-//         codeString,
-//         language,
-//         cursor: sheets.getCursorPosition(),
-//       });
-
-//       ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
-//     }
-//   }, [aiSetCodeCellValue, language, text]);
-
-//   return (
-//     <TooltipHint title={'Ask AI to Save and Run Code'}>
-//       <IconButton size="small" onClick={handleAIInsert}>
-//         <PlayArrowOutlined fontSize="inherit" color="inherit" className="text-muted-foreground" />
-//       </IconButton>
-//     </TooltipHint>
-//   );
-// }
-
 function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
   const handleSaveAndRun = useRecoilCallback(
     ({ snapshot, set }) =>

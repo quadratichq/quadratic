@@ -27,6 +27,7 @@ export const defaultAIAnalystState: AIAnalystState = {
     allSheets: false,
     currentSheet: true,
     visibleData: true,
+    toolUse: true,
     selection: undefined,
     codeCell: undefined,
   },

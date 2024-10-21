@@ -1,11 +1,6 @@
 import { MODEL_OPTIONS } from '@/app/ai/MODELS';
-import {
-  AI_TOOL_DEFINITIONS,
-  anthropicTools,
-  getAnthropicToolChoice,
-  getOpenAIToolChoice,
-  openAITools,
-} from '@/app/ai/TOOLS';
+import { getToolChoice, getTools } from '@/app/ai/tools/aiHelpers';
+import { AITool } from '@/app/ai/tools/aiTools';
 import { authClient } from '@/auth';
 import { AI } from '@/shared/constants/routes';
 import {
@@ -32,7 +27,7 @@ type HandleAIPromptProps = {
   signal: AbortSignal;
   useStream?: boolean;
   useTools?: boolean;
-  toolChoice?: keyof typeof AI_TOOL_DEFINITIONS;
+  toolChoice?: AITool;
 };
 
 export function useAIRequestToAPI() {
@@ -99,13 +94,6 @@ export function useAIRequestToAPI() {
             }
           }
         }
-      }
-
-      if (!responseMessage.content) {
-        responseMessage.content = responseMessage.functionCalls
-          ? JSON.stringify(responseMessage.functionCalls)
-          : "I'm sorry, I don't have a response for that.";
-        setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
       }
 
       return { content: responseMessage.content, functionCalls: responseMessage.functionCalls };
@@ -176,13 +164,6 @@ export function useAIRequestToAPI() {
         }
       }
 
-      if (!responseMessage.content) {
-        responseMessage.content = responseMessage.functionCalls
-          ? JSON.stringify(responseMessage.functionCalls)
-          : "I'm sorry, I don't have a response for that.";
-        setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
-      }
-
       return { content: responseMessage.content, functionCalls: responseMessage.functionCalls };
     },
     []
@@ -217,12 +198,8 @@ export function useAIRequestToAPI() {
         const { stream: streamDefault, temperature } = MODEL_OPTIONS[model];
         const stream = useStream ?? streamDefault;
         const endpoint = isAnthropic ? AI.ANTHROPIC[stream ? 'STREAM' : 'CHAT'] : AI.OPENAI[stream ? 'STREAM' : 'CHAT'];
-        const tools = !useTools ? undefined : isAnthropic ? anthropicTools : openAITools;
-        const tool_choice = !useTools
-          ? undefined
-          : isAnthropic
-          ? getAnthropicToolChoice(toolChoice)
-          : getOpenAIToolChoice(toolChoice);
+        const tools = !useTools ? undefined : getTools(isAnthropic);
+        const tool_choice = !useTools ? undefined : getToolChoice(isAnthropic, toolChoice);
         const response = await fetch(endpoint, {
           method: 'POST',
           signal,

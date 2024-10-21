@@ -48,7 +48,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
 
     return (
       <form
-        className={cn('z-10 m-2 h-min rounded-lg bg-slate-100 pt-1', edit ? '' : 'pointer-events-none')}
+        className={cn('z-10 m-2 h-min rounded-lg bg-slate-100 pt-1', edit ? '' : 'pointer-events-none select-none')}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => textareaRef.current?.focus()}
       >

@@ -14,6 +14,7 @@ export const ContextTypeSchema = z.enum([
   'visibleData',
   'selection',
   'codeCell',
+  'toolUse',
   'userPrompt',
 ]);
 export type ContextType = z.infer<typeof ContextTypeSchema>;
@@ -49,12 +50,17 @@ export type AIMessage = z.infer<typeof AIMessageSchema>;
 
 export const AnthropicToolSchema = z.object({
   name: z.string(),
-  description: z.string().optional(),
+  description: z.string(),
   input_schema: z
     .object({
       type: z.literal('object'),
-      properties: z.record(z.unknown()).optional().nullable(),
-      required: z.array(z.string()).optional(),
+      properties: z.record(
+        z.object({
+          type: z.string(),
+          description: z.string(),
+        })
+      ),
+      required: z.array(z.string()),
     })
     .and(z.record(z.unknown())),
 });
@@ -77,19 +83,19 @@ export const AnthropicAutoCompleteRequestBodySchema = z.object({
 export type AnthropicAutoCompleteRequestBody = z.infer<typeof AnthropicAutoCompleteRequestBodySchema>;
 
 export const OpenAIToolSchema = z.object({
-  type: z.enum(['function']),
+  type: z.literal('function'),
   function: z.object({
     name: z.string(),
-    description: z.string().optional(),
+    description: z.string(),
     parameters: z.object({
       type: z.literal('object'),
       properties: z.record(
         z.object({
           type: z.string(),
-          description: z.string().optional(),
+          description: z.string(),
         })
       ),
-      required: z.array(z.string()).optional(),
+      required: z.array(z.string()),
     }),
     strict: z.boolean().optional(),
   }),
