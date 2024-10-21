@@ -1,10 +1,46 @@
+use anyhow::Result;
+
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
-
 use crate::selection::Selection;
-use crate::SheetPos;
+use crate::{CellValue, Pos, SheetPos};
 
 impl GridController {
+    // Using sheet_pos, either set a cell value or a data table value
+    pub fn set_value(
+        &mut self,
+        sheet_pos: SheetPos,
+        value: String,
+        cursor: Option<String>,
+    ) -> Result<()> {
+        let sheet = self.try_sheet_mut_result(sheet_pos.sheet_id)?;
+
+        let cell_value = sheet
+            .get_column(sheet_pos.x)
+            .and_then(|column| column.values.get(&sheet_pos.y));
+
+        let is_data_table = if let Some(cell_value) = cell_value {
+            matches!(cell_value, CellValue::Code(_) | CellValue::Import(_))
+        } else {
+            sheet
+                .data_tables
+                .iter()
+                .find(|(code_cell_pos, data_table)| {
+                    data_table
+                        .output_rect(**code_cell_pos, false)
+                        .contains(Pos::from(sheet_pos))
+                })
+                .is_some()
+        };
+
+        match is_data_table {
+            true => self.set_data_table_value(sheet_pos, value, cursor),
+            false => self.set_cell_value(sheet_pos, value, cursor),
+        };
+
+        Ok(())
+    }
+
     /// Starts a transaction to set the value of a cell by converting a user's String input
     pub fn set_cell_value(&mut self, sheet_pos: SheetPos, value: String, cursor: Option<String>) {
         let ops = self.set_cell_value_operations(sheet_pos, value);
@@ -21,16 +57,11 @@ impl GridController {
         let mut ops = vec![];
         let mut x = sheet_pos.x;
         let mut y = sheet_pos.y;
+
         for row in values {
             for value in row {
-                ops.extend(self.set_cell_value_operations(
-                    SheetPos {
-                        x,
-                        y,
-                        sheet_id: sheet_pos.sheet_id,
-                    },
-                    value.to_string(),
-                ));
+                let op_sheet_pos = SheetPos::new(sheet_pos.sheet_id, x, y);
+                ops.extend(self.set_cell_value_operations(op_sheet_pos, value.to_string()));
                 x += 1;
             }
             x = sheet_pos.x;

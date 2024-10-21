@@ -18,6 +18,7 @@ import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
+import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
@@ -54,6 +55,10 @@ export class PixiApp {
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
+
+  // this is used to display content over the headings (eg, table name when off
+  // the screen)
+  overHeadings: Container;
   cellMoving!: UICellMoving;
   headings!: GridHeadings;
   boxCells!: BoxCells;
@@ -84,6 +89,7 @@ export class PixiApp {
     this.cellsSheets = new CellsSheets();
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
+    this.overHeadings = new Container();
     this.viewport = new Viewport();
   }
 
@@ -156,6 +162,7 @@ export class PixiApp {
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.validations = this.viewportContents.addChild(this.validations);
     this.headings = this.viewportContents.addChild(new GridHeadings());
+    this.viewportContents.addChild(this.overHeadings);
 
     this.reset();
 
@@ -351,6 +358,10 @@ export class PixiApp {
     return this.cellsSheets.isCursorOnCodeCell();
   }
 
+  isCursorOnCodeCellOutput(): boolean {
+    return this.cellsSheets.isCursorOnCodeCellOutput();
+  }
+
   // called when the viewport is loaded from the URL
   urlViewportLoad(sheetId: string) {
     const cellsSheet = sheets.getById(sheetId);
@@ -362,6 +373,13 @@ export class PixiApp {
         scaleY: this.viewport.scale.y,
       };
     }
+  }
+
+  cellSheet(): CellsSheet {
+    if (!this.cellsSheets.current) {
+      throw new Error('cellSheet not found in pixiApp');
+    }
+    return this.cellsSheets.current;
   }
 }
 

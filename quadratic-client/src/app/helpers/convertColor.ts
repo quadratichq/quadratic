@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/react';
 import Color from 'color';
 import { ColorResult } from 'react-color';
-import { colors } from '../theme/colors';
 import { Rgba } from '../quadratic-core-types';
+import { colors } from '../theme/colors';
 
 export function convertReactColorToString(color: ColorResult): string {
   const rgb = color.rgb;
@@ -71,4 +71,11 @@ export function convertColorStringToHex(color: string): string {
 export function convertRgbaToTint(rgba: Rgba): { tint: number; alpha: number } {
   const rgb = { r: rgba.red, g: rgba.green, b: rgba.blue };
   return { tint: Color(rgb).rgbNumber(), alpha: rgba.alpha };
+}
+
+export function getCSSVariableTint(variable: string): number {
+  // Add this function to get CSS variable value
+  const color = getComputedStyle(document.documentElement).getPropertyValue(`--${variable}`).trim();
+  const parsed = Color.hsl(color.split(' ').map(parseFloat));
+  return parsed.rgbNumber();
 }

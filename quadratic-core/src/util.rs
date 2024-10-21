@@ -216,6 +216,7 @@ pub fn maybe_reverse_range(
 }
 
 /// For debugging both in tests and in the JS console
+#[track_caller]
 pub fn dbgjs(val: impl fmt::Debug) {
     if cfg!(target_family = "wasm") {
         crate::wasm_bindings::js::log(&(format!("{:?}", val)));

@@ -139,4 +139,14 @@ export enum Action {
   InsertRowBelow = 'insert_row_below',
   DeleteRow = 'delete_row',
   DeleteColumn = 'delete_column',
+
+  FlattenTable = 'flatten_table',
+  GridToDataTable = 'grid_to_data_table',
+  ToggleFirstRowAsHeaderTable = 'toggle_first_row_as_header_table',
+  RenameTable = 'rename_table',
+  ToggleHeaderTable = 'toggle_header_table',
+  DeleteDataTable = 'delete_table',
+  CodeToDataTable = 'code_to_data_table',
+  SortTable = 'table_sort',
+  ToggleTableAlternatingColors = 'toggle_table_alternating_colors',
 }

@@ -2,7 +2,10 @@ import { events } from '@/app/events/events';
 import { Annotations } from '@/app/gridGL/HTMLGrid/annotations/Annotations';
 import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
 import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
-import { GridContextMenu } from '@/app/gridGL/HTMLGrid/GridContextMenu';
+import { GridContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenu';
+import { TableColumnHeaderRename } from '@/app/gridGL/HTMLGrid/contextMenus/TableColumnHeaderRename';
+import { TableContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableContextMenu';
+import { TableRename } from '@/app/gridGL/HTMLGrid/contextMenus/TableRename';
 import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { HoverTooltip } from '@/app/gridGL/HTMLGrid/hoverTooltip/HoverTooltip';
 import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
@@ -131,6 +134,9 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
         }}
       >
         <GridContextMenu />
+        <TableContextMenu />
+        <TableRename />
+        <TableColumnHeaderRename />
       </div>
     </>
   );

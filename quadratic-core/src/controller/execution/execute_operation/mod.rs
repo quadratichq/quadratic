@@ -6,6 +6,7 @@ mod execute_borders;
 mod execute_code;
 mod execute_col_rows;
 mod execute_cursor;
+mod execute_data_table;
 mod execute_formats;
 mod execute_move_cells;
 mod execute_offsets;
@@ -14,6 +15,13 @@ mod execute_validation;
 mod execute_values;
 
 impl GridController {
+    #[track_caller]
+    pub fn handle_execution_operation_result(result: anyhow::Result<()>) {
+        if let Err(error) = result {
+            dbgjs!(&format!("Error in execute_operation: {:?}", &error));
+        }
+    }
+
     /// Executes the given operation.
     ///
     pub fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
@@ -24,6 +32,23 @@ impl GridController {
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
+                Operation::SetDataTableAt { .. } => Self::handle_execution_operation_result(
+                    self.execute_set_data_table_at(transaction, op),
+                ),
+                Operation::FlattenDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_flatten_data_table(transaction, op),
+                ),
+                Operation::GridToDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_grid_to_data_table(transaction, op),
+                ),
+                Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
+                    self.execute_sort_data_table(transaction, op),
+                ),
+                Operation::DataTableFirstRowAsHeader { .. } => {
+                    Self::handle_execution_operation_result(
+                        self.execute_data_table_first_row_as_header(transaction, op),
+                    )
+                }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
                 Operation::SetCellFormatsSelection { .. } => {
@@ -76,4 +101,19 @@ impl GridController {
             }
         }
     }
+}
+
+#[cfg(test)]
+pub fn execute_reverse_operations(gc: &mut GridController, transaction: &PendingTransaction) {
+    let mut undo_transaction = PendingTransaction::default();
+    undo_transaction.operations = transaction.reverse_operations.clone().into();
+    println!("reverse_operations: {:?}", undo_transaction.operations);
+    gc.execute_operation(&mut undo_transaction);
+}
+
+#[cfg(test)]
+pub fn execute_forward_operations(gc: &mut GridController, transaction: &mut PendingTransaction) {
+    let mut undo_transaction = PendingTransaction::default();
+    undo_transaction.operations = transaction.forward_operations.clone().into();
+    gc.execute_operation(&mut undo_transaction);
 }

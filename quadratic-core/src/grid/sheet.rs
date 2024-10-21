@@ -10,6 +10,7 @@ use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::column::Column;
+use super::data_table::DataTable;
 use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
@@ -27,6 +28,7 @@ pub mod cell_values;
 pub mod clipboard;
 pub mod code;
 pub mod col_row;
+pub mod data_table;
 pub mod formats;
 pub mod formatting;
 pub mod rendering;
@@ -35,6 +37,7 @@ pub mod row_resize;
 pub mod search;
 pub mod selection;
 pub mod send_render;
+#[cfg(test)]
 pub mod sheet_test;
 pub mod summarize;
 pub mod validations;
@@ -52,7 +55,7 @@ pub struct Sheet {
     pub columns: BTreeMap<i64, Column>,
 
     #[serde(with = "crate::util::indexmap_serde")]
-    pub code_runs: IndexMap<Pos, CodeRun>,
+    pub data_tables: IndexMap<Pos, DataTable>,
 
     // todo: we need to redo this struct to track the timestamp for all formats
     // applied to column and rows to properly use the latest column or row
@@ -104,7 +107,7 @@ impl Sheet {
 
             columns: BTreeMap::new(),
 
-            code_runs: IndexMap::new(),
+            data_tables: IndexMap::new(),
 
             formats_columns: BTreeMap::new(),
             formats_rows: BTreeMap::new(),
@@ -194,7 +197,7 @@ impl Sheet {
         }
 
         // remove code_cells where the rect overlaps the anchor cell
-        self.code_runs.retain(|pos, _| !rect.contains(*pos));
+        self.data_tables.retain(|pos, _| !rect.contains(*pos));
 
         old_cell_values_array
     }
@@ -203,25 +206,35 @@ impl Sheet {
         self.columns.iter()
     }
 
-    /// Returns the cell_value at a Pos using both column.values and code_runs (i.e., what would be returned if code asked
+    pub fn iter_data_tables(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
+        self.data_tables.iter()
+    }
+
+    pub fn iter_code_runs(&self) -> impl Iterator<Item = (&Pos, &CodeRun)> {
+        self.data_tables
+            .iter()
+            .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (pos, code_run)))
+    }
+
+    /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         let cell_value = self
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y));
 
-        // if CellValue::Code, then we need to get the value from code_runs
+        // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
         if let Some(cell_value) = cell_value {
             match cell_value {
-                CellValue::Code(_) => self
-                    .code_runs
+                CellValue::Code(_) | CellValue::Import(_) => self
+                    .data_tables
                     .get(&pos)
-                    .and_then(|run| run.cell_value_at(0, 0)),
+                    .and_then(|data_table| data_table.cell_value_at(0, 0)),
                 CellValue::Blank => self.get_code_cell_value(pos),
                 _ => Some(cell_value.clone()),
             }
         } else {
-            // if there is no CellValue at Pos, then we still need to check code_runs
+            // if there is no CellValue at Pos, then we still need to check data_tables
             self.get_code_cell_value(pos)
         }
     }
@@ -234,7 +247,7 @@ impl Sheet {
         })
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
+    /// Returns the cell_value at the Pos in column.values. This does not check or return results within data_tables.
     pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(&pos.y).cloned()
@@ -246,7 +259,7 @@ impl Sheet {
     }
 
     /// Returns the cell value at a position using both `column.values` and
-    /// `code_runs`, for use when a formula references a cell.
+    /// `data_tables`, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, pos: Pos) -> CellValue {
         let cell_value = self
             .get_column(pos.x)
@@ -254,10 +267,12 @@ impl Sheet {
 
         if let Some(cell_value) = cell_value {
             match cell_value {
-                CellValue::Blank | CellValue::Code(_) => match self.code_runs.get(&pos) {
-                    Some(run) => run.get_cell_for_formula(0, 0),
-                    None => CellValue::Blank,
-                },
+                CellValue::Blank | CellValue::Code(_) | CellValue::Import(_) => {
+                    match self.data_tables.get(&pos) {
+                        Some(data_table) => data_table.get_cell_for_formula(0, 0),
+                        None => CellValue::Blank,
+                    }
+                }
                 other => other.clone(),
             }
         } else {
@@ -364,7 +379,7 @@ impl Sheet {
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
         self.columns.clear();
-        self.code_runs.clear();
+        self.data_tables.clear();
         self.recalculate_bounds();
     }
 

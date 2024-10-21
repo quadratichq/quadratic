@@ -1179,6 +1179,49 @@ class QuadraticCore {
   }
 
   //#endregion
+  //#region data tables
+
+  flattenDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    this.send({
+      type: 'clientCoreFlattenDataTable',
+      sheetId,
+      x,
+      y,
+      cursor,
+    });
+  }
+
+  gridToDataTable(selection: Selection, cursor: string) {
+    this.send({
+      type: 'clientCoreGridToDataTable',
+      selection,
+      cursor,
+    });
+  }
+
+  sortDataTable(sheetId: string, x: number, y: number, columnIndex: number, sortOrder: string, cursor: string) {
+    this.send({
+      type: 'clientCoreSortDataTable',
+      sheetId,
+      x,
+      y,
+      columnIndex,
+      sortOrder,
+      cursor,
+    });
+  }
+
+  dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
+    this.send({
+      type: 'clientCoreDataTableFirstRowAsHeader',
+      sheetId,
+      x,
+      y,
+      firstRowAsHeader,
+      cursor,
+    });
+  }
+  //#endregion
 }
 
 export const quadraticCore = new QuadraticCore();

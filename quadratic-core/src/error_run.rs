@@ -291,6 +291,12 @@ impl<T: Into<RunErrorMsg>> From<T> for RunError {
     }
 }
 
+impl From<RunErrorMsg> for anyhow::Error {
+    fn from(msg: RunErrorMsg) -> Self {
+        RunError { span: None, msg }.into()
+    }
+}
+
 /// Handles internal errors. Panics in debug mode for the stack trace, but
 /// returns a nice error message in release mode or on web.
 ///

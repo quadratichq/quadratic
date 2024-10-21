@@ -50,7 +50,7 @@ impl GridController {
                             .push(Operation::SetCellValues { sheet_pos, values });
 
                         if transaction.is_user() {
-                            self.check_deleted_code_runs(transaction, &sheet_rect);
+                            self.check_deleted_data_tables(transaction, &sheet_rect);
                             self.add_compute_operations(transaction, &sheet_rect, None);
                             self.check_all_spills(transaction, sheet_rect.sheet_id, true);
                         }

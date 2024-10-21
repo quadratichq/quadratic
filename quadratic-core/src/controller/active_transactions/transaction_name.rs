@@ -10,11 +10,17 @@ pub enum TransactionName {
     SetBorders,
     SetCells,
     SetFormats,
+    SetDataTableAt,
     CutClipboard,
     PasteClipboard,
+
     SetCode,
     RunCode,
+    FlattenDataTable,
+    GridToDataTable,
+    DataTableFirstRowAsHeader,
     Import,
+
     SetSheetMetadata,
     SheetAdd,
     SheetDelete,
