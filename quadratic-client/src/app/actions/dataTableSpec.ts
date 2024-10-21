@@ -61,7 +61,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.ToggleFirstRowAsHeaderTable]: {
-    label: 'First row as column headings',
+    label: 'First row as column headers',
     checkbox: isFirstRowHeader,
     run: () => {
       const table = getTable();

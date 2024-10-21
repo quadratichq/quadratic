@@ -3,6 +3,7 @@ import { Annotations } from '@/app/gridGL/HTMLGrid/annotations/Annotations';
 import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
 import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
 import { GridContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenu';
+import { TableColumnHeaderRename } from '@/app/gridGL/HTMLGrid/contextMenus/TableColumnHeaderRename';
 import { TableContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableContextMenu';
 import { TableRename } from '@/app/gridGL/HTMLGrid/contextMenus/TableRename';
 import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
@@ -135,6 +136,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
         <GridContextMenu />
         <TableContextMenu />
         <TableRename />
+        <TableColumnHeaderRename />
       </div>
     </>
   );

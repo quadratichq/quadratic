@@ -149,4 +149,20 @@ export class TableColumnHeaders extends Container {
     }
     return this.columns.children[index]?.columnHeaderBounds;
   }
+
+  // Hides a column header
+  hide(index: number) {
+    if (index < 0 || index >= this.columns.children.length) {
+      throw new Error('Invalid column header index in hide');
+    }
+    const column = this.columns.children[index];
+    if (column) {
+      column.visible = false;
+    }
+  }
+
+  // Shows all column headers
+  show() {
+    this.columns.children.forEach((column) => (column.visible = true));
+  }
 }

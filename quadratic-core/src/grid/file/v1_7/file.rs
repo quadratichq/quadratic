@@ -57,6 +57,7 @@ fn upgrade_code_runs(
                 readonly: true,
                 spill_error: code_run.spill_error,
                 last_modified: code_run.last_modified,
+                alternating_colors: true,
             };
             Ok((v1_8::PosSchema::from(pos), new_data_table))
         })

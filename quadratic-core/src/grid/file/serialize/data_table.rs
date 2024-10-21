@@ -197,6 +197,7 @@ pub(crate) fn import_data_table_builder(
                     .collect()
             }),
             display_buffer: data_table.display_buffer,
+            alternating_colors: data_table.alternating_colors,
         };
 
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
@@ -398,6 +399,7 @@ pub(crate) fn export_data_tables(
                 last_modified: Some(data_table.last_modified),
                 spill_error: data_table.spill_error,
                 value,
+                alternating_colors: data_table.alternating_colors,
             };
 
             (current::PosSchema::from(pos), data_table)

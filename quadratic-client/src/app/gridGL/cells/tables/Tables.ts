@@ -181,6 +181,7 @@ export class Tables extends Container<Table> {
     // until the cursor moves again.
     if (this.renameDataTable) {
       this.renameDataTable.showTableName();
+      this.renameDataTable.showColumnHeaders();
       if (this.activeTable !== this.renameDataTable) {
         this.renameDataTable.hideActive();
       }
@@ -201,7 +202,11 @@ export class Tables extends Container<Table> {
         this.renameDataTable = this.children.find((table) => table.codeCell === options.table);
         if (this.renameDataTable) {
           this.renameDataTable.showActive();
-          this.renameDataTable.hideTableName();
+          if (options.selectedColumn === undefined) {
+            this.renameDataTable.hideTableName();
+          } else {
+            this.renameDataTable.hideColumnHeaders(options.selectedColumn);
+          }
           this.hoverTable = undefined;
         }
       } else {
