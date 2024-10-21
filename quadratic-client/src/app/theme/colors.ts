@@ -20,7 +20,6 @@ export const colors = {
   cursorCell: 0x2463eb,
   searchCell: 0x50c878,
 
-  // todo: this is new and should be reviewed
   movingCells: 0x2463eb,
 
   gridBackground: 0xffffff,
