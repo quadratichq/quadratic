@@ -21,6 +21,9 @@ impl GridController {
             transaction.add_dirty_hashes_from_sheet_rect(*sheet_rect);
 
             if transaction.is_user() {
+                self.add_compute_operations(transaction, &sheet_rect, None);
+                self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+
                 let sheet = self.try_sheet_result(sheet_rect.sheet_id)?;
                 let rows = sheet.get_rows_with_wrap_in_rect(&(*sheet_rect).into());
 
