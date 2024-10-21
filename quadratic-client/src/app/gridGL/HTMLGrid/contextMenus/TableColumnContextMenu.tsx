@@ -1,4 +1,4 @@
-//! This shows the table context menu.
+//! This shows the table column's header context menu.
 
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
@@ -13,13 +13,10 @@ export const TableContextMenu = () => {
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const onClose = useCallback(() => {
-    if (contextMenu.type === ContextMenuType.Table && contextMenu.rename) {
-      return;
-    }
     setContextMenu({});
     events.emit('contextMenuClose');
     focusGrid();
-  }, [contextMenu.rename, contextMenu.type, setContextMenu]);
+  }, [setContextMenu]);
 
   useEffect(() => {
     pixiApp.viewport.on('moved', onClose);
@@ -42,7 +39,10 @@ export const TableContextMenu = () => {
         top: contextMenu.world?.y ?? 0,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
         pointerEvents: 'auto',
-        display: contextMenu.type === ContextMenuType.Table && !contextMenu.rename ? 'block' : 'none',
+        display:
+          contextMenu.type === ContextMenuType.Table && contextMenu.column !== undefined && !contextMenu.rename
+            ? 'block'
+            : 'none',
       }}
     >
       <ControlledMenu

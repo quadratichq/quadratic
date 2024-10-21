@@ -36,9 +36,11 @@ export const PixiRename = (props: Props) => {
 
   const saveAndClose = useCallback(() => {
     if (closed.current === true) return;
+    if (ref.current?.value !== defaultValue) {
+      onSave(ref.current?.value ?? '');
+    }
     onClose();
-    onSave(ref.current?.value ?? '');
-  }, [onClose, onSave]);
+  }, [defaultValue, onClose, onSave]);
 
   const ref = useRef<HTMLInputElement>(null);
 

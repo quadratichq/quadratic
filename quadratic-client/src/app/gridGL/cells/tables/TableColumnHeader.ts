@@ -2,6 +2,7 @@
 //! Holds a column header within a table.
 
 import { Table } from '@/app/gridGL/cells/tables/Table';
+import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { DataTableSort } from '@/app/quadratic-core-types';
@@ -15,12 +16,15 @@ const SORT_ICON_SIZE = 12;
 const SORT_BUTTON_PADDING = 3;
 
 export class TableColumnHeader extends Container {
+  private table: Table;
+  private index: number;
+
   private columnName: BitmapText;
   private sortButton?: Graphics;
   private sortIcon?: Sprite;
 
   private sortButtonStart = 0;
-  private columnHeaderBounds: Rectangle;
+  columnHeaderBounds: Rectangle;
 
   private onSortPressed: Function;
 
@@ -28,6 +32,7 @@ export class TableColumnHeader extends Container {
 
   constructor(options: {
     table: Table;
+    index: number;
     x: number;
     width: number;
     height: number;
@@ -36,7 +41,9 @@ export class TableColumnHeader extends Container {
     onSortPressed: Function;
   }) {
     super();
-    const { table, x, width, height, name, sort, onSortPressed } = options;
+    const { table, index, x, width, height, name, sort, onSortPressed } = options;
+    this.table = table;
+    this.index = index;
     this.onSortPressed = onSortPressed;
     this.columnHeaderBounds = new Rectangle(table.tableBounds.x + x, table.tableBounds.y, width, height);
     this.position.set(x, 0);
@@ -45,7 +52,7 @@ export class TableColumnHeader extends Container {
       new BitmapText(name, {
         fontName: 'OpenSans-Bold',
         fontSize: FONT_SIZE,
-        tint: colors.tableHeadingForeground,
+        tint: colors.tableColumnHeaderForeground,
       })
     );
     this.clipName(name, width);
@@ -107,12 +114,15 @@ export class TableColumnHeader extends Container {
     return false;
   }
 
-  pointerDown(world: Point): boolean {
-    if (!this.sortButton) return false;
-    if (intersects.rectanglePoint(this.columnHeaderBounds, world) && world.x > this.sortButtonStart) {
-      this.onSortPressed();
-      return true;
+  pointerDown(world: Point): TablePointerDownResult | undefined {
+    if (!this.sortButton) return;
+    if (intersects.rectanglePoint(this.columnHeaderBounds, world)) {
+      if (world.x > this.sortButtonStart) {
+        this.onSortPressed();
+        return { table: this.table.codeCell, type: 'sort' };
+      } else {
+        return { table: this.table.codeCell, type: 'column-name', column: this.index };
+      }
     }
-    return false;
   }
 }

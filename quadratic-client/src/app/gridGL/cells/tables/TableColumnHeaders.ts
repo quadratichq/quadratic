@@ -3,6 +3,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeader } from '@/app/gridGL/cells/tables/TableColumnHeader';
+import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { JsDataTableColumn, SortDirection } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -25,7 +26,7 @@ export class TableColumnHeaders extends Container {
 
   private drawBackground() {
     this.background.clear();
-    this.background.beginFill(colors.tableHeadingBackground);
+    this.background.beginFill(colors.tableColumnHeaderBackground);
     this.background.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.headerHeight));
     this.background.endFill();
   }
@@ -98,6 +99,7 @@ export class TableColumnHeaders extends Container {
       this.columns.addChild(
         new TableColumnHeader({
           table: this.table,
+          index,
           x,
           width,
           height: this.headerHeight,
@@ -132,7 +134,19 @@ export class TableColumnHeaders extends Container {
     return !!found;
   }
 
-  pointerDown(world: Point): boolean {
-    return !!this.columns.children.find((column) => column.pointerDown(world));
+  pointerDown(world: Point): TablePointerDownResult | undefined {
+    for (const column of this.columns.children) {
+      const result = column.pointerDown(world);
+      if (result) {
+        return result;
+      }
+    }
+  }
+
+  getColumnHeaderBounds(index: number): Rectangle {
+    if (index < 0 || index >= this.columns.children.length) {
+      throw new Error('Invalid column header index in getColumnHeaderBounds');
+    }
+    return this.columns.children[index]?.columnHeaderBounds;
   }
 }

@@ -270,9 +270,11 @@ impl GridController {
         {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
+            let sheet_rect = data_table
+                .output_rect(sheet_pos.into(), true)
+                .to_sheet_rect(sheet_id);
 
             // DSF: this would be better if we used the enum directly. TS will
             // send it as a string (using the export_types definition) and it's

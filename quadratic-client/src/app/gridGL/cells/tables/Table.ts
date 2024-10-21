@@ -3,6 +3,7 @@ import { Sheet } from '@/app/grid/sheet/Sheet';
 import { TableColumnHeaders } from '@/app/gridGL/cells/tables/TableColumnHeaders';
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import { TableOutline } from '@/app/gridGL/cells/tables/TableOutline';
+import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -85,12 +86,12 @@ export class Table extends Container {
     );
   }
 
-  intersectsTableName(world: Point): { table: JsRenderCodeCell; nameOrDropdown: 'name' | 'dropdown' } | undefined {
+  intersectsTableName(world: Point): TablePointerDownResult | undefined {
     if (intersects.rectanglePoint(this.tableName.getScaled(), world)) {
       if (world.x <= this.tableName.x + this.tableName.getScaledTextWidth()) {
-        return { table: this.codeCell, nameOrDropdown: 'name' };
+        return { table: this.codeCell, type: 'table-name' };
       }
-      return { table: this.codeCell, nameOrDropdown: 'dropdown' };
+      return { table: this.codeCell, type: 'dropdown' };
     }
   }
 
@@ -149,6 +150,11 @@ export class Table extends Container {
     return this.tableName.tableNameBounds;
   }
 
+  // Gets the column header bounds
+  getColumnHeaderBounds(index: number): Rectangle {
+    return this.columnHeaders.getColumnHeaderBounds(index);
+  }
+
   pointerMove(world: Point): boolean {
     const result = this.columnHeaders.pointerMove(world);
     if (result) {
@@ -159,9 +165,9 @@ export class Table extends Container {
     return result;
   }
 
-  pointerDown(world: Point): boolean {
+  pointerDown(world: Point): TablePointerDownResult | undefined {
     if (intersects.rectanglePoint(this.tableName.getScaled(), world)) {
-      return true;
+      return { table: this.codeCell, type: 'table-name' };
     }
     return this.columnHeaders.pointerDown(world);
   }

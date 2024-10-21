@@ -140,11 +140,12 @@ export enum Action {
   DeleteRow = 'delete_row',
   DeleteColumn = 'delete_column',
 
-  FlattenDataTable = 'flatten_data_table',
+  FlattenTable = 'flatten_table',
   GridToDataTable = 'grid_to_data_table',
-  ToggleFirstRowAsHeaderDataTable = 'toggle_first_row_as_header_data_table',
-  RenameDataTable = 'rename_data_table',
-  ToggleHeaderDataTable = 'toggle_header_data_table',
-  DeleteDataTable = 'delete_data_table',
+  ToggleFirstRowAsHeaderTable = 'toggle_first_row_as_header_table',
+  RenameTable = 'rename_table',
+  ToggleHeaderTable = 'toggle_header_table',
+  DeleteDataTable = 'delete_table',
   CodeToDataTable = 'code_to_data_table',
+  SortTable = 'table_sort',
 }

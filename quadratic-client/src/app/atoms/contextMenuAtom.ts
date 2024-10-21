@@ -8,10 +8,6 @@ export enum ContextMenuType {
   Table = 'table',
 }
 
-export enum ContextMenuSpecial {
-  rename = 'rename',
-}
-
 export interface ContextMenuState {
   type?: ContextMenuType;
   world?: Point;
@@ -21,7 +17,8 @@ export interface ContextMenuState {
 
   // special states we need to track
   // rename is for tables
-  special?: ContextMenuSpecial;
+  rename?: boolean;
+  selectedColumn?: number;
 }
 
 export const defaultContextMenuState: ContextMenuState = {
@@ -29,6 +26,8 @@ export const defaultContextMenuState: ContextMenuState = {
   column: undefined,
   row: undefined,
   table: undefined,
+  rename: undefined,
+  selectedColumn: undefined,
 };
 
 export interface ContextMenuOptions {
@@ -37,7 +36,8 @@ export interface ContextMenuOptions {
   column?: number;
   row?: number;
   table?: JsRenderCodeCell;
-  special?: ContextMenuSpecial;
+  rename?: boolean;
+  selectedColumn?: number;
 }
 
 export const contextMenuAtom = atom({

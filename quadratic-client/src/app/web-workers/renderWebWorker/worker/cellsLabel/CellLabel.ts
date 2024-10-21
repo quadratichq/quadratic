@@ -165,8 +165,8 @@ export class CellLabel {
       this.tint = convertColorStringToTint(cell.textColor);
     } else if (this.link) {
       this.tint = convertColorStringToTint(colors.link);
-    } else if (cell.special === 'TableHeading') {
-      this.tint = colors.tableHeadingForeground;
+    } else if (cell.special === 'TableColumnHeader') {
+      this.tint = colors.tableColumnHeaderForeground;
     } else {
       this.tint = 0;
     }
