@@ -19,6 +19,7 @@ pub enum JsRenderCellSpecial {
     Checkbox,
     List,
     TableColumnHeader,
+    TableAlternatingColor,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -197,6 +198,7 @@ pub struct JsRenderCodeCell {
     pub first_row_header: bool,
     pub show_header: bool,
     pub sort: Option<Vec<DataTableSort>>,
+    pub alternating_colors: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

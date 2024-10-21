@@ -63,7 +63,7 @@ export class TableColumnHeader extends Container {
   // tests the width of the text and clips it if it is too wide
   private clipName(name: string, width: number) {
     let clippedName = name;
-    while (clippedName.length > 0 && this.columnName.width > width) {
+    while (clippedName.length > 0 && this.columnName.width + SORT_BUTTON_RADIUS * 2 + SORT_BUTTON_PADDING > width) {
       clippedName = clippedName.slice(0, -1);
       this.columnName.text = clippedName;
     }

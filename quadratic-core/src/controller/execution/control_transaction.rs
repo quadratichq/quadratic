@@ -6,12 +6,12 @@ use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::JsCodeResult;
-use crate::error_core::Result;
+use crate::error_core::{CoreError, Result};
 use crate::grid::js_types::JsHtmlOutput;
-use crate::grid::{CodeRun, DataTable, DataTableKind};
+use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
 use crate::parquet::parquet_to_vec;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
-use crate::{Pos, RunError, RunErrorMsg, Value};
+use crate::{CellValue, Pos, RunError, RunErrorMsg, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
@@ -299,17 +299,32 @@ impl GridController {
                 Value::Array(array.into())
             };
 
-            let sheet = self.try_sheet_result(current_sheet_pos.sheet_id)?;
+            let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) else {
+                return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
+            };
+            let Some(CellValue::Code(code)) = sheet.cell_value_ref(current_sheet_pos.into()) else {
+                return Err(CoreError::CodeCellSheetError(
+                    "Code cell not found".to_string(),
+                ));
+            };
 
-            // todo: this should be true sometimes...
-            let show_header = false;
+            let name = match code.language {
+                CodeCellLanguage::Connection { kind, .. } => match kind {
+                    ConnectionKind::Postgres => "Postgres 1",
+                    ConnectionKind::Mysql => "MySQL 1",
+                    ConnectionKind::Mssql => "MSSQL 1",
+                    ConnectionKind::Snowflake => "Snowflake 1",
+                },
+                // this should not happen
+                _ => "Connection 1",
+            };
             let data_table = DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                &sheet.next_data_table_name(),
+                name,
                 value,
                 false,
-                false,
-                show_header,
+                true,
+                true,
             );
 
             self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);

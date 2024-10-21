@@ -25,9 +25,10 @@ export const colors = {
 
   gridBackground: 0xffffff,
 
-  // table column headings
+  // table colors
   tableColumnHeaderForeground: 0,
   tableColumnHeaderBackground: 0xe3eafc,
+  tableAlternatingBackground: 0xf8fafe,
 
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,

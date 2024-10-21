@@ -232,7 +232,11 @@ impl Sheet {
                             let special = if y == code_rect.min.y && data_table.show_header {
                                 Some(JsRenderCellSpecial::TableColumnHeader)
                             } else {
-                                None
+                                if (y - code_rect.min.y) % 2 == 0 {
+                                    Some(JsRenderCellSpecial::TableAlternatingColor)
+                                } else {
+                                    None
+                                }
                             };
                             cells.push(
                                 self.get_render_cell(x, y, column, &value, language, special),
@@ -449,6 +453,7 @@ impl Sheet {
             first_row_header: data_table.header_is_first_row,
             show_header: data_table.show_header,
             sort: data_table.sort.clone(),
+            alternating_colors: data_table.alternating_colors,
         })
     }
 
@@ -496,6 +501,7 @@ impl Sheet {
                                 first_row_header: data_table.header_is_first_row,
                                 show_header: data_table.show_header,
                                 sort: data_table.sort.clone(),
+                                alternating_colors: data_table.alternating_colors,
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -1130,6 +1136,7 @@ mod tests {
                 first_row_header: false,
                 show_header: true,
                 sort: None,
+                alternating_colors: true,
             })
         );
     }

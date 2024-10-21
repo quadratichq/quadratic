@@ -26,8 +26,8 @@ export interface ErrorValidation {
 }
 
 export class CellsSheet extends Container {
-  private cellsFills: CellsFills;
   private borders: Borders;
+  cellsFills: CellsFills;
   cellsArray: CellsArray;
   cellsImages: CellsImages;
 
