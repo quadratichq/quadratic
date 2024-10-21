@@ -286,41 +286,34 @@ impl DataTable {
     ) -> Result<Option<DataTableSort>> {
         let old = self.prepend_sort(column_index, direction.clone());
         self.display_buffer = None;
+        let value = self.display_value()?.into_array()?;
+        let mut display_buffer = (0..value.height()).map(|i| i as u64).collect::<Vec<u64>>();
 
-        // TODO(ddimaria): skip this if SortDirection::None
         if let Some(ref mut sort) = self.sort.to_owned() {
             for sort in sort
                 .iter()
                 .rev()
                 .filter(|s| s.direction != SortDirection::None)
             {
-                dbgjs!(format!(
-                    "sorting index {} {}",
-                    sort.column_index, sort.direction
-                ));
-                let mut display_buffer = self
-                    .display_value()?
-                    .into_array()?
-                    .col(sort.column_index)
+                display_buffer = display_buffer
+                    .into_iter()
                     .skip(self.adjust_for_header(0))
-                    .enumerate()
+                    .map(|i| (i, value.get(sort.column_index as u32, i as u32).unwrap()))
                     .sorted_by(|a, b| match sort.direction {
                         SortDirection::Ascending => a.1.total_cmp(b.1),
                         SortDirection::Descending => b.1.total_cmp(a.1),
                         SortDirection::None => std::cmp::Ordering::Equal,
                     })
-                    .map(|(i, _)| self.adjust_for_header(i) as u64)
+                    .map(|(i, _)| i)
                     .collect::<Vec<u64>>();
 
                 if self.header_is_first_row {
                     display_buffer.insert(0, 0);
                 }
-
-                self.display_buffer = Some(display_buffer);
             }
         }
 
-        dbgjs!(format!("sorts: {:?}", self.sort));
+        self.display_buffer = Some(display_buffer);
 
         Ok(old)
     }
