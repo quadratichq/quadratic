@@ -9,12 +9,13 @@ import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
 import { InlineEditor } from '@/app/gridGL/HTMLGrid/inlineEditor/InlineEditor';
 import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MultiplayerCursors';
 import { MultiplayerCellEdits } from '@/app/gridGL/HTMLGrid/multiplayerInput/MultiplayerCellEdits';
+import { SuggestionDropDown } from '@/app/gridGL/HTMLGrid/SuggestionDropdown';
 import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { HtmlValidations } from '@/app/gridGL/HTMLGrid/validations/HtmlValidations';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Following } from '@/app/ui/components/Following';
+import { AIResearcherRequestHandler } from '@/app/ui/menus/AIResearcher/AIResearcherRequestHandler';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { SuggestionDropDown } from './SuggestionDropdown';
 
 interface Props {
   parent?: HTMLDivElement;
@@ -114,6 +115,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
               <HtmlValidations />
               <Annotations />
               <SuggestionDropDown />
+              <AIResearcherRequestHandler />
             </div>
           </div>
         </div>

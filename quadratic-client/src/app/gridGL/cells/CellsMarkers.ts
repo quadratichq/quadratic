@@ -1,8 +1,8 @@
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { generatedTextures } from '../generateTextures';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { ErrorMarker } from './CellsSheet';
 
 const INDICATOR_SIZE = 4;
@@ -54,6 +54,9 @@ export class CellsMarkers extends Container {
           symbol.x -= 1;
           symbol.y -= 1;
         }
+      } else if (codeCell.language === 'AIResearcher') {
+        symbol.texture = Texture.from('/images/ai-icon.png');
+        symbol.tint = isError ? colors.cellColorError : colors.cellColorUserAI;
       }
     }
     this.markers.push({

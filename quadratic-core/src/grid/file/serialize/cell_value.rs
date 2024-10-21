@@ -29,6 +29,7 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
                         id,
                     }
                 }
+                CodeCellLanguage::AIResearcher => current::CodeCellLanguageSchema::AIResearcher,
             },
         }),
         CellValue::Logical(logical) => current::CellValueSchema::Logical(logical),
@@ -79,6 +80,7 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
                         id,
                     }
                 }
+                current::CodeCellLanguageSchema::AIResearcher => CodeCellLanguage::AIResearcher,
             },
         }),
         current::CellValueSchema::Logical(logical) => CellValue::Logical(logical),

@@ -1,4 +1,5 @@
-import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { AIResearcher } from '@/app/ui/menus/AIResearcher/AIResearcher';
 import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
 import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
@@ -23,6 +24,7 @@ export const dispatchEditorAction = (name: string) => {
 
 export const CodeEditor = () => {
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const [editorInst, setEditorInst] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const { onKeyDownCodeEditor } = useOnKeyDownCodeEditor();
   const codeEditorRef = useRef<HTMLDivElement | null>(null);
@@ -32,74 +34,77 @@ export const CodeEditor = () => {
     <>
       <CodeEditorEffects />
 
-      {showCodeEditor && (
-        <div
-          ref={codeEditorRef}
-          className={cn(
-            'relative flex h-full bg-background',
-            codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
-          )}
-          style={{
-            width: `${
-              codeEditorPanelData.editorWidth +
-              (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
-            }px`,
-            borderLeft: '1px solid black',
-          }}
-        >
+      <CodeEditorEscapeEffect editorInst={editorInst} />
+
+      {showCodeEditor &&
+        (codeCell.language === 'AIResearcher' ? (
+          <AIResearcher />
+        ) : (
           <div
-            id="QuadraticCodeEditorID"
+            ref={codeEditorRef}
             className={cn(
-              'flex min-h-0 shrink select-none flex-col',
-              codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
+              'relative flex h-full bg-background',
+              codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
             )}
             style={{
-              width: `${codeEditorPanelData.editorWidth}px`,
-              height:
-                codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
-                  ? '100%'
-                  : `${codeEditorPanelData.editorHeightPercentage}%`,
-            }}
-            onKeyDownCapture={onKeyDownCodeEditor}
-            onPointerEnter={() => {
-              // todo: handle multiplayer code editor here
-              multiplayer.sendMouseMove();
+              width: `${
+                codeEditorPanelData.editorWidth +
+                (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
+              }px`,
+              borderLeft: '1px solid black',
             }}
           >
-            <SaveChangesAlert editorInst={editorInst} />
+            <div
+              id="QuadraticCodeEditorID"
+              className={cn(
+                'flex min-h-0 shrink select-none flex-col',
+                codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
+              )}
+              style={{
+                width: `${codeEditorPanelData.editorWidth}px`,
+                height:
+                  codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
+                    ? '100%'
+                    : `${codeEditorPanelData.editorHeightPercentage}%`,
+              }}
+              onKeyDownCapture={onKeyDownCodeEditor}
+              onPointerEnter={() => {
+                // todo: handle multiplayer code editor here
+                multiplayer.sendMouseMove();
+              }}
+            >
+              <SaveChangesAlert editorInst={editorInst} />
 
-            <CodeEditorHeader editorInst={editorInst} />
+              <CodeEditorHeader editorInst={editorInst} />
 
-            <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
+              <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
 
-            <CodeEditorEmptyState editorInst={editorInst} />
+              <CodeEditorEmptyState editorInst={editorInst} />
 
-            <ReturnTypeInspector />
+              <ReturnTypeInspector />
+            </div>
 
-            <CodeEditorEscapeEffect editorInst={editorInst} />
+            <div
+              className={cn(
+                codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
+                'relative flex flex-col bg-background'
+              )}
+              style={{
+                width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
+                height:
+                  codeEditorPanelData.panelPosition === 'left'
+                    ? '100%'
+                    : codeEditorPanelData.bottomHidden
+                    ? 'auto'
+                    : 100 - codeEditorPanelData.editorHeightPercentage + '%',
+              }}
+            >
+              <CodeEditorPanel editorInst={editorInst} codeEditorRef={codeEditorRef} />
+            </div>
+
+            <CodeEditorPanels codeEditorRef={codeEditorRef} />
           </div>
-
-          <div
-            className={cn(
-              codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
-              'relative flex flex-col bg-background'
-            )}
-            style={{
-              width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
-              height:
-                codeEditorPanelData.panelPosition === 'left'
-                  ? '100%'
-                  : codeEditorPanelData.bottomHidden
-                  ? 'auto'
-                  : 100 - codeEditorPanelData.editorHeightPercentage + '%',
-            }}
-          >
-            <CodeEditorPanel editorInst={editorInst} codeEditorRef={codeEditorRef} />
-          </div>
-
-          <CodeEditorPanels codeEditorRef={codeEditorRef} />
-        </div>
-      )}
+        ))}
     </>
   );
 };

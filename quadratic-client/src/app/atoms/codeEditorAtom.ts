@@ -1,3 +1,4 @@
+import { aiResearcherAtom, defaultAIResearcherState } from '@/app/atoms/aiResearcherAtom';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { Coordinate } from '@/app/gridGL/types/size';
@@ -5,7 +6,6 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface ConsoleOutput {
@@ -14,12 +14,6 @@ export interface ConsoleOutput {
 }
 
 export interface CodeEditorState {
-  aiAssistant: {
-    abortController?: AbortController;
-    loading: boolean;
-    messages: (UserMessage | AIMessage)[];
-    prompt: string;
-  };
   showCodeEditor: boolean;
   escapePressed: boolean;
   loading: boolean;
@@ -43,12 +37,6 @@ export interface CodeEditorState {
 }
 
 export const defaultCodeEditorState: CodeEditorState = {
-  aiAssistant: {
-    abortController: undefined,
-    loading: false,
-    messages: [],
-    prompt: '',
-  },
   showCodeEditor: false,
   escapePressed: false,
   loading: false,
@@ -84,6 +72,7 @@ export const codeEditorShowCodeEditorAtom = selector<CodeEditorState['showCodeEd
         focusGrid();
       }
       if (!newValue) {
+        set(aiResearcherAtom, defaultAIResearcherState);
         return defaultCodeEditorState;
       }
       return {
@@ -126,18 +115,3 @@ export const codeEditorUnsavedChangesAtom = selector<boolean>({
     return unsavedChanges;
   },
 });
-
-const createAIAssistantSelector = <T extends keyof CodeEditorState['aiAssistant']>(key: T) =>
-  selector<CodeEditorState['aiAssistant'][T]>({
-    key: `codeEditorAIAssistant${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
-    get: ({ get }) => get(codeEditorAtom).aiAssistant[key],
-    set: ({ set }, newValue) =>
-      set(codeEditorAtom, (prev) => ({
-        ...prev,
-        aiAssistant: { ...prev.aiAssistant, [key]: newValue },
-      })),
-  });
-export const codeEditorAIAssistantAbortControllerAtom = createAIAssistantSelector('abortController');
-export const codeEditorAIAssistantLoadingAtom = createAIAssistantSelector('loading');
-export const codeEditorAIAssistantMessagesAtom = createAIAssistantSelector('messages');
-export const codeEditorAIAssistantPromptAtom = createAIAssistantSelector('prompt');
