@@ -1,4 +1,4 @@
-import { isAnthropicModel } from '@/app/ai/hooks/useAIRequestToAPI';
+import { isAnthropicModel } from '@/app/ai/tools/helpers';
 import { aiAssistantMessagesAtom } from '@/app/atoms/codeEditorAtom';
 import { debugShowAIAssistantInternalContext } from '@/app/debugFlags';
 import { colors } from '@/app/theme/colors';
