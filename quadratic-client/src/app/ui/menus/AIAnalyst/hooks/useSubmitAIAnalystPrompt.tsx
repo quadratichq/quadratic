@@ -152,11 +152,11 @@ export function useSubmitAIAnalystPrompt() {
           // TODO(ayush): remove before merge
           console.log('response', response);
 
-          if (response.functionCalls && response.functionCalls.length > 0) {
-            for (const functionCall of response.functionCalls) {
-              if (Object.values(AITool).includes(functionCall.name as AITool)) {
-                const aiTool = functionCall.name as AITool;
-                const argsObject = JSON.parse(functionCall.arguments);
+          if (response.toolCalls && response.toolCalls.length > 0) {
+            for (const toolCall of response.toolCalls) {
+              if (Object.values(AITool).includes(toolCall.name as AITool)) {
+                const aiTool = toolCall.name as AITool;
+                const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
                 await aiToolsSpec[aiTool].action(args);
               }

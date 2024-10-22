@@ -48,9 +48,13 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
 
     return (
       <form
-        className={cn('z-10 m-2 h-min rounded-lg bg-slate-100 pt-1', edit ? '' : 'pointer-events-none select-none')}
+        className={cn('group z-10 m-2 h-min rounded-lg bg-slate-100 pt-1', edit ? '' : 'select-none')}
         onSubmit={(e) => e.preventDefault()}
-        onClick={() => textareaRef.current?.focus()}
+        onClick={() => {
+          if (edit) {
+            textareaRef.current?.focus();
+          }
+        }}
       >
         <div className="flex flex-row items-start justify-between">
           <AIAnalystContext textAreaRef={textareaRef} disabled={!edit} />
@@ -58,7 +62,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
           {!edit && (
             <TooltipPopover label="Edit">
               <Button
-                className="pointer-events-auto h-4 pr-2"
+                className="pointer-events-auto h-4 pr-2 opacity-0 transition-opacity group-hover:opacity-100"
                 variant="ghost"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -77,7 +81,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
           value={prompt}
           className={cn(
             'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-            edit ? 'min-h-14' : 'h-fit min-h-fit'
+            edit ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
           )}
           onChange={(event) => setPrompt(event.target.value)}
           onKeyDown={(event) => {

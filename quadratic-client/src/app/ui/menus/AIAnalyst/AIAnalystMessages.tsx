@@ -5,6 +5,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { colors } from '@/app/theme/colors';
 import { Markdown } from '@/app/ui/components/Markdown';
+import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -105,12 +106,23 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
                 </Markdown>
               )
             ) : (
-              <Markdown
-                key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
-                className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
-              >
-                {message.content}
-              </Markdown>
+              <>
+                <Markdown
+                  key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
+                  className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
+                >
+                  {message.content}
+                </Markdown>
+
+                {message.toolCalls?.map((toolCall) => (
+                  <AIAnalystToolCard
+                    key={toolCall.id}
+                    name={toolCall.name}
+                    args={toolCall.arguments}
+                    loading={toolCall.loading}
+                  />
+                ))}
+              </>
             )}
           </div>
         );

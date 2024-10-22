@@ -73,12 +73,13 @@ export const AIMessageSchema = PromptMessageSchema.extend({
   model: AnthropicModelSchema.or(OpenAIModelSchema),
   internalContext: z.boolean(),
   contextType: ContextTypeSchema,
-  functionCalls: z
+  toolCalls: z
     .array(
       z.object({
         id: z.string(),
         name: z.string(),
         arguments: z.string(),
+        loading: z.boolean(),
       })
     )
     .optional(),

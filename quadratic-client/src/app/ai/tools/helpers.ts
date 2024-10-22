@@ -31,7 +31,7 @@ export const getMessages = (
   const isAnthropic = isAnthropicModel(model);
   if (isAnthropic) {
     return messages.map((message) => {
-      if (message.role === 'assistant' && message.functionCalls !== undefined) {
+      if (message.role === 'assistant' && message.toolCalls !== undefined) {
         return {
           role: message.role,
           content: [
@@ -43,11 +43,11 @@ export const getMessages = (
                   },
                 ]
               : []),
-            ...message.functionCalls.map((functionCall) => ({
+            ...message.toolCalls.map((toolCall) => ({
               type: 'tool_use' as const,
-              id: functionCall.id,
-              name: functionCall.name,
-              input: JSON.parse(functionCall.arguments),
+              id: toolCall.id,
+              name: toolCall.name,
+              input: JSON.parse(toolCall.arguments),
             })),
           ],
         };
@@ -61,16 +61,16 @@ export const getMessages = (
   }
 
   return messages.map((message) => {
-    if (message.role === 'assistant' && message.functionCalls !== undefined) {
+    if (message.role === 'assistant' && message.toolCalls !== undefined) {
       return {
         role: message.role,
         content: message.content,
-        tool_calls: message.functionCalls.map((functionCall) => ({
-          id: functionCall.id,
+        tool_calls: message.toolCalls.map((toolCall) => ({
+          id: toolCall.id,
           type: 'function',
           function: {
-            name: functionCall.name,
-            arguments: functionCall.arguments,
+            name: toolCall.name,
+            arguments: toolCall.arguments,
           },
         })),
       };

@@ -32,7 +32,7 @@ export function useAIRequestToAPI() {
       reader: ReadableStreamDefaultReader<Uint8Array>,
       responseMessage: AIMessage,
       setMessages?: (value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void
-    ): Promise<{ error?: boolean; content: AIMessage['content']; functionCalls?: AIMessage['functionCalls'] }> => {
+    ): Promise<{ error?: boolean; content: AIMessage['content']; toolCalls?: AIMessage['toolCalls'] }> => {
       const decoder = new TextDecoder();
       while (true) {
         const { value, done } = await reader.read();
@@ -49,39 +49,51 @@ export function useAIRequestToAPI() {
                 if (data.content_block.type === 'text') {
                   responseMessage.content += data.content_block.text;
                 } else if (data.content_block.type === 'tool_use') {
-                  const functionCalls = [...(responseMessage.functionCalls ?? [])];
-                  const functionCall = {
+                  const toolCalls = [...(responseMessage.toolCalls ?? [])];
+                  const toolCall = {
                     id: data.content_block.id,
                     name: data.content_block.name,
                     arguments: '',
+                    loading: true,
                   };
-                  functionCalls.push(functionCall);
-                  responseMessage.functionCalls = functionCalls;
+                  toolCalls.push(toolCall);
+                  responseMessage.toolCalls = toolCalls;
                 }
                 setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
               } else if (data.type === 'content_block_delta') {
                 if (data.delta.type === 'text_delta') {
                   responseMessage.content += data.delta.text;
                 } else if (data.delta.type === 'input_json_delta') {
-                  const functionCalls = [...(responseMessage.functionCalls ?? [])];
-                  const functionCall = {
-                    ...(functionCalls.pop() ?? {
+                  const toolCalls = [...(responseMessage.toolCalls ?? [])];
+                  const toolCall = {
+                    ...(toolCalls.pop() ?? {
                       id: '',
                       name: '',
                       arguments: '',
+                      loading: true,
                     }),
                   };
-                  functionCall.arguments += data.delta.partial_json;
-                  functionCalls.push(functionCall);
-                  responseMessage.functionCalls = functionCalls;
+                  toolCall.arguments += data.delta.partial_json;
+                  toolCalls.push(toolCall);
+                  responseMessage.toolCalls = toolCalls;
                 }
                 setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
+              } else if (data.type === 'content_block_stop') {
+                const toolCalls = [...(responseMessage.toolCalls ?? [])];
+                let toolCall = toolCalls.pop();
+                if (toolCall) {
+                  toolCall = { ...toolCall, loading: false };
+                  toolCalls.push(toolCall);
+                  responseMessage.toolCalls = toolCalls;
+                  setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
+                }
               } else if (data.type === 'message_start') {
                 // message start
               } else if (data.type === 'message_stop') {
                 // message stop
               } else if (data.type === 'error') {
                 responseMessage.content += '\n\nAn error occurred while processing the response.';
+                responseMessage.toolCalls = undefined;
                 setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
                 console.error('Error in AI prompt handling:', data.error);
                 return { error: true, content: 'An error occurred while processing the response.' };
@@ -95,11 +107,11 @@ export function useAIRequestToAPI() {
       }
 
       if (!responseMessage.content) {
-        responseMessage.content = responseMessage.functionCalls ? '' : "I'm sorry, I don't have a response for that.";
+        responseMessage.content = responseMessage.toolCalls ? '' : "I'm sorry, I don't have a response for that.";
         setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
       }
 
-      return { content: responseMessage.content, functionCalls: responseMessage.functionCalls };
+      return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
     },
     []
   );
@@ -109,7 +121,7 @@ export function useAIRequestToAPI() {
       reader: ReadableStreamDefaultReader<Uint8Array>,
       responseMessage: AIMessage,
       setMessages?: (value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void
-    ): Promise<{ error?: boolean; content: AIMessage['content']; functionCalls?: AIMessage['functionCalls'] }> => {
+    ): Promise<{ error?: boolean; content: AIMessage['content']; toolCalls?: AIMessage['toolCalls'] }> => {
       const decoder = new TextDecoder();
       while (true) {
         const { value, done } = await reader.read();
@@ -129,34 +141,51 @@ export function useAIRequestToAPI() {
                 } else if (data.choices[0].delta.tool_calls) {
                   data.choices[0].delta.tool_calls.forEach(
                     (tool_call: { id: string; function: { name?: string; arguments: string } }) => {
-                      const functionCalls = [...(responseMessage.functionCalls ?? [])];
+                      const toolCalls = [...(responseMessage.toolCalls ?? [])];
+                      let toolCall = toolCalls.pop();
+                      if (toolCall) {
+                        toolCall = {
+                          ...toolCall,
+                          loading: true,
+                        };
+                        toolCalls.push(toolCall);
+                      }
                       if (tool_call.function.name) {
-                        const functionCall = {
+                        toolCall = {
                           id: tool_call.id,
                           name: tool_call.function.name,
                           arguments: tool_call.function.arguments,
+                          loading: true,
                         };
-                        functionCalls.push(functionCall);
+                        toolCalls.push(toolCall);
                       } else {
-                        const functionCall = {
-                          ...(functionCalls.pop() ?? {
+                        const toolCall = {
+                          ...(toolCalls.pop() ?? {
                             id: '',
                             name: '',
                             arguments: '',
+                            loading: true,
                           }),
                         };
-                        functionCall.arguments += tool_call?.function?.arguments ?? '';
-                        functionCalls.push(functionCall);
+                        toolCall.arguments += tool_call?.function?.arguments ?? '';
+                        toolCalls.push(toolCall);
                       }
-                      responseMessage.functionCalls = functionCalls;
+                      responseMessage.toolCalls = toolCalls;
                     }
                   );
+                  setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
+                } else if (data.choices[0].finish_reason === 'tool_calls') {
+                  responseMessage.toolCalls = responseMessage.toolCalls?.map((toolCall) => ({
+                    ...toolCall,
+                    loading: false,
+                  }));
                   setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
                 } else if (data.choices[0].delta.refusal) {
                   console.warn('Invalid AI response: ', data.choices[0].delta.refusal);
                 }
               } else if (data.error) {
                 responseMessage.content += '\n\nAn error occurred while processing the response.';
+                responseMessage.toolCalls = undefined;
                 setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
                 console.error('Error in AI prompt handling:', data.error);
                 return { error: true, content: 'An error occurred while processing the response.' };
@@ -170,11 +199,11 @@ export function useAIRequestToAPI() {
       }
 
       if (!responseMessage.content) {
-        responseMessage.content = responseMessage.functionCalls ? '' : "I'm sorry, I don't have a response for that.";
+        responseMessage.content = responseMessage.toolCalls ? '' : "I'm sorry, I don't have a response for that.";
         setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
       }
 
-      return { content: responseMessage.content, functionCalls: responseMessage.functionCalls };
+      return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
     },
     []
   );
@@ -191,7 +220,7 @@ export function useAIRequestToAPI() {
     }: HandleAIPromptProps): Promise<{
       error?: boolean;
       content: AIMessage['content'];
-      functionCalls?: AIMessage['functionCalls'];
+      toolCalls?: AIMessage['toolCalls'];
     }> => {
       const responseMessage: AIMessage = {
         role: 'assistant',
@@ -253,12 +282,13 @@ export function useAIRequestToAPI() {
                     setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
                     break;
                   case 'tool_use':
-                    responseMessage.functionCalls = [
-                      ...(responseMessage.functionCalls ?? []),
+                    responseMessage.toolCalls = [
+                      ...(responseMessage.toolCalls ?? []),
                       {
                         id: message.id,
                         name: message.name,
                         arguments: JSON.stringify(message.input),
+                        loading: false,
                       },
                     ];
                     break;
@@ -277,12 +307,13 @@ export function useAIRequestToAPI() {
                   (toolCall: { type: string; id: string; function: { name: string; arguments: string } }) => {
                     switch (toolCall.type) {
                       case 'function':
-                        responseMessage.functionCalls = [
-                          ...(responseMessage.functionCalls ?? []),
+                        responseMessage.toolCalls = [
+                          ...(responseMessage.toolCalls ?? []),
                           {
                             id: toolCall.id,
                             name: toolCall.function.name,
                             arguments: toolCall.function.arguments,
+                            loading: false,
                           },
                         ];
                         break;
@@ -298,13 +329,11 @@ export function useAIRequestToAPI() {
           }
 
           if (!responseMessage.content) {
-            responseMessage.content = responseMessage.functionCalls
-              ? ''
-              : "I'm sorry, I don't have a response for that.";
+            responseMessage.content = responseMessage.toolCalls ? '' : "I'm sorry, I don't have a response for that.";
             setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
           }
 
-          return { content: responseMessage.content, functionCalls: responseMessage.functionCalls };
+          return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
         }
       } catch (err: any) {
         if (err.name === 'AbortError') {
