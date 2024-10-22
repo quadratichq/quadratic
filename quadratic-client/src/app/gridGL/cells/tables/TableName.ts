@@ -2,10 +2,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { getLanguageSymbol } from '@/app/gridGL/cells/CellsMarkers';
 import { Table } from '@/app/gridGL/cells/tables/Table';
+import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
-import { BitmapText, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { BitmapText, Container, Graphics, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 
 export const TABLE_NAME_FONT_SIZE = 12;
 export const TABLE_NAME_PADDING = [4, 2];
@@ -124,5 +126,14 @@ export class TableName extends Container {
   // Returns the width of the table name text scaled to the viewport.
   getScaledTextWidth() {
     return this.text.width / pixiApp.viewport.scaled;
+  }
+
+  intersects(world: Point): TablePointerDownResult | undefined {
+    if (intersects.rectanglePoint(this.getScaled(), world)) {
+      if (world.x <= this.x + this.text.x + this.getScaledTextWidth()) {
+        return { table: this.table.codeCell, type: 'table-name' };
+      }
+      return { table: this.table.codeCell, type: 'dropdown' };
+    }
   }
 }

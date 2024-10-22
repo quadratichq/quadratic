@@ -7,6 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
 import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { ControlledMenu, MenuDivider, SubMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -36,15 +37,13 @@ export const GridContextMenu = () => {
 
   const [columnRowAvailable, setColumnRowAvailable] = useState(false);
   const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
-  const [isDataTable, setIsDataTable] = useState(false);
-  const [tableType, setTableType] = useState('');
+  const [table, setTable] = useState<JsRenderCodeCell | undefined>();
   useEffect(() => {
     const updateCursor = () => {
       setColumnRowAvailable(sheets.sheet.cursor.hasOneColumnRowSelection(true));
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
       const codeCell = pixiApp.cellSheet().cursorOnDataTable();
-      setIsDataTable(!!codeCell);
-      setTableType(codeCell?.language === 'Import' ? 'Data' : 'Code');
+      setTable(codeCell);
     };
 
     updateCursor();
@@ -103,10 +102,10 @@ export const GridContextMenu = () => {
         {canConvertToDataTable && <MenuDivider />}
         {canConvertToDataTable && <MenuItemAction action={Action.GridToDataTable} />}
 
-        {isDataTable && <MenuDivider />}
-        {isDataTable && (
-          <SubMenu label={`${tableType} Table`}>
-            <TableMenu isCodeTable={tableType === 'Code'} defaultRename={false} />
+        {table && <MenuDivider />}
+        {table && (
+          <SubMenu label={`${table?.language === 'Import' ? 'Data' : 'Code'} Table`}>
+            <TableMenu defaultRename={false} codeCell={table} />
           </SubMenu>
         )}
       </ControlledMenu>

@@ -35,23 +35,23 @@ export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean):
   } else if (typeof language === 'object') {
     switch (language.Connection?.kind) {
       case 'MSSQL':
-        symbol.texture = Texture.from('/images/mssql-icon.png');
+        symbol.texture = Texture.from('/images/mssql-icon.svg');
         symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageMssql);
         return symbol;
 
       case 'POSTGRES':
         symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languagePostgres);
-        symbol.texture = Texture.from('/images/postgres-icon.png');
+        symbol.texture = Texture.from('postgres-icon');
         return symbol;
 
       case 'MYSQL':
         symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageMysql);
-        symbol.texture = Texture.from('/images/mysql-icon.png');
+        symbol.texture = Texture.from('/images/mysql-icon.svg');
         return symbol;
 
       case 'SNOWFLAKE':
         symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageSnowflake);
-        symbol.texture = Texture.from('/images/snowflake-icon.png');
+        symbol.texture = Texture.from('/images/snowflake-icon.svg');
         return symbol;
 
       default:

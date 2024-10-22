@@ -95,15 +95,6 @@ export class Table extends Container {
     );
   }
 
-  intersectsTableName(world: Point): TablePointerDownResult | undefined {
-    if (intersects.rectanglePoint(this.tableName.getScaled(), world)) {
-      if (world.x <= this.tableName.x + this.tableName.getScaledTextWidth()) {
-        return { table: this.codeCell, type: 'table-name' };
-      }
-      return { table: this.codeCell, type: 'dropdown' };
-    }
-  }
-
   update(bounds: Rectangle, gridHeading: number) {
     this.visible = intersects.rectangleRectangle(this.tableBounds, bounds);
     this.headingPosition(bounds, gridHeading);
@@ -173,6 +164,11 @@ export class Table extends Container {
   }
 
   pointerMove(world: Point): boolean {
+    const name = this.tableName.intersects(world);
+    if (name?.type === 'dropdown') {
+      this.tableCursor = 'pointer';
+      return true;
+    }
     const result = this.columnHeaders.pointerMove(world);
     if (result) {
       this.tableCursor = this.columnHeaders.tableCursor;
@@ -183,9 +179,14 @@ export class Table extends Container {
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
-    if (intersects.rectanglePoint(this.tableName.getScaled(), world)) {
+    const result = this.tableName.intersects(world);
+    if (result?.type === 'table-name') {
       return { table: this.codeCell, type: 'table-name' };
     }
     return this.columnHeaders.pointerDown(world);
+  }
+
+  intersectsTableName(world: Point): TablePointerDownResult | undefined {
+    return this.tableName.intersects(world);
   }
 }

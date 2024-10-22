@@ -72,7 +72,7 @@ export class TableColumnHeader extends Container {
   }
 
   private drawSortButton(width: number, height: number, sort?: DataTableSort) {
-    this.sortButtonStart = this.columnHeaderBounds.x + width - SORT_BUTTON_RADIUS * 2 - SORT_BUTTON_PADDING;
+    this.sortButtonStart = this.columnHeaderBounds.x + this.columnName.width + this.columnName.x;
     this.sortButton = this.addChild(new Graphics());
     this.sortButton.beginFill(0, SORT_BACKGROUND_ALPHA);
     this.sortButton.drawCircle(0, 0, SORT_BUTTON_RADIUS);
@@ -113,6 +113,7 @@ export class TableColumnHeader extends Container {
       this.tableCursor = undefined;
       pixiApp.setViewportDirty();
     }
+    this.tableCursor = undefined;
     return false;
   }
 

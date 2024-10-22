@@ -170,6 +170,7 @@ export class Tables extends Container<Table> {
         return true;
       }
     }
+    this.tableCursor = undefined;
     return false;
   }
 
@@ -190,7 +191,9 @@ export class Tables extends Container<Table> {
     if (this.contextMenuTable) {
       // we keep the former context menu table active after the context
       // menu closes until the cursor moves again.
-      this.hoverTable = this.contextMenuTable;
+      if (this.contextMenuTable !== this.activeTable) {
+        this.hoverTable = this.contextMenuTable;
+      }
       this.contextMenuTable = undefined;
     }
     if (!options?.type) {
