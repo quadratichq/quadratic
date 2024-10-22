@@ -46,7 +46,7 @@ export const CodeEditorRefButton = () => {
   return (
     <div className="code-editor-ref-button flex items-center">
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
             disabled={disabled}
