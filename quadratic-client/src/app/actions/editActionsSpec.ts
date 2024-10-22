@@ -10,6 +10,7 @@ import {
 } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadFile } from '@/app/helpers/downloadFileInBrowser';
@@ -42,6 +43,7 @@ type EditActionSpec = Pick<
   | Action.FillRight
   | Action.FillDown
   | Action.EditCell
+  | Action.ToggleArrowMode
   | Action.DeleteCell
   | Action.CloseInlineEditor
   | Action.SaveInlineEditor
@@ -162,19 +164,51 @@ export const editActionsSpec: EditActionSpec = {
     label: 'Edit cell',
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
-        const cursor = sheets.sheet.cursor;
-        const cursorPosition = cursor.cursorPosition;
-        const column = cursorPosition.x;
-        const row = cursorPosition.y;
-        quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
+        const { x, y } = sheets.sheet.cursor.cursorPosition;
+        quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
           if (code) {
-            doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+            doubleClickCell({
+              column: Number(code.x),
+              row: Number(code.y),
+              language: code.language,
+              cell: '',
+            });
           } else {
-            quadraticCore.getEditCell(sheets.sheet.id, column, row).then((cell) => {
-              doubleClickCell({ column, row, cell });
+            quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
+              doubleClickCell({
+                column: x,
+                row: y,
+                cell,
+                cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
+              });
             });
           }
         });
+        return true;
+      }
+    },
+  },
+  [Action.ToggleArrowMode]: {
+    label: 'Toggle arrow mode',
+    run: () => {
+      if (!inlineEditorHandler.isEditingFormula()) {
+        const { x, y } = sheets.sheet.cursor.cursorPosition;
+        quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
+          if (code) {
+            doubleClickCell({
+              column: Number(code.x),
+              row: Number(code.y),
+              language: code.language,
+              cell: '',
+              cursorMode: CursorMode.Edit,
+            });
+          } else {
+            quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
+              doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
+            });
+          }
+        });
+        return true;
       }
     },
   },

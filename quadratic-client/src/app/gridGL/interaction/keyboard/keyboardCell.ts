@@ -6,6 +6,7 @@ import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -76,14 +77,46 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   // Edit cell
   if (matchShortcut(Action.EditCell, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
-      const column = cursorPosition.x;
-      const row = cursorPosition.y;
-      quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
+      const { x, y } = sheets.sheet.cursor.cursorPosition;
+      quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
         if (code) {
-          doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+          doubleClickCell({
+            column: Number(code.x),
+            row: Number(code.y),
+            language: code.language,
+            cell: '',
+          });
         } else {
-          quadraticCore.getEditCell(sheets.sheet.id, column, row).then((cell) => {
-            doubleClickCell({ column, row, cell });
+          quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
+            doubleClickCell({
+              column: x,
+              row: y,
+              cell,
+              cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
+            });
+          });
+        }
+      });
+      return true;
+    }
+  }
+
+  // Edit cell - navigate text
+  if (matchShortcut(Action.ToggleArrowMode, event)) {
+    if (!inlineEditorHandler.isEditingFormula()) {
+      const { x, y } = sheets.sheet.cursor.cursorPosition;
+      quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
+        if (code) {
+          doubleClickCell({
+            column: Number(code.x),
+            row: Number(code.y),
+            language: code.language,
+            cell: '',
+            cursorMode: CursorMode.Edit,
+          });
+        } else {
+          quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
+            doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
           });
         }
       });
@@ -131,13 +164,18 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    const cursorPosition = cursor.cursorPosition;
-    quadraticCore.getCodeCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y).then((code) => {
+    const { x, y } = cursor.cursorPosition;
+    quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
       // open code cell unless this is the actual code cell. In this case we can overwrite it
-      if (code && (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)) {
-        doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+      if (code && (Number(code.x) !== x || Number(code.y) !== y)) {
+        doubleClickCell({
+          column: Number(code.x),
+          row: Number(code.y),
+          language: code.language,
+          cell: '',
+        });
       } else {
-        pixiAppSettings.changeInput(true, event.key);
+        pixiAppSettings.changeInput(true, event.key, CursorMode.Enter);
       }
     });
     return true;
