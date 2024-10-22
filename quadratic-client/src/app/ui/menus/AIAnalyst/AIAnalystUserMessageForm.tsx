@@ -148,6 +148,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
                 >
                   <Button
                     size="icon-sm"
+                    className="rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       submitPrompt({ userPrompt: prompt, messageIndex });

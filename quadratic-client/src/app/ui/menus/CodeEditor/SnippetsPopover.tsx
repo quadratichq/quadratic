@@ -1,8 +1,7 @@
 import { codeEditorCodeCellAtom, codeEditorShowSnippetsPopoverAtom } from '@/app/atoms/codeEditorAtom';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { snippetsJS } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { snippetsPY } from '@/app/ui/menus/CodeEditor/snippetsPY';
-import { ExternalLinkIcon } from '@/shared/components/Icons';
+import { ExternalLinkIcon, SnippetsIcon } from '@/shared/components/Icons';
 import {
   DOCUMENTATION_JAVASCRIPT_URL,
   DOCUMENTATION_PYTHON_URL,
@@ -10,6 +9,7 @@ import {
   WEBSITE_CONNECTIONS,
   WEBSITE_EXAMPLES,
 } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
 import {
   Command,
   CommandEmpty,
@@ -19,8 +19,7 @@ import {
   CommandList,
 } from '@/shared/shadcn/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
-import { IntegrationInstructionsOutlined } from '@mui/icons-material';
-import { IconButton, useTheme } from '@mui/material';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import mixpanel from 'mixpanel-browser';
 import * as monaco from 'monaco-editor';
 import { ReactNode, useEffect, useMemo } from 'react';
@@ -33,7 +32,6 @@ interface SnippetsPopoverProps {
 export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
   const [showSnippetsPopover, setShowSnippetsPopover] = useRecoilState(codeEditorShowSnippetsPopoverAtom);
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
-  const theme = useTheme();
 
   useEffect(() => {
     if (showSnippetsPopover === true) {
@@ -48,24 +46,22 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
   );
   return (
     <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>
-      <PopoverTrigger asChild>
-        <div>
-          <TooltipHint title="Snippets" placement="bottom">
-            <IconButton
-              size="small"
-              style={{
-                ...(showSnippetsPopover
-                  ? {
-                      backgroundColor: theme.palette.action.hover,
-                    }
-                  : {}),
-              }}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground"
+              onClick={() => setShowSnippetsPopover(true)}
             >
-              <IntegrationInstructionsOutlined fontSize="small" />
-            </IconButton>
-          </TooltipHint>
-        </div>
-      </PopoverTrigger>
+              <SnippetsIcon />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Snippets</TooltipContent>
+      </Tooltip>
+
       <PopoverContent className="w-[250px] p-0">
         <Command
           filter={(value, search, keywords) => {

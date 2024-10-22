@@ -115,6 +115,7 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssi
               >
                 <Button
                   size="icon-sm"
+                  className="rounded-full"
                   onClick={(e) => {
                     e.stopPropagation();
                     submitPrompt({ userPrompt: prompt });

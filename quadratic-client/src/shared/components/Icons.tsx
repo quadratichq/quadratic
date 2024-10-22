@@ -7,6 +7,13 @@
 import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
+// const sizes = {
+//   sm: '20',
+//   md: '24',
+//   lg: '40',
+//   xl: '48',
+// };
+
 /**
  * Base icon component, used to render icons from the Material Symbols font.
  */
@@ -14,13 +21,15 @@ interface BaseIconProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: string;
   // TODO: if and when we need to use other sizes, we'll have this as a prop
   // Note: we'll have to load the additional sizes via the font loader in `index.html`
-  //e.g. size: 'sm' | 'md' | 'lg' | 'xl' -> '20' '24' '40' '48';
+  // size?: keyof typeof sizes;
 }
 
 const Icon = (props: BaseIconProps) => {
   const { children, className, ...rest } = props;
+  const _size = '20'; // size ? sizes[size] : sizes['sm'];
+
   return (
-    <span className={`material-symbols-outlined material-symbols-20 ${className ? className : ''}`} {...rest}>
+    <span className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`} {...rest}>
       {children}
     </span>
   );
@@ -328,6 +337,10 @@ export const InsertChartIcon: IconComponent = (props) => {
   return <Icon {...props}>insert_chart</Icon>;
 };
 
+export const InsertCellRefIcon: IconComponent = (props) => {
+  return <Icon {...props}>ink_selection</Icon>;
+};
+
 export const LogoutIcon: IconComponent = (props) => {
   return <Icon {...props}>logout</Icon>;
 };
@@ -404,7 +417,11 @@ export const RefreshIcon: IconComponent = (props) => {
 };
 
 export const SaveAndRunIcon: IconComponent = (props) => {
-  return <Icon {...props}>play_circle</Icon>;
+  return <Icon {...props}>play_arrow</Icon>;
+};
+
+export const SaveAndRunStopIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop</Icon>;
 };
 
 export const ScientificIcon: IconComponent = (props) => {
@@ -417,6 +434,10 @@ export const SettingsIcon: IconComponent = (props) => {
 
 export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
+};
+
+export const SnippetsIcon: IconComponent = (props) => {
+  return <Icon {...props}>integration_instructions</Icon>;
 };
 
 export const StopIcon: IconComponent = (props) => {
