@@ -51,7 +51,7 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-sm"
               className="text-muted-foreground"
               onClick={() => setShowSnippetsPopover(true)}
             >
