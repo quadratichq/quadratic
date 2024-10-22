@@ -125,12 +125,12 @@ export class TableName extends Container {
 
   // Returns the width of the table name text scaled to the viewport.
   getScaledTextWidth() {
-    return this.text.width / pixiApp.viewport.scaled;
+    return (this.tableNameBounds.width - this.dropdown.width - DROPDOWN_PADDING) / pixiApp.viewport.scaled;
   }
 
   intersects(world: Point): TablePointerDownResult | undefined {
     if (intersects.rectanglePoint(this.getScaled(), world)) {
-      if (world.x <= this.x + this.text.x + this.getScaledTextWidth()) {
+      if (world.x <= this.x + this.getScaledTextWidth()) {
         return { table: this.table.codeCell, type: 'table-name' };
       }
       return { table: this.table.codeCell, type: 'dropdown' };

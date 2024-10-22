@@ -72,7 +72,7 @@ export class TableColumnHeader extends Container {
   }
 
   private drawSortButton(width: number, height: number, sort?: DataTableSort) {
-    this.sortButtonStart = this.columnHeaderBounds.x + this.columnName.width + this.columnName.x;
+    this.sortButtonStart = this.columnHeaderBounds.right - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING;
     this.sortButton = this.addChild(new Graphics());
     this.sortButton.beginFill(0, SORT_BACKGROUND_ALPHA);
     this.sortButton.drawCircle(0, 0, SORT_BUTTON_RADIUS);

@@ -6,6 +6,7 @@ import { atom } from 'recoil';
 export enum ContextMenuType {
   Grid = 'grid',
   Table = 'table',
+  TableSort = 'table-sort',
 }
 
 export interface ContextMenuState {
@@ -15,8 +16,7 @@ export interface ContextMenuState {
   row?: number;
   table?: JsRenderCodeCell;
 
-  // special states we need to track
-  // rename is for tables
+  // special states we need to track rename for tables
   rename?: boolean;
   selectedColumn?: number;
 }

@@ -128,10 +128,11 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.SortTable]: {
-    label: 'Sort table (coming soon)',
+    label: 'Sort table',
     Icon: SortIcon,
     run: async () => {
-      // open table sort dialog...
+      const table = getTable();
+      pixiAppSettings.setContextMenu?.({ type: ContextMenuType.TableSort, table });
     },
   },
   [Action.ToggleTableAlternatingColors]: {
