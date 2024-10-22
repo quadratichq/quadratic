@@ -19,7 +19,7 @@ export const ThemeAccentColors = () => {
       <span data-theme={c} className="-ml-1 mr-2 flex h-4 w-4 shrink-0 rounded-full bg-primary">
         {c === accentColor && <CheckSmallIcon className="relative -left-0.5 -top-0.5 text-background" />}
       </span>
-      <span className="capitalize">{c}</span>
+      <span className="capitalize">{c === 'black' ? 'Mono' : c}</span>
     </Button>
   ));
 };
