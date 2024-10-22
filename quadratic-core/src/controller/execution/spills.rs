@@ -36,23 +36,9 @@ impl GridController {
                     && !transaction.is_server()
                     && send_client
                 {
-                    if let (Some(code_cell), Some(render_code_cell)) = (
-                        sheet.edit_code_value(sheet_pos.into()),
-                        sheet.get_render_code_cell(sheet_pos.into()),
-                    ) {
-                        if let (Ok(code_cell), Ok(render_code_cell)) = (
-                            serde_json::to_string(&code_cell),
-                            serde_json::to_string(&render_code_cell),
-                        ) {
-                            crate::wasm_bindings::js::jsUpdateCodeCell(
-                                sheet_id.to_string(),
-                                sheet_pos.x,
-                                sheet_pos.y,
-                                Some(code_cell),
-                                Some(render_code_cell),
-                            );
-                        }
-                    }
+                    transaction.add_from_code_run(sheet_id, *pos, &Some(run.to_owned()));
+                    let sheet_rect = run.output_sheet_rect(sheet_pos, false);
+                    transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
                 }
             }
         }
@@ -185,8 +171,6 @@ mod tests {
     #[serial]
     fn test_check_all_spills() {
         let mut gc = GridController::test();
-        let mut transaction = PendingTransaction::default();
-
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
 
@@ -209,25 +193,37 @@ mod tests {
         clear_js_calls();
 
         // manually set a cell value and see if the spill error changed
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            "3".into(),
+            None,
+        );
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));
-
-        let sheet = gc.sheet(sheet_id);
-        assert!(!sheet.code_runs[0].spill_error);
-
-        gc.check_all_spills(&mut transaction, sheet_id, false);
-        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.cell_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(3.into()))
+        );
         assert!(sheet.code_runs[0].spill_error);
-        expect_js_call_count("jsUpdateCodeCell", 0, true);
+        expect_js_call_count("jsUpdateCodeCell", 1, true);
 
         // remove the cell causing the spill error
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            "".into(),
+            None,
+        );
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Blank);
         assert_eq!(sheet.cell_value(Pos { x: 1, y: 1 }), None);
-        gc.check_all_spills(&mut transaction, sheet_id, true);
-        expect_js_call_count("jsUpdateCodeCell", 1, true);
-        let sheet = gc.sheet(sheet_id);
         assert!(!sheet.code_runs[0].spill_error);
+        expect_js_call_count("jsUpdateCodeCell", 1, true);
     }
 
     #[test]
