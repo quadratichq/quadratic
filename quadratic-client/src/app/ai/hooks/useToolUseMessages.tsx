@@ -1,4 +1,4 @@
-import { AI_TOOLS } from '@/app/ai/tools/aiTools';
+import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -12,7 +12,7 @@ Following are the tools you should use to do actions in the spreadsheet, use the
 
 Include a concise explanation of the actions you are taking to respond to the user prompt.\n
           
-${Object.entries(AI_TOOLS)
+${Object.entries(aiToolsSpec)
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)
   .join('\n\n')}
 `,

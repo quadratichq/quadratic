@@ -1,26 +1,22 @@
 import { MODEL_OPTIONS } from '@/app/ai/MODELS';
-import { getToolChoice, getTools } from '@/app/ai/tools/aiHelpers';
 import { AITool } from '@/app/ai/tools/aiTools';
+import { getToolChoice, getTools, isAnthropicModel } from '@/app/ai/tools/helpers';
 import { authClient } from '@/auth';
 import { AI } from '@/shared/constants/routes';
 import {
   AIMessage,
   AnthropicModel,
-  AnthropicModelSchema,
+  AnthropicPromptMessage,
   OpenAIModel,
-  PromptMessage,
+  OpenAIPromptMessage,
   UserMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
 
-export function isAnthropicModel(model: AnthropicModel | OpenAIModel): model is AnthropicModel {
-  return AnthropicModelSchema.safeParse(model).success;
-}
-
 type HandleAIPromptProps = {
   model: AnthropicModel | OpenAIModel;
-  messages: PromptMessage[];
+  messages: AnthropicPromptMessage[] | OpenAIPromptMessage[];
   setMessages?:
     | SetterOrUpdater<(UserMessage | AIMessage)[]>
     | ((value: React.SetStateAction<(UserMessage | AIMessage)[]>) => void);
@@ -55,6 +51,7 @@ export function useAIRequestToAPI() {
                 } else if (data.content_block.type === 'tool_use') {
                   const functionCalls = [...(responseMessage.functionCalls ?? [])];
                   const functionCall = {
+                    id: data.content_block.id,
                     name: data.content_block.name,
                     arguments: '',
                   };
@@ -69,6 +66,7 @@ export function useAIRequestToAPI() {
                   const functionCalls = [...(responseMessage.functionCalls ?? [])];
                   const functionCall = {
                     ...(functionCalls.pop() ?? {
+                      id: '',
                       name: '',
                       arguments: '',
                     }),
@@ -94,6 +92,11 @@ export function useAIRequestToAPI() {
             }
           }
         }
+      }
+
+      if (!responseMessage.content) {
+        responseMessage.content = responseMessage.functionCalls ? '' : "I'm sorry, I don't have a response for that.";
+        setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
       }
 
       return { content: responseMessage.content, functionCalls: responseMessage.functionCalls };
@@ -125,10 +128,11 @@ export function useAIRequestToAPI() {
                   setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
                 } else if (data.choices[0].delta.tool_calls) {
                   data.choices[0].delta.tool_calls.forEach(
-                    (tool_call: { function: { name?: string; arguments: string } }) => {
+                    (tool_call: { id: string; function: { name?: string; arguments: string } }) => {
                       const functionCalls = [...(responseMessage.functionCalls ?? [])];
                       if (tool_call.function.name) {
                         const functionCall = {
+                          id: tool_call.id,
                           name: tool_call.function.name,
                           arguments: tool_call.function.arguments,
                         };
@@ -136,6 +140,7 @@ export function useAIRequestToAPI() {
                       } else {
                         const functionCall = {
                           ...(functionCalls.pop() ?? {
+                            id: '',
                             name: '',
                             arguments: '',
                           }),
@@ -162,6 +167,11 @@ export function useAIRequestToAPI() {
             }
           }
         }
+      }
+
+      if (!responseMessage.content) {
+        responseMessage.content = responseMessage.functionCalls ? '' : "I'm sorry, I don't have a response for that.";
+        setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
       }
 
       return { content: responseMessage.content, functionCalls: responseMessage.functionCalls };
@@ -198,8 +208,8 @@ export function useAIRequestToAPI() {
         const { stream: streamDefault, temperature } = MODEL_OPTIONS[model];
         const stream = useStream ?? streamDefault;
         const endpoint = isAnthropic ? AI.ANTHROPIC[stream ? 'STREAM' : 'CHAT'] : AI.OPENAI[stream ? 'STREAM' : 'CHAT'];
-        const tools = !useTools ? undefined : getTools(isAnthropic);
-        const tool_choice = !useTools ? undefined : getToolChoice(isAnthropic, toolChoice);
+        const tools = !useTools ? undefined : getTools(model);
+        const tool_choice = !useTools ? undefined : getToolChoice(model, toolChoice);
         const response = await fetch(endpoint, {
           method: 'POST',
           signal,
@@ -234,7 +244,9 @@ export function useAIRequestToAPI() {
           const data = await response.json();
           if (isAnthropic) {
             data?.forEach(
-              (message: { type: 'text'; text: string } | { type: 'tool_use'; name: string; input: unknown }) => {
+              (
+                message: { type: 'text'; text: string } | { type: 'tool_use'; id: string; name: string; input: unknown }
+              ) => {
                 switch (message.type) {
                   case 'text':
                     responseMessage.content += message.text;
@@ -244,6 +256,7 @@ export function useAIRequestToAPI() {
                     responseMessage.functionCalls = [
                       ...(responseMessage.functionCalls ?? []),
                       {
+                        id: message.id,
                         name: message.name,
                         arguments: JSON.stringify(message.input),
                       },
@@ -260,21 +273,24 @@ export function useAIRequestToAPI() {
                 responseMessage.content += data.content;
                 setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
               } else if (data.tool_calls) {
-                data.tool_calls.forEach((toolCall: { type: string; function: { name: string; arguments: string } }) => {
-                  switch (toolCall.type) {
-                    case 'function':
-                      responseMessage.functionCalls = [
-                        ...(responseMessage.functionCalls ?? []),
-                        {
-                          name: toolCall.function.name,
-                          arguments: toolCall.function.arguments,
-                        },
-                      ];
-                      break;
-                    default:
-                      throw new Error(`Invalid AI response: ${data}`);
+                data.tool_calls.forEach(
+                  (toolCall: { type: string; id: string; function: { name: string; arguments: string } }) => {
+                    switch (toolCall.type) {
+                      case 'function':
+                        responseMessage.functionCalls = [
+                          ...(responseMessage.functionCalls ?? []),
+                          {
+                            id: toolCall.id,
+                            name: toolCall.function.name,
+                            arguments: toolCall.function.arguments,
+                          },
+                        ];
+                        break;
+                      default:
+                        throw new Error(`Invalid AI response: ${data}`);
+                    }
                   }
-                });
+                );
               } else if (data.refusal) {
                 throw new Error(`Invalid AI response: ${data}`);
               }
@@ -283,7 +299,7 @@ export function useAIRequestToAPI() {
 
           if (!responseMessage.content) {
             responseMessage.content = responseMessage.functionCalls
-              ? JSON.stringify(responseMessage.functionCalls)
+              ? ''
               : "I'm sorry, I don't have a response for that.";
             setMessages?.((prev) => [...prev.slice(0, -1), { ...responseMessage }]);
           }

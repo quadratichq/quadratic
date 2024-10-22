@@ -6,7 +6,8 @@ import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextM
 import { useSelectionContextMessages } from '@/app/ai/hooks/useSelectionContextMessages';
 import { useToolUseMessages } from '@/app/ai/hooks/useToolUseMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
-import { AI_TOOLS, AITool } from '@/app/ai/tools/aiTools';
+import { AITool } from '@/app/ai/tools/aiTools';
+import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystContextAtom,
@@ -19,7 +20,12 @@ import {
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { SheetRect } from '@/app/quadratic-core-types';
-import { AIMessage, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import {
+  AIMessage,
+  AnthropicPromptMessage,
+  OpenAIPromptMessage,
+  UserMessage,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export function useSubmitAIAnalystPrompt() {
@@ -126,12 +132,13 @@ export function useSubmitAIAnalystPrompt() {
           return updatedMessages;
         });
 
-        const messagesToSend: PromptMessage[] = [
+        const messagesToSend: (AnthropicPromptMessage | OpenAIPromptMessage)[] = [
           ...updatedMessages.map((message) => ({
             role: message.role,
             content: message.content,
           })),
         ];
+
         try {
           const response = await handleAIRequestToAPI({
             model,
@@ -142,17 +149,36 @@ export function useSubmitAIAnalystPrompt() {
             useTools: true,
           });
 
+          // TODO(ayush): remove before merge
+          console.log('response', response);
+
           if (response.functionCalls && response.functionCalls.length > 0) {
             for (const functionCall of response.functionCalls) {
               if (Object.values(AITool).includes(functionCall.name as AITool)) {
                 const aiTool = functionCall.name as AITool;
                 const argsObject = JSON.parse(functionCall.arguments);
-                const args = AI_TOOLS[aiTool].responseSchema.parse(argsObject);
-                await AI_TOOLS[aiTool].action(args);
+                const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
+                await aiToolsSpec[aiTool].action(args);
               }
             }
           }
         } catch (error) {
+          set(aiAnalystMessagesAtom, (prevMessages) => {
+            const aiMessage: AIMessage = {
+              role: 'assistant',
+              model,
+              content: 'Looks like there was a problem. Please try again.',
+              internalContext: false,
+              contextType: 'userPrompt',
+            };
+
+            const lastMessage = prevMessages.at(-1);
+            if (lastMessage?.role === 'assistant') {
+              return [...prevMessages.slice(0, -1), aiMessage];
+            }
+            return [...prevMessages, aiMessage];
+          });
+
           console.error(error);
         }
 

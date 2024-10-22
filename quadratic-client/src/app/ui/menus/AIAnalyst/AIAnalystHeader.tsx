@@ -24,7 +24,7 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
       <span className="text-sm font-bold">Chat</span>
 
       <div className="flex items-center gap-2">
-        <TooltipPopover label="Clear chat" side="bottom">
+        <TooltipPopover label="Clear" side="bottom">
           <Button
             variant="ghost"
             size="icon-sm"

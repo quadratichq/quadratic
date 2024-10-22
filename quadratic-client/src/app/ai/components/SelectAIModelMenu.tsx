@@ -1,6 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { isAnthropicModel } from '@/app/ai/hooks/useAIRequestToAPI';
 import { MODEL_OPTIONS } from '@/app/ai/MODELS';
+import { isAnthropicModel } from '@/app/ai/tools/helpers';
 import { Anthropic, OpenAI } from '@/app/ui/icons';
 import {
   DropdownMenu,
