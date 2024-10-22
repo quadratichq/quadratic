@@ -2,6 +2,7 @@ import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 
 import { ThemeAccentColors } from '@/shared/components/ThemeAccentColors';
 import { ThemeAppearanceModes } from '@/shared/components/ThemeAppearanceModes';
+import { CONTACT_URL } from '@/shared/constants/urls';
 import { useFeatureFlag, type FeatureFlagKey } from '@/shared/hooks/useFeatureFlag';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
@@ -35,15 +36,15 @@ export const Component = () => {
         <DashboardHeader title="Labs" />
 
         <p className="text-sm text-muted-foreground">
-          These are experimental features still under development by our team. To learn more about these features, visit
-          our{' '}
-          <a href="TODO:" className="underline hover:text-primary">
-            community page
+          These are experimental features you can try while they’re still under active development. If you have
+          feedback, we’d love to hear it! Please{' '}
+          <a href={CONTACT_URL} className="underline hover:text-primary">
+            contact us
           </a>
           .
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          <em>Please note: these preferences are stored in the browser and do not persist across devices.</em>
+          <em>Note: these preferences are stored in the browser and do not persist across devices.</em>
         </p>
 
         <div className="mb-4 w-full space-y-6">
