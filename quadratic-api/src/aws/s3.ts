@@ -16,8 +16,14 @@ export const s3Client = new S3Client({
     accessKeyId: AWS_S3_ACCESS_KEY_ID,
     secretAccessKey: AWS_S3_SECRET_ACCESS_KEY,
   },
-  endpoint,
-  forcePathStyle: true,
+  ...(endpoint === undefined
+    ? {
+        useAccelerateEndpoint: true,
+      }
+    : {
+        endpoint,
+        forcePathStyle: true,
+      }),
 });
 
 export const uploadStringAsFileS3 = async (fileKey: string, contents: string) => {
