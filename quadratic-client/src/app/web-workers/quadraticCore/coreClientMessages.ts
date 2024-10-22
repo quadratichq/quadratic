@@ -13,6 +13,7 @@ import {
   JsCodeCell,
   JsHtmlOutput,
   JsOffset,
+  JsPos,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -772,6 +773,40 @@ export interface CoreClientFindNextRow {
   row?: number;
 }
 
+export interface ClientCoreFindNextColumnForRect {
+  type: 'clientCoreFindNextColumnForRect';
+  id: number;
+  sheetId: string;
+  columnStart: number;
+  row: number;
+  width: number;
+  height: number;
+  reverse: boolean;
+}
+
+export interface CoreClientFindNextColumnForRect {
+  type: 'coreClientFindNextColumnForRect';
+  id: number;
+  column: number;
+}
+
+export interface ClientCoreFindNextRowForRect {
+  type: 'clientCoreFindNextRowForRect';
+  id: number;
+  sheetId: string;
+  column: number;
+  rowStart: number;
+  width: number;
+  height: number;
+  reverse: boolean;
+}
+
+export interface CoreClientFindNextRowForRect {
+  type: 'coreClientFindNextRowForRect';
+  id: number;
+  row: number;
+}
+
 export interface ClientCoreCommitTransientResize {
   type: 'clientCoreCommitTransientResize';
   sheetId: string;
@@ -853,6 +888,40 @@ export interface ClientCoreMoveCells {
   targetX: number;
   targetY: number;
   cursor: string;
+}
+
+export interface ClientCoreMoveCodeCellVertically {
+  type: 'clientCoreMoveCodeCellVertically';
+  sheetId: string;
+  x: number;
+  y: number;
+  sheetEnd: boolean;
+  reverse: boolean;
+  cursor: string;
+  id: number;
+}
+
+export interface CoreClientMoveCodeCellVertically {
+  type: 'coreClientMoveCodeCellVertically';
+  pos: JsPos;
+  id: number;
+}
+
+export interface ClientCoreMoveCodeCellHorizontally {
+  type: 'clientCoreMoveCodeCellHorizontally';
+  sheetId: string;
+  x: number;
+  y: number;
+  sheetEnd: boolean;
+  reverse: boolean;
+  cursor: string;
+  id: number;
+}
+
+export interface CoreClientMoveCodeCellHorizontally {
+  type: 'coreClientMoveCodeCellHorizontally';
+  pos: JsPos;
+  id: number;
 }
 
 export interface CoreClientSetCursorSelection {
@@ -1095,7 +1164,11 @@ export type ClientCoreMessage =
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
-  | ClientCoreInsertRow;
+  | ClientCoreInsertRow
+  | ClientCoreFindNextColumnForRect
+  | ClientCoreFindNextRowForRect
+  | ClientCoreMoveCodeCellVertically
+  | ClientCoreMoveCodeCellHorizontally;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1158,4 +1231,9 @@ export type CoreClientMessage =
   | CoreClientGetCellValue
   | CoreClientNeighborText
   | CoreClientBordersSheet
-  | CoreClientGetCellValue;
+  | CoreClientGetCellValue
+  | CoreClientGetCellValue
+  | CoreClientFindNextColumnForRect
+  | CoreClientFindNextRowForRect
+  | CoreClientMoveCodeCellVertically
+  | CoreClientMoveCodeCellHorizontally;
