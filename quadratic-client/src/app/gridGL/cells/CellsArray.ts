@@ -153,6 +153,8 @@ export class CellsArray extends Container {
       tint = colors.cellColorUserFormula;
     } else if (codeCell.language === 'Javascript') {
       tint = colors.cellColorUserJavascript;
+    } else if (codeCell.language === 'AIResearcher') {
+      tint = colors.cellColorUserAI;
     }
 
     if (!pixiAppSettings.showCellTypeOutlines) {

@@ -14,7 +14,7 @@ export interface CellRef { sheet: string | null, x: CellRefCoord, y: CellRefCoor
 export type CellRefCoord = { "type": "Relative", "coord": bigint } | { "type": "Absolute", "coord": bigint };
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
-export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript";
+export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "AIResearcher";
 export interface ColumnRow { column: number, row: number, }
 export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE";
 export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };

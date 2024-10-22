@@ -407,7 +407,10 @@ impl GridController {
                     for (&y, cell) in col.iter_mut() {
                         match cell {
                             CellValue::Code(code_cell) => {
-                                if matches!(code_cell.language, CodeCellLanguage::Formula) {
+                                if matches!(
+                                    code_cell.language,
+                                    CodeCellLanguage::Formula | CodeCellLanguage::AIResearcher
+                                ) {
                                     code_cell.code = replace_internal_cell_references(
                                         &code_cell.code,
                                         Pos {

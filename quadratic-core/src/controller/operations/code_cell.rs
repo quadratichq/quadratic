@@ -16,14 +16,26 @@ impl GridController {
         code: String,
     ) -> Vec<Operation> {
         let code = match language {
-            CodeCellLanguage::Formula => replace_a1_notation(&code, sheet_pos.into()),
+            CodeCellLanguage::Formula | CodeCellLanguage::AIResearcher => {
+                replace_a1_notation(&code, sheet_pos.into())
+            }
             _ => code,
         };
+
+        let is_ai_researcher_code =
+            language == CodeCellLanguage::Formula && code.starts_with("AI(");
 
         vec![
             Operation::SetCellValues {
                 sheet_pos,
-                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
+                values: CellValues::from(CellValue::Code(CodeCellValue {
+                    language: if is_ai_researcher_code {
+                        CodeCellLanguage::AIResearcher
+                    } else {
+                        language
+                    },
+                    code,
+                })),
             },
             Operation::ComputeCode { sheet_pos },
         ]

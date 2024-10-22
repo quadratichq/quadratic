@@ -1,6 +1,8 @@
+import { aiResearcherAtom, defaultAIResearcherState } from '@/app/atoms/aiResearcherAtom';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsCodeCell, Pos } from '@/app/quadratic-core-types';
+import { parseCodeString } from '@/app/ui/menus/AIResearcher/parseAIResearcherCodeString';
 import { useRecoilCallback } from 'recoil';
 
 export const useUpdateCodeEditor = () => {
@@ -28,6 +30,16 @@ export const useUpdateCodeEditor = () => {
             spillError: codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)),
             initialCode: undefined,
           }));
+
+          if (codeCell.language === 'AIResearcher') {
+            const parsedCodeString = parseCodeString(codeCell.code_string);
+            if (parsedCodeString) {
+              const { prompt, refCell } = parsedCodeString;
+              set(aiResearcherAtom, (prev) => ({ ...prev, prompt, refCell, output: newEvaluationResult.value ?? '' }));
+            } else {
+              set(aiResearcherAtom, defaultAIResearcherState);
+            }
+          }
         } else {
           set(codeEditorAtom, (prev) => ({
             ...prev,
