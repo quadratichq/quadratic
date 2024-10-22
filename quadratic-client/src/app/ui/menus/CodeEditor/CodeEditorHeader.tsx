@@ -21,10 +21,12 @@ import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRun
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { CloseIcon, SaveAndRunIcon, SaveAndRunStopIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { Close, PlayArrow, Stop } from '@mui/icons-material';
-import { CircularProgress, IconButton } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -187,11 +189,14 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
         )}
       </div>
 
-      <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+      <div className="ml-auto flex flex-shrink-0 items-center gap-0">
         {isRunningComputation && (
-          <TooltipHint title={`${language} executing…`} placement="bottom">
-            <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
-          </TooltipHint>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{`${language} executing…`}</TooltipContent>
+          </Tooltip>
         )}
 
         {hasPermission && (
@@ -205,33 +210,55 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
                 {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
 
                 {!isRunningComputation ? (
-                  <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-                    <IconButton
-                      id="QuadraticCodeEditorRunButtonID"
-                      size="small"
-                      color="primary"
-                      onClick={saveAndRunCell}
-                    >
-                      <PlayArrow />
-                    </IconButton>
-                  </TooltipHint>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        id="QuadraticCodeEditorRunButtonID"
+                        onClick={saveAndRunCell}
+                        size="icon"
+                        className="mx-2 rounded-full"
+                      >
+                        <SaveAndRunIcon />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      Save & run{' '}
+                      <span className="opacity-50">({`${KeyboardSymbols.Command}${KeyboardSymbols.Enter}`})</span>
+                    </TooltipContent>
+                  </Tooltip>
                 ) : (
-                  <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-                    <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                      <Stop />
-                    </IconButton>
-                  </TooltipHint>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={cancelRun} size="icon" className="mx-2 rounded-full">
+                        <SaveAndRunStopIcon />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      Cancel execution <span className="opacity-50">({`${KeyboardSymbols.Command} ESC`})</span>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </>
             )}
           </>
         )}
 
-        <TooltipHint title="Close" shortcut="ESC" placement="bottom">
-          <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={() => closeEditor(false)}>
-            <Close />
-          </IconButton>
-        </TooltipHint>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              id="QuadraticCodeEditorCloseButtonID"
+              onClick={() => closeEditor(false)}
+              size="icon"
+              className="text-muted-foreground"
+            >
+              <CloseIcon />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            Close <span className="opacity-50">(ESC)</span>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );
