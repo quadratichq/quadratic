@@ -43,7 +43,8 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.code_data_table_to_data_table(pos.to_sheet_pos(sheet_id), cursor);
+        self.code_data_table_to_data_table(pos.to_sheet_pos(sheet_id), cursor)
+            .map_err(|e| e.to_string())?;
 
         Ok(())
     }

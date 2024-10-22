@@ -85,4 +85,75 @@ impl GridController {
 
 #[cfg(test)]
 #[serial_test::parallel]
-mod tests {}
+mod tests {
+    use std::collections::HashSet;
+
+    use crate::{
+        cellvalue::Import,
+        controller::GridController,
+        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+        test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
+        Array, CellValue, CodeCellValue, Pos, Rect, SheetPos, Value,
+    };
+
+    #[test]
+    fn test_code_data_table_to_data_table() {
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            cells_accessed: HashSet::new(),
+            formatted_code_string: None,
+        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1",
+            Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
+            false,
+            false,
+            true,
+        );
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.data_tables.insert_full(pos, data_table);
+        let code_cell_value = CodeCellValue {
+            language: CodeCellLanguage::Javascript,
+            code: "return [1,2,3]".into(),
+        };
+        sheet.set_cell_value(pos, CellValue::Code(code_cell_value.clone()));
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let expected = vec!["1", "2", "3"];
+        let import = Import::new("".into());
+
+        // initial value
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 0));
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            0,
+            0,
+            CellValue::Code(code_cell_value.clone()),
+        );
+
+        gc.code_data_table_to_data_table(sheet_pos, None).unwrap();
+
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 2, 0));
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Import(import.clone()));
+
+        // undo, the value should be a code run data table again
+        gc.undo(None);
+        assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Code(code_cell_value));
+
+        // redo, the value should be a data table
+        gc.redo(None);
+        assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Import(import));
+    }
+}

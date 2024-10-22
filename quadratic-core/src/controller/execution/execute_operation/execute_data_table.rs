@@ -78,7 +78,9 @@ impl GridController {
                 if rect.contains(*pos) {
                     // only delete when there's not another code cell in the same position (this maintains the original output until a run completes)
                     if let Some(value) = sheet.cell_value(*pos) {
-                        if matches!(value, CellValue::Code(_)) {
+                        if matches!(value, CellValue::Code(_))
+                            || matches!(value, CellValue::Import(_))
+                        {
                             None
                         } else {
                             Some(*pos)
@@ -229,7 +231,7 @@ impl GridController {
             let data_table_pos = sheet.first_data_table_within(pos)?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
             let old_data_table_kind = data_table.kind.to_owned();
-            let old_data_table_name = data_table.name.to_owned();
+            // let old_data_table_name = data_table.name.to_owned();
             let sheet_rect = data_table.output_sheet_rect(sheet_pos, false);
 
             data_table.kind = match old_data_table_kind {
@@ -468,6 +470,8 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use crate::{
         controller::{
             execution::execute_operation::{
@@ -475,12 +479,12 @@ mod tests {
             },
             user_actions::import::tests::{assert_simple_csv, simple_csv},
         },
-        grid::SheetId,
+        grid::{CodeCellLanguage, CodeRun, SheetId},
         test_util::{
             assert_cell_value_row, assert_data_table_cell_value, assert_data_table_cell_value_row,
             print_data_table, print_table,
         },
-        SheetPos,
+        Array, CodeCellValue, SheetPos, Value,
     };
 
     use super::*;
@@ -601,6 +605,73 @@ mod tests {
     }
 
     #[test]
+    fn test_execute_code_data_table_to_data_table() {
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            cells_accessed: HashSet::new(),
+            formatted_code_string: None,
+        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run.clone()),
+            "Table 1",
+            Value::Array(Array::from(vec![vec!["1", "2", "3"]])),
+            false,
+            false,
+            true,
+        );
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.data_tables.insert_full(pos, data_table);
+        let code_cell_value = CodeCellValue {
+            language: CodeCellLanguage::Javascript,
+            code: "return [1,2,3]".into(),
+        };
+        sheet.set_cell_value(pos, CellValue::Code(code_cell_value.clone()));
+        let data_table_pos = sheet.first_data_table_within(pos).unwrap();
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let expected = vec!["1", "2", "3"];
+
+        // initial value
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        let data_table = &gc.sheet(sheet_id).data_table(data_table_pos).unwrap();
+        assert_eq!(data_table.kind, DataTableKind::CodeRun(code_run.clone()));
+
+        let import = Import::new("".into());
+        let kind = DataTableKind::Import(import.to_owned());
+        let op = Operation::SwitchDataTableKind {
+            sheet_pos,
+            kind: kind.clone(),
+        };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_code_data_table_to_data_table(&mut transaction, op)
+            .unwrap();
+
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        let data_table = &gc.sheet(sheet_id).data_table(data_table_pos).unwrap();
+        assert_eq!(data_table.kind, kind);
+
+        // undo, the value should be a code run data table again
+        execute_reverse_operations(&mut gc, &transaction);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        let data_table = &gc.sheet(sheet_id).data_table(data_table_pos).unwrap();
+        assert_eq!(data_table.kind, DataTableKind::CodeRun(code_run));
+
+        // redo, the value should be a data table
+        execute_forward_operations(&mut gc, &mut transaction);
+        assert_data_table_cell_value_row(&gc, sheet_id, 0, 2, 0, expected.clone());
+        let data_table = &gc.sheet(sheet_id).data_table(data_table_pos).unwrap();
+        assert_eq!(data_table.kind, kind);
+    }
+
+    #[test]
     fn test_execute_grid_to_data_table() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv();
         flatten_data_table(&mut gc, sheet_id, pos, file_name);
@@ -654,5 +725,40 @@ mod tests {
         execute_forward_operations(&mut gc, &mut transaction);
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
         assert_sorted_data_table(&gc, sheet_id, pos, "simple.csv");
+    }
+
+    #[test]
+    fn test_execute_update_data_table_name() {
+        let (mut gc, sheet_id, pos, _) = simple_csv();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        let updated_name = "My Table";
+
+        assert_eq!(&data_table.name, "simple.csv");
+        println!("Initial data table name: {}", &data_table.name);
+
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let op = Operation::UpdateDataTableName {
+            sheet_pos,
+            name: updated_name.into(),
+        };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_update_data_table_name(&mut transaction, op)
+            .unwrap();
+
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        assert_eq!(&data_table.name, updated_name);
+        println!("Updated data table name: {}", &data_table.name);
+
+        // undo, the value should be the initial name
+        execute_reverse_operations(&mut gc, &transaction);
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        assert_eq!(&data_table.name, "simple.csv");
+        println!("Initial data table name: {}", &data_table.name);
+
+        // redo, the value should be the updated name
+        execute_forward_operations(&mut gc, &mut transaction);
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        assert_eq!(&data_table.name, updated_name);
+        println!("Updated data table name: {}", &data_table.name);
     }
 }
