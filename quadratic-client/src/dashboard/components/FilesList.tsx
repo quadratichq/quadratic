@@ -27,8 +27,9 @@ export type FilesListUserFile = {
   creator?: {
     name?: string;
     picture?: string;
+    email?: string;
   };
-  filterMatch?: 'name' | 'creator';
+  filterMatch?: 'file-name' | 'creator-name' | 'creator-email';
 };
 
 export function FilesList({
@@ -88,13 +89,16 @@ export function FilesList({
         const { name, creator } = file;
         const fileNameNormalized = name.toLowerCase();
         const creatorNameNormalized = creator?.name?.toLowerCase() || '';
+        const creatorEmailNormalized = creator?.email?.toLowerCase() || '';
         const filterValueNormalized = filterValue.toLowerCase();
 
         let filterMatch: FilesListUserFile['filterMatch'] = undefined;
         if (fileNameNormalized.includes(filterValueNormalized)) {
-          filterMatch = 'name';
+          filterMatch = 'file-name';
         } else if (creatorNameNormalized.includes(filterValueNormalized)) {
-          filterMatch = 'creator';
+          filterMatch = 'creator-name';
+        } else if (creatorEmailNormalized.includes(filterValueNormalized)) {
+          filterMatch = 'creator-email';
         }
 
         return filterMatch
