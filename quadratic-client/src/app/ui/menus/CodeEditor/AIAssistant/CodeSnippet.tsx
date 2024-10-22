@@ -1,4 +1,5 @@
 import {
+  aiAssistantLoadingAtom,
   codeEditorAtom,
   codeEditorCodeCellAtom,
   codeEditorModifiedEditorContentAtom,
@@ -19,7 +20,7 @@ import { cn } from '@/shared/shadcn/utils';
 import Editor from '@monaco-editor/react';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useMemo, useState } from 'react';
-import { useRecoilCallback } from 'recoil';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 interface CodeSnippetProps {
   code: string;
@@ -27,6 +28,7 @@ interface CodeSnippetProps {
 }
 
 export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) {
+  const loading = useRecoilValue(aiAssistantLoadingAtom);
   const syntax = useMemo(() => {
     const lowerCaseLanguage = language.toLowerCase();
     if (
@@ -49,11 +51,13 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
         <div className="flex flex-row items-center justify-between gap-2 bg-accent px-3 py-1">
           <div className="lowercase text-muted-foreground">{language}</div>
 
-          <div className="flex items-center gap-1">
-            <CodeSnippetRunButton text={code} language={language} />
-            <CodeSnippetInsertButton text={code} language={language} />
-            <CodeSnippetCopyButton text={code} language={language} />
-          </div>
+          {!loading && (
+            <div className="flex items-center gap-1">
+              <CodeSnippetRunButton text={code} language={language} />
+              <CodeSnippetInsertButton text={code} language={language} />
+              <CodeSnippetCopyButton text={code} language={language} />
+            </div>
+          )}
         </div>
 
         <div
