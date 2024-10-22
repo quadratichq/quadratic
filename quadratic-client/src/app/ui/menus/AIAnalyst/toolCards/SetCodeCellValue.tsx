@@ -6,7 +6,6 @@ import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { useMemo } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { z } from 'zod';
 
@@ -37,18 +36,17 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     []
   );
 
-  const toolArgs = useMemo(() => {
-    try {
-      const argsObject = JSON.parse(args);
-      return aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(argsObject);
-    } catch (error) {
-      console.error('[SetCodeCellValue] Failed to parse args: ', error);
-      return { success: false, error, data: undefined };
-    }
-  }, [args]);
-
   if (loading) {
     return <div className="flex items-center">Loading SetCodeCellValue...</div>;
+  }
+
+  let toolArgs;
+  try {
+    const argsObject = JSON.parse(args);
+    toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(argsObject);
+  } catch (error) {
+    console.error('[SetCodeCellValue] Failed to parse args: ', error);
+    return <div className="flex items-center">Error in SetCodeCellValue</div>;
   }
 
   if (!toolArgs.success || !toolArgs.data) {
