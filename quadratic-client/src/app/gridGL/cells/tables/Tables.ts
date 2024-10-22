@@ -184,7 +184,7 @@ export class Tables extends Container<Table> {
       this.renameDataTable.showTableName();
       this.renameDataTable.showColumnHeaders();
       if (this.activeTable !== this.renameDataTable) {
-        this.renameDataTable.hideActive();
+        this.hoverTable = this.renameDataTable;
       }
       this.renameDataTable = undefined;
     }
