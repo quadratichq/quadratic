@@ -37,7 +37,11 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   );
 
   if (loading) {
-    return <div className="flex items-center">Loading SetCodeCellValue...</div>;
+    return (
+      <div className="mx-2 my-1 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow">
+        Loading SetCodeCellValue...
+      </div>
+    );
   }
 
   let toolArgs;
@@ -46,11 +50,19 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(argsObject);
   } catch (error) {
     console.error('[SetCodeCellValue] Failed to parse args: ', error);
-    return <div className="flex items-center">Error in SetCodeCellValue</div>;
+    return (
+      <div className="mx-2 my-1 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow">
+        Error in SetCodeCellValue
+      </div>
+    );
   }
 
   if (!toolArgs.success || !toolArgs.data) {
-    return <div className="flex items-center">Error in SetCodeCellValue</div>;
+    return (
+      <div className="mx-2 my-1 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow">
+        Error in SetCodeCellValue
+      </div>
+    );
   }
 
   return (
