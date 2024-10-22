@@ -15,7 +15,7 @@ export const MODEL_OPTIONS: {
     stream: true,
     enabled: true,
   },
-  'claude-3-5-sonnet-20240620': {
+  'claude-3-5-sonnet-latest': {
     displayName: 'Anthropic: claude-3.5-sonnet',
     temperature: 0,
     stream: true,

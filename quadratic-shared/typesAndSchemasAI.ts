@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const AnthropicModelSchema = z.enum(['claude-3-5-sonnet-20240620']).default('claude-3-5-sonnet-20240620');
+export const AnthropicModelSchema = z.enum(['claude-3-5-sonnet-latest']).default('claude-3-5-sonnet-latest');
 export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 
 export const OpenAIModelSchema = z.enum(['gpt-4o', 'o1-preview']).default('gpt-4o');
