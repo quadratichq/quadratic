@@ -1,3 +1,5 @@
+import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { CSVImportSettings } from '@/app/ui/components/CSVImportSettings';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
@@ -155,6 +157,9 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
       throw error;
     });
 
+  // Initialize Rust client
+  await initRustClient();
+
   return { teams, userMakingRequest, eduStatus, initialActiveTeamUuid, activeTeam };
 };
 export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData;
@@ -230,6 +235,7 @@ export const Component = () => {
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
         <NewFileDialogWrapper />
+        <CSVImportSettings />
         <ImportProgressList />
       </TooltipProvider>
     </RecoilRoot>
