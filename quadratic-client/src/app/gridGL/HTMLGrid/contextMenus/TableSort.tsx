@@ -8,7 +8,6 @@ export const TableSort = () => {
 
   const onClose = useCallback(
     (open: boolean) => {
-      debugger;
       if (!open) {
         setContextMenu({});
       }
@@ -17,7 +16,7 @@ export const TableSort = () => {
   );
 
   const open = contextMenu?.type === ContextMenuType.TableSort;
-  console.log(contextMenu?.type);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>

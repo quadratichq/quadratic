@@ -34,9 +34,17 @@ export const PixiRename = (props: Props) => {
     focusGrid();
   }, [onClose]);
 
+  // Validates the input value.
+  const validate = (value: string): boolean => {
+    if (value.trim().length === 0) {
+      return false;
+    }
+    return true;
+  };
+
   const saveAndClose = useCallback(() => {
     if (closed.current === true) return;
-    if (ref.current?.value !== defaultValue) {
+    if (ref.current?.value !== defaultValue && validate(ref.current?.value ?? '')) {
       onSave(ref.current?.value ?? '');
     }
     onClose();
@@ -97,6 +105,19 @@ export const PixiRename = (props: Props) => {
     }
   }, [className]);
 
+  // Need to catch the Blur event via useEffect since the Input goes away when
+  // the context menu closes (eg, via a click outside the Input)
+  useEffect(() => {
+    const input = ref.current;
+    return () => {
+      if (!closed.current && input) {
+        if (input.value !== defaultValue && validate(input.value)) {
+          onSave(input.value);
+        }
+      }
+    };
+  }, [onSave, defaultValue]);
+
   if (!position) return null;
 
   return (
@@ -112,7 +133,6 @@ export const PixiRename = (props: Props) => {
         ...styles,
       }}
       onKeyDown={onKeyDown}
-      onBlur={saveAndClose}
       onChange={onChange}
       defaultValue={defaultValue}
     />
