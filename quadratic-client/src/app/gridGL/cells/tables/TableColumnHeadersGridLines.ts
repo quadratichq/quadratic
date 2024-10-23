@@ -22,7 +22,7 @@ export class TableColumnHeadersGridLines extends Graphics {
       if (!currentLineStyle) return;
 
       lines.forEach((line, index) => {
-        if (pixiApp.cellsSheet().tables.isActive(this.table)) {
+        if (pixiApp.cellsSheet().tables.isActive(this.table) && (index === 0 || index === lines.length - 1)) {
           this.lineStyle({
             color: getCSSVariableTint('primary'),
             width: 2,
