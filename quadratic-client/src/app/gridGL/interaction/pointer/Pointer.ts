@@ -100,10 +100,10 @@ export class Pointer {
       this.pointerImages.pointerDown(world) ||
       this.pointerCellMoving.pointerDown(event) ||
       this.pointerHtmlCells.pointerDown(e) ||
+      this.pointerTable.pointerDown(world, event) ||
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerLink.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
-      this.pointerTable.pointerDown(world, event) ||
       this.pointerDown.pointerDown(world, event);
 
     this.updateCursor();
@@ -125,12 +125,12 @@ export class Pointer {
       this.pointerImages.pointerMove(world) ||
       this.pointerCellMoving.pointerMove(event, world) ||
       this.pointerHtmlCells.pointerMove(e) ||
+      this.pointerTable.pointerMove(world) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world, event) ||
       this.pointerCursor.pointerMove(world, event) ||
-      this.pointerLink.pointerMove(world, event) ||
-      this.pointerTable.pointerMove(world);
+      this.pointerLink.pointerMove(world, event);
 
     this.updateCursor();
   };

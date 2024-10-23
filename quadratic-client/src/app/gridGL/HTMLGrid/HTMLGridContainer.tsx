@@ -18,7 +18,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Following } from '@/app/ui/components/Following';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { SuggestionDropDown } from './SuggestionDropdown';
-import { TableSort } from '@/app/gridGL/HTMLGrid/contextMenus/TableSort';
+import { TableSort } from '@/app/gridGL/HTMLGrid/contextMenus/tableSort/TableSort';
 
 interface Props {
   parent?: HTMLDivElement;

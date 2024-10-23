@@ -5,6 +5,7 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeader } from '@/app/gridGL/cells/tables/TableColumnHeader';
 import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsDataTableColumn, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -13,9 +14,9 @@ import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 export class TableColumnHeaders extends Container {
   private table: Table;
   private background: Graphics;
-  private columns: Container<TableColumnHeader>;
   private headerHeight = 0;
 
+  columns: Container<TableColumnHeader>;
   tableCursor: string | undefined;
 
   constructor(table: Table) {
@@ -25,13 +26,13 @@ export class TableColumnHeaders extends Container {
     this.columns = this.addChild(new Container<TableColumnHeader>());
   }
 
-  private drawBackground() {
+  private drawBackground = () => {
     this.background.clear();
     const color = getCSSVariableTint('table-column-header-background');
     this.background.beginFill(color);
     this.background.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.headerHeight));
     this.background.endFill();
-  }
+  };
 
   private onSortPressed(column: JsDataTableColumn) {
     // todo: once Rust is fixed, this should be the SortDirection enum
@@ -63,28 +64,6 @@ export class TableColumnHeaders extends Container {
       newOrder,
       sheets.getCursorPosition()
     );
-
-    // todo: once Rust is fixed, this should be the SortDirection enum
-    // todo: not sure if this is worthwhile
-    // let newOrderRust: SortDirection;
-    // switch (newOrder) {
-    //   case 'asc':
-    //     newOrderRust = 'Ascending';
-    //     break;
-    //   case 'desc':
-    //     newOrderRust = 'Descending';
-    //     break;
-    //   case 'none':
-    //     newOrderRust = 'None';
-    //     break;
-    // }
-
-    // // we optimistically update the Sort array while we wait for core to finish the sort
-    // table.sort = table.sort
-    //   ? table.sort.map((s) => (s.column_index === column.valueIndex ? { ...s, direction: newOrderRust } : s))
-    //   : null;
-    // this.createColumnHeaders();
-    // pixiApp.setViewportDirty();
   }
 
   private createColumnHeaders() {
@@ -93,7 +72,6 @@ export class TableColumnHeaders extends Container {
       this.columns.visible = false;
       return;
     }
-    this.columns.visible = true;
     let x = 0;
     const codeCell = this.table.codeCell;
     codeCell.column_names.forEach((column, index) => {
@@ -127,7 +105,10 @@ export class TableColumnHeaders extends Container {
   }
 
   pointerMove(world: Point): boolean {
-    const found = this.columns.children.find((column) => column.pointerMove(world));
+    const adjustedWorld = world.clone();
+    // need to adjust the y position in the case of sticky headers
+    adjustedWorld.y -= this.y ? this.y - this.table.y : 0;
+    const found = this.columns.children.find((column) => column.pointerMove(adjustedWorld));
     if (!found) {
       this.tableCursor = undefined;
     } else {
@@ -147,8 +128,11 @@ export class TableColumnHeaders extends Container {
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
+    const adjustedWorld = world.clone();
+    // need to adjust the y position in the case of sticky headers
+    adjustedWorld.y -= this.y ? this.y - this.table.y : 0;
     for (const column of this.columns.children) {
-      const result = column.pointerDown(world);
+      const result = column.pointerDown(adjustedWorld);
       if (result) {
         return result;
       }
@@ -159,7 +143,14 @@ export class TableColumnHeaders extends Container {
     if (index < 0 || index >= this.columns.children.length) {
       throw new Error('Invalid column header index in getColumnHeaderBounds');
     }
-    return this.columns.children[index]?.columnHeaderBounds;
+    const bounds = this.columns.children[index]?.columnHeaderBounds;
+    if (!bounds) {
+      throw new Error('Column header bounds not found in getColumnHeaderBounds');
+    }
+    // need to adjust the bounds in the case of sticky headers
+    const adjustedBounds = bounds.clone();
+    adjustedBounds.y -= this.y;
+    return adjustedBounds;
   }
 
   // Hides a column header
@@ -176,5 +167,22 @@ export class TableColumnHeaders extends Container {
   // Shows all column headers
   show() {
     this.columns.children.forEach((column) => (column.visible = true));
+  }
+
+  getSortDialogPosition(): Coordinate | undefined {
+    if (this.columns.children.length === 0) return;
+    const firstColumn = this.columns.children[0];
+    return { x: firstColumn.columnHeaderBounds.left, y: firstColumn.columnHeaderBounds.bottom + this.y };
+  }
+
+  getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
+    const lines: number[] = [];
+    this.columns.children.forEach((column, index) => {
+      lines.push(column.x);
+      if (index === this.columns.children.length - 1) {
+        lines.push(column.x + column.w);
+      }
+    });
+    return { y0: 0, y1: this.headerHeight, lines };
   }
 }

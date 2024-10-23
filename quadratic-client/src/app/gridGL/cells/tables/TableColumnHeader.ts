@@ -26,6 +26,8 @@ export class TableColumnHeader extends Container {
 
   sortButton?: Graphics;
   columnHeaderBounds: Rectangle;
+  w: number;
+  h: number;
 
   private onSortPressed: Function;
 
@@ -47,6 +49,8 @@ export class TableColumnHeader extends Container {
     this.index = index;
     this.onSortPressed = onSortPressed;
     this.columnHeaderBounds = new Rectangle(table.tableBounds.x + x, table.tableBounds.y, width, height);
+    this.w = width;
+    this.h = height;
     this.position.set(x, 0);
 
     const tint = getCSSVariableTint('table-column-header-foreground');
