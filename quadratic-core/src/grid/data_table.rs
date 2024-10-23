@@ -37,6 +37,11 @@ impl Grid {
             .flat_map(|sheet| sheet.data_tables.values().map(|table| &table.name))
             .collect::<Vec<_>>();
 
+        // short circuit if the name is unique
+        if !all_names.contains(&&name.to_string()) {
+            return name.to_string();
+        }
+
         let mut num = 1;
         let mut name = String::from("");
 

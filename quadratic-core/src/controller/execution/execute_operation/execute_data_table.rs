@@ -742,7 +742,7 @@ mod tests {
             name: updated_name.into(),
         };
         let mut transaction = PendingTransaction::default();
-        gc.execute_update_data_table_name(&mut transaction, op)
+        gc.execute_update_data_table_name(&mut transaction, op.clone())
             .unwrap();
 
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
@@ -756,9 +756,18 @@ mod tests {
         println!("Initial data table name: {}", &data_table.name);
 
         // redo, the value should be the updated name
-        execute_forward_operations(&mut gc, &mut transaction);
+        {
+            execute_forward_operations(&mut gc, &mut transaction);
+            let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+            assert_eq!(&data_table.name, updated_name);
+            println!("Updated data table name: {}", &data_table.name);
+        }
+
+        // ensure names are unique
+        let mut transaction = PendingTransaction::default();
+        gc.execute_update_data_table_name(&mut transaction, op)
+            .unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, updated_name);
-        println!("Updated data table name: {}", &data_table.name);
+        assert_eq!(&data_table.name, "My Table1")
     }
 }
