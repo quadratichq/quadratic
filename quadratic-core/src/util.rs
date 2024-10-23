@@ -205,12 +205,15 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
     format!("{prefix} {i}")
 }
 
-pub fn unique_name(name: &str, already_used: &[&str]) -> String {
+/// Returns a unique name by appending numbers to the base name if the name is not unique.
+/// Starts at 1, and checks if the name is unique, then 2, etc.
+/// If `require_number` is true, the name will always have an appended number.
+pub fn unique_name(name: &str, all_names: &[&str], require_number: bool) -> String {
     let re = Regex::new(r"\d+$").expect("regex should compile");
     let base = re.replace(&name, "");
 
     // short circuit if the name is unique
-    if !already_used.contains(&&name) {
+    if !all_names.contains(&&name) {
         return name.to_string();
     }
 
@@ -220,8 +223,10 @@ pub fn unique_name(name: &str, already_used: &[&str]) -> String {
 
     while name == "" {
         let new_name = format!("{}{}", base, num);
+        let new_name_alt = format!("{} {}", base, num);
+        let new_names = [new_name.as_str(), new_name_alt.as_str()];
 
-        if !already_used.contains(&new_name.as_str()) {
+        if !all_names.iter().any(|item| new_names.contains(item)) {
             name = new_name;
         }
 

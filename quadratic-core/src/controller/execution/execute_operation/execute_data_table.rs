@@ -332,7 +332,7 @@ impl GridController {
         } = op
         {
             let sheet_id = sheet_pos.sheet_id;
-            let name = self.grid.unique_data_table_name(name);
+            let name = self.grid.unique_data_table_name(name, false);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;

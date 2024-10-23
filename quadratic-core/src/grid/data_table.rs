@@ -27,18 +27,23 @@ use ts_rs::TS;
 use super::Grid;
 
 impl Grid {
-    pub fn unique_data_table_name(&self, name: &str) -> String {
+    pub fn unique_data_table_name(&self, name: &str, require_number: bool) -> String {
         let all_names = &self
             .sheets()
             .iter()
             .flat_map(|sheet| sheet.data_tables.values().map(|table| table.name.as_str()))
             .collect_vec();
 
-        return unique_name(name, all_names);
+        return unique_name(name, all_names, require_number);
     }
 
-    pub fn update_data_table_name(&mut self, sheet_pos: SheetPos, name: &str) -> Result<()> {
-        let unique_name = self.unique_data_table_name(name);
+    pub fn update_data_table_name(
+        &mut self,
+        sheet_pos: SheetPos,
+        name: &str,
+        require_number: bool,
+    ) -> Result<()> {
+        let unique_name = self.unique_data_table_name(name, require_number);
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
             .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
@@ -49,7 +54,7 @@ impl Grid {
     }
 
     pub fn next_data_table_name(&self) -> String {
-        self.unique_data_table_name("Table")
+        self.unique_data_table_name("Table", true)
     }
 }
 
@@ -110,7 +115,7 @@ pub struct DataTable {
 
 impl From<(Import, Array, &Grid)> for DataTable {
     fn from((import, cell_values, grid): (Import, Array, &Grid)) -> Self {
-        let name = grid.unique_data_table_name(&import.file_name);
+        let name = grid.unique_data_table_name(&import.file_name, false);
 
         DataTable::new(
             DataTableKind::Import(import),
@@ -268,6 +273,14 @@ impl DataTable {
         display: bool,
     ) -> anyhow::Result<()> {
         self.check_index(index, true)?;
+        // let all_names = &self
+        //     .columns
+        //     .as_ref()
+        //     .unwrap()
+        //     .iter()
+        //     .map(|column| column.name.to_string().to_owned().as_str())
+        //     .collect_vec();
+        // let name = unique_name(&name, all_names);
 
         self.columns
             .as_mut()
