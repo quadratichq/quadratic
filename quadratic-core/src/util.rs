@@ -3,7 +3,12 @@ use std::ops::Range;
 
 use chrono::Utc;
 use itertools::Itertools;
+use lazy_static::lazy_static;
 use regex::Regex;
+
+lazy_static! {
+    pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
+}
 
 pub(crate) mod btreemap_serde {
     use std::collections::{BTreeMap, HashMap};
@@ -209,11 +214,12 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
 /// Starts at 1, and checks if the name is unique, then 2, etc.
 /// If `require_number` is true, the name will always have an appended number.
 pub fn unique_name(name: &str, all_names: &[&str], require_number: bool) -> String {
-    let re = Regex::new(r"\d+$").expect("regex should compile");
-    let base = re.replace(&name, "");
+    let base = MATCH_NUMBERS.replace(&name, "");
+    let contains_number = base != name;
+    let should_short_circuit = !(require_number && !contains_number);
 
     // short circuit if the name is unique
-    if !all_names.contains(&&name) {
+    if should_short_circuit && !all_names.contains(&&name) {
         return name.to_string();
     }
 
