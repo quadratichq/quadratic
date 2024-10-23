@@ -225,6 +225,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         minHeight: '2rem',
         flex: '2',
       }}
+      className="dark-mode-hack"
     >
       <Editor
         height="100%"

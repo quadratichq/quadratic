@@ -69,3 +69,9 @@ a {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+/* These are little hacks for dark mode until we have better solutions in place */
+.dark #QuadraticCanvasID,
+.dark .dark-mode-hack {
+  filter: invert(1) hue-rotate(185deg);
+}

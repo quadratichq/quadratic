@@ -93,9 +93,8 @@ export function ReturnTypeInspector() {
 
   return (
     <div
-      className="flex gap-6 whitespace-pre-wrap px-6 py-2 outline-none"
+      className="flex gap-6 whitespace-pre-wrap px-6 py-2 text-muted-foreground outline-none"
       style={{
-        color: theme.palette.text.secondary,
         ...codeEditorBaseStyles,
       }}
     >

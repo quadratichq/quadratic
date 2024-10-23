@@ -253,7 +253,7 @@ How can I help you?
       </div>
 
       <form
-        className="z-10 m-3 rounded-lg bg-slate-100"
+        className="z-10 m-3 rounded-lg bg-accent"
         onSubmit={(e) => {
           e.preventDefault();
         }}
