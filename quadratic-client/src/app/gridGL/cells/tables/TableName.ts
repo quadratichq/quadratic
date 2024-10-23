@@ -23,13 +23,11 @@ export class TableName extends Container {
   private symbol: Sprite | undefined;
   private text: BitmapText;
   private dropdown: Sprite;
-
-  tableNameBounds: Rectangle;
+  private backgroundWidth = 0;
 
   constructor(table: Table) {
     super();
     this.table = table;
-    this.tableNameBounds = new Rectangle(0, 0, 0, CELL_HEIGHT);
     this.background = this.addChild(new Graphics());
     this.text = this.addChild(new BitmapText('', { fontSize: TABLE_NAME_FONT_SIZE, fontName: 'OpenSans-Bold' }));
     this.symbol = this.addChild(new Sprite());
@@ -57,7 +55,7 @@ export class TableName extends Container {
     this.background.drawShape(new Rectangle(0, -CELL_HEIGHT, width, CELL_HEIGHT));
     this.background.endFill();
 
-    this.tableNameBounds.width = width;
+    this.backgroundWidth = width;
   }
 
   private drawSymbol() {
@@ -109,17 +107,27 @@ export class TableName extends Container {
     this.drawText();
     this.drawDropdown();
     this.drawBackground();
+  }
 
-    this.tableNameBounds.x = this.table.tableBounds.x;
-    this.tableNameBounds.y = this.table.tableBounds.y - CELL_HEIGHT;
+  get tableNameBounds(): Rectangle {
+    const rect = new Rectangle(0, 0, this.backgroundWidth, CELL_HEIGHT);
+    if (this.table.inOverHeadings) {
+      rect.x = this.table.columnHeaders.x;
+      rect.y = this.table.columnHeaders.y - CELL_HEIGHT;
+    } else {
+      rect.x = this.table.tableBounds.x;
+      rect.y = this.table.tableBounds.y - CELL_HEIGHT;
+    }
+    return rect;
   }
 
   // Returns the table name bounds scaled to the viewport.
   getScaled() {
-    const scaled = this.tableNameBounds.clone();
+    const scaled = this.tableNameBounds;
+    const originalHeight = scaled.height;
     scaled.width /= pixiApp.viewport.scaled;
     scaled.height /= pixiApp.viewport.scaled;
-    scaled.y -= scaled.height - this.tableNameBounds.height;
+    scaled.y -= scaled.height - originalHeight;
     return scaled;
   }
 

@@ -18,10 +18,10 @@ export class Table extends Container {
 
   // Both columnHeaders and tableName are either children of Table or, when they
   // are sticky, children of pixiApp.overHeadings.
-  private columnHeaders: TableColumnHeaders;
   private tableName: TableName;
-
   private gridLines: TableColumnHeadersGridLines;
+
+  columnHeaders: TableColumnHeaders;
 
   // whether the column headers are in the overHeadings container
   inOverHeadings = false;
@@ -207,6 +207,9 @@ export class Table extends Container {
     const name = this.tableName.intersects(world);
     if (name?.type === 'dropdown') {
       this.tableCursor = 'pointer';
+      return true;
+    } else if (name?.type === 'table-name') {
+      this.tableCursor = undefined;
       return true;
     }
     const result = this.columnHeaders.pointerMove(world);
