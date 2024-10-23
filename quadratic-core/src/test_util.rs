@@ -14,6 +14,26 @@ use tabled::{
 /// Run an assertion that a cell value is equal to the given value
 #[track_caller]
 #[cfg(test)]
+pub fn assert_cell_value(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x: i64,
+    y: i64,
+    value: CellValue,
+) {
+    let sheet = grid_controller.sheet(sheet_id);
+    let cell_value = sheet.cell_value(Pos { x, y }).unwrap();
+
+    assert_eq!(
+        value, cell_value,
+        "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
+        x, y, value, cell_value
+    );
+}
+
+/// Run an assertion that a cell value is equal to the given value
+#[track_caller]
+#[cfg(test)]
 pub fn assert_display_cell_value(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -72,8 +92,6 @@ pub fn assert_data_table_cell_value(
     let mut pos = Pos { x, y };
     let data_table_pos = sheet.first_data_table_within(pos).unwrap();
     let data_table = sheet.data_table_result(data_table_pos).unwrap();
-
-    println!("Data table at {:?}", data_table);
 
     if data_table.show_header && !data_table.header_is_first_row {
         pos.y += 1;
@@ -237,7 +255,7 @@ pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rec
     if let Some(sheet) = grid_controller.try_sheet(sheet_id) {
         let data_table = sheet.data_table(rect.min).unwrap();
 
-        let max = rect.max.y - rect.min.y;
+        let max = rect.max.y - rect.min.y + 1;
         crate::grid::data_table::test::pretty_print_data_table(
             data_table,
             None,

@@ -22,17 +22,14 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let import = Import::new("".into());
         let kind = DataTableKind::Import(import.to_owned());
-        let name = self.grid.next_data_table_name();
-        // let cell_value = CellValue::Import(import);
+        let cell_value = CellValue::Import(import);
 
         Ok(vec![
             Operation::SwitchDataTableKind { sheet_pos, kind },
-            Operation::UpdateDataTableName { sheet_pos, name },
-            // TODO(ddimaria): add this back in
-            // Operation::SetCellValues {
-            //     sheet_pos,
-            //     values: cell_value.into(),
-            // },
+            Operation::SetCellValues {
+                sheet_pos,
+                values: cell_value.into(),
+            },
         ])
     }
 

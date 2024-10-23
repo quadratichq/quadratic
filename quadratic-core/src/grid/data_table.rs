@@ -9,13 +9,13 @@ use std::num::NonZeroU32;
 use crate::cellvalue::Import;
 use crate::grid::js_types::JsDataTableColumn;
 use crate::grid::CodeRun;
+use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
 use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use tabled::{
@@ -28,29 +28,13 @@ use super::Grid;
 
 impl Grid {
     pub fn unique_data_table_name(&self, name: &str) -> String {
-        let re = Regex::new(r"\d+$").unwrap();
-        let base = re.replace(&name, "");
-
-        let all_names = self
+        let all_names = &self
             .sheets()
             .iter()
-            .flat_map(|sheet| sheet.data_tables.values().map(|table| &table.name))
-            .collect::<Vec<_>>();
+            .flat_map(|sheet| sheet.data_tables.values().map(|table| table.name.as_str()))
+            .collect_vec();
 
-        let mut num = 1;
-        let mut name = String::from("");
-
-        while name == "" {
-            let new_name = format!("{}{}", base, num);
-
-            if !all_names.contains(&&new_name) {
-                name = new_name;
-            }
-
-            num += 1;
-        }
-
-        name
+        return unique_name(name, all_names);
     }
 
     pub fn update_data_table_name(&mut self, sheet_pos: SheetPos, name: &str) -> Result<()> {

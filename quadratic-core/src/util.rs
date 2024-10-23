@@ -3,6 +3,7 @@ use std::ops::Range;
 
 use chrono::Utc;
 use itertools::Itertools;
+use regex::Regex;
 
 pub(crate) mod btreemap_serde {
     use std::collections::{BTreeMap, HashMap};
@@ -202,6 +203,32 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
         None => 1,
     };
     format!("{prefix} {i}")
+}
+
+pub fn unique_name(name: &str, already_used: &[&str]) -> String {
+    let re = Regex::new(r"\d+$").expect("regex should compile");
+    let base = re.replace(&name, "");
+
+    // short circuit if the name is unique
+    if !already_used.contains(&&name) {
+        return name.to_string();
+    }
+
+    // if not unique, try appending numbers until we find a unique name
+    let mut num = 1;
+    let mut name = String::from("");
+
+    while name == "" {
+        let new_name = format!("{}{}", base, num);
+
+        if !already_used.contains(&new_name.as_str()) {
+            name = new_name;
+        }
+
+        num += 1;
+    }
+
+    name
 }
 
 pub fn maybe_reverse_range(
