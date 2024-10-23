@@ -332,13 +332,13 @@ impl GridController {
         } = op
         {
             let sheet_id = sheet_pos.sheet_id;
+            let name = self.grid.unique_data_table_name(name);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
             let data_table = sheet.data_table_mut(data_table_pos)?;
 
             let old_name = data_table.name.to_owned();
-            data_table.name = name.to_owned();
-
+            data_table.name = name;
             let data_table_rect = data_table
                 .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
