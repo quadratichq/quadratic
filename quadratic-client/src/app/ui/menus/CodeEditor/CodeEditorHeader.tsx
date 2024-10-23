@@ -189,7 +189,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
         )}
       </div>
 
-      <div className="ml-auto flex flex-shrink-0 items-center gap-0">
+      <div className="ml-auto flex flex-shrink-0 items-center gap-1 py-1">
         {isRunningComputation && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -215,8 +215,8 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
                       <Button
                         id="QuadraticCodeEditorRunButtonID"
                         onClick={saveAndRunCell}
-                        size="icon"
-                        className="mx-2 rounded-full"
+                        size="icon-sm"
+                        className="mx-1 rounded-full"
                       >
                         <SaveAndRunIcon />
                       </Button>
@@ -229,12 +229,12 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
                 ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button onClick={cancelRun} size="icon" className="mx-2 rounded-full">
+                      <Button onClick={cancelRun} size="icon-sm" className="mx-1 rounded-full">
                         <SaveAndRunStopIcon />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      Cancel execution <span className="opacity-50">({`${KeyboardSymbols.Command} ESC`})</span>
+                      Cancel execution <span className="opacity-50">({`${KeyboardSymbols.Command} Esc`})</span>
                     </TooltipContent>
                   </Tooltip>
                 )}
@@ -249,7 +249,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
               variant="ghost"
               id="QuadraticCodeEditorCloseButtonID"
               onClick={() => closeEditor(false)}
-              size="icon"
+              size="icon-sm"
               className="text-muted-foreground"
             >
               <CloseIcon />
