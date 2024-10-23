@@ -34,6 +34,7 @@ import { Link } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
+const toggleAIChat = defaultActionSpec[Action.ToggleAIChat];
 
 export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
@@ -72,7 +73,7 @@ export const QuadraticSidebar = () => {
 
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
-          <SidebarTooltip label="AI Analyst">
+          <SidebarTooltip label={toggleAIChat.label} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIChat)}>
             <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
               <AIIcon />
             </SidebarToggle>

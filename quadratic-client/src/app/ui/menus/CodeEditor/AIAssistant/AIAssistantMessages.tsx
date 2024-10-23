@@ -1,17 +1,16 @@
-import { isAnthropicModel } from '@/app/ai/tools/helpers';
 import { aiAssistantMessagesAtom } from '@/app/atoms/codeEditorAtom';
 import { debugShowAIAssistantInternalContext } from '@/app/debugFlags';
 import { colors } from '@/app/theme/colors';
-import { Anthropic, OpenAI } from '@/app/ui/icons';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
-import { useRootRouteLoaderData } from '@/routes/_root';
-import { Avatar } from '@/shared/components/Avatar';
+import { EditIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export function AIAssistantMessages() {
   const messages = useRecoilValue(aiAssistantMessagesAtom);
-  const { loggedInUser: user } = useRootRouteLoaderData();
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement | null) => {
@@ -63,35 +62,26 @@ export function AIAssistantMessages() {
         .map((message, index) => (
           <div
             key={index}
+            className={cn('group relative my-4', message.role === 'user' && 'rounded bg-accent px-2 py-2')}
+            // For debugging internal context
             style={{
-              borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
-              marginTop: '1rem',
-              paddingTop: index !== 0 ? '1rem' : '0',
-              backgroundColor: message.internalContext ? colors.lightGray : 'white',
-              borderRadius: '0.5rem',
+              ...(message.internalContext ? { backgroundColor: colors.lightGray } : {}),
             }}
           >
-            {message.role === 'user' ? (
-              <Avatar
-                src={user?.picture}
-                alt={user?.name}
-                style={{
-                  backgroundColor: colors.quadraticSecondary,
-                  marginBottom: '0.5rem',
-                }}
-              >
-                {user?.name}
-              </Avatar>
-            ) : (
-              <Avatar
-                alt="AI Assistant"
-                style={{
-                  backgroundColor: 'white',
-                  marginBottom: '0.5rem',
-                }}
-              >
-                {isAnthropicModel(message.model) ? <Anthropic /> : <OpenAI />}
-              </Avatar>
+            {/* TODO: Edit button for user messages */}
+            {message.role === 'user' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="absolute right-2 top-1 hidden text-muted-foreground group-hover:flex"
+                  >
+                    <EditIcon />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit prompt</TooltipContent>
+              </Tooltip>
             )}
             <AICodeBlockParser input={message.content} />
           </div>

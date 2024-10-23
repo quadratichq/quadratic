@@ -161,7 +161,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
   return (
-    <div className="flex items-center px-3 py-1">
+    <div className="flex items-center py-1 pl-3 pr-2">
       <div
         className={cn(
           `relative`,

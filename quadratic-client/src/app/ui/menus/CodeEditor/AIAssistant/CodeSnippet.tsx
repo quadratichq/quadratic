@@ -1,34 +1,25 @@
-import {
-  aiAssistantLoadingAtom,
-  codeEditorAtom,
-  codeEditorCodeCellAtom,
-  codeEditorModifiedEditorContentAtom,
-} from '@/app/atoms/codeEditorAtom';
+import { aiAssistantLoadingAtom, codeEditorAtom, codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import {
-  CopyIcon,
-  DiffIcon,
-  ExpandCircleDownIcon,
-  ExpandCircleUpIcon,
-  SaveAndRunIcon,
-} from '@/shared/components/Icons';
+import { CollapseIcon, CopyIcon, DiffIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import Editor from '@monaco-editor/react';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
+const MAX_LINES = 8;
 interface CodeSnippetProps {
   code: string;
   language: string;
 }
 
 export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) {
-  const loading = useRecoilValue(aiAssistantLoadingAtom);
+  const isLoading = useRecoilValue(aiAssistantLoadingAtom);
   const syntax = useMemo(() => {
     const lowerCaseLanguage = language.toLowerCase();
     if (
@@ -42,34 +33,60 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
     return lowerCaseLanguage;
   }, [language]);
   const numberOfLines = useMemo(() => code.split('\n').length, [code]);
-  const showAsCollapsed = useMemo(() => numberOfLines > 10, [numberOfLines]);
-  const [collapsed, setCollapsed] = useState(true);
+  const [isCollapsible, setIsCollapsible] = useState(numberOfLines > MAX_LINES);
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
+  useEffect(() => {
+    if (numberOfLines > MAX_LINES) {
+      setIsCollapsible(true);
+    }
+  }, [numberOfLines]);
 
   return (
     <div className="relative">
       <div className="overflow-hidden rounded border shadow-sm">
-        <div className="flex flex-row items-center justify-between gap-2 bg-accent px-3 py-1">
-          <div className="lowercase text-muted-foreground">{language}</div>
-
-          {!loading && (
-            <div className="flex items-center gap-1">
+        <div className="relative flex flex-row">
+          <button
+            className="relative flex w-full flex-row items-center py-2 pl-2 pr-3 font-medium lowercase [&:not(:disabled)]:hover:bg-accent"
+            onClick={() => setIsCollapsed((prev) => !prev)}
+            disabled={!isCollapsible}
+            aria-label={isCollapsible ? 'Collapse code' : 'Expand code'}
+          >
+            <LanguageIcon language={language} />
+            <span className="ml-2 mr-1">
+              {language} (<span className="tabular-nums">{numberOfLines}</span> lines)
+            </span>
+            {isCollapsible &&
+              (isCollapsed ? (
+                <CollapseIcon className="mr-0.5 text-muted-foreground opacity-50" />
+              ) : (
+                <ExpandIcon className="mr-0.5 text-muted-foreground opacity-50" />
+              ))}
+          </button>
+          {!isLoading && (
+            <div className="absolute right-2 top-1.5 flex items-center gap-1">
               <CodeSnippetRunButton text={code} language={language} />
-              <CodeSnippetInsertButton text={code} language={language} />
+              {/* <CodeSnippetInsertButton text={code} language={language} /> */}
               <CodeSnippetCopyButton text={code} language={language} />
             </div>
           )}
         </div>
 
         <div
-          className="relative pt-2"
+          className={cn(
+            isCollapsible &&
+              isCollapsed &&
+              "relative after:absolute after:inset-0 after:bg-gradient-to-t after:from-white after:to-transparent after:content-['']"
+          )}
           style={{
             ...codeEditorBaseStyles,
             // calculate height based on number of lines
-            height: `${Math.ceil(numberOfLines) * 19 + 16}px`,
-            maxHeight: collapsed ? '148px' : '100%',
+            height: calculateHeightInPx(numberOfLines),
+            maxHeight: isCollapsed ? calculateHeightInPx(MAX_LINES) : undefined,
           }}
         >
           <Editor
+            className="border-t border-border pt-2"
             language={syntax}
             value={code}
             height="100%"
@@ -94,7 +111,8 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
           />
         </div>
       </div>
-      {showAsCollapsed && (
+      {
+        /*showAsCollapsed && (
         <div
           className={cn(
             ' flex  flex-col items-center justify-end rounded bg-gradient-to-t from-white from-50% pb-1',
@@ -105,7 +123,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
             variant="ghost"
             size="sm"
             className="gap-1 text-muted-foreground"
-            onClick={() => setCollapsed((prev) => !prev)}
+            onClick={() => setIsCollapsed((prev) => !prev)}
           >
             {collapsed ? (
               <>
@@ -120,7 +138,8 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
             )}
           </Button>
         </div>
-      )}
+      )*/ ''
+      }
     </div>
   );
 }
@@ -130,6 +149,7 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
     ({ snapshot, set }) =>
       async () => {
         mixpanel.track('[AI].code.run', { language });
+
         const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         quadraticCore.setCodeCellValue({
           sheetId: codeCell.sheetId,
@@ -139,10 +159,20 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
           language: codeCell.language,
           cursor: sheets.getCursorPosition(),
         });
-        const modifiedEditorContent = await snapshot.getPromise(codeEditorModifiedEditorContentAtom);
-        if (modifiedEditorContent) {
-          set(codeEditorModifiedEditorContentAtom, undefined);
-        }
+
+        // if (modifiedEditorContent) {
+        //   set(codeEditorModifiedEditorContentAtom, undefined);
+        // }
+        set(codeEditorAtom, (prev) => ({
+          ...prev,
+          modifiedEditorContent: text,
+          waitingForEditorClose: {
+            codeCell,
+            showCellTypeMenu: false,
+            initialCode: '',
+            inlineEditor: false,
+          },
+        }));
       },
     [language, text]
   );
@@ -159,7 +189,7 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
           <SaveAndRunIcon />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Save & run</TooltipContent>
+      <TooltipContent>Apply & run</TooltipContent>
     </Tooltip>
   );
 }
@@ -239,4 +269,8 @@ function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps[
       </TooltipContent>
     </Tooltip>
   );
+}
+
+function calculateHeightInPx(numberOfLines: number) {
+  return Math.ceil(numberOfLines) * 19 + 16 + 'px';
 }

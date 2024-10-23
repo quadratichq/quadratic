@@ -28,6 +28,7 @@ type ViewActionSpec = Pick<
   | Action.PageDown
   | Action.ShowGoToMenu
   | Action.ShowCellTypeMenu
+  | Action.ToggleAIChat
 >;
 
 export const viewActionsSpec: ViewActionSpec = {
@@ -174,6 +175,13 @@ export const viewActionsSpec: ViewActionSpec = {
     Icon: CodeIcon,
     run: () => {
       openCodeEditor();
+    },
+  },
+  [Action.ToggleAIChat]: {
+    label: 'Chat',
+    run: () => {
+      // TODO: wire this up to the recoil state
+      window.alert('Toggle AI chat');
     },
   },
 };
