@@ -12,6 +12,7 @@ import { getPresignedFileUrl } from '../../storage/storage';
 import { RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 import { getFilePermissions } from '../../utils/permissions';
+import { ApiError } from '../../utils/ApiError';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -111,7 +112,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const license = await licenseClient.check();
 
   if (!license) {
-    return res.status(500).json({ error: { message: 'Unable to retrieve license' } });
+    throw new ApiError(500, 'Unable to retrieve license');
   }
 
   // Get signed thumbnail URLs
