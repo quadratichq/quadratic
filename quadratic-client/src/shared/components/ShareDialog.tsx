@@ -648,6 +648,13 @@ function ManageUser({
   let activeRole = user.role;
   let error = undefined;
 
+  // If the user's role is being updated, show the optimistic value
+  if (fetcherUpdate.state !== 'idle' && isJsonObject(fetcherUpdate.json)) {
+    activeRole = fetcherUpdate.json.role as (typeof roles)[0];
+  } else if (fetcherUpdate.data && !fetcherUpdate.data.ok) {
+    error = 'Failed to update. Try again.';
+  }
+
   const label = useMemo(() => getRoleLabel(activeRole), [activeRole]);
 
   // If user is being deleted, hide them
@@ -656,13 +663,6 @@ function ManageUser({
     // If there was a failure to delete, show an error
   } else if (fetcherDelete.data && !fetcherDelete.data.ok) {
     error = 'Failed to delete. Try again.';
-  }
-
-  // If the user's role is being updated, show the optimistic value
-  if (fetcherUpdate.state !== 'idle' && isJsonObject(fetcherUpdate.json)) {
-    activeRole = fetcherUpdate.json.role as (typeof roles)[0];
-  } else if (fetcherUpdate.data && !fetcherUpdate.data.ok) {
-    error = 'Failed to update. Try again.';
   }
 
   return (
