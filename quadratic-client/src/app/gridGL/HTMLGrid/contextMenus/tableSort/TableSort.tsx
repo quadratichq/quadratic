@@ -14,7 +14,7 @@ export const TableSort = () => {
   const ref = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
-  const close = useCallback(() => {
+  const handleClose = useCallback(() => {
     setContextMenu({});
   }, [setContextMenu]);
 
@@ -30,6 +30,18 @@ export const TableSort = () => {
       setSort([{ column_index: -1, direction: 'None' }]);
     }
   }, [contextMenu.table]);
+
+  const handleSave = useCallback(() => {
+    if (contextMenu.table) {
+      const sortToSend = sort.filter((item) => item.direction !== 'None' && item.column_index !== -1);
+      // todo: need a fn to send the entire sorted data table
+      console.log(
+        `Sending table ${contextMenu.table.x},${contextMenu.table.y} with sort ${JSON.stringify(sortToSend)}`
+      );
+      // quadraticCore.sortDataTable(contextMenu.table, sort);
+    }
+    handleClose();
+  }, [contextMenu.table, sort, handleClose]);
 
   useEffect(() => {
     const changePosition = () => {
@@ -130,10 +142,10 @@ export const TableSort = () => {
         })}
       </div>
       <div className="mt-5 flex w-full justify-end gap-2">
-        <Button variant="secondary" onClick={close}>
+        <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
-        <Button>Ok</Button>
+        <Button onClick={handleSave}>Ok</Button>
       </div>
     </div>
   );
