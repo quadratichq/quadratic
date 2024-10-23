@@ -185,11 +185,12 @@ export class TableColumnHeaders extends Container {
   getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
     const lines: number[] = [];
     this.columns.children.forEach((column, index) => {
-      lines.push(this.table.x + column.columnHeaderBounds.left);
+      lines.push(column.columnHeaderBounds.left);
       if (index === this.columns.children.length - 1) {
-        lines.push(this.table.x + column.columnHeaderBounds.right);
+        lines.push(column.columnHeaderBounds.right);
       }
     });
-    return { y0: this.y, y1: this.y + this.headerHeight, lines };
+    console.log(lines);
+    return { y0: 0, y1: this.headerHeight, lines };
   }
 }

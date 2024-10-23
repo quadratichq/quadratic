@@ -261,4 +261,8 @@ export class Tables extends Container<Table> {
     }
     return table.getSortDialogPosition();
   }
+
+  isActive(table: Table): boolean {
+    return this.activeTable === table || this.hoverTable === table || this.contextMenuTable === table;
+  }
 }
