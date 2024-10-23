@@ -24,10 +24,13 @@ export const Component = () => {
   const canEdit = teamPermissions.includes('TEAM_EDIT');
   const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
 
-  const usersById: Record<number, { name: string | undefined; picture: string | undefined }> = users.reduce(
+  const usersById: Record<
+    number,
+    { name: string | undefined; picture: string | undefined; email: string | undefined }
+  > = users.reduce(
     (acc, user) => ({
       ...acc,
-      [user.id]: { name: user.name, picture: user.picture },
+      [user.id]: { name: user.name, picture: user.picture, email: user.email },
     }),
     {}
   );
@@ -70,7 +73,6 @@ export const Component = () => {
 
       <FilesList
         files={files.map(({ file, userMakingRequest }) => {
-          // Don't include the creator if it's the person logged in
           const creator = usersById[file.creatorId];
           return {
             name: file.name,

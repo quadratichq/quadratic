@@ -27,7 +27,9 @@ export type FilesListUserFile = {
   creator?: {
     name?: string;
     picture?: string;
+    email?: string;
   };
+  filterMatch?: 'file-name' | 'creator-name' | 'creator-email';
 };
 
 export function FilesList({
@@ -82,7 +84,31 @@ export function FilesList({
 
   // If the user has an active filter query, remove those
   if (filterValue) {
-    filesToRender = filesToRender.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()));
+    filesToRender = filesToRender
+      .map((file) => {
+        const { name, creator } = file;
+        const fileNameNormalized = name.toLowerCase();
+        const creatorNameNormalized = creator?.name?.toLowerCase() || '';
+        const creatorEmailNormalized = creator?.email?.toLowerCase() || '';
+        const filterValueNormalized = filterValue.toLowerCase();
+
+        let filterMatch: FilesListUserFile['filterMatch'] = undefined;
+        if (fileNameNormalized.includes(filterValueNormalized)) {
+          filterMatch = 'file-name';
+        } else if (creatorNameNormalized.includes(filterValueNormalized)) {
+          filterMatch = 'creator-name';
+        } else if (creatorEmailNormalized.includes(filterValueNormalized)) {
+          filterMatch = 'creator-email';
+        }
+
+        return filterMatch
+          ? {
+              ...file,
+              filterMatch,
+            }
+          : file;
+      })
+      .filter((item) => item.filterMatch);
   }
 
   // Sort 'em based on current prefs
@@ -129,6 +155,7 @@ export function FilesList({
             file={file}
             lazyLoad={i > 12}
             filterValue={filterValue}
+            setFilterValue={setFilterValue}
             activeShareMenuFileId={activeShareMenuFileId}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
             viewPreferences={viewPreferences}

@@ -4,12 +4,15 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { GlobeIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
+import { FilesListUserFile } from './FilesList';
 import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export function FilesListItemCore({
   name,
   description,
+  filterMatch,
   filterValue,
+  setFilterValue,
   creator,
   hasNetworkError,
   isShared,
@@ -18,19 +21,21 @@ export function FilesListItemCore({
 }: {
   name: string;
   description: string;
+  filterMatch?: FilesListUserFile['filterMatch'];
   filterValue: string;
+  setFilterValue?: Function;
   viewPreferences: ViewPreferences;
-  creator?: { name?: string; picture?: string };
+  creator?: FilesListUserFile['creator'];
   hasNetworkError?: boolean;
   isShared?: boolean;
   actions?: ReactNode;
 }) {
-  const __html = filterValue ? highlightMatchingString(name, filterValue) : name;
+  const __html = filterMatch === 'file-name' ? highlightMatchingString(name, filterValue) : name;
   const isGrid = viewPreferences.layout === Layout.Grid;
 
   return (
-    <div className={`flex w-full items-center gap-1`}>
-      <div className={`flex flex-1 items-center justify-between gap-1 overflow-hidden`}>
+    <div className={`flex w-full items-center`}>
+      <div className={`flex w-full items-center justify-between gap-3`}>
         <div className={cn(`flex-1 overflow-hidden`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
           <h2
             className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
@@ -50,11 +55,25 @@ export function FilesListItemCore({
             </p>
           )}
         </div>
-        {creator && creator.name && (
+        {creator && creator.name && setFilterValue && (
           <TooltipPopover label={`Created by ${creator.name}`}>
-            <Avatar alt={creator.name} src={creator.picture}>
-              {creator.name[0]}
-            </Avatar>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                // Toggle filtering by the creator's email based on the current filter match
+                setFilterValue(filterMatch && filterValue === creator.email ? '' : creator.email);
+              }}
+              className={cn(
+                'relative',
+                (filterMatch === 'creator-email' || filterMatch === 'creator-name') &&
+                  "after:absolute after:left-0 after:top-0 after:h-full after:w-full after:rounded-full  after:outline after:outline-4 after:outline-yellow-200 after:content-[''] dark:after:outline-yellow-700"
+              )}
+            >
+              <Avatar alt={creator.name} src={creator.picture}>
+                {creator.name[0]}
+              </Avatar>
+            </button>
           </TooltipPopover>
         )}
       </div>
@@ -68,7 +87,7 @@ function highlightMatchingString(str: string, search: string) {
   const searchWithEscapedParenthesis = search.replace('(', '\\(').replace(')', '\\)');
   const regex = new RegExp(searchWithEscapedParenthesis, 'gi'); // case insensitive matching
   const highlightedString = str.replace(regex, (match: string) => {
-    return `<b class="bg-yellow-100">${match}</b>`;
+    return `<b class="bg-yellow-100 dark:bg-yellow-700">${match}</b>`;
   });
   return highlightedString;
 }
