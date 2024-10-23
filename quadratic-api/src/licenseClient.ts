@@ -7,6 +7,7 @@ import { LicenseSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from './dbClient';
 import { LICENSE_API_URI, LICENSE_KEY } from './env-vars';
+import { encryptFromEnv, hash } from './utils/crypto';
 
 type LicenseResponse = z.infer<typeof LicenseSchema>;
 
@@ -31,9 +32,22 @@ export const licenseClient = {
     }
   },
   checkFromServer: async (): Promise<LicenseResponse | null> => {
+    // NOTE: Modifying this license check is violating the Quadratic Terms and Conditions and is stealing software, and we will come after you.
+    if (hash(LICENSE_KEY) === '2ef876ddfe6cc783b83ac63cbef0ae84e6807c69fa72066801f130706e2a935a') {
+      return licenseClient.adminLicenseResponse();
+    }
+
     const userCount = await dbClient.user.count();
 
     return licenseClient.post(userCount);
+  },
+  adminLicenseResponse: async (): Promise<LicenseResponse | null> => {
+    return {
+      limits: {
+        seats: 100000000000,
+      },
+      status: 'active',
+    };
   },
   check: async (): Promise<LicenseResponse | null> => {
     const currentTime = Date.now();
