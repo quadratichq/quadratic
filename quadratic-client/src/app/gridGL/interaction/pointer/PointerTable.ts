@@ -72,7 +72,7 @@ export class PointerTable {
   }
 
   pointerDown(world: Point, event: PointerEvent): boolean {
-    const tableDown = pixiApp.cellSheet().tables.pointerDown(world);
+    const tableDown = pixiApp.cellsSheet().tables.pointerDown(world);
     if (!tableDown?.table) return false;
 
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
@@ -102,8 +102,8 @@ export class PointerTable {
       clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
     }
-    const result = pixiApp.cellSheet().tables.pointerMove(world);
-    this.cursor = pixiApp.cellSheet().tables.tableCursor;
+    const result = pixiApp.cellsSheet().tables.pointerMove(world);
+    this.cursor = pixiApp.cellsSheet().tables.tableCursor;
     return result;
   }
 }

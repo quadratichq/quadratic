@@ -7,12 +7,12 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
+import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { BitmapText, Container, Graphics, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 
 export const TABLE_NAME_FONT_SIZE = 12;
 export const TABLE_NAME_PADDING = [4, 2];
 
-const TABLE_NAME_HEIGHT = 20;
 const DROPDOWN_PADDING = 10;
 const SYMBOL_SCALE = 0.5;
 const SYMBOL_PADDING = 5;
@@ -29,7 +29,7 @@ export class TableName extends Container {
   constructor(table: Table) {
     super();
     this.table = table;
-    this.tableNameBounds = new Rectangle(0, 0, 0, TABLE_NAME_HEIGHT);
+    this.tableNameBounds = new Rectangle(0, 0, 0, CELL_HEIGHT);
     this.background = this.addChild(new Graphics());
     this.text = this.addChild(new BitmapText('', { fontSize: TABLE_NAME_FONT_SIZE, fontName: 'OpenSans-Bold' }));
     this.symbol = this.addChild(new Sprite());
@@ -54,7 +54,7 @@ export class TableName extends Container {
       (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0);
     this.background.clear();
     this.background.beginFill(getCSSVariableTint('primary'));
-    this.background.drawShape(new Rectangle(0, -TABLE_NAME_HEIGHT, width, TABLE_NAME_HEIGHT));
+    this.background.drawShape(new Rectangle(0, -CELL_HEIGHT, width, CELL_HEIGHT));
     this.background.endFill();
 
     this.tableNameBounds.width = width;
@@ -69,10 +69,10 @@ export class TableName extends Container {
       this.symbol = getLanguageSymbol(this.table.codeCell.language, false);
       if (this.symbol) {
         this.addChild(this.symbol);
-        this.symbol.width = TABLE_NAME_HEIGHT * SYMBOL_SCALE;
+        this.symbol.width = CELL_HEIGHT * SYMBOL_SCALE;
         this.symbol.scale.y = this.symbol.scale.x;
         this.symbol.anchor.set(0, 0.5);
-        this.symbol.y = -TABLE_NAME_HEIGHT / 2;
+        this.symbol.y = -CELL_HEIGHT / 2;
         this.symbol.x = SYMBOL_PADDING;
         if (this.table.codeCell.language === 'Formula' || this.table.codeCell.language === 'Python') {
           this.symbol.tint = 0xffffff;
@@ -86,7 +86,7 @@ export class TableName extends Container {
     this.text.anchor.set(0, 0.5);
     this.text.position.set(
       TABLE_NAME_PADDING[0] + (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0),
-      -TABLE_NAME_HEIGHT / 2 + OPEN_SANS_FIX.y
+      -CELL_HEIGHT / 2 + OPEN_SANS_FIX.y
     );
   }
 
@@ -97,7 +97,7 @@ export class TableName extends Container {
         DROPDOWN_PADDING +
         TABLE_NAME_PADDING[0] +
         (this.symbol ? SYMBOL_PADDING + this.symbol.width : 0),
-      -TABLE_NAME_HEIGHT / 2
+      -CELL_HEIGHT / 2
     );
   }
 
@@ -111,7 +111,7 @@ export class TableName extends Container {
     this.drawBackground();
 
     this.tableNameBounds.x = this.table.tableBounds.x;
-    this.tableNameBounds.y = this.table.tableBounds.y - TABLE_NAME_HEIGHT;
+    this.tableNameBounds.y = this.table.tableBounds.y - CELL_HEIGHT;
   }
 
   // Returns the table name bounds scaled to the viewport.

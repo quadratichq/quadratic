@@ -8,6 +8,7 @@ import { Sheet } from '@/app/grid/sheet/Sheet';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point, Rectangle } from 'pixi.js';
 
@@ -249,5 +250,13 @@ export class Tables extends Container<Table> {
   // Returns the table that the cursor is on, or undefined if the cursor is not on a table.
   cursorOnDataTable(): JsRenderCodeCell | undefined {
     return this.children.find((table) => table.isCursorOnDataTable())?.codeCell;
+  }
+
+  getSortDialogPosition(codeCell: JsRenderCodeCell): Coordinate | undefined {
+    const table = this.children.find((table) => table.codeCell === codeCell);
+    if (!table) {
+      return;
+    }
+    return table.getSortDialogPosition();
   }
 }

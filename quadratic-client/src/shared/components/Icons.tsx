@@ -450,3 +450,7 @@ export const TableIcon: IconComponent = (props) => {
 export const SortIcon: IconComponent = (props) => {
   return <Icon {...props}>sort</Icon>;
 };
+
+export const DragIndicatorIcon: IconComponent = (props) => {
+  return <Icon {...props}>drag_indicator</Icon>;
+};

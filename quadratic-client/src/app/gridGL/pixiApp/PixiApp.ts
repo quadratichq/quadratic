@@ -375,7 +375,7 @@ export class PixiApp {
     }
   }
 
-  cellSheet(): CellsSheet {
+  cellsSheet(): CellsSheet {
     if (!this.cellsSheets.current) {
       throw new Error('cellSheet not found in pixiApp');
     }

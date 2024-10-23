@@ -6,6 +6,7 @@ import { TableOutline } from '@/app/gridGL/cells/tables/TableOutline';
 import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point, Rectangle } from 'pixi.js';
 
@@ -188,5 +189,14 @@ export class Table extends Container {
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {
     return this.tableName.intersects(world);
+  }
+
+  getSortDialogPosition(): Coordinate | undefined {
+    // we need to force the column headers to be updated first to avoid a
+    // flicker since the update normally happens on the tick instead of on the
+    // viewport event (caused by inconsistency between React and pixi's update
+    // loop)
+    this.update(pixiApp.viewport.getVisibleBounds(), pixiApp.headings.headingSize.height / pixiApp.viewport.scaled);
+    return this.columnHeaders.getSortDialogPosition();
   }
 }

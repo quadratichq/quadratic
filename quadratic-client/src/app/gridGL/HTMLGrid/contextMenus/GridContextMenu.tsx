@@ -8,6 +8,7 @@ import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
 import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { TableIcon } from '@/shared/components/Icons';
 import { ControlledMenu, MenuDivider, SubMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -42,7 +43,7 @@ export const GridContextMenu = () => {
     const updateCursor = () => {
       setColumnRowAvailable(sheets.sheet.cursor.hasOneColumnRowSelection(true));
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
-      const codeCell = pixiApp.cellSheet().cursorOnDataTable();
+      const codeCell = pixiApp.cellsSheet().cursorOnDataTable();
       setTable(codeCell);
     };
 
@@ -104,7 +105,15 @@ export const GridContextMenu = () => {
 
         {table && <MenuDivider />}
         {table && (
-          <SubMenu label={`${table?.language === 'Import' ? 'Data' : 'Code'} Table`}>
+          <SubMenu
+            className="text-sm"
+            label={
+              <div className="flex">
+                <TableIcon className="-ml-3 mr-4" />
+                <div>{table?.language === 'Import' ? 'Data' : 'Code'} Table</div>
+              </div>
+            }
+          >
             <TableMenu defaultRename={false} codeCell={table} />
           </SubMenu>
         )}

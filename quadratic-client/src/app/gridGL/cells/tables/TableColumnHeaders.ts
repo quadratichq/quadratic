@@ -5,6 +5,7 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeader } from '@/app/gridGL/cells/tables/TableColumnHeader';
 import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsDataTableColumn, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -64,21 +65,6 @@ export class TableColumnHeaders extends Container {
       sheets.getCursorPosition()
     );
 
-    // todo: once Rust is fixed, this should be the SortDirection enum
-    // todo: not sure if this is worthwhile
-    // let newOrderRust: SortDirection;
-    // switch (newOrder) {
-    //   case 'asc':
-    //     newOrderRust = 'Ascending';
-    //     break;
-    //   case 'desc':
-    //     newOrderRust = 'Descending';
-    //     break;
-    //   case 'none':
-    //     newOrderRust = 'None';
-    //     break;
-    // }
-
     // // we optimistically update the Sort array while we wait for core to finish the sort
     // table.sort = table.sort
     //   ? table.sort.map((s) => (s.column_index === column.valueIndex ? { ...s, direction: newOrderRust } : s))
@@ -127,7 +113,9 @@ export class TableColumnHeaders extends Container {
   }
 
   pointerMove(world: Point): boolean {
-    const found = this.columns.children.find((column) => column.pointerMove(world));
+    const adjustedWorld = world.clone();
+    adjustedWorld.y -= this.y;
+    const found = this.columns.children.find((column) => column.pointerMove(adjustedWorld));
     if (!found) {
       this.tableCursor = undefined;
     } else {
@@ -147,8 +135,11 @@ export class TableColumnHeaders extends Container {
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
+    // need to adjust the world position in the case of sticky headers
+    const adjustedWorld = world.clone();
+    adjustedWorld.y -= this.y;
     for (const column of this.columns.children) {
-      const result = column.pointerDown(world);
+      const result = column.pointerDown(adjustedWorld);
       if (result) {
         return result;
       }
@@ -159,7 +150,14 @@ export class TableColumnHeaders extends Container {
     if (index < 0 || index >= this.columns.children.length) {
       throw new Error('Invalid column header index in getColumnHeaderBounds');
     }
-    return this.columns.children[index]?.columnHeaderBounds;
+    const bounds = this.columns.children[index]?.columnHeaderBounds;
+    if (!bounds) {
+      throw new Error('Column header bounds not found in getColumnHeaderBounds');
+    }
+    // need to adjust the bounds in the case of sticky headers
+    const adjustedBounds = bounds.clone();
+    adjustedBounds.y -= this.y;
+    return adjustedBounds;
   }
 
   // Hides a column header
@@ -176,5 +174,11 @@ export class TableColumnHeaders extends Container {
   // Shows all column headers
   show() {
     this.columns.children.forEach((column) => (column.visible = true));
+  }
+
+  getSortDialogPosition(): Coordinate | undefined {
+    if (this.columns.children.length === 0) return;
+    const firstColumn = this.columns.children[0];
+    return { x: firstColumn.columnHeaderBounds.left, y: firstColumn.columnHeaderBounds.bottom + this.y };
   }
 }

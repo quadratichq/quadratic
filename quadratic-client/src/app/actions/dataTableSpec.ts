@@ -40,7 +40,7 @@ const isHeadingShowing = (): boolean => {
 };
 
 const getTable = (): JsRenderCodeCell | undefined => {
-  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellSheet().cursorOnDataTable();
+  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
 const isAlternatingColorsShowing = (): boolean => {
@@ -85,16 +85,14 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Rename table',
     defaultOption: true,
     Icon: FileRenameIcon,
-    run: async () => {
+    run: () => {
       const table = getTable();
       const contextMenu = pixiAppSettings.contextMenu;
-      console.log('contextMenu', contextMenu);
       if (contextMenu) {
         setTimeout(() => {
           const newContextMenu = { type: ContextMenuType.Table, rename: true, table };
-          pixiAppSettings.setContextMenu?.(newContextMenu);
           events.emit('contextMenu', newContextMenu);
-        }, 0);
+        });
       }
     },
   },
@@ -109,7 +107,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.DeleteDataTable]: {
     label: 'Delete table',
     Icon: DeleteIcon,
-    run: async () => {
+    run: () => {
       const table = getTable();
       if (table) {
         const selection = createSelection({ sheetId: sheets.sheet.id, rects: [new Rectangle(table.x, table.y, 1, 1)] });
@@ -120,7 +118,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.CodeToDataTable]: {
     label: 'Convert to data table',
     Icon: TableIcon,
-    run: async () => {
+    run: () => {
       const table = getTable();
       if (table) {
         quadraticCore.codeDataTableToDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
@@ -130,15 +128,18 @@ export const dataTableSpec: DataTableSpec = {
   [Action.SortTable]: {
     label: 'Sort table',
     Icon: SortIcon,
-    run: async () => {
-      const table = getTable();
-      pixiAppSettings.setContextMenu?.({ type: ContextMenuType.TableSort, table });
+    run: () => {
+      setTimeout(() => {
+        const table = getTable();
+        const contextMenu = { type: ContextMenuType.TableSort, table };
+        events.emit('contextMenu', contextMenu);
+      });
     },
   },
   [Action.ToggleTableAlternatingColors]: {
     label: 'Toggle alternating colors',
     checkbox: isAlternatingColorsShowing,
-    run: async () => {
+    run: () => {
       console.log('TODO: toggle alternating colors');
       // quadraticCore.dataTableToggleAlternatingColors(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
     },

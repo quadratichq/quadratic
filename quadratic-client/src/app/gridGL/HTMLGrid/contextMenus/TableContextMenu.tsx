@@ -13,7 +13,7 @@ export const TableContextMenu = () => {
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const onClose = useCallback(() => {
-    if (contextMenu.type === ContextMenuType.Table && contextMenu.rename) {
+    if (contextMenu.type !== ContextMenuType.Table || (contextMenu.type === ContextMenuType.Table && !contextMenu.rename)) {
       return;
     }
     setContextMenu({});
