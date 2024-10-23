@@ -21,10 +21,11 @@ export const TableSort = () => {
   const [sort, setSort] = useState<DataTableSort[]>([]);
   useEffect(() => {
     if (contextMenu.table && contextMenu.table.sort) {
-      setSort([
-        ...contextMenu.table.sort.filter((item) => item.direction !== 'None'),
-        { column_index: -1, direction: 'None' },
-      ]);
+      const sort = [...contextMenu.table.sort.filter((item) => item.direction !== 'None')];
+      if (sort.length !== contextMenu.table.column_names.length) {
+        sort.push({ column_index: -1, direction: 'None' });
+      }
+      setSort(sort);
     } else {
       setSort([{ column_index: -1, direction: 'None' }]);
     }
@@ -60,10 +61,7 @@ export const TableSort = () => {
   }, [contextMenu.table]);
 
   const columnNames = useMemo(() => contextMenu.table?.column_names ?? [], [contextMenu.table]);
-  const nonNoneSortItems = useMemo(
-    () => contextMenu.table?.sort?.filter((item) => item.direction !== 'None') ?? [],
-    [contextMenu.table?.sort]
-  );
+  const nonNoneSortItems = useMemo(() => sort.filter((item) => item.direction !== 'None') ?? [], [sort]);
 
   const availableColumns = useMemo(() => {
     const availableColumns = columnNames.filter(
@@ -86,6 +84,20 @@ export const TableSort = () => {
     });
   };
 
+  const handleDelete = (index: number) => {
+    setSort((prev) => {
+      const sort = prev.filter((_, i) => i !== index);
+      if (
+        sort.length !== contextMenu.table?.column_names.length &&
+        sort.length &&
+        sort[sort.length - 1].column_index !== -1
+      ) {
+        sort.push({ column_index: -1, direction: 'None' });
+      }
+      return sort;
+    });
+  };
+
   if (contextMenu.type !== ContextMenuType.TableSort) return null;
 
   return (
@@ -99,19 +111,20 @@ export const TableSort = () => {
       }}
     >
       <div className="mb-4 text-lg font-semibold">Table Sort</div>
-      <div className="flex flex-col gap-2">
+      <div className="flex max-h-96 flex-col gap-2 overflow-y-auto">
         {sort.map((entry, index) => {
-          const name = entry.column_index !== -1 ? '' : contextMenu.table?.column_names[entry.column_index]?.name ?? '';
+          const name = entry.column_index === -1 ? '' : contextMenu.table?.column_names[entry.column_index]?.name ?? '';
           const columns = name ? [name, ...availableColumns] : availableColumns;
           return (
             <TableSortEntry
               index={index}
-              key={index}
+              key={name}
               direction={entry.direction}
               name={name}
               availableColumns={columns}
               onChange={handleChange}
-              last={index === sort.length - 1}
+              onDelete={handleDelete}
+              last={sort.length !== contextMenu.table?.column_names.length && index === sort.length - 1}
             />
           );
         })}
