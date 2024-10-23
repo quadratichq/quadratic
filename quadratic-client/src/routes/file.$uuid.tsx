@@ -56,11 +56,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   await Promise.all([initRustClient(), loadAssets()]);
 
   // initialize Core web worker
-  const result = await quadraticCore.load(
-    data.file.lastCheckpointDataUrl,
-    data.file.lastCheckpointVersion,
-    data.file.lastCheckpointSequenceNumber
-  );
+  const result = await quadraticCore.load({
+    fileId: uuid,
+    url: data.file.lastCheckpointDataUrl,
+    version: data.file.lastCheckpointVersion,
+    sequenceNumber: data.file.lastCheckpointSequenceNumber,
+  });
   if (result.error) {
     Sentry.captureEvent({
       message: `Failed to deserialize file ${uuid} from server.`,
@@ -178,7 +179,15 @@ export const ErrorBoundary = () => {
       title = 'Failed to load file';
       description = 'There was an error retrieving and loading this file.';
     }
-    return <Empty title={title} description={description} Icon={ExclamationTriangleIcon} actions={actions} />;
+    return (
+      <Empty
+        title={title}
+        description={description}
+        Icon={ExclamationTriangleIcon}
+        actions={actions}
+        showLoggedInUser
+      />
+    );
   }
 
   // If we reach here, it's an error we don't know how to handle.
@@ -191,6 +200,7 @@ export const ErrorBoundary = () => {
       Icon={ExclamationTriangleIcon}
       actions={actionsDefault}
       severity="error"
+      showLoggedInUser
     />
   );
 };

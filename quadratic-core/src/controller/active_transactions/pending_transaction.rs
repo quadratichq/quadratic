@@ -12,7 +12,7 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{sheet::validations::validation::Validation, CodeCellLanguage, CodeRun, SheetId},
+    grid::{sheet::validations::validation::Validation, CodeCellLanguage, CodeRun, Sheet, SheetId},
     selection::Selection,
     Pos, SheetPos, SheetRect,
 };
@@ -234,6 +234,46 @@ impl PendingTransaction {
         dirty_hashes.extend(hashes);
     }
 
+    // Adds dirty hashes for all hashes from col_start to col_end (goes to sheet bounds if not provided)
+    pub fn add_dirty_hashes_from_sheet_columns(
+        &mut self,
+        sheet: &Sheet,
+        col_start: i64,
+        col_end: Option<i64>,
+    ) {
+        let col_end = col_end.unwrap_or(sheet.bounds(false).last_column().unwrap_or(col_start));
+        let dirty_hashes = self.dirty_hashes.entry(sheet.id).or_default();
+        for col in col_start..=col_end {
+            if let Some((start, end)) = sheet.column_bounds(col, false) {
+                for y in start..=end {
+                    let mut pos = Pos { x: col, y };
+                    pos.to_quadrant();
+                    dirty_hashes.insert(pos);
+                }
+            }
+        }
+    }
+
+    // Adds dirty hashes for all hashes from row_start to row_end (goes to sheet bounds if not provided)
+    pub fn add_dirty_hashes_from_sheet_rows(
+        &mut self,
+        sheet: &Sheet,
+        row_start: i64,
+        row_end: Option<i64>,
+    ) {
+        let row_end = row_end.unwrap_or(sheet.bounds(false).last_row().unwrap_or(row_start));
+        let dirty_hashes = self.dirty_hashes.entry(sheet.id).or_default();
+        for row in row_start..=row_end {
+            if let Some((start, end)) = sheet.row_bounds(row, false) {
+                for x in start..=end {
+                    let mut pos = Pos { x, y: row };
+                    pos.to_quadrant();
+                    dirty_hashes.insert(pos);
+                }
+            }
+        }
+    }
+
     /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
     pub fn add_from_code_run(&mut self, sheet_id: SheetId, pos: Pos, code_run: &Option<CodeRun>) {
         if let Some(code_run) = &code_run {
@@ -286,6 +326,23 @@ impl PendingTransaction {
                     .or_default()
                     .extend(changed_hashes);
             }
+        }
+    }
+
+    /// Updates the offsets modified for a column or row.
+    pub fn offsets_modified(
+        &mut self,
+        sheet_id: SheetId,
+        column: Option<i64>,
+        row: Option<i64>,
+        size: Option<f64>,
+    ) {
+        let offsets_modified = self.offsets_modified.entry(sheet_id).or_default();
+        if let Some(column) = column {
+            offsets_modified.insert((Some(column), None), size.unwrap_or(0.0));
+        }
+        if let Some(row) = row {
+            offsets_modified.insert((None, Some(row)), size.unwrap_or(0.0));
         }
     }
 }
@@ -491,5 +548,55 @@ mod tests {
         transaction.add_image_cell(sheet_id, pos);
         assert_eq!(transaction.image_cells.len(), 1);
         assert_eq!(transaction.image_cells[&sheet_id].len(), 1);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_offsets_modified() {
+        let mut transaction = PendingTransaction::default();
+        let sheet_id = SheetId::new();
+        transaction.offsets_modified(sheet_id, Some(1), None, Some(10.0));
+        assert_eq!(transaction.offsets_modified.len(), 1);
+        assert_eq!(transaction.offsets_modified[&sheet_id].len(), 1);
+        assert_eq!(
+            transaction.offsets_modified[&sheet_id][&(Some(1), None)],
+            10.0
+        );
+        transaction.offsets_modified(sheet_id, None, Some(1), Some(10.0));
+        assert_eq!(transaction.offsets_modified[&sheet_id].len(), 2);
+        assert_eq!(
+            transaction.offsets_modified[&sheet_id][&(None, Some(1))],
+            10.0
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_dirty_hashes_from_sheet_columns() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
+        sheet.recalculate_bounds();
+
+        let mut transaction = PendingTransaction::default();
+        transaction.add_dirty_hashes_from_sheet_columns(&sheet, 0, None);
+
+        let dirty_hashes = transaction.dirty_hashes.get(&sheet.id).unwrap();
+        assert!(dirty_hashes.contains(&Pos { x: 0, y: 0 }));
+        assert_eq!(dirty_hashes.len(), 1);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_add_dirty_hashes_from_sheet_rows() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
+        sheet.recalculate_bounds();
+
+        let mut transaction = PendingTransaction::default();
+        transaction.add_dirty_hashes_from_sheet_rows(&sheet, 0, None);
+
+        let dirty_hashes = transaction.dirty_hashes.get(&sheet.id).unwrap();
+        assert!(dirty_hashes.contains(&Pos { x: 0, y: 0 }));
+        assert_eq!(dirty_hashes.len(), 1);
     }
 }
