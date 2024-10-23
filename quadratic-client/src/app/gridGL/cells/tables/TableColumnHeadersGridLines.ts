@@ -21,16 +21,23 @@ export class TableColumnHeadersGridLines extends Graphics {
       const currentLineStyle = pixiApp.gridLines.currentLineStyle;
       if (!currentLineStyle) return;
 
-      if (pixiApp.cellsSheet().tables.isActive(this.table)) {
-        console.log('active?');
-        this.lineStyle({ color: getCSSVariableTint('primary'), width: 2, alignment: 0 });
-      } else {
-        this.lineStyle(currentLineStyle);
-      }
+      lines.forEach((line, index) => {
+        if (pixiApp.cellsSheet().tables.isActive(this.table)) {
+          this.lineStyle({
+            color: getCSSVariableTint('primary'),
+            width: 2,
+            alignment: index === lines.length - 1 ? 0 : 1,
+          });
+        } else {
+          this.lineStyle(currentLineStyle);
+        }
 
-      lines.forEach((line) => {
         this.moveTo(line, y0).lineTo(line, y1);
       });
+
+      this.lineStyle(currentLineStyle);
+      this.moveTo(lines[0], y0).lineTo(lines[lines.length - 1], y0);
+      this.moveTo(lines[0], y1).lineTo(lines[lines.length - 1], y1);
     }
   }
 }

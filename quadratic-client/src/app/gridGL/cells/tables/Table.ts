@@ -22,7 +22,9 @@ export class Table extends Container {
   private tableName: TableName;
 
   private gridLines: TableColumnHeadersGridLines;
-  private inOverHeadings = false;
+
+  // whether the column headers are in the overHeadings container
+  inOverHeadings = false;
 
   sheet: Sheet;
   tableBounds: Rectangle;
@@ -79,24 +81,31 @@ export class Table extends Container {
   };
 
   // places column headers back into the table (instead of the overHeadings container)
-  private addChildColumnHeaders() {
+  private columnHeadersHere() {
     this.columnHeaders.x = 0;
     this.columnHeaders.y = 0;
-    this.addChild(this.columnHeaders);
+
+    // need to keep columnHeaders in the same position in the z-order
+    this.addChildAt(this.columnHeaders, 0);
+
+    this.gridLines.visible = false;
+    this.inOverHeadings = false;
+  }
+
+  private columnHeadersInOverHeadings(bounds: Rectangle, gridHeading: number) {
+    this.columnHeaders.x = this.tableBounds.x;
+    this.columnHeaders.y = this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top;
+    pixiApp.overHeadings.addChild(this.columnHeaders);
+    this.gridLines.visible = true;
+    this.inOverHeadings = true;
   }
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
       if (this.tableBounds.top < bounds.top + gridHeading) {
-        this.columnHeaders.x = this.tableBounds.x;
-        this.columnHeaders.y = this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top;
-        pixiApp.overHeadings.addChild(this.columnHeaders);
-        this.gridLines.visible = true;
-        this.inOverHeadings = true;
+        this.columnHeadersInOverHeadings(bounds, gridHeading);
       } else {
-        this.addChildColumnHeaders();
-        this.gridLines.visible = false;
-        this.inOverHeadings = false;
+        this.columnHeadersHere();
       }
     }
   };
@@ -123,7 +132,7 @@ export class Table extends Container {
   update(bounds: Rectangle, gridHeading: number) {
     this.visible = intersects.rectangleRectangle(this.tableBounds, bounds);
     if (!this.visible && this.columnHeaders.parent !== this) {
-      this.addChildColumnHeaders();
+      this.columnHeadersHere();
     }
     this.headingPosition(bounds, gridHeading);
     if (this.isShowingTableName()) {

@@ -64,13 +64,6 @@ export class TableColumnHeaders extends Container {
       newOrder,
       sheets.getCursorPosition()
     );
-
-    // // we optimistically update the Sort array while we wait for core to finish the sort
-    // table.sort = table.sort
-    //   ? table.sort.map((s) => (s.column_index === column.valueIndex ? { ...s, direction: newOrderRust } : s))
-    //   : null;
-    // this.createColumnHeaders();
-    // pixiApp.setViewportDirty();
   }
 
   private createColumnHeaders() {
@@ -79,7 +72,6 @@ export class TableColumnHeaders extends Container {
       this.columns.visible = false;
       return;
     }
-    this.columns.visible = true;
     let x = 0;
     const codeCell = this.table.codeCell;
     codeCell.column_names.forEach((column, index) => {
@@ -114,7 +106,8 @@ export class TableColumnHeaders extends Container {
 
   pointerMove(world: Point): boolean {
     const adjustedWorld = world.clone();
-    adjustedWorld.y -= this.y;
+    // need to adjust the y position in the case of sticky headers
+    adjustedWorld.y -= this.y ? this.y - this.table.y : 0;
     const found = this.columns.children.find((column) => column.pointerMove(adjustedWorld));
     if (!found) {
       this.tableCursor = undefined;
@@ -135,9 +128,9 @@ export class TableColumnHeaders extends Container {
   }
 
   pointerDown(world: Point): TablePointerDownResult | undefined {
-    // need to adjust the world position in the case of sticky headers
     const adjustedWorld = world.clone();
-    adjustedWorld.y -= this.y;
+    // need to adjust the y position in the case of sticky headers
+    adjustedWorld.y -= this.y ? this.y - this.table.y : 0;
     for (const column of this.columns.children) {
       const result = column.pointerDown(adjustedWorld);
       if (result) {
@@ -185,12 +178,11 @@ export class TableColumnHeaders extends Container {
   getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
     const lines: number[] = [];
     this.columns.children.forEach((column, index) => {
-      lines.push(column.columnHeaderBounds.left);
+      lines.push(column.x);
       if (index === this.columns.children.length - 1) {
-        lines.push(column.columnHeaderBounds.right);
+        lines.push(column.x + column.w);
       }
     });
-    console.log(lines);
     return { y0: 0, y1: this.headerHeight, lines };
   }
 }
