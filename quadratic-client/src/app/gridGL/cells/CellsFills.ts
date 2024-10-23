@@ -60,6 +60,7 @@ export class CellsFills extends Container {
         }
       }
     });
+
     events.on('sheetOffsets', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);

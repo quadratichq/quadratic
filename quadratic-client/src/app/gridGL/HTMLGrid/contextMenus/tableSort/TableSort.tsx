@@ -34,10 +34,10 @@ export const TableSort = () => {
   const handleSave = useCallback(() => {
     if (contextMenu.table) {
       const sortToSend = sort.filter((item) => item.direction !== 'None' && item.column_index !== -1);
-      // todo: need a fn to send the entire sorted data table
       console.log(
         `Sending table ${contextMenu.table.x},${contextMenu.table.y} with sort ${JSON.stringify(sortToSend)}`
       );
+      // todo: need a fn to send the entire sorted data table
       // quadraticCore.sortDataTable(contextMenu.table, sort);
     }
     handleClose();

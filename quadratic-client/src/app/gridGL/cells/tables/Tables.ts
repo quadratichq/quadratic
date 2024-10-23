@@ -63,6 +63,8 @@ export class Tables extends Container<Table> {
       if (table) {
         if (!renderCodeCell) {
           table.hideTableName();
+          pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
+          this.removeChild(table);
           table.destroy();
         } else {
           table.updateCodeCell(renderCodeCell);

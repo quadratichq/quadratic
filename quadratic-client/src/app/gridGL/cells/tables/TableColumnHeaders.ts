@@ -14,9 +14,9 @@ import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 export class TableColumnHeaders extends Container {
   private table: Table;
   private background: Graphics;
-  private columns: Container<TableColumnHeader>;
   private headerHeight = 0;
 
+  columns: Container<TableColumnHeader>;
   tableCursor: string | undefined;
 
   constructor(table: Table) {
@@ -26,13 +26,13 @@ export class TableColumnHeaders extends Container {
     this.columns = this.addChild(new Container<TableColumnHeader>());
   }
 
-  private drawBackground() {
+  private drawBackground = () => {
     this.background.clear();
     const color = getCSSVariableTint('table-column-header-background');
     this.background.beginFill(color);
     this.background.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.headerHeight));
     this.background.endFill();
-  }
+  };
 
   private onSortPressed(column: JsDataTableColumn) {
     // todo: once Rust is fixed, this should be the SortDirection enum
@@ -180,5 +180,16 @@ export class TableColumnHeaders extends Container {
     if (this.columns.children.length === 0) return;
     const firstColumn = this.columns.children[0];
     return { x: firstColumn.columnHeaderBounds.left, y: firstColumn.columnHeaderBounds.bottom + this.y };
+  }
+
+  getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
+    const lines: number[] = [];
+    this.columns.children.forEach((column, index) => {
+      lines.push(this.table.x + column.columnHeaderBounds.left);
+      if (index === this.columns.children.length - 1) {
+        lines.push(this.table.x + column.columnHeaderBounds.right);
+      }
+    });
+    return { y0: this.y, y1: this.y + this.headerHeight, lines };
   }
 }

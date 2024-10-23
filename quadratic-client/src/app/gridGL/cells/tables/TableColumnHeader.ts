@@ -46,7 +46,6 @@ export class TableColumnHeader extends Container {
     this.table = table;
     this.index = index;
     this.onSortPressed = onSortPressed;
-    console.log(height);
     this.columnHeaderBounds = new Rectangle(table.tableBounds.x + x, table.tableBounds.y, width, height);
     this.position.set(x, 0);
 

@@ -1,6 +1,9 @@
+//! A table in the grid.
+
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { TableColumnHeaders } from '@/app/gridGL/cells/tables/TableColumnHeaders';
+import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColumnHeadersGridLines';
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import { TableOutline } from '@/app/gridGL/cells/tables/TableOutline';
 import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
@@ -11,9 +14,15 @@ import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point, Rectangle } from 'pixi.js';
 
 export class Table extends Container {
-  private tableName: TableName;
   private outline: TableOutline;
+
+  // Both columnHeaders and tableName are either children of Table or, when they
+  // are sticky, children of pixiApp.overHeadings.
   private columnHeaders: TableColumnHeaders;
+  private tableName: TableName;
+
+  private gridLines: TableColumnHeadersGridLines;
+  private inOverHeadings = false;
 
   sheet: Sheet;
   tableBounds: Rectangle;
@@ -27,6 +36,7 @@ export class Table extends Container {
     this.tableName = new TableName(this);
     this.columnHeaders = this.addChild(new TableColumnHeaders(this));
     this.outline = this.addChild(new TableOutline(this));
+    this.gridLines = this.columnHeaders.addChild(new TableColumnHeadersGridLines(this));
     this.tableBounds = new Rectangle();
     this.updateCodeCell(codeCell);
   }
@@ -46,6 +56,7 @@ export class Table extends Container {
     this.tableName.update();
     this.columnHeaders.update();
     this.outline.update();
+    this.gridLines.update();
 
     const cellsSheet = pixiApp.cellsSheets.getById(this.sheet.id);
     if (cellsSheet) {
@@ -67,12 +78,25 @@ export class Table extends Container {
     }
   };
 
+  // places column headers back into the table (instead of the overHeadings container)
+  private addChildColumnHeaders() {
+    this.columnHeaders.x = 0;
+    this.columnHeaders.y = 0;
+    this.addChild(this.columnHeaders);
+  }
+
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
       if (this.tableBounds.top < bounds.top + gridHeading) {
-        this.columnHeaders.y = bounds.top + gridHeading - this.tableBounds.top;
+        this.columnHeaders.x = this.tableBounds.x;
+        this.columnHeaders.y = this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top;
+        pixiApp.overHeadings.addChild(this.columnHeaders);
+        this.gridLines.visible = true;
+        this.inOverHeadings = true;
       } else {
-        this.columnHeaders.y = 0;
+        this.addChildColumnHeaders();
+        this.gridLines.visible = false;
+        this.inOverHeadings = false;
       }
     }
   };
@@ -98,10 +122,16 @@ export class Table extends Container {
 
   update(bounds: Rectangle, gridHeading: number) {
     this.visible = intersects.rectangleRectangle(this.tableBounds, bounds);
+    if (!this.visible && this.columnHeaders.parent !== this) {
+      this.addChildColumnHeaders();
+    }
     this.headingPosition(bounds, gridHeading);
     if (this.isShowingTableName()) {
       this.tableName.scale.set(1 / pixiApp.viewport.scale.x);
       this.tableNamePosition(bounds, gridHeading);
+    }
+    if (this.visible && this.inOverHeadings) {
+      this.gridLines.update();
     }
   }
 
@@ -198,5 +228,9 @@ export class Table extends Container {
     // loop)
     this.update(pixiApp.viewport.getVisibleBounds(), pixiApp.headings.headingSize.height / pixiApp.viewport.scaled);
     return this.columnHeaders.getSortDialogPosition();
+  }
+
+  getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
+    return this.columnHeaders.getColumnHeaderLines();
   }
 }
