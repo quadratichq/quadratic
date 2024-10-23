@@ -1,7 +1,9 @@
 use super::operation::Operation;
 use crate::{
-    cellvalue::Import, controller::GridController, grid::DataTableKind, CellValue, SheetPos,
-    SheetRect,
+    cellvalue::Import,
+    controller::GridController,
+    grid::{DataTableKind, DataTableSort},
+    CellValue, SheetPos, SheetRect,
 };
 
 use anyhow::Result;
@@ -53,15 +55,10 @@ impl GridController {
     pub fn sort_data_table_operations(
         &self,
         sheet_pos: SheetPos,
-        column_index: u32,
-        sort_order: String,
+        sort: Option<Vec<DataTableSort>>,
         _cursor: Option<String>,
     ) -> Vec<Operation> {
-        vec![Operation::SortDataTable {
-            sheet_pos,
-            column_index,
-            sort_order,
-        }]
+        vec![Operation::SortDataTable { sheet_pos, sort }]
     }
 
     pub fn data_table_first_row_as_header_operations(

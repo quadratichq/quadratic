@@ -10,7 +10,7 @@ use crate::{
         formatting::CellFmtArray,
         js_types::JsRowHeight,
         sheet::{borders::BorderStyleCellUpdates, validations::validation::Validation},
-        DataTable, DataTableKind, Sheet, SheetBorders, SheetId,
+        DataTable, DataTableKind, DataTableSort, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -61,9 +61,7 @@ pub enum Operation {
     },
     SortDataTable {
         sheet_pos: SheetPos,
-        column_index: u32,
-        // TODO(ddimarai): rename this to `direction`
-        sort_order: String,
+        sort: Option<Vec<DataTableSort>>,
     },
     DataTableFirstRowAsHeader {
         sheet_pos: SheetPos,
@@ -245,15 +243,11 @@ impl fmt::Display for Operation {
                     sheet_pos, name
                 )
             }
-            Operation::SortDataTable {
-                sheet_pos,
-                column_index,
-                sort_order,
-            } => {
+            Operation::SortDataTable { sheet_pos, sort } => {
                 write!(
                     fmt,
-                    "SortDataTable {{ sheet_pos: {}, column_index: {}, sort_order: {} }}",
-                    sheet_pos, column_index, sort_order
+                    "SortDataTable {{ sheet_pos: {}, sort: {:?} }}",
+                    sheet_pos, sort
                 )
             }
             Operation::DataTableFirstRowAsHeader {

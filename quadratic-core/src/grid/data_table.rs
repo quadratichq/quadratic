@@ -17,7 +17,7 @@ use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString};
+use strum_macros::Display;
 use tabled::{
     builder::Builder,
     settings::{Color, Modify, Style},
@@ -81,13 +81,10 @@ impl DataTableColumn {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS, Display, EnumString)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum SortDirection {
-    #[strum(serialize = "asc")]
     Ascending,
-    #[strum(serialize = "desc")]
     Descending,
-    #[strum(serialize = "none")]
     None,
 }
 
@@ -325,6 +322,13 @@ impl DataTable {
         direction: SortDirection,
     ) -> Result<Option<DataTableSort>> {
         let old = self.prepend_sort(column_index, direction.clone());
+
+        self.sort_all()?;
+
+        Ok(old)
+    }
+
+    pub fn sort_all(&mut self) -> Result<()> {
         self.display_buffer = None;
         let value = self.display_value()?.into_array()?;
         let mut display_buffer = (0..value.height()).map(|i| i as u64).collect::<Vec<u64>>();
@@ -355,7 +359,7 @@ impl DataTable {
 
         self.display_buffer = Some(display_buffer);
 
-        Ok(old)
+        Ok(())
     }
 
     pub fn prepend_sort(

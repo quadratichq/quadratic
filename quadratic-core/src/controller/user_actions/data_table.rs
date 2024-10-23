@@ -1,5 +1,6 @@
 use crate::{
     controller::{active_transactions::transaction_name::TransactionName, GridController},
+    grid::DataTableSort,
     Pos, SheetPos, SheetRect,
 };
 
@@ -59,12 +60,10 @@ impl GridController {
     pub fn sort_data_table(
         &mut self,
         sheet_pos: SheetPos,
-        column_index: u32,
-        sort_order: String,
+        sort: Option<Vec<DataTableSort>>,
         cursor: Option<String>,
     ) {
-        let ops =
-            self.sort_data_table_operations(sheet_pos, column_index, sort_order, cursor.to_owned());
+        let ops = self.sort_data_table_operations(sheet_pos, sort, cursor.to_owned());
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
 

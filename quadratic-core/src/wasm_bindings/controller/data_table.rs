@@ -55,13 +55,13 @@ impl GridController {
         &mut self,
         sheet_id: String,
         pos: String,
-        column_index: u32,
-        sort_order: String,
+        sort: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.sort_data_table(pos.to_sheet_pos(sheet_id), column_index, sort_order, cursor);
+        let sort = sort.map(|s| serde_json::from_str::<Vec<DataTableSort>>(&s).unwrap_or_default());
+        self.sort_data_table(pos.to_sheet_pos(sheet_id), sort, cursor);
 
         Ok(())
     }

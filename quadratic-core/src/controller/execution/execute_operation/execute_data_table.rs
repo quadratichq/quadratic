@@ -4,7 +4,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{DataTable, DataTableKind, SortDirection},
+    grid::{DataTable, DataTableKind},
     ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
@@ -370,12 +370,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::SortDataTable {
-            sheet_pos,
-            column_index,
-            sort_order,
-        } = op.to_owned()
-        {
+        if let Operation::SortDataTable { sheet_pos, sort } = op.to_owned() {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
@@ -384,20 +379,8 @@ impl GridController {
                 .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
 
-            // DSF: this would be better if we used the enum directly. TS will
-            // send it as a string (using the export_types definition) and it's
-            // easy to parse. Additionally, we probably don't need the "None"
-            // value as we should use Option<SortDirection> so we can set the
-            // entire table's sort value to None if there are no remaining sort
-            // orders.
-            let sort_order_enum = match sort_order.as_str() {
-                "asc" => SortDirection::Ascending,
-                "desc" => SortDirection::Descending,
-                "none" => SortDirection::None,
-                _ => bail!("Invalid sort order"),
-            };
-
-            let old_value = data_table.sort_column(column_index as usize, sort_order_enum)?;
+            let old_value = data_table.sort.to_owned();
+            data_table.sort = sort;
 
             self.send_to_wasm(transaction, &data_table_sheet_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos.into());
@@ -405,11 +388,7 @@ impl GridController {
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SortDataTable {
                 sheet_pos,
-                column_index,
-                sort_order: old_value
-                    .map(|v| v.direction)
-                    .unwrap_or(SortDirection::None)
-                    .to_string(),
+                sort: old_value,
             }];
 
             self.data_table_operations(
@@ -479,7 +458,7 @@ mod tests {
             },
             user_actions::import::tests::{assert_simple_csv, simple_csv},
         },
-        grid::{CodeCellLanguage, CodeRun, SheetId},
+        grid::{CodeCellLanguage, CodeRun, DataTableSort, SheetId, SortDirection},
         test_util::{
             assert_cell_value_row, assert_data_table_cell_value, assert_data_table_cell_value_row,
             print_data_table, print_table,
@@ -705,10 +684,13 @@ mod tests {
         print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
+        let sort = vec![DataTableSort {
+            column_index: 0,
+            direction: SortDirection::Ascending,
+        }];
         let op = Operation::SortDataTable {
             sheet_pos,
-            column_index: 0,
-            sort_order: "asc".into(),
+            sort: Some(sort),
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_sort_data_table(&mut transaction, op).unwrap();
