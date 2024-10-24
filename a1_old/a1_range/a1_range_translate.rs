@@ -26,8 +26,8 @@ fn translate_col_row_range(
     delta_x: i64,
 ) -> Result<RelColRowRange, A1Error> {
     Ok(RelColRowRange {
-        from: translate_index(&col_row_range.from, delta_x)?,
-        to: translate_index(&col_row_range.to, delta_x)?,
+        min: translate_index(&col_row_range.min, delta_x)?,
+        max: translate_index(&col_row_range.max, delta_x)?,
     })
 }
 
@@ -118,22 +118,22 @@ mod tests {
     #[parallel]
     fn test_translate_col_row_range() {
         let range = RelColRowRange {
-            from: RelColRow {
+            min: RelColRow {
                 index: 2,
                 relative: true,
             },
-            to: RelColRow {
+            max: RelColRow {
                 index: 5,
                 relative: true,
             },
         };
 
         let expected = RelColRowRange {
-            from: RelColRow {
+            min: RelColRow {
                 index: 4,
                 relative: true,
             },
-            to: RelColRow {
+            max: RelColRow {
                 index: 7,
                 relative: true,
             },

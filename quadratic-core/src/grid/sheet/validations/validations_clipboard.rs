@@ -1,6 +1,6 @@
 use crate::{
     controller::operations::clipboard::{ClipboardOrigin, ClipboardValidations},
-    selection::Selection,
+    selection::OldSelection,
 };
 
 use super::Validations;
@@ -9,7 +9,7 @@ impl Validations {
     /// Copies validations to the clipboard for the Selection and translates them to the clipboard origin.
     pub fn to_clipboard(
         &self,
-        selection: &Selection,
+        selection: &OldSelection,
         clipboard_origin: &ClipboardOrigin,
     ) -> Option<ClipboardValidations> {
         let validations = self
@@ -59,7 +59,7 @@ mod tests {
 
         let validation_outside_selection = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::rect(Rect::new(4, 4, 5, 5), sheet_id),
+            selection: OldSelection::rect(Rect::new(4, 4, 5, 5), sheet_id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
@@ -68,14 +68,14 @@ mod tests {
 
         let validation_to_copy = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::rect(Rect::new(1, 1, 3, 3), sheet_id),
+            selection: OldSelection::rect(Rect::new(1, 1, 3, 3), sheet_id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
         };
         validations.set(validation_to_copy.clone());
 
-        let selection = Selection::rect(Rect::new(1, 1, 2, 2), sheet_id);
+        let selection = OldSelection::rect(Rect::new(1, 1, 2, 2), sheet_id);
         let clipboard_origin = ClipboardOrigin {
             x: 0,
             y: 0,

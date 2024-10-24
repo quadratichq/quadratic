@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use quadratic_core::{grid::SheetId, selection::Selection, A1Error, SheetNameIdMap, A1};
+use quadratic_core::{grid::SheetId, selection::OldSelection, A1Error, SheetNameIdMap};
 use wasm_bindgen::prelude::*;
 
 #[allow(non_snake_case)]
@@ -18,7 +18,7 @@ pub fn pos_to_a1_absolute(x: u32, y: u32) -> String {
 #[allow(non_snake_case)]
 #[wasm_bindgen(js_name = "selectionToA1")]
 pub fn a1_to_pos(selection: &str, sheet_id: &str, sheets: &str) -> Result<String, String> {
-    let Ok(selection) = Selection::from_str(selection) else {
+    let Ok(selection) = OldSelection::from_str(selection) else {
         return Err(format!("Invalid selection: {}", selection));
     };
     let Ok(sheet_id) = SheetId::from_str(sheet_id) else {
@@ -38,10 +38,10 @@ pub fn a1_to_selection(a1: &str, sheet_id: &str, sheets: &str) -> Result<String,
     let sheet_id =
         SheetId::from_str(sheet_id).map_err(|_| A1Error::InvalidSheetId(sheet_id.to_string()))?;
 
-    let sheets = serde_json::from_str::<SheetNameIdMap>(sheets)
+    let sheet_map = serde_json::from_str::<SheetNameIdMap>(sheets)
         .map_err(|_| A1Error::InvalidSheetMap(sheets.to_string()))?;
 
-    match Selection::from_a1(a1, sheet_id, sheets) {
+    match OldSelection::from_a1(a1, sheet_id, sheet_map) {
         Ok(selection) => Ok(selection.into()),
         Err(err) => Err(err.into()),
     }
@@ -52,7 +52,7 @@ pub fn a1_to_selection(a1: &str, sheet_id: &str, sheets: &str) -> Result<String,
 /// Converts a Selection to a string value (eg, A1:B2,C3:D4)
 pub fn a1_to_sheet_id(selection: &str, sheet_id: &str, sheets: &str) -> Result<String, String> {
     if let (Ok(selection), Ok(sheet_id), Ok(sheets)) = (
-        Selection::from_str(selection),
+        OldSelection::from_str(selection),
         SheetId::from_str(sheet_id),
         serde_json::from_str::<SheetNameIdMap>(sheets),
     ) {
@@ -85,7 +85,7 @@ mod tests {
         let selection = "A1:B2,C3:D4";
         let sheet_id = SheetId::test();
         let result = a1_to_selection(selection, &sheet_id.to_string(), "{}");
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rects: Some(vec![Rect::new(1, 1, 2, 2), Rect::new(3, 3, 4, 4)]),
             ..Default::default()

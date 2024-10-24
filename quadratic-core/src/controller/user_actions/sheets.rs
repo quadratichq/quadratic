@@ -54,7 +54,7 @@ mod test {
         controller::GridController,
         grid::sheet::borders::{BorderSelection, BorderStyle},
         grid::{CodeCellLanguage, SheetId},
-        selection::Selection,
+        selection::OldSelection,
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
@@ -245,7 +245,7 @@ mod test {
             None,
         );
         gc.set_fill_color_selection(
-            Selection::sheet_pos(SheetPos {
+            OldSelection::sheet_pos(SheetPos {
                 x: 1,
                 y: 1,
                 sheet_id,
@@ -256,7 +256,7 @@ mod test {
         .unwrap();
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),
+            OldSelection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,

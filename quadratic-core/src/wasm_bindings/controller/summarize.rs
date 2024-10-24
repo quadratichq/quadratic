@@ -1,4 +1,4 @@
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 use crate::wasm_bindings::GridController;
 use serde::Serialize;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -19,7 +19,7 @@ impl GridController {
         selection: String,
         max_decimals: i64,
     ) -> Option<String> {
-        let Ok(selection) = serde_json::from_str::<Selection>(&selection) else {
+        let Ok(selection) = serde_json::from_str::<OldSelection>(&selection) else {
             dbgjs!("Unable to parse selection in core.summarizeSelection");
             return None;
         };

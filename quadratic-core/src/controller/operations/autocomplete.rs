@@ -7,8 +7,8 @@ use crate::{
         sheet::borders::BorderStyleCellUpdates,
         SheetId,
     },
-    selection::Selection,
-    util::maybe_reverse_range,
+    selection::OldSelection,
+    util::maybe_reverse,
     CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
@@ -154,7 +154,7 @@ impl GridController {
     fn shrink(&mut self, delete_range: SheetRect) -> Vec<Operation> {
         let mut ops = vec![];
 
-        let selection = Selection::sheet_rect(delete_range);
+        let selection = OldSelection::sheet_rect(delete_range);
         ops.extend(self.delete_cells_operations(&selection));
         ops.extend(self.clear_format_selection_operations(&selection));
         ops
@@ -251,7 +251,7 @@ impl GridController {
         }
 
         let formats_op = Operation::SetCellFormatsSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: format_rects.into(),
                 ..Default::default()
@@ -261,7 +261,7 @@ impl GridController {
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: border_rects.into(),
                 ..Default::default()
@@ -364,7 +364,7 @@ impl GridController {
         }
 
         let formats_op = Operation::SetCellFormatsSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: format_rects.into(),
                 ..Default::default()
@@ -374,7 +374,7 @@ impl GridController {
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: border_rects.into(),
                 ..Default::default()
@@ -446,7 +446,7 @@ impl GridController {
             .collect::<Result<Vec<Operation>>>()?;
 
         let formats_op = Operation::SetCellFormatsSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: format_rects.into(),
                 ..Default::default()
@@ -456,7 +456,7 @@ impl GridController {
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: border_rects.into(),
                 ..Default::default()
@@ -533,7 +533,7 @@ impl GridController {
             .collect::<Result<Vec<Operation>>>()?;
 
         let formats_op = Operation::SetCellFormatsSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: format_rects.into(),
                 ..Default::default()
@@ -543,7 +543,7 @@ impl GridController {
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: border_rects.into(),
                 ..Default::default()
@@ -588,7 +588,7 @@ impl GridController {
                     .collect::<Vec<_>>();
 
                 let format_x = selection.min.x + (x - selection.min.x) % selection.width() as i64;
-                maybe_reverse_range(range.y_range(), direction == ExpandDirection::Up)
+                maybe_reverse(range.y_range(), direction == ExpandDirection::Up)
                     .step_by(height as usize)
                     .for_each(|y| {
                         let mut start_pos = (format_x, selection.min.y).into();
@@ -639,7 +639,7 @@ impl GridController {
             .collect::<Result<Vec<Operation>>>()?;
 
         let formats_op = Operation::SetCellFormatsSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: format_rects.into(),
                 ..Default::default()
@@ -649,7 +649,7 @@ impl GridController {
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: border_rects.into(),
                 ..Default::default()
@@ -700,7 +700,7 @@ impl GridController {
                     .collect::<Vec<_>>();
 
                 let format_x = selection.max.x - (index as i64 % selection.width() as i64);
-                maybe_reverse_range(range.y_range(), direction == ExpandDirection::Up)
+                maybe_reverse(range.y_range(), direction == ExpandDirection::Up)
                     .step_by(height as usize)
                     .for_each(|y| {
                         let mut start_pos = (format_x, selection.min.y).into();
@@ -751,7 +751,7 @@ impl GridController {
             .collect::<Result<Vec<Operation>>>()?;
 
         let formats_op = Operation::SetCellFormatsSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: format_rects.into(),
                 ..Default::default()
@@ -761,7 +761,7 @@ impl GridController {
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id,
                 rects: border_rects.into(),
                 ..Default::default()

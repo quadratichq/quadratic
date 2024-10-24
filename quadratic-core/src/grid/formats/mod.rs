@@ -12,7 +12,7 @@ use format_update::FormatUpdate;
 use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 
-/// Used to store changes from a Format to another Format.
+/// Run-length encoded changes to apply to formatting.
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Formats {
     pub formats: RunLengthEncoding<FormatUpdate>,

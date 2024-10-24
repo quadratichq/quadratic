@@ -2,11 +2,11 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{grid::Sheet, selection::Selection, CellValue};
+use crate::{grid::Sheet, selection::OldSelection, CellValue};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationListSource {
-    Selection(Selection),
+    Selection(OldSelection),
     List(Vec<String>),
 }
 
@@ -19,7 +19,7 @@ pub struct ValidationList {
 
 impl ValidationList {
     /// Compares all CellValues within a Selection to the provided CellValue.
-    fn validate_selection(sheet: &Sheet, selection: &Selection, value: &CellValue) -> bool {
+    fn validate_selection(sheet: &Sheet, selection: &OldSelection, value: &CellValue) -> bool {
         if let Some(values) = sheet.selection(selection, None, false, true) {
             values.iter().any(|(_, search)| *search == value)
         } else {
@@ -86,7 +86,7 @@ mod tests {
     fn validate_list_selection() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value((0, 0).into(), "test");
-        let selection = Selection::pos(0, 0, sheet.id);
+        let selection = OldSelection::pos(0, 0, sheet.id);
 
         assert!(ValidationList::validate_selection(
             &sheet,
@@ -132,7 +132,7 @@ mod tests {
         sheet.set_cell_value((0, 0).into(), "test");
         sheet.set_cell_value((0, 1).into(), "test");
         sheet.set_cell_value((0, 2).into(), "test2");
-        let selection = Selection::rect(Rect::new(0, 0, 0, 2), sheet.id);
+        let selection = OldSelection::rect(Rect::new(0, 0, 0, 2), sheet.id);
 
         let list = ValidationList {
             source: ValidationListSource::Selection(selection),

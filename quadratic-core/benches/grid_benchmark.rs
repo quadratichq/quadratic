@@ -4,7 +4,7 @@ use quadratic_core::controller::GridController;
 use quadratic_core::grid::formats::format_update::FormatUpdate;
 use quadratic_core::grid::formats::Formats;
 use quadratic_core::grid::{CellAlign, Grid};
-use quadratic_core::selection::Selection;
+use quadratic_core::selection::OldSelection;
 use quadratic_core::{Pos, Rect, SheetRect};
 use std::time::Duration;
 
@@ -60,10 +60,10 @@ fn criterion_benchmark(c: &mut Criterion) {
             let pos = Pos { x: 10000, y: 10000 };
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let contents = sheet
-                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect))
+                .copy_to_clipboard(&OldSelection::sheet_rect(sheet_rect))
                 .unwrap();
             gc.paste_from_clipboard(
-                Selection::rect(pos.into(), sheet_id),
+                OldSelection::rect(pos.into(), sheet_id),
                 Some(contents.0),
                 Some(contents.1),
                 PasteSpecial::None,
@@ -84,10 +84,10 @@ fn criterion_benchmark(c: &mut Criterion) {
             let pos = Pos { x: 10000, y: 10000 };
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let contents = sheet
-                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect))
+                .copy_to_clipboard(&OldSelection::sheet_rect(sheet_rect))
                 .unwrap();
             gc.paste_from_clipboard(
-                Selection::rect(pos.into(), sheet_id),
+                OldSelection::rect(pos.into(), sheet_id),
                 Some(contents.0),
                 Some(contents.1),
                 PasteSpecial::None,
@@ -129,7 +129,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
+                gc.delete_cells(&OldSelection::sheet_rect(sheet_rect), None);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -149,7 +149,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
+                gc.delete_cells(&OldSelection::sheet_rect(sheet_rect), None);
                 gc
             },
             |mut gc| {
@@ -174,7 +174,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
+                gc.delete_cells(&OldSelection::sheet_rect(sheet_rect), None);
                 gc.undo(None);
                 gc
             },
@@ -262,7 +262,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.clear_formatting(&Selection::sheet_rect(sheet_rect), None);
+                gc.clear_formatting(&OldSelection::sheet_rect(sheet_rect), None);
             },
             criterion::BatchSize::SmallInput,
         )

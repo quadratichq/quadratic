@@ -54,7 +54,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{file::import, formats::format::Format, CellBorderLine},
-        CellValue, Pos, A1,
+        CellValue,
     };
 
     #[test]
@@ -67,19 +67,19 @@ mod test {
         let sheet = gc.sheet(sheet_id);
 
         assert_eq!(
-            sheet.display_value(Pos::from("a1")).unwrap(),
+            sheet.display_value(pos![A1]).unwrap(),
             CellValue::Text("negative column and row".into())
         );
         assert_eq!(
-            sheet.display_value(Pos::from("f1")).unwrap(),
+            sheet.display_value(pos![F1]).unwrap(),
             CellValue::Text("negative row".into())
         );
         assert_eq!(
-            sheet.display_value(Pos::from("a9")).unwrap(),
+            sheet.display_value(pos![A9]).unwrap(),
             CellValue::Text("negative column".into())
         );
         assert_eq!(
-            sheet.format_column(A1::column("f")),
+            sheet.format_column(col![F] as i64),
             Format {
                 fill_color: Some("rgb(23, 200, 165)".to_string()),
                 ..Default::default()

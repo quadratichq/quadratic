@@ -29,10 +29,10 @@ impl A1Range {
             A1RangeType::Column(col) => col.to_column_a1(),
             A1RangeType::Row(row) => row.to_row_a1(),
             A1RangeType::ColumnRange(cols) => {
-                format!("{}:{}", cols.from.to_column_a1(), cols.to.to_column_a1())
+                format!("{}:{}", cols.min.to_column_a1(), cols.max.to_column_a1())
             }
             A1RangeType::RowRange(rows) => {
-                format!("{}:{}", rows.from.to_row_a1(), rows.to.to_row_a1())
+                format!("{}:{}", rows.min.to_row_a1(), rows.max.to_row_a1())
             }
             A1RangeType::Pos(pos) => pos.to_a1(),
             A1RangeType::Rect(rect) => {
@@ -127,8 +127,8 @@ mod tests {
         let range = A1Range {
             sheet_id,
             range: A1RangeType::ColumnRange(RelColRowRange {
-                from: RelColRow::new(3, true),
-                to: RelColRow::new(5, true),
+                min: RelColRow::new(3, true),
+                max: RelColRow::new(5, true),
             }),
         };
         let result = range.to_a1(sheet_id, &map).unwrap();
@@ -137,8 +137,8 @@ mod tests {
         let range = A1Range {
             sheet_id,
             range: A1RangeType::ColumnRange(RelColRowRange {
-                from: RelColRow::new(3, false),
-                to: RelColRow::new(5, false),
+                min: RelColRow::new(3, false),
+                max: RelColRow::new(5, false),
             }),
         };
         let result = range.to_a1(sheet_id, &map).unwrap();
@@ -153,8 +153,8 @@ mod tests {
         let part = A1Range {
             sheet_id,
             range: A1RangeType::RowRange(RelColRowRange {
-                from: RelColRow::new(3, true),
-                to: RelColRow::new(5, true),
+                min: RelColRow::new(3, true),
+                max: RelColRow::new(5, true),
             }),
         };
         let result = part.to_a1(sheet_id, &map).unwrap();
@@ -162,8 +162,8 @@ mod tests {
         let range = A1Range {
             sheet_id,
             range: A1RangeType::RowRange(RelColRowRange {
-                from: RelColRow::new(3, false),
-                to: RelColRow::new(5, false),
+                min: RelColRow::new(3, false),
+                max: RelColRow::new(5, false),
             }),
         };
         let result = range.to_a1(sheet_id, &map).unwrap();

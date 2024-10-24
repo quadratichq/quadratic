@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     grid::{js_types::JsRenderFill, RenderSize, SheetId},
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    selection::Selection,
+    selection::OldSelection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     CellValue, Pos, Rect, SheetPos, SheetRect,
 };
@@ -61,7 +61,7 @@ impl GridController {
     ///
     /// TODO: this is only implemented when only_rects == true; add
     /// only_rects == false when needed.
-    pub fn send_render_cells_selection(&self, selection: &Selection, only_rects: bool) {
+    pub fn send_render_cells_selection(&self, selection: &OldSelection, only_rects: bool) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -122,7 +122,7 @@ impl GridController {
         };
     }
 
-    pub fn send_updated_bounds_selection(&mut self, selection: &Selection, format: bool) {
+    pub fn send_updated_bounds_selection(&mut self, selection: &OldSelection, format: bool) {
         let recalculated = if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
             sheet.recalculate_add_bounds_selection(selection, format)
         } else {
@@ -277,7 +277,7 @@ mod test {
             },
             RenderSize, SheetId,
         },
-        selection::Selection,
+        selection::OldSelection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
         Rect,
     };
@@ -487,7 +487,7 @@ mod test {
         gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
 
         let rect = Rect::new(1, 1, 2, 2);
-        let selection = Selection::rect(rect, sheet_id);
+        let selection = OldSelection::rect(rect, sheet_id);
         gc.update_validation(
             Validation {
                 id: Uuid::new_v4(),

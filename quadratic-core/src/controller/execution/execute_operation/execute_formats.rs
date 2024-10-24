@@ -173,12 +173,18 @@ impl GridController {
             }
         }
     }
+
+    pub fn execute_set_cell_formats_a1(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        todo!("todo todo todo");
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use chrono::Utc;
     use serial_test::serial;
 
@@ -210,7 +216,7 @@ mod test {
                 std_err: None,
                 std_out: None,
                 result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
-                cells_accessed: HashSet::new(),
+                cells_accessed: Default::default(),
                 return_type: None,
                 line_number: None,
                 last_modified: Utc::now(),

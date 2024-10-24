@@ -1,12 +1,11 @@
-use std::collections::HashSet;
-
 use itertools::Itertools;
 use smallvec::{smallvec, SmallVec};
 
 use super::*;
 use crate::{
-    grid::Grid, Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect,
-    Span, Spanned, Value,
+    grid::{CellsAccessed, Grid},
+    Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect, Span,
+    Spanned, Value,
 };
 
 /// Formula execution context.
@@ -16,7 +15,7 @@ pub struct Ctx<'ctx> {
     /// Position in the grid from which the formula is being evaluated.
     pub sheet_pos: SheetPos,
     /// Cells that have been accessed in evaluating the formula.
-    pub cells_accessed: HashSet<SheetRect>,
+    pub cells_accessed: CellsAccessed,
 
     /// Whether to only parse, skipping expensive computations.
     pub skip_computation: bool,
@@ -27,7 +26,7 @@ impl<'ctx> Ctx<'ctx> {
         Ctx {
             grid,
             sheet_pos,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             skip_computation: false,
         }
     }
@@ -39,7 +38,7 @@ impl<'ctx> Ctx<'ctx> {
         Ctx {
             grid,
             sheet_pos: Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             skip_computation: true,
         }
     }
@@ -109,7 +108,7 @@ impl<'ctx> Ctx<'ctx> {
             return error_value(RunErrorMsg::CircularReference);
         }
 
-        self.cells_accessed.insert(pos.into());
+        self.cells_accessed.add_sheet_pos(pos);
 
         let value = sheet.get_cell_for_formula(pos.into());
         Spanned { inner: value, span }

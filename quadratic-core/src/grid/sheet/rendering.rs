@@ -592,8 +592,6 @@ impl Sheet {
 mod tests {
     use super::*;
 
-    use std::collections::HashSet;
-
     use chrono::Utc;
     use serial_test::{parallel, serial};
     use uuid::Uuid;
@@ -612,7 +610,7 @@ mod tests {
             },
             Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
         },
-        selection::Selection,
+        selection::OldSelection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
@@ -650,7 +648,7 @@ mod tests {
                 std_err: None,
                 std_out: None,
                 spill_error: false,
-                cells_accessed: HashSet::new(),
+                cells_accessed: Default::default(),
                 result: CodeRunResult::Ok(Value::Single(CellValue::Text("hello".to_string()))),
                 return_type: Some("text".into()),
                 line_number: None,
@@ -660,7 +658,7 @@ mod tests {
         );
         assert!(sheet.has_render_cells(rect));
 
-        let selection = Selection::pos(2, 3, sheet_id);
+        let selection = OldSelection::pos(2, 3, sheet_id);
         gc.delete_cells(&selection, None);
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.has_render_cells(rect));
@@ -863,7 +861,7 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Array(
                 vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into(),
             )),
@@ -914,7 +912,7 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(1.into()))),
             return_type: Some("number".into()),
             spill_error: false,
@@ -1034,7 +1032,7 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(2.into()))),
             return_type: Some("number".into()),
             spill_error: false,
@@ -1079,7 +1077,7 @@ mod tests {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Image(image.clone()))),
             return_type: Some("image".into()),
             spill_error: false,
@@ -1207,7 +1205,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.validations.set(Validation {
             id: Uuid::new_v4(),
-            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet.id),
+            selection: OldSelection::rect(Rect::new(0, 0, 1, 1), sheet.id),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -1227,7 +1225,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.validations.set(Validation {
             id: Uuid::new_v4(),
-            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet_id),
+            selection: OldSelection::rect(Rect::new(0, 0, 1, 1), sheet_id),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -1252,7 +1250,7 @@ mod tests {
         let validation_id = Uuid::new_v4();
         sheet.validations.set(Validation {
             id: validation_id,
-            selection: Selection::rect(Rect::new(0, 0, 1, 1), sheet_id),
+            selection: OldSelection::rect(Rect::new(0, 0, 1, 1), sheet_id),
             rule: ValidationRule::Logical(ValidationLogical {
                 ignore_blank: false,
                 ..Default::default()

@@ -10,15 +10,24 @@ use super::active_transactions::ActiveTransactions;
 use crate::controller::GridController;
 use serde::{Deserialize, Serialize};
 
+/// Where the transaction came from.
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum TransactionType {
+pub enum TransactionSource {
+    /// Unknown / unspecified.
     #[default]
     Unset,
+    /// Local user performed an action directly.
     User,
+    /// Local user performed an undo.
     Undo,
+    /// Local user performed a redo.
     Redo,
+    /// Multiplayer user performed an action.
     Multiplayer,
+    /// Server applied a transaction.
     Server,
+    /// Local user performed an action and the transaction has not yet been sent
+    /// to the server.
     Unsaved,
 }
 

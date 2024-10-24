@@ -41,6 +41,7 @@ quadratic-core/tmp.txt
 quadratic-files/target/
 quadratic-multiplayer/target/
 quadratic-multiplayer/updateAlertVersion.json
+quadratic-shared/src/auto_gen_path.rs
 
 # Generated JS files
 quadratic-api/node_modules/

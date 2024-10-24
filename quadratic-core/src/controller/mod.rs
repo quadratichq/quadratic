@@ -60,7 +60,8 @@ impl GridController {
         Self::from_grid(Grid::new(), 0)
     }
 
-    // create a new gc for testing purposes in both Rust and TS
+    /// Creates a grid controller for testing purposes in both Rust and TS
+    #[cfg(test)]
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
     }

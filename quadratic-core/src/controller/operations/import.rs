@@ -285,7 +285,7 @@ impl GridController {
             }
             // add new sheets
             ops.push(Operation::AddSheetSchema {
-                schema: export_sheet(sheet),
+                schema: Box::new(export_sheet(sheet)),
             });
             ops.extend(formula_compute_ops);
         }

@@ -6,7 +6,7 @@ use crate::{
         formats::{format_update::FormatUpdate, Formats},
         CellWrap, Sheet,
     },
-    selection::Selection,
+    selection::OldSelection,
     Pos, Rect,
 };
 
@@ -68,7 +68,7 @@ impl Sheet {
 
         (
             vec![Operation::SetCellFormatsSelection {
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: self.id,
                     rects: Some(rects.to_vec()),
                     ..Default::default()
@@ -113,7 +113,7 @@ mod test {
         assert_eq!(
             reverse[0],
             Operation::SetCellFormatsSelection {
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: sheet.id,
                     rects: Some(vec![rect]),
                     ..Default::default()
@@ -193,7 +193,7 @@ mod test {
         assert_eq!(
             reverse[0],
             Operation::SetCellFormatsSelection {
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: sheet.id,
                     rects: Some(vec![rect]),
                     ..Default::default()

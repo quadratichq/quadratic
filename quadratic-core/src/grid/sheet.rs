@@ -16,7 +16,7 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
 
@@ -122,7 +122,8 @@ impl Sheet {
         }
     }
 
-    // creates a Sheet for testing
+    /// Creates a sheet for testing.
+    #[cfg(test)]
     pub fn test() -> Self {
         Sheet::new(SheetId::test(), String::from("Sheet 1"), String::from("a0"))
     }
@@ -462,7 +463,7 @@ impl Sheet {
         rows
     }
 
-    pub fn get_rows_with_wrap_in_selection(&self, selection: &Selection) -> Vec<i64> {
+    pub fn get_rows_with_wrap_in_selection(&self, selection: &OldSelection) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         if selection.all {
             let bounds = self.bounds(true);
@@ -508,7 +509,7 @@ mod test {
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::formats::Formats;
     use crate::grid::{Bold, CodeCellLanguage, Italic, NumericFormat};
-    use crate::selection::Selection;
+    use crate::selection::OldSelection;
     use crate::test_util::print_table;
     use crate::{CodeCellValue, SheetPos};
 
@@ -742,7 +743,7 @@ mod test {
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
 
         let rect = Rect::from_numbers(0, 0, 2, 2);
-        let selection = &Selection::rect(rect, sheet_id);
+        let selection = &OldSelection::rect(rect, sheet_id);
         gc.delete_cells(selection, None);
 
         let sheet = gc.sheet(sheet_id);
@@ -765,7 +766,7 @@ mod test {
                 language: CodeCellLanguage::Formula,
             }),
         );
-        gc.delete_cells(&Selection::pos(0, 0, sheet_id), None);
+        gc.delete_cells(&OldSelection::pos(0, 0, sheet_id), None);
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
@@ -918,7 +919,7 @@ mod test {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
         assert!(!sheet.check_if_wrap_in_cell(0, 0));
-        let selection = Selection::pos(0, 0, sheet.id);
+        let selection = OldSelection::pos(0, 0, sheet.id);
         sheet.set_formats_selection(
             &selection,
             &Formats::repeat(
@@ -971,7 +972,7 @@ mod test {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
         assert!(!sheet.check_if_wrap_in_row(0));
-        let selection = Selection::pos(0, 0, sheet.id);
+        let selection = OldSelection::pos(0, 0, sheet.id);
         sheet.set_formats_selection(
             &selection,
             &Formats::repeat(
@@ -1019,7 +1020,7 @@ mod test {
         };
         assert_eq!(sheet.get_rows_with_wrap_in_column(0), Vec::<i64>::new());
         sheet.set_formats_selection(
-            &Selection {
+            &OldSelection {
                 sheet_id: sheet.id,
                 rects: Some(vec![rect]),
                 ..Default::default()
@@ -1047,7 +1048,7 @@ mod test {
         };
         assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect), Vec::<i64>::new());
         sheet.set_formats_selection(
-            &Selection {
+            &OldSelection {
                 sheet_id: sheet.id,
                 rects: Some(vec![rect]),
                 ..Default::default()
@@ -1073,7 +1074,7 @@ mod test {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 0, y: 4 },
         };
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: sheet.id,
             rects: Some(vec![rect]),
             ..Default::default()

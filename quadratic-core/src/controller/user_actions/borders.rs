@@ -1,13 +1,13 @@
 use crate::{
     controller::{active_transactions::transaction_name::TransactionName, GridController},
     grid::sheet::borders::{BorderSelection, BorderStyle},
-    selection::Selection,
+    selection::OldSelection,
 };
 
 impl GridController {
     pub fn set_borders_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
         cursor: Option<String>,

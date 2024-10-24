@@ -19,14 +19,14 @@ impl GridController {
                 // sheet already exists (unlikely but possible if this operation is run twice)
                 return;
             }
-            let sheet_id = self.grid.add_sheet(Some(sheet.clone()));
+            let sheet_id = self.grid.add_sheet(Some((*sheet).clone()));
 
             self.send_add_sheet(sheet_id, transaction);
 
             transaction
                 .forward_operations
                 .push(Operation::AddSheetSchema {
-                    schema: export_sheet(sheet),
+                    schema: Box::new(export_sheet(*sheet)),
                 });
             transaction
                 .reverse_operations
@@ -91,7 +91,7 @@ impl GridController {
             transaction
                 .reverse_operations
                 .push(Operation::AddSheetSchema {
-                    schema: export_sheet(deleted_sheet),
+                    schema: Box::new(export_sheet(deleted_sheet)),
                 });
 
             // create a sheet if we deleted the last one (only for user actions)
@@ -103,7 +103,7 @@ impl GridController {
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
 
                 transaction.forward_operations.push(Operation::AddSheet {
-                    sheet: new_first_sheet,
+                    sheet: Box::new(new_first_sheet),
                 });
                 transaction.reverse_operations.push(Operation::DeleteSheet {
                     sheet_id: new_first_sheet_id,

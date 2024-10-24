@@ -2,7 +2,7 @@ use super::Sheet;
 use crate::grid::formats::format_update::FormatUpdate;
 use crate::grid::formats::Formats;
 use crate::grid::CellFmtAttr;
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 use crate::{Pos, Rect, RunLengthEncoding, SheetRect};
 
 impl Sheet {
@@ -34,7 +34,7 @@ impl Sheet {
     /// formatting. This is used in the paste and (soon) auto-fill operations.
     /// If Selection is provided, it ignores values that do not fall within the
     /// Selection.
-    pub fn override_cell_formats(&self, rect: Rect, selection: Option<&Selection>) -> Formats {
+    pub fn override_cell_formats(&self, rect: Rect, selection: Option<&OldSelection>) -> Formats {
         let mut formats = Formats::default();
         for x in rect.x_range() {
             for y in rect.y_range() {
@@ -62,7 +62,7 @@ mod tests {
     fn override_cell_formats() {
         let sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 2, 2);
-        let selection = Selection::rect(rect, sheet.id);
+        let selection = OldSelection::rect(rect, sheet.id);
         let formats = sheet.override_cell_formats(rect, Some(&selection));
         assert_eq!(formats.size(), 4);
         let format = formats.get_at(0).unwrap();

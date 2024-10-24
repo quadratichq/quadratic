@@ -61,7 +61,10 @@ pub fn parse_string_literal(s: &str) -> Option<String> {
 pub fn parse_sheet_name(s: &str) -> (Option<String>, String) {
     let mut remaining = s;
 
-    let sheet = s.split_once('!').and_then(|(sheet_name, rest)| {
+    let sheet = s.rsplit_once('!').and_then(|(sheet_name, rest)| {
+        // TODO: merge with `SheetCellRefRange` parsing code, and test with
+        // sheet name containing `!` or other funny characters
+
         remaining = rest;
 
         if sheet_name.starts_with(['\'', '"']) {

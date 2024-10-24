@@ -5,6 +5,7 @@ use crate::A1Error;
 use controller::execution::run_code::get_cells::CellA1Response;
 use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
+use grid::cells_accessed::JsCellsAccessed;
 use grid::formats::format::Format;
 use grid::js_types::{
     CellFormatSummary, JsCellValue, JsClipboard, JsPos, JsRenderFill, JsRowHeight, JsSheetFill,
@@ -44,7 +45,7 @@ use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::{
     BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
 };
-use quadratic_core::selection::Selection;
+use quadratic_core::selection::OldSelection;
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement};
 use quadratic_core::wasm_bindings::controller::bounds::MinMax;
@@ -69,8 +70,11 @@ fn main() {
 
     s += &generate_type_declarations!(
         A1Error,
-        A1Cells,
-        A1CellsType,
+        A1Selection,
+        SheetCellRefRange,
+        CellRefRange,
+        CellRefRangeEnd,
+        JsCellsAccessed,
         ArraySize,
         Axis,
         BorderSelection,
@@ -125,7 +129,7 @@ fn main() {
         RunError,
         RunErrorMsg,
         SearchOptions,
-        Selection,
+        OldSelection,
         SheetBounds,
         SheetId,
         SheetInfo,

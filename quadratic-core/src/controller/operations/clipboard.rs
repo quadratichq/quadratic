@@ -14,7 +14,7 @@ use crate::grid::formats::Formats;
 use crate::grid::sheet::borders::BorderStyleCellUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::CodeCellLanguage;
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 use crate::{CellValue, Pos, SheetPos, SheetRect};
 
 // todo: break up this file so tests are easier to write
@@ -65,10 +65,10 @@ pub struct Clipboard {
     pub formats: Formats,
     pub sheet_formats: ClipboardSheetFormats,
 
-    pub borders: Option<(Selection, BorderStyleCellUpdates)>,
+    pub borders: Option<(OldSelection, BorderStyleCellUpdates)>,
 
     pub origin: ClipboardOrigin,
-    pub selection: Option<Selection>,
+    pub selection: Option<OldSelection>,
 
     pub validations: Option<ClipboardValidations>,
 }
@@ -76,7 +76,7 @@ pub struct Clipboard {
 impl GridController {
     pub fn cut_to_clipboard_operations(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
     ) -> Result<(Vec<Operation>, String, String), String> {
         let sheet = self
             .try_sheet(selection.sheet_id)
@@ -126,14 +126,14 @@ impl GridController {
     /// Returns a list of operations to undo the change.
     fn sheet_formats_operations(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
         sheet_formats: ClipboardSheetFormats,
     ) -> Vec<Operation> {
         let mut ops = vec![];
         if let Some(all) = sheet_formats.all {
             let formats = Formats::repeat(all.into(), 1);
             ops.push(Operation::SetCellFormatsSelection {
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: selection.sheet_id,
                     all: true,
                     ..Default::default()
@@ -142,7 +142,7 @@ impl GridController {
             });
         } else {
             let mut formats = Formats::new();
-            let mut new_selection = Selection {
+            let mut new_selection = OldSelection {
                 sheet_id: selection.sheet_id,
                 ..Default::default()
             };
@@ -204,7 +204,7 @@ impl GridController {
 
     fn set_clipboard_cells(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
         clipboard: Clipboard,
         special: PasteSpecial,
     ) -> Vec<Operation> {
@@ -297,7 +297,7 @@ impl GridController {
                 sheet_id: selection.sheet_id,
             };
             ops.push(Operation::SetCellFormatsSelection {
-                selection: Selection::sheet_rect(sheet_rect),
+                selection: OldSelection::sheet_rect(sheet_rect),
                 formats: clipboard.formats,
             });
 
@@ -370,7 +370,7 @@ impl GridController {
     // todo: parse table structure to provide better pasting experience from other spreadsheets
     pub fn paste_html_operations(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
         html: String,
         special: PasteSpecial,
     ) -> Result<Vec<Operation>> {
@@ -464,7 +464,7 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(0, 5, 1, 5, vec!["1", "2", "3", "4", "5"]);
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
+            .copy_to_clipboard(&OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -474,7 +474,7 @@ mod test {
             .unwrap();
         let operations = gc
             .paste_html_operations(
-                &Selection {
+                &OldSelection {
                     sheet_id,
                     x: 5,
                     y: 0,
@@ -502,7 +502,7 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(5, 2, 5, 1, vec!["1", "2", "3", "4", "5"]);
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
+            .copy_to_clipboard(&OldSelection {
                 sheet_id,
                 x: 0,
                 y: 2,
@@ -512,7 +512,7 @@ mod test {
             .unwrap();
         let operations = gc
             .paste_html_operations(
-                &Selection {
+                &OldSelection {
                     sheet_id,
                     x: 1,
                     y: 5,
@@ -542,7 +542,7 @@ mod test {
         sheet.calculate_bounds();
 
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
+            .copy_to_clipboard(&OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -555,7 +555,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[1];
         let operations = gc
             .paste_html_operations(
-                &Selection {
+                &OldSelection {
                     sheet_id,
                     x: 1,
                     y: 1,
@@ -604,7 +604,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
+            .copy_to_clipboard(&OldSelection {
                 sheet_id,
                 x: 1,
                 y: 3,
@@ -615,7 +615,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 3,
                 y: 3,
@@ -667,7 +667,7 @@ mod test {
         let validations = ClipboardValidations {
             validations: vec![Validation {
                 id: Uuid::new_v4(),
-                selection: Selection::rect(crate::Rect::new(1, 1, 2, 2), SheetId::test()),
+                selection: OldSelection::rect(crate::Rect::new(1, 1, 2, 2), SheetId::test()),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
                 error: Default::default(),
@@ -685,7 +685,7 @@ mod test {
         if let Operation::SetValidation { validation } = &operations[0] {
             assert_eq!(
                 validation.selection,
-                Selection::rect(crate::Rect::new(2, 2, 3, 3), SheetId::test())
+                OldSelection::rect(crate::Rect::new(2, 2, 3, 3), SheetId::test())
             );
         } else {
             panic!("Expected SetValidation operation");
@@ -726,7 +726,7 @@ mod test {
 
         let (_, html) = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&Selection {
+            .copy_to_clipboard(&OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -736,7 +736,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 5,
                 y: 5,

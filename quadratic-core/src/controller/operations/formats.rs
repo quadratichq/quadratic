@@ -5,14 +5,14 @@ use crate::{
         formats::{format_update::FormatUpdate, Formats},
         sheet::borders::BorderStyleCellUpdate,
     },
-    selection::Selection,
+    selection::OldSelection,
     RunLengthEncoding,
 };
 
 impl GridController {
     pub(crate) fn clear_format_selection_operations(
         &self,
-        selection: &Selection,
+        selection: &OldSelection,
     ) -> Vec<Operation> {
         vec![
             Operation::SetCellFormatsSelection {
@@ -41,7 +41,7 @@ mod tests {
     fn clear_format_selection_operations() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             x: 0,
             y: 0,

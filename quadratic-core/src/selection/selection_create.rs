@@ -2,9 +2,9 @@ use crate::{grid::SheetId, Rect, SheetPos, SheetRect};
 
 use super::*;
 
-impl Selection {
+impl OldSelection {
     pub fn new(sheet_id: SheetId) -> Self {
-        Selection {
+        OldSelection {
             all: false,
             sheet_id,
             x: 1,
@@ -17,7 +17,7 @@ impl Selection {
 
     /// Creates a selection via a single sheet rect
     pub fn sheet_rect(sheet_rect: SheetRect) -> Self {
-        Selection {
+        OldSelection {
             sheet_id: sheet_rect.sheet_id,
             x: sheet_rect.min.x,
             y: sheet_rect.min.y,
@@ -30,7 +30,7 @@ impl Selection {
 
     /// Creates a selection via a single sheet position
     pub fn sheet_pos(sheet_pos: SheetPos) -> Self {
-        Selection {
+        OldSelection {
             sheet_id: sheet_pos.sheet_id,
             x: sheet_pos.x,
             y: sheet_pos.y,
@@ -43,7 +43,7 @@ impl Selection {
 
     /// Creates a new selection with a single sheet position
     pub fn new_sheet_pos(x: i64, y: i64, sheet_id: SheetId) -> Self {
-        Selection {
+        OldSelection {
             sheet_id,
             x,
             y,
@@ -56,7 +56,7 @@ impl Selection {
 
     /// Creates an all selection
     pub fn all(sheet_id: SheetId) -> Self {
-        Selection {
+        OldSelection {
             sheet_id,
             all: true,
             ..Default::default()
@@ -65,7 +65,7 @@ impl Selection {
 
     /// Creates a selection with columns
     pub fn columns(columns: &[i64], sheet_id: SheetId) -> Self {
-        Selection {
+        OldSelection {
             sheet_id,
             x: columns[0],
             columns: Some(columns.to_vec()),
@@ -75,7 +75,7 @@ impl Selection {
 
     /// Creates a selection with rows
     pub fn rows(rows: &[i64], sheet_id: SheetId) -> Self {
-        Selection {
+        OldSelection {
             sheet_id,
             y: rows[0],
             rows: Some(rows.to_vec()),
@@ -85,7 +85,7 @@ impl Selection {
 
     /// Creates a selection via  single rect
     pub fn rect(rect: Rect, sheet_id: SheetId) -> Self {
-        Selection {
+        OldSelection {
             sheet_id,
             x: rect.min.x,
             y: rect.min.y,
@@ -96,7 +96,7 @@ impl Selection {
 
     /// Creates a selection from a list of rects
     pub fn rects(rects: &[Rect], sheet_id: SheetId) -> Self {
-        Selection {
+        OldSelection {
             sheet_id,
             x: rects[0].min.x,
             y: rects[0].min.y,
@@ -107,7 +107,7 @@ impl Selection {
 
     /// Create a selection via a single position.
     pub fn pos(x: i64, y: i64, sheet_id: SheetId) -> Self {
-        Selection {
+        OldSelection {
             sheet_id,
             x,
             y,
@@ -117,11 +117,11 @@ impl Selection {
     }
 }
 
-impl FromStr for Selection {
+impl FromStr for OldSelection {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str::<Selection>(s).map_err(|e| e.to_string())
+        serde_json::from_str::<OldSelection>(s).map_err(|e| e.to_string())
     }
 }
 
@@ -134,10 +134,10 @@ mod test {
     #[parallel]
     fn selection_from_str_rects() {
         let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":0,"y":1,"rects":[{"min":{"x":0,"y":1},"max":{"x":3,"y":4}}],"rows":null,"columns":null,"all":false}"#;
-        let selection: Selection = Selection::from_str(s).unwrap();
+        let selection: OldSelection = OldSelection::from_str(s).unwrap();
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id: SheetId::test(),
                 x: 0,
                 y: 1,
@@ -153,10 +153,10 @@ mod test {
     #[parallel]
     fn selection_from_str_rows() {
         let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":0,"y":3,"rects":null,"rows":[3,5],"columns":null,"all":false}"#;
-        let selection: Selection = Selection::from_str(s).unwrap();
+        let selection: OldSelection = OldSelection::from_str(s).unwrap();
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id: SheetId::test(),
                 x: 0,
                 y: 3,
@@ -172,10 +172,10 @@ mod test {
     #[parallel]
     fn selection_from_str_columns() {
         let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":7,"y":0,"rects":null,"rows":null,"columns":[7, 8, 9],"all":false}"#;
-        let selection: Selection = Selection::from_str(s).unwrap();
+        let selection: OldSelection = OldSelection::from_str(s).unwrap();
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 x: 7,
                 y: 0,
                 sheet_id: SheetId::test(),
@@ -191,10 +191,10 @@ mod test {
     #[parallel]
     fn selection_from_str_all() {
         let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"x":0,"y":0,"rects":null,"rows":null,"columns":null,"all":true}"#;
-        let selection: Selection = Selection::from_str(s).unwrap();
+        let selection: OldSelection = OldSelection::from_str(s).unwrap();
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 x: 0,
                 y: 0,
                 sheet_id: SheetId::test(),
@@ -210,10 +210,10 @@ mod test {
     #[parallel]
     fn selection_from_rect() {
         let rect = Rect::from_numbers(0, 0, 1, 1);
-        let selection = Selection::rect(rect, SheetId::test());
+        let selection = OldSelection::rect(rect, SheetId::test());
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 x: 0,
                 y: 0,
                 sheet_id: SheetId::test(),
@@ -228,10 +228,10 @@ mod test {
     #[test]
     #[parallel]
     fn selection_from_pos() {
-        let selection = Selection::pos(0, 0, SheetId::test());
+        let selection = OldSelection::pos(0, 0, SheetId::test());
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 x: 0,
                 y: 0,
                 sheet_id: SheetId::test(),
@@ -247,10 +247,10 @@ mod test {
     #[parallel]
     fn selection_from_sheet_rect() {
         let sheet_rect = SheetRect::from_numbers(0, 0, 1, 1, SheetId::test());
-        let selection = Selection::sheet_rect(sheet_rect);
+        let selection = OldSelection::sheet_rect(sheet_rect);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 x: 0,
                 y: 0,
                 sheet_id: SheetId::test(),
@@ -270,10 +270,10 @@ mod test {
             y: 2,
             sheet_id: SheetId::test(),
         };
-        let selection = Selection::sheet_pos(sheet_pos);
+        let selection = OldSelection::sheet_pos(sheet_pos);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id: sheet_pos.sheet_id,
                 x: sheet_pos.x,
                 y: sheet_pos.y,
@@ -289,10 +289,10 @@ mod test {
     #[parallel]
     fn new_sheet_pos() {
         let sheet_id = SheetId::test();
-        let selection = Selection::new_sheet_pos(1, 1, sheet_id);
+        let selection = OldSelection::new_sheet_pos(1, 1, sheet_id);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 1,
                 y: 1,
@@ -305,10 +305,10 @@ mod test {
     #[test]
     #[parallel]
     fn new() {
-        let selection = Selection::new(SheetId::test());
+        let selection = OldSelection::new(SheetId::test());
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id: SheetId::test(),
                 ..Default::default()
             }
@@ -319,10 +319,10 @@ mod test {
     #[parallel]
     fn test_rects() {
         let rects = vec![Rect::new(1, 1, 2, 2), Rect::new(3, 3, 4, 4)];
-        let selection = Selection::rects(&rects, SheetId::test());
+        let selection = OldSelection::rects(&rects, SheetId::test());
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id: SheetId::test(),
                 rects: Some(rects),
                 ..Default::default()
