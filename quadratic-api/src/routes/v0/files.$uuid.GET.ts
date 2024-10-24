@@ -64,7 +64,7 @@ async function handler(
     fileTeamPrivacy = 'PUBLIC_TO_TEAM';
   }
 
-  const license = await licenseClient.check();
+  const license = await licenseClient.check(false);
 
   if (license === null) {
     throw new ApiError(500, 'Unable to retrieve license');

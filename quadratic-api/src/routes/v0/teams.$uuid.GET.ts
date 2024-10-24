@@ -109,7 +109,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       };
     });
 
-  const license = await licenseClient.check();
+  const license = await licenseClient.check(false);
 
   if (!license) {
     throw new ApiError(500, 'Unable to retrieve license');
