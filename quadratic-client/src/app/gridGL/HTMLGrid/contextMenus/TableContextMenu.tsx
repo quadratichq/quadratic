@@ -46,9 +46,7 @@ export const TableContextMenu = () => {
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
         pointerEvents: 'auto',
         display:
-          contextMenu.type === ContextMenuType.TableColumn && contextMenu.selectedColumn !== undefined
-            ? 'block'
-            : 'none',
+          contextMenu.type === ContextMenuType.Table && contextMenu.selectedColumn === undefined ? 'block' : 'none',
       }}
     >
       <ControlledMenu

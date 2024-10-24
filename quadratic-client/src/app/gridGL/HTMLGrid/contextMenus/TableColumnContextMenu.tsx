@@ -36,7 +36,7 @@ export const TableColumnContextMenu = () => {
   const ref = useRef<HTMLDivElement>(null);
 
   const display =
-    contextMenu.type === ContextMenuType.Table && contextMenu.column !== undefined && !contextMenu.rename
+    contextMenu.type === ContextMenuType.Table && contextMenu.selectedColumn !== undefined && !contextMenu.rename
       ? 'block'
       : 'none';
 
