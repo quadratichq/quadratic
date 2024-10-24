@@ -58,15 +58,13 @@ Note: All this data is only for your reference to data on the sheet. This data c
 
 My cursor is on cell x:${cursorPosition.x} and y:${cursorPosition.y}.\n 
 `,
-          internalContext: true,
           contextType: 'visibleData',
         },
         {
           role: 'assistant',
           content: `I understand the visible data, I will reference it to answer following messages. How can I help you?`,
-          model,
-          internalContext: true,
           contextType: 'visibleData',
+          model,
         },
       ];
     },

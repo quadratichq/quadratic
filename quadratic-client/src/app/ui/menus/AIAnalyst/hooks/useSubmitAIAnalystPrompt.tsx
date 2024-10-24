@@ -10,23 +10,31 @@ import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import {
   aiAnalystAbortControllerAtom,
-  aiAnalystContextAtom,
   aiAnalystLoadingAtom,
   aiAnalystMessagesAtom,
-  AIAnalystState,
-  defaultAIAnalystState,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { SheetRect } from '@/app/quadratic-core-types';
 import {
   AIMessage,
   AnthropicPromptMessage,
+  Context,
   OpenAIPromptMessage,
   UserMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
+
+export const defaultAIAnalystContext: Context = {
+  quadraticDocs: true,
+  connections: false,
+  allSheets: false,
+  currentSheet: true,
+  visibleData: true,
+  toolUse: true,
+  selection: [],
+  codeCell: undefined,
+};
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -42,12 +50,14 @@ export function useSubmitAIAnalystPrompt() {
     ({ set, snapshot }) =>
       async ({
         userPrompt,
+        context = defaultAIAnalystContext,
         messageIndex,
         clearMessages,
         codeCell,
         selectionSheetRect,
       }: {
         userPrompt: string;
+        context?: Context;
         messageIndex?: number;
         clearMessages?: boolean;
         codeCell?: CodeCell;
@@ -62,33 +72,29 @@ export function useSubmitAIAnalystPrompt() {
         const abortController = new AbortController();
         set(aiAnalystAbortControllerAtom, abortController);
 
-        let aiContext: AIAnalystState['context'] = await snapshot.getPromise(aiAnalystContextAtom);
-        set(aiAnalystContextAtom, (prev) => {
-          aiContext = !!codeCell
-            ? {
-                ...defaultAIAnalystState['context'],
-                codeCell: codeCell,
-              }
-            : !!selectionSheetRect
-            ? {
-                ...defaultAIAnalystState['context'],
-                selection: selectionSheetRect,
-              }
-            : prev;
-          return aiContext;
-        });
+        if (codeCell) {
+          context = { ...context, codeCell };
+        }
 
-        const quadraticContext = aiContext.quadraticDocs
-          ? getQuadraticContext(aiContext.codeCell ? getLanguage(aiContext.codeCell.language) : undefined, model)
-          : [];
-        const sheetContext = aiContext.currentSheet ? await getCurrentSheetContext({ model }) : [];
-        const visibleContext = aiContext.visibleData ? await getVisibleContext({ model }) : [];
-        const toolUsePrompt = aiContext.toolUse ? getToolUsePrompt({ model }) : [];
-        const selectionContext = await getSelectionContext({
-          sheetRect: aiContext.selection,
-          model,
-        });
-        const codeContext = await getCodeCellContext({ codeCell: aiContext.codeCell, model });
+        if (selectionSheetRect) {
+          context = { ...context, selection: [...context.selection, selectionSheetRect] };
+        }
+
+        const quadraticContext = context.quadraticDocs ? getQuadraticContext({ model }) : [];
+        const currentSheetContext = context.currentSheet ? await getCurrentSheetContext({ model }) : [];
+        const visibleContext = context.visibleData ? await getVisibleContext({ model }) : [];
+        const toolUsePrompt = context.toolUse ? getToolUsePrompt({ model }) : [];
+        const selectionContext = (
+          await Promise.all(
+            context.selection.map((sheetRect) =>
+              getSelectionContext({
+                sheetRect,
+                model,
+              })
+            )
+          )
+        ).flat();
+        const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell, model }) : [];
         let updatedMessages: (UserMessage | AIMessage)[] = [];
         set(aiAnalystMessagesAtom, (prevMessages) => {
           if (messageIndex !== undefined) {
@@ -104,29 +110,23 @@ export function useSubmitAIAnalystPrompt() {
               message.contextType !== 'toolUse'
           );
 
-          const lastSelectionContext = prevMessages
-            .filter((message) => message.role === 'user' && message.contextType === 'selection')
-            .at(-1);
-
           const lastCodeContext = prevMessages
             .filter((message) => message.role === 'user' && message.contextType === 'codeCell')
             .at(-1);
 
           const newContextMessages: (UserMessage | AIMessage)[] = [
-            ...(!clearMessages && lastSelectionContext?.content === selectionContext?.[0]?.content
-              ? []
-              : selectionContext),
             ...(!clearMessages && lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
           ];
 
           updatedMessages = [
             ...quadraticContext,
-            ...sheetContext,
+            ...currentSheetContext,
             ...visibleContext,
             ...toolUsePrompt,
+            ...selectionContext,
             ...(clearMessages ? [] : prevMessages),
             ...newContextMessages,
-            { role: 'user', content: userPrompt, internalContext: false, contextType: 'userPrompt' },
+            { role: 'user', content: userPrompt, contextType: 'userPrompt', context },
           ];
 
           return updatedMessages;
@@ -166,10 +166,9 @@ export function useSubmitAIAnalystPrompt() {
           set(aiAnalystMessagesAtom, (prevMessages) => {
             const aiMessage: AIMessage = {
               role: 'assistant',
-              model,
               content: 'Looks like there was a problem. Please try again.',
-              internalContext: false,
               contextType: 'userPrompt',
+              model,
             };
 
             const lastMessage = prevMessages.at(-1);

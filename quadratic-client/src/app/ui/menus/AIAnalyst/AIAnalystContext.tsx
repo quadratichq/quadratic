@@ -1,18 +1,20 @@
-import { aiAnalystContextAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
+import { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAnalystContextProps = {
+  context: Context;
+  setContext: React.Dispatch<React.SetStateAction<Context>>;
   disabled: boolean;
   textAreaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
-export const AIAnalystContext = ({ disabled, textAreaRef }: AIAnalystContextProps) => {
-  const context = useRecoilValue(aiAnalystContextAtom);
+export const AIAnalystContext = ({ context, setContext, disabled, textAreaRef }: AIAnalystContextProps) => {
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
@@ -21,11 +23,21 @@ export const AIAnalystContext = ({ disabled, textAreaRef }: AIAnalystContextProp
         disabled || loading ? 'opacity-60' : ''
       } `}
     >
-      <AIAnalystSelectContextMenu onClose={() => textAreaRef.current?.focus()} disabled={disabled} />
+      <AIAnalystSelectContextMenu
+        context={context}
+        setContext={setContext}
+        onClose={() => textAreaRef.current?.focus()}
+        disabled={disabled}
+      />
 
       <CodeCellContext codeCell={context.codeCell} />
 
-      <SelectionContext sheetRect={context.selection} />
+      {context.selection.map((sheetRect) => (
+        <SelectionContext
+          key={`${sheetRect.sheet_id.id} (${sheetRect.min.x},${sheetRect.min.y}) - (${sheetRect.max.x},${sheetRect.max.y})`}
+          sheetRect={sheetRect}
+        />
+      ))}
 
       {!!context.visibleData && <span>{'[Visible data]'}</span>}
 

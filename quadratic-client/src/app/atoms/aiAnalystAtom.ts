@@ -1,18 +1,13 @@
-import { events } from '@/app/events/events';
-import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { SheetRect } from '@/app/quadratic-core-types';
-import { AIMessage, ContextType, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
+
 export interface AIAnalystState {
   showAIAnalyst: boolean;
   showInternalContext: boolean;
   abortController?: AbortController;
   loading: boolean;
   messages: (UserMessage | AIMessage)[];
-  context: {
-    [key in Exclude<ContextType, 'selection' | 'codeCell' | 'userPrompt'>]: boolean;
-  } & { selection?: SheetRect; codeCell?: CodeCell };
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
@@ -21,16 +16,6 @@ export const defaultAIAnalystState: AIAnalystState = {
   abortController: undefined,
   loading: false,
   messages: [],
-  context: {
-    quadraticDocs: true,
-    connections: false,
-    allSheets: false,
-    currentSheet: true,
-    visibleData: true,
-    toolUse: true,
-    selection: undefined,
-    codeCell: undefined,
-  },
 };
 
 export const aiAnalystAtom = atom<AIAnalystState>({
@@ -47,21 +32,6 @@ export const aiAnalystAtom = atom<AIAnalystState>({
           focusGrid();
         }
       });
-    },
-    ({ setSelf }) => {
-      const updateCodeCell = (codeCell?: CodeCell) => {
-        setSelf((prev) => {
-          if (prev instanceof DefaultValue) {
-            return prev;
-          }
-
-          return { ...prev, context: { ...prev.context, codeCell } };
-        });
-      };
-      events.on('codeEditorCodeCell', updateCodeCell);
-      return () => {
-        events.off('codeEditorCodeCell', updateCodeCell);
-      };
     },
   ],
 });
@@ -81,9 +51,8 @@ export const aiAnalystShowInternalContextAtom = createSelector('showInternalCont
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
 export const aiAnalystLoadingAtom = createSelector('loading');
 export const aiAnalystMessagesAtom = createSelector('messages');
-export const aiAnalystContextAtom = createSelector('context');
 
 export const aiAnalystMessagesCountAtom = selector<number>({
   key: 'aiAnalystMessagesCountAtom',
-  get: ({ get }) => get(aiAnalystMessagesAtom).filter((message) => !message.internalContext).length,
+  get: ({ get }) => get(aiAnalystMessagesAtom).filter((message) => message.contextType === 'userPrompt').length,
 });

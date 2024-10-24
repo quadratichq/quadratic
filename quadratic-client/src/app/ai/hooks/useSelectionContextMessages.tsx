@@ -37,15 +37,13 @@ ${JSON.stringify(selectionContext)}
 \`\`\`
 
 Note: This selection JSON is only for your reference to data on the sheet. This JSON cannot be used directly in code. Use the cell reference functions, like \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions, to reference cells in code.`,
-          internalContext: true,
           contextType: 'selection',
         },
         {
           role: 'assistant',
           content: `I understand the cursor selection data, I will reference it to answer following messages. How can I help you?`,
-          model,
-          internalContext: true,
           contextType: 'selection',
+          model,
         },
       ];
     },

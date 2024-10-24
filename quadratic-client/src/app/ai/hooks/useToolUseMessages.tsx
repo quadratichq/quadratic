@@ -16,16 +16,14 @@ ${Object.entries(aiToolsSpec)
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)
   .join('\n\n')}
 `,
-        internalContext: true,
         contextType: 'toolUse',
       },
       {
         role: 'assistant',
         content:
           'I understand these tools are available to me for taking actions on the spreadsheet. How can I help you?',
-        model,
-        internalContext: true,
         contextType: 'toolUse',
+        model,
       },
     ];
   }, []);

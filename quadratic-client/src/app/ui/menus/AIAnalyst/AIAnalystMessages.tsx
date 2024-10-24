@@ -77,29 +77,30 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!showInternalContext && message.internalContext) {
+        if (!showInternalContext && message.contextType !== 'userPrompt') {
           return null;
         }
 
         return (
           <div
-            key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
+            key={`${index}-${message.role}-${message.contextType}`}
             style={{
-              backgroundColor: message.internalContext ? colors.lightGray : 'white',
+              backgroundColor: message.contextType === 'userPrompt' ? 'white' : colors.lightGray,
               borderRadius: '0.5rem',
             }}
           >
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
                 <AIAnalystUserMessageForm
-                  key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
+                  key={`${index}-${message.role}-${message.contextType}`}
                   initialPrompt={message.content}
+                  initialContext={message.context}
                   messageIndex={index}
                   textareaRef={textareaRef}
                 />
               ) : (
                 <Markdown
-                  key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
+                  key={`${index}-${message.role}-${message.contextType}`}
                   className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
                 >
                   {message.content}
@@ -108,7 +109,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             ) : (
               <>
                 <Markdown
-                  key={`${index}-${message.role}-${message.contextType}-${message.internalContext}`}
+                  key={`${index}-${message.role}-${message.contextType}`}
                   className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
                 >
                   {message.content}

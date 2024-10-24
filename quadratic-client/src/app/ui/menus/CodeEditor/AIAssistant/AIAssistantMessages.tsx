@@ -59,7 +59,7 @@ export function AIAssistantMessages() {
       data-enable-grammarly="false"
     >
       {messages
-        .filter((message) => debugShowAIAssistantInternalContext || !message.internalContext)
+        .filter((message) => debugShowAIAssistantInternalContext || message.contextType === 'userPrompt')
         .map((message, index) => (
           <div
             key={index}
@@ -67,7 +67,7 @@ export function AIAssistantMessages() {
               borderTop: index !== 0 ? `1px solid ${colors.lightGray}` : 'none',
               marginTop: '1rem',
               paddingTop: index !== 0 ? '1rem' : '0',
-              backgroundColor: message.internalContext ? colors.lightGray : 'white',
+              backgroundColor: message.contextType === 'userPrompt' ? 'white' : colors.lightGray,
               borderRadius: '0.5rem',
             }}
           >

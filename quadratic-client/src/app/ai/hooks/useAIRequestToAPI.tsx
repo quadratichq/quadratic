@@ -225,9 +225,8 @@ export function useAIRequestToAPI() {
       const responseMessage: AIMessage = {
         role: 'assistant',
         content: '',
-        model,
-        internalContext: false,
         contextType: 'userPrompt',
+        model,
       };
       setMessages?.((prev) => [...prev, { ...responseMessage, content: 'Loading...' }]);
 
@@ -253,7 +252,7 @@ export function useAIRequestToAPI() {
               : `Looks like there was a problem. Status Code: ${response.status}`;
           setMessages?.((prev) => [
             ...prev.slice(0, -1),
-            { role: 'assistant', content: error, model, internalContext: false, contextType: 'userPrompt' },
+            { role: 'assistant', content: error, contextType: 'userPrompt', model },
           ]);
           if (response.status !== 429) {
             console.error(`Error retrieving data from AI API: ${response.status}`);

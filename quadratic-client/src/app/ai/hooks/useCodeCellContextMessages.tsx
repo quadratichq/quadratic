@@ -70,15 +70,13 @@ ${
 \`\`\`json\n${JSON.stringify(consoleOutput)}\n\`\`\``
     : ``
 }`,
-          internalContext: true,
           contextType: 'codeCell',
         },
         {
           role: 'assistant',
           content: `How can I help you?`,
+          contextType: 'codeCell',
           model,
-          internalContext: true,
-          contextType: 'userPrompt',
         },
       ];
     },

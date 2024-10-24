@@ -1,4 +1,3 @@
-import { aiAnalystContextAtom } from '@/app/atoms/aiAnalystAtom';
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -15,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 const SELECTION_PROMPTS: { label: string; prompt: string }[] = [
   { label: 'Create a chart', prompt: 'Create a chart from my selected data using Plotly in Python' },
@@ -33,7 +32,6 @@ const SELECTION_PROMPTS: { label: string; prompt: string }[] = [
 const ASK_AI_SELECTION_DELAY = 500;
 
 export function AskAISelection() {
-  const setAIAnalystContext = useSetRecoilState(aiAnalystContextAtom);
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
   const [currentSheet, setCurrentSheet] = useState(sheets.current);
   const [sheetRect, setSheetRect] = useState<SheetRect | undefined>();
@@ -79,24 +77,20 @@ export function AskAISelection() {
     clearTimeout(timeoutRef.current);
     setDisplayPos(undefined);
     setSheetRect(undefined);
-    setAIAnalystContext((prev) => {
-      if (!prev.selection) return prev;
-
-      return {
-        ...prev,
-        selection: undefined,
-      };
-    });
 
     timeoutRef.current = setTimeout(() => {
       showAskAISelection();
     }, ASK_AI_SELECTION_DELAY);
-  }, [setAIAnalystContext, showAskAISelection]);
+  }, [showAskAISelection]);
 
   const handleSubmitPrompt = useCallback(
     (prompt: string) => {
       setLoading(true);
-      submitPrompt({ userPrompt: prompt, clearMessages: true, selectionSheetRect: sheetRect })
+      submitPrompt({
+        userPrompt: prompt,
+        clearMessages: true,
+        selectionSheetRect: sheetRect,
+      })
         .catch(console.error)
         .finally(() => {
           setLoading(false);

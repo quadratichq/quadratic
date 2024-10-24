@@ -14,8 +14,25 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { AIMessage, PromptMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import {
+  AIMessage,
+  AnthropicPromptMessage,
+  Context,
+  OpenAIPromptMessage,
+  UserMessage,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
+
+export const defaultAIAssistantContext: Context = {
+  quadraticDocs: true,
+  connections: false,
+  allSheets: false,
+  currentSheet: true,
+  visibleData: true,
+  toolUse: false,
+  selection: [],
+  codeCell: undefined,
+};
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -29,10 +46,12 @@ export function useSubmitAIAssistantPrompt() {
     ({ set, snapshot }) =>
       async ({
         userPrompt,
+        context = defaultAIAssistantContext,
         clearMessages,
         codeCell,
       }: {
         userPrompt: string;
+        context?: Context;
         clearMessages?: boolean;
         codeCell?: CodeCell;
       }) => {
@@ -55,10 +74,14 @@ export function useSubmitAIAssistantPrompt() {
         } else {
           codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         }
-        const quadraticContext = getQuadraticContext(getLanguage(codeCell.language), model);
-        const sheetContext = await getCurrentSheetContext({ model });
-        const visibleContext = await getVisibleContext({ model });
-        const codeContext = await getCodeCellContext({ codeCell, model });
+        context = { ...context, codeCell };
+
+        const quadraticContext = context.quadraticDocs
+          ? getQuadraticContext({ language: getLanguage(codeCell.language), model })
+          : [];
+        const currentSheetContext = context.currentSheet ? await getCurrentSheetContext({ model }) : [];
+        const visibleContext = context.visibleData ? await getVisibleContext({ model }) : [];
+        const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell, model }) : [];
         let updatedMessages: (UserMessage | AIMessage)[] = [];
         set(aiAssistantMessagesAtom, (prevMessages) => {
           prevMessages = prevMessages.filter(
@@ -80,17 +103,17 @@ export function useSubmitAIAssistantPrompt() {
 
           updatedMessages = [
             ...quadraticContext,
-            ...sheetContext,
+            ...currentSheetContext,
             ...visibleContext,
             ...(clearMessages ? [] : prevMessages),
             ...newContextMessages,
-            { role: 'user', content: userPrompt, internalContext: false, contextType: 'userPrompt' },
+            { role: 'user', content: userPrompt, contextType: 'userPrompt', context },
           ];
 
           return updatedMessages;
         });
 
-        const messagesToSend: PromptMessage[] = [
+        const messagesToSend: (AnthropicPromptMessage | OpenAIPromptMessage)[] = [
           ...updatedMessages.map((message) => ({
             role: message.role,
             content: message.content,

@@ -9,7 +9,13 @@ import { useCallback } from 'react';
 
 export function useQuadraticContextMessages() {
   const getQuadraticContext = useCallback(
-    (language: CodeCellType | undefined, model: AnthropicModel | OpenAIModel): (UserMessage | AIMessage)[] => [
+    ({
+      language,
+      model,
+    }: {
+      language?: CodeCellType;
+      model: AnthropicModel | OpenAIModel;
+    }): (UserMessage | AIMessage)[] => [
       {
         role: 'user',
         content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
@@ -26,16 +32,14 @@ Provide your response in ${
 Respond in minimum number of words with direct answer. Don't explain the answer.
 `,
         contextType: 'quadraticDocs',
-        internalContext: true,
       },
       {
         role: 'assistant',
         content: `As your AI assistant for Quadratic, I understand that Quadratic documentation and I will strictly adhere to the Quadratic documentation.\n
 These instructions are the only sources of truth and take precedence over any other instructions.\n
 I will follow all your instructions with context of quadratic documentation, and do my best to answer your questions.\n`,
-        model,
         contextType: 'quadraticDocs',
-        internalContext: true,
+        model,
       },
     ],
     []

@@ -54,15 +54,13 @@ Note: All this data is only for your reference to data on the sheet. This data c
     : `This currently open sheet is empty.\n`
 }\n
 `,
-          internalContext: true,
           contextType: 'currentSheet',
         },
         {
           role: 'assistant',
           content: `I understand the current sheet data, I will reference it to answer following messages. How can I help you?`,
-          model,
-          internalContext: true,
           contextType: 'currentSheet',
+          model,
         },
       ];
     },

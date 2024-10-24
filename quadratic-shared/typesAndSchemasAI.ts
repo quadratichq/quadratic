@@ -12,20 +12,77 @@ export const ContextTypeSchema = z.enum([
   'allSheets',
   'currentSheet',
   'visibleData',
+  'toolUse',
   'selection',
   'codeCell',
-  'toolUse',
   'userPrompt',
 ]);
 export type ContextType = z.infer<typeof ContextTypeSchema>;
 
-export const PromptMessageSchema = z.object({
-  role: z.enum(['user', 'assistant']),
-  content: z.string(),
+const ContextSchema = z.object({
+  quadraticDocs: z.boolean(),
+  connections: z.boolean(),
+  allSheets: z.boolean(),
+  currentSheet: z.boolean(),
+  visibleData: z.boolean(),
+  toolUse: z.boolean(),
+  selection: z.array(
+    z.object({
+      sheet_id: z.object({ id: z.string() }),
+      min: z.object({ x: z.bigint(), y: z.bigint() }),
+      max: z.object({ x: z.bigint(), y: z.bigint() }),
+    })
+  ),
+  codeCell: z
+    .object({
+      sheetId: z.string(),
+      pos: z.object({ x: z.number(), y: z.number() }),
+      language: z.enum(['Python', 'Javascript', 'Formula']).or(
+        z.object({
+          Connection: z.object({ kind: z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE']), id: z.string() }),
+        })
+      ),
+    })
+    .optional(),
 });
-export type PromptMessage = z.infer<typeof PromptMessageSchema>;
+export type Context = z.infer<typeof ContextSchema>;
 
-export const AnthropicPromptMessageSchema = PromptMessageSchema.extend({
+const UserMessageInternalSchema = z.object({
+  role: z.literal('user'),
+  content: z.string(),
+  contextType: ContextTypeSchema.exclude(['userPrompt']),
+});
+
+const UserMessagePromptSchema = z.object({
+  role: z.literal('user'),
+  content: z.string(),
+  contextType: z.literal('userPrompt'),
+  context: ContextSchema,
+});
+export type UserMessagePrompt = z.infer<typeof UserMessagePromptSchema>;
+
+const UserMessageSchema = UserMessageInternalSchema.or(UserMessagePromptSchema);
+export type UserMessage = z.infer<typeof UserMessageSchema>;
+
+const AIMessageSchema = z.object({
+  role: z.literal('assistant'),
+  content: z.string(),
+  contextType: ContextTypeSchema,
+  model: AnthropicModelSchema.or(OpenAIModelSchema),
+  toolCalls: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        arguments: z.string(),
+        loading: z.boolean(),
+      })
+    )
+    .optional(),
+});
+export type AIMessage = z.infer<typeof AIMessageSchema>;
+
+const AnthropicPromptMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
   content: z
     .string()
@@ -39,7 +96,7 @@ export const AnthropicPromptMessageSchema = PromptMessageSchema.extend({
 });
 export type AnthropicPromptMessage = z.infer<typeof AnthropicPromptMessageSchema>;
 
-export const OpenAIPromptMessageSchema = z
+const OpenAIPromptMessageSchema = z
   .object({
     role: z.literal('user'),
     content: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
@@ -61,32 +118,7 @@ export const OpenAIPromptMessageSchema = z
   );
 export type OpenAIPromptMessage = z.infer<typeof OpenAIPromptMessageSchema>;
 
-export const UserMessageSchema = PromptMessageSchema.extend({
-  role: z.literal('user'),
-  internalContext: z.boolean(),
-  contextType: ContextTypeSchema,
-});
-export type UserMessage = z.infer<typeof UserMessageSchema>;
-
-export const AIMessageSchema = PromptMessageSchema.extend({
-  role: z.literal('assistant'),
-  model: AnthropicModelSchema.or(OpenAIModelSchema),
-  internalContext: z.boolean(),
-  contextType: ContextTypeSchema,
-  toolCalls: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        arguments: z.string(),
-        loading: z.boolean(),
-      })
-    )
-    .optional(),
-});
-export type AIMessage = z.infer<typeof AIMessageSchema>;
-
-export const AnthropicToolSchema = z.object({
+const AnthropicToolSchema = z.object({
   name: z.string(),
   description: z.string(),
   input_schema: z
@@ -104,7 +136,7 @@ export const AnthropicToolSchema = z.object({
 });
 export type AnthropicTool = z.infer<typeof AnthropicToolSchema>;
 
-export const AnthropicToolChoiceSchema = z.discriminatedUnion('type', [
+const AnthropicToolChoiceSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('auto') }),
   z.object({ type: z.literal('any') }),
   z.object({ type: z.literal('tool'), name: z.string() }),
@@ -120,7 +152,7 @@ export const AnthropicAutoCompleteRequestBodySchema = z.object({
 });
 export type AnthropicAutoCompleteRequestBody = z.infer<typeof AnthropicAutoCompleteRequestBodySchema>;
 
-export const OpenAIToolSchema = z.object({
+const OpenAIToolSchema = z.object({
   type: z.literal('function'),
   function: z.object({
     name: z.string(),
@@ -141,7 +173,7 @@ export const OpenAIToolSchema = z.object({
 });
 export type OpenAITool = z.infer<typeof OpenAIToolSchema>;
 
-export const OpenAIToolChoiceSchema = z.union([
+const OpenAIToolChoiceSchema = z.union([
   z.literal('auto'),
   z.literal('none'),
   z.object({

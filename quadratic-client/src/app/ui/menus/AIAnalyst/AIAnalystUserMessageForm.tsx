@@ -1,31 +1,45 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import { aiAnalystAbortControllerAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import {
+  aiAnalystAbortControllerAtom,
+  aiAnalystLoadingAtom,
+  aiAnalystMessagesAtom,
+  aiAnalystMessagesCountAtom,
+} from '@/app/atoms/aiAnalystAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
-import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import {
+  defaultAIAnalystContext,
+  useSubmitAIAnalystPrompt,
+} from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { ArrowUpwardIcon, EditIcon, StopIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
+import { Context, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 type AIAnalystUserMessageFormProps = {
   initialPrompt?: string;
+  initialContext?: Context;
   messageIndex?: number;
   autoFocus?: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
 export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalystUserMessageFormProps>(
-  ({ initialPrompt, messageIndex, autoFocus, textareaRef: bottomTextareaRef }: AIAnalystUserMessageFormProps, ref) => {
+  (props: AIAnalystUserMessageFormProps, ref) => {
+    const { initialPrompt, initialContext, messageIndex, autoFocus, textareaRef: bottomTextareaRef } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
+    const messages = useRecoilValue(aiAnalystMessagesAtom);
+    const messagesCount = useRecoilValue(aiAnalystMessagesCountAtom);
 
     const [edit, setEdit] = useState(!initialPrompt);
+    const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
     const [prompt, setPrompt] = useState(initialPrompt ?? '');
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
@@ -46,6 +60,19 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
       }
     }, [autoFocus, textareaRef]);
 
+    useEffect(() => {
+      if (initialPrompt === undefined && messagesCount > 0) {
+        const lastUserMessage = messages
+          .filter(
+            (message): message is UserMessagePrompt => message.role === 'user' && message.contextType === 'userPrompt'
+          )
+          .at(-1);
+        if (lastUserMessage) {
+          setContext(lastUserMessage.context);
+        }
+      }
+    }, [initialPrompt, messages, messagesCount]);
+
     return (
       <form
         className={cn('group z-10 m-2 h-min rounded-lg bg-slate-100 pt-1', edit ? '' : 'select-none')}
@@ -57,7 +84,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
         }}
       >
         <div className="flex flex-row items-start justify-between">
-          <AIAnalystContext textAreaRef={textareaRef} disabled={!edit} />
+          <AIAnalystContext context={context} setContext={setContext} textAreaRef={textareaRef} disabled={!edit} />
 
           {!edit && (
             <TooltipPopover label="Edit">
@@ -92,7 +119,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
 
               if (prompt.trim().length === 0) return;
 
-              submitPrompt({ userPrompt: prompt, messageIndex });
+              submitPrompt({ userPrompt: prompt, context, messageIndex });
 
               if (initialPrompt === undefined) {
                 setPrompt('');
@@ -151,7 +178,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
                     className="rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      submitPrompt({ userPrompt: prompt, messageIndex });
+                      submitPrompt({ userPrompt: prompt, context, messageIndex });
                     }}
                     disabled={prompt.length === 0}
                   >
