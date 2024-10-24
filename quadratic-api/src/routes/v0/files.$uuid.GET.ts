@@ -9,6 +9,8 @@ import { validateOptionalAccessToken } from '../../middleware/validateOptionalAc
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import { RequestWithOptionalUser } from '../../types/Request';
+import { ResponseError } from '@sendgrid/mail';
+import { ApiError } from '../../utils/ApiError';
 
 export default [
   validateRequestSchema(
@@ -23,7 +25,10 @@ export default [
   handler,
 ];
 
-async function handler(req: RequestWithOptionalUser, res: Response<any>) {
+async function handler(
+  req: RequestWithOptionalUser,
+  res: Response<ApiTypes['/v0/files/:uuid.GET.response'] | ResponseError>
+) {
   const userId = req.user?.id;
   const {
     file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerUserId, ownerTeam },
@@ -43,7 +48,7 @@ async function handler(req: RequestWithOptionalUser, res: Response<any>) {
   });
 
   if (!checkpoint) {
-    return res.status(500).json({ error: { message: 'No Checkpoints exist for this file' } });
+    throw new ApiError(500, 'No Checkpoints exist for this file');
   }
   const lastCheckpointDataUrl = await getFileUrl(checkpoint.s3Key);
 
@@ -59,12 +64,10 @@ async function handler(req: RequestWithOptionalUser, res: Response<any>) {
     fileTeamPrivacy = 'PUBLIC_TO_TEAM';
   }
 
-  console.log('a');
-  const license = await licenseClient.check();
-  console.log('b');
+  const license = await licenseClient.check(false);
 
   if (license === null) {
-    return res.status(500).json({ error: { message: 'Unable to retrieve license' } });
+    throw new ApiError(500, 'Unable to retrieve license');
   }
 
   const data = {

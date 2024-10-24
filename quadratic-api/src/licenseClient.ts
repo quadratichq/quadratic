@@ -49,10 +49,15 @@ export const licenseClient = {
       status: 'active',
     };
   },
-  check: async (): Promise<LicenseResponse | null> => {
+  /**
+   *
+   * @param force boolean to force a license check (ignoring the cache)
+   * @returns
+   */
+  check: async (force: boolean): Promise<LicenseResponse | null> => {
     const currentTime = Date.now();
 
-    if (cachedResult && lastCheckedTime && currentTime - lastCheckedTime < cacheDuration) {
+    if (!force && cachedResult && lastCheckedTime && currentTime - lastCheckedTime < cacheDuration) {
       // Use cached result if within the cache duration
       return cachedResult;
     }

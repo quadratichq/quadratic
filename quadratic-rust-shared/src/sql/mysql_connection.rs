@@ -153,24 +153,26 @@ impl Connection for MySqlConnection {
         };
 
         for row in rows.into_iter() {
-            let table_name = row.get::<String, usize>(2);
+            let row_get = |row: &MySqlRow, index: usize| {
+                let bytes: Vec<u8> = row.get::<Vec<u8>, usize>(index);
+                String::from_utf8_lossy(&bytes).into_owned()
+            };
+
+            let table_name = row_get(&row, 2);
 
             schema
                 .tables
                 .entry(table_name.to_owned())
                 .or_insert_with(|| SchemaTable {
                     name: table_name,
-                    schema: row.get::<String, usize>(1),
+                    schema: row_get(&row, 1),
                     columns: vec![],
                 })
                 .columns
                 .push(SchemaColumn {
-                    name: row.get::<String, usize>(3),
-                    r#type: row.get::<String, usize>(4),
-                    is_nullable: matches!(
-                        row.get::<String, usize>(5).to_lowercase().as_str(),
-                        "yes"
-                    ),
+                    name: row_get(&row, 3),
+                    r#type: row_get(&row, 4),
+                    is_nullable: matches!(row_get(&row, 5).to_lowercase().as_str(), "yes"),
                 });
         }
 
@@ -180,7 +182,7 @@ impl Connection for MySqlConnection {
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
+            "TEXT" | "VARCHAR" | "VARBINARY" | "CHAR" | "ENUM" => {
                 ArrowType::Utf8(convert_mysql_type!(String, row, index))
             }
             "TINYINT" => ArrowType::Int8(convert_mysql_type!(i8, row, index)),
@@ -189,7 +191,9 @@ impl Connection for MySqlConnection {
             "BIGINT" => ArrowType::Int64(convert_mysql_type!(i64, row, index)),
             "TINYINT UNSIGNED" => ArrowType::UInt8(convert_mysql_type!(u8, row, index)),
             "SMALLINT UNSIGNED" => ArrowType::UInt16(convert_mysql_type!(u16, row, index)),
-            "INT UNSIGNED" => ArrowType::UInt32(convert_mysql_type!(u32, row, index)),
+            "INT UNSIGNED" | "MEDIUMINT UNSIGNED" => {
+                ArrowType::UInt32(convert_mysql_type!(u32, row, index))
+            }
             "BIGINT UNSIGNED" | "BIT" => ArrowType::UInt64(convert_mysql_type!(u64, row, index)),
             "BOOL" | "BOOLEAN" => ArrowType::Boolean(convert_mysql_type!(bool, row, index)),
             "FLOAT" => ArrowType::Float32(convert_mysql_type!(f32, row, index)),
@@ -205,6 +209,7 @@ impl Connection for MySqlConnection {
             "YEAR" => ArrowType::UInt16(convert_mysql_type!(u16, row, index)),
             "JSON" => ArrowType::Json(convert_mysql_type!(Value, row, index)),
             "UUID" => ArrowType::Uuid(convert_mysql_type!(Uuid, row, index)),
+            "NULL" => ArrowType::Void,
             // try to convert others to a string
             _ => ArrowType::Unsupported,
         }
