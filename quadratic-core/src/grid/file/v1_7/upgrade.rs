@@ -9,34 +9,23 @@ use super::schema::{self as current};
 fn upgrade_cells_accessed(
     cells_accessed: Vec<current::SheetRectSchema>,
 ) -> v1_7_1::CellsAccessedSchema {
-    let mut new_cells_accessed: HashMap<v1_7_1::IdSchema, Vec<v1_7_1::A1RangeTypeSchema>> =
+    let mut new_cells_accessed: HashMap<v1_7_1::IdSchema, Vec<v1_7_1::CellRefRangeSchema>> =
         HashMap::new();
+
     for cell_access in cells_accessed {
         let vec = new_cells_accessed
             .entry(v1_7_1::IdSchema::from(cell_access.sheet_id.id))
             .or_default();
-        vec.push(v1_7_1::A1RangeTypeSchema::Rect(v1_7_1::RelRectSchema {
-            min: v1_7_1::RelPosSchema {
-                x: v1_7_1::RelColRowSchema {
-                    index: cell_access.min.x as u64,
-                    relative: true,
-                },
-                y: v1_7_1::RelColRowSchema {
-                    index: cell_access.min.y as u64,
-                    relative: true,
-                },
-            },
-            max: v1_7_1::RelPosSchema {
-                x: v1_7_1::RelColRowSchema {
-                    index: cell_access.max.x as u64,
-                    relative: true,
-                },
-                y: v1_7_1::RelColRowSchema {
-                    index: cell_access.max.y as u64,
-                    relative: true,
-                },
-            },
-        }));
+        vec.push(v1_7_1::CellRefRangeSchema {
+            start: v1_7_1::CellRefRangeEndSchema::new_relative_pos(
+                cell_access.min.x,
+                cell_access.min.y,
+            ),
+            end: Some(v1_7_1::CellRefRangeEndSchema::new_relative_pos(
+                cell_access.max.x,
+                cell_access.max.y,
+            )),
+        });
     }
     new_cells_accessed.into_iter().collect()
 }

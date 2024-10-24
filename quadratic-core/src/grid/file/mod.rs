@@ -182,7 +182,7 @@ mod tests {
     use crate::{
         controller::GridController,
         grid::{BorderSelection, BorderStyle, CodeCellLanguage},
-        selection::Selection,
+        selection::OldSelection,
         ArraySize, CellValue, CodeCellValue, Pos, SheetPos,
     };
     use serial_test::parallel;
@@ -318,7 +318,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_pos(SheetPos::new(sheet_id, 0, 0)),
+            OldSelection::sheet_pos(SheetPos::new(sheet_id, 0, 0)),
             BorderSelection::Bottom,
             Some(BorderStyle::default()),
             None,

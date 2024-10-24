@@ -3,7 +3,7 @@
 
 use crate::{
     grid::{bounds::BoundsRect, Column, GridBounds},
-    selection::Selection,
+    selection::OldSelection,
     CellValue, Pos, Rect,
 };
 
@@ -80,7 +80,7 @@ impl Sheet {
     /// Returns whether any of the sheet's bounds has changed
     pub fn recalculate_add_bounds_selection(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
         format: bool,
     ) -> bool {
         if selection.all || selection.columns.is_some() || selection.rows.is_some() {
@@ -402,7 +402,7 @@ mod test {
             },
             BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
-        selection::Selection,
+        selection::OldSelection,
         CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
@@ -923,7 +923,7 @@ mod test {
                     show_checkbox: true,
                     ignore_blank: true,
                 }),
-                selection: Selection::pos(0, 0, sheet_id),
+                selection: OldSelection::pos(0, 0, sheet_id),
                 message: Default::default(),
                 error: Default::default(),
             },
@@ -944,7 +944,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,

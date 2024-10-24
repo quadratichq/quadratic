@@ -4,14 +4,14 @@ use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
 use crate::formulas::replace_a1_notation;
 use crate::grid::formats::Formats;
 use crate::grid::{CodeCellLanguage, Sheet};
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 use crate::{CellValue, Pos, Rect};
 
 impl Sheet {
     /// Copies the selection to the clipboard.
     ///
     /// Returns the copied SheetRect, plain text, and html.
-    pub fn copy_to_clipboard(&self, selection: &Selection) -> Result<(String, String), String> {
+    pub fn copy_to_clipboard(&self, selection: &OldSelection) -> Result<(String, String), String> {
         let mut clipboard_origin = ClipboardOrigin::default();
         let mut html = String::from("<tbody>");
         let mut plain_text = String::new();
@@ -305,7 +305,7 @@ mod tests {
         sheet.test_set_values(0, 0, 4, 1, vec!["1", "2", "3", "4"]);
 
         let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
+            .copy_to_clipboard(&OldSelection {
                 rects: Some(vec![
                     Rect::single_pos(Pos { x: 0, y: 0 }),
                     Rect::from_numbers(2, 0, 2, 1),
@@ -315,7 +315,7 @@ mod tests {
             .unwrap();
 
         gc.paste_from_clipboard(
-            Selection::pos(0, 5, sheet_id),
+            OldSelection::pos(0, 5, sheet_id),
             None,
             Some(html),
             PasteSpecial::None,
@@ -332,7 +332,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+        let selection = OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
         gc.set_borders_selection(
             selection.clone(),
             BorderSelection::All,
@@ -344,7 +344,7 @@ mod tests {
         let (_, html) = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
-            Selection::pos(2, 2, sheet_id),
+            OldSelection::pos(2, 2, sheet_id),
             None,
             Some(html),
             PasteSpecial::None,

@@ -100,15 +100,19 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
 mod tests {
     use serial_test::parallel;
 
-    use crate::{controller::GridController, grid::file, selection::Selection};
+    use crate::{controller::GridController, grid::file, selection::OldSelection};
 
     #[test]
     #[parallel]
     fn import_and_export_date_time() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_date_time_format(Selection::pos(0, 0, sheet_id), Some("%H".to_string()), None)
-            .unwrap();
+        gc.set_date_time_format(
+            OldSelection::pos(0, 0, sheet_id),
+            Some("%H".to_string()),
+            None,
+        )
+        .unwrap();
         let grid = gc.grid().clone();
         let exported = file::export(grid).unwrap();
         let imported = file::import(exported).unwrap();

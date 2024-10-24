@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     grid::{js_types::JsRenderCellSpecial, Sheet},
-    selection::Selection,
+    selection::OldSelection,
     CellValue,
 };
 
@@ -36,7 +36,7 @@ pub struct ValidationError {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct Validation {
     pub id: Uuid,
-    pub selection: Selection,
+    pub selection: OldSelection,
     pub rule: ValidationRule,
     pub message: ValidationMessage,
     pub error: ValidationError,
@@ -142,7 +142,7 @@ mod tests {
     fn validation_render_special() {
         let v = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::default(),
+            selection: OldSelection::default(),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -154,7 +154,7 @@ mod tests {
 
         let v = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::default(),
+            selection: OldSelection::default(),
             rule: ValidationRule::List(ValidationList {
                 source: ValidationListSource::List(vec!["test".to_string()]),
                 ignore_blank: true,
@@ -167,7 +167,7 @@ mod tests {
 
         let v = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::default(),
+            selection: OldSelection::default(),
             rule: ValidationRule::None,
             message: Default::default(),
             error: Default::default(),

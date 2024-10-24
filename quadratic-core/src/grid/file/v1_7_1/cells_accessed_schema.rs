@@ -1,44 +1,41 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::grid::file::v1_7_1;
+use crate::{grid::file::v1_7_1, Pos};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RelRectSchema {
-    pub min: RelPosSchema,
-    pub max: RelPosSchema,
+pub struct CellRefRangeSchema {
+    pub start: CellRefRangeEndSchema,
+    pub end: Option<CellRefRangeEndSchema>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RelPosSchema {
-    pub x: RelColRowSchema,
-    pub y: RelColRowSchema,
+pub struct CellRefRangeEndSchema {
+    pub col: Option<CellRefCoordSchema>,
+    pub row: Option<CellRefCoordSchema>,
+}
+impl CellRefRangeEndSchema {
+    pub fn new_relative_pos(x: i64, y: i64) -> Self {
+        Self {
+            col: Some(CellRefCoordSchema {
+                coord: x as u64,
+                is_absolute: false,
+            }),
+            row: Some(CellRefCoordSchema {
+                coord: y as u64,
+                is_absolute: false,
+            }),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RelColRowSchema {
-    pub index: u64,
-    pub relative: bool,
+pub struct CellRefCoordSchema {
+    pub coord: u64,
+    pub is_absolute: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RelColRowRangeSchema {
-    pub min: RelColRowSchema,
-    pub max: RelColRowSchema,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum A1RangeTypeSchema {
-    All,
-    Column(RelColRowSchema),
-    Row(RelColRowSchema),
-    ColumnRange(RelColRowRangeSchema),
-    RowRange(RelColRowRangeSchema),
-    Rect(RelRectSchema),
-    Pos(RelPosSchema),
-}
-
-pub type CellsAccessedSchema = Vec<(v1_7_1::IdSchema, Vec<A1RangeTypeSchema>)>;
+pub type CellsAccessedSchema = Vec<(v1_7_1::IdSchema, Vec<CellRefRangeSchema>)>;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CodeRunSchema {

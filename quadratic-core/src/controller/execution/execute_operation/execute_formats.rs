@@ -173,6 +173,14 @@ impl GridController {
             }
         }
     }
+
+    pub fn execute_set_cell_formats_a1(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        todo!("todo todo todo");
+    }
 }
 
 #[cfg(test)]

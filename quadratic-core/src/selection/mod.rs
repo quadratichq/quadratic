@@ -7,11 +7,10 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 mod selection_create;
-mod selection_from_a1;
-mod selection_to_a1;
 
+/// **Deprecated** Nov 2024 in favor of [`crate::A1Selection`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
-pub struct Selection {
+pub struct OldSelection {
     pub sheet_id: SheetId,
 
     // cursor position
@@ -24,18 +23,9 @@ pub struct Selection {
     pub all: bool,
 }
 
-impl From<Selection> for String {
-    fn from(selection: Selection) -> Self {
-        serde_json::to_string(&selection).unwrap_or(format!(
-            "Failed to convert selection to string: {:?}",
-            selection
-        ))
-    }
-}
-
-impl Default for Selection {
+impl Default for OldSelection {
     fn default() -> Self {
-        Selection {
+        OldSelection {
             sheet_id: SheetId::test(),
             x: 1,
             y: 1,
@@ -46,7 +36,7 @@ impl Default for Selection {
         }
     }
 }
-impl Selection {
+impl OldSelection {
     pub fn has_sheet_selection(&self) -> bool {
         self.rows.is_some() || self.columns.is_some() || self.all
     }
@@ -212,8 +202,8 @@ impl Selection {
     }
 
     // Translates the selection and returns a new selection.
-    pub fn translate(&self, delta_x: i64, delta_y: i64) -> Selection {
-        Selection {
+    pub fn translate(&self, delta_x: i64, delta_y: i64) -> OldSelection {
+        OldSelection {
             x: self.x + delta_x,
             y: self.y + delta_y,
             columns: self
@@ -256,7 +246,7 @@ impl Selection {
 
     /// Finds intersection of two Selections. Note: x,y of the resulting
     /// Selection is defined as self.x and self.y (mostly not useful).
-    pub fn intersection(&self, other: &Selection) -> Option<Selection> {
+    pub fn intersection(&self, other: &OldSelection) -> Option<OldSelection> {
         if self.sheet_id != other.sheet_id {
             return None;
         }
@@ -300,7 +290,7 @@ impl Selection {
         } else {
             None
         };
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: self.sheet_id,
             x: self.x,
             y: self.y,
@@ -552,28 +542,28 @@ mod test {
     #[parallel]
     fn test_largest_rect() {
         let sheet_id = SheetId::test();
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             all: true,
             ..Default::default()
         };
         assert_eq!(selection.largest_rect(), None);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rows: Some(vec![1, 2, 3]),
             ..Default::default()
         };
         assert_eq!(selection.largest_rect(), None);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             columns: Some(vec![1, 2, 3]),
             ..Default::default()
         };
         assert_eq!(selection.largest_rect(), None);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
             ..Default::default()
@@ -588,14 +578,14 @@ mod test {
     #[parallel]
     fn test_pos_in_selection() {
         let sheet_id = SheetId::test();
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             all: true,
             ..Default::default()
         };
         assert!(selection.contains_pos(Pos { x: 0, y: 0 }));
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rows: Some(vec![1, 2, 3]),
             ..Default::default()
@@ -603,7 +593,7 @@ mod test {
         assert!(selection.contains_pos(Pos { x: 0, y: 1 }));
         assert!(!selection.contains_pos(Pos { x: 0, y: 4 }));
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             columns: Some(vec![1, 2, 3]),
             rows: Some(vec![10]),
@@ -613,7 +603,7 @@ mod test {
         assert!(selection.contains_pos(Pos { x: -5, y: 10 }));
         assert!(!selection.contains_pos(Pos { x: 4, y: 0 }));
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             columns: Some(vec![5]),
             rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
@@ -628,7 +618,7 @@ mod test {
     #[parallel]
     fn test_origin() {
         let sheet_id = SheetId::test();
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             x: 1,
             y: 2,
@@ -648,7 +638,7 @@ mod test {
     #[parallel]
     fn test_translate() {
         let sheet_id = SheetId::test();
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             x: 1,
             y: 2,
@@ -662,7 +652,7 @@ mod test {
         let translated = selection.translate(delta_x, delta_y);
         assert_eq!(
             translated,
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 1,
@@ -678,7 +668,7 @@ mod test {
     #[parallel]
     fn test_count() {
         let sheet_id = SheetId::test();
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             x: 1,
             y: 2,
@@ -689,7 +679,7 @@ mod test {
         };
         assert_eq!(selection.count(), 18);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             x: 1,
             y: 2,
@@ -707,10 +697,10 @@ mod test {
     #[parallel]
     fn test_selection_columns() {
         let sheet_id = SheetId::test();
-        let selection = Selection::columns(&[1, 2, 3], sheet_id);
+        let selection = OldSelection::columns(&[1, 2, 3], sheet_id);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id,
                 columns: Some(vec![1, 2, 3]),
                 ..Default::default()
@@ -722,10 +712,10 @@ mod test {
     #[parallel]
     fn test_selection_rows() {
         let sheet_id = SheetId::test();
-        let selection = Selection::rows(&[1, 2, 3], sheet_id);
+        let selection = OldSelection::rows(&[1, 2, 3], sheet_id);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id,
                 rows: Some(vec![1, 2, 3]),
                 ..Default::default()
@@ -737,7 +727,7 @@ mod test {
     #[parallel]
     fn test_contains_column() {
         let sheet_id = SheetId::test();
-        let selection = Selection::columns(&[1, 2, 3], sheet_id);
+        let selection = OldSelection::columns(&[1, 2, 3], sheet_id);
         assert!(selection.contains_column(1));
         assert!(!selection.contains_column(4));
     }
@@ -746,7 +736,7 @@ mod test {
     #[parallel]
     fn test_contains_row() {
         let sheet_id = SheetId::test();
-        let selection = Selection::rows(&[1, 2, 3], sheet_id);
+        let selection = OldSelection::rows(&[1, 2, 3], sheet_id);
         assert!(selection.contains_row(1));
         assert!(!selection.contains_row(4));
     }
@@ -755,7 +745,7 @@ mod test {
     #[parallel]
     fn test_in_rect() {
         let sheet_id = SheetId::test();
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -772,7 +762,7 @@ mod test {
     #[parallel]
     fn test_is_empty() {
         let sheet_id = SheetId::test();
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -783,7 +773,7 @@ mod test {
         };
         assert!(!selection.is_empty());
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -799,7 +789,7 @@ mod test {
     #[parallel]
     fn test_translate_in_place() {
         let sheet_id = SheetId::test();
-        let mut selection = Selection {
+        let mut selection = OldSelection {
             sheet_id,
             x: 1,
             y: 2,
@@ -811,7 +801,7 @@ mod test {
         selection.translate_in_place(1, 2);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 2,
                 y: 4,
@@ -827,7 +817,7 @@ mod test {
     #[parallel]
     fn test_intersection() {
         let sheet_id = SheetId::test();
-        let selection1 = Selection {
+        let selection1 = OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -836,7 +826,7 @@ mod test {
             rows: Some(vec![4, 5, 6]),
             all: false,
         };
-        let selection2 = Selection {
+        let selection2 = OldSelection {
             sheet_id,
             x: 1,
             y: 2,
@@ -848,7 +838,7 @@ mod test {
         let intersection = selection1.intersection(&selection2).unwrap();
         assert_eq!(
             intersection,
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -859,7 +849,7 @@ mod test {
             }
         );
 
-        let selection2 = Selection {
+        let selection2 = OldSelection {
             sheet_id,
             x: 1,
             y: 2,
@@ -876,7 +866,7 @@ mod test {
     #[parallel]
     fn test_count_parts() {
         let sheet_id = SheetId::test();
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -887,7 +877,7 @@ mod test {
         };
         assert_eq!(selection.count_parts(), (6, 12));
 
-        let selection_all = Selection {
+        let selection_all = OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -898,7 +888,7 @@ mod test {
         };
         assert_eq!(selection_all.count_parts(), (1, 0));
 
-        let selection_only_rects = Selection {
+        let selection_only_rects = OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -912,7 +902,7 @@ mod test {
         };
         assert_eq!(selection_only_rects.count_parts(), (0, 16));
 
-        let selection_empty = Selection {
+        let selection_empty = OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -928,7 +918,7 @@ mod test {
     #[parallel]
     fn test_inserted_column() {
         let sheet_id = SheetId::test();
-        let mut selection = Selection {
+        let mut selection = OldSelection {
             sheet_id,
             columns: Some(vec![1, 2, 3]),
             rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
@@ -937,7 +927,7 @@ mod test {
         assert!(selection.inserted_column(2));
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id,
                 columns: Some(vec![1, 3, 4]),
                 rects: Some(vec![Rect::new(1, 1, 4, 3), Rect::new(-10, -10, 1, 1)]),
@@ -951,7 +941,7 @@ mod test {
     #[parallel]
     fn test_inserted_row() {
         let sheet_id = SheetId::test();
-        let mut selection = Selection {
+        let mut selection = OldSelection {
             sheet_id,
             rows: Some(vec![1, 2, 3]),
             rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
@@ -960,7 +950,7 @@ mod test {
         selection.inserted_row(2);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id,
                 rows: Some(vec![1, 3, 4]),
                 rects: Some(vec![Rect::new(1, 1, 3, 4), Rect::new(-10, -10, 1, 1)]),
@@ -973,7 +963,7 @@ mod test {
     #[parallel]
     fn test_removed_column() {
         let sheet_id = SheetId::test();
-        let mut selection = Selection {
+        let mut selection = OldSelection {
             sheet_id,
             columns: Some(vec![1, 2, 3]),
             rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
@@ -982,7 +972,7 @@ mod test {
         selection.removed_column(2);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id,
                 columns: Some(vec![1, 2]),
                 rects: Some(vec![Rect::new(1, 1, 2, 3), Rect::new(-10, -10, 1, 1)]),
@@ -990,7 +980,7 @@ mod test {
             }
         );
 
-        let mut selection = Selection {
+        let mut selection = OldSelection {
             sheet_id,
             columns: Some(vec![1]),
             ..Default::default()
@@ -1003,7 +993,7 @@ mod test {
     #[parallel]
     fn test_removed_row() {
         let sheet_id = SheetId::test();
-        let mut selection = Selection {
+        let mut selection = OldSelection {
             sheet_id,
             rows: Some(vec![1, 2, 3]),
             rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-10, -10, 1, 1)]),
@@ -1012,7 +1002,7 @@ mod test {
         selection.removed_row(2);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 sheet_id,
                 rows: Some(vec![1, 2]),
                 rects: Some(vec![Rect::new(1, 1, 3, 2), Rect::new(-10, -10, 1, 1)]),
@@ -1020,7 +1010,7 @@ mod test {
             }
         );
 
-        let mut selection = Selection {
+        let mut selection = OldSelection {
             sheet_id,
             rows: Some(vec![1]),
             ..Default::default()
@@ -1032,7 +1022,7 @@ mod test {
     #[test]
     #[parallel]
     fn test_rects_to_hashes() {
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: SheetId::test(),
             rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(-3, -3, -1, -1)]),
             ..Default::default()
@@ -1046,11 +1036,11 @@ mod test {
     #[test]
     #[parallel]
     fn test_add_rect() {
-        let mut selection = Selection::default();
+        let mut selection = OldSelection::default();
         selection.add_rect(Rect::new(1, 1, 3, 3));
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 rects: Some(vec![Rect::new(1, 1, 3, 3)]),
                 ..Default::default()
             }
@@ -1059,7 +1049,7 @@ mod test {
         selection.add_rect(Rect::new(4, 4, 6, 6));
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 rects: Some(vec![Rect::new(1, 1, 3, 3), Rect::new(4, 4, 6, 6)]),
                 ..Default::default()
             }
@@ -1069,11 +1059,11 @@ mod test {
     #[test]
     #[parallel]
     fn test_add_columns() {
-        let mut selection = Selection::default();
+        let mut selection = OldSelection::default();
         selection.add_columns(vec![1, 2, 3]);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 columns: Some(vec![1, 2, 3]),
                 x: 1,
                 ..Default::default()
@@ -1083,7 +1073,7 @@ mod test {
         selection.add_columns(vec![4, 5, 6]);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 columns: Some(vec![1, 2, 3, 4, 5, 6]),
                 x: 1,
                 ..Default::default()
@@ -1093,7 +1083,7 @@ mod test {
         selection.add_columns(vec![5, 6, 4]);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 columns: Some(vec![1, 2, 3, 4, 5, 6]),
                 ..Default::default()
             }
@@ -1103,11 +1093,11 @@ mod test {
     #[test]
     #[parallel]
     fn test_add_rows() {
-        let mut selection = Selection::default();
+        let mut selection = OldSelection::default();
         selection.add_rows(vec![1, 2, 3]);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 rows: Some(vec![1, 2, 3]),
                 ..Default::default()
             }
@@ -1116,7 +1106,7 @@ mod test {
         selection.add_rows(vec![5, 4, 6]);
         assert_eq!(
             selection,
-            Selection {
+            OldSelection {
                 rows: Some(vec![1, 2, 3, 4, 5, 6]),
                 ..Default::default()
             }

@@ -10,13 +10,13 @@ use uuid::Uuid;
 
 use crate::{
     controller::{
-        execution::TransactionType, operations::operation::Operation, transaction::Transaction,
+        execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
     },
     grid::{
         sheet::validations::validation::Validation, CellsAccessed, CodeCellLanguage, CodeRun,
         SheetId,
     },
-    selection::Selection,
+    selection::OldSelection,
     viewport::ViewportBuffer,
     Pos, SheetPos,
 };
@@ -30,10 +30,10 @@ pub struct PendingTransaction {
     // a name for the transaction for user display purposes
     pub transaction_name: TransactionName,
 
-    // cursor sent as part of this transaction
+    /// Previous selection, represented as a serialized `` cursor sent as part of this transaction
     pub cursor: Option<String>,
 
-    pub transaction_type: TransactionType,
+    pub source: TransactionSource,
 
     // pending operations
     pub operations: VecDeque<Operation>,
@@ -103,7 +103,7 @@ impl Default for PendingTransaction {
             id: Uuid::new_v4(),
             transaction_name: TransactionName::Unknown,
             cursor: None,
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             operations: VecDeque::new(),
             reverse_operations: Vec::new(),
             forward_operations: Vec::new(),
@@ -192,26 +192,32 @@ impl PendingTransaction {
         }
     }
 
+    /// Returns whether the transaction is from the server.
     pub fn is_server(&self) -> bool {
-        matches!(self.transaction_type, TransactionType::Server)
+        self.source == TransactionSource::Server
     }
 
+    /// Returns whether the transaction is from an action directly performed by
+    /// the local user; i.e., whether it is `User` or `Unsaved`. This does not
+    /// include undo/redo.
     pub fn is_user(&self) -> bool {
-        matches!(self.transaction_type, TransactionType::User)
-            || matches!(self.transaction_type, TransactionType::Unsaved)
+        self.source == TransactionSource::User || self.source == TransactionSource::Unsaved
     }
 
+    /// Returns whether the transaction is from an undo/redo.
     pub fn is_undo_redo(&self) -> bool {
-        matches!(self.transaction_type, TransactionType::Undo)
-            || matches!(self.transaction_type, TransactionType::Redo)
+        self.source == TransactionSource::Undo || self.source == TransactionSource::Redo
     }
 
+    /// Returns whether the transaction is from the local user, including
+    /// undo/redo.
     pub fn is_user_undo_redo(&self) -> bool {
         self.is_user() || self.is_undo_redo()
     }
 
+    /// Returns whether the transaction is from another multiplayer user.
     pub fn is_multiplayer(&self) -> bool {
-        matches!(self.transaction_type, TransactionType::Multiplayer)
+        self.source == TransactionSource::Multiplayer
     }
 
     /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
@@ -249,7 +255,7 @@ impl PendingTransaction {
         &mut self,
         sheet_id: SheetId,
         validation: &Validation,
-        changed_selection: Option<&Selection>,
+        changed_selection: Option<&OldSelection>,
     ) {
         self.validations.insert(sheet_id);
         if validation.render_special().is_some() {
@@ -328,19 +334,19 @@ mod tests {
     #[parallel]
     fn is_user() {
         let transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             ..Default::default()
         };
         assert!(transaction.is_user());
 
         let transaction = PendingTransaction {
-            transaction_type: TransactionType::Unsaved,
+            source: TransactionSource::Unsaved,
             ..Default::default()
         };
         assert!(transaction.is_user());
 
         let transaction = PendingTransaction {
-            transaction_type: TransactionType::Server,
+            source: TransactionSource::Server,
             ..Default::default()
         };
         assert!(!transaction.is_user());

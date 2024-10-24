@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{controller::GridController, grid::SheetId, selection::Selection, Pos, Rect};
+use crate::{controller::GridController, grid::SheetId, selection::OldSelection, Pos, Rect};
 
 #[wasm_bindgen]
 impl GridController {
@@ -108,7 +108,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection =
-            Selection::from_str(&selection).map_err(|_| JsValue::from_str("Invalid selection"))?;
+            OldSelection::from_str(&selection).map_err(|_| JsValue::from_str("Invalid selection"))?;
         self.delete_cells(&selection, cursor);
         Ok(())
     }

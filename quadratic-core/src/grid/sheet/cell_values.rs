@@ -135,7 +135,7 @@ mod test {
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             NumericFormat,
         },
-        selection::Selection,
+        selection::OldSelection,
         wasm_bindings::js::expect_js_call,
         CellValue, Rect,
     };
@@ -222,7 +222,7 @@ mod test {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::rect(Rect::new(0, 0, 2, 0), sheet.id),
+            selection: OldSelection::rect(Rect::new(0, 0, 2, 0), sheet.id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),

@@ -12,7 +12,7 @@ use crate::{
         },
         SheetId,
     },
-    selection::Selection,
+    selection::OldSelection,
     CellValue, Pos,
 };
 
@@ -24,7 +24,7 @@ impl GridController {
     }
 
     /// Gets a validation based on a Selection.
-    pub fn validation_selection(&self, selection: Selection) -> Option<&Validation> {
+    pub fn validation_selection(&self, selection: OldSelection) -> Option<&Validation> {
         self.try_sheet(selection.sheet_id)
             .and_then(|sheet| sheet.validations.validation_selection(selection))
     }
@@ -138,7 +138,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = Selection::all(sheet_id);
+        let selection = OldSelection::all(sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -169,7 +169,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = Selection::all(sheet_id);
+        let selection = OldSelection::all(sheet_id);
         let validation1 = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -184,7 +184,7 @@ mod tests {
 
         let validation2 = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: OldSelection::pos(0, 0, sheet_id),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -222,7 +222,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = Selection::pos(0, 0, sheet_id);
+        let selection = OldSelection::pos(0, 0, sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -260,7 +260,7 @@ mod tests {
         };
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: OldSelection::pos(0, 0, sheet_id),
             rule: ValidationRule::List(list),
             message: Default::default(),
             error: Default::default(),
@@ -286,7 +286,7 @@ mod tests {
         sheet.set_cell_value((0, 3).into(), "123");
 
         let list = ValidationList {
-            source: ValidationListSource::Selection(Selection::rect(
+            source: ValidationListSource::Selection(OldSelection::rect(
                 Rect::new(0, 0, 0, 4),
                 sheet_id,
             )),
@@ -295,7 +295,7 @@ mod tests {
         };
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(1, 0, sheet_id),
+            selection: OldSelection::pos(1, 0, sheet_id),
             rule: ValidationRule::List(list),
             message: Default::default(),
             error: Default::default(),
@@ -327,7 +327,7 @@ mod tests {
         };
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: OldSelection::pos(0, 0, sheet_id),
             rule: ValidationRule::List(list),
             message: Default::default(),
             error: Default::default(),
@@ -342,7 +342,7 @@ mod tests {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 1, sheet_id),
+            selection: OldSelection::pos(0, 1, sheet_id),
             rule: ValidationRule::None,
             message: Default::default(),
             error: ValidationError {
@@ -364,7 +364,7 @@ mod tests {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 2, sheet_id),
+            selection: OldSelection::pos(0, 2, sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),

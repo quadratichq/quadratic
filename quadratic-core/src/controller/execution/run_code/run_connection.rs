@@ -4,7 +4,7 @@ use regex::Regex;
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, ConnectionKind, SheetId},
-    A1Error, A1RangeType, Pos, RunError, RunErrorMsg, SheetPos, A1,
+    A1Error, Pos, RunError, RunErrorMsg, SheetPos,
 };
 
 use lazy_static::lazy_static;
@@ -37,42 +37,46 @@ impl GridController {
 
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
 
-            let (range_type, sheet_name) = A1::to_a1_range_type(content)?;
+            return todo!("a1 stuff");
 
-            let sheet = if let Some(sheet_name) = sheet_name {
-                self.grid
-                    .try_sheet_from_name(sheet_name.clone())
-                    .ok_or_else(|| A1Error::InvalidSheetName(sheet_name))
-            } else {
-                self.grid
-                    .try_sheet(default_sheet_id)
-                    .ok_or_else(|| A1Error::InvalidSheetId(default_sheet_id.to_string()))
-            }?;
+            // let (range_type, sheet_name) = A1::to_a1_range_type(content)?;
 
-            // Gets the display value of the cell at the cursor position of
-            // the Selection (for now we only support 1 cell)
-            let (x, y, value) = match range_type {
-                A1RangeType::Pos(rel_pos) => (
-                    rel_pos.x.index as i64,
-                    rel_pos.y.index as i64,
-                    sheet
-                        .display_value(Pos::new(rel_pos.x.index as i64, rel_pos.y.index as i64))
-                        .map(|value| value.to_display())
-                        .unwrap_or_default(),
-                ),
-                _ => {
-                    return Err(A1Error::WrongCellCount(
-                        "Connections only supports one cell".to_string(),
-                    ))
-                }
-            };
+            // let sheet = if let Some(sheet_name) = sheet_name {
+            //     self.grid
+            //         .try_sheet_from_name(sheet_name.clone())
+            //         .ok_or_else(|| A1Error::InvalidSheetName(sheet_name))
+            // } else {
+            //     self.grid
+            //         .try_sheet(default_sheet_id)
+            //         .ok_or_else(|| A1Error::InvalidSheetId(default_sheet_id.to_string()))
+            // }?;
 
-            transaction
-                .cells_accessed
-                .add_sheet_pos(SheetPos::new(sheet.id, x, y));
-            result.push_str(&value);
+            // // Gets the display value of the cell at the cursor position of
+            // // the Selection (for now we only support 1 cell)
+            // let (x, y, value) =
+            //  match range_type {
+            //     A1RangeType::Pos(rel_pos) => (
+            //         rel_pos.x.index as i64,
+            //         rel_pos.y.index as i64,
+            //         sheet
+            //             .display_value(Pos::new(rel_pos.x.index as i64, rel_pos.y.index as i64))
+            //             .map(|value| value.to_display())
+            //             .unwrap_or_default(),
+            //     ),
+            //     _ => {
+            //         return Err(A1Error::WrongCellCount(
+            //             "Connections only supports one cell".to_string(),
+            //         ))
+            //     }
+            // }
+            // ;
 
-            last_match_end = whole_match.end();
+            // transaction
+            //     .cells_accessed
+            //     .add_sheet_pos(SheetPos::new(sheet.id, x, y));
+            // result.push_str(&value);
+
+            // last_match_end = whole_match.end();
         }
 
         // Add the remaining part of the string

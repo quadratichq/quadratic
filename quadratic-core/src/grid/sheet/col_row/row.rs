@@ -10,7 +10,7 @@ use crate::{
     },
     grid::{formats::Formats, GridBounds, Sheet},
     renderer_constants::CELL_SHEET_WIDTH,
-    selection::Selection,
+    selection::OldSelection,
     Pos, Rect, SheetPos,
 };
 
@@ -45,7 +45,7 @@ impl Sheet {
     /// Creates reverse operations for cell formatting within the row.
     fn reverse_formats_ops_for_row(&self, row: i64) -> Vec<Operation> {
         let mut formats = Formats::new();
-        let mut selection = Selection::new(self.id);
+        let mut selection = OldSelection::new(self.id);
 
         if let Some(format) = self.try_format_row(row) {
             selection.rows = Some(vec![row]);
@@ -539,7 +539,7 @@ mod test {
     use serial_test::parallel;
 
     use crate::{
-        controller::execution::TransactionType,
+        controller::execution::TransactionSource,
         grid::{
             formats::{format::Format, format_update::FormatUpdate},
             BorderStyle, CellBorderLine, CellWrap,
@@ -638,7 +638,7 @@ mod test {
         sheet.calculate_bounds();
 
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             ..Default::default()
         };
         sheet.delete_row(&mut transaction, 1);

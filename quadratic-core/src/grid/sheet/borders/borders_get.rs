@@ -157,7 +157,7 @@ mod tests {
         color::Rgba,
         controller::GridController,
         grid::{BorderSelection, BorderStyle, CellBorderLine},
-        selection::Selection,
+        selection::OldSelection,
     };
 
     #[test]
@@ -166,7 +166,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_borders_selection(
-            Selection::sheet_rect(crate::SheetRect::new(0, 0, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(crate::SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -192,7 +192,7 @@ mod tests {
 
         // Set initial borders
         gc.set_borders_selection(
-            Selection::sheet_rect(crate::SheetRect::new(0, 0, 0, 0, sheet_id)),
+            OldSelection::sheet_rect(crate::SheetRect::new(0, 0, 0, 0, sheet_id)),
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,
@@ -217,7 +217,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_borders_selection(
-            Selection::sheet_rect(crate::SheetRect::new(0, 0, 0, 0, sheet_id)),
+            OldSelection::sheet_rect(crate::SheetRect::new(0, 0, 0, 0, sheet_id)),
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,
@@ -237,7 +237,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_borders_selection(
-            Selection::sheet_rect(crate::SheetRect::new(1, 1, 1, 1, sheet_id)),
+            OldSelection::sheet_rect(crate::SheetRect::new(1, 1, 1, 1, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -257,7 +257,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_borders_selection(
-            Selection::sheet_rect(crate::SheetRect::new(1, 1, 1, 1, sheet_id)),
+            OldSelection::sheet_rect(crate::SheetRect::new(1, 1, 1, 1, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,

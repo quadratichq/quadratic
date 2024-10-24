@@ -7,84 +7,36 @@ use itertools::Itertools;
 
 use crate::{
     grid::{CellsAccessed, CodeRun, CodeRunResult, SheetId},
-    A1RangeType, Pos, RelColRow, RelColRowRange, RelPos, RelRect, Value,
+    CellRefCoord, CellRefRange, CellRefRangeEnd, Pos, Value,
 };
 
 use super::{
     cell_value::{export_cell_value, import_cell_value},
-    current::{self, A1RangeTypeSchema},
+    current,
 };
 
-fn import_a1_range_type(range: A1RangeTypeSchema) -> A1RangeType {
-    match range {
-        current::A1RangeTypeSchema::All => A1RangeType::All,
-        current::A1RangeTypeSchema::Column(col) => A1RangeType::Column(RelColRow {
-            index: col.index,
-            relative: col.relative,
-        }),
-        current::A1RangeTypeSchema::Row(row) => A1RangeType::Row(RelColRow {
-            index: row.index,
-            relative: row.relative,
-        }),
-        current::A1RangeTypeSchema::ColumnRange(col_range) => {
-            A1RangeType::ColumnRange(RelColRowRange {
-                min: RelColRow {
-                    index: col_range.min.index,
-                    relative: col_range.min.relative,
-                },
-                max: RelColRow {
-                    index: col_range.max.index,
-                    relative: col_range.max.relative,
-                },
-            })
-        }
-        current::A1RangeTypeSchema::RowRange(row_range) => A1RangeType::RowRange(RelColRowRange {
-            min: RelColRow {
-                index: row_range.min.index,
-                relative: row_range.min.relative,
-            },
-            max: RelColRow {
-                index: row_range.max.index,
-                relative: row_range.max.relative,
-            },
-        }),
-        current::A1RangeTypeSchema::Rect(rect) => A1RangeType::Rect(RelRect {
-            min: RelPos {
-                x: RelColRow {
-                    index: rect.min.x.index,
-                    relative: rect.min.x.relative,
-                },
-                y: RelColRow {
-                    index: rect.min.y.index,
-                    relative: rect.min.y.relative,
-                },
-            },
-            max: RelPos {
-                x: RelColRow {
-                    index: rect.max.x.index,
-                    relative: rect.max.x.relative,
-                },
-                y: RelColRow {
-                    index: rect.max.y.index,
-                    relative: rect.max.y.relative,
-                },
-            },
-        }),
-        current::A1RangeTypeSchema::Pos(pos) => A1RangeType::Pos(RelPos {
-            x: RelColRow {
-                index: pos.x.index,
-                relative: pos.x.relative,
-            },
-            y: RelColRow {
-                index: pos.y.index,
-                relative: pos.y.relative,
-            },
+fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
+    CellRefCoord {
+        coord: coord.coord,
+        is_absolute: coord.is_absolute,
+    }
+}
+
+fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellRefRange {
+    CellRefRange {
+        start: CellRefRangeEnd {
+            col: range.start.col.map(import_cell_ref_coord),
+            row: range.start.row.map(import_cell_ref_coord),
+        },
+        end: range.end.map(|end| CellRefRangeEnd {
+            col: end.col.map(import_cell_ref_coord),
+            row: end.row.map(import_cell_ref_coord),
         }),
     }
 }
 
 fn import_cells_accessed(
-    cells_accessed: Vec<(current::IdSchema, Vec<current::A1RangeTypeSchema>)>,
+    cells_accessed: Vec<(current::IdSchema, Vec<current::CellRefRangeSchema>)>,
 ) -> Result<CellsAccessed> {
     let mut imported_cells = CellsAccessed::default();
 
@@ -92,7 +44,7 @@ fn import_cells_accessed(
         let sheet_id = SheetId::from_str(&id.to_string())?;
         imported_cells.cells.insert(
             sheet_id,
-            ranges.into_iter().map(import_a1_range_type).collect(),
+            ranges.into_iter().map(import_cell_ref_range).collect(),
         );
     }
 
@@ -144,86 +96,36 @@ pub(crate) fn import_code_cell_builder(
     Ok(new_code_runs)
 }
 
-fn export_a1_range_type(range: A1RangeType) -> A1RangeTypeSchema {
-    match range {
-        A1RangeType::All => current::A1RangeTypeSchema::All,
-        A1RangeType::Column(col) => current::A1RangeTypeSchema::Column(current::RelColRowSchema {
-            index: col.index,
-            relative: col.relative,
-        }),
-        A1RangeType::Row(row) => current::A1RangeTypeSchema::Row(current::RelColRowSchema {
-            index: row.index,
-            relative: row.relative,
-        }),
-        A1RangeType::ColumnRange(col_range) => {
-            current::A1RangeTypeSchema::ColumnRange(current::RelColRowRangeSchema {
-                min: current::RelColRowSchema {
-                    index: col_range.min.index,
-                    relative: col_range.min.relative,
-                },
-                max: current::RelColRowSchema {
-                    index: col_range.max.index,
-                    relative: col_range.max.relative,
-                },
-            })
-        }
-        A1RangeType::RowRange(row_range) => {
-            current::A1RangeTypeSchema::RowRange(current::RelColRowRangeSchema {
-                min: current::RelColRowSchema {
-                    index: row_range.min.index,
-                    relative: row_range.min.relative,
-                },
-                max: current::RelColRowSchema {
-                    index: row_range.max.index,
-                    relative: row_range.max.relative,
-                },
-            })
-        }
-        A1RangeType::Rect(rect) => current::A1RangeTypeSchema::Rect(current::RelRectSchema {
-            min: current::RelPosSchema {
-                x: current::RelColRowSchema {
-                    index: rect.min.x.index,
-                    relative: rect.min.x.relative,
-                },
-                y: current::RelColRowSchema {
-                    index: rect.min.y.index,
-                    relative: rect.min.y.relative,
-                },
-            },
-            max: current::RelPosSchema {
-                x: current::RelColRowSchema {
-                    index: rect.max.x.index,
-                    relative: rect.max.x.relative,
-                },
-                y: current::RelColRowSchema {
-                    index: rect.max.y.index,
-                    relative: rect.max.y.relative,
-                },
-            },
-        }),
-        A1RangeType::Pos(pos) => current::A1RangeTypeSchema::Pos(current::RelPosSchema {
-            x: current::RelColRowSchema {
-                index: pos.x.index,
-                relative: pos.x.relative,
-            },
-            y: current::RelColRowSchema {
-                index: pos.y.index,
-                relative: pos.y.relative,
-            },
+fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
+    current::CellRefCoordSchema {
+        coord: coord.coord,
+        is_absolute: coord.is_absolute,
+    }
+}
+
+fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRangeSchema {
+    current::CellRefRangeSchema {
+        start: current::CellRefRangeEndSchema {
+            col: range.start.col.map(export_cell_ref_coord),
+            row: range.start.row.map(export_cell_ref_coord),
+        },
+        end: range.end.map(|end| current::CellRefRangeEndSchema {
+            col: end.col.map(export_cell_ref_coord),
+            row: end.row.map(export_cell_ref_coord),
         }),
     }
 }
 
 fn export_cells_accessed(
     cells_accessed: CellsAccessed,
-) -> Vec<(current::IdSchema, Vec<current::A1RangeTypeSchema>)> {
+) -> Vec<(current::IdSchema, Vec<current::CellRefRangeSchema>)> {
     cells_accessed
         .cells
         .into_iter()
         .map(|(sheet_id, ranges)| {
             (
                 current::IdSchema::from(sheet_id.to_string()),
-                ranges.into_iter().map(export_a1_range_type).collect(),
+                ranges.into_iter().map(export_cell_ref_range).collect(),
             )
         })
         .collect()

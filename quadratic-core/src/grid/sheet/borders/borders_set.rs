@@ -1,7 +1,7 @@
 //! Functionality to set borders on a selection.
 
 use crate::{
-    controller::operations::operation::Operation, selection::Selection, RunLengthEncoding,
+    controller::operations::operation::Operation, selection::OldSelection, RunLengthEncoding,
 };
 
 use super::{BorderStyle, BorderStyleCell, BorderStyleCellUpdate, BorderStyleCellUpdates, Borders};
@@ -10,7 +10,7 @@ impl Borders {
     /// Sets the borders for a selection.
     pub fn set_borders(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
         borders: &BorderStyleCellUpdates,
     ) -> Vec<Operation> {
         let mut undo = vec![];
@@ -184,7 +184,7 @@ mod tests {
     fn set_borders() {
         let sheet_id = SheetId::test();
         let mut borders = Borders::default();
-        let selection = Selection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id));
+        let selection = OldSelection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id));
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 10 * 10);
         borders.set_borders(&selection, &value);
 
@@ -204,7 +204,7 @@ mod tests {
     fn set_borders_erase() {
         let sheet_id = SheetId::test();
         let mut borders = Borders::default();
-        let selection = Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+        let selection = OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1);
         borders.set_borders(&selection, &value);
 

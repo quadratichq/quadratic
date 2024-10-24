@@ -317,7 +317,7 @@ mod tests {
     use serial_test::parallel;
     use uuid::Uuid;
 
-    use crate::{grid::SheetId, selection::Selection, Rect};
+    use crate::{grid::SheetId, selection::OldSelection, Rect};
 
     use super::*;
 
@@ -331,7 +331,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: SheetId::test(),
                     x: 1,
                     y: 2,
@@ -341,7 +341,7 @@ mod tests {
                     all: true,
                 },
                 rule: ValidationRule::List(ValidationList {
-                    source: ValidationListSource::Selection(Selection {
+                    source: ValidationListSource::Selection(OldSelection {
                         sheet_id: SheetId::test(),
                         x: 1,
                         y: 2,
@@ -381,7 +381,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: SheetId::test(),
                     x: 1,
                     y: 2,
@@ -425,7 +425,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: SheetId::test(),
                     x: 1,
                     y: 2,
@@ -483,7 +483,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: SheetId::test(),
                     x: 1,
                     y: 2,

@@ -84,7 +84,7 @@ mod tests {
         CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, NumericFormat, NumericFormatKind,
         RenderSize, SheetId,
     };
-    use crate::selection::Selection;
+    use crate::selection::OldSelection;
     use crate::sheet_offsets::resize_transient::TransientResize;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
     use crate::{CellValue, Pos, SheetPos, SheetRect};
@@ -224,7 +224,7 @@ mod tests {
 
         // should trigger auto resize row heights for wrap
         let ops = vec![Operation::SetCellFormatsSelection {
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: OldSelection::pos(0, 0, sheet_id),
             formats: Formats::repeat(
                 FormatUpdate {
                     wrap: Some(Some(CellWrap::Overflow)),
@@ -254,7 +254,7 @@ mod tests {
 
         // should trigger auto resize row heights for numeric format
         let ops = vec![Operation::SetCellFormatsSelection {
-            selection: Selection::pos(0, 1, sheet_id),
+            selection: OldSelection::pos(0, 1, sheet_id),
             formats: Formats::repeat(
                 FormatUpdate {
                     numeric_format: Some(Some(NumericFormat {
@@ -287,7 +287,7 @@ mod tests {
 
         // should trigger auto resize row heights for numeric decimals
         let ops = vec![Operation::SetCellFormatsSelection {
-            selection: Selection::pos(0, 2, sheet_id),
+            selection: OldSelection::pos(0, 2, sheet_id),
             formats: Formats::repeat(
                 FormatUpdate {
                     numeric_decimals: Some(Some(2)),
@@ -317,7 +317,7 @@ mod tests {
 
         // should trigger auto resize row heights for numeric commas
         let ops = vec![Operation::SetCellFormatsSelection {
-            selection: Selection::pos(0, 3, sheet_id),
+            selection: OldSelection::pos(0, 3, sheet_id),
             formats: Formats::repeat(
                 FormatUpdate {
                     numeric_commas: Some(Some(true)),
@@ -347,7 +347,7 @@ mod tests {
 
         // should trigger auto resize row heights for bold
         let ops = vec![Operation::SetCellFormatsSelection {
-            selection: Selection::pos(0, 4, sheet_id),
+            selection: OldSelection::pos(0, 4, sheet_id),
             formats: Formats::repeat(
                 FormatUpdate {
                     bold: Some(Some(true)),
@@ -377,7 +377,7 @@ mod tests {
 
         // should trigger auto resize row heights for italic
         let ops = vec![Operation::SetCellFormatsSelection {
-            selection: Selection::pos(0, 5, sheet_id),
+            selection: OldSelection::pos(0, 5, sheet_id),
             formats: Formats::repeat(
                 FormatUpdate {
                     italic: Some(Some(true)),
@@ -407,7 +407,7 @@ mod tests {
 
         // should not trigger auto resize row heights for other formats
         let ops = vec![Operation::SetCellFormatsSelection {
-            selection: Selection::pos(1, 0, sheet_id),
+            selection: OldSelection::pos(1, 0, sheet_id),
             formats: Formats::repeat(
                 FormatUpdate {
                     align: Some(Some(CellAlign::Center)),

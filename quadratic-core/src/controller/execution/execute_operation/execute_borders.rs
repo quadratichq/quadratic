@@ -5,7 +5,7 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::sheet::borders::{BorderStyle, BorderStyleCellUpdate},
-    selection::Selection,
+    selection::OldSelection,
     Pos, RunLengthEncoding,
 };
 
@@ -32,7 +32,7 @@ impl GridController {
                 sheet_rect,
                 borders,
             } => {
-                let selection = Selection::sheet_rect(sheet_rect);
+                let selection = OldSelection::sheet_rect(sheet_rect);
                 let mut borders_new = RunLengthEncoding::new();
 
                 for y in sheet_rect.y_range() {
@@ -94,6 +94,10 @@ impl GridController {
             }
             _ => unreachable!("Expected Operation::SetBordersSelection"),
         }
+    }
+
+    pub fn execute_set_borders_a1(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        todo!("todo todo todo");
     }
 }
 

@@ -30,7 +30,7 @@ mod tests {
     use crate::{
         array,
         grid::{BorderSelection, BorderStyle, CodeCellLanguage},
-        selection::Selection,
+        selection::OldSelection,
         test_util::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
@@ -84,7 +84,7 @@ mod tests {
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
                         grid_controller
-                            .set_bold_selection(Selection::sheet_pos(sheet_pos), true, None)
+                            .set_bold_selection(OldSelection::sheet_pos(sheet_pos), true, None)
                             .unwrap();
                     }
                 }
@@ -92,7 +92,7 @@ mod tests {
                 if let Some(fill_color) = fill_colors.get(count) {
                     grid_controller
                         .set_fill_color_selection(
-                            Selection::sheet_pos(sheet_pos),
+                            OldSelection::sheet_pos(sheet_pos),
                             Some(fill_color.to_lowercase()),
                             None,
                         )
@@ -642,7 +642,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 3, 3, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 3, 3, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -664,7 +664,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(3, 1, 6, 1, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(3, 1, 6, 1, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -686,7 +686,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -708,7 +708,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,

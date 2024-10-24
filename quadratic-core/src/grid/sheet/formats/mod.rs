@@ -5,7 +5,7 @@ use crate::{
         operation::Operation,
     },
     grid::formats::{format::Format, format_update::FormatUpdate, Formats},
-    selection::Selection,
+    selection::OldSelection,
     Pos,
 };
 use std::collections::{HashMap, HashSet};
@@ -62,7 +62,7 @@ impl Sheet {
 
     pub fn set_formats_selection(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
         formats: &Formats,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         if selection.all {
@@ -96,7 +96,7 @@ impl Sheet {
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.
     pub fn sheet_formats(
         &self,
-        selection: &Selection,
+        selection: &OldSelection,
         clipboard_origin: &ClipboardOrigin,
     ) -> ClipboardSheetFormats {
         if selection.all {
@@ -142,7 +142,7 @@ mod tests {
             formats::{format::Format, format_update::FormatUpdate, Formats},
             sheet,
         },
-        selection::Selection,
+        selection::OldSelection,
     };
     use serial_test::parallel;
 
@@ -170,7 +170,7 @@ mod tests {
                 2,
             ),
         );
-        let selection = Selection {
+        let selection = OldSelection {
             columns: Some(vec![2]),
             rows: Some(vec![2]),
             ..Default::default()
@@ -190,7 +190,7 @@ mod tests {
         ));
         // note that columns and rows are ignored when all is true
         let formats = sheet.sheet_formats(
-            &Selection {
+            &OldSelection {
                 all: true,
                 rows: Some(vec![2]),
                 columns: Some(vec![2]),

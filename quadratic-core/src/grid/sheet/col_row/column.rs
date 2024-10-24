@@ -8,7 +8,7 @@ use crate::{
     },
     grid::{formats::Formats, Sheet},
     renderer_constants::CELL_SHEET_HEIGHT,
-    selection::Selection,
+    selection::OldSelection,
     Pos, Rect, SheetPos,
 };
 
@@ -46,7 +46,7 @@ impl Sheet {
     /// Creates reverse operations for cell formatting within the column.
     fn reverse_formats_ops_for_column(&self, column: i64) -> Vec<Operation> {
         let mut formats = Formats::new();
-        let mut selection = Selection::new(self.id);
+        let mut selection = OldSelection::new(self.id);
 
         if let Some(format) = self.try_format_column(column) {
             selection.columns = Some(vec![column]);
@@ -414,7 +414,7 @@ mod tests {
     use serial_test::parallel;
 
     use crate::{
-        controller::execution::TransactionType,
+        controller::execution::TransactionSource,
         grid::{
             formats::{format::Format, format_update::FormatUpdate},
             BorderStyle, CellBorderLine, CellWrap,
@@ -487,7 +487,7 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             ..Default::default()
         };
         sheet.delete_column(&mut transaction, 0);
