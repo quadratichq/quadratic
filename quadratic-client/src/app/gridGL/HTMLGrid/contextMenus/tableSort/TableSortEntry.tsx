@@ -3,7 +3,7 @@ import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/Valida
 import { DeleteIcon, DownArrowIcon, UpArrowIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 interface Props {
   index: number;
@@ -19,33 +19,65 @@ interface Props {
 export const TableSortEntry = (props: Props) => {
   const { index, availableColumns, direction, name, onChange, onDelete, onReorder, last } = props;
 
-  const [newColumn, setNewColumn] = useState(name);
-  const [newDirection, setNewDirection] = useState(direction);
-  useEffect(() => {
-    if (newColumn !== name && newDirection !== direction) {
-      onChange(index, newColumn, newDirection);
-    }
-  }, [direction, index, name, newColumn, newDirection, onChange]);
+  const [newColumn, setNewColumn] = useState<string | undefined>(name);
+  const [newDirection, setNewDirection] = useState<SortDirection>(direction ?? 'Descending');
+
+  const updateValues = useCallback(
+    (column?: string, direction?: string) => {
+      if (column !== undefined) setNewColumn(column);
+      if (direction !== undefined) setNewDirection(direction as SortDirection);
+
+      // only update if the new column and direction are valid
+      if (column || newColumn) {
+        console.log(column, newColumn);
+        onChange(index, column ?? newColumn!, (direction as SortDirection) ?? newDirection!);
+      }
+    },
+    [index, onChange, newColumn, newDirection]
+  );
 
   return (
     <div className="flex h-fit w-full gap-2">
       <ValidationDropdown
         className="w-fit grow"
         style={{ paddingTop: 1, paddingBottom: 1, paddingLeft: 1 }}
-        value={newColumn}
+        value={newColumn ?? ''}
         options={availableColumns}
-        onChange={setNewColumn}
+        onChange={(column) => updateValues(column)}
         includeBlank
       />
       <ValidationDropdown
-        style={{ width: 140, paddingTop: 1, paddingBottom: 1 }}
+        style={{ width: 150, paddingTop: 1, paddingBottom: 1 }}
         value={newDirection}
         options={[
-          { label: <> &uarr; Ascending</>, value: 'Ascending' },
-          { label: <>&darr; Descending </>, value: 'Descending' },
+          {
+            label: (
+              <div className="flex w-full items-center">
+                <div className="mr-2" style={{ fontSize: 9 }}>
+                  <div className="-my-3 text-primary">A</div>
+                  <div className="-my-3">&darr;</div>
+                  <div className="-my-3">Z</div>
+                </div>
+                <div>Ascending</div>
+              </div>
+            ),
+            value: 'Ascending',
+          },
+          {
+            label: (
+              <div className="space-between flex w-full items-center">
+                <div className="mr-2" style={{ fontSize: 9 }}>
+                  <div className="-my-3">Z</div>
+                  <div className="-my-3">&darr;</div>
+                  <div className="-my-3 text-primary">A</div>
+                </div>
+                <div className="mr-2">Descending</div>
+              </div>
+            ),
+            value: 'Descending',
+          },
         ]}
-        onChange={(direction) => setNewDirection(direction as SortDirection)}
-        includeBlank
+        onChange={(direction) => updateValues(undefined, direction as SortDirection)}
       />
       <div className={cn('flex gap-1 p-0', name === '' ? 'invisible' : '')}>
         <Button variant="secondary" className="p-0" disabled={index === 0} onClick={() => onReorder(index, 'up')}>

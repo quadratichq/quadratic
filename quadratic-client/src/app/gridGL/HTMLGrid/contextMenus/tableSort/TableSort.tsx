@@ -22,11 +22,11 @@ export const TableSort = () => {
     if (contextMenu.table && contextMenu.table.sort) {
       const sort = [...contextMenu.table.sort.filter((item) => item.direction !== 'None')];
       if (sort.length !== contextMenu.table.column_names.length) {
-        sort.push({ column_index: -1, direction: 'None' });
+        sort.push({ column_index: -1, direction: 'Ascending' });
       }
       setSort(sort);
     } else {
-      setSort([{ column_index: -1, direction: 'None' }]);
+      setSort([{ column_index: -1, direction: 'Ascending' }]);
     }
   }, [contextMenu.table]);
 
@@ -72,24 +72,27 @@ export const TableSort = () => {
   }, [contextMenu.table]);
 
   const columnNames = useMemo(() => contextMenu.table?.column_names ?? [], [contextMenu.table]);
-  const nonNoneSortItems = useMemo(() => sort.filter((item) => item.direction !== 'None') ?? [], [sort]);
 
   const availableColumns = useMemo(() => {
-    const availableColumns = columnNames.filter(
-      (_, index) => !nonNoneSortItems.some((item) => item.column_index === index)
-    );
+    const availableColumns = columnNames.filter((_, index) => !sort.some((item) => item.column_index === index));
     return availableColumns.map((column) => column.name);
-  }, [columnNames, nonNoneSortItems]);
+  }, [columnNames, sort]);
 
   const handleChange = (index: number, column: string, direction: SortDirection) => {
     setSort((prev) => {
-      const columnIndex = column === '' ? -1 : columnNames.findIndex((c) => c.name === column);
-      const newSort = [...prev];
-      newSort[index] = { column_index: columnIndex, direction };
-      const last = newSort[newSort.length - 1];
-      console.log(availableColumns);
-      if (last.column_index !== -1 && availableColumns.length > 1) {
-        newSort.push({ column_index: -1, direction: 'None' });
+      const columnIndex = columnNames.findIndex((c) => c.name === column);
+      if (columnIndex === -1) return prev;
+
+      // remove new entry from old sort
+      const newSort = [...prev.filter((value) => value.column_index !== -1)];
+
+      if (index === -1) {
+        newSort.push({ column_index: columnIndex, direction });
+      } else {
+        newSort[index] = { column_index: columnIndex, direction };
+      }
+      if (sort.length !== columnNames.length) {
+        newSort.push({ column_index: -1, direction: 'Ascending' });
       }
       return newSort;
     });
@@ -103,7 +106,7 @@ export const TableSort = () => {
         sort.length &&
         sort[sort.length - 1].column_index !== -1
       ) {
-        sort.push({ column_index: -1, direction: 'None' });
+        sort.push({ column_index: -1, direction: 'Ascending' });
       }
       return sort;
     });
@@ -127,7 +130,7 @@ export const TableSort = () => {
       style={{
         transformOrigin: 'top left',
         transform: `scale(${1 / pixiApp.viewport.scaled})`,
-        width: 400,
+        width: 450,
       }}
       onKeyDown={(e) => {
         if (e.key === 'Escape') {
@@ -154,7 +157,9 @@ export const TableSort = () => {
               onChange={handleChange}
               onDelete={handleDelete}
               onReorder={handleReorder}
-              last={index === sort.length - 1 || (sort.length === 2 && sort[sort.length - 1].column_index === -1)}
+              last={
+                index === sort.length - 1 || (sort[sort.length - 1].column_index === -1 && index === sort.length - 2)
+              }
             />
           );
         })}
