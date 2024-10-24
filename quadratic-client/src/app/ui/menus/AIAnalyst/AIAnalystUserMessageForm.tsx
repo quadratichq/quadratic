@@ -1,9 +1,9 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import {
   aiAnalystAbortControllerAtom,
+  aiAnalystCurrentChatMessagesAtom,
+  aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
-  aiAnalystMessagesAtom,
-  aiAnalystMessagesCountAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
@@ -35,8 +35,8 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
     const { initialPrompt, initialContext, messageIndex, autoFocus, textareaRef: bottomTextareaRef } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
-    const messages = useRecoilValue(aiAnalystMessagesAtom);
-    const messagesCount = useRecoilValue(aiAnalystMessagesCountAtom);
+    const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+    const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
 
     const [edit, setEdit] = useState(!initialPrompt);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);

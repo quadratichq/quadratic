@@ -1,21 +1,58 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
+import { v4 } from 'uuid';
+
+export interface Chat {
+  id: string;
+  name: string;
+  lastUpdated: number;
+  messages: (UserMessage | AIMessage)[];
+}
 
 export interface AIAnalystState {
   showAIAnalyst: boolean;
+  showChatHistory: boolean;
   showInternalContext: boolean;
   abortController?: AbortController;
   loading: boolean;
-  messages: (UserMessage | AIMessage)[];
+  chats: Chat[];
+  currentChat: Chat;
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
   showAIAnalyst: true,
+  showChatHistory: false,
   showInternalContext: false,
   abortController: undefined,
   loading: false,
-  messages: [],
+  chats: [
+    // TODO(ayush): remove dummy chats
+    {
+      id: v4(),
+      name: 'Chat 1',
+      lastUpdated: Date.now(),
+      messages: [],
+    },
+    {
+      id: v4(),
+      name: 'Chat 2',
+      lastUpdated: new Date(new Date().getFullYear(), new Date().getMonth(), 0).getTime(),
+      messages: [],
+    },
+    {
+      id: v4(),
+      name: 'Chat 3',
+      lastUpdated: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 15).getTime(),
+      messages: [],
+    },
+  ],
+  currentChat: {
+    id: '',
+    name: '',
+    lastUpdated: Date.now(),
+    messages: [],
+  },
 };
 
 export const aiAnalystAtom = atom<AIAnalystState>({
@@ -40,19 +77,130 @@ const createSelector = <T extends keyof AIAnalystState>(key: T) =>
   selector<AIAnalystState[T]>({
     key: `aiAnalyst${key.charAt(0).toUpperCase() + key.slice(1)}Atom`,
     get: ({ get }) => get(aiAnalystAtom)[key],
-    set: ({ set }, newValue) =>
+    set: ({ set }, newValue) => {
       set(aiAnalystAtom, (prev) => ({
         ...prev,
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
-      })),
+      }));
+    },
   });
 export const showAIAnalystAtom = createSelector('showAIAnalyst');
+export const aiAnalystShowChatHistoryAtom = createSelector('showChatHistory');
 export const aiAnalystShowInternalContextAtom = createSelector('showInternalContext');
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
-export const aiAnalystLoadingAtom = createSelector('loading');
-export const aiAnalystMessagesAtom = createSelector('messages');
 
-export const aiAnalystMessagesCountAtom = selector<number>({
-  key: 'aiAnalystMessagesCountAtom',
-  get: ({ get }) => get(aiAnalystMessagesAtom).filter((message) => message.contextType === 'userPrompt').length,
+export const aiAnalystLoadingAtom = selector<boolean>({
+  key: 'aiAnalystLoadingAtom',
+  get: ({ get }) => get(aiAnalystAtom).loading,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      let chats: Chat[] = prev.chats;
+      if (prev.loading && !newValue) {
+        chats = prev.chats.map((chat) => (chat.id === prev.currentChat.id ? prev.currentChat : chat));
+        console.log('TODO(ayush): sync chats');
+      }
+
+      return {
+        ...prev,
+        chats,
+        loading: newValue,
+      };
+    });
+  },
+});
+
+export const aiAnalystChatsAtom = selector<Chat[]>({
+  key: 'aiAnalystChatsAtom',
+  get: ({ get }) => get(aiAnalystAtom).chats,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      const deletedChatIds = prev.chats
+        .filter((chat) => !newValue.some((newChat) => newChat.id === chat.id))
+        .map((chat) => chat.id);
+      if (deletedChatIds.length > 0) {
+        console.log('TODO(ayush): delete chats', deletedChatIds);
+      }
+      console.log('TODO(ayush): sync chats');
+
+      return {
+        ...prev,
+        chats: newValue,
+      };
+    });
+  },
+});
+
+export const aiAnalystCurrentChatAtom = selector<Chat>({
+  key: 'aiAnalystCurrentChatAtom',
+  get: ({ get }) => get(aiAnalystAtom).currentChat,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      if (!!newValue.id && newValue.messages.length === 0) {
+        console.log('TODO(ayush): load chat messages');
+      }
+
+      return {
+        ...prev,
+        showChatHistory: false,
+        currentChat: newValue,
+      };
+    });
+  },
+});
+
+export const aiAnalystChatsCountAtom = selector<number>({
+  key: 'aiAnalystChatsCountAtom',
+  get: ({ get }) => get(aiAnalystChatsAtom).length,
+});
+
+export const aiAnalystCurrentChatMessagesAtom = selector<(UserMessage | AIMessage)[]>({
+  key: 'aiAnalystCurrentChatMessagesAtom',
+  get: ({ get }) => get(aiAnalystCurrentChatAtom).messages,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      let id = prev.currentChat.id;
+      let name = prev.currentChat.name;
+      let addNewChat = !id && newValue.length > 0;
+      if (addNewChat) {
+        id = v4();
+        name = 'New chat';
+        console.log('TODO(ayush): update name from AI');
+      }
+
+      const currentChat: Chat = {
+        id,
+        name,
+        lastUpdated: Date.now(),
+        messages: newValue,
+      };
+
+      return {
+        ...prev,
+        chats: addNewChat ? [...prev.chats, currentChat] : prev.chats,
+        currentChat,
+      };
+    });
+  },
+});
+
+export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
+  key: 'aiAnalystCurrentChatMessagesCountAtom',
+  get: ({ get }) =>
+    get(aiAnalystCurrentChatAtom).messages.filter((message) => message.contextType === 'userPrompt').length,
 });

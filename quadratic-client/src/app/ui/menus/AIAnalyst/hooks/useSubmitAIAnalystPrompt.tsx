@@ -10,8 +10,8 @@ import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import {
   aiAnalystAbortControllerAtom,
+  aiAnalystCurrentChatMessagesAtom,
   aiAnalystLoadingAtom,
-  aiAnalystMessagesAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
@@ -96,7 +96,7 @@ export function useSubmitAIAnalystPrompt() {
         ).flat();
         const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell, model }) : [];
         let updatedMessages: (UserMessage | AIMessage)[] = [];
-        set(aiAnalystMessagesAtom, (prevMessages) => {
+        set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
           if (messageIndex !== undefined) {
             prevMessages = prevMessages.slice(0, messageIndex);
           }
@@ -143,7 +143,7 @@ export function useSubmitAIAnalystPrompt() {
           const response = await handleAIRequestToAPI({
             model,
             messages: messagesToSend,
-            setMessages: (updater) => set(aiAnalystMessagesAtom, updater),
+            setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
             signal: abortController.signal,
             useStream: true,
             useTools: true,
@@ -163,7 +163,7 @@ export function useSubmitAIAnalystPrompt() {
             }
           }
         } catch (error) {
-          set(aiAnalystMessagesAtom, (prevMessages) => {
+          set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
             const aiMessage: AIMessage = {
               role: 'assistant',
               content: 'Looks like there was a problem. Please try again.',

@@ -1,5 +1,6 @@
-import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystShowChatHistoryAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
+import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
@@ -9,6 +10,7 @@ import { useRecoilValue } from 'recoil';
 
 export const AIAnalyst = () => {
   const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
+  const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
@@ -46,9 +48,15 @@ export const AIAnalyst = () => {
       <div className="grid h-full w-full grid-rows-[auto_1fr_auto]">
         <AIAnalystHeader textareaRef={textareaRef} />
 
-        <AIAnalystMessages textareaRef={textareaRef} />
+        {showChatHistory ? (
+          <AIAnalystChatHistory />
+        ) : (
+          <>
+            <AIAnalystMessages textareaRef={textareaRef} />
 
-        <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+            <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+          </>
+        )}
       </div>
     </div>
   );

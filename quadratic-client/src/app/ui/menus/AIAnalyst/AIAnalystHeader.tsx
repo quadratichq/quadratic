@@ -1,41 +1,63 @@
 import {
+  aiAnalystChatsCountAtom,
+  aiAnalystCurrentChatAtom,
+  aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
-  aiAnalystMessagesAtom,
-  aiAnalystMessagesCountAtom,
+  aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { BackspaceIcon, CloseIcon } from '@/shared/components/Icons';
+import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { cn } from '@/shared/shadcn/utils';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 type AIAnalystHeaderProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
 export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
+  const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
+  const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
+  const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
+  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
-  const setMessages = useSetRecoilState(aiAnalystMessagesAtom);
-  const messagesCount = useRecoilValue(aiAnalystMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
     <div className="flex items-center justify-between p-3">
-      <span className="text-sm font-bold">Chat</span>
+      <span className="text-sm font-bold">{showChatHistory ? 'Chat history' : 'Chat'}</span>
 
       <div className="flex items-center gap-2">
-        <TooltipPopover label="Clear" side="bottom">
+        <TooltipPopover label="Previous chats" side="bottom">
+          <Button
+            variant={showChatHistory ? 'default' : 'ghost'}
+            size="icon-sm"
+            className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
+            disabled={loading || chatsCount === 0}
+            onClick={() => setShowChatHistory((prev) => !prev)}
+          >
+            <HistoryIcon />
+          </Button>
+        </TooltipPopover>
+
+        <TooltipPopover label="New chat" side="bottom">
           <Button
             variant="ghost"
             size="icon-sm"
             className="text-muted-foreground hover:text-foreground"
             disabled={loading || messagesCount === 0}
             onClick={() => {
-              setMessages([]);
+              setCurrentChat({
+                id: '',
+                name: '',
+                lastUpdated: Date.now(),
+                messages: [],
+              });
               textareaRef.current?.focus();
             }}
           >
-            <BackspaceIcon />
+            <AddIcon />
           </Button>
         </TooltipPopover>
 

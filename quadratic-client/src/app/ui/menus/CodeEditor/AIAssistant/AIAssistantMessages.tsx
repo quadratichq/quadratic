@@ -57,11 +57,14 @@ export function AIAssistantMessages() {
       data-gramm_editor="false"
       data-enable-grammarly="false"
     >
-      {messages
-        .filter((message) => debugShowAIAssistantInternalContext || message.contextType === 'userPrompt')
-        .map((message, index) => (
+      {messages.map((message, index) => {
+        if (!debugShowAIAssistantInternalContext && message.contextType !== 'userPrompt') {
+          return null;
+        }
+
+        return (
           <div
-            key={index}
+            key={`${index}-${message.role}-${message.contextType}`}
             className={cn('group relative my-4', message.role === 'user' && 'rounded bg-accent px-2 py-2')}
             // For debugging internal context
             style={{
@@ -83,9 +86,11 @@ export function AIAssistantMessages() {
                 <TooltipContent>Edit prompt</TooltipContent>
               </Tooltip>
             )}
+
             <AICodeBlockParser input={message.content} />
           </div>
-        ))}
+        );
+      })}
     </div>
   );
 }

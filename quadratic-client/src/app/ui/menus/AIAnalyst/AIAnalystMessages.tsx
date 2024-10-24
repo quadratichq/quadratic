@@ -1,6 +1,6 @@
 import {
-  aiAnalystMessagesAtom,
-  aiAnalystMessagesCountAtom,
+  aiAnalystCurrentChatMessagesAtom,
+  aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystShowInternalContextAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { colors } from '@/app/theme/colors';
@@ -16,8 +16,8 @@ type AIAnalystMessagesProps = {
 
 export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   const showInternalContext = useRecoilValue(aiAnalystShowInternalContextAtom);
-  const messages = useRecoilValue(aiAnalystMessagesAtom);
-  const messagesCount = useRecoilValue(aiAnalystMessagesCountAtom);
+  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+  const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement | null) => {
@@ -92,26 +92,19 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
                 <AIAnalystUserMessageForm
-                  key={`${index}-${message.role}-${message.contextType}`}
                   initialPrompt={message.content}
                   initialContext={message.context}
                   messageIndex={index}
                   textareaRef={textareaRef}
                 />
               ) : (
-                <Markdown
-                  key={`${index}-${message.role}-${message.contextType}`}
-                  className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
-                >
+                <Markdown className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm">
                   {message.content}
                 </Markdown>
               )
             ) : (
               <>
-                <Markdown
-                  key={`${index}-${message.role}-${message.contextType}`}
-                  className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
-                >
+                <Markdown className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm">
                   {message.content}
                 </Markdown>
 
