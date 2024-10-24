@@ -597,6 +597,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetAIContextRectsInSheetRect':
+        this.send({
+          type: 'coreClientGetAIContextRectsInSheetRect',
+          id: e.data.id,
+          value: core.getAIContextRectsInSheetRect(e.data.sheetRect),
+        });
+        return;
+
       case 'clientCoreDeleteColumns':
         core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
         return;

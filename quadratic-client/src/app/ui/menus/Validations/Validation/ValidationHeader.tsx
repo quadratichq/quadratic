@@ -12,15 +12,14 @@ import { useSetRecoilState } from 'recoil';
 export const ValidationHeader = (props: { validationData: ValidationData }) => {
   const { unsaved, sheetId } = props.validationData;
   const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
-
   const [sheetName] = useState(` - ${sheets.getById(sheetId)?.name}`);
-
-  const close = useCallback(() => {
-    setShowValidation(false);
-  }, [setShowValidation]);
 
   const back = useCallback(() => {
     setShowValidation(true);
+  }, [setShowValidation]);
+
+  const close = useCallback(() => {
+    setShowValidation(false);
   }, [setShowValidation]);
 
   return (

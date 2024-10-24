@@ -15,17 +15,11 @@ export const MODEL_OPTIONS: {
     stream: true,
     enabled: true,
   },
-  'claude-3-5-sonnet-20240620': {
+  'claude-3-5-sonnet-latest': {
     displayName: 'Anthropic: claude-3.5-sonnet',
     temperature: 0,
     stream: true,
     enabled: true,
-  },
-  'gpt-4o-2024-08-06': {
-    displayName: 'OpenAI: gpt-4o-2024-08-06',
-    temperature: 0,
-    stream: true,
-    enabled: debug,
   },
   'o1-preview': {
     displayName: 'OpenAI: o1-preview',

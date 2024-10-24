@@ -33,6 +33,8 @@ export const CodeEditor = () => {
     <>
       <CodeEditorEffects />
 
+      <CodeEditorEscapeEffect editorInst={editorInst} />
+
       {showCodeEditor && (
         <div
           ref={codeEditorRef}
@@ -47,6 +49,9 @@ export const CodeEditor = () => {
             }px`,
             borderLeft: '1px solid black',
           }}
+          onCopy={(e) => e.stopPropagation()}
+          onCut={(e) => e.stopPropagation()}
+          onPaste={(e) => e.stopPropagation()}
         >
           <div
             id="QuadraticCodeEditorID"
@@ -78,8 +83,6 @@ export const CodeEditor = () => {
             <CodeEditorEmptyState editorInst={editorInst} />
 
             <ReturnTypeInspector />
-
-            <CodeEditorEscapeEffect editorInst={editorInst} />
           </div>
 
           <div

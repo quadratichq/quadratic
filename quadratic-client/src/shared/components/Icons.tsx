@@ -7,6 +7,13 @@
 import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
+// const sizes = {
+//   sm: '20',
+//   md: '24',
+//   lg: '40',
+//   xl: '48',
+// };
+
 /**
  * Base icon component, used to render icons from the Material Symbols font.
  */
@@ -14,13 +21,15 @@ interface BaseIconProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: string;
   // TODO: if and when we need to use other sizes, we'll have this as a prop
   // Note: we'll have to load the additional sizes via the font loader in `index.html`
-  //e.g. size: 'sm' | 'md' | 'lg' | 'xl' -> '20' '24' '40' '48';
+  // size?: keyof typeof sizes;
 }
 
 const Icon = (props: BaseIconProps) => {
   const { children, className, ...rest } = props;
+  const _size = '20'; // size ? sizes[size] : sizes['sm'];
+
   return (
-    <span className={`material-symbols-outlined material-symbols-20 ${className ? className : ''}`} {...rest}>
+    <span className={`material-symbols-outlined material-symbols-${_size} ${className ? className : ''}`} {...rest}>
       {children}
     </span>
   );
@@ -36,6 +45,10 @@ export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
 };
 
+export const AIIcon: IconComponent = (props) => {
+  return <Icon {...props}>auto_awesome</Icon>;
+};
+
 export const ApiIcon: IconComponent = (props) => {
   return <Icon {...props}>api</Icon>;
 };
@@ -46,6 +59,14 @@ export const ArrowDropDownIcon: IconComponent = (props) => {
 
 export const ArrowDropDownCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_drop_down_circle</Icon>;
+};
+
+export const ArrowUpwardIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_upward</Icon>;
+};
+
+export const BackspaceIcon: IconComponent = (props) => {
+  return <Icon {...props}>backspace</Icon>;
 };
 
 export const BorderAllIcon: IconComponent = (props) => {
@@ -184,6 +205,10 @@ export const DeleteIcon: IconComponent = (props) => {
   return <Icon {...props}>delete</Icon>;
 };
 
+export const DiffIcon: IconComponent = (props) => {
+  return <Icon {...props}>difference</Icon>;
+};
+
 export const DownloadIcon: IconComponent = (props) => {
   return <Icon {...props}>download</Icon>;
 };
@@ -202,6 +227,22 @@ export const EducationIcon: IconComponent = (props) => {
 
 export const ExamplesIcon: IconComponent = (props) => {
   return <Icon {...props}>view_carousel</Icon>;
+};
+
+export const ExpandIcon: IconComponent = (props) => {
+  return <Icon {...props}>unfold_less</Icon>;
+};
+
+export const CollapseIcon: IconComponent = (props) => {
+  return <Icon {...props}>unfold_more</Icon>;
+};
+
+export const ExpandCircleDownIcon: IconComponent = (props) => {
+  return <Icon {...props}>expand_circle_down</Icon>;
+};
+
+export const ExpandCircleUpIcon: IconComponent = (props) => {
+  return <Icon {...props}>expand_circle_up</Icon>;
 };
 
 export const ExternalLinkIcon: IconComponent = (props) => {
@@ -296,12 +337,20 @@ export const GroupIcon: IconComponent = (props) => {
   return <Icon {...props}>group</Icon>;
 };
 
+export const HistoryIcon: IconComponent = (props) => {
+  return <Icon {...props}>history</Icon>;
+};
+
 export const ImportIcon: IconComponent = (props) => {
   return <Icon {...props}>login</Icon>;
 };
 
 export const InsertChartIcon: IconComponent = (props) => {
   return <Icon {...props}>insert_chart</Icon>;
+};
+
+export const InsertCellRefIcon: IconComponent = (props) => {
+  return <Icon {...props}>ink_selection</Icon>;
 };
 
 export const LogoutIcon: IconComponent = (props) => {
@@ -379,6 +428,14 @@ export const RefreshIcon: IconComponent = (props) => {
   return <Icon {...props}>refresh</Icon>;
 };
 
+export const SaveAndRunIcon: IconComponent = (props) => {
+  return <Icon {...props}>play_arrow</Icon>;
+};
+
+export const SaveAndRunStopIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop</Icon>;
+};
+
 export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
@@ -389,6 +446,14 @@ export const SettingsIcon: IconComponent = (props) => {
 
 export const SheetIcon: IconComponent = (props) => {
   return <Icon {...props}>tab</Icon>;
+};
+
+export const SnippetsIcon: IconComponent = (props) => {
+  return <Icon {...props}>integration_instructions</Icon>;
+};
+
+export const StopIcon: IconComponent = (props) => {
+  return <Icon {...props}>stop</Icon>;
 };
 
 export const StopCircleIcon: IconComponent = (props) => {

@@ -2,6 +2,8 @@ import {
   codeEditorCodeCellAtom,
   codeEditorEditorContentAtom,
   codeEditorLoadingAtom,
+  codeEditorModifiedEditorContentAtom,
+  codeEditorShowDiffEditorAtom,
   codeEditorShowSnippetsPopoverAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
@@ -37,17 +39,20 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
   const codeCell = useMemo(() => getCodeCell(language), [language]);
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
+  const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
 
   const fillWithSnippet = useCallback(
     (code: string) => {
       setEditorContent(code);
+      setModifiedEditorContent(undefined);
       editorInst?.focus();
     },
-    [editorInst, setEditorContent]
+    [editorInst, setEditorContent, setModifiedEditorContent]
   );
 
   // Must meet these criteria to even show in the UI
-  if (editorContent !== '' || loading) {
+  if (editorContent !== '' || showDiffEditor || loading) {
     return null;
   }
   if (!(codeCell?.id === 'Javascript' || codeCell?.id === 'Python')) {

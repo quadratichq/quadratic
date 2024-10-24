@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 
 interface Props {
   id: string;
-  title: string;
+  title: ReactNode;
   children: ReactNode;
   open: boolean;
   toggleOpen: () => void;
