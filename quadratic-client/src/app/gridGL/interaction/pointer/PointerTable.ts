@@ -82,7 +82,9 @@ export class PointerTable {
         column: tableDown.table.x,
         row: tableDown.table.y,
         table: tableDown.table,
+        selectedColumn: tableDown.column,
       });
+      return true;
     }
 
     if (tableDown.type === 'table-name') {

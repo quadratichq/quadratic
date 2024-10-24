@@ -54,6 +54,7 @@ export const TableSort = () => {
     handleClose();
   }, [contextMenu.table, sort, handleClose]);
 
+  const [display, setDisplay] = useState('none');
   useEffect(() => {
     const changePosition = () => {
       if (!ref.current) {
@@ -66,6 +67,7 @@ export const TableSort = () => {
           ref.current.style.left = `${position.x}px`;
           ref.current.style.top = `${position.y}px`;
           ref.current.style.display = 'block';
+          setDisplay('block');
         }
       }
     };
@@ -143,6 +145,7 @@ export const TableSort = () => {
         transformOrigin: 'top left',
         transform: `scale(${1 / pixiApp.viewport.scaled})`,
         width: 450,
+        display,
       }}
       onKeyDown={(e) => {
         if (e.key === 'Escape') {

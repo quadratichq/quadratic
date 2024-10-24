@@ -3,9 +3,11 @@ import { Annotations } from '@/app/gridGL/HTMLGrid/annotations/Annotations';
 import { CodeHint } from '@/app/gridGL/HTMLGrid/CodeHint';
 import { CodeRunning } from '@/app/gridGL/HTMLGrid/codeRunning/CodeRunning';
 import { GridContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/GridContextMenu';
+import { TableColumnContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableColumnContextMenu';
 import { TableColumnHeaderRename } from '@/app/gridGL/HTMLGrid/contextMenus/TableColumnHeaderRename';
 import { TableContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableContextMenu';
 import { TableRename } from '@/app/gridGL/HTMLGrid/contextMenus/TableRename';
+import { TableSort } from '@/app/gridGL/HTMLGrid/contextMenus/tableSort/TableSort';
 import { HoverCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { HoverTooltip } from '@/app/gridGL/HTMLGrid/hoverTooltip/HoverTooltip';
 import { HtmlCells } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCells';
@@ -18,7 +20,6 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Following } from '@/app/ui/components/Following';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { SuggestionDropDown } from './SuggestionDropdown';
-import { TableSort } from '@/app/gridGL/HTMLGrid/contextMenus/tableSort/TableSort';
 
 interface Props {
   parent?: HTMLDivElement;
@@ -136,6 +137,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
       >
         <GridContextMenu />
         <TableContextMenu />
+        <TableColumnContextMenu />
         <TableRename />
         <TableColumnHeaderRename />
         <TableSort />

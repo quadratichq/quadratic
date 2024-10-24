@@ -13,7 +13,10 @@ export const TableContextMenu = () => {
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const onClose = useCallback(() => {
-    if (contextMenu.type !== ContextMenuType.Table || (contextMenu.type === ContextMenuType.Table && !contextMenu.rename)) {
+    if (
+      contextMenu.type !== ContextMenuType.Table ||
+      (contextMenu.type === ContextMenuType.Table && !contextMenu.rename)
+    ) {
       return;
     }
     setContextMenu({});
@@ -42,7 +45,8 @@ export const TableContextMenu = () => {
         top: contextMenu.world?.y ?? 0,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
         pointerEvents: 'auto',
-        display: contextMenu.type === ContextMenuType.Table && !contextMenu.rename ? 'block' : 'none',
+        display:
+          contextMenu.type === ContextMenuType.Table && contextMenu.selectedColumn === undefined ? 'block' : 'none',
       }}
     >
       <ControlledMenu

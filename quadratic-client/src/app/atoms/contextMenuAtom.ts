@@ -7,6 +7,7 @@ export enum ContextMenuType {
   Grid = 'grid',
   Table = 'table',
   TableSort = 'table-sort',
+  TableColumn = 'table-column',
 }
 
 export interface ContextMenuState {

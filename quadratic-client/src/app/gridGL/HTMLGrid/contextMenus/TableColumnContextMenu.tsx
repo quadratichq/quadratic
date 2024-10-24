@@ -1,22 +1,27 @@
 //! This shows the table column's header context menu.
 
+import { Action } from '@/app/actions/actions';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
+import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
 import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { ControlledMenu } from '@szhsin/react-menu';
+import { TableIcon } from '@/shared/components/Icons';
+import { ControlledMenu, MenuDivider, SubMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 
-export const TableContextMenu = () => {
+export const TableColumnContextMenu = () => {
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
 
   const onClose = useCallback(() => {
-    setContextMenu({});
-    events.emit('contextMenuClose');
-    focusGrid();
-  }, [setContextMenu]);
+    if (contextMenu.type === ContextMenuType.TableColumn) {
+      setContextMenu({});
+      events.emit('contextMenuClose');
+      focusGrid();
+    }
+  }, [contextMenu.type, setContextMenu]);
 
   useEffect(() => {
     pixiApp.viewport.on('moved', onClose);
@@ -30,6 +35,11 @@ export const TableContextMenu = () => {
 
   const ref = useRef<HTMLDivElement>(null);
 
+  const display =
+    contextMenu.type === ContextMenuType.Table && contextMenu.selectedColumn !== undefined && !contextMenu.rename
+      ? 'block'
+      : 'none';
+
   return (
     <div
       className="absolute"
@@ -39,10 +49,7 @@ export const TableContextMenu = () => {
         top: contextMenu.world?.y ?? 0,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
         pointerEvents: 'auto',
-        display:
-          contextMenu.type === ContextMenuType.Table && contextMenu.column !== undefined && !contextMenu.rename
-            ? 'block'
-            : 'none',
+        display,
       }}
     >
       <ControlledMenu
@@ -52,7 +59,24 @@ export const TableContextMenu = () => {
         menuStyle={{ padding: '0', color: 'inherit' }}
         menuClassName="bg-background"
       >
-        <TableMenu codeCell={contextMenu.table} />
+        <MenuItemAction action={Action.RenameTableColumn} />
+        <MenuDivider />
+        <MenuItemAction action={Action.SortTableColumnAscending} />
+        <MenuItemAction action={Action.SortTableColumnDescending} />
+        <MenuDivider />
+        <MenuItemAction action={Action.HideTableColumn} />
+        <MenuDivider />
+        <SubMenu
+          className="text-sm"
+          label={
+            <div className="flex">
+              <TableIcon className="-ml-3 mr-4" />
+              <div>{contextMenu.table?.language === 'Import' ? 'Data' : 'Code'} Table</div>
+            </div>
+          }
+        >
+          <TableMenu codeCell={contextMenu.table} />
+        </SubMenu>
       </ControlledMenu>
     </div>
   );

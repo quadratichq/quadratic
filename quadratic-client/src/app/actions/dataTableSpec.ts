@@ -8,11 +8,15 @@ import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   DeleteIcon,
+  DownArrowIcon,
   FileRenameIcon,
   FlattenTableIcon,
+  HideIcon,
+  ShowIcon,
   SortIcon,
   TableConvertIcon,
   TableIcon,
+  UpArrowIcon,
 } from '@/shared/components/Icons';
 import { Rectangle } from 'pixi.js';
 import { sheets } from '../grid/controller/Sheets';
@@ -29,6 +33,11 @@ type DataTableSpec = Pick<
   | Action.CodeToDataTable
   | Action.SortTable
   | Action.ToggleTableAlternatingColors
+  | Action.RenameTableColumn
+  | Action.SortTableColumnAscending
+  | Action.SortTableColumnDescending
+  | Action.HideTableColumn
+  | Action.ShowAllColumns
 >;
 
 const isFirstRowHeader = (): boolean => {
@@ -142,6 +151,51 @@ export const dataTableSpec: DataTableSpec = {
     run: () => {
       console.log('TODO: toggle alternating colors');
       // quadraticCore.dataTableToggleAlternatingColors(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+    },
+  },
+  [Action.RenameTableColumn]: {
+    label: 'Rename column',
+    defaultOption: true,
+    Icon: FileRenameIcon,
+    run: () => {
+      const table = getTable();
+      if (table) {
+        setTimeout(() => {
+          const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+          if (selectedColumn !== undefined) {
+            const contextMenu = { type: ContextMenuType.Table, rename: true, table, selectedColumn };
+            events.emit('contextMenu', contextMenu);
+          }
+        });
+      }
+    },
+  },
+  [Action.SortTableColumnAscending]: {
+    label: 'Sort column ascending',
+    Icon: UpArrowIcon,
+    run: () => {
+      console.log('TODO: sort column ascending');
+    },
+  },
+  [Action.SortTableColumnDescending]: {
+    label: 'Sort column descending',
+    Icon: DownArrowIcon,
+    run: () => {
+      console.log('TODO: sort column descending');
+    },
+  },
+  [Action.HideTableColumn]: {
+    label: 'Hide column',
+    Icon: HideIcon,
+    run: () => {
+      console.log('TODO: hide column');
+    },
+  },
+  [Action.ShowAllColumns]: {
+    label: 'Show all columns',
+    Icon: ShowIcon,
+    run: () => {
+      console.log('TODO: show all columns');
     },
   },
 };
