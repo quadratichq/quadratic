@@ -118,10 +118,11 @@ interface DropdownProps {
 
   // first entry is blank
   includeBlank?: boolean;
+  tabIndex?: number;
 }
 
 export const ValidationDropdown = (props: DropdownProps) => {
-  const { label, value, className, onChange, options, disabled, readOnly, includeBlank, style } = props;
+  const { label, value, className, onChange, options, disabled, readOnly, includeBlank, style, tabIndex } = props;
 
   const optionsBlank = includeBlank ? [{ value: 'blank', label: '' }, ...options] : options;
 
@@ -135,6 +136,7 @@ export const ValidationDropdown = (props: DropdownProps) => {
             // this is needed to avoid selecting text when clicking the dropdown
             e.preventDefault();
           }}
+          tabIndex={tabIndex}
         >
           <SelectValue />
         </SelectTrigger>

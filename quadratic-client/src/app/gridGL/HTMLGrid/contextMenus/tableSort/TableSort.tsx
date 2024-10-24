@@ -1,6 +1,5 @@
 //! Shows the Table Sort Dialog for a table
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { TableSortEntry } from '@/app/gridGL/HTMLGrid/contextMenus/tableSort/TableSortEntry';
@@ -130,6 +129,15 @@ export const TableSort = () => {
         transform: `scale(${1 / pixiApp.viewport.scaled})`,
         width: 400,
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          handleClose();
+        } else if (e.key === 'Enter') {
+          handleSave();
+        }
+        e.stopPropagation();
+      }}
+      autoFocus
     >
       <div className="mb-4 text-lg font-semibold">Table Sort</div>
       <div className="flex max-h-96 flex-col gap-2 overflow-y-auto">

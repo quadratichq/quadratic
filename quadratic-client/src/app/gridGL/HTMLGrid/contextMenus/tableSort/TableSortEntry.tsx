@@ -31,7 +31,7 @@ export const TableSortEntry = (props: Props) => {
     <div className="flex h-fit w-full gap-2">
       <ValidationDropdown
         className="w-fit grow"
-        style={{ paddingTop: 1, paddingBottom: 1 }}
+        style={{ paddingTop: 1, paddingBottom: 1, paddingLeft: 1 }}
         value={newColumn}
         options={availableColumns}
         onChange={setNewColumn}
