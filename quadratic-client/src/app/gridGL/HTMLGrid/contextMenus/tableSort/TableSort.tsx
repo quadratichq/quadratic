@@ -136,7 +136,6 @@ export const TableSort = () => {
               availableColumns={columns}
               onChange={handleChange}
               onDelete={handleDelete}
-              last={sort.length !== contextMenu.table?.column_names.length && index === sort.length - 1}
             />
           );
         })}

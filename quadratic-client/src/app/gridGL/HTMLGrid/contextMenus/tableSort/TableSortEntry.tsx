@@ -12,11 +12,10 @@ interface Props {
   direction: SortDirection;
   onChange: (index: number, column: string, direction: SortDirection) => void;
   onDelete: (index: number) => void;
-  last?: boolean;
 }
 
 export const TableSortEntry = (props: Props) => {
-  const { index, availableColumns, direction, name, onChange, onDelete, last } = props;
+  const { index, availableColumns, direction, name, onChange, onDelete } = props;
 
   const [newColumn, setNewColumn] = useState(name);
   const [newDirection, setNewDirection] = useState(direction);
@@ -28,7 +27,7 @@ export const TableSortEntry = (props: Props) => {
 
   return (
     <div className="flex h-fit w-full gap-2">
-      <Button variant="ghost" className={cn('p-0', last ? 'invisible' : '')}>
+      <Button variant="ghost" className={cn('p-0', name === '' ? 'invisible' : '')}>
         <DragIndicatorIcon />
       </Button>
       <ValidationDropdown
@@ -49,7 +48,7 @@ export const TableSortEntry = (props: Props) => {
         onChange={(direction) => setNewDirection(direction as SortDirection)}
         includeBlank
       />
-      <Button className={last ? 'invisible' : ''} onClick={() => onDelete(index)}>
+      <Button className={name === '' ? 'invisible' : ''} onClick={() => onDelete(index)}>
         <DeleteIcon />
       </Button>
     </div>
