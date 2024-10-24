@@ -30,19 +30,19 @@ export const defaultAIAnalystState: AIAnalystState = {
     // TODO(ayush): remove dummy chats
     {
       id: v4(),
-      name: 'Chat 1',
+      name: 'Dummy chat 1',
       lastUpdated: Date.now(),
       messages: [],
     },
     {
       id: v4(),
-      name: 'Chat 2',
+      name: 'Dummy chat 2',
       lastUpdated: new Date(new Date().getFullYear(), new Date().getMonth(), 0).getTime(),
       messages: [],
     },
     {
       id: v4(),
-      name: 'Chat 3',
+      name: 'Dummy chat 3',
       lastUpdated: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 15).getTime(),
       messages: [],
     },
