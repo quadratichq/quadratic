@@ -1032,6 +1032,7 @@ mod tests {
                 language: Some(CodeCellLanguage::Formula),
                 align: Some(CellAlign::Right),
                 number: Some(JsNumber::default()),
+                special: Some(JsRenderCellSpecial::TableAlternatingColor),
                 ..Default::default()
             }]
         );
@@ -1208,21 +1209,21 @@ mod tests {
                 y: 0,
                 value: "true".to_string(),
                 language: Some(CodeCellLanguage::Formula),
-                special: Some(JsRenderCellSpecial::Logical),
+                special: Some(JsRenderCellSpecial::TableAlternatingColor),
                 ..Default::default()
             },
             JsRenderCell {
                 x: 1,
                 y: 0,
                 value: "false".to_string(),
-                special: Some(JsRenderCellSpecial::Logical),
+                special: Some(JsRenderCellSpecial::TableAlternatingColor),
                 ..Default::default()
             },
             JsRenderCell {
                 x: 2,
                 y: 0,
                 value: "true".to_string(),
-                special: Some(JsRenderCellSpecial::Logical),
+                special: Some(JsRenderCellSpecial::TableAlternatingColor),
                 ..Default::default()
             },
         ];

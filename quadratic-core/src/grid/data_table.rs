@@ -17,7 +17,7 @@ use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString};
+use strum_macros::Display;
 use tabled::{
     builder::Builder,
     settings::{Color, Modify, Style},
@@ -81,16 +81,13 @@ impl DataTableColumn {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS, Display, EnumString)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum SortDirection {
     #[serde(rename = "asc")]
-    #[strum(serialize = "asc")]
     Ascending,
     #[serde(rename = "desc")]
-    #[strum(serialize = "desc")]
     Descending,
     #[serde(rename = "none")]
-    #[strum(serialize = "none")]
     None,
 }
 
@@ -712,9 +709,15 @@ pub mod test {
         let values = data_table.value.clone().into_array().unwrap();
 
         let expected_values = Value::Array(values.clone().into());
-        let expected_data_table =
-            DataTable::new(kind.clone(), "Table 1", expected_values, false, false, true)
-                .with_last_modified(data_table.last_modified);
+        let expected_data_table = DataTable::new(
+            kind.clone(),
+            "test.csv",
+            expected_values,
+            false,
+            false,
+            true,
+        )
+        .with_last_modified(data_table.last_modified);
         let expected_array_size = ArraySize::new(4, 5).unwrap();
         assert_eq!(data_table, expected_data_table);
         assert_eq!(data_table.output_size(), expected_array_size);

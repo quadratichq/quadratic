@@ -381,6 +381,7 @@ impl GridController {
 
             let old_value = data_table.sort.to_owned();
             data_table.sort = sort;
+            data_table.sort_all()?;
 
             self.send_to_wasm(transaction, &data_table_sheet_rect)?;
             transaction.add_code_cell(sheet_id, data_table_pos.into());
@@ -483,7 +484,7 @@ mod tests {
         gc.execute_flatten_data_table(&mut transaction, op).unwrap();
 
         assert_eq!(transaction.forward_operations.len(), 1);
-        assert_eq!(transaction.reverse_operations.len(), 1);
+        assert_eq!(transaction.reverse_operations.len(), 2);
 
         assert!(gc.sheet(sheet_id).first_data_table_within(pos).is_err());
 

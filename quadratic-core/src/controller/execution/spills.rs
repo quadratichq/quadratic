@@ -133,6 +133,7 @@ mod tests {
         y: i64,
         n: &str,
         language: Option<CodeCellLanguage>,
+        special: Option<JsRenderCellSpecial>,
     ) -> Vec<JsRenderCell> {
         vec![JsRenderCell {
             x,
@@ -141,6 +142,7 @@ mod tests {
             value: n.into(),
             align: Some(CellAlign::Right),
             number: Some(JsNumber::default()),
+            special,
             ..Default::default()
         }]
     }
@@ -293,7 +295,13 @@ mod tests {
         // should be B0: "1" since spill was removed
         assert_eq!(
             render_cells,
-            output_number(0, 0, "1", Some(CodeCellLanguage::Formula)),
+            output_number(
+                0,
+                0,
+                "1",
+                Some(CodeCellLanguage::Formula),
+                Some(JsRenderCellSpecial::TableAlternatingColor)
+            ),
         );
     }
 
@@ -330,10 +338,16 @@ mod tests {
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
         assert_eq!(
             render_cells,
-            output_number(0, 0, "1", Some(CodeCellLanguage::Formula))
+            output_number(
+                0,
+                0,
+                "1",
+                Some(CodeCellLanguage::Formula),
+                Some(JsRenderCellSpecial::TableAlternatingColor)
+            )
         );
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 1 }));
-        assert_eq!(render_cells, output_number(0, 1, "2", None),);
+        assert_eq!(render_cells, output_number(0, 1, "2", None, None));
 
         gc.set_code_cell(
             SheetPos {
@@ -416,7 +430,13 @@ mod tests {
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 11, y: 9 }));
         assert_eq!(
             render_cells,
-            output_number(11, 9, "1", Some(CodeCellLanguage::Formula))
+            output_number(
+                11,
+                9,
+                "1",
+                Some(CodeCellLanguage::Formula),
+                Some(JsRenderCellSpecial::TableAlternatingColor)
+            )
         );
     }
 

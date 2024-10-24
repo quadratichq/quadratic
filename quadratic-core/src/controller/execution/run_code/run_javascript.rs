@@ -35,7 +35,7 @@ mod tests {
         controller::{
             execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
         },
-        grid::js_types::JsRenderCell,
+        grid::js_types::{JsRenderCell, JsRenderCellSpecial},
         ArraySize, CellValue, Pos, Rect,
     };
     use bigdecimal::BigDecimal;
@@ -334,14 +334,29 @@ mod tests {
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         let cells = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 3));
-        // println!("{:?}", cells);
+
         assert_eq!(cells.len(), 3);
         assert_eq!(
             cells[0],
-            JsRenderCell::new_number(0, 0, 1, Some(CodeCellLanguage::Javascript))
+            JsRenderCell::new_number(
+                0,
+                0,
+                1,
+                Some(CodeCellLanguage::Javascript),
+                Some(JsRenderCellSpecial::TableAlternatingColor)
+            )
         );
-        assert_eq!(cells[1], JsRenderCell::new_number(0, 1, 2, None));
-        assert_eq!(cells[2], JsRenderCell::new_number(0, 2, 3, None));
+        assert_eq!(cells[1], JsRenderCell::new_number(0, 1, 2, None, None));
+        assert_eq!(
+            cells[2],
+            JsRenderCell::new_number(
+                0,
+                2,
+                3,
+                None,
+                Some(JsRenderCellSpecial::TableAlternatingColor)
+            )
+        );
     }
 
     #[test]

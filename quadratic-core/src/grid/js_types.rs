@@ -95,7 +95,13 @@ pub struct JsRenderCell {
 
 #[cfg(test)]
 impl JsRenderCell {
-    pub fn new_number(x: i64, y: i64, value: isize, language: Option<CodeCellLanguage>) -> Self {
+    pub fn new_number(
+        x: i64,
+        y: i64,
+        value: isize,
+        language: Option<CodeCellLanguage>,
+        special: Option<JsRenderCellSpecial>,
+    ) -> Self {
         Self {
             x,
             y,
@@ -103,6 +109,7 @@ impl JsRenderCell {
             language,
             align: Some(CellAlign::Right),
             number: Some(JsNumber::default()),
+            special,
             ..Default::default()
         }
     }
