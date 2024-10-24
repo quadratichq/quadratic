@@ -3,7 +3,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { CollapseIcon, CopyIcon, DiffIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
+import { CollapseIcon, CopyIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 const MAX_LINES = 8;
+
 interface CodeSnippetProps {
   code: string;
   language: string;
@@ -66,7 +67,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
           {!isLoading && (
             <div className="absolute right-2 top-1.5 flex items-center gap-1">
               <CodeSnippetRunButton text={code} language={language} />
-              {/* <CodeSnippetInsertButton text={code} language={language} /> */}
+              {/* <CodeSnippetDiffButton text={code} language={language} /> */}
               <CodeSnippetCopyButton text={code} language={language} />
             </div>
           )}
@@ -111,8 +112,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
           />
         </div>
       </div>
-      {
-        /*showAsCollapsed && (
+      {/* {showAsCollapsed && (
         <div
           className={cn(
             ' flex  flex-col items-center justify-end rounded bg-gradient-to-t from-white from-50% pb-1',
@@ -138,8 +138,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
             )}
           </Button>
         </div>
-      )*/ ''
-      }
+      )} */}
     </div>
   );
 }
@@ -194,43 +193,43 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
   );
 }
 
-function CodeSnippetInsertButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const handleReplace = useRecoilCallback(
-    ({ set, snapshot }) =>
-      async () => {
-        mixpanel.track('[AI].code.insert', { language });
-        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
-        set(codeEditorAtom, (prev) => ({
-          ...prev,
-          modifiedEditorContent: text,
-          waitingForEditorClose: {
-            codeCell,
-            showCellTypeMenu: false,
-            initialCode: '',
-            inlineEditor: false,
-          },
-        }));
-      },
-    [language, text]
-  );
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="text-muted-foreground hover:text-foreground"
-          onClick={handleReplace}
-          disabled={!language}
-        >
-          <DiffIcon />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>Apply diff</TooltipContent>
-    </Tooltip>
-  );
-}
+// function CodeSnippetDiffButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+//   const handleReplace = useRecoilCallback(
+//     ({ set, snapshot }) =>
+//       async () => {
+//         mixpanel.track('[AI].code.insert', { language });
+//         const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+//         set(codeEditorAtom, (prev) => ({
+//           ...prev,
+//           modifiedEditorContent: text,
+//           waitingForEditorClose: {
+//             codeCell,
+//             showCellTypeMenu: false,
+//             initialCode: '',
+//             inlineEditor: false,
+//           },
+//         }));
+//       },
+//     [language, text]
+//   );
+//
+//   return (
+//     <Tooltip>
+//       <TooltipTrigger asChild>
+//         <Button
+//           variant="ghost"
+//           size="icon-sm"
+//           className="text-muted-foreground hover:text-foreground"
+//           onClick={handleReplace}
+//           disabled={!language}
+//         >
+//           <DiffIcon />
+//         </Button>
+//       </TooltipTrigger>
+//       <TooltipContent>Apply diff</TooltipContent>
+//     </Tooltip>
+//   );
+// }
 
 function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
   const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
