@@ -1,6 +1,6 @@
 use crate::{
     controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::DataTableSort,
+    grid::sort::DataTableSort,
     Pos, SheetPos, SheetRect,
 };
 

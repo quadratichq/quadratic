@@ -3,6 +3,7 @@ use std::fs::create_dir_all;
 use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
 use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
+use grid::data_table::sort::{DataTableSort, SortDirection};
 use grid::formats::format::Format;
 use grid::js_types::{
     CellFormatSummary, JsCellValue, JsClipboard, JsDataTableColumn, JsOffset, JsPos, JsRenderFill,
@@ -28,8 +29,7 @@ use grid::sheet::validations::validation_rules::validation_text::{
 };
 use grid::sheet::validations::validation_rules::ValidationRule;
 use grid::{
-    CellAlign, CellVerticalAlign, CellWrap, DataTableSort, GridBounds, NumericFormat,
-    NumericFormatKind, SheetId, SortDirection,
+    CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;

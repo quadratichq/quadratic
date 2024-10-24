@@ -26,7 +26,7 @@ mod block;
 mod borders;
 mod bounds;
 mod code_run;
-mod column;
+pub mod column;
 pub mod data_table;
 pub mod file;
 pub mod formats;

@@ -5,12 +5,13 @@ use uuid::Uuid;
 use crate::{
     cell_values::CellValues,
     grid::{
+        data_table::sort::DataTableSort,
         file::sheet_schema::SheetSchema,
         formats::Formats,
         formatting::CellFmtArray,
         js_types::JsRowHeight,
         sheet::{borders::BorderStyleCellUpdates, validations::validation::Validation},
-        DataTable, DataTableKind, DataTableSort, Sheet, SheetBorders, SheetId,
+        DataTable, DataTableKind, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,

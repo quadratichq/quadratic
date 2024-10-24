@@ -459,7 +459,10 @@ mod tests {
             },
             user_actions::import::tests::{assert_simple_csv, simple_csv},
         },
-        grid::{CodeCellLanguage, CodeRun, DataTableSort, SheetId, SortDirection},
+        grid::{
+            data_table::sort::{DataTableSort, SortDirection},
+            CodeCellLanguage, CodeRun, SheetId,
+        },
         test_util::{
             assert_cell_value_row, assert_data_table_cell_value, assert_data_table_cell_value_row,
             print_data_table, print_table,

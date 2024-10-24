@@ -4,10 +4,11 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
+use super::data_table::{column::DataTableColumn, sort::DataTableSort};
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
-use super::{CodeCellLanguage, DataTableColumn, DataTableSort, NumericFormat};
+use super::{CodeCellLanguage, NumericFormat};
 use crate::{Pos, SheetRect};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]

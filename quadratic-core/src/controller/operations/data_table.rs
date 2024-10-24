@@ -2,7 +2,7 @@ use super::operation::Operation;
 use crate::{
     cellvalue::Import,
     controller::GridController,
-    grid::{DataTableKind, DataTableSort},
+    grid::{data_table::sort::DataTableSort, DataTableKind},
     CellValue, SheetPos, SheetRect,
 };
 

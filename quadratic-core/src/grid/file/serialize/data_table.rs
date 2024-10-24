@@ -4,7 +4,11 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 
 use crate::{
-    grid::{CodeRun, DataTable, DataTableColumn, DataTableKind, DataTableSort, SortDirection},
+    grid::{
+        data_table::column::DataTableColumn,
+        data_table::sort::{DataTableSort, SortDirection},
+        CodeRun, DataTable, DataTableKind,
+    },
     ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
 };
 

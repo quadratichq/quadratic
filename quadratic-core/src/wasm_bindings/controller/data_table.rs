@@ -1,4 +1,5 @@
 use selection::Selection;
+use sort::DataTableSort;
 
 use super::*;
 
@@ -69,8 +70,6 @@ impl GridController {
             );
         }
 
-        // let sort = sort.map(|s| serde_json::from_str::<Vec<DataTableSort>>(&s)?);
-        dbgjs!(&sort);
         self.sort_data_table(pos.to_sheet_pos(sheet_id), sort, cursor);
 
         Ok(())
