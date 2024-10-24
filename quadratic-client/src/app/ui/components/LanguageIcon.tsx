@@ -9,21 +9,19 @@ interface LanguageIconProps extends SvgIconProps {
 }
 
 export function LanguageIcon({ language, ...props }: LanguageIconProps) {
-  language = language ? language.toLowerCase() : language;
-
-  return language === 'python' ? (
+  return language === 'Python' ? (
     <Python {...props} sx={{ color: colors.languagePython, ...(props.sx ? props.sx : {}) }} />
-  ) : language === 'formula' ? (
+  ) : language === 'Formula' ? (
     <Formula {...props} sx={{ color: colors.languageFormula, ...(props.sx ? props.sx : {}) }} />
-  ) : language === 'javascript' ? (
+  ) : language === 'Javascript' ? (
     <JavaScript className="text-gray-700" sx={{ color: colors.languageJavascript }} />
-  ) : language === 'postgres' ? (
+  ) : language === 'POSTGRES' ? (
     <PostgresIcon {...props} sx={{ color: colors.languagePostgres, ...(props.sx ? props.sx : {}) }} />
-  ) : language === 'mysql' ? (
+  ) : language === 'MYSQL' ? (
     <MysqlIcon {...props} sx={{ color: colors.languageMysql, ...(props.sx ? props.sx : {}) }} />
-  ) : language === 'mssql' ? (
+  ) : language === 'MSSQL' ? (
     <MssqlIcon sx={{ color: colors.languageMssql, ...(props.sx ? props.sx : {}) }} />
-  ) : language === 'snowflake' ? (
+  ) : language === 'SNOWFLAKE' ? (
     <SnowflakeIcon sx={{ color: colors.languageSnowflake, ...(props.sx ? props.sx : {}) }} />
   ) : (
     <Subject {...props} />

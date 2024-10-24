@@ -1,13 +1,17 @@
-import { aiAssistantLoadingAtom, codeEditorAtom, codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  aiAssistantLoadingAtom,
+  codeEditorAtom,
+  codeEditorCodeCellAtom,
+  codeEditorModifiedEditorContentAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { CollapseIcon, CopyIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
+import { CopyIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import Editor from '@monaco-editor/react';
+import { ChevronDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
@@ -46,29 +50,30 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
   return (
     <div className="relative">
       <div className="overflow-hidden rounded border shadow-sm">
-        <div className="relative flex flex-row">
-          <button
-            className="relative flex w-full flex-row items-center py-2 pl-2 pr-3 font-medium lowercase [&:not(:disabled)]:hover:bg-accent"
+        <div className="relative flex flex-row items-center pl-1.5 pt-1.5">
+          <Button
+            variant="ghost"
+            className={cn('gap-0.5 px-2 lowercase', `${isCollapsible ? '' : '!'}text-muted-foreground`)}
+            size="sm"
             onClick={() => setIsCollapsed((prev) => !prev)}
             disabled={!isCollapsible}
             aria-label={isCollapsible ? 'Collapse code' : 'Expand code'}
           >
-            <LanguageIcon language={language} />
-            <span className="ml-2 mr-1">
+            {isCollapsible && (
+              <ChevronDownIcon
+                className={`-ml-1 mr-0.5 text-muted-foreground transition ${isCollapsed ? '-rotate-90' : 'rotate-0'}`}
+              />
+            )}
+            <span>
               {language} (<span className="tabular-nums">{numberOfLines}</span> lines)
             </span>
-            {isCollapsible &&
-              (isCollapsed ? (
-                <CollapseIcon className="mr-0.5 text-muted-foreground opacity-50" />
-              ) : (
-                <ExpandIcon className="mr-0.5 text-muted-foreground opacity-50" />
-              ))}
-          </button>
+          </Button>
+
           {!isLoading && (
-            <div className="absolute right-2 top-1.5 flex items-center gap-1">
-              <CodeSnippetRunButton text={code} language={language} />
+            <div className="absolute right-1.5 top-1.5 flex items-center">
               {/* <CodeSnippetDiffButton text={code} language={language} /> */}
               <CodeSnippetCopyButton text={code} language={language} />
+              <CodeSnippetRunButton text={code} language={language} />
             </div>
           )}
         </div>
@@ -77,7 +82,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
           className={cn(
             isCollapsible &&
               isCollapsed &&
-              "relative after:absolute after:inset-0 after:bg-gradient-to-t after:from-white after:to-transparent after:content-['']"
+              "relative after:absolute after:inset-0 after:flex after:items-end after:justify-center after:bg-gradient-to-t after:from-white after:to-transparent after:content-['']"
           )}
           style={{
             ...codeEditorBaseStyles,
@@ -87,7 +92,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
           }}
         >
           <Editor
-            className="border-t border-border pt-2"
+            className=" pt-2"
             language={syntax}
             value={code}
             height="100%"
@@ -110,35 +115,18 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
               renderLineHighlightOnlyWhenFocus: true,
             }}
           />
+          {isCollapsible && isCollapsed && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed((prev) => !prev)}
+              className="absolute bottom-0.5 left-1/2 z-10 -translate-x-1/2 font-sans text-muted-foreground"
+            >
+              Show all code
+            </Button>
+          )}
         </div>
       </div>
-      {/* {showAsCollapsed && (
-        <div
-          className={cn(
-            ' flex  flex-col items-center justify-end rounded bg-gradient-to-t from-white from-50% pb-1',
-            collapsed ? 'absolute bottom-[1px] left-[1px] right-[1px] h-16' : ''
-          )}
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1 text-muted-foreground"
-            onClick={() => setIsCollapsed((prev) => !prev)}
-          >
-            {collapsed ? (
-              <>
-                <ExpandCircleDownIcon />
-                Show code ({numberOfLines} lines)
-              </>
-            ) : (
-              <>
-                <ExpandCircleUpIcon />
-                Collapse code
-              </>
-            )}
-          </Button>
-        </div>
-      )} */}
     </div>
   );
 }
@@ -159,9 +147,43 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
           cursor: sheets.getCursorPosition(),
         });
 
-        // if (modifiedEditorContent) {
-        //   set(codeEditorModifiedEditorContentAtom, undefined);
-        // }
+        const modifiedEditorContent = await snapshot.getPromise(codeEditorModifiedEditorContentAtom);
+        if (modifiedEditorContent) {
+          set(codeEditorModifiedEditorContentAtom, undefined);
+        }
+        set(codeEditorAtom, (prev) => ({
+          ...prev,
+          modifiedEditorContent: text,
+          waitingForEditorClose: {
+            codeCell,
+            showCellTypeMenu: false,
+            initialCode: '',
+            inlineEditor: false,
+          },
+        }));
+      },
+    [language, text]
+  );
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="px-2 text-muted-foreground hover:text-foreground"
+      onClick={handleSaveAndRun}
+    >
+      <SaveAndRunIcon /> Apply
+    </Button>
+  );
+}
+
+/*
+function CodeSnippetDiffButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+  const handleReplace = useRecoilCallback(
+    ({ set, snapshot }) =>
+      async () => {
+        mixpanel.track('[AI].code.insert', { language });
+        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         set(codeEditorAtom, (prev) => ({
           ...prev,
           modifiedEditorContent: text,
@@ -183,53 +205,17 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
           variant="ghost"
           size="icon-sm"
           className="text-muted-foreground hover:text-foreground"
-          onClick={handleSaveAndRun}
+          onClick={handleReplace}
+          disabled={!language}
         >
-          <SaveAndRunIcon />
+          <DiffIcon />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Apply & run</TooltipContent>
+      <TooltipContent>Apply diff</TooltipContent>
     </Tooltip>
   );
 }
-
-// function CodeSnippetDiffButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-//   const handleReplace = useRecoilCallback(
-//     ({ set, snapshot }) =>
-//       async () => {
-//         mixpanel.track('[AI].code.insert', { language });
-//         const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
-//         set(codeEditorAtom, (prev) => ({
-//           ...prev,
-//           modifiedEditorContent: text,
-//           waitingForEditorClose: {
-//             codeCell,
-//             showCellTypeMenu: false,
-//             initialCode: '',
-//             inlineEditor: false,
-//           },
-//         }));
-//       },
-//     [language, text]
-//   );
-//
-//   return (
-//     <Tooltip>
-//       <TooltipTrigger asChild>
-//         <Button
-//           variant="ghost"
-//           size="icon-sm"
-//           className="text-muted-foreground hover:text-foreground"
-//           onClick={handleReplace}
-//           disabled={!language}
-//         >
-//           <DiffIcon />
-//         </Button>
-//       </TooltipTrigger>
-//       <TooltipContent>Apply diff</TooltipContent>
-//     </Tooltip>
-//   );
-// }
+  */
 
 function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
   const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
@@ -248,25 +234,9 @@ function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps[
   );
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="text-muted-foreground hover:text-foreground"
-          onClick={handleCopy}
-        >
-          <CopyIcon />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent
-        onPointerDownOutside={(event) => {
-          event.preventDefault();
-        }}
-      >
-        {tooltipMsg}
-      </TooltipContent>
-    </Tooltip>
+    <Button variant="ghost" size="sm" className="px-2 text-muted-foreground hover:text-foreground" onClick={handleCopy}>
+      <CopyIcon className="mr-1" /> {tooltipMsg}
+    </Button>
   );
 }
 
