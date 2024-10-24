@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { getUsersFromAuth0 } from '../auth0/profile';
+import { getUsers } from '../auth/auth';
 import dbClient from '../dbClient';
 import { addUserToTeam } from '../internal/addUserToTeam';
 import { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
@@ -8,7 +8,7 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
   const { id: userId, auth0Id } = user;
 
   // Lookup their email in auth0
-  const usersById = await getUsersFromAuth0([{ id: userId, auth0Id }]);
+  const usersById = await getUsers([{ id: userId, auth0Id }]);
   const { email } = usersById[userId];
 
   // See if they've been invited to any teams and make them team members
@@ -59,6 +59,7 @@ const getOrCreateUser = async (auth0Id: string) => {
       auth0Id,
     },
   });
+
   if (user) {
     return user;
   }

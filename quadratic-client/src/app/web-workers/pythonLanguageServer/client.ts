@@ -1,4 +1,4 @@
-import EventEmitter from 'events';
+import EventEmitter from 'eventemitter3';
 import {
   CompletionList,
   CompletionParams,
@@ -50,9 +50,12 @@ export class LanguageServerClient extends EventEmitter {
     super();
   }
 
-  on(event: 'diagnostics', listener: (params: PublishDiagnosticsParams) => void): this {
-    super.on(event, listener);
-    return this;
+  on<T extends string | symbol>(event: T, listener: (...args: any[]) => void): this {
+    return super.on(event, listener);
+  }
+
+  onDiagnostics(listener: (params: PublishDiagnosticsParams) => void): this {
+    return super.on('diagnostics', listener);
   }
 
   currentDiagnostics(uri: string): Diagnostic[] {

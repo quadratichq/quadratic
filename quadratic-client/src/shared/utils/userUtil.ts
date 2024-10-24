@@ -1,5 +1,5 @@
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { User } from '@auth0/auth0-spa-js';
+import { User } from '@/auth/auth';
 
 export const displayName = (user: User | MultiplayerUser | undefined, you: boolean): string => {
   let name = '';
@@ -37,5 +37,5 @@ export const displayInitials = (user: User | MultiplayerUser | undefined): strin
       return user.email[0];
     }
   }
-  return user?.index !== undefined ? user.index + 1 : '0';
+  return user?.index !== undefined ? String(user.index + 1) : '0';
 };

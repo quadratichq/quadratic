@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsersFromAuth0 } from '../../auth0/profile';
+import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
@@ -65,7 +65,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
   if (dbFile.ownerUser) {
     usersToSearchFor.push({ id: dbFile.ownerUser.id, auth0Id: dbFile.ownerUser.auth0Id });
   }
-  const usersById = await getUsersFromAuth0(usersToSearchFor);
+  const usersById = await getUsers(usersToSearchFor);
 
   // Assign the owner based on whether this is a team or user-owned file
   let owner: ApiTypes['/v0/files/:uuid/sharing.GET.response']['owner'];

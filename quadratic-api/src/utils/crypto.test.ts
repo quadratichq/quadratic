@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { decrypt, encrypt } from './crypto';
+import { decrypt, encrypt, hash } from './crypto';
 
 // Convert a hex string to a buffer.
 //
@@ -12,6 +12,13 @@ describe('Encryption and Decryption', () => {
   const keyBytes = crypto.randomBytes(32);
   const key = hexStringToBuffer(keyBytes.toString('hex'));
   const text = 'Hello, world!';
+
+  it('should hash a value', () => {
+    const hashed = hash(text);
+    const expected = '315f5bdb76d078c43b8ac0064e4a0164612b1fce77c869345bfc94c75894edd3';
+
+    expect(hashed).toEqual(expected);
+  });
 
   it('should convert a hex to a buffer', () => {
     const hex = keyBytes.toString('hex');

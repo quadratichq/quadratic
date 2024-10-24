@@ -1,4 +1,4 @@
-import { User } from '@auth0/auth0-spa-js';
+import { User } from '@/auth/auth';
 import { CellEdit, ReceiveRoom, UserUpdate } from './multiplayerTypes';
 
 export type MultiplayerState =

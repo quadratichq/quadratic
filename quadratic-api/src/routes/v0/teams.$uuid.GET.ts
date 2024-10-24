@@ -1,15 +1,18 @@
 import { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsersFromAuth0 } from '../../auth0/profile';
-import { generatePresignedUrl } from '../../aws/s3';
+import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
+import { licenseClient } from '../../licenseClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
+import { getPresignedFileUrl } from '../../storage/storage';
 import { RequestWithUser } from '../../types/Request';
+import { ResponseError } from '../../types/Response';
 import { getFilePermissions } from '../../utils/permissions';
+import { ApiError } from '../../utils/ApiError';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -19,7 +22,7 @@ const schema = z.object({
   }),
 });
 
-async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>) {
+async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET.response'] | ResponseError>) {
   const {
     params: { uuid },
   } = parseRequest(req, schema);
@@ -88,14 +91,35 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const dbUsers = dbTeam.UserTeamRole ? dbTeam.UserTeamRole : [];
   const dbInvites = dbTeam.TeamInvite ? dbTeam.TeamInvite : [];
 
-  // Get user info from auth0
-  const auth0UsersById = await getUsersFromAuth0(dbUsers.map(({ user }) => user));
+  // Get user info from auth
+  const authUsersById = await getUsers(dbUsers.map(({ user }) => user));
+
+  // IDEA: (enhancement) we could put this in /sharing and just return the userCount
+  // then require the data for the team share modal to be a seaparte network request
+  const users = dbUsers
+    .filter(({ userId: id }) => authUsersById[id])
+    .map(({ userId: id, role }) => {
+      const { email, name, picture } = authUsersById[id];
+      return {
+        id,
+        email,
+        role,
+        name,
+        picture,
+      };
+    });
+
+  const license = await licenseClient.check(false);
+
+  if (!license) {
+    throw new ApiError(500, 'Unable to retrieve license');
+  }
 
   // Get signed thumbnail URLs
   await Promise.all(
     dbFiles.map(async (file) => {
       if (file.thumbnail) {
-        file.thumbnail = await generatePresignedUrl(file.thumbnail);
+        file.thumbnail = await getPresignedFileUrl(file.thumbnail);
       }
     })
   );
@@ -115,18 +139,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       teamRole: userMakingRequest.role,
       teamPermissions: userMakingRequest.permissions,
     },
-    // IDEA: (enhancement) we could put this in /sharing and just return the userCount
-    // then require the data for the team share modal to be a seaparte network request
-    users: dbUsers.map(({ userId: id, role }) => {
-      const { email, name, picture } = auth0UsersById[id];
-      return {
-        id,
-        email,
-        role,
-        name,
-        picture,
-      };
-    }),
+    users,
     invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
     files: dbFiles
       .filter((file) => !file.ownerUserId)
@@ -172,6 +185,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           }),
         },
       })),
+    license: { ...license },
     connections: dbTeam.Connection.map((connection) => ({
       uuid: connection.uuid,
       name: connection.name,

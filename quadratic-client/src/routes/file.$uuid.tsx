@@ -8,10 +8,10 @@ import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareV
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
-import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
+import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
-import { CONTACT_URL } from '@/shared/constants/urls';
+import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -122,7 +122,7 @@ export const Component = () => {
 export const ErrorBoundary = () => {
   const error = useRouteError();
 
-  const actions = (
+  const actionsDefault = (
     <div className={`flex justify-center gap-2`}>
       <Button asChild variant="outline">
         <a href={CONTACT_URL} target="_blank" rel="noreferrer">
@@ -135,9 +135,25 @@ export const ErrorBoundary = () => {
     </div>
   );
 
+  const actionsLicenseRevoked = (
+    <div className={`flex justify-center gap-2`}>
+      <Button asChild variant="outline">
+        <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+          Contact Support
+        </a>
+      </Button>
+      <Button asChild>
+        <a href={SCHEDULE_MEETING} target="_blank" rel="noreferrer">
+          Schedule Meeting
+        </a>
+      </Button>
+    </div>
+  );
+
   if (isRouteErrorResponse(error)) {
     let title = '';
     let description: string = '';
+    let actions = actionsDefault;
 
     if (error.status === 404) {
       title = 'File not found';
@@ -145,6 +161,10 @@ export const ErrorBoundary = () => {
     } else if (error.status === 400) {
       title = 'Bad file request';
       description = 'Check the URL and try again.';
+    } else if (error.status === 402) {
+      title = 'License Revoked';
+      description = 'Your license has been revoked. Please contact Quadratic Support.';
+      actions = actionsLicenseRevoked;
     } else if (error.status === 403) {
       title = 'Permission denied';
       description = 'You do not have permission to view this file. Try reaching out to the file owner.';
@@ -178,7 +198,7 @@ export const ErrorBoundary = () => {
       title="Unexpected error"
       description="Something went wrong loading this file. If the error continues, contact us."
       Icon={ExclamationTriangleIcon}
-      actions={actions}
+      actions={actionsDefault}
       severity="error"
       showLoggedInUser
     />
