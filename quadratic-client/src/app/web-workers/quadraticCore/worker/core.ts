@@ -1114,6 +1114,43 @@ class Core {
       this.gridController.insertRow(sheetId, BigInt(row), below, cursor);
     });
   }
+
+  flattenDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.flattenDataTable(sheetId, posToPos(x, y), cursor);
+  }
+
+  codeDataTableToDataTable(sheetId: string, x: number, y: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.codeDataTableToDataTable(sheetId, posToPos(x, y), cursor);
+  }
+
+  gridToDataTable(selection: Selection, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.gridToDataTable(JSON.stringify(selection, bigIntReplacer), cursor);
+  }
+
+  updateDataTableName(sheetId: string, x: number, y: number, name: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.updateDataTableName(sheetId, posToPos(x, y), name, cursor);
+  }
+
+  sortDataTable(
+    sheetId: string,
+    x: number,
+    y: number,
+    sort: { column_index: number; direction: string }[],
+    cursor: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    console.log('sortDataTable', sheetId, x, y, sort, cursor);
+    this.gridController.sortDataTable(sheetId, posToPos(x, y), JSON.stringify(sort), cursor);
+  }
+
+  dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
+  }
 }
 
 export const core = new Core();

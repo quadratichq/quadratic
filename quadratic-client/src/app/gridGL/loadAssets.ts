@@ -48,6 +48,13 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('checkbox-icon', '/images/checkbox.png');
     addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
     addResourceOnce('dropdown-icon', '/images/dropdown.png');
+    addResourceOnce('dropdown-white-icon', '/images/dropdown-white.png');
+    addResourceOnce('mssql-icon', '/images/mssql-icon.svg');
+    addResourceOnce('postgres-icon', '/images/postgres-icon.svg');
+    addResourceOnce('mysql-icon', '/images/mysql-icon.svg');
+    addResourceOnce('snowflake-icon', '/images/snowflake-icon.svg');
+    addResourceOnce('arrow-up', '/images/arrow-up.svg');
+    addResourceOnce('arrow-down', '/images/arrow-down.svg');
 
     // Wait until pixi fonts are loaded before resolving
     Loader.shared.load(() => {

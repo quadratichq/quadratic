@@ -96,6 +96,10 @@ export const BorderColorIcon: IconComponent = (props) => {
   return <Icon {...props}>border_color</Icon>;
 };
 
+export const CheckBoxEmptyIcon: IconComponent = (props) => {
+  return <Icon {...props}>check_box_outline_blank</Icon>;
+};
+
 export const CheckBoxIcon: IconComponent = (props) => {
   return <Icon {...props}>check_box</Icon>;
 };
@@ -425,4 +429,44 @@ export const ZoomInIcon: IconComponent = (props) => {
 
 export const ZoomOutIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_out</Icon>;
+};
+
+export const TableEditIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_edit</Icon>;
+};
+
+export const TableConvertIcon: IconComponent = (props) => {
+  return <Icon {...props}>table_convert</Icon>;
+};
+
+export const FlattenTableIcon: IconComponent = (props) => {
+  return <Icon {...props}>view_compact</Icon>;
+};
+
+export const TableIcon: IconComponent = (props) => {
+  return <Icon {...props}>table</Icon>;
+};
+
+export const SortIcon: IconComponent = (props) => {
+  return <Icon {...props}>sort</Icon>;
+};
+
+export const DragIndicatorIcon: IconComponent = (props) => {
+  return <Icon {...props}>drag_indicator</Icon>;
+};
+
+export const UpArrowIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_upward</Icon>;
+};
+
+export const DownArrowIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_downward</Icon>;
+};
+
+export const HideIcon: IconComponent = (props) => {
+  return <Icon {...props}>visibility_off</Icon>;
+};
+
+export const ShowIcon: IconComponent = (props) => {
+  return <Icon {...props}>visibility</Icon>;
 };

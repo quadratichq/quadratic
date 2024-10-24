@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 
-pub use super::run_error::Axis;
 pub use super::run_error::RunError;
 pub use super::run_error::RunErrorMsg;
 

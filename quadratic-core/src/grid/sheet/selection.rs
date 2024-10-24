@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use indexmap::IndexMap;
 
 use crate::{
-    grid::{formats::format::Format, CodeRunResult, GridBounds},
+    grid::{formats::format::Format, GridBounds},
     selection::Selection,
     CellValue, Pos, Rect, Value,
 };
@@ -69,35 +69,20 @@ impl Sheet {
                 }));
             }
             if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
-                    match code_run.result {
-                        CodeRunResult::Ok(ref value) => match value {
-                            Value::Single(v) => {
-                                count += 1;
-                                if count >= max_count.unwrap_or(i64::MAX) {
-                                    return None;
-                                }
-                                cells.insert(*pos, v);
+                for (pos, code_run) in self.data_tables.iter() {
+                    match &code_run.value {
+                        Value::Single(v) => {
+                            count += 1;
+                            if count >= max_count.unwrap_or(i64::MAX) {
+                                return None;
                             }
-                            Value::Array(a) => {
-                                for x in 0..a.width() {
-                                    for y in 0..a.height() {
-                                        if let Ok(entry) = a.get(x, y) {
-                                            if include_blanks || !matches!(entry, &CellValue::Blank)
-                                            {
-                                                count += 1;
-                                                if count >= max_count.unwrap_or(i64::MAX) {
-                                                    return None;
-                                                }
-                                                cells.insert(
-                                                    Pos {
-                                                        x: x as i64 + pos.x,
-                                                        y: y as i64 + pos.y,
-                                                    },
-                                                    entry,
-                                                );
-                                            }
-                                        } else if include_blanks {
+                            cells.insert(*pos, v);
+                        }
+                        Value::Array(a) => {
+                            for x in 0..a.width() {
+                                for y in 0..a.height() {
+                                    if let Ok(entry) = a.get(x, y) {
+                                        if include_blanks || !matches!(entry, &CellValue::Blank) {
                                             count += 1;
                                             if count >= max_count.unwrap_or(i64::MAX) {
                                                 return None;
@@ -107,15 +92,26 @@ impl Sheet {
                                                     x: x as i64 + pos.x,
                                                     y: y as i64 + pos.y,
                                                 },
-                                                &CellValue::Blank,
+                                                entry,
                                             );
                                         }
+                                    } else if include_blanks {
+                                        count += 1;
+                                        if count >= max_count.unwrap_or(i64::MAX) {
+                                            return None;
+                                        }
+                                        cells.insert(
+                                            Pos {
+                                                x: x as i64 + pos.x,
+                                                y: y as i64 + pos.y,
+                                            },
+                                            &CellValue::Blank,
+                                        );
                                     }
                                 }
                             }
-                            Value::Tuple(_) => {} // Tuples are not spilled onto the grid
-                        },
-                        CodeRunResult::Err(_) => {}
+                        }
+                        Value::Tuple(_) => {} // Tuples are not spilled onto the grid
                     }
                 }
             }
@@ -141,7 +137,7 @@ impl Sheet {
                 }
             }
             if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
+                for (pos, code_run) in self.data_tables.iter() {
                     let rect = code_run.output_rect(*pos, false);
                     if columns
                         .iter()
@@ -183,7 +179,7 @@ impl Sheet {
                 }
             }
             if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
+                for (pos, code_run) in self.data_tables.iter() {
                     let rect = code_run.output_rect(*pos, false);
                     for y in rect.min.y..=rect.max.y {
                         if rows.contains(&y) {
@@ -231,7 +227,7 @@ impl Sheet {
                 }
             }
             if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
+                for (pos, code_run) in self.data_tables.iter() {
                     let rect = code_run.output_rect(*pos, false);
                     for x in rect.min.x..=rect.max.x {
                         for y in rect.min.y..=rect.max.y {

@@ -2,7 +2,7 @@
 //! and disappears at higher zoom levels. We remove lines between cells that
 //! overflow (and in the future, merged cells).
 
-import { Graphics, Rectangle } from 'pixi.js';
+import { Graphics, ILineStyleOptions, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -19,6 +19,7 @@ interface GridLine {
 }
 
 export class GridLines extends Graphics {
+  currentLineStyle: ILineStyleOptions = { alpha: 0 };
   dirty = true;
 
   // cache of lines used for snapping
@@ -45,15 +46,21 @@ export class GridLines extends Graphics {
 
       const gridAlpha = calculateAlphaForGridLines(scale);
       if (gridAlpha === 0) {
-        this.alpha = 0;
         this.visible = false;
+        this.currentLineStyle = { alpha: 0 };
         return;
       }
 
-      this.alpha = gridAlpha;
       this.visible = true;
 
-      this.lineStyle(1, colors.gridLines, 0.2, 0.5, true);
+      this.currentLineStyle = {
+        width: 1,
+        color: colors.gridLines,
+        alpha: 0.2 * gridAlpha,
+        alignment: 0.5,
+        native: true,
+      };
+      this.lineStyle(this.currentLineStyle);
       this.gridLinesX = [];
       this.gridLinesY = [];
       const range = this.drawHorizontalLines(bounds);

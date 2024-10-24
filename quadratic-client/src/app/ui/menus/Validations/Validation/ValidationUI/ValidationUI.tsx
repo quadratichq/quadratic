@@ -114,18 +114,20 @@ interface DropdownProps {
   options: (string | { value: string; label: string | JSX.Element })[];
   disabled?: boolean;
   readOnly?: boolean;
+  style?: React.CSSProperties;
 
   // first entry is blank
   includeBlank?: boolean;
+  tabIndex?: number;
 }
 
 export const ValidationDropdown = (props: DropdownProps) => {
-  const { label, value, className, onChange, options, disabled, readOnly, includeBlank } = props;
+  const { label, value, className, onChange, options, disabled, readOnly, includeBlank, style, tabIndex } = props;
 
   const optionsBlank = includeBlank ? [{ value: 'blank', label: '' }, ...options] : options;
 
   return (
-    <div className={className}>
+    <div className={className} style={style}>
       {label && <div className={disabled ? 'opacity-50' : ''}>{label}</div>}
       <Select value={value} onValueChange={onChange} disabled={disabled || readOnly}>
         <SelectTrigger
@@ -134,6 +136,7 @@ export const ValidationDropdown = (props: DropdownProps) => {
             // this is needed to avoid selecting text when clicking the dropdown
             e.preventDefault();
           }}
+          tabIndex={tabIndex}
         >
           <SelectValue />
         </SelectTrigger>

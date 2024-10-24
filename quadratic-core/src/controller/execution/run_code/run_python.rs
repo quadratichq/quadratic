@@ -34,7 +34,7 @@ mod tests {
         controller::{
             execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
         },
-        grid::js_types::JsRenderCell,
+        grid::js_types::{JsRenderCell, JsRenderCellSpecial},
         ArraySize, CellValue, Pos, Rect,
     };
     use bigdecimal::BigDecimal;
@@ -79,7 +79,7 @@ mod tests {
             }
             _ => panic!("expected code cell"),
         }
-        let code_run = sheet.code_runs.get(&pos).unwrap();
+        let code_run = sheet.data_tables.get(&pos).unwrap();
         assert_eq!(code_run.output_size(), ArraySize::_1X1);
         assert_eq!(
             code_run.cell_value_at(0, 0),
@@ -353,10 +353,25 @@ mod tests {
         assert_eq!(cells.len(), 3);
         assert_eq!(
             cells[0],
-            JsRenderCell::new_number(0, 0, 1, Some(CodeCellLanguage::Python))
+            JsRenderCell::new_number(
+                0,
+                0,
+                1,
+                Some(CodeCellLanguage::Python),
+                Some(JsRenderCellSpecial::TableAlternatingColor)
+            )
         );
-        assert_eq!(cells[1], JsRenderCell::new_number(0, 1, 2, None));
-        assert_eq!(cells[2], JsRenderCell::new_number(0, 2, 3, None));
+        assert_eq!(cells[1], JsRenderCell::new_number(0, 1, 2, None, None));
+        assert_eq!(
+            cells[2],
+            JsRenderCell::new_number(
+                0,
+                2,
+                3,
+                None,
+                Some(JsRenderCellSpecial::TableAlternatingColor)
+            )
+        );
 
         // transaction should be completed
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);

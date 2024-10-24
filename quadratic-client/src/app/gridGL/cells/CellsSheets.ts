@@ -79,7 +79,7 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current.show(bounds);
   }
 
-  private getById(id: string): CellsSheet | undefined {
+  getById(id: string): CellsSheet | undefined {
     return this.children.find((search) => search.sheetId === id);
   }
 
@@ -186,7 +186,14 @@ export class CellsSheets extends Container<CellsSheet> {
     return cellsSheet.cellsArray.isCodeCell(cursor.x, cursor.y);
   }
 
-  update() {
-    this.current?.update();
+  isCursorOnCodeCellOutput(): boolean {
+    const cellsSheet = this.current;
+    if (!cellsSheet) return false;
+    const cursor = sheets.sheet.cursor.cursorPosition;
+    return cellsSheet.cellsArray.isCodeCellOutput(cursor.x, cursor.y);
+  }
+
+  update(dirtyViewport: boolean) {
+    this.current?.update(dirtyViewport);
   }
 }

@@ -3,6 +3,12 @@ use std::ops::Range;
 
 use chrono::Utc;
 use itertools::Itertools;
+use lazy_static::lazy_static;
+use regex::Regex;
+
+lazy_static! {
+    pub static ref MATCH_NUMBERS: Regex = Regex::new(r"\d+$").expect("regex should compile");
+}
 
 pub(crate) mod btreemap_serde {
     use std::collections::{BTreeMap, HashMap};
@@ -204,6 +210,38 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
     format!("{prefix} {i}")
 }
 
+/// Returns a unique name by appending numbers to the base name if the name is not unique.
+/// Starts at 1, and checks if the name is unique, then 2, etc.
+/// If `require_number` is true, the name will always have an appended number.
+pub fn unique_name(name: &str, all_names: &[&str], require_number: bool) -> String {
+    let base = MATCH_NUMBERS.replace(&name, "");
+    let contains_number = base != name;
+    let should_short_circuit = !(require_number && !contains_number);
+
+    // short circuit if the name is unique
+    if should_short_circuit && !all_names.contains(&&name) {
+        return name.to_string();
+    }
+
+    // if not unique, try appending numbers until we find a unique name
+    let mut num = 1;
+    let mut name = String::from("");
+
+    while name == "" {
+        let new_name = format!("{}{}", base, num);
+        let new_name_alt = format!("{} {}", base, num);
+        let new_names = [new_name.as_str(), new_name_alt.as_str()];
+
+        if !all_names.iter().any(|item| new_names.contains(item)) {
+            name = new_name;
+        }
+
+        num += 1;
+    }
+
+    name
+}
+
 pub fn maybe_reverse_range(
     range: Range<i64>,
     rev: bool,
@@ -216,6 +254,7 @@ pub fn maybe_reverse_range(
 }
 
 /// For debugging both in tests and in the JS console
+#[track_caller]
 pub fn dbgjs(val: impl fmt::Debug) {
     if cfg!(target_family = "wasm") {
         crate::wasm_bindings::js::log(&(format!("{:?}", val)));

@@ -1,12 +1,10 @@
-use code_run::CodeRunResult;
-
 use super::Sheet;
 use crate::grid::formats::format::Format;
 use crate::grid::js_types::{
     JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
 };
-use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun, Column};
+use crate::grid::{CellAlign, CodeCellLanguage, Column, DataTable};
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
@@ -29,6 +27,7 @@ impl Sheet {
         column: Option<&Column>,
         value: &CellValue,
         language: Option<CodeCellLanguage>,
+        special: Option<JsRenderCellSpecial>,
     ) -> JsRenderCell {
         if let CellValue::Html(_) = value {
             return JsRenderCell {
@@ -70,12 +69,16 @@ impl Sheet {
         } else {
             None
         };
-        let special = self.validations.render_special_pos(Pos { x, y }).or({
-            if matches!(value, CellValue::Logical(_)) {
-                Some(JsRenderCellSpecial::Logical)
-            } else {
-                None
-            }
+        let special = special.or_else(|| {
+            self.validations
+                .render_special_pos(Pos { x, y })
+                .or_else(|| {
+                    if matches!(value, CellValue::Logical(_)) {
+                        Some(JsRenderCellSpecial::Logical)
+                    } else {
+                        None
+                    }
+                })
         });
 
         match column {
@@ -156,13 +159,14 @@ impl Sheet {
     fn get_code_cells(
         &self,
         code: &CellValue,
-        run: &CodeRun,
+        data_table: &DataTable,
         output_rect: &Rect,
         code_rect: &Rect,
     ) -> Vec<JsRenderCell> {
         let mut cells = vec![];
-        if let CellValue::Code(code) = code {
-            if run.spill_error {
+
+        if let Some(code_cell_value) = code.code_cell_value() {
+            if data_table.spill_error {
                 cells.push(self.get_render_cell(
                     code_rect.min.x,
                     code_rect.min.y,
@@ -171,15 +175,17 @@ impl Sheet {
                         span: None,
                         msg: RunErrorMsg::Spill,
                     })),
-                    Some(code.language.to_owned()),
+                    Some(code_cell_value.language),
+                    None,
                 ));
-            } else if let Some(error) = run.get_error() {
+            } else if let Some(error) = data_table.get_error() {
                 cells.push(self.get_render_cell(
                     code_rect.min.x,
                     code_rect.min.y,
                     None,
                     &CellValue::Error(Box::new(error)),
-                    Some(code.language.to_owned()),
+                    Some(code_cell_value.language),
+                    None,
                 ));
             } else {
                 // find overlap of code_rect into rect
@@ -206,22 +212,41 @@ impl Sheet {
                 for x in x_start..=x_end {
                     let column = self.get_column(x);
                     for y in y_start..=y_end {
-                        let value = run.cell_value_at(
+                        // We skip rendering the heading row because we render it separately.
+                        if y == code_rect.min.y
+                            && data_table.show_header
+                            && data_table.header_is_first_row
+                        {
+                            continue;
+                        }
+                        let value = data_table.cell_value_at(
                             (x - code_rect.min.x) as u32,
                             (y - code_rect.min.y) as u32,
                         );
                         if let Some(value) = value {
                             let language = if x == code_rect.min.x && y == code_rect.min.y {
-                                Some(code.language.to_owned())
+                                Some(code_cell_value.language.to_owned())
                             } else {
                                 None
                             };
-                            cells.push(self.get_render_cell(x, y, column, &value, language));
+                            let special = if y == code_rect.min.y && data_table.show_header {
+                                Some(JsRenderCellSpecial::TableColumnHeader)
+                            } else {
+                                if (y - code_rect.min.y) % 2 == 0 {
+                                    Some(JsRenderCellSpecial::TableAlternatingColor)
+                                } else {
+                                    None
+                                }
+                            };
+                            cells.push(
+                                self.get_render_cell(x, y, column, &value, language, special),
+                            );
                         }
                     }
                 }
             }
         }
+
         cells
     }
 
@@ -236,21 +261,35 @@ impl Sheet {
             .for_each(|(x, column)| {
                 column.values.range(rect.y_range()).for_each(|(y, value)| {
                     // ignore code cells when rendering since they will be taken care in the next part
-                    if !matches!(value, CellValue::Code(_)) {
-                        render_cells.push(self.get_render_cell(x, *y, Some(column), value, None));
+                    if !matches!(value, CellValue::Code(_))
+                        && !matches!(value, CellValue::Import(_))
+                    {
+                        render_cells.push(self.get_render_cell(
+                            x,
+                            *y,
+                            Some(column),
+                            value,
+                            None,
+                            None,
+                        ));
                     }
                 });
             });
 
         // Fetch values from code cells
         self.iter_code_output_in_rect(rect)
-            .for_each(|(code_rect, code_run)| {
+            .for_each(|(data_table_rect, data_table)| {
                 // sanity check that there is a CellValue::Code for this CodeRun
-                if let Some(code) = self.cell_value(Pos {
-                    x: code_rect.min.x,
-                    y: code_rect.min.y,
+                if let Some(cell_value) = self.cell_value(Pos {
+                    x: data_table_rect.min.x,
+                    y: data_table_rect.min.y,
                 }) {
-                    render_cells.extend(self.get_code_cells(&code, code_run, &rect, &code_rect));
+                    render_cells.extend(self.get_code_cells(
+                        &cell_value,
+                        data_table,
+                        &rect,
+                        &data_table_rect,
+                    ));
                 }
             });
 
@@ -284,7 +323,7 @@ impl Sheet {
     }
 
     pub fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
-        let run = self.code_runs.get(&pos)?;
+        let run = self.data_tables.get(&pos)?;
         if !run.is_html() {
             return None;
         }
@@ -305,7 +344,7 @@ impl Sheet {
     }
 
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
-        self.code_runs
+        self.data_tables
             .iter()
             .filter_map(|(pos, run)| {
                 let output = run.cell_value_at(0, 0)?;
@@ -374,29 +413,28 @@ impl Sheet {
     }
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
-        let run = self.code_runs.get(&pos)?;
+        let data_table = self.data_tables.get(&pos)?;
         let code = self.cell_value(pos)?;
-        let output_size = run.output_size();
-        let (state, w, h, spill_error) = if run.spill_error {
-            let reasons = self.find_spill_error_reasons(&run.output_rect(pos, true), pos);
+        let output_size = data_table.output_size();
+        let (state, w, h, spill_error) = if data_table.spill_error {
+            let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
             (
                 JsRenderCodeCellState::SpillError,
                 output_size.w.get(),
                 output_size.h.get(),
                 Some(reasons),
             )
+        } else if data_table.has_error()
+            || matches!(data_table.value, Value::Single(CellValue::Error(_)))
+        {
+            (JsRenderCodeCellState::RunError, 1, 1, None)
         } else {
-            match run.result {
-                CodeRunResult::Err(_) | CodeRunResult::Ok(Value::Single(CellValue::Error(_))) => {
-                    (JsRenderCodeCellState::RunError, 1, 1, None)
-                }
-                CodeRunResult::Ok(_) => (
-                    JsRenderCodeCellState::Success,
-                    output_size.w.get(),
-                    output_size.h.get(),
-                    None,
-                ),
-            }
+            (
+                JsRenderCodeCellState::Success,
+                output_size.w.get(),
+                output_size.h.get(),
+                None,
+            )
         };
         Some(JsRenderCodeCell {
             x: pos.x as i32,
@@ -405,52 +443,65 @@ impl Sheet {
             h,
             language: match code {
                 CellValue::Code(code) => code.language,
+                CellValue::Import(_) => CodeCellLanguage::Import,
                 _ => return None,
             },
             state,
             spill_error,
+            name: data_table.name.clone(),
+            column_names: data_table.send_columns(),
+            first_row_header: data_table.header_is_first_row,
+            show_header: data_table.show_header,
+            sort: data_table.sort.clone(),
+            alternating_colors: data_table.alternating_colors,
         })
     }
 
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
-        self.code_runs
+        self.data_tables
             .iter()
-            .filter_map(|(pos, run)| {
+            .filter_map(|(pos, data_table)| {
                 if let Some(code) = self.cell_value(*pos) {
-                    match &code {
-                        CellValue::Code(code) => {
-                            let output_size = run.output_size();
-                            let (state, w, h, spill_error) = if run.spill_error {
-                                let reasons = self
-                                    .find_spill_error_reasons(&run.output_rect(*pos, true), *pos);
+                    match code.code_cell_value() {
+                        Some(code_cell_value) => {
+                            let output_size = data_table.output_size();
+                            let (state, w, h, spill_error) = if data_table.spill_error {
+                                let reasons = self.find_spill_error_reasons(
+                                    &data_table.output_rect(*pos, true),
+                                    *pos,
+                                );
                                 (
                                     JsRenderCodeCellState::SpillError,
                                     output_size.w.get(),
                                     output_size.h.get(),
                                     Some(reasons),
                                 )
+                            } else if data_table.has_error() {
+                                (JsRenderCodeCellState::RunError, 1, 1, None)
                             } else {
-                                match run.result {
-                                    CodeRunResult::Ok(_) => (
-                                        JsRenderCodeCellState::Success,
-                                        output_size.w.get(),
-                                        output_size.h.get(),
-                                        None,
-                                    ),
-                                    CodeRunResult::Err(_) => {
-                                        (JsRenderCodeCellState::RunError, 1, 1, None)
-                                    }
-                                }
+                                (
+                                    JsRenderCodeCellState::Success,
+                                    output_size.w.get(),
+                                    output_size.h.get(),
+                                    None,
+                                )
                             };
+
                             Some(JsRenderCodeCell {
                                 x: pos.x as i32,
                                 y: pos.y as i32,
                                 w,
                                 h,
-                                language: code.language.to_owned(),
+                                language: code_cell_value.language,
                                 state,
                                 spill_error,
+                                name: data_table.name.clone(),
+                                column_names: data_table.send_columns(),
+                                first_row_header: data_table.header_is_first_row,
+                                show_header: data_table.show_header,
+                                sort: data_table.sort.clone(),
+                                alternating_colors: data_table.alternating_colors,
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -471,7 +522,7 @@ impl Sheet {
             return;
         }
 
-        self.code_runs.iter().for_each(|(pos, run)| {
+        self.data_tables.iter().for_each(|(pos, run)| {
             if let Some(CellValue::Image(image)) = run.cell_value_at(0, 0) {
                 let (w, h) = if let Some(render_size) = self.render_size(*pos) {
                     (Some(render_size.w), Some(render_size.h))
@@ -594,7 +645,6 @@ mod tests {
 
     use std::collections::HashSet;
 
-    use chrono::Utc;
     use serial_test::{parallel, serial};
     use uuid::Uuid;
 
@@ -603,14 +653,14 @@ mod tests {
         grid::{
             formats::{format::Format, format_update::FormatUpdate, Formats},
             js_types::{
-                JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-                JsSheetFill, JsValidationWarning,
+                JsDataTableColumn, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial,
+                JsRenderCodeCell, JsSheetFill, JsValidationWarning,
             },
             sheet::validations::{
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
+            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableKind, Italic, RenderSize,
         },
         selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
@@ -643,20 +693,26 @@ mod tests {
                 code: "1 + 1".to_string(),
             }),
         );
-        sheet.set_code_run(
+        let code_run = CodeRun {
+            formatted_code_string: None,
+            std_err: None,
+            std_out: None,
+            cells_accessed: HashSet::new(),
+            error: None,
+            return_type: Some("text".into()),
+            line_number: None,
+            output_type: None,
+        };
+        sheet.set_data_table(
             Pos { x: 2, y: 3 },
-            Some(CodeRun {
-                formatted_code_string: None,
-                std_err: None,
-                std_out: None,
-                spill_error: false,
-                cells_accessed: HashSet::new(),
-                result: CodeRunResult::Ok(Value::Single(CellValue::Text("hello".to_string()))),
-                return_type: Some("text".into()),
-                line_number: None,
-                output_type: None,
-                last_modified: Utc::now(),
-            }),
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table 1".into(),
+                Value::Single(CellValue::Text("hello".to_string())),
+                false,
+                false,
+                true,
+            )),
         );
         assert!(sheet.has_render_cells(rect));
 
@@ -856,27 +912,31 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "".to_string(),
         });
-
-        // code_run is always 3x2
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Array(
-                vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into(),
-            )),
+            error: None,
             return_type: Some("text".into()),
-            spill_error: false,
             line_number: None,
             output_type: None,
         };
 
+        // data_table is always 3x2
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
+            Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
+            false,
+            false,
+            false,
+        );
+
         // render rect is larger than code rect
         let code_cells = sheet.get_code_cells(
             &code_cell,
-            &code_run,
+            &data_table,
             &Rect::from_numbers(0, 0, 10, 10),
             &Rect::from_numbers(5, 5, 3, 2),
         );
@@ -890,7 +950,7 @@ mod tests {
         // code rect overlaps render rect to the top-left
         let code_cells = sheet.get_code_cells(
             &code_cell,
-            &code_run,
+            &data_table,
             &Rect::from_numbers(2, 1, 10, 10),
             &Rect::from_numbers(0, 0, 3, 2),
         );
@@ -901,7 +961,7 @@ mod tests {
         // code rect overlaps render rect to the bottom-right
         let code_cells = sheet.get_code_cells(
             &code_cell,
-            &code_run,
+            &data_table,
             &Rect::from_numbers(0, 0, 3, 2),
             &Rect::from_numbers(2, 1, 10, 10),
         );
@@ -913,14 +973,21 @@ mod tests {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Number(1.into()))),
+            error: None,
             return_type: Some("number".into()),
-            spill_error: false,
             line_number: None,
             output_type: None,
         };
+
+        let code_run = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
+            Value::Single(CellValue::Number(1.into())),
+            false,
+            false,
+            false,
+        );
         let code_cells = sheet.get_code_cells(
             &code_cell,
             &code_run,
@@ -965,6 +1032,7 @@ mod tests {
                 language: Some(CodeCellLanguage::Formula),
                 align: Some(CellAlign::Right),
                 number: Some(JsNumber::default()),
+                special: Some(JsRenderCellSpecial::TableAlternatingColor),
                 ..Default::default()
             }]
         );
@@ -1029,19 +1097,25 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "1 + 1".to_string(),
         });
-        let run = CodeRun {
+        let code_run = CodeRun {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Number(2.into()))),
+            error: None,
             return_type: Some("number".into()),
-            spill_error: false,
             line_number: None,
             output_type: None,
         };
-        sheet.set_code_run(pos, Some(run));
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
+            Value::Single(CellValue::Number(2.into())),
+            false,
+            false,
+            true,
+        );
+        sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
         let rendering = sheet.get_render_code_cell(pos);
         assert_eq!(
@@ -1054,6 +1128,16 @@ mod tests {
                 language: CodeCellLanguage::Python,
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
+                name: "Table 1".to_string(),
+                column_names: vec![JsDataTableColumn {
+                    name: "Column 1".into(),
+                    display: true,
+                    value_index: 0,
+                }],
+                first_row_header: false,
+                show_header: true,
+                sort: None,
+                alternating_colors: true,
             })
         );
     }
@@ -1074,19 +1158,25 @@ mod tests {
         let pos = (0, 0).into();
         let image = "image".to_string();
         let code = CellValue::Image(image.clone());
-        let run = CodeRun {
+        let code_run = CodeRun {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Image(image.clone()))),
+            error: None,
             return_type: Some("image".into()),
-            spill_error: false,
             line_number: None,
             output_type: None,
         };
-        sheet.set_code_run(pos, Some(run));
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "Table 1".into(),
+            Value::Single(CellValue::Image(image.clone())),
+            false,
+            false,
+            false,
+        );
+        sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
         sheet.send_all_images();
         expect_js_call(
@@ -1119,26 +1209,30 @@ mod tests {
                 y: 0,
                 value: "true".to_string(),
                 language: Some(CodeCellLanguage::Formula),
-                special: Some(JsRenderCellSpecial::Logical),
+                special: Some(JsRenderCellSpecial::TableAlternatingColor),
                 ..Default::default()
             },
             JsRenderCell {
                 x: 1,
                 y: 0,
                 value: "false".to_string(),
-                special: Some(JsRenderCellSpecial::Logical),
+                special: Some(JsRenderCellSpecial::TableAlternatingColor),
                 ..Default::default()
             },
             JsRenderCell {
                 x: 2,
                 y: 0,
                 value: "true".to_string(),
-                special: Some(JsRenderCellSpecial::Logical),
+                special: Some(JsRenderCellSpecial::TableAlternatingColor),
                 ..Default::default()
             },
         ];
         let sheet = gc.sheet(sheet_id);
         let expected = sheet.get_render_cells(Rect::new(0, 0, 2, 0));
+
+        println!("{:?}", expected);
+        println!("{:?}", cells);
+
         assert_eq!(expected.len(), cells.len());
         assert!(expected.iter().all(|cell| cells.contains(cell)));
 

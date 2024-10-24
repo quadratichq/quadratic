@@ -5,9 +5,13 @@ use uuid::Uuid;
 use crate::{
     cell_values::CellValues,
     grid::{
-        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray,
-        js_types::JsRowHeight, sheet::borders::BorderStyleCellUpdates,
-        sheet::validations::validation::Validation, CodeRun, Sheet, SheetBorders, SheetId,
+        data_table::sort::DataTableSort,
+        file::sheet_schema::SheetSchema,
+        formats::Formats,
+        formatting::CellFmtArray,
+        js_types::JsRowHeight,
+        sheet::{borders::BorderStyleCellUpdates, validations::validation::Validation},
+        DataTable, DataTableKind, Sheet, SheetBorders, SheetId,
     },
     selection::Selection,
     SheetPos, SheetRect,
@@ -35,8 +39,34 @@ pub enum Operation {
     },
     SetCodeRun {
         sheet_pos: SheetPos,
-        code_run: Option<CodeRun>,
+        code_run: Option<DataTable>,
         index: usize,
+    },
+    SetDataTableAt {
+        sheet_pos: SheetPos,
+        values: CellValues,
+    },
+    FlattenDataTable {
+        sheet_pos: SheetPos,
+    },
+    SwitchDataTableKind {
+        sheet_pos: SheetPos,
+        kind: DataTableKind,
+    },
+    GridToDataTable {
+        sheet_rect: SheetRect,
+    },
+    UpdateDataTableName {
+        sheet_pos: SheetPos,
+        name: String,
+    },
+    SortDataTable {
+        sheet_pos: SheetPos,
+        sort: Option<Vec<DataTableSort>>,
+    },
+    DataTableFirstRowAsHeader {
+        sheet_pos: SheetPos,
+        first_row_is_header: bool,
     },
     ComputeCode {
         sheet_pos: SheetPos,
@@ -189,6 +219,48 @@ impl fmt::Display for Operation {
                 "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} index: {} }}",
                 sheet_pos, run, index
             ),
+            Operation::SetDataTableAt { sheet_pos, values } => write!(
+                fmt,
+                "SetDataTableAt {{ sheet_pos: {} values: {:?} }}",
+                sheet_pos, values
+            ),
+            Operation::FlattenDataTable { sheet_pos } => {
+                write!(fmt, "FlattenDataTable {{ sheet_pos: {} }}", sheet_pos)
+            }
+            Operation::SwitchDataTableKind { sheet_pos, kind } => {
+                write!(
+                    fmt,
+                    "SwitchDataTableKind {{ sheet_pos: {}, kind: {} }}",
+                    sheet_pos, kind
+                )
+            }
+            Operation::GridToDataTable { sheet_rect } => {
+                write!(fmt, "GridToDataTable {{ sheet_rect: {} }}", sheet_rect)
+            }
+            Operation::UpdateDataTableName { sheet_pos, name } => {
+                write!(
+                    fmt,
+                    "UpdateDataTableName {{ sheet_pos: {} name: {} }}",
+                    sheet_pos, name
+                )
+            }
+            Operation::SortDataTable { sheet_pos, sort } => {
+                write!(
+                    fmt,
+                    "SortDataTable {{ sheet_pos: {}, sort: {:?} }}",
+                    sheet_pos, sort
+                )
+            }
+            Operation::DataTableFirstRowAsHeader {
+                sheet_pos,
+                first_row_is_header,
+            } => {
+                write!(
+                    fmt,
+                    "DataTableFirstRowAsHeader {{ sheet_pos: {}, first_row_is_header {} }}",
+                    sheet_pos, first_row_is_header
+                )
+            }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::SetCellFormatsSelection { selection, formats } => {
                 write!(

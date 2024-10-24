@@ -4,14 +4,14 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
+use super::data_table::{column::DataTableColumn, sort::DataTableSort};
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
 use crate::{Pos, SheetRect};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum JsRenderCellSpecial {
     Chart,
     SpillError,
@@ -19,9 +19,11 @@ pub enum JsRenderCellSpecial {
     Logical,
     Checkbox,
     List,
+    TableColumnHeader,
+    TableAlternatingColor,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ts_rs::TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsNumber {
     pub decimals: Option<i16>,
     pub commas: Option<bool>,
@@ -94,7 +96,13 @@ pub struct JsRenderCell {
 
 #[cfg(test)]
 impl JsRenderCell {
-    pub fn new_number(x: i64, y: i64, value: isize, language: Option<CodeCellLanguage>) -> Self {
+    pub fn new_number(
+        x: i64,
+        y: i64,
+        value: isize,
+        language: Option<CodeCellLanguage>,
+        special: Option<JsRenderCellSpecial>,
+    ) -> Self {
         Self {
             x,
             y,
@@ -102,6 +110,7 @@ impl JsRenderCell {
             language,
             align: Some(CellAlign::Right),
             number: Some(JsNumber::default()),
+            special,
             ..Default::default()
         }
     }
@@ -183,8 +192,7 @@ pub struct JsCodeCell {
     pub cells_accessed: Option<Vec<SheetRect>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsRenderCodeCell {
     pub x: i32,
     pub y: i32,
@@ -193,6 +201,12 @@ pub struct JsRenderCodeCell {
     pub language: CodeCellLanguage,
     pub state: JsRenderCodeCellState,
     pub spill_error: Option<Vec<Pos>>,
+    pub name: String,
+    pub column_names: Vec<JsDataTableColumn>,
+    pub first_row_header: bool,
+    pub show_header: bool,
+    pub sort: Option<Vec<DataTableSort>>,
+    pub alternating_colors: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -231,6 +245,25 @@ pub struct JsValidationSheet {
 
     // validation errors that will be displayed
     errors: Vec<(Pos, String)>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct JsDataTableColumn {
+    pub name: String,
+    pub display: bool,
+    pub value_index: u32,
+}
+
+impl From<DataTableColumn> for JsDataTableColumn {
+    fn from(column: DataTableColumn) -> Self {
+        JsDataTableColumn {
+            name: column.name.to_string(),
+            display: column.display,
+            value_index: column.value_index,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]

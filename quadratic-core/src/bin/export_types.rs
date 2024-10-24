@@ -3,10 +3,11 @@ use std::fs::create_dir_all;
 use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
 use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
+use grid::data_table::sort::{DataTableSort, SortDirection};
 use grid::formats::format::Format;
 use grid::js_types::{
-    CellFormatSummary, JsCellValue, JsClipboard, JsOffset, JsPos, JsRenderFill, JsRowHeight,
-    JsSheetFill, JsValidationWarning,
+    CellFormatSummary, JsCellValue, JsClipboard, JsDataTableColumn, JsOffset, JsPos, JsRenderFill,
+    JsRowHeight, JsSheetFill, JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::validations::validation::{
@@ -94,6 +95,7 @@ fn main() {
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
+        JsDataTableColumn,
         JsGetCellResponse,
         JsHtmlOutput,
         JsNumber,
@@ -127,6 +129,8 @@ fn main() {
         SheetInfo,
         SheetPos,
         SheetRect,
+        SortDirection,
+        DataTableSort,
         Span,
         SummarizeSelectionResult,
         TextCase,
