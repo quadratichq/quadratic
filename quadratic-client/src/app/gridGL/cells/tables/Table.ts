@@ -95,7 +95,7 @@ export class Table extends Container {
   private columnHeadersInOverHeadings(bounds: Rectangle, gridHeading: number) {
     this.columnHeaders.x = this.tableBounds.x;
     this.columnHeaders.y = this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top;
-    pixiApp.overHeadings.addChild(this.columnHeaders);
+    pixiApp.overHeadingsColumnsHeaders.addChild(this.columnHeaders);
     this.gridLines.visible = true;
     this.inOverHeadings = true;
   }
@@ -157,11 +157,11 @@ export class Table extends Container {
   }
 
   showTableName() {
-    pixiApp.overHeadings.addChild(this.tableName);
+    pixiApp.overHeadingsTableNames.addChild(this.tableName);
   }
 
   hideTableName() {
-    pixiApp.overHeadings.removeChild(this.tableName);
+    pixiApp.overHeadingsTableNames.removeChild(this.tableName);
   }
 
   hideColumnHeaders(index: number) {

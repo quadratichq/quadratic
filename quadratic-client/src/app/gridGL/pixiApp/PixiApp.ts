@@ -58,7 +58,10 @@ export class PixiApp {
 
   // this is used to display content over the headings (eg, table name when off
   // the screen)
-  overHeadings: Container;
+  private overHeadings: Container;
+  overHeadingsColumnsHeaders: Container;
+  overHeadingsTableNames: Container;
+
   cellMoving!: UICellMoving;
   headings!: GridHeadings;
   boxCells!: BoxCells;
@@ -90,6 +93,8 @@ export class PixiApp {
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
     this.overHeadings = new Container();
+    this.overHeadingsColumnsHeaders = this.overHeadings.addChild(new Container());
+    this.overHeadingsTableNames = this.overHeadings.addChild(new Container());
     this.viewport = new Viewport();
   }
 
