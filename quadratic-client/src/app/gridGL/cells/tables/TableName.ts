@@ -38,7 +38,7 @@ export class TableName extends Container {
 
     // we only add to overHeadings if the sheet is active
     if (sheets.sheet.id === this.table.sheet.id) {
-      pixiApp.overHeadings.addChild(this);
+      pixiApp.overHeadingsTableNames.addChild(this);
     }
   }
 

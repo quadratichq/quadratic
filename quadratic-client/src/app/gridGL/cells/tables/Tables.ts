@@ -24,7 +24,9 @@ export class Tables extends Container<Table> {
   private activeTable: Table | undefined;
   private hoverTable: Table | undefined;
   private contextMenuTable: Table | undefined;
-  private renameDataTable: Table | undefined;
+
+  // either rename or sort
+  private actionDataTable: Table | undefined;
 
   tableCursor: string | undefined;
 
@@ -137,7 +139,7 @@ export class Tables extends Container<Table> {
     }
     const hover = this.children.find((table) => table.checkHover(world));
     // if we already have the active table open, then don't show hover
-    if (hover && (hover === this.contextMenuTable || hover === this.activeTable || hover === this.renameDataTable)) {
+    if (hover && (hover === this.contextMenuTable || hover === this.activeTable || hover === this.actionDataTable)) {
       return;
     }
     if (hover !== this.hoverTable) {
@@ -183,13 +185,13 @@ export class Tables extends Container<Table> {
   contextMenu = (options?: ContextMenuOptions) => {
     // we keep the former context menu table active after the rename finishes
     // until the cursor moves again.
-    if (this.renameDataTable) {
-      this.renameDataTable.showTableName();
-      this.renameDataTable.showColumnHeaders();
-      if (this.activeTable !== this.renameDataTable) {
-        this.hoverTable = this.renameDataTable;
+    if (this.actionDataTable) {
+      this.actionDataTable.showTableName();
+      this.actionDataTable.showColumnHeaders();
+      if (this.activeTable !== this.actionDataTable) {
+        this.hoverTable = this.actionDataTable;
       }
-      this.renameDataTable = undefined;
+      this.actionDataTable = undefined;
     }
     if (this.contextMenuTable) {
       // we keep the former context menu table active after the context
@@ -203,15 +205,23 @@ export class Tables extends Container<Table> {
       pixiApp.setViewportDirty();
       return;
     }
-    if (options.type === ContextMenuType.Table && options.table) {
+    if (options.type === ContextMenuType.TableSort) {
+      this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
+      if (this.actionDataTable) {
+        this.actionDataTable.showActive();
+        if (this.hoverTable === this.actionDataTable) {
+          this.hoverTable = undefined;
+        }
+      }
+    } else if (options.type === ContextMenuType.Table && options.table) {
       if (options.rename) {
-        this.renameDataTable = this.children.find((table) => table.codeCell === options.table);
-        if (this.renameDataTable) {
-          this.renameDataTable.showActive();
+        this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
+        if (this.actionDataTable) {
+          this.actionDataTable.showActive();
           if (options.selectedColumn === undefined) {
-            this.renameDataTable.hideTableName();
+            this.actionDataTable.hideTableName();
           } else {
-            this.renameDataTable.hideColumnHeaders(options.selectedColumn);
+            this.actionDataTable.hideColumnHeaders(options.selectedColumn);
           }
           this.hoverTable = undefined;
         }
