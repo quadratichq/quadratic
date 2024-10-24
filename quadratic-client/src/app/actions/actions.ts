@@ -149,4 +149,9 @@ export enum Action {
   CodeToDataTable = 'code_to_data_table',
   SortTable = 'table_sort',
   ToggleTableAlternatingColors = 'toggle_table_alternating_colors',
+  RenameTableColumn = 'rename_table_column',
+  SortTableColumnAscending = 'sort_table_column_ascending',
+  SortTableColumnDescending = 'sort_table_column_descending',
+  HideTableColumn = 'hide_table_column',
+  ShowAllColumns = 'show_all_columns',
 }

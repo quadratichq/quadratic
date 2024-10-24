@@ -33,6 +33,12 @@ export const TableMenu = (props: Props) => {
     }
   }, [codeCell]);
 
+  const hasHiddenColumns = useMemo(() => {
+    console.log('TODO: hasHiddenColumns', codeCell);
+    return false;
+    // return codeCell?.;
+  }, [codeCell]);
+
   if (!codeCell) {
     return null;
   }
@@ -42,6 +48,7 @@ export const TableMenu = (props: Props) => {
       <MenuHeader className="-ml-3">{header}</MenuHeader>
       <MenuItemAction action={Action.RenameTable} overrideDefaultOption={defaultRename} />
       <MenuItemAction action={Action.SortTable} />
+      {hasHiddenColumns && <MenuItemAction action={Action.ShowAllColumns} />}
       <MenuDivider />
       <MenuItemAction action={Action.ToggleHeaderTable} />
       <MenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />

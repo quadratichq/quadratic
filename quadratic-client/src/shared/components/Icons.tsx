@@ -462,3 +462,11 @@ export const UpArrowIcon: IconComponent = (props) => {
 export const DownArrowIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_downward</Icon>;
 };
+
+export const HideIcon: IconComponent = (props) => {
+  return <Icon {...props}>visibility_off</Icon>;
+};
+
+export const ShowIcon: IconComponent = (props) => {
+  return <Icon {...props}>visibility</Icon>;
+};
