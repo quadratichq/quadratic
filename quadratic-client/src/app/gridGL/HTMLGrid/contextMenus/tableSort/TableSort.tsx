@@ -17,6 +17,13 @@ export const TableSort = () => {
     setContextMenu({});
   }, [setContextMenu]);
 
+  // focus on the first input when the dialog is opened
+  useEffect(() => {
+    setTimeout(() => {
+      (ref.current?.querySelector('.first-focus')?.children[0] as HTMLElement)?.focus();
+    });
+  });
+
   const [sort, setSort] = useState<DataTableSort[]>([]);
   useEffect(() => {
     if (contextMenu.table && contextMenu.table.sort) {
@@ -140,7 +147,6 @@ export const TableSort = () => {
         }
         e.stopPropagation();
       }}
-      autoFocus
     >
       <div className="mb-4 text-lg font-semibold">Table Sort</div>
       <div className="flex max-h-96 flex-col gap-2 overflow-y-auto">
