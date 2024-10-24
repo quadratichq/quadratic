@@ -598,7 +598,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSortDataTable':
-        core.sortDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.columnIndex, e.data.sortOrder, e.data.cursor);
+        core.sortDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.sort, e.data.cursor);
         return;
 
       case 'clientCoreDataTableFirstRowAsHeader':

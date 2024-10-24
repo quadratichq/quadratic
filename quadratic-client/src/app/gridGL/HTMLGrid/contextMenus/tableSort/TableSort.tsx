@@ -41,7 +41,7 @@ export const TableSort = () => {
       setSort([{ column_index: -1, direction: 'Ascending' }]);
     }
   }, [contextMenu]);
-  console.log(sort);
+
   const handleSave = useCallback(() => {
     if (contextMenu.table) {
       const sortToSend = sort.filter((item) => item.direction !== 'None' && item.column_index !== -1);

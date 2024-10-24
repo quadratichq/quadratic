@@ -1052,8 +1052,7 @@ export interface ClientCoreSortDataTable {
   sheetId: string;
   x: number;
   y: number;
-  columnIndex: number;
-  sortOrder: string;
+  sort: { column_index: number; direction: string }[];
   cursor: string;
 }
 

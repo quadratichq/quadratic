@@ -56,12 +56,12 @@ export class TableColumnHeaders extends Container {
       throw new Error('Unknown sort order in onSortPressed');
     }
     const table = this.table.codeCell;
+
     quadraticCore.sortDataTable(
       sheets.sheet.id,
       table.x,
       table.y,
-      column.valueIndex,
-      newOrder,
+      [{ column_index: column.valueIndex, direction: newOrder }],
       sheets.getCursorPosition()
     );
   }

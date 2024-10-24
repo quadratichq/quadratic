@@ -17,7 +17,7 @@ use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use strum_macros::Display;
+use strum_macros::{Display, EnumString};
 use tabled::{
     builder::Builder,
     settings::{Color, Modify, Style},
@@ -81,10 +81,16 @@ impl DataTableColumn {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS, Display, EnumString)]
 pub enum SortDirection {
+    #[serde(rename = "asc")]
+    #[strum(serialize = "asc")]
     Ascending,
+    #[serde(rename = "desc")]
+    #[strum(serialize = "desc")]
     Descending,
+    #[serde(rename = "none")]
+    #[strum(serialize = "none")]
     None,
 }
 

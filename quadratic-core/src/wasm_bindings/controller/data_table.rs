@@ -55,12 +55,22 @@ impl GridController {
         &mut self,
         sheet_id: String,
         pos: String,
-        sort: Option<String>,
+        sort_js: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        let sort = sort.map(|s| serde_json::from_str::<Vec<DataTableSort>>(&s).unwrap_or_default());
+
+        let mut sort = None;
+
+        if let Some(sort_js) = sort_js {
+            sort = Some(
+                serde_json::from_str::<Vec<DataTableSort>>(&sort_js).map_err(|e| e.to_string())?,
+            );
+        }
+
+        // let sort = sort.map(|s| serde_json::from_str::<Vec<DataTableSort>>(&s)?);
+        dbgjs!(&sort);
         self.sort_data_table(pos.to_sheet_pos(sheet_id), sort, cursor);
 
         Ok(())

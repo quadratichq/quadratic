@@ -1135,9 +1135,16 @@ class Core {
     this.gridController.updateDataTableName(sheetId, posToPos(x, y), name, cursor);
   }
 
-  sortDataTable(sheetId: string, x: number, y: number, column_index: number, sort_order: string, cursor: string) {
+  sortDataTable(
+    sheetId: string,
+    x: number,
+    y: number,
+    sort: { column_index: number; direction: string }[],
+    cursor: string
+  ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.sortDataTable(sheetId, posToPos(x, y), column_index, sort_order, cursor);
+    console.log('sortDataTable', sheetId, x, y, sort, cursor);
+    this.gridController.sortDataTable(sheetId, posToPos(x, y), JSON.stringify(sort), cursor);
   }
 
   dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {

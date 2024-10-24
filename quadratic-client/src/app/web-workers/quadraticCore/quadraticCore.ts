@@ -1220,14 +1220,19 @@ class QuadraticCore {
     });
   }
 
-  sortDataTable(sheetId: string, x: number, y: number, columnIndex: number, sortOrder: string, cursor: string) {
+  sortDataTable(
+    sheetId: string,
+    x: number,
+    y: number,
+    sort: { column_index: number; direction: string }[],
+    cursor: string
+  ) {
     this.send({
       type: 'clientCoreSortDataTable',
       sheetId,
       x,
       y,
-      columnIndex,
-      sortOrder,
+      sort,
       cursor,
     });
   }
