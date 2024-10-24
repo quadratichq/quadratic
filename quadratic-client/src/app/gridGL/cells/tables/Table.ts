@@ -238,6 +238,9 @@ export class Table extends Container {
     // flicker since the update normally happens on the tick instead of on the
     // viewport event (caused by inconsistency between React and pixi's update
     // loop)
+    if (!this.codeCell.show_header) {
+      return { x: this.tableName.x, y: this.tableName.y };
+    }
     this.update(pixiApp.viewport.getVisibleBounds(), pixiApp.headings.headingSize.height / pixiApp.viewport.scaled);
     return this.columnHeaders.getSortDialogPosition();
   }

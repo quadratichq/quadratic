@@ -19,15 +19,20 @@ export const TableSort = () => {
 
   // focus on the first input when the dialog is opened
   useEffect(() => {
-    setTimeout(() => {
-      (ref.current?.querySelector('.first-focus')?.children[0] as HTMLElement)?.focus();
-    });
-  });
+    if (contextMenu.type === ContextMenuType.TableSort) {
+      setTimeout(() => {
+        (ref.current?.querySelector('.first-focus')?.children[0] as HTMLElement)?.focus();
+      });
+    }
+  }, [contextMenu]);
 
   const [sort, setSort] = useState<DataTableSort[]>([]);
   useEffect(() => {
-    if (contextMenu.table && contextMenu.table.sort) {
-      const sort = [...contextMenu.table.sort.filter((item) => item.direction !== 'None')];
+    if (contextMenu.type !== ContextMenuType.TableSort) return;
+    if (contextMenu.table) {
+      const sort = contextMenu.table.sort
+        ? [...contextMenu.table.sort.filter((item) => item.direction !== 'None')]
+        : [];
       if (sort.length !== contextMenu.table.column_names.length) {
         sort.push({ column_index: -1, direction: 'Ascending' });
       }
@@ -35,8 +40,8 @@ export const TableSort = () => {
     } else {
       setSort([{ column_index: -1, direction: 'Ascending' }]);
     }
-  }, [contextMenu.table]);
-
+  }, [contextMenu]);
+  console.log(sort);
   const handleSave = useCallback(() => {
     if (contextMenu.table) {
       const sortToSend = sort.filter((item) => item.direction !== 'None' && item.column_index !== -1);
