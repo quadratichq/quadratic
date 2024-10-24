@@ -229,6 +229,14 @@ export const ExamplesIcon: IconComponent = (props) => {
   return <Icon {...props}>view_carousel</Icon>;
 };
 
+export const ExpandIcon: IconComponent = (props) => {
+  return <Icon {...props}>unfold_less</Icon>;
+};
+
+export const CollapseIcon: IconComponent = (props) => {
+  return <Icon {...props}>unfold_more</Icon>;
+};
+
 export const ExpandCircleDownIcon: IconComponent = (props) => {
   return <Icon {...props}>expand_circle_down</Icon>;
 };

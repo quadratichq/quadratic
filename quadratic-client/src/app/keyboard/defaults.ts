@@ -353,4 +353,9 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Ctrl, Keys.Semicolon]],
     windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.Semicolon]],
   },
+  // TODO: use this?
+  [Action.ToggleAIChat]: {
+    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.L]],
+    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.L]],
+  },
 };
