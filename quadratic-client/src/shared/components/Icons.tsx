@@ -454,3 +454,11 @@ export const SortIcon: IconComponent = (props) => {
 export const DragIndicatorIcon: IconComponent = (props) => {
   return <Icon {...props}>drag_indicator</Icon>;
 };
+
+export const UpArrowIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_upward</Icon>;
+};
+
+export const DownArrowIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_downward</Icon>;
+};

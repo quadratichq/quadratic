@@ -110,6 +110,15 @@ export const TableSort = () => {
     });
   };
 
+  const handleReorder = (index: number, direction: 'up' | 'down') => {
+    setSort((prev) => {
+      const sort = [...prev];
+      sort.splice(index, 1);
+      sort.splice(index + (direction === 'up' ? -1 : 1), 0, prev[index]);
+      return sort;
+    });
+  };
+
   if (contextMenu.type !== ContextMenuType.TableSort) return null;
 
   return (
@@ -136,6 +145,8 @@ export const TableSort = () => {
               availableColumns={columns}
               onChange={handleChange}
               onDelete={handleDelete}
+              onReorder={handleReorder}
+              last={index === sort.length - 1 || (sort.length === 2 && sort[sort.length - 1].column_index === -1)}
             />
           );
         })}
