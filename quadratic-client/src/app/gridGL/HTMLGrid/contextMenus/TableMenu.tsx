@@ -1,7 +1,9 @@
 import { Action } from '@/app/actions/actions';
-import { MenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/contextMenu';
+import { ContextMenuItem, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuItem';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { MenuDivider, MenuHeader } from '@szhsin/react-menu';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { DropdownMenuItem, DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
 import { useMemo } from 'react';
 
 interface Props {
@@ -11,27 +13,8 @@ interface Props {
 
 export const TableMenu = (props: Props) => {
   const { defaultRename, codeCell } = props;
-
-  const isCodeTable = codeCell?.language === 'Import' ? 'Data' : 'Code';
-
-  const header = useMemo(() => {
-    if (!codeCell) {
-      return '';
-    }
-    if (codeCell.language === 'Import') {
-      return 'Data Table';
-    } else if (codeCell.language === 'Formula') {
-      return 'Formula Table';
-    } else if (codeCell.language === 'Python') {
-      return 'Python Table';
-    } else if (codeCell.language === 'Javascript') {
-      return 'JavaScript Table';
-    } else if (typeof codeCell.language === 'object') {
-      return codeCell.language.Connection?.kind;
-    } else {
-      throw new Error(`Unknown language: ${codeCell.language}`);
-    }
-  }, [codeCell]);
+  const cell = getCodeCell(codeCell?.language);
+  const isCodeCell = cell && cell.id !== 'Import';
 
   const hasHiddenColumns = useMemo(() => {
     console.log('TODO: hasHiddenColumns', codeCell);
@@ -45,18 +28,32 @@ export const TableMenu = (props: Props) => {
 
   return (
     <>
-      <MenuHeader className="-ml-3">{header}</MenuHeader>
-      <MenuItemAction action={Action.RenameTable} overrideDefaultOption={defaultRename} />
-      <MenuItemAction action={Action.SortTable} />
-      {hasHiddenColumns && <MenuItemAction action={Action.ShowAllColumns} />}
-      <MenuDivider />
-      <MenuItemAction action={Action.ToggleHeaderTable} />
-      <MenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
-      <MenuItemAction action={Action.ToggleTableAlternatingColors} />
-      <MenuDivider />
-      {isCodeTable && <MenuItemAction action={Action.CodeToDataTable} />}
-      <MenuItemAction action={Action.FlattenTable} />
-      <MenuItemAction action={Action.DeleteDataTable} />
+      {isCodeCell && (
+        <>
+          <DropdownMenuItem>
+            <ContextMenuItem
+              icon={
+                <LanguageIcon language={cell.id} sx={{ color: 'inherit', fontSize: '20px' }} />
+                // <EditIcon />
+              }
+              text={`${cell.label} code`}
+            />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+        </>
+      )}
+      <ContextMenuItemAction action={Action.RenameTable} overrideDefaultOption={defaultRename} />
+      <ContextMenuItemAction action={Action.SortTable} />
+
+      {hasHiddenColumns && <ContextMenuItemAction action={Action.ShowAllColumns} />}
+      <DropdownMenuSeparator />
+      <ContextMenuItemAction action={Action.ToggleHeaderTable} />
+      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
+      <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />
+      <DropdownMenuSeparator />
+      {isCodeCell && <ContextMenuItemAction action={Action.CodeToDataTable} />}
+      <ContextMenuItemAction action={Action.FlattenTable} />
+      <ContextMenuItemAction action={Action.DeleteDataTable} />
     </>
   );
 };

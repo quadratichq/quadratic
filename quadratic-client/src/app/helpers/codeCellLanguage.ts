@@ -8,7 +8,7 @@ const codeCellsById = {
   POSTGRES: { id: 'POSTGRES', label: 'Postgres', type: 'connection' },
   MYSQL: { id: 'MYSQL', label: 'MySQL', type: 'connection' },
   MSSQL: { id: 'MSSQL', label: 'MS SQL Server', type: 'connection' },
-  SNOWFLAKE: { id: 'SNOWFLAKE', label: 'SNOWFLAKE', type: 'connection' },
+  SNOWFLAKE: { id: 'SNOWFLAKE', label: 'Snowflake', type: 'connection' },
 } as const;
 export type CodeCellIds = keyof typeof codeCellsById;
 // type CodeCell = (typeof codeCellsById)[CodeCellIds];

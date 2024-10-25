@@ -15,7 +15,6 @@ import {
   ShowIcon,
   SortIcon,
   TableConvertIcon,
-  TableIcon,
   UpArrowIcon,
 } from '@/shared/components/Icons';
 import { Rectangle } from 'pixi.js';
@@ -58,7 +57,7 @@ const isAlternatingColorsShowing = (): boolean => {
 
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
-    label: 'Flatten table to grid',
+    label: 'Flatten to sheet',
     Icon: FlattenTableIcon,
     run: async () => {
       const table = getTable();
@@ -68,7 +67,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.GridToDataTable]: {
-    label: 'Convert values to data table',
+    label: 'Convert to table',
     Icon: TableConvertIcon,
     run: async () => {
       quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
@@ -91,7 +90,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.RenameTable]: {
-    label: 'Rename table',
+    label: 'Rename',
     defaultOption: true,
     Icon: FileRenameIcon,
     run: () => {
@@ -114,7 +113,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.DeleteDataTable]: {
-    label: 'Delete table',
+    label: 'Delete',
     Icon: DeleteIcon,
     run: () => {
       const table = getTable();
@@ -125,8 +124,8 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.CodeToDataTable]: {
-    label: 'Convert to data table',
-    Icon: TableIcon,
+    label: 'Convert from code to data',
+    Icon: TableConvertIcon,
     run: () => {
       const table = getTable();
       if (table) {
@@ -135,7 +134,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.SortTable]: {
-    label: 'Sort table',
+    label: 'Sort',
     Icon: SortIcon,
     run: () => {
       setTimeout(() => {

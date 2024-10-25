@@ -1,74 +1,80 @@
-import { Action } from '@/app/actions/actions';
-import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
-import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
-import { CheckBoxEmptyIcon, CheckBoxIcon, IconComponent } from '@/shared/components/Icons';
-import { MenuItem } from '@szhsin/react-menu';
+import { contextMenuAtom, ContextMenuState, ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { events } from '@/app/events/events';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRecoilState } from 'recoil';
 
-interface Props {
-  action: Action;
+/**
+ * Wrapper component for any context menu on the grid.
+ */
+export const ContextMenu = ({
+  children,
+  contextMenuType,
+}: {
+  children: ({ contextMenu }: { contextMenu: ContextMenuState }) => React.ReactNode;
+  contextMenuType: ContextMenuType;
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
+  const open = contextMenu.type === contextMenuType && !contextMenu.rename;
 
-  // allows overriding of the default option (which sets the menu item to bold)
-  overrideDefaultOption?: boolean;
-}
+  // Local state for the dropdown menu
+  const [isOpen, setIsOpen] = useState(false);
+  useEffect(() => {
+    setIsOpen(open);
+  }, [open]);
 
-export const MenuItemAction = (props: Props): JSX.Element | null => {
-  const { overrideDefaultOption } = props;
-  const { label, Icon, run, isAvailable, checkbox, defaultOption } = defaultActionSpec[props.action];
-  const isAvailableArgs = useIsAvailableArgs();
-  const keyboardShortcut = keyboardShortcutEnumToDisplay(props.action);
+  const onClose = useCallback(() => {
+    setContextMenu({});
+    events.emit('contextMenuClose');
+    focusGrid();
+  }, [setContextMenu]);
 
-  if (isAvailable && !isAvailable(isAvailableArgs)) {
-    return null;
-  }
+  useEffect(() => {
+    pixiApp.viewport.on('moved', onClose);
+    pixiApp.viewport.on('zoomed', onClose);
+
+    return () => {
+      pixiApp.viewport.off('moved', onClose);
+      pixiApp.viewport.off('zoomed', onClose);
+    };
+  }, [onClose]);
 
   return (
-    <MenuItemShadStyle Icon={Icon} onClick={run} keyboardShortcut={keyboardShortcut} checkbox={checkbox}>
-      <span className={overrideDefaultOption ?? defaultOption ? 'font-bold' : ''}>{label}</span>
-    </MenuItemShadStyle>
+    <div
+      className="absolute"
+      ref={ref}
+      style={{
+        left: contextMenu.world?.x ?? 0,
+        top: contextMenu.world?.y ?? 0,
+        transform: `scale(${1 / pixiApp.viewport.scale.x})`,
+        pointerEvents: 'auto',
+        display: open ? 'block' : 'none',
+      }}
+    >
+      <DropdownMenu
+        modal={false}
+        open={isOpen}
+        onOpenChange={(dropdownOpen) => {
+          setIsOpen(dropdownOpen);
+          if (!dropdownOpen) onClose();
+        }}
+      >
+        {/* Radix wants the trigger for positioning the content, so we hide it visibly */}
+        <DropdownMenuTrigger className="h-0 w-0 opacity-0">Menu</DropdownMenuTrigger>
+        <DropdownMenuContent
+          animate={false}
+          side="bottom"
+          sideOffset={0}
+          align="start"
+          alignOffset={0}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
+          {children({ contextMenu })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 };
-
-function MenuItemShadStyle({
-  children,
-  Icon,
-  checkbox,
-  onClick,
-  keyboardShortcut,
-}: {
-  children: JSX.Element;
-  Icon?: IconComponent;
-  onClick: any;
-  checkbox?: boolean | (() => boolean);
-  keyboardShortcut?: string;
-}) {
-  const menuItemClassName =
-    'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50';
-
-  const icon = Icon ? <Icon className="-ml-3 mr-4" /> : null;
-  let checkboxElement: JSX.Element | null = null;
-  if (!Icon && checkbox !== undefined) {
-    let checked: boolean;
-    if (typeof checkbox === 'function') {
-      checked = checkbox();
-    } else {
-      checked = checkbox === true;
-    }
-    if (checked) {
-      checkboxElement = <CheckBoxIcon className="-ml-3 mr-4" />;
-    } else {
-      checkboxElement = <CheckBoxEmptyIcon className="-ml-3 mr-4" />;
-    }
-  }
-  return (
-    <MenuItem className={menuItemClassName} onClick={onClick}>
-      <span className="mr-4 flex items-center">
-        {icon}
-        {checkboxElement} {children}
-      </span>
-      {keyboardShortcut && (
-        <span className="ml-auto text-xs tracking-widest text-muted-foreground">{keyboardShortcut}</span>
-      )}
-    </MenuItem>
-  );
-}
