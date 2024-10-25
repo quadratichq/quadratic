@@ -2,9 +2,11 @@
 
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { TableSortEntry } from '@/app/gridGL/HTMLGrid/contextMenus/tableSort/TableSortEntry';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { DataTableSort, SortDirection } from '@/app/quadratic-core-types';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -45,11 +47,13 @@ export const TableSort = () => {
   const handleSave = useCallback(() => {
     if (contextMenu.table) {
       const sortToSend = sort.filter((item) => item.direction !== 'None' && item.column_index !== -1);
-      console.log(
-        `Sending table ${contextMenu.table.x},${contextMenu.table.y} with sort ${JSON.stringify(sortToSend)}`
+      quadraticCore.sortDataTable(
+        sheets.sheet.id,
+        contextMenu.table.x,
+        contextMenu.table.y,
+        sortToSend,
+        sheets.getCursorPosition()
       );
-      // todo: need a fn to send the entire sorted data table
-      // quadraticCore.sortDataTable(contextMenu.table, sort);
     }
     handleClose();
   }, [contextMenu.table, sort, handleClose]);
