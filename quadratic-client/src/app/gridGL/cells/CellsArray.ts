@@ -165,9 +165,9 @@ export class CellsArray extends Container {
     //   }
     // }
 
-    // if (!editingCell) {
-    //   this.cellsSheet.cellsMarkers.add(start, codeCell, true);
-    // }
+    if (!editingCell) {
+      this.cellsSheet.cellsMarkers.add(start, codeCell, true);
+    }
 
     const end = this.sheet.getCellOffsets(
       Number(codeCell.x) + (codeCell.spill_error ? 1 : codeCell.w),

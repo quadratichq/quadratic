@@ -3,10 +3,9 @@ import { CodeCellLanguage, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { generatedTextures } from '../generateTextures';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { ErrorMarker } from './CellsSheet';
 
-const INDICATOR_SIZE = 4;
+// const INDICATOR_SIZE = 4;
 export const TRIANGLE_SCALE = 0.1;
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
@@ -74,29 +73,29 @@ export class CellsMarkers extends Container {
     if (isError) {
       triangle = this.addChild(new Sprite(generatedTextures.triangle));
       triangle.scale.set(TRIANGLE_SCALE);
-      triangle.position.set(box.x, box.y);
+      triangle.anchor.set(1, 0);
+      triangle.position.set(box.x + box.width - 0.5, box.y + 0.5);
       triangle.tint = colors.cellColorError;
     }
 
-    if (isError || selected || pixiAppSettings.showCellTypeOutlines) {
-      const symbol = getLanguageSymbol(codeCell.language, isError);
-      if (symbol) {
-        this.addChild(symbol);
-        symbol.height = INDICATOR_SIZE;
-        symbol.width = INDICATOR_SIZE;
-        symbol.position.set(box.x + 1.25, box.y + 1.25);
-        if (isError) {
-          symbol.x -= 1;
-          symbol.y -= 1;
-        }
-        this.markers.push({
-          bounds: new Rectangle(box.x, box.y, box.width, box.height),
-          codeCell,
-          triangle,
-          symbol,
-        });
-      }
+    if (isError) {
+      //   const symbol = getLanguageSymbol(codeCell.language, isError);
+      //   if (symbol) {
+      //     this.addChild(symbol);
+      //     symbol.height = INDICATOR_SIZE;
+      //     symbol.width = INDICATOR_SIZE;
+      //     symbol.position.set(box.x + 1.25, box.y + 1.25);
+      //     if (isError) {
+      //       symbol.x -= 1;
+      //       symbol.y -= 1;
+      //     }
+      this.markers.push({
+        bounds: new Rectangle(box.x, box.y, box.width, box.height),
+        codeCell,
+        triangle,
+      });
     }
+    // }
   }
 
   intersectsCodeInfo(point: Point): JsRenderCodeCell | undefined {
