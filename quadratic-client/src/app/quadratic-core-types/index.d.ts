@@ -63,7 +63,7 @@ export interface SheetId { id: string, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
 export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
 export interface SheetRect { min: Pos, max: Pos, sheet_id: SheetId, }
-export type SortDirection = "asc" | "desc" | "none";
+export type SortDirection = "Ascending" | "Descending" | "None";
 export interface DataTableSort { column_index: number, direction: SortDirection, }
 export interface Span { start: number, end: number, }
 export interface SummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }

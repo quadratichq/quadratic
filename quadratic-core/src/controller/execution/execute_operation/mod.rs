@@ -47,6 +47,9 @@ impl GridController {
                 Operation::UpdateDataTableName { .. } => Self::handle_execution_operation_result(
                     self.execute_update_data_table_name(transaction, op),
                 ),
+                Operation::DataTableMeta { .. } => Self::handle_execution_operation_result(
+                    self.execute_data_table_meta(transaction, op),
+                ),
                 Operation::SortDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_sort_data_table(transaction, op),
                 ),
