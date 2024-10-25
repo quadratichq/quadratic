@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { GridHeadingRows } from '@/app/gridGL/UI/gridHeadings/GridHeadingsRows';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { BitmapText, Container, Graphics, Point, Rectangle } from 'pixi.js';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -44,6 +45,10 @@ export class GridHeadings extends Container {
   private columnRect: Rectangle | undefined;
   private cornerRect: Rectangle | undefined;
 
+  // this needs to be a child of viewportContents so it it is placed over the
+  // grid lines
+  gridHeadingsRows: GridHeadingRows;
+
   dirty = true;
 
   constructor() {
@@ -51,6 +56,7 @@ export class GridHeadings extends Container {
     this.headingsGraphics = this.addChild(new Graphics());
     this.labels = this.addChild(new GridHeadingsLabels());
     this.corner = this.addChild(new Graphics());
+    this.gridHeadingsRows = new GridHeadingRows();
   }
 
   // calculates static character size (used in overlap calculations)
@@ -279,11 +285,11 @@ export class GridHeadings extends Container {
     this.rowWidth = Math.max(this.rowWidth, CELL_HEIGHT / viewport.scale.x);
 
     // draw background of vertical bar
-    this.headingsGraphics.lineStyle(0);
-    this.headingsGraphics.beginFill(colors.headerBackgroundColor);
+    this.gridHeadingsRows.headingsGraphics.lineStyle(0);
+    this.gridHeadingsRows.headingsGraphics.beginFill(colors.headerBackgroundColor);
     this.columnRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
-    this.headingsGraphics.drawShape(this.columnRect);
-    this.headingsGraphics.endFill();
+    this.gridHeadingsRows.headingsGraphics.drawShape(this.columnRect);
+    this.gridHeadingsRows.headingsGraphics.endFill();
     this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
 
     // fill the entire viewport if all cells are selected
@@ -383,15 +389,15 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(
+        this.gridHeadingsRows.headingsGraphics.lineStyle(
           1,
           colors.gridLines,
           colors.headerSelectedRowColumnBackgroundColorAlpha * gridAlpha,
           0.5,
           true
         );
-        this.headingsGraphics.moveTo(bounds.left, y);
-        this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
+        this.gridHeadingsRows.headingsGraphics.moveTo(bounds.left, y);
+        this.gridHeadingsRows.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
       }
 
@@ -474,8 +480,10 @@ export class GridHeadings extends Container {
     }
     this.dirty = false;
     this.labels.clear();
-
     this.headingsGraphics.clear();
+
+    this.gridHeadingsRows.labels.clear();
+    this.gridHeadingsRows.headingsGraphics.clear();
 
     if (!pixiAppSettings.showHeadings) {
       this.visible = false;
