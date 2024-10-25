@@ -73,6 +73,8 @@ export const TableSort = () => {
           ref.current.style.display = 'block';
           setDisplay('block');
         }
+      } else {
+        setDisplay('none');
       }
     };
     const viewportChanged = () => {
@@ -96,20 +98,24 @@ export const TableSort = () => {
     return availableColumns.map((column) => column.name);
   }, [columnNames, sort]);
 
-  const handleChange = (index: number, column: string, direction: SortDirection) => {
+  const handleChange = (index: number, column: string | undefined, direction: SortDirection) => {
     setSort((prev) => {
       const columnIndex = columnNames.findIndex((c) => c.name === column);
-      if (columnIndex === -1) return prev;
 
-      // remove new entry from old sort
-      const newSort = [...prev.filter((value) => value.column_index !== -1)];
+      // remove any additional entries
+      const newSort = [...prev.filter((item) => item.column_index !== -1)];
 
-      if (index === -1) {
-        newSort.push({ column_index: columnIndex, direction });
+      if (columnIndex === -1) {
+        newSort.splice(index, 1);
       } else {
-        newSort[index] = { column_index: columnIndex, direction };
+        if (index === -1) {
+          newSort.push({ column_index: columnIndex, direction });
+        } else {
+          newSort[index] = { column_index: columnIndex, direction };
+        }
       }
-      if (sort.length !== columnNames.length) {
+
+      if (newSort.length !== columnNames.length) {
         newSort.push({ column_index: -1, direction: 'Ascending' });
       }
       return newSort;

@@ -44,6 +44,7 @@ export const PixiRename = (props: Props) => {
 
   const saveAndClose = useCallback(() => {
     if (closed.current === true) return;
+    closed.current = true;
     if (ref.current?.value !== defaultValue && validate(ref.current?.value ?? '')) {
       onSave(ref.current?.value ?? '');
     }

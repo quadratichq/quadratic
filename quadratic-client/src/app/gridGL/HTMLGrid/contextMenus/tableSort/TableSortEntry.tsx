@@ -10,7 +10,7 @@ interface Props {
   availableColumns: string[];
   name: string;
   direction: SortDirection;
-  onChange: (index: number, column: string, direction: SortDirection) => void;
+  onChange: (index: number, column: string | undefined, direction: SortDirection) => void;
   onDelete: (index: number) => void;
   onReorder: (index: number, direction: 'up' | 'down') => void;
   last: boolean;
@@ -20,18 +20,27 @@ export const TableSortEntry = (props: Props) => {
   const { index, availableColumns, direction, name, onChange, onDelete, onReorder, last } = props;
 
   const [newColumn, setNewColumn] = useState<string | undefined>(name);
-  const [newDirection, setNewDirection] = useState<SortDirection>(direction ?? 'Descending');
+  const [newDirection, setNewDirection] = useState<SortDirection>(direction ?? 'Ascending');
 
   const updateValues = useCallback(
     (column?: string, direction?: string) => {
+      if (column === 'blank') {
+        column = '';
+      }
       if (column !== undefined) setNewColumn(column);
       if (direction !== undefined) setNewDirection(direction as SortDirection);
 
       // only update if the new column and direction are valid
-      if (column || newColumn) {
-        console.log(column, newColumn);
-        onChange(index, column ?? newColumn!, (direction as SortDirection) ?? newDirection!);
-      }
+      onChange(
+        index,
+        column === undefined ? newColumn ?? undefined : column,
+        (direction as SortDirection) ?? newDirection
+      );
+      console.log(
+        index,
+        column === undefined ? newColumn ?? '' : column,
+        (direction as SortDirection) ?? newDirection!
+      );
     },
     [index, onChange, newColumn, newDirection]
   );
@@ -39,7 +48,7 @@ export const TableSortEntry = (props: Props) => {
   return (
     <div className="flex h-fit w-full gap-2">
       <ValidationDropdown
-        className="w-fit grow first-focus"
+        className="first-focus w-fit grow"
         style={{ paddingTop: 1, paddingBottom: 1, paddingLeft: 1 }}
         value={newColumn ?? ''}
         options={availableColumns}
