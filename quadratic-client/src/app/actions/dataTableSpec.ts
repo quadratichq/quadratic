@@ -2,6 +2,7 @@ import { Action } from '@/app/actions/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { createSelection } from '@/app/grid/sheet/selection';
+import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -9,6 +10,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   DeleteIcon,
   DownArrowIcon,
+  EditIcon,
   FileRenameIcon,
   FlattenTableIcon,
   HideIcon,
@@ -37,6 +39,7 @@ type DataTableSpec = Pick<
   | Action.SortTableColumnDescending
   | Action.HideTableColumn
   | Action.ShowAllColumns
+  | Action.EditTableCode
 >;
 
 const isFirstRowHeader = (): boolean => {
@@ -195,6 +198,22 @@ export const dataTableSpec: DataTableSpec = {
     Icon: ShowIcon,
     run: () => {
       console.log('TODO: show all columns');
+    },
+  },
+  [Action.EditTableCode]: {
+    label: 'Edit code',
+    Icon: EditIcon,
+    run: () => {
+      const table = getTable();
+      if (table) {
+        const column = table.x;
+        const row = table.y;
+        quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
+          if (code) {
+            doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+          }
+        });
+      }
     },
   },
 };

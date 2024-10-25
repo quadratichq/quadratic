@@ -154,4 +154,5 @@ export enum Action {
   SortTableColumnDescending = 'sort_table_column_descending',
   HideTableColumn = 'hide_table_column',
   ShowAllColumns = 'show_all_columns',
+  EditTableCode = 'edit_table_code',
 }

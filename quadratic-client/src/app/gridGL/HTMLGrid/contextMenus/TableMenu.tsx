@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { ContextMenuItem, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuItem';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -30,12 +31,9 @@ export const TableMenu = (props: Props) => {
     <>
       {isCodeCell && (
         <>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => defaultActionSpec[Action.EditTableCode].run()}>
             <ContextMenuItem
-              icon={
-                <LanguageIcon language={cell.id} sx={{ color: 'inherit', fontSize: '20px' }} />
-                // <EditIcon />
-              }
+              icon={<LanguageIcon language={cell.id} sx={{ color: 'inherit', fontSize: '20px' }} />}
               text={`${cell.label} code`}
             />
           </DropdownMenuItem>
