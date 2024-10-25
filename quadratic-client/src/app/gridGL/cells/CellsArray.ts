@@ -9,16 +9,10 @@ import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsCodeCell, JsRenderCodeCell, RunError } from '@/app/quadratic-core-types';
 import mixpanel from 'mixpanel-browser';
 import { Container, Graphics, ParticleContainer, Point, Rectangle, Sprite, Texture } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { generatedTextures } from '../generateTextures';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 import { BorderCull, drawBorder } from './drawBorders';
-
-const SPILL_HIGHLIGHT_THICKNESS = 1;
-const SPILL_HIGHLIGHT_COLOR = colors.cellColorError;
-const SPILL_FILL_ALPHA = 0.025;
 
 export class CellsArray extends Container {
   private cellsSheet: CellsSheet;
@@ -26,6 +20,7 @@ export class CellsArray extends Container {
   private tables: Map<String, Rectangle>;
 
   private particles: ParticleContainer;
+
   // only used for the spill error indicators (lines are drawn using sprites in particles for performance)
   private graphics: Graphics;
   private lines: BorderCull[];
@@ -174,35 +169,11 @@ export class CellsArray extends Container {
     //   this.cellsSheet.cellsMarkers.add(start, codeCell, true);
     // }
 
-    const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
-    if (codeCell.spill_error) {
-      const cursorPosition = sheets.sheet.cursor.cursorPosition;
-      if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {
-        this.lines.push(
-          ...drawBorder({
-            alpha: 0.5,
-            tint,
-            x: start.x,
-            y: start.y,
-            width: start.width,
-            height: start.height,
-            getSprite: this.getSprite,
-            top: true,
-            left: true,
-            bottom: true,
-            right: true,
-          })
-        );
-      } else {
-        this.drawDashedRectangle(new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y), tint);
-        codeCell.spill_error?.forEach((error) => {
-          const rectangle = this.sheet.getCellOffsets(Number(error.x), Number(error.y));
-          this.drawDashedRectangle(rectangle, SPILL_HIGHLIGHT_COLOR);
-        });
-      }
-    } else {
-      this.drawBox(start, end, tint);
-    }
+    const end = this.sheet.getCellOffsets(
+      Number(codeCell.x) + (codeCell.spill_error ? 1 : codeCell.w),
+      Number(codeCell.y) + (codeCell.spill_error ? 1 : codeCell.h)
+    );
+    this.drawBox(start, end, tint);
 
     // save the entire table for hover checks
     if (!codeCell.spill_error) {
@@ -258,35 +229,6 @@ export class CellsArray extends Container {
     //     })
     //   );
     // }
-  }
-
-  private drawDashedRectangle(rectangle: Rectangle, color: number) {
-    this.graphics.lineStyle();
-    this.graphics.beginFill(color, SPILL_FILL_ALPHA);
-    this.graphics.drawRect(rectangle.left, rectangle.top, rectangle.width, rectangle.height);
-    this.graphics.endFill();
-
-    const minX = rectangle.left;
-    const minY = rectangle.top;
-    const maxX = rectangle.right;
-    const maxY = rectangle.bottom;
-
-    const path = [
-      [maxX, minY],
-      [maxX, maxY],
-      [minX, maxY],
-      [minX, minY],
-    ];
-
-    this.graphics.moveTo(minX, minY);
-    for (let i = 0; i < path.length; i++) {
-      this.graphics.lineStyle({
-        width: SPILL_HIGHLIGHT_THICKNESS,
-        color,
-        texture: i % 2 === 0 ? generatedTextures.dashedHorizontal : generatedTextures.dashedVertical,
-      });
-      this.graphics.lineTo(path[i][0], path[i][1]);
-    }
   }
 
   private getSprite = (): Sprite => {
