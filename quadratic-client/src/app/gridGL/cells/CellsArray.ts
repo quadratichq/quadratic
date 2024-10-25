@@ -5,6 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Coordinate } from '@/app/gridGL/types/size';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsCodeCell, JsRenderCodeCell, RunError } from '@/app/quadratic-core-types';
 import mixpanel from 'mixpanel-browser';
 import { Container, Graphics, ParticleContainer, Point, Rectangle, Sprite, Texture } from 'pixi.js';
@@ -13,7 +14,7 @@ import { generatedTextures } from '../generateTextures';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
-import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders';
+import { BorderCull, drawBorder } from './drawBorders';
 
 const SPILL_HIGHLIGHT_THICKNESS = 1;
 const SPILL_HIGHLIGHT_COLOR = colors.cellColorError;
@@ -149,14 +150,17 @@ export class CellsArray extends Container {
       overlapTest.height = 1;
     }
 
-    let tint = colors.independence;
-    if (codeCell.language === 'Python') {
-      tint = colors.cellColorUserPython;
-    } else if (codeCell.language === 'Formula') {
-      tint = colors.cellColorUserFormula;
-    } else if (codeCell.language === 'Javascript') {
-      tint = colors.cellColorUserJavascript;
-    }
+    const tint = getCSSVariableTint('primary');
+
+    // old code that draws a box around the code cell
+    // let tint = colors.independence;
+    // if (codeCell.language === 'Python') {
+    //   tint = colors.cellColorUserPython;
+    // } else if (codeCell.language === 'Formula') {
+    //   tint = colors.cellColorUserFormula;
+    // } else if (codeCell.language === 'Javascript') {
+    //   tint = colors.cellColorUserJavascript;
+    // }
 
     // if (!pixiAppSettings.showCellTypeOutlines) {
     //   // only show the entire array if the cursor overlaps any part of the output
@@ -169,6 +173,7 @@ export class CellsArray extends Container {
     // if (!editingCell) {
     //   this.cellsSheet.cellsMarkers.add(start, codeCell, true);
     // }
+
     const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
     if (codeCell.spill_error) {
       const cursorPosition = sheets.sheet.cursor.cursorPosition;
@@ -225,34 +230,34 @@ export class CellsArray extends Container {
         right: true,
       })
     );
-    const right = end.x !== start.x + start.width;
-    if (right) {
-      this.lines.push(
-        drawLine({
-          x: start.x + start.width - borderLineWidth / 2,
-          y: start.y + borderLineWidth / 2,
-          width: borderLineWidth,
-          height: start.height,
-          alpha: 0.5,
-          tint,
-          getSprite: this.getSprite,
-        })
-      );
-    }
-    const bottom = end.y !== start.y + start.height;
-    if (bottom) {
-      this.lines.push(
-        drawLine({
-          x: start.x + borderLineWidth / 2,
-          y: start.y + start.height - borderLineWidth / 2,
-          width: start.width - borderLineWidth,
-          height: borderLineWidth,
-          alpha: 0.5,
-          tint,
-          getSprite: this.getSprite,
-        })
-      );
-    }
+    // const right = end.x !== start.x + start.width;
+    // if (right) {
+    //   this.lines.push(
+    //     drawLine({
+    //       x: start.x + start.width - borderLineWidth / 2,
+    //       y: start.y + borderLineWidth / 2,
+    //       width: borderLineWidth,
+    //       height: start.height,
+    //       alpha: 0.5,
+    //       tint,
+    //       getSprite: this.getSprite,
+    //     })
+    //   );
+    // }
+    // const bottom = end.y !== start.y + start.height;
+    // if (bottom) {
+    //   this.lines.push(
+    //     drawLine({
+    //       x: start.x + borderLineWidth / 2,
+    //       y: start.y + start.height - borderLineWidth / 2,
+    //       width: start.width - borderLineWidth,
+    //       height: borderLineWidth,
+    //       alpha: 0.5,
+    //       tint,
+    //       getSprite: this.getSprite,
+    //     })
+    //   );
+    // }
   }
 
   private drawDashedRectangle(rectangle: Rectangle, color: number) {
