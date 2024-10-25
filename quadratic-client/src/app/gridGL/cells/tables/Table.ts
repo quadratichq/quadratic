@@ -203,14 +203,14 @@ export class Table extends Container {
     return this.columnHeaders.getColumnHeaderBounds(index);
   }
 
-  pointerMove(world: Point): boolean {
+  pointerMove(world: Point): 'table-name' | boolean {
     const name = this.tableName.intersects(world);
     if (name?.type === 'dropdown') {
       this.tableCursor = 'pointer';
-      return true;
+      return 'table-name';
     } else if (name?.type === 'table-name') {
       this.tableCursor = undefined;
-      return true;
+      return 'table-name';
     }
     const result = this.columnHeaders.pointerMove(world);
     if (result) {

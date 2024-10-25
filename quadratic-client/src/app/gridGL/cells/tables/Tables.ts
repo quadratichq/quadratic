@@ -153,16 +153,21 @@ export class Tables extends Container<Table> {
     }
   }
 
+  private isTableActive(table: Table): boolean {
+    return this.activeTable === table || this.hoverTable === table || this.contextMenuTable === table;
+  }
+
   // Returns true if the pointer down as handled (eg, a column header was
-  // clicked). Otherwise it handles TableName.
+  // clicked). Otherwise it handles TableName. We ignore the table name if the
+  // table is not active to allow the user to select the row above the table.
   pointerDown(world: Point): TablePointerDownResult | undefined {
     for (const table of this.children) {
       const result = table.intersectsTableName(world);
-      if (result) {
+      if (result && (result.type !== 'table-name' || this.isTableActive(table))) {
         return result;
       }
       const columnName = table.pointerDown(world);
-      if (columnName) {
+      if (columnName && columnName.type !== 'table-name') {
         return columnName;
       }
     }
@@ -170,8 +175,16 @@ export class Tables extends Container<Table> {
 
   pointerMove(world: Point): boolean {
     for (const table of this.children) {
-      if (table.pointerMove(world)) {
+      const result = table.pointerMove(world);
+      if (result) {
         this.tableCursor = table.tableCursor;
+        // we don't make the title active unless we're already hovering over
+        // it--this ensures that the user can select the row above the table
+        // when the table is not active
+        if (result !== 'table-name' && !this.isTableActive(table)) {
+          this.hoverTable = table;
+          table.showActive();
+        }
         return true;
       }
     }

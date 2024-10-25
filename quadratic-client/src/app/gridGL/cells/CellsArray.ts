@@ -1,3 +1,5 @@
+//! Holds borders for tables and code errors.
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
@@ -10,7 +12,6 @@ import { colors } from '../../theme/colors';
 import { generatedTextures } from '../generateTextures';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsSheet } from './CellsSheet';
 import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders';
 
@@ -157,17 +158,17 @@ export class CellsArray extends Container {
       tint = colors.cellColorUserJavascript;
     }
 
-    if (!pixiAppSettings.showCellTypeOutlines) {
-      // only show the entire array if the cursor overlaps any part of the output
-      if (!intersects.rectanglePoint(overlapTest, new Point(cursor.x, cursor.y))) {
-        this.cellsSheet.cellsMarkers.add(start, codeCell, false);
-        return;
-      }
-    }
+    // if (!pixiAppSettings.showCellTypeOutlines) {
+    //   // only show the entire array if the cursor overlaps any part of the output
+    //   if (!intersects.rectanglePoint(overlapTest, new Point(cursor.x, cursor.y))) {
+    //     this.cellsSheet.cellsMarkers.add(start, codeCell, false);
+    //     return;
+    //   }
+    // }
 
-    if (!editingCell) {
-      this.cellsSheet.cellsMarkers.add(start, codeCell, true);
-    }
+    // if (!editingCell) {
+    //   this.cellsSheet.cellsMarkers.add(start, codeCell, true);
+    // }
     const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
     if (codeCell.spill_error) {
       const cursorPosition = sheets.sheet.cursor.cursorPosition;

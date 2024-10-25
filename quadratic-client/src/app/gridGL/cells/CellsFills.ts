@@ -36,11 +36,10 @@ export class CellsFills extends Container {
     super();
     this.cellsSheet = cellsSheet;
     this.meta = this.addChild(new Graphics());
+    this.alternatingColorsGraphics = this.addChild(new Graphics());
     this.cellsContainer = this.addChild(
       new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
     );
-
-    this.alternatingColorsGraphics = this.addChild(new Graphics());
 
     events.on('sheetFills', (sheetId, fills) => {
       if (sheetId === this.cellsSheet.sheetId) {
