@@ -58,7 +58,6 @@ export class PixiApp {
 
   // this is used to display content over the headings (eg, table name when off
   // the screen)
-  private overHeadings: Container;
   overHeadingsColumnsHeaders: Container;
   overHeadingsTableNames: Container;
 
@@ -92,9 +91,8 @@ export class PixiApp {
     this.cellsSheets = new CellsSheets();
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
-    this.overHeadings = new Container();
-    this.overHeadingsColumnsHeaders = this.overHeadings.addChild(new Container());
-    this.overHeadingsTableNames = this.overHeadings.addChild(new Container());
+    this.overHeadingsColumnsHeaders = new Container();
+    this.overHeadingsTableNames = new Container();
     this.viewport = new Viewport();
   }
 
@@ -155,6 +153,7 @@ export class PixiApp {
     this.debug = this.viewportContents.addChild(new Graphics());
 
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
+    this.viewportContents.addChild(this.overHeadingsColumnsHeaders);
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.axesLines = this.viewportContents.addChild(new AxesLines());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
@@ -167,7 +166,7 @@ export class PixiApp {
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.validations = this.viewportContents.addChild(this.validations);
     this.headings = this.viewportContents.addChild(new GridHeadings());
-    this.viewportContents.addChild(this.overHeadings);
+    this.viewportContents.addChild(this.overHeadingsTableNames);
 
     this.reset();
 
