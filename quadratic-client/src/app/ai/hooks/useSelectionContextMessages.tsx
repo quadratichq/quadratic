@@ -44,6 +44,7 @@ Note: This selection JSON is only for your reference to data on the sheet. This 
           content: `I understand the cursor selection data, I will reference it to answer following messages. How can I help you?`,
           contextType: 'selection',
           model,
+          toolCalls: [],
         },
       ];
     },

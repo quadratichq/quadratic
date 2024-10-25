@@ -178,8 +178,7 @@ export const aiAnalystCurrentChatMessagesAtom = selector<(UserMessage | AIMessag
       }
 
       let id = prev.currentChat.id;
-      const addNewChat = !id && newValue.length > 0;
-      if (addNewChat) {
+      if (!id) {
         id = v4();
       }
 
@@ -189,6 +188,8 @@ export const aiAnalystCurrentChatMessagesAtom = selector<(UserMessage | AIMessag
         lastUpdated: Date.now(),
         messages: newValue,
       };
+
+      const addNewChat = newValue.length > 0 && !prev.chats.some((chat) => chat.id === id);
 
       return {
         ...prev,

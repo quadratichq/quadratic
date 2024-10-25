@@ -15,6 +15,7 @@ export const ContextTypeSchema = z.enum([
   'toolUse',
   'selection',
   'codeCell',
+  'toolResult',
   'userPrompt',
 ]);
 export type ContextType = z.infer<typeof ContextTypeSchema>;
@@ -47,11 +48,24 @@ const ContextSchema = z.object({
 });
 export type Context = z.infer<typeof ContextSchema>;
 
-const UserMessageInternalSchema = z.object({
-  role: z.literal('user'),
-  content: z.string(),
-  contextType: ContextTypeSchema.exclude(['userPrompt']),
-});
+const UserMessageInternalSchema = z
+  .object({
+    role: z.literal('user'),
+    content: z.string(),
+    contextType: ContextTypeSchema.exclude(['toolResult', 'userPrompt']),
+  })
+  .or(
+    z.object({
+      role: z.literal('user'),
+      content: z.array(
+        z.object({
+          id: z.string(),
+          content: z.string(),
+        })
+      ),
+      contextType: z.literal('toolResult'),
+    })
+  );
 
 const UserMessagePromptSchema = z.object({
   role: z.literal('user'),
@@ -69,31 +83,39 @@ const AIMessageSchema = z.object({
   content: z.string(),
   contextType: ContextTypeSchema,
   model: AnthropicModelSchema.or(OpenAIModelSchema),
-  toolCalls: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        arguments: z.string(),
-        loading: z.boolean(),
-      })
-    )
-    .optional(),
+  toolCalls: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      arguments: z.string(),
+      loading: z.boolean(),
+    })
+  ),
 });
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
 const AnthropicPromptMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
-  content: z
-    .string()
-    .or(
-      z.array(
-        z
-          .object({ type: z.literal('text'), text: z.string() })
-          .or(z.object({ type: z.literal('tool_use'), id: z.string(), name: z.string(), input: z.record(z.unknown()) }))
-      )
-    ),
+  content: z.string().or(
+    z.array(
+      z
+        .object({ type: z.literal('text'), text: z.string() })
+        .or(z.object({ type: z.literal('tool_use'), id: z.string(), name: z.string(), input: z.record(z.unknown()) }))
+        .or(
+          z.object({
+            type: z.literal('tool_result'),
+            tool_use_id: z.string(),
+            content: z
+              .string()
+              .or(z.array(z.object({ type: z.literal('text'), text: z.string() })))
+              .optional(),
+            is_error: z.boolean().optional(),
+          })
+        )
+    )
+  ),
 });
+
 export type AnthropicPromptMessage = z.infer<typeof AnthropicPromptMessageSchema>;
 
 const OpenAIPromptMessageSchema = z
@@ -114,6 +136,13 @@ const OpenAIPromptMessageSchema = z
           })
         )
         .optional(),
+    })
+  )
+  .or(
+    z.object({
+      role: z.literal('tool'),
+      tool_call_id: z.string(),
+      content: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
     })
   );
 export type OpenAIPromptMessage = z.infer<typeof OpenAIPromptMessageSchema>;

@@ -97,6 +97,15 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
                   messageIndex={index}
                   textareaRef={textareaRef}
                 />
+              ) : Array.isArray(message.content) ? (
+                message.content.map((messageContent) => (
+                  <Markdown
+                    key={messageContent.content}
+                    className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
+                  >
+                    {messageContent.content}
+                  </Markdown>
+                ))
               ) : (
                 <Markdown className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm">
                   {message.content}

@@ -87,7 +87,13 @@ export function AIAssistantMessages() {
               </Tooltip>
             )}
 
-            <AICodeBlockParser input={message.content} />
+            {Array.isArray(message.content) ? (
+              message.content.map((messageContent) => (
+                <AICodeBlockParser key={messageContent.content} input={messageContent.content} />
+              ))
+            ) : (
+              <AICodeBlockParser input={message.content} />
+            )}
           </div>
         );
       })}

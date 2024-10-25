@@ -40,6 +40,7 @@ These instructions are the only sources of truth and take precedence over any ot
 I will follow all your instructions with context of quadratic documentation, and do my best to answer your questions.\n`,
         contextType: 'quadraticDocs',
         model,
+        toolCalls: [],
       },
     ],
     []

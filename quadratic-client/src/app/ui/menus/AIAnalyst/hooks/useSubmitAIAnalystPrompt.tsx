@@ -8,6 +8,7 @@ import { useToolUseMessages } from '@/app/ai/hooks/useToolUseMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
+import { getMessagesForModel } from '@/app/ai/tools/helpers';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatAtom,
@@ -17,13 +18,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetRect } from '@/app/quadratic-core-types';
-import {
-  AIMessage,
-  AnthropicPromptMessage,
-  Context,
-  OpenAIPromptMessage,
-  UserMessage,
-} from 'quadratic-shared/typesAndSchemasAI';
+import { AIMessage, Context, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export const defaultAIAnalystContext: Context = {
@@ -73,7 +68,7 @@ export function useSubmitAIAnalystPrompt() {
         const abortController = new AbortController();
         set(aiAnalystAbortControllerAtom, abortController);
 
-        // fork chat, if we are editing a previous chat
+        // fork chat, if we are editing an existing chat
         if (messageIndex !== undefined) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
@@ -109,8 +104,8 @@ export function useSubmitAIAnalystPrompt() {
           )
         ).flat();
         const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell, model }) : [];
-        let updatedMessages: (UserMessage | AIMessage)[] = [];
 
+        let updatedMessages: (UserMessage | AIMessage)[] = [];
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
           prevMessages = prevMessages.filter(
             (message) =>
@@ -143,53 +138,92 @@ export function useSubmitAIAnalystPrompt() {
           return updatedMessages;
         });
 
-        const messagesToSend: (AnthropicPromptMessage | OpenAIPromptMessage)[] = [
-          ...updatedMessages.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
-        ];
-
-        try {
-          const response = await handleAIRequestToAPI({
-            model,
-            messages: messagesToSend,
-            setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
-            signal: abortController.signal,
-            useStream: true,
-            useTools: true,
-          });
-
-          // TODO(ayush): remove before merge
-          console.log('response', response);
-
-          if (response.toolCalls && response.toolCalls.length > 0) {
-            for (const toolCall of response.toolCalls) {
-              if (Object.values(AITool).includes(toolCall.name as AITool)) {
-                const aiTool = toolCall.name as AITool;
-                const argsObject = JSON.parse(toolCall.arguments);
-                const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                await aiToolsSpec[aiTool].action(args);
-              }
-            }
-          }
-        } catch (error) {
-          set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
-            const aiMessage: AIMessage = {
-              role: 'assistant',
-              content: 'Looks like there was a problem. Please try again.',
-              contextType: 'userPrompt',
+        let toolCalls: AIMessage['toolCalls'] | undefined = undefined;
+        while (toolCalls === undefined || toolCalls.length > 0) {
+          try {
+            const response = await handleAIRequestToAPI({
               model,
-            };
+              messages: getMessagesForModel(model, updatedMessages),
+              setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
+              signal: abortController.signal,
+              useStream: true,
+              useTools: true,
+            });
 
-            const lastMessage = prevMessages.at(-1);
-            if (lastMessage?.role === 'assistant') {
-              return [...prevMessages.slice(0, -1), aiMessage];
+            // TODO(ayush): remove before merge
+            console.log('response', response);
+
+            // Handle tool calls
+            toolCalls = response.toolCalls;
+            if (toolCalls !== undefined && toolCalls.length > 0) {
+              // Message containing tool call results
+              const toolResultMessage: UserMessage = {
+                role: 'user',
+                content: [],
+                contextType: 'toolResult',
+              };
+
+              for (const toolCall of toolCalls) {
+                if (Object.values(AITool).includes(toolCall.name as AITool)) {
+                  const aiTool = toolCall.name as AITool;
+                  const argsObject = JSON.parse(toolCall.arguments);
+                  const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
+                  const result = await aiToolsSpec[aiTool].action(args);
+                  toolResultMessage.content.push({
+                    id: toolCall.id,
+                    content: result,
+                  });
+                } else {
+                  toolResultMessage.content.push({
+                    id: toolCall.id,
+                    content: 'Unknown tool',
+                  });
+                }
+              }
+
+              // Update messages to include tool call results
+              let updatedMessages: (UserMessage | AIMessage)[] = [];
+              set(aiAnalystCurrentChatMessagesAtom, (prev) => {
+                updatedMessages = [...prev, toolResultMessage];
+                return updatedMessages;
+              });
+
+              // Send tool call results to API
+              const response = await handleAIRequestToAPI({
+                model,
+                messages: getMessagesForModel(model, updatedMessages),
+                setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
+                signal: abortController.signal,
+                useStream: true,
+                useTools: true,
+              });
+
+              toolCalls = response.toolCalls;
+
+              // TODO(ayush): remove before merge
+              console.log('response', response);
             }
-            return [...prevMessages, aiMessage];
-          });
+          } catch (error) {
+            set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
+              const aiMessage: AIMessage = {
+                role: 'assistant',
+                content: 'Looks like there was a problem. Please try again.',
+                contextType: 'userPrompt',
+                model,
+                toolCalls: [],
+              };
 
-          console.error(error);
+              const lastMessage = prevMessages.at(-1);
+              if (lastMessage?.role === 'assistant') {
+                return [...prevMessages.slice(0, -1), aiMessage];
+              }
+              return [...prevMessages, aiMessage];
+            });
+
+            toolCalls = [];
+
+            console.error(error);
+          }
         }
 
         set(aiAnalystAbortControllerAtom, undefined);

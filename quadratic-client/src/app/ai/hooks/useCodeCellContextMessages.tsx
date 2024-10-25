@@ -77,6 +77,7 @@ ${
           content: `How can I help you?`,
           contextType: 'codeCell',
           model,
+          toolCalls: [],
         },
       ];
     },

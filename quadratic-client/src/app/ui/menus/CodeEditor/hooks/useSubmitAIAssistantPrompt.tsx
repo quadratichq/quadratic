@@ -4,6 +4,7 @@ import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMes
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
+import { getMessagesForModel } from '@/app/ai/tools/helpers';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantLoadingAtom,
@@ -113,12 +114,11 @@ export function useSubmitAIAssistantPrompt() {
           return updatedMessages;
         });
 
-        const messagesToSend: (AnthropicPromptMessage | OpenAIPromptMessage)[] = [
-          ...updatedMessages.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
-        ];
+        const messagesToSend: AnthropicPromptMessage[] | OpenAIPromptMessage[] = getMessagesForModel(
+          model,
+          updatedMessages
+        );
+
         try {
           await handleAIRequestToAPI({
             model,

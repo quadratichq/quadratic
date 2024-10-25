@@ -12,16 +12,16 @@ type AIToolSpec<T extends AITool> = {
     required: string[];
   };
   responseSchema: (typeof AIToolsResponseSchema)[T];
-  action: (args: z.infer<(typeof AIToolsResponseSchema)[T]>) => Promise<void> | void;
+  action: (args: z.infer<(typeof AIToolsResponseSchema)[T]>) => Promise<string>;
   prompt: string;
 };
 
 const AIToolsResponseSchema = {
   [AITool.SetCodeCellValue]: z.object({
     language: z.enum(['Python', 'Javascript', 'Formula']),
-    codeString: z.string(),
     x: z.number(),
     y: z.number(),
+    codeString: z.string(),
     width: z.number(),
     height: z.number(),
   }),
@@ -39,10 +39,6 @@ export const aiToolsSpec: Record<AITool, AIToolSpec<AITool>> = {
           description:
             'The language of the code cell, this can be one of Python, Javascript or Formula. This is case sensitive.',
         },
-        codeString: {
-          type: 'string',
-          description: 'The code which will run in the cell',
-        },
         x: {
           type: 'number',
           description: 'The x position of the cell, which is the column index of the current spreadsheet',
@@ -50,6 +46,10 @@ export const aiToolsSpec: Record<AITool, AIToolSpec<AITool>> = {
         y: {
           type: 'number',
           description: 'The y position of the cell, which is the row index of the current spreadsheet',
+        },
+        codeString: {
+          type: 'string',
+          description: 'The code which will run in the cell',
         },
         width: {
           type: 'number',
@@ -60,10 +60,10 @@ export const aiToolsSpec: Record<AITool, AIToolSpec<AITool>> = {
           description: 'The height, i.e. number of rows, of the code output on running this Code in spreadsheet',
         },
       },
-      required: ['language', 'codeString', 'x', 'y', 'width', 'height'],
+      required: ['language', 'x', 'y', 'codeString', 'width', 'height'],
     },
     responseSchema: AIToolsResponseSchema[AITool.SetCodeCellValue],
-    action: (args) => {
+    action: async (args) => {
       const { language, codeString, x, y, width, height } = args;
       quadraticCore.setCodeCellValue({
         sheetId: sheets.current,
@@ -74,6 +74,7 @@ export const aiToolsSpec: Record<AITool, AIToolSpec<AITool>> = {
         cursor: sheets.getCursorPosition(),
       });
       ensureRectVisible({ x, y }, { x: x + width - 1, y: y + height - 1 });
+      return 'Executed set code cell value tool successfully';
     },
     prompt: `       
 You can use the SetCodeCellValue function to set this code cell value. Use this function instead of responding with code.

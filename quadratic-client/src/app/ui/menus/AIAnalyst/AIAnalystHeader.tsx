@@ -34,7 +34,7 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
             variant={showChatHistory ? 'default' : 'ghost'}
             size="icon-sm"
             className={cn(!showChatHistory && 'text-muted-foreground hover:text-foreground')}
-            disabled={loading || chatsCount === 0}
+            disabled={!showChatHistory && (loading || chatsCount === 0)}
             onClick={() => setShowChatHistory((prev) => !prev)}
           >
             <HistoryIcon />

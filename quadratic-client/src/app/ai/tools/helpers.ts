@@ -24,15 +24,15 @@ export function isAnthropicModel(model: AnthropicModel | OpenAIModel): model is 
   return AnthropicModelSchema.safeParse(model).success;
 }
 
-export const getMessages = (
+export const getMessagesForModel = (
   model: AnthropicModel | OpenAIModel,
   messages: (UserMessage | AIMessage)[]
 ): AnthropicPromptMessage[] | OpenAIPromptMessage[] => {
   const isAnthropic = isAnthropicModel(model);
   if (isAnthropic) {
-    return messages.map((message) => {
-      if (message.role === 'assistant' && message.toolCalls !== undefined) {
-        return {
+    return messages.map<AnthropicPromptMessage>((message) => {
+      if (message.role === 'assistant' && message.toolCalls.length > 0) {
+        const anthropicMessage: AnthropicPromptMessage = {
           role: message.role,
           content: [
             ...(message.content
@@ -51,36 +51,72 @@ export const getMessages = (
             })),
           ],
         };
+        return anthropicMessage;
+      } else if (message.role === 'user' && message.contextType === 'toolResult') {
+        const anthropicMessage: AnthropicPromptMessage = {
+          role: message.role,
+          content: [
+            ...message.content.map((toolResult) => ({
+              type: 'tool_result' as const,
+              tool_use_id: toolResult.id,
+              content: toolResult.content,
+            })),
+            {
+              type: 'text' as const,
+              text: 'Given the above tool calls, please provide your final answer to the user.',
+            },
+          ],
+        };
+        return anthropicMessage;
       } else {
-        return {
+        const anthropicMessage: AnthropicPromptMessage = {
           role: message.role,
           content: message.content,
         };
+        return anthropicMessage;
       }
     });
   }
 
-  return messages.map((message) => {
-    if (message.role === 'assistant' && message.toolCalls !== undefined) {
-      return {
-        role: message.role,
-        content: message.content,
-        tool_calls: message.toolCalls.map((toolCall) => ({
-          id: toolCall.id,
-          type: 'function',
-          function: {
-            name: toolCall.name,
-            arguments: toolCall.arguments,
-          },
+  return messages.reduce<OpenAIPromptMessage[]>((acc, message) => {
+    if (message.role === 'assistant' && message.toolCalls.length > 0) {
+      const openaiMessages: OpenAIPromptMessage[] = [
+        ...acc,
+        {
+          role: message.role,
+          content: message.content,
+          tool_calls: message.toolCalls.map((toolCall) => ({
+            id: toolCall.id,
+            type: 'function' as const,
+            function: {
+              name: toolCall.name,
+              arguments: toolCall.arguments,
+            },
+          })),
+        },
+      ];
+      return openaiMessages;
+    } else if (message.role === 'user' && message.contextType === 'toolResult') {
+      const openaiMessages: OpenAIPromptMessage[] = [
+        ...acc,
+        ...message.content.map((toolResult) => ({
+          role: 'tool' as const,
+          tool_call_id: toolResult.id,
+          content: toolResult.content,
         })),
-      };
+      ];
+      return openaiMessages;
     } else {
-      return {
-        role: message.role,
-        content: message.content,
-      };
+      const openaiMessages: OpenAIPromptMessage[] = [
+        ...acc,
+        {
+          role: message.role,
+          content: message.content,
+        },
+      ];
+      return openaiMessages;
     }
-  });
+  }, [] as OpenAIPromptMessage[]);
 };
 
 export const getTools = (model: AnthropicModel | OpenAIModel): AnthropicTool[] | OpenAITool[] => {
@@ -97,7 +133,7 @@ export const getTools = (model: AnthropicModel | OpenAIModel): AnthropicTool[] |
 
   return Object.entries(aiToolsSpec).map(
     ([name, { description, parameters }]): OpenAITool => ({
-      type: 'function',
+      type: 'function' as const,
       function: {
         name,
         description,

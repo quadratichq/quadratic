@@ -18,8 +18,9 @@ export const CodeEditorDiffButtons = () => {
         if (!diffEditorContent) return;
 
         if (diffEditorContent.isApplied) {
-          const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+          set(codeEditorEditorContentAtom, diffEditorContent.editorContent);
 
+          const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
           quadraticCore.setCodeCellValue({
             sheetId: codeCell.sheetId,
             x: codeCell.pos.x,
@@ -28,8 +29,6 @@ export const CodeEditorDiffButtons = () => {
             language: codeCell.language,
             cursor: sheets.getCursorPosition(),
           });
-
-          set(codeEditorEditorContentAtom, diffEditorContent.editorContent);
         } else {
           set(codeEditorDiffEditorContentAtom, undefined);
         }
@@ -45,6 +44,16 @@ export const CodeEditorDiffButtons = () => {
 
         if (!diffEditorContent.isApplied) {
           set(codeEditorEditorContentAtom, diffEditorContent.editorContent);
+
+          const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+          quadraticCore.setCodeCellValue({
+            sheetId: codeCell.sheetId,
+            x: codeCell.pos.x,
+            y: codeCell.pos.y,
+            codeString: diffEditorContent.editorContent ?? '',
+            language: codeCell.language,
+            cursor: sheets.getCursorPosition(),
+          });
         } else {
           set(codeEditorDiffEditorContentAtom, undefined);
         }

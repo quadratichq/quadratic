@@ -7,8 +7,11 @@ import { CodeIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { OBJ, parse, STR } from 'partial-json';
+import { useEffect, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { z } from 'zod';
+
+type SetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>;
 
 type SetCodeCellValueProps = {
   args: string;
@@ -19,9 +22,22 @@ const className =
   'mx-2 my-1 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow';
 
 export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
+  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
+
+  useEffect(() => {
+    if (!loading) {
+      const fullJson = parseFullJson(args);
+      if (fullJson) {
+        setToolArgs(aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson));
+      } else {
+        setToolArgs(undefined);
+      }
+    }
+  }, [args, loading]);
+
   const openDiffInCodeEditor = useRecoilCallback(
     ({ set }) =>
-      (toolArgs: z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>) => {
+      (toolArgs: SetCodeCellValueResponse) => {
         set(codeEditorAtom, (prev) => ({
           ...prev,
           diffEditorContent: { editorContent: toolArgs.codeString, isApplied: false },
@@ -41,21 +57,24 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   );
 
   if (loading) {
-    if (args) console.log(parse(args, STR | OBJ));
-    return <div className={className}>Loading SetCodeCellValue...</div>;
+    const partialJson = parsePartialJson(args);
+    if (partialJson && 'language' in partialJson) {
+      const estimatedNumberOfLines = args.split('\\n').length;
+      return (
+        <SetCodeCellValueLoadingCard
+          language={partialJson.language}
+          lines={estimatedNumberOfLines}
+          x={partialJson.x}
+          y={partialJson.y}
+        />
+      );
+    }
   }
 
-  let toolArgs;
-  try {
-    const argsObject = JSON.parse(args);
-    toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(argsObject);
-  } catch (error) {
-    console.error('[SetCodeCellValue] Failed to parse args: ', error);
-    return <div className={className}>Error in SetCodeCellValue</div>;
-  }
-
-  if (!toolArgs.success || !toolArgs.data) {
-    return <div className={className}>Error in SetCodeCellValue</div>;
+  if (!toolArgs || !toolArgs.data) {
+    return <div className={className}>Loading...</div>;
+  } else if (!toolArgs.success) {
+    return <div className={className}>Something went wrong</div>;
   }
 
   return (
@@ -73,4 +92,41 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
       </TooltipPopover>
     </div>
   );
+};
+
+type SetCodeCellValueLoadingProps = {
+  language: string;
+  lines: number;
+  x?: number;
+  y?: number;
+};
+
+const SetCodeCellValueLoadingCard = ({ language, lines, x, y }: SetCodeCellValueLoadingProps) => {
+  return (
+    <div className={className}>
+      <div className="flex items-center gap-2">
+        <LanguageIcon language={language} />
+
+        <span className="font-bold">{`Loading ${language} - ${lines} lines${x && y ? ` for (${x}, ${y})` : ''}`}</span>
+      </div>
+    </div>
+  );
+};
+
+const parsePartialJson = (args: string) => {
+  try {
+    const parsed = parse(args, STR | OBJ);
+    return parsed;
+  } catch (error) {
+    return null;
+  }
+};
+
+const parseFullJson = (args: string) => {
+  try {
+    const json = JSON.parse(args);
+    return json;
+  } catch (error) {
+    console.error('[SetCodeCellValue] Failed to parse args: ', error);
+  }
 };
