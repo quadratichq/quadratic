@@ -23,8 +23,8 @@ export const useUpdateCodeEditor = () => {
             },
             codeString: codeCell.code_string,
             editorContent,
-            modifiedEditorContent:
-              editorContent === prev.modifiedEditorContent ? undefined : prev.modifiedEditorContent,
+            diffEditorContent:
+              editorContent === prev.diffEditorContent?.editorContent ? undefined : prev.diffEditorContent,
             evaluationResult: { ...newEvaluationResult, ...codeCell.return_info },
             cellsAccessed: codeCell.cells_accessed,
             consoleOutput: { stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined },
@@ -41,8 +41,8 @@ export const useUpdateCodeEditor = () => {
               language: prev.codeCell.language,
             },
             codeString: '',
-            editorContent: initialCode ? initialCode : prev.modifiedEditorContent ?? '',
-            modifiedEditorContent: initialCode ? prev.modifiedEditorContent : undefined,
+            editorContent: initialCode ? initialCode : prev.diffEditorContent?.editorContent ?? '',
+            diffEditorContent: initialCode ? prev.diffEditorContent : undefined,
             evaluationResult: undefined,
             cellsAccessed: undefined,
             consoleOutput: undefined,

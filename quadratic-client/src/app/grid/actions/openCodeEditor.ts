@@ -43,7 +43,7 @@ export const openCodeEditor = async () => {
       // this will also open the save changes modal if there are unsaved changes
       setCodeEditorState({
         ...codeEditorState,
-        modifiedEditorContent: undefined,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -59,7 +59,7 @@ export const openCodeEditor = async () => {
     // code editor is already open, so check it for save before closing
     setCodeEditorState({
       ...codeEditorState,
-      modifiedEditorContent: undefined,
+      diffEditorContent: undefined,
       waitingForEditorClose: {
         codeCell: {
           sheetId: sheets.current,
@@ -78,7 +78,7 @@ export const openCodeEditor = async () => {
     }));
     setCodeEditorState({
       ...codeEditorState,
-      modifiedEditorContent: undefined,
+      diffEditorContent: undefined,
       initialCode: '',
       codeCell: {
         sheetId: sheets.current,

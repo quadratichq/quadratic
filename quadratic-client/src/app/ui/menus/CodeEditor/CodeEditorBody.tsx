@@ -2,9 +2,9 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import {
   codeEditorCellsAccessedAtom,
   codeEditorCodeCellAtom,
+  codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
   codeEditorLoadingAtom,
-  codeEditorModifiedEditorContentAtom,
   codeEditorShowCodeEditorAtom,
   codeEditorShowDiffEditorAtom,
   codeEditorUnsavedChangesAtom,
@@ -58,7 +58,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
-  const modifiedEditorContent = useRecoilValue(codeEditorModifiedEditorContentAtom);
+  const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const loading = useRecoilValue(codeEditorLoadingAtom);
   const cellsAccessedState = useRecoilValue(codeEditorCellsAccessedAtom);
@@ -281,8 +281,8 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
           height="100%"
           width="100%"
           language={monacoLanguage}
-          original={editorContent}
-          modified={modifiedEditorContent}
+          original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
+          modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
           onMount={onMountDiff}
           options={{
             renderSideBySide: false,

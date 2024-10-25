@@ -61,6 +61,12 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
     }, [autoFocus, textareaRef]);
 
     useEffect(() => {
+      if (loading && initialPrompt !== undefined) {
+        setEdit(false);
+      }
+    }, [loading, initialPrompt]);
+
+    useEffect(() => {
       if (initialPrompt === undefined && messagesCount > 0) {
         const lastUserMessage = messages
           .filter(

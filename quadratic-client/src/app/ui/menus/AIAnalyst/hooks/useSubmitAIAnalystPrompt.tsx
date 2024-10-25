@@ -10,6 +10,7 @@ import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import {
   aiAnalystAbortControllerAtom,
+  aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystLoadingAtom,
   showAIAnalystAtom,
@@ -72,6 +73,19 @@ export function useSubmitAIAnalystPrompt() {
         const abortController = new AbortController();
         set(aiAnalystAbortControllerAtom, abortController);
 
+        // fork chat, if we are editing a previous chat
+        if (messageIndex !== undefined) {
+          set(aiAnalystCurrentChatAtom, (prev) => {
+            return {
+              ...prev,
+              id: '',
+              name: '',
+              lastUpdated: Date.now(),
+              messages: prev.messages.slice(0, messageIndex),
+            };
+          });
+        }
+
         if (codeCell) {
           context = { ...context, codeCell };
         }
@@ -96,11 +110,8 @@ export function useSubmitAIAnalystPrompt() {
         ).flat();
         const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell, model }) : [];
         let updatedMessages: (UserMessage | AIMessage)[] = [];
-        set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
-          if (messageIndex !== undefined) {
-            prevMessages = prevMessages.slice(0, messageIndex);
-          }
 
+        set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
           prevMessages = prevMessages.filter(
             (message) =>
               message.contextType !== 'quadraticDocs' &&

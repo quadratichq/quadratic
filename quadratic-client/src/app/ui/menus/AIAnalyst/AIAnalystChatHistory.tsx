@@ -7,6 +7,8 @@ import { cn } from '@/shared/shadcn/utils';
 import { useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
+const DEFAULT_CHAT_NAME = 'Untitled chat';
+
 export const AIAnalystChatHistory = () => {
   const [searchValue, setSearchValue] = useState('');
 
@@ -53,17 +55,19 @@ export const AIAnalystChatHistory = () => {
                           }
                         }}
                         onBlur={() => {
-                          setChats((prev) =>
-                            prev.map((prevChat) =>
-                              prevChat.id === chat.id ? { ...prevChat, name: editingChatName } : prevChat
-                            )
-                          );
                           setEditingChatId(null);
+                          if (editingChatName !== chat.name) {
+                            setChats((prev) =>
+                              prev.map((prevChat) =>
+                                prevChat.id === chat.id ? { ...prevChat, name: editingChatName } : prevChat
+                              )
+                            );
+                          }
                         }}
                         autoFocus
                       />
                     ) : (
-                      <span className="text-sm text-foreground">{chat.name}</span>
+                      <span className="text-sm text-foreground">{chat.name ? chat.name : DEFAULT_CHAT_NAME}</span>
                     )}
 
                     <div>

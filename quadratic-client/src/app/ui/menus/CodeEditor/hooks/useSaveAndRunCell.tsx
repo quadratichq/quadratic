@@ -1,7 +1,7 @@
 import {
   codeEditorCodeCellAtom,
+  codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
-  codeEditorModifiedEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
@@ -29,7 +29,7 @@ export const useSaveAndRunCell = () => {
           cursor: sheets.getCursorPosition(),
         });
 
-        set(codeEditorModifiedEditorContentAtom, undefined);
+        set(codeEditorDiffEditorContentAtom, undefined);
 
         mixpanel.track('[CodeEditor].cellRun', {
           type: getLanguage(codeCell.language),

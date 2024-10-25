@@ -2,7 +2,7 @@ import {
   aiAssistantLoadingAtom,
   codeEditorAtom,
   codeEditorCodeCellAtom,
-  codeEditorModifiedEditorContentAtom,
+  codeEditorEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
@@ -137,7 +137,20 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
       async () => {
         mixpanel.track('[AI].code.run', { language });
 
+        const editorContent = await snapshot.getPromise(codeEditorEditorContentAtom);
         const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+
+        set(codeEditorAtom, (prev) => ({
+          ...prev,
+          diffEditorContent: { editorContent, isApplied: true },
+          waitingForEditorClose: {
+            codeCell,
+            showCellTypeMenu: false,
+            initialCode: text,
+            inlineEditor: false,
+          },
+        }));
+
         quadraticCore.setCodeCellValue({
           sheetId: codeCell.sheetId,
           x: codeCell.pos.x,
@@ -146,21 +159,6 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
           language: codeCell.language,
           cursor: sheets.getCursorPosition(),
         });
-
-        const modifiedEditorContent = await snapshot.getPromise(codeEditorModifiedEditorContentAtom);
-        if (modifiedEditorContent) {
-          set(codeEditorModifiedEditorContentAtom, undefined);
-        }
-        set(codeEditorAtom, (prev) => ({
-          ...prev,
-          modifiedEditorContent: text,
-          waitingForEditorClose: {
-            codeCell,
-            showCellTypeMenu: false,
-            initialCode: '',
-            inlineEditor: false,
-          },
-        }));
       },
     [language, text]
   );
@@ -177,45 +175,33 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
   );
 }
 
-/*
-function CodeSnippetDiffButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-  const handleReplace = useRecoilCallback(
-    ({ set, snapshot }) =>
-      async () => {
-        mixpanel.track('[AI].code.insert', { language });
-        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
-        set(codeEditorAtom, (prev) => ({
-          ...prev,
-          modifiedEditorContent: text,
-          waitingForEditorClose: {
-            codeCell,
-            showCellTypeMenu: false,
-            initialCode: '',
-            inlineEditor: false,
-          },
-        }));
-      },
-    [language, text]
-  );
+// function CodeSnippetDiffButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+//   const handleReplace = useRecoilCallback(
+//     ({ set }) =>
+//       async () => {
+//         mixpanel.track('[AI].code.insert', { language });
+//         set(codeEditorDiffEditorContentAtom, { editorContent: text, isApplied: false });
+//       },
+//     [language, text]
+//   );
 
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="text-muted-foreground hover:text-foreground"
-          onClick={handleReplace}
-          disabled={!language}
-        >
-          <DiffIcon />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>Apply diff</TooltipContent>
-    </Tooltip>
-  );
-}
-  */
+//   return (
+//     <Tooltip>
+//       <TooltipTrigger asChild>
+//         <Button
+//           variant="ghost"
+//           size="icon-sm"
+//           className="text-muted-foreground hover:text-foreground"
+//           onClick={handleReplace}
+//           disabled={!language}
+//         >
+//           <DiffIcon />
+//         </Button>
+//       </TooltipTrigger>
+//       <TooltipContent>Apply diff</TooltipContent>
+//     </Tooltip>
+//   );
+// }
 
 function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
   const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');

@@ -6,6 +6,7 @@ import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { OBJ, parse, STR } from 'partial-json';
 import { useRecoilCallback } from 'recoil';
 import { z } from 'zod';
 
@@ -18,12 +19,12 @@ const className =
   'mx-2 my-1 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow';
 
 export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
-  const openInCodeEditor = useRecoilCallback(
+  const openDiffInCodeEditor = useRecoilCallback(
     ({ set }) =>
       (toolArgs: z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>) => {
         set(codeEditorAtom, (prev) => ({
           ...prev,
-          modifiedEditorContent: undefined,
+          diffEditorContent: { editorContent: toolArgs.codeString, isApplied: false },
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,
@@ -32,7 +33,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
             },
             showCellTypeMenu: false,
             inlineEditor: false,
-            initialCode: toolArgs.codeString,
+            initialCode: '',
           },
         }));
       },
@@ -40,6 +41,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   );
 
   if (loading) {
+    if (args) console.log(parse(args, STR | OBJ));
     return <div className={className}>Loading SetCodeCellValue...</div>;
   }
 
@@ -64,8 +66,8 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
         <span className="font-bold">{`Inserted ${toolArgs.data.language} in (${toolArgs.data.x}, ${toolArgs.data.y})`}</span>
       </div>
 
-      <TooltipPopover label={'Open in code editor'}>
-        <Button size="icon-sm" variant="ghost" onClick={() => openInCodeEditor(toolArgs.data)}>
+      <TooltipPopover label={'Show diff in code editor'}>
+        <Button size="icon-sm" variant="ghost" onClick={() => openDiffInCodeEditor(toolArgs.data)}>
           <CodeIcon />
         </Button>
       </TooltipPopover>

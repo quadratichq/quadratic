@@ -1,8 +1,8 @@
 import {
   codeEditorCodeCellAtom,
+  codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
   codeEditorLoadingAtom,
-  codeEditorModifiedEditorContentAtom,
   codeEditorShowDiffEditorAtom,
   codeEditorShowSnippetsPopoverAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -39,16 +39,16 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
   const codeCell = useMemo(() => getCodeCell(language), [language]);
   const setShowSnippetsPopover = useSetRecoilState(codeEditorShowSnippetsPopoverAtom);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
-  const setModifiedEditorContent = useSetRecoilState(codeEditorModifiedEditorContentAtom);
+  const setDiffEditorContent = useSetRecoilState(codeEditorDiffEditorContentAtom);
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
 
   const fillWithSnippet = useCallback(
     (code: string) => {
       setEditorContent(code);
-      setModifiedEditorContent(undefined);
+      setDiffEditorContent(undefined);
       editorInst?.focus();
     },
-    [editorInst, setEditorContent, setModifiedEditorContent]
+    [editorInst, setEditorContent, setDiffEditorContent]
   );
 
   // Must meet these criteria to even show in the UI

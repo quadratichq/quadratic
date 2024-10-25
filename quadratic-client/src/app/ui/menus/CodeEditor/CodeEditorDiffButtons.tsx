@@ -1,22 +1,56 @@
-import { codeEditorEditorContentAtom, codeEditorModifiedEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorCodeCellAtom,
+  codeEditorDiffEditorContentAtom,
+  codeEditorEditorContentAtom,
+} from '@/app/atoms/codeEditorAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ThumbDownOutlined, ThumbUpOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { useCallback } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilCallback } from 'recoil';
 
 export const CodeEditorDiffButtons = () => {
-  const setEditorContent = useSetRecoilState(codeEditorEditorContentAtom);
-  const [modifiedEditorContent, setModifiedEditorContent] = useRecoilState(codeEditorModifiedEditorContentAtom);
+  const handleDiffReject = useRecoilCallback(
+    ({ set, snapshot }) =>
+      async () => {
+        const diffEditorContent = await snapshot.getPromise(codeEditorDiffEditorContentAtom);
+        if (!diffEditorContent) return;
 
-  const handleDiffReject = useCallback(() => {
-    setModifiedEditorContent(undefined);
-  }, [setModifiedEditorContent]);
+        if (diffEditorContent.isApplied) {
+          const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
 
-  const handleDiffAccept = useCallback(() => {
-    setEditorContent(modifiedEditorContent);
-    setModifiedEditorContent(undefined);
-  }, [modifiedEditorContent, setEditorContent, setModifiedEditorContent]);
+          quadraticCore.setCodeCellValue({
+            sheetId: codeCell.sheetId,
+            x: codeCell.pos.x,
+            y: codeCell.pos.y,
+            codeString: diffEditorContent.editorContent ?? '',
+            language: codeCell.language,
+            cursor: sheets.getCursorPosition(),
+          });
+
+          set(codeEditorEditorContentAtom, diffEditorContent.editorContent);
+        } else {
+          set(codeEditorDiffEditorContentAtom, undefined);
+        }
+      },
+    []
+  );
+
+  const handleDiffAccept = useRecoilCallback(
+    ({ set, snapshot }) =>
+      async () => {
+        const diffEditorContent = await snapshot.getPromise(codeEditorDiffEditorContentAtom);
+        if (!diffEditorContent) return;
+
+        if (!diffEditorContent.isApplied) {
+          set(codeEditorEditorContentAtom, diffEditorContent.editorContent);
+        } else {
+          set(codeEditorDiffEditorContentAtom, undefined);
+        }
+      },
+    []
+  );
 
   return (
     <div className="code-editor-diff-button flex items-center">
@@ -27,6 +61,7 @@ export const CodeEditorDiffButtons = () => {
           </IconButton>
         </span>
       </TooltipHint>
+
       <TooltipHint title={'Accept'} placement="bottom">
         <span>
           <IconButton size="small" color="success" onClick={handleDiffAccept}>

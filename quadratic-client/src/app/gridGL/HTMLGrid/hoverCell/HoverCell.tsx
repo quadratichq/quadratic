@@ -253,7 +253,7 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
               onClick={() => {
                 setCodeEditorState((prev) => ({
                   ...prev,
-                  modifiedEditorContent: undefined,
+                  diffEditorContent: undefined,
                   waitingForEditorClose: {
                     codeCell,
                     showCellTypeMenu: false,

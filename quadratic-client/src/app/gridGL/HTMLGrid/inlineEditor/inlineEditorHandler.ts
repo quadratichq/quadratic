@@ -501,7 +501,7 @@ class InlineEditorHandler {
     const { sheetId, x, y } = this.location;
     pixiAppSettings.setCodeEditorState({
       ...pixiAppSettings.codeEditorState,
-      modifiedEditorContent: undefined,
+      diffEditorContent: undefined,
       waitingForEditorClose: {
         codeCell: {
           sheetId,

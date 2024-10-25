@@ -100,8 +100,12 @@ export const aiAnalystLoadingAtom = selector<boolean>({
 
       let chats: Chat[] = prev.chats;
       if (prev.loading && !newValue) {
+        if (!prev.currentChat.name) {
+          console.log('TODO(ayush): update name from AI');
+        }
+
         chats = prev.chats.map((chat) => (chat.id === prev.currentChat.id ? prev.currentChat : chat));
-        console.log('TODO(ayush): sync chats');
+        console.log('TODO(ayush): sync current chat');
       }
 
       return {
@@ -128,7 +132,6 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
       if (deletedChatIds.length > 0) {
         console.log('TODO(ayush): delete chats', deletedChatIds);
       }
-      console.log('TODO(ayush): sync chats');
 
       return {
         ...prev,
@@ -136,6 +139,11 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
       };
     });
   },
+});
+
+export const aiAnalystChatsCountAtom = selector<number>({
+  key: 'aiAnalystChatsCountAtom',
+  get: ({ get }) => get(aiAnalystChatsAtom).length,
 });
 
 export const aiAnalystCurrentChatAtom = selector<Chat>({
@@ -160,11 +168,6 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
   },
 });
 
-export const aiAnalystChatsCountAtom = selector<number>({
-  key: 'aiAnalystChatsCountAtom',
-  get: ({ get }) => get(aiAnalystChatsAtom).length,
-});
-
 export const aiAnalystCurrentChatMessagesAtom = selector<(UserMessage | AIMessage)[]>({
   key: 'aiAnalystCurrentChatMessagesAtom',
   get: ({ get }) => get(aiAnalystCurrentChatAtom).messages,
@@ -175,17 +178,14 @@ export const aiAnalystCurrentChatMessagesAtom = selector<(UserMessage | AIMessag
       }
 
       let id = prev.currentChat.id;
-      let name = prev.currentChat.name;
-      let addNewChat = !id && newValue.length > 0;
+      const addNewChat = !id && newValue.length > 0;
       if (addNewChat) {
         id = v4();
-        name = 'New chat';
-        console.log('TODO(ayush): update name from AI');
       }
 
       const currentChat: Chat = {
         id,
-        name,
+        name: prev.currentChat.name,
         lastUpdated: Date.now(),
         messages: newValue,
       };

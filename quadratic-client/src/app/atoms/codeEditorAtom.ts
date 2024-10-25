@@ -33,7 +33,10 @@ export interface CodeEditorState {
   showSnippetsPopover: boolean;
   initialCode?: string;
   editorContent?: string;
-  modifiedEditorContent?: string;
+  diffEditorContent?: {
+    editorContent?: string;
+    isApplied: boolean;
+  };
   showSaveChangesAlert: boolean;
   cellsAccessed?: SheetRect[] | null;
   waitingForEditorClose?: {
@@ -67,7 +70,7 @@ export const defaultCodeEditorState: CodeEditorState = {
   showSnippetsPopover: false,
   initialCode: undefined,
   editorContent: undefined,
-  modifiedEditorContent: undefined,
+  diffEditorContent: undefined,
   showSaveChangesAlert: false,
   cellsAccessed: undefined,
   waitingForEditorClose: undefined,
@@ -143,22 +146,39 @@ export const codeEditorSpillErrorAtom = createCodeEditorSelector('spillError');
 export const codeEditorPanelBottomActiveTabAtom = createCodeEditorSelector('panelBottomActiveTab');
 export const codeEditorShowSnippetsPopoverAtom = createCodeEditorSelector('showSnippetsPopover');
 export const codeEditorInitialCodeAtom = createCodeEditorSelector('initialCode');
-export const codeEditorEditorContentAtom = createCodeEditorSelector('editorContent');
-export const codeEditorModifiedEditorContentAtom = createCodeEditorSelector('modifiedEditorContent');
+export const codeEditorDiffEditorContentAtom = createCodeEditorSelector('diffEditorContent');
 export const codeEditorShowSaveChangesAlertAtom = createCodeEditorSelector('showSaveChangesAlert');
 export const codeEditorCellsAccessedAtom = createCodeEditorSelector('cellsAccessed');
 export const codeEditorWaitingForEditorClose = createCodeEditorSelector('waitingForEditorClose');
 
+export const codeEditorEditorContentAtom = selector<string | undefined>({
+  key: 'codeEditorEditorContentAtom',
+  get: ({ get }) => get(codeEditorAtom).editorContent,
+  set: ({ set }, newValue) =>
+    set(codeEditorAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return { ...prev, diffEditorContent: undefined };
+      }
+
+      return {
+        ...prev,
+        diffEditorContent: undefined,
+        editorContent: newValue,
+      };
+    }),
+});
+
 export const codeEditorShowDiffEditorAtom = selector<boolean>({
   key: 'codeEditorShowDiffEditorAtom',
   get: ({ get }) => {
-    const { waitingForEditorClose, modifiedEditorContent, editorContent } = get(codeEditorAtom);
+    const { waitingForEditorClose, diffEditorContent, editorContent } = get(codeEditorAtom);
 
     return (
       waitingForEditorClose === undefined &&
-      modifiedEditorContent !== undefined &&
+      diffEditorContent !== undefined &&
       !!editorContent &&
-      modifiedEditorContent !== editorContent
+      !!diffEditorContent.editorContent &&
+      diffEditorContent.editorContent !== editorContent
     );
   },
 });
