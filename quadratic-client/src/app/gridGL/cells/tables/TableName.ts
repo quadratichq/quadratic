@@ -25,6 +25,9 @@ export class TableName extends Container {
   private dropdown: Sprite;
   private backgroundWidth = 0;
 
+  // hidden by Tables
+  hidden: boolean = true;
+
   constructor(table: Table) {
     super();
     this.table = table;
@@ -40,6 +43,7 @@ export class TableName extends Container {
     if (sheets.sheet.id === this.table.sheet.id) {
       pixiApp.overHeadingsTableNames.addChild(this);
     }
+    this.visible = false;
   }
 
   private drawBackground() {
@@ -143,5 +147,15 @@ export class TableName extends Container {
       }
       return { table: this.table.codeCell, type: 'dropdown' };
     }
+  }
+
+  hide() {
+    this.visible = false;
+    this.hidden = true;
+  }
+
+  show() {
+    this.visible = true;
+    this.hidden = false;
   }
 }

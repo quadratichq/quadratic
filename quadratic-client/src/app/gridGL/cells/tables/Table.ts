@@ -70,6 +70,7 @@ export class Table extends Container {
     }
   };
 
+  // todo: this probably belongs in TableName
   private tableNamePosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
       if (this.tableBounds.y < bounds.top + gridHeading) {
@@ -78,12 +79,14 @@ export class Table extends Container {
         this.tableName.y = this.tableBounds.top;
       }
       const headingWidth = pixiApp.headings.headingSize.width / pixiApp.viewport.scaled;
-      if (this.tableBounds.x < bounds.left + headingWidth) {
-        this.tableName.x = bounds.left + headingWidth;
-        this.tableName.visible = this.tableName.x + this.tableName.width <= this.tableBounds.right;
-      } else {
-        this.tableName.x = this.tableBounds.x;
-        this.tableName.visible = true;
+      if (!this.tableName.hidden) {
+        if (this.tableBounds.x < bounds.left + headingWidth) {
+          this.tableName.x = bounds.left + headingWidth;
+          this.tableName.visible = this.tableName.x + this.tableName.width <= this.tableBounds.right;
+        } else {
+          this.tableName.x = this.tableBounds.x;
+          this.tableName.visible = true;
+        }
       }
     }
   };
@@ -154,13 +157,13 @@ export class Table extends Container {
 
   hideActive() {
     this.outline.visible = false;
-    this.tableName.visible = false;
+    this.tableName.hide();
     pixiApp.setViewportDirty();
   }
 
   showActive() {
     this.outline.visible = true;
-    this.tableName.visible = true;
+    this.tableName.show();
     pixiApp.setViewportDirty();
   }
 
