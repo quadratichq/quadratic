@@ -9,11 +9,8 @@ use super::DataTable;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum SortDirection {
-    #[serde(rename = "asc")]
     Ascending,
-    #[serde(rename = "desc")]
     Descending,
-    #[serde(rename = "none")]
     None,
 }
 

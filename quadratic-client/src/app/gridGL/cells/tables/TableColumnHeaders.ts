@@ -35,59 +35,67 @@ export class TableColumnHeaders extends Container {
   };
 
   private onSortPressed(column: JsDataTableColumn) {
-    // todo: once Rust is fixed, this should be the SortDirection enum
     const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
       (s) => s.column_index === column.valueIndex
     )?.direction;
-    let newOrder: 'asc' | 'desc' | 'none' = 'none';
+    let newOrder: SortDirection;
     switch (sortOrder) {
       case undefined:
       case 'None':
-        newOrder = 'asc';
+        newOrder = 'Ascending';
         break;
       case 'Ascending':
-        newOrder = 'desc';
+        newOrder = 'Descending';
         break;
       case 'Descending':
-        newOrder = 'none';
+        newOrder = 'None';
         break;
     }
     if (!newOrder) {
       throw new Error('Unknown sort order in onSortPressed');
     }
     const table = this.table.codeCell;
-
-    quadraticCore.sortDataTable(
-      sheets.sheet.id,
-      table.x,
-      table.y,
-      [{ column_index: column.valueIndex, direction: newOrder }],
-      sheets.getCursorPosition()
-    );
+    const sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
+    quadraticCore.sortDataTable(sheets.sheet.id, table.x, table.y, sort, sheets.getCursorPosition());
   }
 
   private createColumnHeaders() {
-    this.columns.removeChildren();
     if (!this.table.codeCell.show_header) {
       this.columns.visible = false;
       return;
+    }
+    while (this.columns.children.length > this.table.codeCell.column_names.length) {
+      this.columns.children.pop();
     }
     let x = 0;
     const codeCell = this.table.codeCell;
     codeCell.column_names.forEach((column, index) => {
       const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + index);
-      this.columns.addChild(
-        new TableColumnHeader({
-          table: this.table,
-          index,
+      if (index >= this.columns.children.length) {
+        // if this is a new column, then add it
+        this.columns.addChild(
+          new TableColumnHeader({
+            table: this.table,
+            index,
+            x,
+            width,
+            height: this.headerHeight,
+            name: column.name,
+            sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+            onSortPressed: () => this.onSortPressed(column),
+          })
+        );
+      } else {
+        // otherwise, update the existing column header (this is needed to keep
+        // the sort button hover working properly)
+        this.columns.children[index].updateHeader(
           x,
           width,
-          height: this.headerHeight,
-          name: column.name,
-          sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
-          onSortPressed: () => this.onSortPressed(column),
-        })
-      );
+          this.height,
+          column.name,
+          codeCell.sort?.find((s) => s.column_index === column.valueIndex)
+        );
+      }
       x += width;
     });
   }

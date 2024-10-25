@@ -1,22 +1,18 @@
+//! Holds borders for tables and code errors.
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Coordinate } from '@/app/gridGL/types/size';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsCodeCell, JsRenderCodeCell, RunError } from '@/app/quadratic-core-types';
 import mixpanel from 'mixpanel-browser';
 import { Container, Graphics, ParticleContainer, Point, Rectangle, Sprite, Texture } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { generatedTextures } from '../generateTextures';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsSheet } from './CellsSheet';
-import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders';
-
-const SPILL_HIGHLIGHT_THICKNESS = 1;
-const SPILL_HIGHLIGHT_COLOR = colors.cellColorError;
-const SPILL_FILL_ALPHA = 0.025;
+import { BorderCull, drawBorder } from './drawBorders';
 
 export class CellsArray extends Container {
   private cellsSheet: CellsSheet;
@@ -24,6 +20,7 @@ export class CellsArray extends Container {
   private tables: Map<String, Rectangle>;
 
   private particles: ParticleContainer;
+
   // only used for the spill error indicators (lines are drawn using sprites in particles for performance)
   private graphics: Graphics;
   private lines: BorderCull[];
@@ -148,55 +145,35 @@ export class CellsArray extends Container {
       overlapTest.height = 1;
     }
 
-    let tint = colors.independence;
-    if (codeCell.language === 'Python') {
-      tint = colors.cellColorUserPython;
-    } else if (codeCell.language === 'Formula') {
-      tint = colors.cellColorUserFormula;
-    } else if (codeCell.language === 'Javascript') {
-      tint = colors.cellColorUserJavascript;
-    }
+    const tint = getCSSVariableTint('primary');
 
-    if (!pixiAppSettings.showCellTypeOutlines) {
-      // only show the entire array if the cursor overlaps any part of the output
-      if (!intersects.rectanglePoint(overlapTest, new Point(cursor.x, cursor.y))) {
-        this.cellsSheet.cellsMarkers.add(start, codeCell, false);
-        return;
-      }
-    }
+    // old code that draws a box around the code cell
+    // let tint = colors.independence;
+    // if (codeCell.language === 'Python') {
+    //   tint = colors.cellColorUserPython;
+    // } else if (codeCell.language === 'Formula') {
+    //   tint = colors.cellColorUserFormula;
+    // } else if (codeCell.language === 'Javascript') {
+    //   tint = colors.cellColorUserJavascript;
+    // }
 
-    if (!editingCell) {
-      this.cellsSheet.cellsMarkers.add(start, codeCell, true);
-    }
-    const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
-    if (codeCell.spill_error) {
-      const cursorPosition = sheets.sheet.cursor.cursorPosition;
-      if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {
-        this.lines.push(
-          ...drawBorder({
-            alpha: 0.5,
-            tint,
-            x: start.x,
-            y: start.y,
-            width: start.width,
-            height: start.height,
-            getSprite: this.getSprite,
-            top: true,
-            left: true,
-            bottom: true,
-            right: true,
-          })
-        );
-      } else {
-        this.drawDashedRectangle(new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y), tint);
-        codeCell.spill_error?.forEach((error) => {
-          const rectangle = this.sheet.getCellOffsets(Number(error.x), Number(error.y));
-          this.drawDashedRectangle(rectangle, SPILL_HIGHLIGHT_COLOR);
-        });
-      }
-    } else {
-      this.drawBox(start, end, tint);
-    }
+    // if (!pixiAppSettings.showCellTypeOutlines) {
+    //   // only show the entire array if the cursor overlaps any part of the output
+    //   if (!intersects.rectanglePoint(overlapTest, new Point(cursor.x, cursor.y))) {
+    //     this.cellsSheet.cellsMarkers.add(start, codeCell, false);
+    //     return;
+    //   }
+    // }
+
+    // if (!editingCell) {
+    //   this.cellsSheet.cellsMarkers.add(start, codeCell, true);
+    // }
+
+    const end = this.sheet.getCellOffsets(
+      Number(codeCell.x) + (codeCell.spill_error ? 1 : codeCell.w),
+      Number(codeCell.y) + (codeCell.spill_error ? 1 : codeCell.h)
+    );
+    this.drawBox(start, end, tint);
 
     // save the entire table for hover checks
     if (!codeCell.spill_error) {
@@ -224,63 +201,34 @@ export class CellsArray extends Container {
         right: true,
       })
     );
-    const right = end.x !== start.x + start.width;
-    if (right) {
-      this.lines.push(
-        drawLine({
-          x: start.x + start.width - borderLineWidth / 2,
-          y: start.y + borderLineWidth / 2,
-          width: borderLineWidth,
-          height: start.height,
-          alpha: 0.5,
-          tint,
-          getSprite: this.getSprite,
-        })
-      );
-    }
-    const bottom = end.y !== start.y + start.height;
-    if (bottom) {
-      this.lines.push(
-        drawLine({
-          x: start.x + borderLineWidth / 2,
-          y: start.y + start.height - borderLineWidth / 2,
-          width: start.width - borderLineWidth,
-          height: borderLineWidth,
-          alpha: 0.5,
-          tint,
-          getSprite: this.getSprite,
-        })
-      );
-    }
-  }
-
-  private drawDashedRectangle(rectangle: Rectangle, color: number) {
-    this.graphics.lineStyle();
-    this.graphics.beginFill(color, SPILL_FILL_ALPHA);
-    this.graphics.drawRect(rectangle.left, rectangle.top, rectangle.width, rectangle.height);
-    this.graphics.endFill();
-
-    const minX = rectangle.left;
-    const minY = rectangle.top;
-    const maxX = rectangle.right;
-    const maxY = rectangle.bottom;
-
-    const path = [
-      [maxX, minY],
-      [maxX, maxY],
-      [minX, maxY],
-      [minX, minY],
-    ];
-
-    this.graphics.moveTo(minX, minY);
-    for (let i = 0; i < path.length; i++) {
-      this.graphics.lineStyle({
-        width: SPILL_HIGHLIGHT_THICKNESS,
-        color,
-        texture: i % 2 === 0 ? generatedTextures.dashedHorizontal : generatedTextures.dashedVertical,
-      });
-      this.graphics.lineTo(path[i][0], path[i][1]);
-    }
+    // const right = end.x !== start.x + start.width;
+    // if (right) {
+    //   this.lines.push(
+    //     drawLine({
+    //       x: start.x + start.width - borderLineWidth / 2,
+    //       y: start.y + borderLineWidth / 2,
+    //       width: borderLineWidth,
+    //       height: start.height,
+    //       alpha: 0.5,
+    //       tint,
+    //       getSprite: this.getSprite,
+    //     })
+    //   );
+    // }
+    // const bottom = end.y !== start.y + start.height;
+    // if (bottom) {
+    //   this.lines.push(
+    //     drawLine({
+    //       x: start.x + borderLineWidth / 2,
+    //       y: start.y + start.height - borderLineWidth / 2,
+    //       width: start.width - borderLineWidth,
+    //       height: borderLineWidth,
+    //       alpha: 0.5,
+    //       tint,
+    //       getSprite: this.getSprite,
+    //     })
+    //   );
+    // }
   }
 
   private getSprite = (): Sprite => {
