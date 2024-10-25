@@ -7,7 +7,6 @@ import { DropdownMenuItem, DropdownMenuShortcut } from '@/shared/shadcn/ui/dropd
 
 export const ContextMenuItemAction = (props: {
   action: Action;
-
   // allows overriding of the default option (which sets the menu item to bold)
   overrideDefaultOption?: boolean;
 }): JSX.Element | null => {
@@ -27,9 +26,6 @@ export const ContextMenuItemAction = (props: {
     if (checked) {
       icon = <CheckIcon />;
     }
-    // else {
-    //   checkboxElement = <CheckBoxEmptyIcon className="-ml-3 mr-4 opacity-0" />;
-    // }
   }
 
   return (
@@ -52,12 +48,6 @@ export const ContextMenuItemAction = (props: {
       />
     </DropdownMenuItem>
   );
-
-  // return (
-  //   <MenuItemShadStyle Icon={Icon} onClick={run} keyboardShortcut={keyboardShortcut} checkbox={checkbox}>
-  //     <span className={overrideDefaultOption ?? defaultOption ? 'font-bold' : ''}>{label}</span>
-  //   </MenuItemShadStyle>
-  // );
 };
 
 export const ContextMenuItem = ({
@@ -79,47 +69,3 @@ export const ContextMenuItem = ({
     </>
   );
 };
-
-// function MenuItemShadStyle({
-//   children,
-//   Icon,
-//   checkbox,
-//   onClick,
-//   keyboardShortcut,
-// }: {
-//   children: JSX.Element;
-//   Icon?: IconComponent;
-//   onClick: any;
-//   checkbox?: boolean | (() => boolean);
-//   keyboardShortcut?: string;
-// }) {
-//   const menuItemClassName =
-//     'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50';
-
-//   const icon = Icon ? <Icon className="-ml-3 mr-4" /> : null;
-//   let checkboxElement: JSX.Element | null = null;
-//   if (!Icon && checkbox !== undefined) {
-//     let checked: boolean;
-//     if (typeof checkbox === 'function') {
-//       checked = checkbox();
-//     } else {
-//       checked = checkbox === true;
-//     }
-//     if (checked) {
-//       checkboxElement = <CheckIcon className="-ml-3 mr-4" />;
-//     } else {
-//       checkboxElement = <CheckBoxEmptyIcon className="-ml-3 mr-4 opacity-0" />;
-//     }
-//   }
-//   return (
-//     <MenuItem className={menuItemClassName} onClick={onClick}>
-//       <span className="mr-4 flex items-center">
-//         {icon}
-//         {checkboxElement} {children}
-//       </span>
-//       {keyboardShortcut && (
-//         <span className="ml-auto text-xs tracking-widest text-muted-foreground">{keyboardShortcut}</span>
-//       )}
-//     </MenuItem>
-//   );
-// }
