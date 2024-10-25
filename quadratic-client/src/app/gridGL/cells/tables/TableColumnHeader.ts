@@ -66,6 +66,17 @@ export class TableColumnHeader extends Container {
     this.columnName.position.set(OPEN_SANS_FIX.x, OPEN_SANS_FIX.y);
   }
 
+  // Called when the CodeCell is updated
+  updateHeader(x: number, width: number, height: number, name: string, sort?: DataTableSort) {
+    this.columnHeaderBounds = new Rectangle(this.table.tableBounds.x + x, this.table.tableBounds.y, width, height);
+    this.w = width;
+    this.h = height;
+    this.position.set(x, 0);
+    this.columnName.text = name;
+    this.clipName(name, width);
+    this.updateSortButton(width, height, sort);
+  }
+
   // tests the width of the text and clips it if it is too wide
   private clipName(name: string, width: number) {
     let clippedName = name;
@@ -84,22 +95,29 @@ export class TableColumnHeader extends Container {
     this.sortButton.position.set(width - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING, height / 2);
     this.sortButton.visible = false;
 
-    if (sort) {
-      let texture: Texture;
-      if (sort.direction === 'Descending') {
-        texture = Texture.from('arrow-up');
-      } else if (sort.direction === 'Ascending') {
-        texture = Texture.from('arrow-down');
-      } else {
-        texture = Texture.EMPTY;
-      }
+    const texture = sort ? Texture.from(sort.direction === 'Descending' ? 'arrow-up' : 'arrow-down') : Texture.EMPTY;
+    this.sortIcon = this.addChild(new Sprite(texture));
+    this.sortIcon.anchor.set(0.5);
+    this.sortIcon.position = this.sortButton.position;
+    this.sortIcon.width = SORT_ICON_SIZE;
+    this.sortIcon.scale.y = this.sortIcon.scale.x;
+  }
 
-      this.sortIcon = this.addChild(new Sprite(texture));
-      this.sortIcon.anchor.set(0.5);
-      this.sortIcon.position = this.sortButton.position;
-      this.sortIcon.width = SORT_ICON_SIZE;
-      this.sortIcon.scale.y = this.sortIcon.scale.x;
+  private updateSortButton(width: number, height: number, sort?: DataTableSort) {
+    this.sortButtonStart = this.columnHeaderBounds.right - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING;
+    if (!this.sortButton) {
+      throw new Error('Expected sortButton to be defined in updateSortButton');
     }
+    this.sortButton.position.set(width - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING, height / 2);
+    if (!this.sortIcon) {
+      throw new Error('Expected sortIcon to be defined in updateSortButton');
+    }
+    this.sortIcon.position = this.sortButton.position;
+    this.sortIcon.texture = sort
+      ? Texture.from(sort.direction === 'Descending' ? 'arrow-up' : 'arrow-down')
+      : Texture.EMPTY;
+    this.sortIcon.width = SORT_ICON_SIZE;
+    this.sortIcon.scale.y = this.sortIcon.scale.x;
   }
 
   pointerMove(world: Point): boolean {
