@@ -82,7 +82,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
       <div className="flex items-center gap-2">
         <LanguageIcon language={toolArgs.data.language} />
 
-        <span className="font-bold">{`Inserted ${toolArgs.data.language} in (${toolArgs.data.x}, ${toolArgs.data.y})`}</span>
+        <span className="font-bold">{`${toolArgs.data.language} (${toolArgs.data.x}, ${toolArgs.data.y})`}</span>
       </div>
 
       <TooltipPopover label={'Show diff in code editor'}>
