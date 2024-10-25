@@ -20,16 +20,16 @@ interface Marker {
 export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean): Sprite | undefined => {
   const symbol = new Sprite();
   if (language === 'Python') {
-    symbol.texture = Texture.from('/images/python-icon.png');
+    symbol.texture = Texture.from('icon-python');
     symbol.tint = isError ? 0xffffff : colors.cellColorUserPython;
     return symbol;
   } else if (language === 'Formula') {
-    symbol.texture = Texture.from('/images/formula-fx-icon.png');
+    symbol.texture = Texture.from('icon-formula');
     symbol.tint = isError ? 0xffffff : colors.cellColorUserFormula;
     return symbol;
   } else if (language === 'Javascript') {
-    symbol.texture = Texture.from('/images/javascript-icon.png');
-    symbol.tint = isError ? colors.cellColorError : colors.cellColorUserJavascript;
+    symbol.texture = Texture.from('icon-javascript');
+    symbol.tint = isError ? colors.cellColorError : 0xffffff;
     return symbol;
   } else if (typeof language === 'object') {
     switch (language.Connection?.kind) {
@@ -39,13 +39,13 @@ export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean):
         return symbol;
 
       case 'POSTGRES':
-        symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languagePostgres);
-        symbol.texture = Texture.from('postgres-icon');
+        symbol.tint = isError ? colors.cellColorError : 0xffffff;
+        symbol.texture = Texture.from('icon-postgres');
         return symbol;
 
       case 'MYSQL':
         symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageMysql);
-        symbol.texture = Texture.from('/images/mysql-icon.svg');
+        symbol.texture = Texture.from('icon-mysql');
         return symbol;
 
       case 'SNOWFLAKE':

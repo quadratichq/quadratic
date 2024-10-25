@@ -42,16 +42,16 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('OpenSans-BoldItalic', '/fonts/opensans/OpenSans-BoldItalic.fnt');
 
     // CellsMarker
-    addResourceOnce('formula-fx-icon', '/images/formula-fx-icon.png');
-    addResourceOnce('python-icon', '/images/python-icon.png');
-    addResourceOnce('javascript-icon', '/images/javascript-icon.png');
+    addResourceOnce('icon-formula', '/images/icon-formula.png');
+    addResourceOnce('icon-python', '/images/icon-python.png');
+    addResourceOnce('icon-javascript', '/images/icon-javascript.png');
+    addResourceOnce('icon-postgres', '/images/icon-postgres.png');
+    addResourceOnce('icon-mysql', '/images/icon-mysql.png');
     addResourceOnce('checkbox-icon', '/images/checkbox.png');
     addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
     addResourceOnce('dropdown-icon', '/images/dropdown.png');
     addResourceOnce('dropdown-white-icon', '/images/dropdown-white.png');
     addResourceOnce('mssql-icon', '/images/mssql-icon.svg');
-    addResourceOnce('postgres-icon', '/images/postgres-icon.svg');
-    addResourceOnce('mysql-icon', '/images/mysql-icon.svg');
     addResourceOnce('snowflake-icon', '/images/snowflake-icon.svg');
     addResourceOnce('arrow-up', '/images/arrow-up.svg');
     addResourceOnce('arrow-down', '/images/arrow-down.svg');
