@@ -34,7 +34,7 @@ export const TableMenu = (props: Props) => {
           <DropdownMenuItem onClick={() => defaultActionSpec[Action.EditTableCode].run()}>
             <ContextMenuItem
               icon={<LanguageIcon language={cell.id} sx={{ color: 'inherit', fontSize: '20px' }} />}
-              text={`${cell.label} code`}
+              text={`Edit ${cell.label}`}
             />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
