@@ -754,6 +754,17 @@ mod tests {
         gc.execute_update_data_table_name(&mut transaction, op)
             .unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, "My Table1")
+        assert_eq!(&data_table.name, "My Table1");
+
+        // ensure numbers aren't added for unique names
+        let op = Operation::UpdateDataTableName {
+            sheet_pos,
+            name: "ABC".into(),
+        };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_update_data_table_name(&mut transaction, op)
+            .unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        assert_eq!(&data_table.name, "ABC");
     }
 }
