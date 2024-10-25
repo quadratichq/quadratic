@@ -182,6 +182,9 @@ export class Tables extends Container<Table> {
         // it--this ensures that the user can select the row above the table
         // when the table is not active
         if (result !== 'table-name' && !this.isTableActive(table)) {
+          if (this.hoverTable !== table) {
+            this.hoverTable?.hideActive();
+          }
           this.hoverTable = table;
           table.showActive();
         }
