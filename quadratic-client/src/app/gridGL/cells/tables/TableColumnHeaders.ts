@@ -100,7 +100,7 @@ export class TableColumnHeaders extends Container {
     });
   }
 
-  // update when there is an updated code cell
+  // update appearance when there is an updated code cell
   update() {
     if (this.table.codeCell.show_header) {
       this.visible = true;
@@ -110,6 +110,17 @@ export class TableColumnHeaders extends Container {
     } else {
       this.visible = false;
     }
+  }
+
+  clearSortButtons(current?: TableColumnHeader) {
+    this.columns.children.forEach((column) => {
+      if (column !== current) {
+        if (column.sortButton?.visible) {
+          column.sortButton.visible = false;
+          pixiApp.setViewportDirty();
+        }
+      }
+    });
   }
 
   pointerMove(world: Point): boolean {
@@ -124,14 +135,7 @@ export class TableColumnHeaders extends Container {
     }
 
     // ensure we clear the sort button on any other column header
-    this.columns.children.forEach((column) => {
-      if (column !== found) {
-        if (column.sortButton?.visible) {
-          column.sortButton.visible = false;
-          pixiApp.setViewportDirty();
-        }
-      }
-    });
+    this.clearSortButtons(found);
     return !!found;
   }
 

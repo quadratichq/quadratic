@@ -70,7 +70,7 @@ export class Table extends Container {
     }
   };
 
-  // todo: this probably belongs in TableName
+  // todo: this probably belongs in TableName.ts
   private tableNamePosition = (bounds: Rectangle, gridHeading: number) => {
     if (this.visible) {
       if (this.tableBounds.y < bounds.top + gridHeading) {
@@ -217,10 +217,12 @@ export class Table extends Container {
   pointerMove(world: Point): 'table-name' | boolean {
     const name = this.tableName.intersects(world);
     if (name?.type === 'dropdown') {
+      this.columnHeaders.clearSortButtons();
       this.tableCursor = 'pointer';
       return 'table-name';
     } else if (name?.type === 'table-name') {
       this.tableCursor = undefined;
+      this.columnHeaders.clearSortButtons();
       return 'table-name';
     }
     const result = this.columnHeaders.pointerMove(world);
