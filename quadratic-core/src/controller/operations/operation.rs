@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{
     cell_values::CellValues,
     grid::{
-        data_table::sort::DataTableSort,
+        data_table::{column::DataTableColumn, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::Formats,
         formatting::CellFmtArray,
@@ -59,6 +59,12 @@ pub enum Operation {
     UpdateDataTableName {
         sheet_pos: SheetPos,
         name: String,
+    },
+    DataTableMeta {
+        sheet_pos: SheetPos,
+        name: Option<String>,
+        alternating_colors: Option<bool>,
+        columns: Option<Vec<DataTableColumn>>,
     },
     SortDataTable {
         sheet_pos: SheetPos,
@@ -242,6 +248,18 @@ impl fmt::Display for Operation {
                     fmt,
                     "UpdateDataTableName {{ sheet_pos: {} name: {} }}",
                     sheet_pos, name
+                )
+            }
+            Operation::DataTableMeta {
+                sheet_pos,
+                name,
+                alternating_colors,
+                columns,
+            } => {
+                write!(
+                    fmt,
+                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} }}",
+                    sheet_pos, name, alternating_colors, columns
                 )
             }
             Operation::SortDataTable { sheet_pos, sort } => {

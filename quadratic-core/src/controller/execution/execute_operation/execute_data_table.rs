@@ -365,6 +365,77 @@ impl GridController {
         bail!("Expected Operation::UpdateDataTableName in execute_update_data_table_name");
     }
 
+    pub(super) fn execute_data_table_meta(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DataTableMeta {
+            sheet_pos,
+            ref name,
+            ref alternating_colors,
+            ref columns,
+        } = op
+        {
+            // get unique name first since it requires an immutable reference to the grid
+            let unique_name = name
+                .as_ref()
+                .map(|name| self.grid.unique_data_table_name(name, false));
+
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+
+            let old_name = unique_name.map(|name| {
+                let old_name = data_table.name.to_owned();
+                data_table.name = name;
+
+                old_name
+            });
+
+            let old_alternating_colors = alternating_colors.map(|alternating_colors| {
+                let old_alternating_colors = data_table.alternating_colors.to_owned();
+                data_table.alternating_colors = alternating_colors;
+
+                old_alternating_colors
+            });
+
+            let old_columns = columns.as_ref().and_then(|columns| {
+                let old_columns = data_table.columns.to_owned();
+                data_table.columns = Some(columns.to_owned());
+
+                old_columns
+            });
+
+            let data_table_rect = data_table
+                .output_rect(sheet_pos.into(), true)
+                .to_sheet_rect(sheet_id);
+
+            self.send_to_wasm(transaction, &data_table_rect)?;
+            transaction.add_code_cell(sheet_id, data_table_pos.into());
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![Operation::DataTableMeta {
+                sheet_pos,
+                name: old_name,
+                alternating_colors: old_alternating_colors,
+                columns: old_columns,
+            }];
+
+            self.data_table_operations(
+                transaction,
+                &data_table_rect,
+                forward_operations,
+                reverse_operations,
+            );
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DataTableMeta in execute_data_table_meta");
+    }
+
     pub(super) fn execute_sort_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -754,6 +825,17 @@ mod tests {
         gc.execute_update_data_table_name(&mut transaction, op)
             .unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, "My Table1")
+        assert_eq!(&data_table.name, "My Table1");
+
+        // ensure numbers aren't added for unique names
+        let op = Operation::UpdateDataTableName {
+            sheet_pos,
+            name: "ABC".into(),
+        };
+        let mut transaction = PendingTransaction::default();
+        gc.execute_update_data_table_name(&mut transaction, op)
+            .unwrap();
+        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
+        assert_eq!(&data_table.name, "ABC");
     }
 }
