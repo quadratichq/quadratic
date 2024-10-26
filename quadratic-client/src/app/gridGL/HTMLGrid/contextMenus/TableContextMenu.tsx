@@ -1,7 +1,7 @@
 //! This shows the table context menu.
 
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
-import { ContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenu';
+import { ContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuNew';
 import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 
 export const TableContextMenu = () => {

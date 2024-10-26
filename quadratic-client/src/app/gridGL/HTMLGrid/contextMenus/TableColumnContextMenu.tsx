@@ -2,8 +2,8 @@
 
 import { Action } from '@/app/actions/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
-import { ContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenu';
 import { ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuItem';
+import { ContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuNew';
 import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 import { TableIcon } from '@/shared/components/Icons';
 import {
