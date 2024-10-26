@@ -2,7 +2,7 @@
 
 import { Action } from '@/app/actions/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
-import { ContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuBase';
+import { ContextMenuBase } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuBase';
 import { ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuItem';
 import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 import { TableIcon } from '@/shared/components/Icons';
@@ -16,7 +16,7 @@ import { DropdownMenuItem } from '@radix-ui/react-dropdown-menu';
 
 export const TableColumnContextMenu = () => {
   return (
-    <ContextMenu contextMenuType={ContextMenuType.TableColumn}>
+    <ContextMenuBase contextMenuType={ContextMenuType.TableColumn}>
       {({ contextMenu }) => (
         <>
           <ContextMenuItemAction action={Action.RenameTableColumn} />
@@ -38,6 +38,6 @@ export const TableColumnContextMenu = () => {
           </DropdownMenuSub>
         </>
       )}
-    </ContextMenu>
+    </ContextMenuBase>
   );
 };

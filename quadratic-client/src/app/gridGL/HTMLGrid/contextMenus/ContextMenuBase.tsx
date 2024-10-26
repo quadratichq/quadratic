@@ -9,7 +9,7 @@ import { useRecoilState } from 'recoil';
 /**
  * Wrapper component for any context menu on the grid.
  */
-export const ContextMenu = ({
+export const ContextMenuBase = ({
   children,
   contextMenuType,
 }: {

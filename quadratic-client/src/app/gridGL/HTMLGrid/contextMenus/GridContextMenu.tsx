@@ -4,7 +4,7 @@ import { Action } from '@/app/actions/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ContextMenu } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuBase';
+import { ContextMenuBase } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuBase';
 import { ContextMenuItem, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuItem';
 import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -39,7 +39,7 @@ export const GridContextMenu = () => {
   }, []);
 
   return (
-    <ContextMenu contextMenuType={ContextMenuType.Grid}>
+    <ContextMenuBase contextMenuType={ContextMenuType.Grid}>
       {({ contextMenu }) => (
         <>
           <ContextMenuItemAction action={Action.Cut} />
@@ -86,6 +86,6 @@ export const GridContextMenu = () => {
           )}
         </>
       )}
-    </ContextMenu>
+    </ContextMenuBase>
   );
 };
