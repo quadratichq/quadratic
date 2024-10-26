@@ -15,6 +15,7 @@ interface Props {
 export const TableMenu = (props: Props) => {
   const { defaultRename, codeCell } = props;
   const cell = getCodeCell(codeCell?.language);
+  console.log(cell);
   const isCodeCell = cell && cell.id !== 'Import';
 
   const hasHiddenColumns = useMemo(() => {
