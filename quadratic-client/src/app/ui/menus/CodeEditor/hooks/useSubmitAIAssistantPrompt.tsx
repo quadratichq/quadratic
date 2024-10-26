@@ -65,6 +65,10 @@ export function useSubmitAIAssistantPrompt() {
         const abortController = new AbortController();
         set(aiAssistantAbortControllerAtom, abortController);
 
+        if (clearMessages) {
+          set(aiAssistantMessagesAtom, []);
+        }
+
         if (codeCell) {
           set(codeEditorWaitingForEditorClose, {
             codeCell,
@@ -99,14 +103,14 @@ export function useSubmitAIAssistantPrompt() {
             .at(-1);
 
           const newContextMessages: (UserMessage | AIMessage)[] = [
-            ...(!clearMessages && lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
+            ...(lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
           ];
 
           updatedMessages = [
             ...quadraticContext,
             ...currentSheetContext,
             ...visibleContext,
-            ...(clearMessages ? [] : prevMessages),
+            ...prevMessages,
             ...newContextMessages,
             { role: 'user', content: userPrompt, contextType: 'userPrompt', context },
           ];

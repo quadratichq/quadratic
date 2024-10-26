@@ -14,6 +14,7 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystLoadingAtom,
+  aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
@@ -60,6 +61,7 @@ export function useSubmitAIAnalystPrompt() {
         selectionSheetRect?: SheetRect;
       }) => {
         set(showAIAnalystAtom, true);
+        set(aiAnalystShowChatHistoryAtom, false);
 
         const previousLoading = await snapshot.getPromise(aiAnalystLoadingAtom);
         if (previousLoading) return;
@@ -67,6 +69,15 @@ export function useSubmitAIAnalystPrompt() {
 
         const abortController = new AbortController();
         set(aiAnalystAbortControllerAtom, abortController);
+
+        if (clearMessages) {
+          set(aiAnalystCurrentChatAtom, {
+            id: '',
+            name: '',
+            lastUpdated: Date.now(),
+            messages: [],
+          });
+        }
 
         // fork chat, if we are editing an existing chat
         if (messageIndex !== undefined) {
@@ -121,7 +132,7 @@ export function useSubmitAIAnalystPrompt() {
             .at(-1);
 
           const newContextMessages: (UserMessage | AIMessage)[] = [
-            ...(!clearMessages && lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
+            ...(lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
           ];
 
           updatedMessages = [
@@ -130,7 +141,7 @@ export function useSubmitAIAnalystPrompt() {
             ...visibleContext,
             ...toolUsePrompt,
             ...selectionContext,
-            ...(clearMessages ? [] : prevMessages),
+            ...prevMessages,
             ...newContextMessages,
             { role: 'user', content: userPrompt, contextType: 'userPrompt', context },
           ];
