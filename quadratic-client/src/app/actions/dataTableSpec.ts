@@ -42,20 +42,23 @@ type DataTableSpec = Pick<
   | Action.EditTableCode
 >;
 
-const isFirstRowHeader = (): boolean => {
-  return !!pixiAppSettings.contextMenu?.table?.first_row_header;
-};
-
-const isHeadingShowing = (): boolean => {
-  return !!pixiAppSettings.contextMenu?.table?.show_header;
-};
-
 const getTable = (): JsRenderCodeCell | undefined => {
   return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
+const isHeadingShowing = (): boolean => {
+  const table = getTable();
+  return !!table?.show_header;
+};
+
+const isFirstRowHeader = (): boolean => {
+  const table = getTable();
+  return !!table?.first_row_header;
+};
+
 const isAlternatingColorsShowing = (): boolean => {
-  return !!pixiAppSettings.contextMenu?.table?.alternating_colors;
+  const table = getTable();
+  return !!table?.alternating_colors;
 };
 
 export const dataTableSpec: DataTableSpec = {
