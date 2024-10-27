@@ -17,6 +17,7 @@ export const ContextMenuBase = ({
   contextMenuType: ContextMenuType;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const refContent = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
   const open = contextMenu.type === contextMenuType && !contextMenu.rename;
 
@@ -42,13 +43,52 @@ export const ContextMenuBase = ({
     };
   }, [onClose]);
 
+  const left = contextMenu.world?.x ?? 0;
+  const [top, setTop] = useState(contextMenu.world?.y ?? 0);
+  useEffect(() => {
+    const updateAfterRender = () => {
+      const content = refContent.current;
+      if (open && content) {
+        let newTop = contextMenu.world?.y ?? 0;
+        if (open && content) {
+          // we use the screen bounds in world coordinates to determine if the
+          // menu is going to be cut off
+          const viewportTop = pixiApp.viewport.toWorld(0, 0).y;
+          const viewportBottom = pixiApp.viewport.toWorld(0, window.innerHeight).y;
+
+          // we use the viewport bounds to determine the direction the menu is
+          // opening
+          const bounds = pixiApp.viewport.getVisibleBounds();
+
+          // menu is opening downwards
+          if (newTop < bounds.y + bounds.height / 2) {
+            if (newTop + content.offsetHeight > viewportBottom) {
+              newTop = viewportBottom - content.offsetHeight;
+            }
+          }
+
+          // menu is opening upwards
+          else {
+            if (newTop - content.offsetHeight < viewportTop) {
+              newTop = viewportTop + content.offsetHeight;
+            }
+          }
+        }
+        setTop(newTop);
+      }
+    };
+
+    // need to wait for the next render to update the position
+    setTimeout(updateAfterRender);
+  }, [contextMenu.world, open]);
+
   return (
     <div
       className="absolute"
       ref={ref}
       style={{
-        left: contextMenu.world?.x ?? 0,
-        top: contextMenu.world?.y ?? 0,
+        left,
+        top,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
         pointerEvents: 'auto',
         display: open ? 'block' : 'none',
@@ -65,6 +105,7 @@ export const ContextMenuBase = ({
         {/* Radix wants the trigger for positioning the content, so we hide it visibly */}
         <DropdownMenuTrigger className="h-0 w-0 opacity-0">Menu</DropdownMenuTrigger>
         <DropdownMenuContent
+          ref={refContent}
           animate={false}
           side="bottom"
           sideOffset={0}
