@@ -1,7 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { MODEL_OPTIONS } from '@/app/ai/MODELS';
-import { isAnthropicModel } from '@/app/ai/tools/helpers';
-import { Anthropic, OpenAI } from '@/app/ui/icons';
+import { getModelIcon } from '@/app/ai/tools/helpers';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -9,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { CaretDownIcon } from '@radix-ui/react-icons';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
   loading: boolean;
@@ -18,30 +17,23 @@ interface SelectAIModelMenuProps {
 
 export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuProps) {
   const [selectedMode, setSelectedModel] = useAIModel();
-  // If the model is not enabled, set the model to the first enabled model
-  useEffect(() => {
-    if (!MODEL_OPTIONS[selectedMode].enabled) {
-      const models = Object.keys(MODEL_OPTIONS) as (keyof typeof MODEL_OPTIONS)[];
-      const newModel = models.find((model) => MODEL_OPTIONS[model].enabled);
-      if (newModel) {
-        setSelectedModel(newModel);
-      }
-    }
-  }, [selectedMode, setSelectedModel]);
-
   const { displayName: selectedModelDisplayName } = useMemo(() => MODEL_OPTIONS[selectedMode], [selectedMode]);
 
   const enabledModels = useMemo(() => {
     const models = Object.keys(MODEL_OPTIONS) as (keyof typeof MODEL_OPTIONS)[];
     return models.filter((model) => MODEL_OPTIONS[model].enabled);
   }, []);
+
+  const SelectedModelIcon = useMemo(() => getModelIcon(selectedMode), [selectedMode]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={loading}>
         <div className={`flex items-center text-xs ${loading ? 'opacity-60' : ''}`}>
           {selectedMode && (
             <>
-              {isAnthropicModel(selectedMode) ? <Anthropic fontSize="inherit" /> : <OpenAI fontSize="inherit" />}
+              <SelectedModelIcon fontSize="inherit" />
+
               <span className="pl-2 pr-1">{selectedModelDisplayName}</span>
             </>
           )}
@@ -59,6 +51,7 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
       >
         {enabledModels.map((enabledModel) => {
           const displayName = MODEL_OPTIONS[enabledModel].displayName;
+          const ModelIcon = getModelIcon(enabledModel);
           return (
             <DropdownMenuCheckboxItem
               key={enabledModel}
@@ -67,7 +60,8 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
             >
               <div className="flex w-full items-center justify-between text-xs">
                 <span className="pr-4">{displayName}</span>
-                {isAnthropicModel(enabledModel) ? <Anthropic fontSize="inherit" /> : <OpenAI fontSize="inherit" />}
+
+                <ModelIcon fontSize="inherit" />
               </div>
             </DropdownMenuCheckboxItem>
           );

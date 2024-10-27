@@ -1,5 +1,5 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -7,7 +7,7 @@ export interface Chat {
   id: string;
   name: string;
   lastUpdated: number;
-  messages: (UserMessage | AIMessage)[];
+  messages: ChatMessage[];
 }
 
 export interface AIAnalystState {
@@ -168,7 +168,7 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
   },
 });
 
-export const aiAnalystCurrentChatMessagesAtom = selector<(UserMessage | AIMessage)[]>({
+export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
   key: 'aiAnalystCurrentChatMessagesAtom',
   get: ({ get }) => get(aiAnalystCurrentChatAtom).messages,
   set: ({ set }, newValue) => {

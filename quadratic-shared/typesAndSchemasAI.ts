@@ -1,12 +1,31 @@
 import { z } from 'zod';
 
-export const AnthropicModelSchema = z.enum(['claude-3-5-sonnet-latest']).default('claude-3-5-sonnet-latest');
+const AIProvidersSchema = z.enum(['bedrock', 'anthropic', 'openai']).default('openai');
+export type AIProviders = z.infer<typeof AIProvidersSchema>;
+
+const BedrockModelSchema = z
+  .enum([
+    'anthropic.claude-3-sonnet-20240229-v1:0',
+    'anthropic.claude-3-haiku-20240307-v1:0',
+    'anthropic.claude-3-5-sonnet-20240620-v1:0',
+    'anthropic.claude-3-5-sonnet-20241022-v2:0',
+    'meta.llama3-1-405b-instruct-v1:0',
+    'mistral.mistral-large-2402-v1:0',
+    'ai21.jamba-1-5-large-v1:0',
+  ])
+  .default('anthropic.claude-3-sonnet-20240229-v1:0');
+export type BedrockModel = z.infer<typeof BedrockModelSchema>;
+
+const AnthropicModelSchema = z.enum(['claude-3-5-sonnet-20241022']).default('claude-3-5-sonnet-20241022');
 export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 
-export const OpenAIModelSchema = z.enum(['gpt-4o', 'o1-preview']).default('gpt-4o');
+const OpenAIModelSchema = z.enum(['gpt-4o-2024-08-06', 'o1-preview']).default('gpt-4o-2024-08-06');
 export type OpenAIModel = z.infer<typeof OpenAIModelSchema>;
 
-export const ContextTypeSchema = z.enum([
+const AIModelSchema = BedrockModelSchema.or(AnthropicModelSchema).or(OpenAIModelSchema);
+export type AIModel = z.infer<typeof AIModelSchema>;
+
+const ContextTypeSchema = z.enum([
   'quadraticDocs',
   'connections',
   'allSheets',
@@ -82,7 +101,7 @@ const AIMessageSchema = z.object({
   role: z.literal('assistant'),
   content: z.string(),
   contextType: ContextTypeSchema,
-  model: AnthropicModelSchema.or(OpenAIModelSchema),
+  model: AIModelSchema,
   toolCalls: z.array(
     z.object({
       id: z.string(),
@@ -93,6 +112,36 @@ const AIMessageSchema = z.object({
   ),
 });
 export type AIMessage = z.infer<typeof AIMessageSchema>;
+
+const ChatMessageSchema = UserMessageSchema.or(AIMessageSchema);
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
+const BedrockPromptMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.array(
+    z
+      .object({ text: z.string() })
+      .or(
+        z.object({
+          toolUse: z.object({
+            toolUseId: z.string(),
+            name: z.string(),
+            input: z.object({}),
+          }),
+        })
+      )
+      .or(
+        z.object({
+          toolResult: z.object({
+            toolUseId: z.string(),
+            content: z.array(z.object({ text: z.string() })),
+            status: z.enum(['error', 'success']).optional(),
+          }),
+        })
+      )
+  ),
+});
+export type BedrockPromptMessage = z.infer<typeof BedrockPromptMessageSchema>;
 
 const AnthropicPromptMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
@@ -115,7 +164,6 @@ const AnthropicPromptMessageSchema = z.object({
     )
   ),
 });
-
 export type AnthropicPromptMessage = z.infer<typeof AnthropicPromptMessageSchema>;
 
 const OpenAIPromptMessageSchema = z
@@ -147,6 +195,41 @@ const OpenAIPromptMessageSchema = z
   );
 export type OpenAIPromptMessage = z.infer<typeof OpenAIPromptMessageSchema>;
 
+const BedrockToolSchema = z.object({
+  toolSpec: z.object({
+    name: z.string(),
+    description: z.string(),
+    inputSchema: z.object({
+      json: z.object({
+        type: z.literal('object'),
+        properties: z.record(
+          z.object({
+            type: z.string(),
+            description: z.string(),
+          })
+        ),
+        required: z.array(z.string()),
+      }),
+    }),
+  }),
+});
+export type BedrockTool = z.infer<typeof BedrockToolSchema>;
+
+const BedrockToolChoiceSchema = z
+  .object({ auto: z.object({}) })
+  .or(z.object({ any: z.object({}) }))
+  .or(z.object({ tool: z.object({ name: z.string() }) }));
+export type BedrockToolChoice = z.infer<typeof BedrockToolChoiceSchema>;
+
+export const BedrockAutoCompleteRequestBodySchema = z.object({
+  model: BedrockModelSchema,
+  messages: z.array(BedrockPromptMessageSchema),
+  temperature: z.number(),
+  max_tokens: z.number(),
+  tools: z.array(BedrockToolSchema).optional(),
+  tool_choice: BedrockToolChoiceSchema.optional(),
+});
+
 const AnthropicToolSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -176,10 +259,10 @@ export const AnthropicAutoCompleteRequestBodySchema = z.object({
   model: AnthropicModelSchema,
   messages: z.array(AnthropicPromptMessageSchema),
   temperature: z.number().min(0).max(1).default(1),
+  max_tokens: z.number(),
   tools: z.array(AnthropicToolSchema).optional(),
   tool_choice: AnthropicToolChoiceSchema.optional(),
 });
-export type AnthropicAutoCompleteRequestBody = z.infer<typeof AnthropicAutoCompleteRequestBodySchema>;
 
 const OpenAIToolSchema = z.object({
   type: z.literal('function'),
@@ -219,4 +302,12 @@ export const OpenAIAutoCompleteRequestBodySchema = z.object({
   tools: z.array(OpenAIToolSchema).optional(),
   tool_choice: OpenAIToolChoiceSchema.optional(),
 });
-export type OpenAIAutoCompleteRequestBody = z.infer<typeof OpenAIAutoCompleteRequestBodySchema>;
+
+const AIToolSchema = BedrockToolSchema.or(AnthropicToolSchema).or(OpenAIToolSchema);
+export type AITool = z.infer<typeof AIToolSchema>;
+
+const AIToolChoiceSchema = BedrockToolChoiceSchema.or(AnthropicToolChoiceSchema).or(OpenAIToolChoiceSchema);
+export type AIToolChoice = z.infer<typeof AIToolChoiceSchema>;
+
+const AIPromptMessageSchema = BedrockPromptMessageSchema.or(AnthropicPromptMessageSchema).or(OpenAIPromptMessageSchema);
+export type AIPromptMessage = z.infer<typeof AIPromptMessageSchema>;

@@ -15,13 +15,7 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import {
-  AIMessage,
-  AnthropicPromptMessage,
-  Context,
-  OpenAIPromptMessage,
-  UserMessage,
-} from 'quadratic-shared/typesAndSchemasAI';
+import { AIPromptMessage, ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export const defaultAIAssistantContext: Context = {
@@ -87,7 +81,7 @@ export function useSubmitAIAssistantPrompt() {
         const currentSheetContext = context.currentSheet ? await getCurrentSheetContext({ model }) : [];
         const visibleContext = context.visibleData ? await getVisibleContext({ model }) : [];
         const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell, model }) : [];
-        let updatedMessages: (UserMessage | AIMessage)[] = [];
+        let updatedMessages: ChatMessage[] = [];
         set(aiAssistantMessagesAtom, (prevMessages) => {
           prevMessages = prevMessages.filter(
             (message) =>
@@ -102,7 +96,7 @@ export function useSubmitAIAssistantPrompt() {
             .filter((message) => message.role === 'user' && message.contextType === 'codeCell')
             .at(-1);
 
-          const newContextMessages: (UserMessage | AIMessage)[] = [
+          const newContextMessages: ChatMessage[] = [
             ...(lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
           ];
 
@@ -118,10 +112,7 @@ export function useSubmitAIAssistantPrompt() {
           return updatedMessages;
         });
 
-        const messagesToSend: AnthropicPromptMessage[] | OpenAIPromptMessage[] = getMessagesForModel(
-          model,
-          updatedMessages
-        );
+        const messagesToSend: AIPromptMessage[] = getMessagesForModel(model, updatedMessages);
 
         try {
           await handleAIRequestToAPI({

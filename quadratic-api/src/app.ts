@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import path from 'path';
 import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
 import anthropic_router from './routes/ai/anthropic';
+import bedrock_router from './routes/ai/bedrock';
 import openai_router from './routes/ai/openai';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
@@ -69,6 +70,7 @@ app.get('/', (req, res) => {
 
 // App routes
 // TODO: eventually move all of these into the `v0` directory and register them dynamically
+app.use('/ai', bedrock_router);
 app.use('/ai', anthropic_router);
 app.use('/ai', openai_router);
 // Internal routes

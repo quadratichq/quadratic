@@ -1,15 +1,22 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import { AnthropicAutoCompleteRequestBodySchema } from 'quadratic-shared/typesAndSchemasAI';
-import { ANTHROPIC_API_KEY, RATE_LIMIT_AI_REQUESTS_MAX, RATE_LIMIT_AI_WINDOW_MS } from '../../env-vars';
+import { BedrockAutoCompleteRequestBodySchema } from 'quadratic-shared/typesAndSchemasAI';
+import {
+  AWS_AI_ACCESS_KEY_ID,
+  AWS_AI_REGION,
+  AWS_AI_SECRET_ACCESS_KEY,
+  RATE_LIMIT_AI_REQUESTS_MAX,
+  RATE_LIMIT_AI_WINDOW_MS,
+} from '../../env-vars';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { Request } from '../../types/Request';
 
-const anthropic_router = express.Router();
+const bedrock_router = express.Router();
 
-const anthropic = new Anthropic({
-  apiKey: ANTHROPIC_API_KEY,
+const bedrock = new BedrockRuntimeClient({
+  region: AWS_AI_REGION,
+  credentials: { accessKeyId: AWS_AI_ACCESS_KEY_ID, secretAccessKey: AWS_AI_SECRET_ACCESS_KEY },
 });
 
 const ai_rate_limiter = rateLimit({
@@ -22,19 +29,25 @@ const ai_rate_limiter = rateLimit({
   },
 });
 
-anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
+bedrock_router.post('/bedrock/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, messages, temperature, max_tokens, tools, tool_choice } =
-      AnthropicAutoCompleteRequestBodySchema.parse(request.body);
-    const result = await anthropic.messages.create({
-      model,
+    const { model, messages, temperature, max_tokens, tools, tool_choice } = BedrockAutoCompleteRequestBodySchema.parse(
+      request.body
+    );
+
+    const command = new ConverseCommand({
+      modelId: model,
       messages,
-      temperature,
-      max_tokens,
-      tools,
-      tool_choice,
+      inferenceConfig: { maxTokens: max_tokens, temperature },
+      toolConfig: tools &&
+        tool_choice && {
+          tools,
+          toolChoice: tool_choice,
+        },
     });
-    response.json(result.content);
+
+    const result = await bedrock.send(command);
+    response.json(result.output);
   } catch (error: any) {
     if (error.response) {
       response.status(error.response.status).json(error.response.data);
@@ -46,23 +59,26 @@ anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, a
   }
 });
 
-anthropic_router.post(
-  '/anthropic/chat/stream',
+bedrock_router.post(
+  '/bedrock/chat/stream',
   validateAccessToken,
   ai_rate_limiter,
   async (request: Request, response) => {
     try {
       const { model, messages, temperature, max_tokens, tools, tool_choice } =
-        AnthropicAutoCompleteRequestBodySchema.parse(request.body);
-      const chunks = await anthropic.messages.create({
-        model,
+        BedrockAutoCompleteRequestBodySchema.parse(request.body);
+      const command = new ConverseStreamCommand({
+        modelId: model,
         messages,
-        temperature,
-        max_tokens,
-        stream: true,
-        tools,
-        tool_choice,
+        inferenceConfig: { maxTokens: max_tokens, temperature },
+        toolConfig: tools &&
+          tool_choice && {
+            tools,
+            toolChoice: tool_choice,
+          },
       });
+
+      const chunks = (await bedrock.send(command)).stream ?? [];
 
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
@@ -94,4 +110,4 @@ anthropic_router.post(
   }
 );
 
-export default anthropic_router;
+export default bedrock_router;

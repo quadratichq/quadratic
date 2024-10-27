@@ -2,7 +2,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { GridBounds, JsCellValuePosAIContext } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useVisibleContextMessages() {
@@ -11,8 +11,8 @@ export function useVisibleContextMessages() {
       sheetBounds: GridBounds,
       visibleRectContext: JsCellValuePosAIContext[] | undefined,
       cursorPosition: Coordinate,
-      model: AnthropicModel | OpenAIModel
-    ): (UserMessage | AIMessage)[] => {
+      model: AIModel
+    ): ChatMessage[] => {
       return [
         {
           role: 'user',
@@ -73,7 +73,7 @@ My cursor is on cell x:${cursorPosition.x} and y:${cursorPosition.y}.\n
   );
 
   const getVisibleContext = useCallback(
-    async ({ model }: { model: AnthropicModel | OpenAIModel }) => {
+    async ({ model }: { model: AIModel }) => {
       const sheetBounds = sheets.sheet.boundsWithoutFormatting;
       const visibleSheetRect = sheets.getVisibleSheetRect();
       const visibleRectContext = visibleSheetRect

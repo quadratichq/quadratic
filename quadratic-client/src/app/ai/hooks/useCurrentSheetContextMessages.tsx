@@ -1,16 +1,20 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { GridBounds, JsCellValuePosAIContext, SheetRect } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useCurrentSheetContextMessages() {
   const getCurrentSheetContextMessages = useCallback(
-    (
-      sheetBounds: GridBounds,
-      sheetRectContext: JsCellValuePosAIContext[] | undefined,
-      model: AnthropicModel | OpenAIModel
-    ): (UserMessage | AIMessage)[] => {
+    ({
+      sheetBounds,
+      sheetRectContext,
+      model,
+    }: {
+      sheetBounds: GridBounds;
+      sheetRectContext: JsCellValuePosAIContext[] | undefined;
+      model: AIModel;
+    }): ChatMessage[] => {
       return [
         {
           role: 'user',
@@ -69,7 +73,7 @@ Note: All this data is only for your reference to data on the sheet. This data c
   );
 
   const getCurrentSheetContext = useCallback(
-    async ({ model }: { model: AnthropicModel | OpenAIModel }) => {
+    async ({ model }: { model: AIModel }) => {
       const sheetBounds = sheets.sheet.boundsWithoutFormatting;
       const sheetRect: SheetRect | undefined =
         sheetBounds.type === 'empty'
@@ -80,7 +84,7 @@ Note: All this data is only for your reference to data on the sheet. This data c
               max: sheetBounds.max,
             };
       const sheetRectContext = sheetRect ? await quadraticCore.getAIContextRectsInSheetRect(sheetRect) : undefined;
-      return getCurrentSheetContextMessages(sheetBounds, sheetRectContext, model);
+      return getCurrentSheetContextMessages({ sheetBounds, sheetRectContext, model });
     },
     [getCurrentSheetContextMessages]
   );

@@ -19,7 +19,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetRect } from '@/app/quadratic-core-types';
-import { AIMessage, Context, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIMessage, ChatMessage, Context, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export const defaultAIAnalystContext: Context = {
@@ -116,7 +116,7 @@ export function useSubmitAIAnalystPrompt() {
         ).flat();
         const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell, model }) : [];
 
-        let updatedMessages: (UserMessage | AIMessage)[] = [];
+        let updatedMessages: ChatMessage[] = [];
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
           prevMessages = prevMessages.filter(
             (message) =>
@@ -131,7 +131,7 @@ export function useSubmitAIAnalystPrompt() {
             .filter((message) => message.role === 'user' && message.contextType === 'codeCell')
             .at(-1);
 
-          const newContextMessages: (UserMessage | AIMessage)[] = [
+          const newContextMessages: ChatMessage[] = [
             ...(lastCodeContext?.content === codeContext?.[0]?.content ? [] : codeContext),
           ];
 
@@ -193,7 +193,7 @@ export function useSubmitAIAnalystPrompt() {
               }
 
               // Update messages to include tool call results
-              let updatedMessages: (UserMessage | AIMessage)[] = [];
+              let updatedMessages: ChatMessage[] = [];
               set(aiAnalystCurrentChatMessagesAtom, (prev) => {
                 updatedMessages = [...prev, toolResultMessage];
                 return updatedMessages;

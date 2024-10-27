@@ -6,7 +6,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { AIMessage, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface ConsoleOutput {
@@ -18,7 +18,7 @@ export interface CodeEditorState {
   aiAssistant: {
     abortController?: AbortController;
     loading: boolean;
-    messages: (UserMessage | AIMessage)[];
+    messages: ChatMessage[];
     prompt: string;
   };
   showCodeEditor: boolean;

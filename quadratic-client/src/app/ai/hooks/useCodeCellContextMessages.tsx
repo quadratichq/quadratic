@@ -4,19 +4,26 @@ import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLang
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
-import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useCodeCellContextMessages() {
   const getCodeCellContextMessages = useCallback(
-    (
-      model: AnthropicModel | OpenAIModel,
-      pos: Coordinate,
-      cellLanguage: CodeCellLanguage,
-      codeString: string,
-      consoleOutput: { std_out: string; std_err: string },
-      schemaJsonForAi?: string
-    ): (UserMessage | AIMessage)[] => {
+    ({
+      pos,
+      cellLanguage,
+      codeString,
+      consoleOutput,
+      schemaJsonForAi,
+      model,
+    }: {
+      pos: Coordinate;
+      cellLanguage: CodeCellLanguage;
+      codeString: string;
+      consoleOutput: { std_out: string; std_err: string };
+      schemaJsonForAi?: string;
+      model: AIModel;
+    }): ChatMessage[] => {
       const { x, y } = pos;
       const language = getConnectionKind(cellLanguage);
       const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
@@ -85,7 +92,7 @@ ${
   );
 
   const getCodeCellContext = useCallback(
-    async ({ codeCell, model }: { codeCell: CodeCell | undefined; model: AnthropicModel | OpenAIModel }) => {
+    async ({ codeCell, model }: { codeCell: CodeCell | undefined; model: AIModel }) => {
       if (!codeCell) return [];
       const { sheetId, pos, language } = codeCell;
       const codeCellCore = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
@@ -105,7 +112,14 @@ ${
       }
       const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
 
-      const codeContext = getCodeCellContextMessages(model, pos, language, codeString, consoleOutput, schemaJsonForAi);
+      const codeContext = getCodeCellContextMessages({
+        pos,
+        cellLanguage: language,
+        codeString,
+        consoleOutput,
+        schemaJsonForAi,
+        model,
+      });
 
       return codeContext;
     },

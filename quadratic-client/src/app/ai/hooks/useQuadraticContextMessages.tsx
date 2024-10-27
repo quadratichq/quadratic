@@ -4,18 +4,12 @@ import { JavascriptDocs } from '@/app/ai/docs/JavascriptDocs';
 import { PythonDocs } from '@/app/ai/docs/PythonDocs';
 import { QuadraticDocs } from '@/app/ai/docs/QuadraticDocs';
 import { CodeCellType } from '@/app/helpers/codeCellLanguage';
-import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useQuadraticContextMessages() {
   const getQuadraticContext = useCallback(
-    ({
-      language,
-      model,
-    }: {
-      language?: CodeCellType;
-      model: AnthropicModel | OpenAIModel;
-    }): (UserMessage | AIMessage)[] => [
+    ({ language, model }: { language?: CodeCellType; model: AIModel }): ChatMessage[] => [
       {
         role: 'user',
         content: `Note: This is an internal message for context. Do not quote it in your response.\n\n

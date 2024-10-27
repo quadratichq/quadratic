@@ -1,9 +1,9 @@
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useToolUseMessages() {
-  const getToolUseMessages = useCallback((model: AnthropicModel | OpenAIModel): (UserMessage | AIMessage)[] => {
+  const getToolUseMessages = useCallback((model: AIModel): ChatMessage[] => {
     return [
       {
         role: 'user',
@@ -30,7 +30,7 @@ ${Object.entries(aiToolsSpec)
   }, []);
 
   const getToolUsePrompt = useCallback(
-    ({ model }: { model: AnthropicModel | OpenAIModel }) => {
+    ({ model }: { model: AIModel }) => {
       return getToolUseMessages(model);
     },
     [getToolUseMessages]

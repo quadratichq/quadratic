@@ -62,12 +62,16 @@ export const SEARCH_PARAMS = {
 };
 
 export const AI = {
-  OPENAI: {
-    CHAT: `${apiClient.getApiUrl()}/ai/openai/chat`,
-    STREAM: `${apiClient.getApiUrl()}/ai/openai/chat/stream`,
+  BEDROCK: {
+    CHAT: `${apiClient.getApiUrl()}/ai/bedrock/chat`,
+    STREAM: `${apiClient.getApiUrl()}/ai/bedrock/chat/stream`,
   },
   ANTHROPIC: {
     CHAT: `${apiClient.getApiUrl()}/ai/anthropic/chat`,
     STREAM: `${apiClient.getApiUrl()}/ai/anthropic/chat/stream`,
+  },
+  OPENAI: {
+    CHAT: `${apiClient.getApiUrl()}/ai/openai/chat`,
+    STREAM: `${apiClient.getApiUrl()}/ai/openai/chat/stream`,
   },
 };

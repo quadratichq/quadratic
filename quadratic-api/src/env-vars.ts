@@ -46,6 +46,11 @@ export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
+// AWS Bedrock
+export const AWS_AI_REGION = process.env.AWS_AI_REGION || 'us-west-2';
+export const AWS_AI_ACCESS_KEY_ID = process.env.AWS_AI_ACCESS_KEY_ID || '';
+export const AWS_AI_SECRET_ACCESS_KEY = process.env.AWS_AI_SECRET_ACCESS_KEY || '';
+
 if (NODE_ENV === 'production') {
   ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);
 }

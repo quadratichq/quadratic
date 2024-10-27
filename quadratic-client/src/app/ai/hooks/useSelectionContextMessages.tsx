@@ -1,11 +1,11 @@
 import { JsCellValuePosAIContext, SheetRect } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AIMessage, AnthropicModel, OpenAIModel, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useSelectionContextMessages() {
   const getSelectionContextMessages = useCallback(
-    (selectionContext: JsCellValuePosAIContext[], model: AnthropicModel | OpenAIModel): (UserMessage | AIMessage)[] => {
+    ({ selectionContext, model }: { selectionContext: JsCellValuePosAIContext[]; model: AIModel }): ChatMessage[] => {
       return [
         {
           role: 'user',
@@ -52,10 +52,10 @@ Note: This selection JSON is only for your reference to data on the sheet. This 
   );
 
   const getSelectionContext = useCallback(
-    async ({ sheetRect, model }: { sheetRect: SheetRect | undefined; model: AnthropicModel | OpenAIModel }) => {
+    async ({ sheetRect, model }: { sheetRect: SheetRect | undefined; model: AIModel }) => {
       if (!sheetRect) return [];
       const selectionContext = await quadraticCore.getAIContextRectsInSheetRect(sheetRect);
-      return selectionContext ? getSelectionContextMessages(selectionContext, model) : [];
+      return selectionContext ? getSelectionContextMessages({ selectionContext, model }) : [];
     },
     [getSelectionContextMessages]
   );
