@@ -37,7 +37,7 @@ export const GridContextMenu = () => {
       events.off('cursorPosition', updateCursor);
     };
   }, []);
-  console.log(table);
+
   return (
     <ContextMenuBase contextMenuType={ContextMenuType.Grid}>
       {({ contextMenu }) => (
