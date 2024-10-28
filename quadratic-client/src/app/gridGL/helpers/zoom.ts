@@ -45,6 +45,11 @@ export function zoomInOut(scale: number): void {
   // If the center of the cell cursor's position is visible, then zoom to that point
   const cursorWorld = sheets.sheet.getCellOffsets(cursorPosition.x, cursorPosition.y);
   const center = new Point(cursorWorld.x + cursorWorld.width / 2, cursorWorld.y + cursorWorld.height / 2);
+  const gridHeadings = pixiApp.headings.headingSize;
+  const clampCenterX = -pixiApp.viewport.worldScreenWidth / 2 - gridHeadings.width;
+  const clampCenterY = -pixiApp.viewport.worldScreenHeight / 2 - gridHeadings.height;
+  center.x = Math.min(center.x, clampCenterX);
+  center.y = Math.min(center.y, clampCenterY);
   pixiApp.viewport.animate({
     time: ZOOM_ANIMATION_TIME_MS,
     scale,

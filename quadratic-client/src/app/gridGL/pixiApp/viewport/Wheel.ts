@@ -324,7 +324,6 @@ export class Wheel extends Plugin {
 
           this.parent.x += point.x - newPoint.x;
           this.parent.y += point.y - newPoint.y;
-          console.log('hi');
           if (pixiAppSettings.gridSettings.viewportClamping === 'all') {
             const clamp = pixiApp.headings.headingSize;
             this.parent.x = Math.min(this.parent.x, clamp.width);
