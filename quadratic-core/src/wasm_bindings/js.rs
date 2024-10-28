@@ -134,7 +134,7 @@ extern "C" {
     // hashes: Vec<JsPos>
     pub fn jsHashesDirty(sheet_id: String, hashes: String);
 
-    pub fn jsSendViewportBuffer(transaction_id: String, buffer: SharedArrayBuffer);
+    pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
     pub fn jsClearViewportBuffer(transaction_id: String);
 

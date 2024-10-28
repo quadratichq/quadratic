@@ -94,7 +94,7 @@ mod tests {
     #[parallel]
     fn test_to_cells_position() {
         let result = A1::to_cells("B2").unwrap();
-        assert_eq!(result.cells, A1CellsType::Rect(Rect::new(2, 2, 1, 1)));
+        assert_eq!(result.cells, A1CellsType::Rect(Rect::new(2, 2, 2, 2)));
         assert_eq!(result.sheet_name, None);
     }
 
