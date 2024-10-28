@@ -7,8 +7,8 @@ use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::formats::format::Format;
 use grid::js_types::{
-    CellFormatSummary, JsCellValue, JsClipboard, JsPos, JsRenderFill, JsRowHeight, JsSheetFill,
-    JsValidationWarning,
+    CellFormatSummary, JsCellValue, JsClipboard, JsOffset, JsPos, JsRenderFill, JsRowHeight,
+    JsSheetFill, JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::validations::validation::{
@@ -103,6 +103,7 @@ fn main() {
         JsGetCellResponse,
         JsHtmlOutput,
         JsNumber,
+        JsOffset,
         JsPos,
         JsRenderCell,
         JsRenderCellSpecial,
@@ -124,6 +125,7 @@ fn main() {
         Rgba,
         RunError,
         RunErrorMsg,
+        ScreenRect,
         SearchOptions,
         Selection,
         SheetBounds,

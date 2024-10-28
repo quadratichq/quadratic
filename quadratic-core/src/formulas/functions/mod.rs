@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 #[macro_use]
 mod macros;
 mod array;
+mod datetime;
 pub mod excel;
 mod logic;
 mod lookup;
@@ -19,8 +20,8 @@ mod trigonometry;
 
 use super::{util, CellRef, Criterion, Ctx, Param, ParamKind};
 use crate::{
-    Array, Axis, CellValue, CodeResult, CoerceInto, IsBlank, RunError, RunErrorMsg, Span, Spanned,
-    SpannedIterExt, Value,
+    Array, Axis, CellValue, CodeResult, CoerceInto, Duration, IsBlank, RunError, RunErrorMsg, Span,
+    Spanned, SpannedIterExt, Value,
 };
 
 pub use lookup::IndexFunctionArgs;
@@ -41,6 +42,7 @@ pub const CATEGORIES: &[FormulaFunctionCategory] = &[
     logic::CATEGORY,
     string::CATEGORY,
     array::CATEGORY,
+    datetime::CATEGORY,
     lookup::CATEGORY,
     #[cfg(test)]
     tests::CATEGORY,
@@ -205,7 +207,7 @@ pub struct FormulaFunctionCategory {
     pub include_in_docs: bool,
     pub include_in_completions: bool,
     pub name: &'static str,
-    pub docs: &'static str,
+    pub docs: Option<&'static str>,
     pub get_functions: fn() -> Vec<FormulaFunction>,
 }
 

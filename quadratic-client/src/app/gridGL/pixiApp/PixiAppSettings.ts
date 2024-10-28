@@ -119,14 +119,6 @@ class PixiAppSettings {
   ): void {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
-
-    // these ifs are needed to because pixiApp may be in a bad state during hmr
-    if (pixiApp.headings) {
-      pixiApp.headings.dirty = true;
-    }
-    if (pixiApp.cursor) {
-      pixiApp.cursor.dirty = true;
-    }
   }
 
   updateInlineEditorState(
@@ -135,14 +127,6 @@ class PixiAppSettings {
   ): void {
     this.inlineEditorState = inlineEditorState;
     this.setInlineEditorState = setInlineEditorState;
-
-    // these ifs are needed to because pixiApp may be in a bad state during hmr
-    if (pixiApp.headings) {
-      pixiApp.headings.dirty = true;
-    }
-    if (pixiApp.cursor) {
-      pixiApp.cursor.dirty = true;
-    }
   }
 
   updateCodeEditorState(codeEditorState: CodeEditorState, setCodeEditorState: SetterOrUpdater<CodeEditorState>): void {

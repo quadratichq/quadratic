@@ -115,17 +115,24 @@ export class Update {
       pixiApp.cellImages.dirty ||
       pixiApp.cellHighlights.isDirty() ||
       pixiApp.cellMoving.dirty ||
-      pixiApp.cursor.dirty ||
       pixiApp.validations.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
-        `dirty: ${pixiApp.viewport.dirty ? 'viewport ' : ''}${pixiApp.gridLines.dirty ? 'gridLines ' : ''}${
-          pixiApp.headings.dirty ? 'headings ' : ''
-        }${pixiApp.cursor.dirty ? 'cursor ' : ''}${
-          pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : pixiApp.cellImages.dirty ? 'uiImageResize' : ''
-        }
-          ${pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : ''}${pixiApp.cellMoving.dirty ? 'cellMoving' : ''}`
+        `dirty: ${[
+          pixiApp.viewport.dirty && 'viewport',
+          pixiApp.gridLines.dirty && 'gridLines',
+          pixiApp.headings.dirty && 'headings',
+          pixiApp.boxCells.dirty && 'boxCells',
+          pixiApp.multiplayerCursor.dirty && 'multiplayerCursor',
+          pixiApp.cursor.dirty && 'cursor',
+          pixiApp.cellImages.dirty && 'cellImages',
+          pixiApp.cellHighlights.isDirty() && 'cellHighlights',
+          pixiApp.cellMoving.dirty && 'cellMoving',
+          pixiApp.validations.dirty && 'validations',
+        ]
+          .filter(Boolean)
+          .join(', ')}`
       );
     }
 

@@ -1,17 +1,28 @@
-// needs to be kept in sync with MULTIPLAYER_COLORS_TINT
-export const MULTIPLAYER_COLORS = [
-  // '#1a1c2c',
-  '#E57373',
-  '#9575CD',
-  '#4FC3F7',
-  '#81C784',
-  '#144cb5',
-  '#FF8A65',
-  '#F06292',
-  '#7986CB',
-];
+import colors from 'tailwindcss/colors';
 
-export const MULTIPLAYER_COLORS_TINT = [
-  // 0x1a1c2c,
-  0xe57373, 0x9575cd, 0x4fc3f7, 0x81c784, 0x144cb5, 0xff8a65, 0xf06292, 0x7986cb,
-];
+// Pull all the colors from tailwind
+// https://tailwindcss.com/docs/customizing-colors
+const tailwindColorNames = [
+  'red',
+  'yellow',
+  'emerald',
+  'sky',
+  'violet',
+  'pink',
+  'orange',
+  'lime',
+  'neutral',
+  'blue',
+  'rose',
+  'amber',
+  'fuchsia',
+  'green',
+  'purple',
+  'slate',
+  'cyan',
+  'indigo',
+] as const;
+
+// needs to be kept in sync with MULTIPLAYER_COLORS_TINT
+export const MULTIPLAYER_COLORS = tailwindColorNames.map((colorName) => colors[colorName][600]);
+export const MULTIPLAYER_COLORS_TINT = MULTIPLAYER_COLORS.map((hexStr) => parseInt(hexStr.slice(1), 16));

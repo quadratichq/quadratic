@@ -47,6 +47,135 @@ impl Default for Selection {
     }
 }
 impl Selection {
+    pub fn new(sheet_id: SheetId) -> Self {
+        Selection {
+            all: false,
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: None,
+            rows: None,
+            columns: None,
+        }
+    }
+
+    /// Creates a selection via a single sheet rect
+    pub fn sheet_rect(sheet_rect: SheetRect) -> Self {
+        Selection {
+            sheet_id: sheet_rect.sheet_id,
+            x: sheet_rect.min.x,
+            y: sheet_rect.min.y,
+            rects: Some(vec![sheet_rect.into()]),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
+    /// Creates a selection for multiple rects
+    pub fn rects(rects: &[Rect], sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: rects[0].min.x,
+            y: rects[0].min.y,
+            rects: Some(rects.to_vec()),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
+    /// Creates a selection via a single sheet position
+    pub fn sheet_pos(sheet_pos: SheetPos) -> Self {
+        Selection {
+            sheet_id: sheet_pos.sheet_id,
+            x: sheet_pos.x,
+            y: sheet_pos.y,
+            rects: Some(vec![Rect::from_numbers(sheet_pos.x, sheet_pos.y, 1, 1)]),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
+    /// Creates a new selection with a single sheet position
+    pub fn new_sheet_pos(x: i64, y: i64, sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x,
+            y,
+            all: false,
+            rects: Some(vec![Rect::from_numbers(x, y, 1, 1)]),
+            rows: None,
+            columns: None,
+        }
+    }
+
+    /// Creates an all selection
+    pub fn all(sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: 0,
+            y: 0,
+            rects: None,
+            rows: None,
+            columns: None,
+            all: true,
+        }
+    }
+
+    /// Creates a selection with columns
+    pub fn columns(columns: &[i64], sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: columns[0],
+            y: 0,
+            rects: None,
+            rows: None,
+            columns: Some(columns.to_vec()),
+            all: false,
+        }
+    }
+
+    /// Creates a selection with rows
+    pub fn rows(rows: &[i64], sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: 0,
+            y: rows[0],
+            rects: None,
+            rows: Some(rows.to_vec()),
+            columns: None,
+            all: false,
+        }
+    }
+
+    /// Creates a selection via  single rect
+    pub fn rect(rect: Rect, sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: rect.min.x,
+            y: rect.min.y,
+            rects: Some(vec![rect]),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
+    /// Create a selection via a single position.
+    pub fn pos(x: i64, y: i64, sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x,
+            y,
+            rects: Some(vec![Rect::from_numbers(x, y, 1, 1)]),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
     pub fn has_sheet_selection(&self) -> bool {
         self.rows.is_some() || self.columns.is_some() || self.all
     }

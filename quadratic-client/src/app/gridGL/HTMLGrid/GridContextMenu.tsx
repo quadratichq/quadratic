@@ -3,23 +3,21 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
-import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { IconComponent } from '@/shared/components/Icons';
 import { ControlledMenu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-import { Point } from 'pixi.js';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { sheets } from '@/app/grid/controller/Sheets';
 
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
 
   const onClose = useCallback(() => {
-    setShow({ world: undefined, column: undefined, row: undefined });
+    setShow({ world: undefined, column: null, row: null });
     focusGrid();
   }, [setShow]);
 
@@ -30,17 +28,6 @@ export const GridContextMenu = () => {
       events.off('viewportChanged', onClose);
     };
   }, [onClose]);
-
-  useEffect(() => {
-    const updateGridMenu = (world: Point, column?: number, row?: number) => {
-      setShow({ world, column, row });
-    };
-    events.on('gridContextMenu', updateGridMenu);
-
-    return () => {
-      events.off('gridContextMenu', updateGridMenu);
-    };
-  }, [setShow]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -71,14 +58,24 @@ export const GridContextMenu = () => {
         <MenuItemAction action={Action.PasteFormattingOnly} />
         <MenuItemAction action={Action.CopyAsPng} />
         <MenuItemAction action={Action.DownloadAsCsv} />
-        <MenuDivider />
-        {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnLeft} />}
-        {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnRight} />}
-        <MenuItemAction action={Action.DeleteColumn} />
-        {isColumnRowAvailable && <MenuDivider />}
-        {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowAbove} />}
-        {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowBelow} />}
-        <MenuItemAction action={Action.DeleteRow} />
+
+        {show.column === null ? null : (
+          <>
+            <MenuDivider />
+            {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnLeft} />}
+            {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnRight} />}
+            <MenuItemAction action={Action.DeleteColumn} />
+          </>
+        )}
+
+        {show.row === null ? null : (
+          <>
+            {isColumnRowAvailable && <MenuDivider />}
+            {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowAbove} />}
+            {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowBelow} />}
+            <MenuItemAction action={Action.DeleteRow} />
+          </>
+        )}
       </ControlledMenu>
     </div>
   );
