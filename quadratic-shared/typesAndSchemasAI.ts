@@ -5,15 +5,14 @@ export type AIProviders = z.infer<typeof AIProvidersSchema>;
 
 const BedrockModelSchema = z
   .enum([
-    'anthropic.claude-3-sonnet-20240229-v1:0',
-    'anthropic.claude-3-haiku-20240307-v1:0',
     'anthropic.claude-3-5-sonnet-20240620-v1:0',
     'anthropic.claude-3-5-sonnet-20241022-v2:0',
-    'meta.llama3-1-405b-instruct-v1:0',
-    'mistral.mistral-large-2402-v1:0',
     'ai21.jamba-1-5-large-v1:0',
+    'cohere.command-r-plus-v1:0',
+    'us.meta.llama3-2-90b-instruct-v1:0',
+    'mistral.mistral-large-2407-v1:0',
   ])
-  .default('anthropic.claude-3-sonnet-20240229-v1:0');
+  .default('anthropic.claude-3-5-sonnet-20241022-v2:0');
 export type BedrockModel = z.infer<typeof BedrockModelSchema>;
 
 const AnthropicModelSchema = z.enum(['claude-3-5-sonnet-20241022']).default('claude-3-5-sonnet-20241022');

@@ -146,7 +146,7 @@ export const getMessagesForModel = (model: AIModel, messages: ChatMessage[]): AI
             })),
             {
               type: 'text' as const,
-              text: 'Given the above tool calls, please provide your final answer to the user.',
+              text: 'Given the above tool calls results, please provide your final answer to the user.',
             },
           ],
         };

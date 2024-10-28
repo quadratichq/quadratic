@@ -13,7 +13,7 @@ export const MODEL_OPTIONS: {
   };
 } = {
   'gpt-4o-2024-08-06': {
-    displayName: 'OpenAI: gpt-4o',
+    displayName: 'OpenAI: GPT-4o',
     temperature: 0,
     max_tokens: undefined,
     canStream: true,
@@ -31,7 +31,7 @@ export const MODEL_OPTIONS: {
     provider: 'openai',
   },
   'claude-3-5-sonnet-20241022': {
-    displayName: 'Anthropic: claude-3.5-sonnet',
+    displayName: 'Anthropic: Claude 3.5 Sonnet (new)',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -39,26 +39,8 @@ export const MODEL_OPTIONS: {
     enabled: true,
     provider: 'anthropic',
   },
-  'anthropic.claude-3-sonnet-20240229-v1:0': {
-    displayName: 'Anthropic: claude-3-sonnet',
-    temperature: 0,
-    max_tokens: 4096,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: debug,
-    provider: 'bedrock',
-  },
-  'anthropic.claude-3-haiku-20240307-v1:0': {
-    displayName: 'Anthropic: claude-3-haiku',
-    temperature: 0,
-    max_tokens: 4096,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: debug,
-    provider: 'bedrock',
-  },
   'anthropic.claude-3-5-sonnet-20240620-v1:0': {
-    displayName: 'Anthropic: claude-3.5-sonnet v1',
+    displayName: 'Anthropic: Claude 3.5 Sonnet',
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
@@ -67,7 +49,7 @@ export const MODEL_OPTIONS: {
     provider: 'bedrock',
   },
   'anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    displayName: 'Anthropic: claude-3.5-sonnet v2',
+    displayName: 'Anthropic: Claude 3.5 Sonnet (new)',
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
@@ -75,8 +57,26 @@ export const MODEL_OPTIONS: {
     enabled: debug,
     provider: 'bedrock',
   },
-  'meta.llama3-1-405b-instruct-v1:0': {
-    displayName: 'Meta: llama-3.1-405b-instruct',
+  'ai21.jamba-1-5-large-v1:0': {
+    displayName: 'AI21: Jamba 1.5 Large',
+    temperature: 0,
+    max_tokens: 4096,
+    canStream: true,
+    canStreamWithToolCalls: false,
+    enabled: debug,
+    provider: 'bedrock',
+  },
+  'cohere.command-r-plus-v1:0': {
+    displayName: 'Cohere: Command R+',
+    temperature: 0,
+    max_tokens: 4096,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: debug,
+    provider: 'bedrock',
+  },
+  'us.meta.llama3-2-90b-instruct-v1:0': {
+    displayName: 'Meta: Llama 3.2 90B Instruct',
     temperature: 0,
     max_tokens: 2048,
     canStream: true,
@@ -84,19 +84,10 @@ export const MODEL_OPTIONS: {
     enabled: debug,
     provider: 'bedrock',
   },
-  'mistral.mistral-large-2402-v1:0': {
-    displayName: 'Mistral: mistral-large-2402',
+  'mistral.mistral-large-2407-v1:0': {
+    displayName: 'Mistral: Mistral Large 2 (24.07)',
     temperature: 0,
     max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: false,
-    enabled: debug,
-    provider: 'bedrock',
-  },
-  'ai21.jamba-1-5-large-v1:0': {
-    displayName: 'AI21: jamba-1.5-large',
-    temperature: 0,
-    max_tokens: 4096,
     canStream: true,
     canStreamWithToolCalls: false,
     enabled: debug,
