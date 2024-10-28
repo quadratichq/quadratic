@@ -5,10 +5,11 @@ import {
   showCodePeekAtom,
   showGridLinesAtom,
   showHeadingsAtom,
+  viewportClampingAtom,
 } from '@/app/atoms/gridSettingsAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
-import { CheckSmallIcon, CropFreeIcon, ZoomInIcon } from '@/shared/components/Icons';
+import { CheckSmallIcon, CropFreeIcon, SettingsIcon, ZoomInIcon } from '@/shared/components/Icons';
 import {
   MenubarContent,
   MenubarItem,
@@ -34,6 +35,7 @@ export const ViewMenubarMenu = () => {
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showCodePeek, setShowCodePeek] = useRecoilState(showCodePeekAtom);
   const setPresentationMode = useSetRecoilState(presentationModeAtom);
+  const [viewportClamping, setViewportClamping] = useRecoilState(viewportClampingAtom);
 
   return (
     <MenubarMenu>
@@ -76,6 +78,27 @@ export const ViewMenubarMenu = () => {
           Presentation mode
           <MenubarShortcut>{KeyboardSymbols.Command + '.'}</MenubarShortcut>
         </MenubarItem>
+        <MenubarSeparator />
+        <MenubarSub>
+          <MenubarSubTrigger>
+            <SettingsIcon />
+            Viewport Clamping
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarItem onClick={() => setViewportClamping('all')}>
+              <MenubarItemCheckbox checked={viewportClamping === 'all'} />
+              Always clamp
+            </MenubarItem>
+            <MenubarItem onClick={() => setViewportClamping('half')}>
+              <MenubarItemCheckbox checked={viewportClamping === 'half'} />
+              Clamp to half the screen size
+            </MenubarItem>
+            <MenubarItem onClick={() => setViewportClamping('zoom')}>
+              <MenubarItemCheckbox checked={viewportClamping === 'zoom'} />
+              Unclamp on zoom only
+            </MenubarItem>
+          </MenubarSubContent>
+        </MenubarSub>
       </MenubarContent>
     </MenubarMenu>
   );

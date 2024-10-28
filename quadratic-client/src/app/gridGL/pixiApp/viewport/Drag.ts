@@ -1,8 +1,9 @@
 //! Cloned from pixi-viewport Drag plugin to add clamping only for changes when
 //! dragging (zoom has different clamping).
 
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { Decelerate, Plugin, Viewport } from 'pixi-viewport';
 import { InteractionEvent, Point } from 'pixi.js';
-import { Viewport, Plugin, Decelerate } from 'pixi-viewport';
 import { Coordinate } from '../../types/size';
 import { pixiApp } from '../PixiApp';
 
@@ -321,21 +322,29 @@ export class Drag extends Plugin {
           (this.yDirection && this.parent.input.checkThreshold(distY))
         ) {
           const newPoint = { x, y };
-
           const clamp = pixiApp.headings.headingSize;
-          if (this.xDirection) {
+          if (pixiAppSettings.gridSettings.viewportClamping === 'zoom') {
+            if (this.xDirection) {
+              let newX = this.parent.x + (newPoint.x - this.last.x) * this.options.factor;
+              if (newX > this.parent.x && newX > clamp.width) {
+                newX = this.parent.x;
+              }
+              this.parent.x = newX;
+            }
+            if (this.yDirection) {
+              let newY = this.parent.y + (newPoint.y - this.last.y) * this.options.factor;
+              if (newY > this.parent.y && newY > clamp.height) {
+                newY = this.parent.y;
+              }
+              this.parent.y = newY;
+            }
+          } else if (pixiAppSettings.gridSettings.viewportClamping === 'all') {
             let newX = this.parent.x + (newPoint.x - this.last.x) * this.options.factor;
-            if (newX > this.parent.x && newX > clamp.width) {
-              newX = this.parent.x;
-            }
-            this.parent.x = newX;
-          }
-          if (this.yDirection) {
+            this.parent.x = Math.min(newX, clamp.width);
             let newY = this.parent.y + (newPoint.y - this.last.y) * this.options.factor;
-            if (newY > this.parent.y && newY > clamp.height) {
-              newY = this.parent.y;
-            }
-            this.parent.y = newY;
+            this.parent.y = Math.min(newY, clamp.height);
+          } else if (pixiAppSettings.gridSettings.viewportClamping === 'half') {
+            pixiApp.viewport.clampViewportToHalf();
           }
           this.last = newPoint;
           if (!this.moved) {

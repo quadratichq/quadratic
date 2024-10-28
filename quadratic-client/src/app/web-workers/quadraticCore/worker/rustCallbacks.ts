@@ -87,8 +87,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendMultiplayerSynced: () => void;
     sendHashesDirty: (sheetId: string, hashes: string) => void;
-    sendSetViewportBuffer: (transactionId: string, buffer: SharedArrayBuffer) => void;
-    sendClearViewportBuffer: (transactionId: string) => void;
+    sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendClientMessage: (message: string, error: boolean) => void;
   };
 
@@ -289,4 +288,8 @@ export const jsHashesDirty = (sheetId: string, hashes: string) => {
 
 export const jsClientMessage = (message: string, error: boolean) => {
   self.sendClientMessage(message, error);
+};
+
+export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
+  self.sendViewportBuffer(buffer);
 };

@@ -1,11 +1,11 @@
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Viewport as PixiViewport } from 'pixi-viewport';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from './Wheel';
-import { events } from '@/app/events/events';
 import { pixiApp } from '../PixiApp';
 import { Drag } from './Drag';
+import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from './Wheel';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;
@@ -89,17 +89,17 @@ export class Viewport extends PixiViewport {
     this.dirty = true;
   }
 
-  // // Clamps viewport to half the screen size
-  // clampViewport() {
-  //   const maxX = this.screenWidth / 2;
-  //   if (this.x > maxX) {
-  //     this.x = maxX;
-  //   }
-  //   const maxY = this.screenHeight / 2;
-  //   if (this.y > maxY) {
-  //     this.y = maxY;
-  //   }
-  // }
+  // Clamps viewport to half the screen size
+  clampViewportToHalf() {
+    const maxX = this.screenWidth / 2;
+    if (this.x > maxX) {
+      this.x = maxX;
+    }
+    const maxY = this.screenHeight / 2;
+    if (this.y > maxY) {
+      this.y = maxY;
+    }
+  }
 
   // resets the viewport to start
   reset() {

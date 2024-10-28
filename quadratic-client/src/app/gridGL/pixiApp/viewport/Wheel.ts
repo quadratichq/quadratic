@@ -1,5 +1,6 @@
 //! Cloned from pixi-viewport Wheel plugin.
 
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { isMac } from '@/shared/utils/isMac';
 import { IPointData, Point } from '@pixi/math';
 import { Plugin, Viewport } from 'pixi-viewport';
@@ -263,6 +264,13 @@ export class Wheel extends Plugin {
 
       this.parent.x += point.x - newPoint.x;
       this.parent.y += point.y - newPoint.y;
+      if (pixiAppSettings.gridSettings.viewportClamping === 'all') {
+        const clamp = pixiApp.headings.headingSize;
+        this.parent.x = Math.min(this.parent.x, clamp.width);
+        this.parent.y = Math.min(this.parent.y, clamp.height);
+      } else if (pixiAppSettings.gridSettings.viewportClamping === 'half') {
+        pixiApp.viewport.clampViewportToHalf();
+      }
     }
     this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
     this.parent.emit('wheel', { wheel: { dx: e.deltaX, dy: e.deltaY, dz: e.deltaZ }, event: e, viewport: this.parent });
@@ -316,6 +324,14 @@ export class Wheel extends Plugin {
 
           this.parent.x += point.x - newPoint.x;
           this.parent.y += point.y - newPoint.y;
+          console.log('hi');
+          if (pixiAppSettings.gridSettings.viewportClamping === 'all') {
+            const clamp = pixiApp.headings.headingSize;
+            this.parent.x = Math.min(this.parent.x, clamp.width);
+            this.parent.y = Math.min(this.parent.y, clamp.height);
+          } else if (pixiAppSettings.gridSettings.viewportClamping === 'half') {
+            pixiApp.viewport.clampViewportToHalf();
+          }
         }
       }
 
@@ -333,20 +349,34 @@ export class Wheel extends Plugin {
       const deltas = [e.deltaX, e.deltaY];
       let [deltaX, deltaY] = deltas;
       let newX = this.parent.x + (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * step * -1;
-      const clamp = pixiApp.headings.headingSize;
-      if (newX > this.parent.x && newX > clamp.width) {
-        if (this.parent.x < clamp.width) {
-          newX = clamp.width;
-        } else {
-          newX = this.parent.x;
-        }
-      }
       let newY = this.parent.y + deltaY * step * -1 * (this.horizontalScrollKeyIsPressed && !isMac ? 0 : 1);
-      if (newY > this.parent.y && newY > clamp.height) {
-        if (this.parent.y < clamp.height) {
-          newY = clamp.height;
-        } else {
-          newY = this.parent.y;
+      const clamp = pixiApp.headings.headingSize;
+      if (pixiAppSettings.gridSettings.viewportClamping === 'zoom') {
+        if (newX > this.parent.x && newX > clamp.width) {
+          if (this.parent.x < clamp.width) {
+            newX = clamp.width;
+          } else {
+            newX = this.parent.x;
+          }
+        }
+        if (newY > this.parent.y && newY > clamp.height) {
+          if (this.parent.y < clamp.height) {
+            newY = clamp.height;
+          } else {
+            newY = this.parent.y;
+          }
+        }
+      } else if (pixiAppSettings.gridSettings.viewportClamping === 'all') {
+        newX = Math.min(newX, clamp.width);
+        newY = Math.min(newY, clamp.height);
+      } else if (pixiAppSettings.gridSettings.viewportClamping === 'half') {
+        const maxX = this.parent.screenWidth / 2;
+        if (newX > maxX) {
+          newX = maxX;
+        }
+        const maxY = this.parent.screenHeight / 2;
+        if (newY > maxY) {
+          newY = maxY;
         }
       }
 
