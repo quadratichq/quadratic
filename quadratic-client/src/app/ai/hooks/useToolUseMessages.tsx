@@ -24,7 +24,6 @@ ${Object.entries(aiToolsSpec)
           'I understand these tools are available to me for taking actions on the spreadsheet. How can I help you?',
         contextType: 'toolUse',
         model,
-        toolCalls: [],
       },
     ];
   }, []);

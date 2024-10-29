@@ -14,23 +14,14 @@ import {
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystLoadingAtom,
   aiAnalystShowChatHistoryAtom,
+  defaultAIAnalystContext,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { SheetRect } from '@/app/quadratic-core-types';
-import { AIMessage, ChatMessage, Context, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIMessage, AIMessagePrompt, ChatMessage, Context, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 const MAX_TOOL_CALL_ITERATIONS = 5;
-
-export const defaultAIAnalystContext: Context = {
-  quadraticDocs: true,
-  connections: false,
-  allSheets: false,
-  currentSheet: true,
-  visibleData: true,
-  toolUse: true,
-  selection: [],
-};
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -125,7 +116,6 @@ export function useSubmitAIAnalystPrompt() {
         if (messageIndex !== undefined) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
-              ...prev,
               id: '',
               name: '',
               lastUpdated: Date.now(),
@@ -154,10 +144,7 @@ export function useSubmitAIAnalystPrompt() {
             useStream: true,
             useTools: true,
           });
-          let toolCalls: AIMessage['toolCalls'] = response.toolCalls;
-
-          // TODO(ayush): remove before merge
-          console.log('response', response);
+          let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
 
           let toolCallIterations = 0;
 
@@ -204,9 +191,6 @@ export function useSubmitAIAnalystPrompt() {
               useTools: true,
             });
             toolCalls = response.toolCalls;
-
-            // TODO(ayush): remove before merge
-            console.log('response', response);
           }
         } catch (error) {
           set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {

@@ -96,10 +96,18 @@ export type UserMessagePrompt = z.infer<typeof UserMessagePromptSchema>;
 const UserMessageSchema = UserMessageInternalSchema.or(UserMessagePromptSchema);
 export type UserMessage = z.infer<typeof UserMessageSchema>;
 
-const AIMessageSchema = z.object({
+const AIMessageInternalSchema = z.object({
   role: z.literal('assistant'),
   content: z.string(),
-  contextType: ContextTypeSchema,
+  contextType: ContextTypeSchema.exclude(['userPrompt']),
+  model: AIModelSchema,
+});
+export type AIMessageInternal = z.infer<typeof AIMessageInternalSchema>;
+
+const AIMessagePromptSchema = z.object({
+  role: z.literal('assistant'),
+  content: z.string(),
+  contextType: z.literal('userPrompt'),
   model: AIModelSchema,
   toolCalls: z.array(
     z.object({
@@ -110,6 +118,9 @@ const AIMessageSchema = z.object({
     })
   ),
 });
+export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
+
+const AIMessageSchema = AIMessageInternalSchema.or(AIMessagePromptSchema);
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
 const ChatMessageSchema = UserMessageSchema.or(AIMessageSchema);

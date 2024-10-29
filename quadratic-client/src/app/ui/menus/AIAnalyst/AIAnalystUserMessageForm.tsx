@@ -4,14 +4,12 @@ import {
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
+  defaultAIAnalystContext,
 } from '@/app/atoms/aiAnalystAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
-import {
-  defaultAIAnalystContext,
-  useSubmitAIAnalystPrompt,
-} from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { ArrowUpwardIcon, EditIcon, StopIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';

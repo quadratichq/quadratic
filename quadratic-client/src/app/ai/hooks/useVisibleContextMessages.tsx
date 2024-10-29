@@ -65,7 +65,6 @@ My cursor is on cell x:${cursorPosition.x} and y:${cursorPosition.y}.\n
           content: `I understand the visible data, I will reference it to answer following messages. How can I help you?`,
           contextType: 'visibleData',
           model,
-          toolCalls: [],
         },
       ];
     },

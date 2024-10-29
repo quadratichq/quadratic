@@ -1,5 +1,6 @@
 import { focusGrid } from '@/app/helpers/focusGrid.js';
 import { SearchOptions } from '@/app/quadratic-core-types';
+import { User } from '@auth0/auth0-spa-js';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
@@ -18,6 +19,7 @@ export interface EditorInteractionState {
   showValidation: boolean | string;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
   permissions: FilePermission[];
+  user?: User;
   uuid: string;
   follow?: string;
   undo: boolean;
@@ -39,6 +41,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showValidation: false,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
+  user: undefined,
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   follow: undefined,
   undo: false,
@@ -109,6 +112,7 @@ export const editorInteractionStateShowValidationAtom = createSelector('showVali
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
 export const editorInteractionStatePermissionsAtom = createSelector('permissions');
+export const editorInteractionStateUserAtom = createSelector('user');
 export const editorInteractionStateUuidAtom = createSelector('uuid');
 export const editorInteractionStateFollowAtom = createSelector('follow');
 export const editorInteractionStateUndoAtom = createSelector('undo');

@@ -58,7 +58,7 @@ export const getMessagesForModel = (model: AIModel, messages: ChatMessage[]): AI
   const isBedrock = isBedrockModel(model);
   if (isBedrock) {
     return messages.map<BedrockPromptMessage>((message) => {
-      if (message.role === 'assistant' && message.toolCalls.length > 0) {
+      if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
         const bedrockMessage: BedrockPromptMessage = {
           role: message.role,
           content: [
@@ -114,7 +114,7 @@ export const getMessagesForModel = (model: AIModel, messages: ChatMessage[]): AI
   const isAnthropic = isAnthropicModel(model);
   if (isAnthropic) {
     return messages.map<AnthropicPromptMessage>((message) => {
-      if (message.role === 'assistant' && message.toolCalls.length > 0) {
+      if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
         const anthropicMessage: AnthropicPromptMessage = {
           role: message.role,
           content: [
@@ -164,7 +164,7 @@ export const getMessagesForModel = (model: AIModel, messages: ChatMessage[]): AI
   const isOpenAI = isOpenAIModel(model);
   if (isOpenAI) {
     return messages.reduce<OpenAIPromptMessage[]>((acc, message) => {
-      if (message.role === 'assistant' && message.toolCalls.length > 0) {
+      if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
         const openaiMessages: OpenAIPromptMessage[] = [
           ...acc,
           {

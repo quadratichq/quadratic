@@ -11,23 +11,13 @@ import {
   aiAssistantMessagesAtom,
   codeEditorCodeCellAtom,
   codeEditorWaitingForEditorClose,
+  defaultAIAssistantContext,
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { AIPromptMessage, ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
-
-export const defaultAIAssistantContext: Context = {
-  quadraticDocs: true,
-  connections: false,
-  allSheets: false,
-  currentSheet: true,
-  visibleData: true,
-  toolUse: false,
-  selection: [],
-  codeCell: undefined,
-};
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();

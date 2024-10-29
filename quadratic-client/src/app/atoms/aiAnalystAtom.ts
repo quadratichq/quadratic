@@ -1,7 +1,19 @@
+import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalyst';
+import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
+
+export const defaultAIAnalystContext: Context = {
+  quadraticDocs: true,
+  connections: false,
+  allSheets: false,
+  currentSheet: true,
+  visibleData: true,
+  toolUse: true,
+  selection: [],
+};
 
 export interface Chat {
   id: string;
@@ -26,27 +38,7 @@ export const defaultAIAnalystState: AIAnalystState = {
   showInternalContext: false,
   abortController: undefined,
   loading: false,
-  chats: [
-    // TODO(ayush): remove dummy chats
-    {
-      id: v4(),
-      name: 'Dummy chat 1',
-      lastUpdated: Date.now(),
-      messages: [],
-    },
-    {
-      id: v4(),
-      name: 'Dummy chat 2',
-      lastUpdated: new Date(new Date().getFullYear(), new Date().getMonth(), 0).getTime(),
-      messages: [],
-    },
-    {
-      id: v4(),
-      name: 'Dummy chat 3',
-      lastUpdated: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 15).getTime(),
-      messages: [],
-    },
-  ],
+  chats: [],
   currentChat: {
     id: '',
     name: '',
@@ -59,6 +51,24 @@ export const aiAnalystAtom = atom<AIAnalystState>({
   key: 'aiAnalystAtom',
   default: defaultAIAnalystState,
   effects: [
+    async ({ getPromise, setSelf, trigger }) => {
+      if (trigger === 'get') {
+        const user = await getPromise(editorInteractionStateUserAtom);
+        const uuid = await getPromise(editorInteractionStateUuidAtom);
+        if (!!user?.email && uuid) {
+          try {
+            await aiAnalystOfflineChats.init(user.email, uuid);
+            const chats = await aiAnalystOfflineChats.loadChats();
+            setSelf({
+              ...defaultAIAnalystState,
+              chats,
+            });
+          } catch (error) {
+            console.error('[AIAnalystOfflineChats]: ', error);
+          }
+        }
+      }
+    },
     ({ onSet }) => {
       onSet((newValue, oldValue) => {
         if (oldValue instanceof DefaultValue) {
@@ -100,12 +110,16 @@ export const aiAnalystLoadingAtom = selector<boolean>({
 
       let chats: Chat[] = prev.chats;
       if (prev.loading && !newValue) {
+        const currentChat = prev.currentChat;
+        if (currentChat.id) {
+          aiAnalystOfflineChats.saveChats([currentChat]).catch((error) => {
+            console.error('[AIAnalystOfflineChats]: ', error);
+          });
+        }
+
         if (!prev.currentChat.name) {
           console.log('TODO(ayush): update name from AI');
         }
-
-        chats = prev.chats.map((chat) => (chat.id === prev.currentChat.id ? prev.currentChat : chat));
-        console.log('TODO(ayush): sync current chat');
       }
 
       return {
@@ -130,12 +144,22 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
         .filter((chat) => !newValue.some((newChat) => newChat.id === chat.id))
         .map((chat) => chat.id);
       if (deletedChatIds.length > 0) {
-        console.log('TODO(ayush): delete chats', deletedChatIds);
+        aiAnalystOfflineChats.deleteChats(deletedChatIds).catch((error) => {
+          console.error('[AIAnalystOfflineChats]: ', error);
+        });
       }
 
       return {
         ...prev,
         chats: newValue,
+        currentChat: deletedChatIds.includes(prev.currentChat.id)
+          ? {
+              id: '',
+              name: '',
+              lastUpdated: Date.now(),
+              messages: [],
+            }
+          : prev.currentChat,
       };
     });
   },
@@ -155,14 +179,46 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
         return prev;
       }
 
-      if (!!newValue.id && newValue.messages.length === 0) {
-        console.log('TODO(ayush): load chat messages');
+      let chats = prev.chats;
+      if (newValue.id) {
+        chats = [...chats.filter((chat) => chat.id !== newValue.id), newValue];
       }
 
       return {
         ...prev,
         showChatHistory: false,
+        chats,
         currentChat: newValue,
+      };
+    });
+  },
+});
+
+export const aiAnalystCurrentChatNameAtom = selector<string>({
+  key: 'aiAnalystCurrentChatNameAtom',
+  get: ({ get }) => get(aiAnalystCurrentChatAtom).name,
+  set: ({ set }, newValue) => {
+    set(aiAnalystAtom, (prev) => {
+      if (newValue instanceof DefaultValue) {
+        return prev;
+      }
+
+      const currentChat: Chat = {
+        ...prev.currentChat,
+        id: !!prev.currentChat.id ? prev.currentChat.id : v4(),
+        name: newValue,
+      };
+
+      aiAnalystOfflineChats.saveChats([currentChat]).catch((error) => {
+        console.error('[AIAnalystOfflineChats]: ', error);
+      });
+
+      const chats = [...prev.chats.filter((chat) => chat.id !== currentChat.id), currentChat];
+
+      return {
+        ...prev,
+        chats,
+        currentChat,
       };
     });
   },
@@ -177,23 +233,18 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         return prev;
       }
 
-      let id = prev.currentChat.id;
-      if (!id) {
-        id = v4();
-      }
-
       const currentChat: Chat = {
-        id,
+        id: prev.currentChat.id ? prev.currentChat.id : v4(),
         name: prev.currentChat.name,
         lastUpdated: Date.now(),
         messages: newValue,
       };
 
-      const addNewChat = newValue.length > 0 && !prev.chats.some((chat) => chat.id === id);
+      const chats = [...prev.chats.filter((chat) => chat.id !== currentChat.id), currentChat];
 
       return {
         ...prev,
-        chats: addNewChat ? [...prev.chats, currentChat] : prev.chats,
+        chats,
         currentChat,
       };
     });

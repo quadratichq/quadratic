@@ -9,7 +9,7 @@ import {
   isOpenAIModel,
 } from '@/app/ai/tools/helpers';
 import { authClient } from '@/auth';
-import { AIMessage, AIModel, AIPromptMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { AIMessagePrompt, AIModel, AIPromptMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
 
@@ -27,9 +27,9 @@ export function useAIRequestToAPI() {
   const parseBedrockStream = useCallback(
     async (
       reader: ReadableStreamDefaultReader<Uint8Array>,
-      responseMessage: AIMessage,
+      responseMessage: AIMessagePrompt,
       setMessages?: (value: React.SetStateAction<ChatMessage[]>) => void
-    ): Promise<{ error?: boolean; content: AIMessage['content']; toolCalls: AIMessage['toolCalls'] }> => {
+    ): Promise<{ error?: boolean; content: AIMessagePrompt['content']; toolCalls: AIMessagePrompt['toolCalls'] }> => {
       const decoder = new TextDecoder();
       while (true) {
         const { value, done } = await reader.read();
@@ -133,9 +133,9 @@ export function useAIRequestToAPI() {
   const parseAnthropicStream = useCallback(
     async (
       reader: ReadableStreamDefaultReader<Uint8Array>,
-      responseMessage: AIMessage,
+      responseMessage: AIMessagePrompt,
       setMessages?: (value: React.SetStateAction<ChatMessage[]>) => void
-    ): Promise<{ error?: boolean; content: AIMessage['content']; toolCalls: AIMessage['toolCalls'] }> => {
+    ): Promise<{ error?: boolean; content: AIMessagePrompt['content']; toolCalls: AIMessagePrompt['toolCalls'] }> => {
       const decoder = new TextDecoder();
       while (true) {
         const { value, done } = await reader.read();
@@ -223,9 +223,9 @@ export function useAIRequestToAPI() {
   const parseOpenAIStream = useCallback(
     async (
       reader: ReadableStreamDefaultReader<Uint8Array>,
-      responseMessage: AIMessage,
+      responseMessage: AIMessagePrompt,
       setMessages?: (value: React.SetStateAction<ChatMessage[]>) => void
-    ): Promise<{ error?: boolean; content: AIMessage['content']; toolCalls: AIMessage['toolCalls'] }> => {
+    ): Promise<{ error?: boolean; content: AIMessagePrompt['content']; toolCalls: AIMessagePrompt['toolCalls'] }> => {
       const decoder = new TextDecoder();
       while (true) {
         const { value, done } = await reader.read();
@@ -329,10 +329,10 @@ export function useAIRequestToAPI() {
       toolChoice,
     }: HandleAIPromptProps): Promise<{
       error?: boolean;
-      content: AIMessage['content'];
-      toolCalls: AIMessage['toolCalls'];
+      content: AIMessagePrompt['content'];
+      toolCalls: AIMessagePrompt['toolCalls'];
     }> => {
-      const responseMessage: AIMessage = {
+      const responseMessage: AIMessagePrompt = {
         role: 'assistant',
         content: '',
         contextType: 'userPrompt',
