@@ -1,10 +1,7 @@
-import { colors } from '@/app/theme/colors';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
-import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
   DatabaseIcon,
@@ -35,7 +32,6 @@ import { useSetRecoilState } from 'recoil';
  */
 export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const [, setSearchParams] = useSearchParams();
-  const { loggedInUser: user } = useRootRouteLoaderData();
   const {
     userMakingRequest: { id: ownerUserId },
     eduStatus,
@@ -49,11 +45,11 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const classNameIcons = `mx-0.5 text-muted-foreground`;
 
   return (
-    <nav className={`flex h-full flex-col gap-4 overflow-auto`}>
-      <div className="sticky top-0 z-10 flex flex-col bg-background px-4 pt-4">
+    <nav className={`flex h-full flex-col gap-4 overflow-auto bg-accent`}>
+      <div className="sticky top-0 z-10 flex flex-col bg-accent px-3 pt-3">
         <TeamSwitcher appIsLoading={isLoading} />
       </div>
-      <div className={`flex flex-col px-4`}>
+      <div className={`flex flex-col px-3`}>
         <Type
           as="h3"
           variant="overline"
@@ -129,7 +125,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
         </div>
       </div>
-      <div className="mt-auto flex flex-col gap-1 bg-background px-4 pb-2">
+      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -154,22 +150,6 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         <SidebarNavLink to="/labs">
           <LabsIcon className={classNameIcons} />
           Labs
-        </SidebarNavLink>
-        <SidebarNavLink to={ROUTES.ACCOUNT}>
-          <Avatar
-            src={user?.picture}
-            alt={user?.name}
-            style={{
-              backgroundColor: colors.quadraticSecondary,
-            }}
-          >
-            {user?.name}
-          </Avatar>
-
-          <div className={`flex flex-col overflow-hidden`}>
-            {user?.name || 'You'}
-            {user?.email && <p className={`truncate ${TYPE.caption} text-muted-foreground`}>{user?.email}</p>}
-          </div>
         </SidebarNavLink>
       </div>
     </nav>
@@ -256,8 +236,8 @@ function SidebarNavLink({
     : {};
 
   const classes = cn(
-    isActive && !isLogo && 'bg-muted',
-    !isLogo && 'hover:bg-accent',
+    isActive && !isLogo && 'bg-border font-medium',
+    !isLogo && 'hover:bg-border',
     isDraggingOver && 'bg-primary text-primary-foreground',
     TYPE.body2,
     `relative flex items-center gap-2 p-2 no-underline rounded`,

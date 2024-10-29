@@ -1,15 +1,15 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { TeamAction } from '@/routes/teams.$teamUuid';
-import { AddIcon, ArrowDropDownIcon, CheckIcon, LogoutIcon, RefreshIcon } from '@/shared/components/Icons';
+import { Avatar } from '@/shared/components/Avatar';
+import { AccountIcon, AddIcon, ArrowDropDownIcon, CheckIcon, LogoutIcon, RefreshIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
+import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES } from '@/shared/constants/routes';
-import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
@@ -40,22 +40,28 @@ export function TeamSwitcher({ appIsLoading }: Props) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="flex justify-between px-3 font-semibold">
-          <div className="select-none truncate">{optimisticActiveTeamName}</div>
-          <div className="relative flex items-center">
-            <ArrowDropDownIcon />
-            <RefreshIcon
-              className={`absolute left-0 top-0 ml-auto animate-spin bg-background text-primary transition-opacity ${
-                appIsLoading ? '' : ' opacity-0'
-              }`}
-            />
-          </div>
-        </Button>
+      <DropdownMenuTrigger className="group flex items-center justify-between gap-2 rounded p-2 text-left hover:bg-border focus:outline-none ">
+        <Avatar src={loggedInUser?.picture} alt={loggedInUser?.name}>
+          {loggedInUser?.name}
+        </Avatar>
+
+        <div className={`flex flex-grow flex-col overflow-hidden`}>
+          <span className="truncate text-sm font-semibold">{optimisticActiveTeamName}</span>
+          {loggedInUser?.email && (
+            <span className={`truncate ${TYPE.caption} text-muted-foreground`}>{loggedInUser?.email}</span>
+          )}
+        </div>
+
+        <div className="relative flex items-center pr-1">
+          <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
+          <RefreshIcon
+            className={`absolute left-0 top-0 ml-auto animate-spin bg-accent text-primary transition-opacity ${
+              appIsLoading ? '' : ' opacity-0'
+            }`}
+          />
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-72">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">{loggedInUser?.email}</DropdownMenuLabel>
-
         {teams.map(({ team: { uuid, name }, users }) => {
           const isActive = activeTeamUuid === uuid;
           return (
@@ -91,8 +97,6 @@ export function TeamSwitcher({ appIsLoading }: Props) {
           );
         })}
 
-        <DropdownMenuSeparator />
-
         <DropdownMenuItem
           className="flex gap-3 text-muted-foreground"
           onClick={() => {
@@ -103,6 +107,17 @@ export function TeamSwitcher({ appIsLoading }: Props) {
             <AddIcon />
           </IconWrapper>
           Create team
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <Link to={ROUTES.ACCOUNT} className="flex gap-3 text-muted-foreground">
+            <IconWrapper>
+              <AccountIcon />
+            </IconWrapper>
+            My account
+          </Link>
         </DropdownMenuItem>
 
         <DropdownMenuItem
