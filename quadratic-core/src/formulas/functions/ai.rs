@@ -4,7 +4,7 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
     include_in_docs: false,
     include_in_completions: true,
     name: "AI Researcher",
-    docs: "",
+    docs: None,
     get_functions,
 };
 
