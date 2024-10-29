@@ -8,7 +8,7 @@ use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
-use crate::{Pos, SheetRect};
+use crate::{Pos, SheetPos, SheetRect};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -280,6 +280,11 @@ impl fmt::Display for JsPos {
 }
 impl From<Pos> for JsPos {
     fn from(pos: Pos) -> Self {
+        JsPos { x: pos.x, y: pos.y }
+    }
+}
+impl From<SheetPos> for JsPos {
+    fn from(pos: SheetPos) -> Self {
         JsPos { x: pos.x, y: pos.y }
     }
 }

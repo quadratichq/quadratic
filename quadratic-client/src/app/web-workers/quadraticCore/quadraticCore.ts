@@ -18,6 +18,7 @@ import {
   Format,
   JsCellValue,
   JsCodeCell,
+  JsPos,
   JsRenderCell,
   MinMax,
   PasteSpecial,
@@ -43,6 +44,8 @@ import {
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
+  CoreClientFindNextColumnForRect,
+  CoreClientFindNextRowForRect,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
@@ -55,6 +58,8 @@ import {
   CoreClientHasRenderCells,
   CoreClientLoad,
   CoreClientMessage,
+  CoreClientMoveCodeCellHorizontally,
+  CoreClientMoveCodeCellVertically,
   CoreClientNeighborText,
   CoreClientSearch,
   CoreClientSummarizeSelection,
@@ -920,6 +925,44 @@ class QuadraticCore {
     });
   }
 
+  moveCodeCellVertically(sheetId: string, x: number, y: number, sheetEnd: boolean, reverse: boolean): Promise<JsPos> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientMoveCodeCellVertically) => {
+        resolve(message.pos);
+      };
+      this.send({
+        type: 'clientCoreMoveCodeCellVertically',
+        sheetId,
+        x,
+        y,
+        sheetEnd,
+        reverse,
+        cursor: sheets.getCursorPosition(),
+        id,
+      });
+    });
+  }
+
+  moveCodeCellHorizontally(sheetId: string, x: number, y: number, sheetEnd: boolean, reverse: boolean): Promise<JsPos> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientMoveCodeCellHorizontally) => {
+        resolve(message.pos);
+      };
+      return this.send({
+        type: 'clientCoreMoveCodeCellHorizontally',
+        sheetId,
+        x,
+        y,
+        sheetEnd,
+        reverse,
+        cursor: sheets.getCursorPosition(),
+        id,
+      });
+    });
+  }
+
   //#endregion
 
   //#region Bounds
@@ -1004,6 +1047,60 @@ class QuadraticCore {
         rowStart,
         reverse,
         withContent,
+      });
+    });
+  }
+
+  findNextColumnForRect(options: {
+    sheetId: string;
+    columnStart: number;
+    row: number;
+    width: number;
+    height: number;
+    reverse: boolean;
+  }): Promise<number> {
+    const { sheetId, columnStart, row, width, height, reverse } = options;
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientFindNextColumnForRect) => {
+        resolve(message.column);
+      };
+      this.send({
+        type: 'clientCoreFindNextColumnForRect',
+        id,
+        sheetId,
+        columnStart,
+        row,
+        width,
+        height,
+        reverse,
+      });
+    });
+  }
+
+  findNextRowForRect(options: {
+    sheetId: string;
+    column: number;
+    rowStart: number;
+    width: number;
+    height: number;
+    reverse: boolean;
+  }): Promise<number> {
+    const { sheetId, column, rowStart, width, height, reverse } = options;
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientFindNextRowForRect) => {
+        resolve(message.row);
+      };
+      this.send({
+        type: 'clientCoreFindNextRowForRect',
+        id,
+        sheetId,
+        column,
+        rowStart,
+        width,
+        height,
+        reverse,
       });
     });
   }

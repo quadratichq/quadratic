@@ -450,3 +450,19 @@ export const ZoomInIcon: IconComponent = (props) => {
 export const ZoomOutIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_out</Icon>;
 };
+
+export const ArrowRight: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_arrow_right</Icon>;
+};
+
+export const ArrowDoubleRight: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_double_arrow_right</Icon>;
+};
+
+export const ArrowDown: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_arrow_down</Icon>;
+};
+
+export const ArrowDoubleDown: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_double_arrow_down</Icon>;
+};

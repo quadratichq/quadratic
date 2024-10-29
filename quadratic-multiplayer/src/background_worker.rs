@@ -136,7 +136,7 @@ mod tests {
         let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
-        let operations = Transaction::serialize_and_compress(&vec![operations_1]).unwrap();
+        let operations = Transaction::serialize_and_compress(vec![operations_1]).unwrap();
 
         state
             .pubsub
