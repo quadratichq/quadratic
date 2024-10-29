@@ -6,6 +6,7 @@ export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   return (
     <div className="grid h-full grid-rows-[1fr_auto]">
       <AIAssistantMessages />
+
       <AIAssistantUserMessageForm autoFocus={autoFocus} />
     </div>
   );

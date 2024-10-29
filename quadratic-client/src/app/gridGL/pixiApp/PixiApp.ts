@@ -27,10 +27,13 @@ import { Update } from '@/app/gridGL/pixiApp/Update';
 import { Viewport } from '@/app/gridGL/pixiApp/Viewport';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Coordinate } from '@/app/gridGL/types/size';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { isEmbed } from '@/app/helpers/isEmbed';
+import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { HEADING_SIZE } from '@/shared/constants/gridConstants';
+import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Rectangle, Renderer, utils } from 'pixi.js';
 import './pixiApp.css';
 
@@ -70,6 +73,8 @@ export class PixiApp {
   loading = true;
   destroyed = false;
   paused = true;
+
+  accentColor = colors.cursorCell;
 
   // for testing purposes
   debug!: Graphics;
@@ -166,6 +171,7 @@ export class PixiApp {
   }
 
   private setupListeners() {
+    sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
     window.addEventListener('resize', this.resize);
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
@@ -173,6 +179,7 @@ export class PixiApp {
   }
 
   private removeListeners() {
+    sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
@@ -216,6 +223,18 @@ export class PixiApp {
     this.removeListeners();
     this.destroyed = true;
   }
+
+  setAccentColor = (): void => {
+    // Pull the value from the current value as defined in CSS
+    const accentColor = getCSSVariableTint('primary');
+    this.accentColor = accentColor;
+    this.gridLines.dirty = true;
+    this.axesLines.dirty = true;
+    this.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
+    this.render();
+  };
 
   resize = (): void => {
     if (!this.parent || this.destroyed) return;
