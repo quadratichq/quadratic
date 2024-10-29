@@ -106,7 +106,9 @@ class AIAnalystOfflineChats {
           uuid,
           ...{
             ...chat,
-            messages: chat.messages.filter((message) => message.contextType === 'userPrompt'),
+            messages: chat.messages.filter(
+              (message) => message.contextType === 'userPrompt' || message.contextType === 'toolResult'
+            ),
           },
         };
         store.put(chatEntry);
