@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Point, Rectangle } from 'pixi.js';
 import { intersects } from '../../helpers/intersects';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { CellsSheet } from '../CellsSheet';
@@ -54,4 +55,13 @@ export class CellsImages extends Container<CellsImage> {
       pixiApp.setViewportDirty();
     }
   };
+
+  hoverPoint(world: Point): Coordinate | undefined {
+    for (const child of this.children) {
+      const result = child.hoverPoint(world);
+      if (result) {
+        return result;
+      }
+    }
+  }
 }

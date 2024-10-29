@@ -206,6 +206,20 @@ export class Tables extends Container<Table> {
       }
       return true;
     }
+    const hoverImage = pixiApp.cellsSheet().cellsImages.hoverPoint(world);
+    const tableImage = this.children.find(
+      (table) => table.codeCell.x === hoverImage?.x && table.codeCell.y === hoverImage?.y
+    );
+    if (tableImage) {
+      if (!this.isTableActive(tableImage)) {
+        if (this.hoverTable !== tableImage) {
+          this.hoverTable?.hideActive();
+        }
+        this.hoverTable = tableImage;
+        tableImage.showActive();
+      }
+      return true;
+    }
     this.tableCursor = undefined;
     return false;
   }

@@ -72,20 +72,18 @@ export class PointerImages {
     }
 
     const search = this.findImage(point);
-    if (search) {
-      if (search.side) {
-        pixiApp.cellImages.activate(search.image);
-        switch (search.side) {
-          case 'bottom':
-            this.cursor = 'ns-resize';
-            break;
-          case 'right':
-            this.cursor = 'ew-resize';
-            break;
-          case 'corner':
-            this.cursor = 'nwse-resize';
-            break;
-        }
+    if (search?.side) {
+      pixiApp.cellImages.activate(search.image);
+      switch (search.side) {
+        case 'bottom':
+          this.cursor = 'ns-resize';
+          break;
+        case 'right':
+          this.cursor = 'ew-resize';
+          break;
+        case 'corner':
+          this.cursor = 'nwse-resize';
+          break;
       }
       return true;
     }

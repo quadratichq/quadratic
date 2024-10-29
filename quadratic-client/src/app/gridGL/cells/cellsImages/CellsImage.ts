@@ -1,7 +1,9 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '../../UI/UICellImages';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { CellsSheet } from '../CellsSheet';
@@ -116,8 +118,15 @@ export class CellsImage extends Container {
   };
 
   reposition() {
-    const screen = this.sheet.getCellOffsets(this.column, this.row + 1);
+    const screen = this.sheet.getCellOffsets(this.column, this.row);
     this.position.set(screen.x, screen.y);
     this.resizeImage();
+  }
+
+  hoverPoint(world: Point): Coordinate | undefined {
+    if (intersects.rectanglePoint(this.viewBounds, world)) {
+      return { x: this.column, y: this.row };
+    }
+    return undefined;
   }
 }
