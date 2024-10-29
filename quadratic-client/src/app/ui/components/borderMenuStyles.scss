@@ -4,29 +4,29 @@
 }
 
 .normalBorder {
-  border-top: 1px solid black;
+  border-top: 1px solid currentColor;
 }
 
 .doubleBorder {
-  border-top: 2px solid black;
+  border-top: 2px solid currentColor;
 }
 
 .tripleBorder {
-  border-top: 3px solid black;
+  border-top: 3px solid currentColor;
 }
 
 .dashedBorder {
-  border-top: 1px dashed black;
+  border-top: 1px dashed currentColor;
 }
 
 .dottedBorder {
-  border-top: 1px dotted black;
+  border-top: 1px dotted currentColor;
 }
 
 .twoLineBorder {
   position: relative;
   top: 2px;
-  border-top: 2px double black;
+  border-top: 2px double currentColor;
   position: relative;
   margin-bottom: 5px;
 }

@@ -1,6 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { colors } from '@/app/theme/colors';
 import { BitmapText, Container, Graphics } from 'pixi.js';
 
 const MOVING_THICKNESS = 3;
@@ -25,7 +24,7 @@ export class UICellMoving extends Container {
     }
     this.visible = true;
     this.graphics.clear();
-    this.graphics.lineStyle(1, colors.movingCells, MOVING_THICKNESS);
+    this.graphics.lineStyle(1, pixiApp.accentColor, MOVING_THICKNESS);
     const sheet = sheets.sheet;
     const start = sheet.getCellOffsets(moving.toColumn, moving.toRow);
     const end = sheet.getCellOffsets(moving.toColumn + moving.width - 1, moving.toRow + moving.height - 1);
