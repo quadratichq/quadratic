@@ -1,6 +1,9 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { JsHtmlOutput } from '@/app/quadratic-core-types';
+import { Point, Rectangle } from 'pixi.js';
 import { HtmlCell } from './HtmlCell';
 
 class HTMLCellsHandler {
@@ -118,6 +121,22 @@ class HTMLCellsHandler {
     // remove and add cell to the set to update the order
     this.cells.delete(cell);
     this.cells.add(cell);
+  }
+
+  checkHover(world: Point): Coordinate | undefined {
+    const cells = this.getCells();
+    for (const cell of cells) {
+      if (cell.sheet.id !== sheets.sheet.id) continue;
+      const bounds = new Rectangle(
+        cell.div.offsetLeft,
+        cell.div.offsetTop,
+        cell.div.offsetWidth,
+        cell.div.offsetHeight
+      );
+      if (intersects.rectanglePoint(bounds, world)) {
+        return { x: cell.x, y: cell.y };
+      }
+    }
   }
 }
 

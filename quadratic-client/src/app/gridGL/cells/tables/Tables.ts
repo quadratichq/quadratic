@@ -7,6 +7,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -190,6 +191,20 @@ export class Tables extends Container<Table> {
         }
         return true;
       }
+    }
+    const hover = htmlCellsHandler.checkHover(world);
+    const table = hover
+      ? this.children.find((table) => table.codeCell.x === hover?.x && table.codeCell.y === hover?.y)
+      : undefined;
+    if (table) {
+      if (!this.isTableActive(table)) {
+        if (this.hoverTable !== table) {
+          this.hoverTable?.hideActive();
+        }
+        this.hoverTable = table;
+        table.showActive();
+      }
+      return true;
     }
     this.tableCursor = undefined;
     return false;
