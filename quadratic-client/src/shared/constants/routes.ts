@@ -41,6 +41,7 @@ export const ROUTES = {
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   EXAMPLES: '/examples',
   ACCOUNT: '/account',
+  LABS: '/labs',
 
   API: {
     FILE: (uuid: string) => `/api/files/${uuid}`,
