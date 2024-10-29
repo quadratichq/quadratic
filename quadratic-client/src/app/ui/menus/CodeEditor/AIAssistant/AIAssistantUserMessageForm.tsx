@@ -46,7 +46,7 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssi
 
     return (
       <form
-        className="z-10 m-2 mt-1 rounded-lg bg-slate-100"
+        className="z-10 m-2 mt-1 rounded-lg bg-accent"
         onSubmit={(e) => e.preventDefault()}
         onClick={() => textareaRef.current?.focus()}
       >

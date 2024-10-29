@@ -3,7 +3,8 @@ import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { CodeIcon } from '@/shared/components/Icons';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { OBJ, parse, STR } from 'partial-json';
@@ -35,12 +36,14 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     }
   }, [args, loading]);
 
-  const openDiffInCodeEditor = useRecoilCallback(
+  const saveAndRun = useRecoilCallback(
     ({ set }) =>
-      (toolArgs: SetCodeCellValueResponse) => {
+      async (toolArgs: SetCodeCellValueResponse) => {
+        const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, toolArgs.x, toolArgs.y);
+
         set(codeEditorAtom, (prev) => ({
           ...prev,
-          diffEditorContent: { editorContent: toolArgs.codeString, isApplied: false },
+          diffEditorContent: { editorContent: codeCell?.code_string ?? '', isApplied: true },
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,
@@ -49,9 +52,18 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
             },
             showCellTypeMenu: false,
             inlineEditor: false,
-            initialCode: '',
+            initialCode: toolArgs.codeString,
           },
         }));
+
+        quadraticCore.setCodeCellValue({
+          sheetId: sheets.current,
+          x: toolArgs.x,
+          y: toolArgs.y,
+          codeString: toolArgs.codeString,
+          language: toolArgs.language,
+          cursor: sheets.getCursorPosition(),
+        });
       },
     []
   );
@@ -85,9 +97,9 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
         <span className="font-bold">{`${toolArgs.data.language} (${toolArgs.data.x}, ${toolArgs.data.y})`}</span>
       </div>
 
-      <TooltipPopover label={'Show diff in code editor'}>
-        <Button size="icon-sm" variant="ghost" onClick={() => openDiffInCodeEditor(toolArgs.data)}>
-          <CodeIcon />
+      <TooltipPopover label={'Apply'}>
+        <Button size="icon-sm" variant="ghost" onClick={() => saveAndRun(toolArgs.data)}>
+          <SaveAndRunIcon />
         </Button>
       </TooltipPopover>
     </div>
