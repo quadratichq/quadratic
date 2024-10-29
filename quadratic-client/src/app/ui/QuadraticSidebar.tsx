@@ -11,6 +11,7 @@ import {
 import { showCellTypeOutlinesAtom } from '@/app/atoms/gridSettingsAtom';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -119,6 +120,9 @@ export const QuadraticSidebar = () => {
           </SidebarToggle>
         </SidebarTooltip>
       </div>
+      <div className="mb-2 mt-auto flex flex-col items-center justify-end gap-1">
+        <ThemePickerMenu />
+      </div>
     </nav>
   );
 };
@@ -130,7 +134,8 @@ export const SidebarToggle = React.forwardRef<HTMLButtonElement, React.Component
         {...props}
         ref={ref}
         className={cn(
-          'relative h-8 w-8 rounded text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border'
+          'relative h-8 w-8 rounded text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border',
+          props.className
         )}
       >
         {children}

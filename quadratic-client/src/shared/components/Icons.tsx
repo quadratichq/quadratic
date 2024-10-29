@@ -48,6 +48,17 @@ export const AddIcon: IconComponent = (props) => {
 export const AIIcon: IconComponent = (props) => {
   return <Icon {...props}>auto_awesome</Icon>;
 };
+export const AppearanceLightModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>light_mode</Icon>;
+};
+
+export const AppearanceDarkModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>dark_mode</Icon>;
+};
+
+export const AppearanceSystemModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>discover_tune</Icon>;
+};
 
 export const ApiIcon: IconComponent = (props) => {
   return <Icon {...props}>api</Icon>;
@@ -408,6 +419,10 @@ export const FileSharedWithMeIcon: IconComponent = (props) => {
   return <Icon {...props}>move_to_inbox</Icon>;
 };
 
+export const LabsIcon: IconComponent = (props) => {
+  return <Icon {...props}>experiment</Icon>;
+};
+
 export const PasteIcon: IconComponent = (props) => {
   return <Icon {...props}>content_paste</Icon>;
 };
@@ -458,6 +473,10 @@ export const StopIcon: IconComponent = (props) => {
 
 export const StopCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>stop_circle</Icon>;
+};
+
+export const ThemeIcon: IconComponent = (props) => {
+  return <Icon {...props}>contrast</Icon>;
 };
 
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
