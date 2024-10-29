@@ -44,7 +44,7 @@ export class HtmlCell {
 
     // the 0.5 is adjustment for the border
     this.div.style.left = `${offset.x - 0.5}px`;
-    this.div.style.top = `${offset.y + offset.height - 0.5}px`;
+    this.div.style.top = `${offset.y - 0.5}px`;
 
     this.right = document.createElement('div');
     this.right.className = 'html-resize-control-right';
