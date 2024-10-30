@@ -7,6 +7,7 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
+import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -26,10 +27,21 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
 
   return (
     <div className="flex items-center justify-between p-3">
-      <span className="text-sm font-bold">{showChatHistory ? 'Chat history' : 'Chat'}</span>
+      <span className="flexz items-centerz text-sm font-bold">
+        {showChatHistory ? (
+          'Chat history'
+        ) : (
+          <>
+            Chat
+            <Badge variant="outline" className="ml-2">
+              Experimental
+            </Badge>
+          </>
+        )}
+      </span>
 
       <div className="flex items-center gap-2">
-        <TooltipPopover label="Previous chats" side="bottom">
+        <TooltipPopover label="Previous chats">
           <Button
             variant={showChatHistory ? 'default' : 'ghost'}
             size="icon-sm"
@@ -41,7 +53,7 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
           </Button>
         </TooltipPopover>
 
-        <TooltipPopover label="New chat" side="bottom">
+        <TooltipPopover label="New chat">
           <Button
             variant="ghost"
             size="icon-sm"

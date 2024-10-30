@@ -1,18 +1,19 @@
-import { aiAnalystChatsAtom, aiAnalystCurrentChatAtom } from '@/app/atoms/aiAnalystAtom';
-import { DeleteIcon, EditIcon } from '@/shared/components/Icons';
+import { aiAnalystChatsAtom, aiAnalystCurrentChatAtom, aiAnalystShowChatHistoryAtom } from '@/app/atoms/aiAnalystAtom';
+import { DeleteIcon, FileRenameIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { useMemo, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 const DEFAULT_CHAT_NAME = 'Untitled chat';
 
 export const AIAnalystChatHistory = () => {
   const [chats, setChats] = useRecoilState(aiAnalystChatsAtom);
   const [currentChat, setCurrentChat] = useRecoilState(aiAnalystCurrentChatAtom);
+  const setShowChatHistory = useSetRecoilState(aiAnalystShowChatHistoryAtom);
   const [searchValue, setSearchValue] = useState('');
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingChatName, setEditingChatName] = useState('');
@@ -29,81 +30,97 @@ export const AIAnalystChatHistory = () => {
               <div key={group} className="flex flex-col gap-1">
                 <span className="pl-3 text-xs font-semibold">{group}</span>
 
-                {groupChats.map((chat) => (
-                  <div
-                    key={chat.id}
-                    className={cn(
-                      'flex items-center justify-between pl-3',
-                      chat.id === currentChat.id ? 'bg-muted' : 'hover:cursor-pointer'
-                    )}
-                    onClick={() => {
-                      if (chat.id === currentChat.id) return;
-                      setCurrentChat(chat);
-                    }}
-                  >
-                    {editingChatId === chat.id ? (
-                      <input
-                        className="flex-grow bg-transparent text-sm text-foreground outline-0"
-                        value={editingChatName}
-                        onChange={(e) => setEditingChatName(e.target.value)}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
-                          if (e.code === 'Enter') {
-                            e.currentTarget.blur();
-                          } else if (e.code === 'Escape') {
+                {groupChats.map((chat) => {
+                  const isCurrentChat = chat.id === currentChat.id;
+                  const isBeingRenamed = editingChatId === chat.id;
+
+                  return (
+                    <div
+                      key={chat.id}
+                      className={cn(
+                        'relative flex h-8 items-center justify-between rounded pl-3 hover:bg-muted',
+                        isBeingRenamed && 'bg-muted',
+                        isCurrentChat
+                          ? 'cursor-default after:absolute after:left-0 after:top-1/2 after:h-1.5 after:w-1.5 after:-translate-y-1/2 after:rounded-full after:bg-primary after:content-[""]'
+                          : 'hover:cursor-pointer'
+                      )}
+                      onClick={() => {
+                        if (isCurrentChat) {
+                          setShowChatHistory(false);
+                          return;
+                        }
+                        setCurrentChat(chat);
+                      }}
+                    >
+                      {isBeingRenamed ? (
+                        <input
+                          className="flex-grow bg-transparent text-sm text-foreground outline-0"
+                          value={editingChatName}
+                          onChange={(e) => setEditingChatName(e.target.value)}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.code === 'Enter') {
+                              e.currentTarget.blur();
+                            } else if (e.code === 'Escape') {
+                              setEditingChatId(null);
+                            }
+                          }}
+                          onBlur={() => {
                             setEditingChatId(null);
-                          }
-                        }}
-                        onBlur={() => {
-                          setEditingChatId(null);
-                          if (editingChatName !== chat.name) {
-                            setChats((prev) =>
-                              prev.map((prevChat) =>
-                                prevChat.id === chat.id ? { ...prevChat, name: editingChatName } : prevChat
-                              )
-                            );
-                          }
-                        }}
-                        autoFocus
-                      />
-                    ) : (
-                      <div className="flex-shrink truncate text-sm text-foreground">
-                        {chat.name ? chat.name : DEFAULT_CHAT_NAME}
-                      </div>
-                    )}
-
-                    <div className="flex flex-shrink-0 items-center gap-1">
-                      <TooltipPopover label="Edit name" side="bottom">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="hover:text-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingChatId(chat.id);
-                            setEditingChatName(chat.name);
+                            if (editingChatName !== chat.name) {
+                              setChats((prev) =>
+                                prev.map((prevChat) =>
+                                  prevChat.id === chat.id ? { ...prevChat, name: editingChatName } : prevChat
+                                )
+                              );
+                            }
                           }}
-                        >
-                          <EditIcon />
-                        </Button>
-                      </TooltipPopover>
-
-                      <TooltipPopover label="Delete chat" side="bottom">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="hover:text-foreground"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setChats((prev) => prev.filter((prevChat) => prevChat.id !== chat.id));
+                          onFocus={(e) => {
+                            e.currentTarget.select();
                           }}
-                        >
-                          <DeleteIcon />
-                        </Button>
-                      </TooltipPopover>
+                          autoFocus
+                        />
+                      ) : (
+                        <div className="flex-shrink truncate text-sm text-foreground">
+                          {chat.name ? chat.name : DEFAULT_CHAT_NAME}
+                        </div>
+                      )}
+
+                      {!isBeingRenamed && (
+                        <div className="flex flex-shrink-0 items-center">
+                          <TooltipPopover label="Rename">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="hover:text-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingChatId(chat.id);
+                                setEditingChatName(chat.name);
+                              }}
+                            >
+                              <FileRenameIcon />
+                            </Button>
+                          </TooltipPopover>
+
+                          <TooltipPopover label="Delete">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="hover:text-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setChats((prev) => prev.filter((prevChat) => prevChat.id !== chat.id));
+                              }}
+                            >
+                              <DeleteIcon />
+                            </Button>
+                          </TooltipPopover>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )
         )}
