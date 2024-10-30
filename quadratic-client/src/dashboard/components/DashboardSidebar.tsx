@@ -1,7 +1,9 @@
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
+import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
   DatabaseIcon,
@@ -32,6 +34,7 @@ import { useSetRecoilState } from 'recoil';
  */
 export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const [, setSearchParams] = useSearchParams();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   const {
     userMakingRequest: { id: ownerUserId },
     eduStatus,
@@ -151,6 +154,16 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           <LabsIcon className={classNameIcons} />
           Labs
         </SidebarNavLink>
+        <SidebarNavLink to="/account">
+          <Avatar src={user?.picture} alt={user?.name}>
+            {user?.name}
+          </Avatar>
+
+          <div className={`flex flex-col overflow-hidden text-left`}>
+            {user?.name || 'You'}
+            {user?.email && <p className={`truncate ${TYPE.caption} text-muted-foreground`}>{user?.email}</p>}
+          </div>
+        </SidebarNavLink>
       </div>
     </nav>
   );
@@ -164,7 +177,7 @@ function SidebarNavLinkCreateButton({ children, isPrivate }: { children: ReactNo
         <Button
           variant="ghost"
           size="icon-sm"
-          className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100"
+          className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
           onClick={() => setNewFileDialogState({ show: true, isPrivate })}
         >
           <AddIcon />
@@ -174,6 +187,12 @@ function SidebarNavLinkCreateButton({ children, isPrivate }: { children: ReactNo
     </Tooltip>
   );
 }
+
+export const sidebarItemClasses = {
+  base: `dark:hover:brightness-125 hover:brightness-95 hover:saturate-150 dark:hover:saturate-100 bg-accent relative flex items-center gap-2 p-2 no-underline rounded`,
+  active: `bg-accent dark:brightness-125 brightness-95 saturate-150 dark:saturate-100`,
+  dragging: `bg-primary text-primary-foreground`,
+};
 
 function SidebarNavLink({
   to,
@@ -236,11 +255,10 @@ function SidebarNavLink({
     : {};
 
   const classes = cn(
-    isActive && !isLogo && 'bg-border font-medium',
-    !isLogo && 'hover:bg-border',
-    isDraggingOver && 'bg-primary text-primary-foreground',
+    sidebarItemClasses.base,
+    isActive && sidebarItemClasses.active,
+    isDraggingOver && sidebarItemClasses.dragging,
     TYPE.body2,
-    `relative flex items-center gap-2 p-2 no-underline rounded`,
     className
   );
 
