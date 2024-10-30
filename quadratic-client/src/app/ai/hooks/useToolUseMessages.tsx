@@ -10,7 +10,9 @@ export function useToolUseMessages() {
         content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 Following are the tools you should use to do actions in the spreadsheet, use them to respond to the user prompt.\n
 
-Include a concise explanation of the actions you are taking to respond to the user prompt.\n
+Include a concise explanation of the actions you are taking to respond to the user prompt.
+
+Don't include tool details in your response. Reply in layman's terms what actions you are taking.\n
           
 ${Object.entries(aiToolsSpec)
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)

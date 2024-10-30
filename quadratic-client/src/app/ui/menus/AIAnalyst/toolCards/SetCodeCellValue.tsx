@@ -83,10 +83,10 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     }
   }
 
-  if (!toolArgs || !toolArgs.data) {
-    return <div className={className}>Loading...</div>;
-  } else if (!toolArgs.success) {
+  if (!!toolArgs && !toolArgs.success) {
     return <div className={className}>Something went wrong</div>;
+  } else if (!toolArgs || !toolArgs.data) {
+    return <div className={className}>Loading...</div>;
   }
 
   return (

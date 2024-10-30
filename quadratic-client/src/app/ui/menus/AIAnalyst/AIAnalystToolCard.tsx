@@ -1,4 +1,5 @@
 import { AITool } from '@/app/ai/tools/aiTools';
+import { SetCellValues } from '@/app/ui/menus/AIAnalyst/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ui/menus/AIAnalyst/toolCards/SetCodeCellValue';
 
 type AIAnalystToolCardProps = {
@@ -15,6 +16,8 @@ export const AIAnalystToolCard = ({ name, args, loading }: AIAnalystToolCardProp
   switch (name) {
     case AITool.SetCodeCellValue:
       return <SetCodeCellValue args={args} loading={loading} />;
+    case AITool.SetCellValues:
+      return <SetCellValues args={args} loading={loading} />;
     default:
       return null;
   }
