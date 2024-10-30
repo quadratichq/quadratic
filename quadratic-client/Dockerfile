@@ -9,7 +9,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 # Install wasm32-unknown-unknown target
-RUN rustup target add wasm32-unknown-unknown
+# RUN rustup target add wasm32-unknown-unknown
 
 # Install python, binaryen & clean up
 RUN apt-get update && apt-get install -y python-is-python3 python3-pip binaryen && apt-get clean && rm -rf /var/lib/apt/lists/*
