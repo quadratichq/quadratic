@@ -1,6 +1,6 @@
 export const QuadraticDocs = `# Quadratic Docs
 
-The infinite spreadsheet with Python, SQL, JavaScript, and AI.
+Quadratic is an infinite spreadsheet with Python, SQL, JavaScript, and AI.
 
 Quadratic is a modern spreadsheet built for technical teams. 
 

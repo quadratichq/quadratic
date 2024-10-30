@@ -31,12 +31,12 @@ const ai_rate_limiter = rateLimit({
 
 bedrock_router.post('/bedrock/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, messages, temperature, max_tokens, tools, tool_choice } = BedrockAutoCompleteRequestBodySchema.parse(
-      request.body
-    );
+    const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
+      BedrockAutoCompleteRequestBodySchema.parse(request.body);
 
     const command = new ConverseCommand({
       modelId: model,
+      system,
       messages,
       inferenceConfig: { maxTokens: max_tokens, temperature },
       toolConfig: tools &&
@@ -65,10 +65,11 @@ bedrock_router.post(
   ai_rate_limiter,
   async (request: Request, response) => {
     try {
-      const { model, messages, temperature, max_tokens, tools, tool_choice } =
+      const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
         BedrockAutoCompleteRequestBodySchema.parse(request.body);
       const command = new ConverseStreamCommand({
         modelId: model,
+        system,
         messages,
         inferenceConfig: { maxTokens: max_tokens, temperature },
         toolConfig: tools &&

@@ -137,9 +137,11 @@ export function useSubmitAIAnalystPrompt() {
         try {
           // Send user prompt to API
           const updatedMessages = await updateInternalContext({ context });
+          const { system, messages } = getMessagesForModel(model, updatedMessages);
           const response = await handleAIRequestToAPI({
             model,
-            messages: getMessagesForModel(model, updatedMessages),
+            system,
+            messages,
             setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
             signal: abortController.signal,
             useStream: true,
@@ -182,9 +184,11 @@ export function useSubmitAIAnalystPrompt() {
 
             // Send tool call results to API
             const updatedMessages = await updateInternalContext({ context });
+            const { system, messages } = getMessagesForModel(model, updatedMessages);
             const response = await handleAIRequestToAPI({
               model,
-              messages: getMessagesForModel(model, updatedMessages),
+              system,
+              messages,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
               useStream: true,

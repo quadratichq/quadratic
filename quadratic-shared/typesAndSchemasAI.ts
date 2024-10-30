@@ -66,24 +66,23 @@ const ContextSchema = z.object({
 });
 export type Context = z.infer<typeof ContextSchema>;
 
-const UserMessageInternalSchema = z
-  .object({
-    role: z.literal('user'),
-    content: z.string(),
-    contextType: ContextTypeSchema.exclude(['toolResult', 'userPrompt']),
-  })
-  .or(
+const SystemMessageSchema = z.object({
+  role: z.literal('user'),
+  content: z.string(),
+  contextType: ContextTypeSchema.exclude(['toolResult', 'userPrompt']),
+});
+export type SystemMessage = z.infer<typeof SystemMessageSchema>;
+
+const ToolResultSchema = z.object({
+  role: z.literal('user'),
+  content: z.array(
     z.object({
-      role: z.literal('user'),
-      content: z.array(
-        z.object({
-          id: z.string(),
-          content: z.string(),
-        })
-      ),
-      contextType: z.literal('toolResult'),
+      id: z.string(),
+      content: z.string(),
     })
-  );
+  ),
+  contextType: z.literal('toolResult'),
+});
 
 const UserMessagePromptSchema = z.object({
   role: z.literal('user'),
@@ -93,7 +92,7 @@ const UserMessagePromptSchema = z.object({
 });
 export type UserMessagePrompt = z.infer<typeof UserMessagePromptSchema>;
 
-const UserMessageSchema = UserMessageInternalSchema.or(UserMessagePromptSchema);
+const UserMessageSchema = SystemMessageSchema.or(ToolResultSchema).or(UserMessagePromptSchema);
 export type UserMessage = z.infer<typeof UserMessageSchema>;
 
 const AIMessageInternalSchema = z.object({
@@ -186,30 +185,37 @@ export type AnthropicPromptMessage = z.infer<typeof AnthropicPromptMessageSchema
 
 const OpenAIPromptMessageSchema = z
   .object({
-    role: z.literal('user'),
+    role: z.literal('system'),
     content: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
   })
   .or(
-    z.object({
-      role: z.literal('assistant'),
-      content: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
-      tool_calls: z
-        .array(
-          z.object({
-            id: z.string(),
-            type: z.literal('function'),
-            function: z.object({ name: z.string(), arguments: z.string() }),
-          })
-        )
-        .optional(),
-    })
-  )
-  .or(
-    z.object({
-      role: z.literal('tool'),
-      tool_call_id: z.string(),
-      content: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
-    })
+    z
+      .object({
+        role: z.literal('user'),
+        content: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
+      })
+      .or(
+        z.object({
+          role: z.literal('assistant'),
+          content: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
+          tool_calls: z
+            .array(
+              z.object({
+                id: z.string(),
+                type: z.literal('function'),
+                function: z.object({ name: z.string(), arguments: z.string() }),
+              })
+            )
+            .optional(),
+        })
+      )
+      .or(
+        z.object({
+          role: z.literal('tool'),
+          tool_call_id: z.string(),
+          content: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
+        })
+      )
   );
 export type OpenAIPromptMessage = z.infer<typeof OpenAIPromptMessageSchema>;
 
@@ -262,6 +268,7 @@ export type BedrockToolChoice = z.infer<typeof BedrockToolChoiceSchema>;
 
 export const BedrockAutoCompleteRequestBodySchema = z.object({
   model: BedrockModelSchema,
+  system: z.array(z.object({ text: z.string() })),
   messages: z.array(BedrockPromptMessageSchema),
   temperature: z.number(),
   max_tokens: z.number(),
@@ -291,6 +298,7 @@ export type AnthropicToolChoice = z.infer<typeof AnthropicToolChoiceSchema>;
 
 export const AnthropicAutoCompleteRequestBodySchema = z.object({
   model: AnthropicModelSchema,
+  system: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
   messages: z.array(AnthropicPromptMessageSchema),
   temperature: z.number().min(0).max(1).default(1),
   max_tokens: z.number(),

@@ -1,3 +1,4 @@
+import { getPromptMessages } from '@/app/ai/tools/helpers';
 import { Chat, ChatSchema } from 'quadratic-shared/typesAndSchemasAI';
 
 const DB_VERSION = 1;
@@ -117,9 +118,7 @@ class AIAnalystOfflineChats {
           uuid,
           ...{
             ...chat,
-            messages: chat.messages.filter(
-              (message) => message.contextType === 'userPrompt' || message.contextType === 'toolResult'
-            ),
+            messages: getPromptMessages(chat.messages),
           },
         };
         store.put(chatEntry);

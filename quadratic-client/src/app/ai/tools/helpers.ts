@@ -27,6 +27,7 @@ import {
   OpenAIPromptMessage,
   OpenAITool,
   OpenAIToolChoice,
+  SystemMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 export function isBedrockModel(model: AIModel): model is BedrockModel {
@@ -54,10 +55,28 @@ export function getAIProviderEndpoint(model: AIModel, stream: boolean): string {
   throw new Error(`Unknown model: ${model}`);
 }
 
-export const getMessagesForModel = (model: AIModel, messages: ChatMessage[]): AIPromptMessage[] => {
+export const getSystemMessages = (messages: ChatMessage[]): string[] => {
+  const systemMessages = messages.filter(
+    (message) => message.role === 'user' && message.contextType !== 'userPrompt' && message.contextType !== 'toolResult'
+  ) as SystemMessage[];
+  return systemMessages.map((message) => message.content);
+};
+
+export const getPromptMessages = (messages: ChatMessage[]): ChatMessage[] => {
+  return messages.filter((message) => message.contextType === 'userPrompt' || message.contextType === 'toolResult');
+};
+
+export const getMessagesForModel = (
+  model: AIModel,
+  messages: ChatMessage[]
+): { system?: string | { text: string }[]; messages: AIPromptMessage[] } => {
+  const systemMessages: string[] = getSystemMessages(messages);
+  const promptMessages = getPromptMessages(messages);
+  messages = [];
+
   const isBedrock = isBedrockModel(model);
   if (isBedrock) {
-    return messages.map<BedrockPromptMessage>((message) => {
+    const bedrockMessages: BedrockPromptMessage[] = promptMessages.map<BedrockPromptMessage>((message) => {
       if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
         const bedrockMessage: BedrockPromptMessage = {
           role: message.role,
@@ -109,61 +128,77 @@ export const getMessagesForModel = (model: AIModel, messages: ChatMessage[]): AI
         return bedrockMessage;
       }
     });
+
+    return { messages: bedrockMessages, system: systemMessages.map((message) => ({ text: message })) };
   }
 
   const isAnthropic = isAnthropicModel(model);
   if (isAnthropic) {
-    return messages.map<AnthropicPromptMessage>((message) => {
-      if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
-        const anthropicMessage: AnthropicPromptMessage = {
-          role: message.role,
-          content: [
-            ...(message.content
-              ? [
-                  {
-                    type: 'text' as const,
-                    text: message.content,
-                  },
-                ]
-              : []),
-            ...message.toolCalls.map((toolCall) => ({
-              type: 'tool_use' as const,
-              id: toolCall.id,
-              name: toolCall.name,
-              input: JSON.parse(toolCall.arguments),
-            })),
-          ],
-        };
-        return anthropicMessage;
-      } else if (message.role === 'user' && message.contextType === 'toolResult') {
-        const anthropicMessage: AnthropicPromptMessage = {
-          role: message.role,
-          content: [
-            ...message.content.map((toolResult) => ({
-              type: 'tool_result' as const,
-              tool_use_id: toolResult.id,
-              content: toolResult.content,
-            })),
+    const anthropicMessages: AnthropicPromptMessage[] = promptMessages.reduce<AnthropicPromptMessage[]>(
+      (acc, message) => {
+        if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
+          const anthropicMessages: AnthropicPromptMessage[] = [
+            ...acc,
             {
-              type: 'text' as const,
-              text: 'Given the above tool calls results, please provide your final answer to the user.',
+              role: message.role,
+              content: [
+                ...(message.content
+                  ? [
+                      {
+                        type: 'text' as const,
+                        text: message.content,
+                      },
+                    ]
+                  : []),
+                ...message.toolCalls.map((toolCall) => ({
+                  type: 'tool_use' as const,
+                  id: toolCall.id,
+                  name: toolCall.name,
+                  input: JSON.parse(toolCall.arguments),
+                })),
+              ],
             },
-          ],
-        };
-        return anthropicMessage;
-      } else {
-        const anthropicMessage: AnthropicPromptMessage = {
-          role: message.role,
-          content: message.content,
-        };
-        return anthropicMessage;
-      }
-    });
+          ];
+          return anthropicMessages;
+        } else if (message.role === 'user' && message.contextType === 'toolResult') {
+          const anthropicMessages: AnthropicPromptMessage[] = [
+            ...acc,
+            {
+              role: message.role,
+              content: [
+                ...message.content.map((toolResult) => ({
+                  type: 'tool_result' as const,
+                  tool_use_id: toolResult.id,
+                  content: toolResult.content,
+                })),
+                {
+                  type: 'text' as const,
+                  text: 'Given the above tool calls results, please provide your final answer to the user.',
+                },
+              ],
+            },
+          ];
+          return anthropicMessages;
+        } else {
+          const anthropicMessages: AnthropicPromptMessage[] = [
+            ...acc,
+            {
+              role: message.role,
+              content: message.content,
+            },
+          ];
+          return anthropicMessages;
+        }
+      },
+      []
+    );
+
+    return { messages: anthropicMessages, system: systemMessages.join('\n\n') };
   }
 
   const isOpenAI = isOpenAIModel(model);
   if (isOpenAI) {
-    return messages.reduce<OpenAIPromptMessage[]>((acc, message) => {
+    const messages: OpenAIPromptMessage[] = promptMessages.reduce<OpenAIPromptMessage[]>((acc, message) => {
       if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
         const openaiMessages: OpenAIPromptMessage[] = [
           ...acc,
@@ -201,7 +236,14 @@ export const getMessagesForModel = (model: AIModel, messages: ChatMessage[]): AI
         ];
         return openaiMessages;
       }
-    }, [] as OpenAIPromptMessage[]);
+    }, []);
+
+    const openaiMessages: OpenAIPromptMessage[] = [
+      { role: 'system', content: systemMessages.map((message) => ({ type: 'text', text: message })) },
+      ...messages,
+    ];
+
+    return { messages: openaiMessages };
   }
 
   throw new Error(`Unknown model: ${model}`);

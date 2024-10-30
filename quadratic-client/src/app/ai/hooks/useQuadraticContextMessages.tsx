@@ -20,10 +20,13 @@ ${language === 'Python' || language === undefined ? PythonDocs : ''}\n
 ${language === 'Javascript' || language === undefined ? JavascriptDocs : ''}\n
 ${language === 'Formula' || language === undefined ? FormulaDocs : ''}\n
 ${language === 'Connection' || language === undefined ? ConnectionDocs : ''}\n
-Provide your response in ${
-          language ?? 'Python'
-        } language. Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.
-Respond in minimum number of words with direct answer. Don't explain the answer.
+${
+  language
+    ? `Provide your response in ${language} language.`
+    : 'Choose the language of your response based on the context and user prompt.'
+}
+Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.
+Respond in minimum number of words with direct answer. Include a concise explanation of the answer.
 `,
         contextType: 'quadraticDocs',
       },

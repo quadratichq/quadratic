@@ -15,6 +15,7 @@ import { SetterOrUpdater } from 'recoil';
 
 type HandleAIPromptProps = {
   model: AIModel;
+  system?: string | { text: string }[];
   messages: AIPromptMessage[];
   setMessages?: SetterOrUpdater<ChatMessage[]> | ((value: React.SetStateAction<ChatMessage[]>) => void);
   signal: AbortSignal;
@@ -321,6 +322,7 @@ export function useAIRequestToAPI() {
   const handleAIRequestToAPI = useCallback(
     async ({
       model,
+      system,
       messages,
       setMessages,
       signal,
@@ -356,7 +358,7 @@ export function useAIRequestToAPI() {
           method: 'POST',
           signal,
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages, temperature, max_tokens, tools, tool_choice }),
+          body: JSON.stringify({ model, system, messages, temperature, max_tokens, tools, tool_choice }),
         });
 
         if (!response.ok) {

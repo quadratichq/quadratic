@@ -16,7 +16,7 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { AIPromptMessage, ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export function useSubmitAIAssistantPrompt() {
@@ -103,12 +103,12 @@ export function useSubmitAIAssistantPrompt() {
           return updatedMessages;
         });
 
-        const messagesToSend: AIPromptMessage[] = getMessagesForModel(model, updatedMessages);
-
+        const { system, messages } = getMessagesForModel(model, updatedMessages);
         try {
           await handleAIRequestToAPI({
             model,
-            messages: messagesToSend,
+            system,
+            messages,
             setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
             signal: abortController.signal,
           });

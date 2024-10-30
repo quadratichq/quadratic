@@ -24,10 +24,11 @@ const ai_rate_limiter = rateLimit({
 
 anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, messages, temperature, max_tokens, tools, tool_choice } =
+    const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
       AnthropicAutoCompleteRequestBodySchema.parse(request.body);
     const result = await anthropic.messages.create({
       model,
+      system,
       messages,
       temperature,
       max_tokens,
@@ -52,10 +53,11 @@ anthropic_router.post(
   ai_rate_limiter,
   async (request: Request, response) => {
     try {
-      const { model, messages, temperature, max_tokens, tools, tool_choice } =
+      const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
         AnthropicAutoCompleteRequestBodySchema.parse(request.body);
       const chunks = await anthropic.messages.create({
         model,
+        system,
         messages,
         temperature,
         max_tokens,

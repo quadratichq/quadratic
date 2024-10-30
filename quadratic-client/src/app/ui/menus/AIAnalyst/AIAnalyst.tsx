@@ -6,6 +6,7 @@ import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { cn } from '@/shared/shadcn/utils';
 import { useCallback, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -48,17 +49,17 @@ export const AIAnalyst = () => {
       >
         <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
 
-        <div className="flex h-full w-full flex-col">
+        <div className={cn('h-full w-full', showChatHistory ? 'flex flex-col' : 'grid grid-rows-[auto_1fr_auto]')}>
           <AIAnalystHeader textareaRef={textareaRef} />
 
           {showChatHistory ? (
             <AIAnalystChatHistory />
           ) : (
-            <div className="grid h-full w-full grid-rows-[1fr_auto]">
+            <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
               <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
-            </div>
+            </>
           )}
         </div>
       </div>
