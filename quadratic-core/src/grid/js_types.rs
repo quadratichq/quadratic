@@ -170,15 +170,13 @@ pub struct CellFormatSummary {
     pub strike_through: Option<bool>,
 }
 
-#[derive(Serialize, PartialEq, Debug)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, PartialEq, Debug, TS)]
 pub struct JsReturnInfo {
     pub line_number: Option<u32>,
     pub output_type: Option<String>,
 }
 
-#[derive(Serialize, PartialEq, Debug)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, PartialEq, Debug, TS)]
 pub struct JsCodeCell {
     pub x: i64,
     pub y: i64,
@@ -209,8 +207,7 @@ pub struct JsRenderCodeCell {
     pub alternating_colors: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsHtmlOutput {
     pub sheet_id: String,
     pub x: i64,
@@ -220,8 +217,7 @@ pub struct JsHtmlOutput {
     pub h: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 pub enum JsRenderCodeCellState {
     NotYetRun,
     RunError,
@@ -247,8 +243,7 @@ pub struct JsValidationSheet {
     errors: Vec<(Pos, String)>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsDataTableColumn {
     pub name: String,
@@ -266,9 +261,7 @@ impl From<DataTableColumn> for JsDataTableColumn {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 pub struct JsRowHeight {
     pub row: i64,
     pub height: f64,
@@ -280,9 +273,7 @@ impl fmt::Display for JsRowHeight {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 pub struct JsOffset {
     pub column: Option<i32>,
     pub row: Option<i32>,
@@ -299,9 +290,7 @@ impl fmt::Display for JsOffset {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 pub struct JsPos {
     pub x: i64,
     pub y: i64,

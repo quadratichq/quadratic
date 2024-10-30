@@ -66,7 +66,7 @@ export class PointerImages {
       }
       this.resizing.image.temporaryResize(width, height);
       pixiApp.cellImages.dirtyResizing = true;
-      pixiApp.cellImages.dirtyBorders = true;
+      // pixiApp.cellImages.dirtyBorders = true;
       pixiApp.setViewportDirty();
       return true;
     }
@@ -125,7 +125,7 @@ export class PointerImages {
       this.resizing.image.width = this.resizing.image.viewBounds.width;
       this.resizing.image.height = this.resizing.image.viewBounds.height;
       pixiApp.cellImages.dirtyResizing = true;
-      pixiApp.cellImages.dirtyBorders = true;
+      // pixiApp.cellImages.dirtyBorders = true;
       this.resizing = undefined;
       return true;
     }

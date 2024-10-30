@@ -12,21 +12,30 @@ const SPILL_FILL_ALPHA = 0.05;
 
 export class TableOutline extends Graphics {
   private table: Table;
+  private active = false;
 
   constructor(table: Table) {
     super();
     this.table = table;
   }
 
+  activate(active: boolean) {
+    if (active === this.active) return;
+    this.active = active;
+    this.update();
+  }
+
   update() {
     this.clear();
 
     // draw the table selected outline
-    this.lineStyle({ color: getCSSVariableTint('primary'), width: 2, alignment: 0 });
+    const width = this.active ? 2 : 1;
+
+    this.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 0 });
     this.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.table.tableBounds.height));
 
     // draw the spill error boundaries
-    if (this.table.codeCell.spill_error) {
+    if (this.active && this.table.codeCell.spill_error) {
       const full = this.table.sheet.getScreenRectangle(
         Number(this.table.codeCell.x),
         Number(this.table.codeCell.y),
@@ -44,7 +53,6 @@ export class TableOutline extends Graphics {
         this.drawDashedRectangle(rectangle, colors.cellColorError);
       });
     }
-    this.visible = false;
   }
 
   // draw a dashed and filled rectangle to identify the cause of the spill error

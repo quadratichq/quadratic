@@ -1,5 +1,7 @@
 //! Holds borders for tables and code errors.
 
+// todo: this should move to TableOutline
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
@@ -8,7 +10,7 @@ import { Coordinate } from '@/app/gridGL/types/size';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsCodeCell, JsRenderCodeCell, RunError } from '@/app/quadratic-core-types';
 import mixpanel from 'mixpanel-browser';
-import { Container, Graphics, ParticleContainer, Point, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
@@ -234,38 +236,4 @@ export class CellsArray extends Container {
   private getSprite = (): Sprite => {
     return this.particles.addChild(new Sprite(Texture.WHITE));
   };
-
-  isCodeCell(x: number, y: number): boolean {
-    return this.codeCells.has(this.key(x, y));
-  }
-
-  isCodeCellOutput(x: number, y: number): boolean {
-    return [...this.codeCells.values()].some((codeCell) => {
-      let rect = new Rectangle(codeCell.x, codeCell.y, codeCell.x + codeCell.w, codeCell.y + codeCell.h);
-
-      return rect.contains(x, y);
-    });
-  }
-
-  getCodeCellWorld(point: Point): JsRenderCodeCell | undefined {
-    for (const [index, tableRect] of this.tables.entries()) {
-      if (tableRect.contains(point.x, point.y)) {
-        return this.codeCells.get(index);
-      }
-    }
-  }
-
-  getTableCursor(point: Coordinate): JsRenderCodeCell | undefined {
-    for (const codeCell of this.codeCells.values()) {
-      if (
-        !codeCell.spill_error &&
-        codeCell.x <= point.x &&
-        codeCell.x + codeCell.w > point.x &&
-        codeCell.y <= point.y &&
-        codeCell.y + codeCell.h > point.y
-      ) {
-        return codeCell;
-      }
-    }
-  }
 }

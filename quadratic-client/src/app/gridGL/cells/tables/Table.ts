@@ -139,13 +139,13 @@ export class Table extends Container {
   }
 
   hideActive() {
-    this.outline.visible = false;
+    this.outline.activate(false);
     this.tableName.hide();
     pixiApp.setViewportDirty();
   }
 
   showActive() {
-    this.outline.visible = true;
+    this.outline.activate(true);
     this.tableName.show();
     pixiApp.setViewportDirty();
   }
@@ -243,5 +243,12 @@ export class Table extends Container {
 
   getColumnHeaderLines(): { y0: number; y1: number; lines: number[] } {
     return this.columnHeaders.getColumnHeaderLines();
+  }
+
+  // resizes an image or html table to its overlapping size
+  resize(width: number, height: number) {
+    this.tableBounds.width = width;
+    this.tableBounds.height = height;
+    this.outline.update();
   }
 }

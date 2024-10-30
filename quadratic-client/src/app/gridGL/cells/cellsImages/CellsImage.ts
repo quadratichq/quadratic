@@ -112,6 +112,12 @@ export class CellsImage extends Container {
       this.sprite.width,
       IMAGE_BORDER_WIDTH
     );
+    const sheet = sheets.getById(this.sheetId);
+    if (!sheet) {
+      throw new Error(`Expected sheet to be defined in CellsImage.resizeImage`);
+    }
+    sheet.gridOverflowLines.updateImageHtml(this.column, this.row, this.sprite.width, this.sprite.height);
+    this.cellsSheet.tables.resizeTable(this.column, this.row, this.sprite.width, this.sprite.height);
     if (this.cellsSheet.sheetId === sheets.current) {
       pixiApp.setViewportDirty();
     }

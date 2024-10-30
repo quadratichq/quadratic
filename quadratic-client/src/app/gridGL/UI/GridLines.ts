@@ -26,13 +26,6 @@ export class GridLines extends Graphics {
   gridLinesX: GridLine[] = [];
   gridLinesY: GridLine[] = [];
 
-  draw(bounds: Rectangle): void {
-    this.lineStyle({ width: 1, color: colors.gridLines, alpha: 0.2, alignment: 0.5, native: false });
-    const range = this.drawHorizontalLines(bounds);
-    this.drawVerticalLines(bounds, range);
-    this.dirty = false;
-  }
-
   update(bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x, forceRefresh = false) {
     if (this.dirty || forceRefresh) {
       this.dirty = false;
@@ -63,9 +56,15 @@ export class GridLines extends Graphics {
       this.lineStyle(this.currentLineStyle);
       this.gridLinesX = [];
       this.gridLinesY = [];
-      const range = this.drawHorizontalLines(bounds);
+
+      const range = this.drawHorizontalLines(bounds, this.getColumns(bounds));
       this.drawVerticalLines(bounds, range);
     }
+  }
+
+  private getColumns(bounds: Rectangle): [number, number] {
+    const sheet = sheets.sheet;
+    return [sheet.offsets.getXPlacement(bounds.left).index, sheet.offsets.getXPlacement(bounds.right).index];
   }
 
   private drawVerticalLines(bounds: Rectangle, range: [number, number]) {
@@ -81,7 +80,7 @@ export class GridLines extends Graphics {
     for (let x = bounds.left; x <= bounds.right + size - 1; x += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {
-        const lines = gridOverflowLines.getLinesInRange(column, range);
+        const lines = gridOverflowLines.getColumnVerticalRange(column, range);
         if (lines) {
           for (const [y0, y1] of lines) {
             const start = offsets.getRowPlacement(y0).position;
@@ -101,11 +100,12 @@ export class GridLines extends Graphics {
   }
 
   // @returns the vertical range of [rowStart, rowEnd]
-  private drawHorizontalLines(bounds: Rectangle): [number, number] {
+  private drawHorizontalLines(bounds: Rectangle, columns: [number, number]): [number, number] {
     const offsets = sheets.sheet.offsets;
     const rowPlacement = offsets.getYPlacement(bounds.top);
     const index = rowPlacement.index;
     const position = rowPlacement.position;
+    const gridOverflowLines = sheets.sheet.gridOverflowLines;
 
     let row = index;
     const offset = bounds.top - position;
@@ -113,8 +113,18 @@ export class GridLines extends Graphics {
     for (let y = bounds.top; y <= bounds.bottom + size - 1; y += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {
-        this.moveTo(bounds.left, y - offset);
-        this.lineTo(bounds.right, y - offset);
+        const lines = gridOverflowLines.getRowHorizontalRange(row, columns);
+        if (lines) {
+          for (const [x0, x1] of lines) {
+            const start = offsets.getColumnPlacement(x0).position;
+            const end = offsets.getColumnPlacement(x1 + 1).position;
+            this.moveTo(start, y - offset);
+            this.lineTo(end, y - offset);
+          }
+        } else {
+          this.moveTo(bounds.left, y - offset);
+          this.lineTo(bounds.right, y - offset);
+        }
         this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - bounds.left, h: 1 });
       }
       size = offsets.getRowHeight(row);

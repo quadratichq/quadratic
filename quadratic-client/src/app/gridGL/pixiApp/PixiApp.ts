@@ -20,7 +20,6 @@ import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
-import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -335,9 +334,6 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
     this.headings.dirty = true;
-    if (!pixiAppSettings.showCellTypeOutlines) {
-      this.cellsSheets.updateCellsArray();
-    }
     if (visible) ensureVisible(visible !== true ? visible : undefined);
     events.emit('cursorPosition');
   }
@@ -354,14 +350,6 @@ export class PixiApp {
       this.headings.dirty = true;
       this.multiplayerCursor.dirty = true;
     }
-  }
-
-  // this shows the CellImages of the current sheet, removing any old ones. This
-  // is needed to ensure the proper z-index for the images (ie, so it shows over
-  // the grid lines).
-  changeCellImages(cellsImages: CellsImages) {
-    this.imagePlaceholders.removeChildren();
-    this.imagePlaceholders.addChild(cellsImages);
   }
 
   isCursorOnCodeCell(): boolean {

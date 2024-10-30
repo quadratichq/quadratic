@@ -88,7 +88,6 @@ class InlineEditorHandler {
     inlineEditorFormula.clearDecorations();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
     multiplayer.sendEndCellEdit();
-    pixiApp.cellsSheets.updateCellsArray();
     this.hideDiv();
   }
 
@@ -208,7 +207,6 @@ class InlineEditorHandler {
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
       this.updateFont();
-      pixiApp.cellsSheets.updateCellsArray();
       this.sendMultiplayerUpdate();
       this.showDiv();
       this.changeToFormula(changeToFormula);

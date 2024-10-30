@@ -1,4 +1,7 @@
+//! Draw the cell images (an Image output from a code cell)
+
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, Point, Rectangle } from 'pixi.js';
@@ -27,7 +30,7 @@ export class CellsImages extends Container<CellsImage> {
     if (this.cellsSheet.sheetId === sheetId) {
       this.children.forEach((sprite) => sprite.reposition());
     }
-    pixiApp.cellImages.dirtyBorders = true;
+    // pixiApp.cellImages.dirtyBorders = true;
   };
 
   cheapCull(bounds: Rectangle) {
@@ -46,12 +49,18 @@ export class CellsImages extends Container<CellsImage> {
           sprite.updateMessage(message);
         } else {
           this.removeChild(sprite);
+
+          // remove the image from the overflow lines
+          const sheet = sheets.getById(this.cellsSheet.sheetId);
+          if (!sheet) throw new Error(`Expected sheet to be defined in CellsImages.updateImage`);
+          sheet.gridOverflowLines.updateImageHtml(message.x, message.y);
+
           sprite = undefined;
         }
       } else if (message.image) {
         this.addChild(new CellsImage(this.cellsSheet, message));
       }
-      pixiApp.cellImages.dirtyBorders = true;
+      // pixiApp.cellImages.dirtyBorders = true;
       pixiApp.setViewportDirty();
     }
   };

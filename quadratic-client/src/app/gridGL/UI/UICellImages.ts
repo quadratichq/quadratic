@@ -2,7 +2,6 @@ import { events } from '@/app/events/events';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import { Container, Graphics } from 'pixi.js';
 import { CellsImage } from '../cells/cellsImages/CellsImage';
-import { pixiApp } from '../pixiApp/PixiApp';
 
 // These should be consistent with ResizeControl.tsx
 export const IMAGE_BORDER_WIDTH = 5;
@@ -19,7 +18,7 @@ export class UICellImages extends Container {
   private animationTime = 0;
   private animationLastTime = 0;
 
-  dirtyBorders = false;
+  // dirtyBorders = false;
   dirtyResizing = false;
 
   constructor() {
@@ -31,7 +30,7 @@ export class UICellImages extends Container {
 
   private changeSheet = () => {
     this.active = undefined;
-    this.dirtyBorders = true;
+    // this.dirtyBorders = true;
     this.dirtyResizing = true;
   };
 
@@ -51,27 +50,26 @@ export class UICellImages extends Container {
     }
   }
 
-  drawBorders(): boolean {
-    if (this.dirtyBorders) {
-      this.dirtyBorders = false;
-      this.borders.clear();
-      const images = pixiApp.cellsSheets.current?.getCellsImages();
-      if (!images) return true;
-      const hslColorFromCssVar = window.getComputedStyle(document.documentElement).getPropertyValue('--primary');
-      const color = convertColorStringToTint(`hsl(${hslColorFromCssVar})`);
-      this.borders.lineStyle({ color, width: 1 });
-      images.forEach((image) => {
-        this.borders.drawRect(image.x, image.y, image.width, image.height);
-      });
-      return true;
-    }
-    return false;
-  }
+  // drawBorders(): boolean {
+  //   if (this.dirtyBorders) {
+  //     this.dirtyBorders = false;
+  //     this.borders.clear();
+  //     const images = pixiApp.cellsSheets.current?.getCellsImages();
+  //     if (!images) return true;
+  //     const hslColorFromCssVar = window.getComputedStyle(document.documentElement).getPropertyValue('--primary');
+  //     const color = convertColorStringToTint(`hsl(${hslColorFromCssVar})`);
+  //     this.borders.lineStyle({ color, width: 1 });
+  //     images.forEach((image) => {
+  //       this.borders.drawRect(image.x, image.y, image.width, image.height);
+  //     });
+  //     return true;
+  //   }
+  //   return false;
+  // }
 
   drawResizing(): boolean {
     if (this.dirtyResizing) {
       this.dirtyResizing = false;
-
       this.resizing.clear();
       if (this.active) {
         const hslColorFromCssVar = window.getComputedStyle(document.documentElement).getPropertyValue('--primary');
@@ -103,7 +101,7 @@ export class UICellImages extends Container {
   }
 
   get dirty(): boolean {
-    return !!this.animationState || this.dirtyBorders || this.dirtyResizing;
+    return !!this.animationState || /*this.dirtyBorders ||*/ this.dirtyResizing;
   }
 
   update(): boolean {
@@ -132,13 +130,14 @@ export class UICellImages extends Container {
           this.resizing.alpha = (1 - this.easeInOutSine(this.animationTime, TRANSITION_TIME_MS)) as number;
         }
       }
-      this.drawBorders();
+      // this.drawBorders();
       this.drawResizing();
       return true;
     } else {
-      let rendered = this.drawBorders();
+      // let rendered = this.drawBorders();
       if (this.drawResizing()) return true;
-      return rendered;
+      // return rendered;
+      return false;
     }
   }
 }

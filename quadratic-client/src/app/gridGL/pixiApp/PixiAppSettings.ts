@@ -89,13 +89,13 @@ class PixiAppSettings {
     pixiApp.axesLines.dirty = true;
     pixiApp.headings.dirty = true;
 
-    if (
-      (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
-      (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
-    ) {
-      pixiApp.cellsSheets.updateCellsArray();
-      pixiApp.viewport.dirty = true;
-    }
+    // todo: not sure what to do with this...
+    // if (
+    //   (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
+    //   (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
+    // ) {
+    //   pixiApp.viewport.dirty = true;
+    // }
     this.lastSettings = this.settings;
   };
 

@@ -154,6 +154,10 @@ export class Tables extends Container<Table> {
     }
   }
 
+  isTable(x: number, y: number): boolean {
+    return this.children.some((table) => table.codeCell.x === x && table.codeCell.y === y);
+  }
+
   private isTableActive(table: Table): boolean {
     return this.activeTable === table || this.hoverTable === table || this.contextMenuTable === table;
   }
@@ -353,6 +357,13 @@ export class Tables extends Container<Table> {
       }
       this.activeTable = table;
       table.showActive();
+    }
+  }
+
+  resizeTable(x: number, y: number, width: number, height: number) {
+    const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+    if (table) {
+      table.resize(width, height);
     }
   }
 }

@@ -130,7 +130,6 @@ export class CellsSheets extends Container<CellsSheet> {
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
-      this.updateCellsArray();
     }
   }
 
@@ -142,11 +141,6 @@ export class CellsSheets extends Container<CellsSheet> {
   getCellsContentMaxHeight(row: number): Promise<number> {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxHeight');
     return this.current.cellsLabels.getCellsContentMaxHeight(row);
-  }
-
-  updateCellsArray(): void {
-    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.updateCellsArray');
-    this.current.updateCellsArray();
   }
 
   adjustOffsetsBorders(sheetId: string): void {
@@ -183,14 +177,14 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
     const cursor = sheets.sheet.cursor.cursorPosition;
-    return cellsSheet.cellsArray.isCodeCell(cursor.x, cursor.y);
+    return cellsSheet.tables.isTable(cursor.x, cursor.y);
   }
 
   isCursorOnCodeCellOutput(): boolean {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
     const cursor = sheets.sheet.cursor.cursorPosition;
-    return cellsSheet.cellsArray.isCodeCellOutput(cursor.x, cursor.y);
+    return cellsSheet.tables.isTable(cursor.x, cursor.y);
   }
 
   update(dirtyViewport: boolean) {

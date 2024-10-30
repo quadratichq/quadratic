@@ -3,9 +3,7 @@ import { Tables } from '@/app/gridGL/cells/tables/Tables';
 import { JsRenderCodeCell, JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle, Sprite } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
 import { Borders } from './borders/Borders';
-import { CellsArray } from './CellsArray';
 import { CellsFills } from './CellsFills';
 import { CellsImage } from './cellsImages/CellsImage';
 import { CellsImages } from './cellsImages/CellsImages';
@@ -28,7 +26,6 @@ export interface ErrorValidation {
 export class CellsSheet extends Container {
   private borders: Borders;
   cellsFills: CellsFills;
-  cellsArray: CellsArray;
   cellsImages: CellsImages;
 
   cellsMarkers: CellsMarkers;
@@ -47,14 +44,11 @@ export class CellsSheet extends Container {
     this.addChild(new CellsSearch(sheetId));
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
+    this.cellsImages = this.addChild(new CellsImages(this));
     this.tables = this.addChild(new Tables(this));
-
-    // todo: this should go away...
-    this.cellsArray = this.addChild(new CellsArray(this));
 
     this.borders = this.addChild(new Borders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
-    this.cellsImages = new CellsImages(this);
     this.visible = false;
 
     events.on('renderValidationWarnings', this.renderValidations);
@@ -69,11 +63,8 @@ export class CellsSheet extends Container {
   show(bounds: Rectangle): void {
     this.visible = true;
     this.cellsLabels.show(bounds);
-    this.cellsArray.visible = true;
-    this.cellsArray.cheapCull(bounds);
     this.cellsFills.cheapCull(bounds);
     this.cellsImages.cheapCull(bounds);
-    pixiApp.changeCellImages(this.cellsImages);
   }
 
   hide(): void {
@@ -81,7 +72,6 @@ export class CellsSheet extends Container {
   }
 
   toggleOutlines(off?: boolean) {
-    this.cellsArray.visible = off ?? true;
     this.cellsMarkers.visible = off ?? true;
   }
 
@@ -96,10 +86,6 @@ export class CellsSheet extends Container {
   adjustOffsets() {
     this.borders.setDirty();
     this.tables.sheetOffsets(this.sheetId);
-  }
-
-  updateCellsArray() {
-    this.cellsArray.updateCellsArray();
   }
 
   getCellsImages(): CellsImage[] {

@@ -35,7 +35,7 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
-    this.gridOverflowLines = new GridOverflowLines();
+    this.gridOverflowLines = new GridOverflowLines(this);
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
   }
