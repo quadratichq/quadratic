@@ -345,7 +345,7 @@ function ListItemView({
             src={thumbnail}
             crossOrigin="anonymous"
             alt="File thumbnail screenshot"
-            className="object-cover"
+            className="dark-mode-hack object-cover"
             draggable="false"
           />
         ) : (
