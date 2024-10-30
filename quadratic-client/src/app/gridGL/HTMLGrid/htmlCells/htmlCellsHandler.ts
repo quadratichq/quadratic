@@ -149,7 +149,7 @@ class HTMLCellsHandler {
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
     );
     if (cell) {
-      cell.div.style.boxShadow = '0 0 0 2px hsl(var(--primary))';
+      cell.div.style.boxShadow = 'inset 0 0 0 2px hsl(var(--primary))';
       cell.iframe.style.pointerEvents = isSelected ? 'auto' : 'none';
     }
   }
@@ -159,7 +159,7 @@ class HTMLCellsHandler {
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
     );
     if (cell) {
-      cell.div.style.boxShadow = '0 0 0 1px hsl(var(--primary))';
+      cell.div.style.boxShadow = 'inset 0 0 0 1px hsl(var(--primary))';
       cell.iframe.style.pointerEvents = 'none';
     }
   }

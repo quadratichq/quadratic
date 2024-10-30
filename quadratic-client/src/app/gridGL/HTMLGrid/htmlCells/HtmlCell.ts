@@ -38,10 +38,9 @@ export class HtmlCell {
 
     this.div = document.createElement('div');
     this.div.className = 'html-cell';
-    this.div.style.boxShadow = '0 0 0 1px hsl(var(--primary))';
+    this.div.style.boxShadow = 'inset 0 0 0 1px hsl(var(--primary))';
     const offset = this.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
 
-    // the 0.5 is adjustment for the border
     this.div.style.left = `${offset.x}px`;
     this.div.style.top = `${offset.y}px`;
 
