@@ -70,27 +70,6 @@ export class Table extends Container {
     }
   };
 
-  // todo: this probably belongs in TableName.ts
-  private tableNamePosition = (bounds: Rectangle, gridHeading: number) => {
-    if (this.visible) {
-      if (this.tableBounds.y < bounds.top + gridHeading) {
-        this.tableName.y = bounds.top + gridHeading;
-      } else {
-        this.tableName.y = this.tableBounds.top;
-      }
-      const headingWidth = pixiApp.headings.headingSize.width / pixiApp.viewport.scaled;
-      if (!this.tableName.hidden) {
-        if (this.tableBounds.x < bounds.left + headingWidth) {
-          this.tableName.x = bounds.left + headingWidth;
-          this.tableName.visible = this.tableName.x + this.tableName.width <= this.tableBounds.right;
-        } else {
-          this.tableName.x = this.tableBounds.x;
-          this.tableName.visible = true;
-        }
-      }
-    }
-  };
-
   // places column headers back into the table (instead of the overHeadings container)
   private columnHeadersHere() {
     if (this.inOverHeadings) {
@@ -152,7 +131,7 @@ export class Table extends Container {
     this.headingPosition(bounds, gridHeading);
     if (this.isShowingTableName()) {
       this.tableName.scale.set(1 / pixiApp.viewport.scale.x);
-      this.tableNamePosition(bounds, gridHeading);
+      this.tableName.updatePosition(bounds, gridHeading);
     }
     if (this.visible && this.inOverHeadings) {
       this.gridLines.update();

@@ -123,7 +123,7 @@ export class CellsImage extends Container {
     this.resizeImage();
   }
 
-  hoverPoint(world: Point): Coordinate | undefined {
+  contains(world: Point): Coordinate | undefined {
     if (intersects.rectanglePoint(this.viewBounds, world)) {
       return { x: this.column, y: this.row };
     }

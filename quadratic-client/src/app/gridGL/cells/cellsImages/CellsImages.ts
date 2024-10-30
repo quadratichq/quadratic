@@ -56,9 +56,9 @@ export class CellsImages extends Container<CellsImage> {
     }
   };
 
-  hoverPoint(world: Point): Coordinate | undefined {
+  contains(world: Point): Coordinate | undefined {
     for (const child of this.children) {
-      const result = child.hoverPoint(world);
+      const result = child.contains(world);
       if (result) {
         return result;
       }

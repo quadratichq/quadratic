@@ -206,7 +206,7 @@ export class Tables extends Container<Table> {
       }
       return true;
     }
-    const hoverImage = pixiApp.cellsSheet().cellsImages.hoverPoint(world);
+    const hoverImage = pixiApp.cellsSheet().cellsImages.contains(world);
     const tableImage = this.children.find(
       (table) => table.codeCell.x === hoverImage?.x && table.codeCell.y === hoverImage?.y
     );
@@ -319,5 +319,40 @@ export class Tables extends Container<Table> {
 
   isActive(table: Table): boolean {
     return this.activeTable === table || this.hoverTable === table || this.contextMenuTable === table;
+  }
+
+  // Ensures that the code cell at the given coordinate is active.
+  ensureActiveCoordinate(coordinate: Coordinate) {
+    const table = this.children.find((table) => table.codeCell.x === coordinate.x && table.codeCell.y === coordinate.y);
+    if (!table) {
+      return;
+    }
+    sheets.sheet.cursor.changePosition({ cursorPosition: coordinate });
+    this.ensureActive(table.codeCell);
+  }
+
+  // Ensures that the JsRenderCodeCell is active.
+  ensureActive(codeCell: JsRenderCodeCell) {
+    const table = this.children.find((table) => table.codeCell === codeCell);
+    if (!table) {
+      return;
+    }
+    sheets.sheet.cursor.changePosition({ cursorPosition: { x: table.codeCell.x, y: table.codeCell.y } });
+    if (this.activeTable !== table) {
+      if (this.activeTable) {
+        this.activeTable.hideActive();
+      }
+      if (this.hoverTable === table) {
+        this.hoverTable = undefined;
+      }
+      if (this.contextMenuTable === table) {
+        this.contextMenuTable = undefined;
+      }
+      if (this.actionDataTable === table) {
+        this.actionDataTable = undefined;
+      }
+      this.activeTable = table;
+      table.showActive();
+    }
   }
 }

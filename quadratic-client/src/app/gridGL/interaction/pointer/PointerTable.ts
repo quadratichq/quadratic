@@ -17,6 +17,7 @@ export class PointerTable {
   private doubleClickTimeout: number | undefined;
 
   private pointerDownTableName(world: Point, tableDown: TablePointerDownResult) {
+    pixiApp.cellsSheet().tables.ensureActive(tableDown.table);
     if (this.doubleClickTimeout) {
       events.emit('contextMenu', {
         type: ContextMenuType.Table,
@@ -72,9 +73,16 @@ export class PointerTable {
   }
 
   pointerDown(world: Point, event: PointerEvent): boolean {
-    const tableDown = pixiApp.cellsSheet().tables.pointerDown(world);
-    if (!tableDown?.table) return false;
-
+    let tableDown = pixiApp.cellsSheet().tables.pointerDown(world);
+    if (!tableDown?.table) {
+      const image = pixiApp.cellsSheet().cellsImages.contains(world);
+      if (image) {
+        pixiApp.cellsSheet().tables.ensureActiveCoordinate(image);
+        sheets.sheet.cursor.changePosition({ cursorPosition: image });
+        return true;
+      }
+      return false;
+    }
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
       events.emit('contextMenu', {
         type: ContextMenuType.Table,

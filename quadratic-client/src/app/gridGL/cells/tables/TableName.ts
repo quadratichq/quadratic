@@ -103,6 +103,26 @@ export class TableName extends Container {
     );
   }
 
+  updatePosition = (bounds: Rectangle, gridHeading: number) => {
+    if (this.table.visible) {
+      if (this.table.tableBounds.y < bounds.top + gridHeading) {
+        this.y = bounds.top + gridHeading;
+      } else {
+        this.y = this.table.tableBounds.top;
+      }
+      const headingWidth = pixiApp.headings.headingSize.width / pixiApp.viewport.scaled;
+      if (!this.hidden) {
+        if (this.table.tableBounds.x < bounds.left + headingWidth) {
+          this.x = bounds.left + headingWidth;
+          this.visible = this.x + this.width <= this.table.tableBounds.right;
+        } else {
+          this.x = this.table.tableBounds.x;
+          this.visible = true;
+        }
+      }
+    }
+  };
+
   update() {
     this.position.set(this.table.tableBounds.x, this.table.tableBounds.y);
     this.visible = false;

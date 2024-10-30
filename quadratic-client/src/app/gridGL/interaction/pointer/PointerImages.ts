@@ -96,11 +96,9 @@ export class PointerImages {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
     const search = this.findImage(point);
-    if (search) {
-      if (search.side) {
-        this.resizing = { point, image: search.image, side: search.side };
-        pixiApp.cellImages.activate(search.image);
-      }
+    if (search && search.side) {
+      this.resizing = { point, image: search.image, side: search.side };
+      pixiApp.cellImages.activate(search.image);
       return true;
     }
     return false;
