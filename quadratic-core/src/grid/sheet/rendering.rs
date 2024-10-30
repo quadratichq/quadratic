@@ -4,7 +4,7 @@ use crate::grid::js_types::{
     JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
 };
-use crate::grid::{CellAlign, CodeCellLanguage, Column, DataTable};
+use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, Column, DataTable};
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
@@ -28,6 +28,7 @@ impl Sheet {
         value: &CellValue,
         language: Option<CodeCellLanguage>,
         special: Option<JsRenderCellSpecial>,
+        from_table: bool,
     ) -> JsRenderCell {
         if let CellValue::Html(_) = value {
             return JsRenderCell {
@@ -135,13 +136,19 @@ impl Sheet {
                     }
                     _ => value.to_display(),
                 };
+                // force clipping for cells in tables
+                let wrap = if from_table {
+                    Some(CellWrap::Clip)
+                } else {
+                    format.wrap
+                };
                 JsRenderCell {
                     x,
                     y,
                     value,
                     language,
                     align: format.align.or(align),
-                    wrap: format.wrap,
+                    wrap,
                     bold: format.bold,
                     italic: format.italic,
                     text_color: format.text_color,
@@ -177,6 +184,7 @@ impl Sheet {
                     })),
                     Some(code_cell_value.language),
                     None,
+                    false,
                 ));
             } else if let Some(error) = data_table.get_error() {
                 cells.push(self.get_render_cell(
@@ -186,6 +194,7 @@ impl Sheet {
                     &CellValue::Error(Box::new(error)),
                     Some(code_cell_value.language),
                     None,
+                    false,
                 ));
             } else {
                 // find overlap of code_rect into rect
@@ -239,7 +248,7 @@ impl Sheet {
                                 }
                             };
                             cells.push(
-                                self.get_render_cell(x, y, column, &value, language, special),
+                                self.get_render_cell(x, y, column, &value, language, special, true),
                             );
                         }
                     }
@@ -271,6 +280,7 @@ impl Sheet {
                             value,
                             None,
                             None,
+                            false,
                         ));
                     }
                 });
