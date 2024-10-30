@@ -3,6 +3,7 @@ import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import { Action as FilesAction } from '@/routes/api.files.$uuid';
+import { AddIcon } from '@/shared/components/Icons';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
@@ -123,6 +124,13 @@ export function FilesList({
       />
 
       <FilesListItems viewPreferences={viewPreferences}>
+        <li className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border hover:bg-muted">
+          <button className="flex flex-col items-center justify-center rounded border-dashed border-border text-sm text-muted-foreground">
+            <AddIcon style={{ fontSize: '24px', width: '24px', height: '24px' }} className="mb-2" />
+            New file
+            <em className="text-xs">(or drag and drop a file)</em>
+          </button>
+        </li>
         {filesToRender.map((file, i) => (
           <FilesListItemUserFile
             key={file.uuid}
