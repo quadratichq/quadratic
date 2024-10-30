@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/react';
 import Color from 'color';
 import { ColorResult } from 'react-color';
-import { colors } from '../theme/colors';
 import { Rgba } from '../quadratic-core-types';
+import { colors } from '../theme/colors';
 
 export function convertReactColorToString(color: ColorResult): string {
   const rgb = color.rgb;
@@ -71,4 +71,23 @@ export function convertColorStringToHex(color: string): string {
 export function convertRgbaToTint(rgba: Rgba): { tint: number; alpha: number } {
   const rgb = { r: rgba.red, g: rgba.green, b: rgba.blue };
   return { tint: Color(rgb).rgbNumber(), alpha: rgba.alpha };
+}
+
+/**
+ * Given the name of a CSS variable that maps to an HSL string, return the tint
+ * we can use in pixi.
+ * @param cssVariableName - CSS var without the `--` prefix
+ */
+export function getCSSVariableTint(cssVariableName: string): number {
+  if (cssVariableName.startsWith('--')) {
+    console.warn(
+      '`getCSSVariableTint` expects a CSS variable name without the `--` prefix. Are you sure you meant: `%s`',
+      cssVariableName
+    );
+  }
+
+  const hslColorString = getComputedStyle(document.documentElement).getPropertyValue(`--${cssVariableName}`).trim();
+  const parsed = Color.hsl(hslColorString.split(' ').map(parseFloat));
+  const out = parsed.rgbNumber();
+  return out;
 }
