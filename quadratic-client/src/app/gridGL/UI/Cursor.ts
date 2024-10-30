@@ -76,6 +76,9 @@ export class Cursor extends Container {
     const cell = cursor.cursorPosition;
     const showInput = pixiAppSettings.input.show;
 
+    if (cursor.onlySingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
+      return;
+    }
     let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
     const color = colors.cursorCell;
     const codeCell = codeEditorState.codeCell;
@@ -240,7 +243,6 @@ export class Cursor extends Container {
   // visible bounds on the screen, not to the selection size.
   update(viewportDirty: boolean) {
     const columnRow = !!sheets.sheet.cursor.columnRow;
-    const multiCursor = sheets.sheet.cursor.multiCursor;
     if (this.dirty || (viewportDirty && columnRow)) {
       this.dirty = false;
       this.graphics.clear();
@@ -253,6 +255,7 @@ export class Cursor extends Container {
       this.drawCodeCursor();
 
       if (!pixiAppSettings.input.show) {
+        const cursorPosition = sheets.sheet.cursor.cursorPosition;
         this.drawMultiCursor();
         const columnRow = sheets.sheet.cursor.columnRow;
         if (columnRow) {
@@ -261,10 +264,10 @@ export class Cursor extends Container {
             columnRow,
             color: colors.cursorCell,
             alpha: FILL_ALPHA,
-            cursorPosition: sheets.sheet.cursor.cursorPosition,
+            cursorPosition,
           });
         }
-        if (!columnRow && (!multiCursor || multiCursor.length === 1)) {
+        if (sheets.sheet.cursor.onlySingleSelection() && !pixiApp.cellsSheet().tables.isHtmlOrImage(cursorPosition)) {
           this.drawCursorIndicator();
         }
       }

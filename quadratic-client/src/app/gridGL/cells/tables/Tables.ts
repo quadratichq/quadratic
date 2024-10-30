@@ -10,7 +10,8 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { JsCodeCell, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, Point, Rectangle } from 'pixi.js';
 
 export interface TablePointerDownResult {
@@ -29,11 +30,16 @@ export class Tables extends Container<Table> {
   // either rename or sort
   private actionDataTable: Table | undefined;
 
+  // tracks which tables are html or image cells
+  private htmlOrImage: Set<string>;
+
   tableCursor: string | undefined;
 
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
+    this.htmlOrImage = new Set();
+
     events.on('renderCodeCells', this.renderCodeCells);
     events.on('updateCodeCell', this.updateCodeCell);
 
@@ -43,7 +49,41 @@ export class Tables extends Container<Table> {
 
     events.on('contextMenu', this.contextMenu);
     events.on('contextMenuClose', this.contextMenu);
+
+    events.on('htmlOutput', this.htmlOutput);
+    events.on('htmlUpdate', this.htmlUpdate);
+    events.on('updateImage', this.updateImage);
   }
+
+  private htmlOutput = (output: JsHtmlOutput[]) => {
+    this.htmlOrImage.clear();
+    output.forEach((htmlOutput) => {
+      if (htmlOutput.sheet_id === this.cellsSheet.sheetId) {
+        this.htmlOrImage.add(`${htmlOutput.x},${htmlOutput.y}`);
+      }
+    });
+    console.log(this.htmlOrImage);
+  };
+
+  private htmlUpdate = (output: JsHtmlOutput) => {
+    if (output.sheet_id === this.cellsSheet.sheetId) {
+      if (output.html) {
+        this.htmlOrImage.add(`${output.x},${output.y}`);
+      } else {
+        this.htmlOrImage.delete(`${output.x},${output.y}`);
+      }
+    }
+  };
+
+  private updateImage = (image: CoreClientImage) => {
+    if (image.sheetId === this.cellsSheet.sheetId) {
+      if (image.image) {
+        this.htmlOrImage.add(`${image.x},${image.y}`);
+      } else {
+        this.htmlOrImage.delete(`${image.x},${image.y}`);
+      }
+    }
+  };
 
   get sheet(): Sheet {
     const sheet = sheets.getById(this.cellsSheet.sheetId);
@@ -72,7 +112,7 @@ export class Tables extends Container<Table> {
         } else {
           table.updateCodeCell(renderCodeCell);
           if (table === this.activeTable || table === this.hoverTable || table === this.contextMenuTable) {
-            table.showActive();
+            table.showActive(true);
           }
         }
       } else if (renderCodeCell) {
@@ -108,6 +148,9 @@ export class Tables extends Container<Table> {
     }
     const cursor = sheets.sheet.cursor.cursorPosition;
     this.activeTable = this.children.find((table) => table.intersectsCursor(cursor.x, cursor.y));
+    if (this.activeTable) {
+      this.activeTable.showActive(true);
+    }
     if (this.hoverTable === this.activeTable) {
       this.hoverTable = undefined;
     }
@@ -149,7 +192,7 @@ export class Tables extends Container<Table> {
       }
       this.hoverTable = hover;
       if (this.hoverTable) {
-        this.hoverTable.showActive();
+        this.hoverTable.showActive(false);
       }
     }
   }
@@ -191,7 +234,7 @@ export class Tables extends Container<Table> {
             this.hoverTable?.hideActive();
           }
           this.hoverTable = table;
-          table.showActive();
+          table.showActive(false);
         }
         return true;
       }
@@ -206,7 +249,7 @@ export class Tables extends Container<Table> {
           this.hoverTable?.hideActive();
         }
         this.hoverTable = table;
-        table.showActive();
+        table.showActive(false);
       }
       return true;
     }
@@ -220,7 +263,7 @@ export class Tables extends Container<Table> {
           this.hoverTable?.hideActive();
         }
         this.hoverTable = tableImage;
-        tableImage.showActive();
+        tableImage.showActive(false);
       }
       return true;
     }
@@ -257,7 +300,7 @@ export class Tables extends Container<Table> {
     if (options.type === ContextMenuType.TableSort) {
       this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
       if (this.actionDataTable) {
-        this.actionDataTable.showActive();
+        this.actionDataTable.showActive(true);
         if (this.hoverTable === this.actionDataTable) {
           this.hoverTable = undefined;
         }
@@ -266,7 +309,7 @@ export class Tables extends Container<Table> {
       if (options.rename) {
         this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
         if (this.actionDataTable) {
-          this.actionDataTable.showActive();
+          this.actionDataTable.showActive(true);
           if (options.selectedColumn === undefined) {
             this.actionDataTable.hideTableName();
           } else {
@@ -277,7 +320,7 @@ export class Tables extends Container<Table> {
       } else {
         this.contextMenuTable = this.children.find((table) => table.codeCell === options.table);
         if (this.contextMenuTable) {
-          this.contextMenuTable.showActive();
+          this.contextMenuTable.showActive(true);
           if (this.hoverTable === this.contextMenuTable) {
             this.hoverTable = undefined;
           }
@@ -356,7 +399,7 @@ export class Tables extends Container<Table> {
         this.actionDataTable = undefined;
       }
       this.activeTable = table;
-      table.showActive();
+      table.showActive(true);
     }
   }
 
@@ -365,5 +408,9 @@ export class Tables extends Container<Table> {
     if (table) {
       table.resize(width, height);
     }
+  }
+
+  isHtmlOrImage(cell: Coordinate): boolean {
+    return this.htmlOrImage.has(`${cell.x},${cell.y}`);
   }
 }

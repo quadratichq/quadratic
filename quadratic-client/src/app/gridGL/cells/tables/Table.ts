@@ -8,6 +8,7 @@ import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import { TableOutline } from '@/app/gridGL/cells/tables/TableOutline';
 import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
@@ -110,7 +111,7 @@ export class Table extends Container {
       intersects.rectanglePoint(rect, { x, y }) ||
       intersects.rectangleRectangle(rect, this.tableName.tableNameBounds)
     ) {
-      this.showActive();
+      this.showActive(false);
       return true;
     }
     return false;
@@ -141,12 +142,14 @@ export class Table extends Container {
   hideActive() {
     this.outline.activate(false);
     this.tableName.hide();
+    htmlCellsHandler.hideActive(this.codeCell);
     pixiApp.setViewportDirty();
   }
 
-  showActive() {
+  showActive(isSelected: boolean) {
     this.outline.activate(true);
     this.tableName.show();
+    htmlCellsHandler.showActive(this.codeCell, isSelected);
     pixiApp.setViewportDirty();
   }
 

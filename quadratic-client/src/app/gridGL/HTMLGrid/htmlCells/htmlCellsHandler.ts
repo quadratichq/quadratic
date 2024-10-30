@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { JsHtmlOutput } from '@/app/quadratic-core-types';
+import { JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Point, Rectangle } from 'pixi.js';
 import { HtmlCell } from './HtmlCell';
 
@@ -142,6 +142,26 @@ class HTMLCellsHandler {
   // returns true if the cell is an html cell
   isHtmlCell(x: number, y: number): boolean {
     return this.getCells().some((cell) => cell.x === x && cell.y === y && cell.sheet.id === sheets.sheet.id);
+  }
+
+  showActive(codeCell: JsRenderCodeCell, isSelected: boolean) {
+    const cell = this.getCells().find(
+      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
+    );
+    if (cell) {
+      cell.div.style.boxShadow = '0 0 0 2px hsl(var(--primary))';
+      cell.iframe.style.pointerEvents = isSelected ? 'auto' : 'none';
+    }
+  }
+
+  hideActive(codeCell: JsRenderCodeCell) {
+    const cell = this.getCells().find(
+      (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
+    );
+    if (cell) {
+      cell.div.style.boxShadow = '0 0 0 1px hsl(var(--primary))';
+      cell.iframe.style.pointerEvents = 'none';
+    }
   }
 }
 

@@ -1,7 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { JsHtmlOutput } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -18,7 +17,6 @@ const ALLOW_CHART_INTERACTIVITY = import.meta.env.VITE_ALLOW_CHART_INTERACTIVITY
 
 export class HtmlCell {
   private right: HTMLDivElement;
-  private iframe: HTMLIFrameElement;
   private bottom: HTMLDivElement;
   private htmlCell: JsHtmlOutput;
   private resizing: HtmlCellResizing | undefined;
@@ -27,6 +25,7 @@ export class HtmlCell {
   sheet: Sheet;
 
   div: HTMLDivElement;
+  iframe: HTMLIFrameElement;
 
   constructor(htmlCell: JsHtmlOutput) {
     if (htmlCell.html === null) throw new Error('Expected html to be defined in HtmlCell constructor');
@@ -39,12 +38,12 @@ export class HtmlCell {
 
     this.div = document.createElement('div');
     this.div.className = 'html-cell';
-    this.div.style.border = `1px solid ${colors.cellColorUserPythonRgba}`;
+    this.div.style.boxShadow = '0 0 0 1px hsl(var(--primary))';
     const offset = this.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
 
     // the 0.5 is adjustment for the border
-    this.div.style.left = `${offset.x - 0.5}px`;
-    this.div.style.top = `${offset.y - 0.5}px`;
+    this.div.style.left = `${offset.x}px`;
+    this.div.style.top = `${offset.y}px`;
 
     this.right = document.createElement('div');
     this.right.className = 'html-resize-control-right';
