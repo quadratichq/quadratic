@@ -138,6 +138,11 @@ class HTMLCellsHandler {
       }
     }
   }
+
+  // returns true if the cell is an html cell
+  isHtmlCell(x: number, y: number): boolean {
+    return this.getCells().some((cell) => cell.x === x && cell.y === y && cell.sheet.id === sheets.sheet.id);
+  }
 }
 
 export const htmlCellsHandler = new HTMLCellsHandler();

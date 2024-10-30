@@ -64,4 +64,8 @@ export class CellsImages extends Container<CellsImage> {
       }
     }
   }
+
+  isImageCell(x: number, y: number): boolean {
+    return this.children.some((child) => child.column === x && child.row === y);
+  }
 }

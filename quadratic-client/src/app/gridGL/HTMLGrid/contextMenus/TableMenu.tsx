@@ -1,6 +1,8 @@
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { ContextMenuItem, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuItem';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
@@ -23,6 +25,14 @@ export const TableMenu = (props: Props) => {
     // return codeCell?.;
   }, [codeCell]);
 
+  const isImageOrHtmlCell = useMemo(() => {
+    if (!codeCell) return false;
+    return (
+      htmlCellsHandler.isHtmlCell(codeCell.x, codeCell.y) ||
+      pixiApp.cellsSheet().cellsImages.isImageCell(codeCell.x, codeCell.y)
+    );
+  }, [codeCell]);
+
   if (!codeCell) {
     return null;
   }
@@ -41,16 +51,16 @@ export const TableMenu = (props: Props) => {
         </>
       )}
       <ContextMenuItemAction action={Action.RenameTable} overrideDefaultOption={defaultRename} />
-      <ContextMenuItemAction action={Action.SortTable} />
+      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.SortTable} />}
 
-      {hasHiddenColumns && <ContextMenuItemAction action={Action.ShowAllColumns} />}
-      <DropdownMenuSeparator />
-      <ContextMenuItemAction action={Action.ToggleHeaderTable} />
-      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
-      <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />
-      <DropdownMenuSeparator />
-      {isCodeCell && <ContextMenuItemAction action={Action.CodeToDataTable} />}
-      <ContextMenuItemAction action={Action.FlattenTable} />
+      {!isImageOrHtmlCell && hasHiddenColumns && <ContextMenuItemAction action={Action.ShowAllColumns} />}
+      {!isImageOrHtmlCell && <DropdownMenuSeparator />}
+      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.ToggleHeaderTable} />}
+      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />}
+      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />}
+      {!isImageOrHtmlCell && <DropdownMenuSeparator />}
+      {!isImageOrHtmlCell && isCodeCell && <ContextMenuItemAction action={Action.CodeToDataTable} />}
+      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.FlattenTable} />}
       <ContextMenuItemAction action={Action.DeleteDataTable} />
     </>
   );
