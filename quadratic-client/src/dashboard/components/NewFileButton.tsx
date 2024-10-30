@@ -1,7 +1,15 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
-import { ApiIcon, ArrowDropDownIcon, CsvIcon, DatabaseIcon, DraftIcon, ExamplesIcon } from '@/shared/components/Icons';
+import {
+  ApiIcon,
+  ArrowDropDownIcon,
+  CsvIcon,
+  DatabaseIcon,
+  DraftIcon,
+  ExamplesIcon,
+  UndoIcon,
+} from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   Dialog,
@@ -22,11 +30,11 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
-import './api-grid.css';
 
 export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
@@ -73,7 +81,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
                 <ExamplesIcon className="mr-3 h-6 w-6 text-primary" />
 
                 <span className="flex flex-col">
-                  Example data
+                  Examples
                   <span className="text-xs text-muted-foreground">Research, analysis, and modeling demos</span>
                 </span>
               </Link>
@@ -112,14 +120,16 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   );
 }
 
+type LoadState = 'idle' | 'loading' | 'error';
 function DialogContentNewFileFromApi({ children }: any) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [json, setJson] = useState({
+  const [loadState, setLoadState] = useState<LoadState>('idle');
+  const [json, setJson] = useState<Record<string, any>>({
     id: 'R7UfaahVfFd',
     joke: 'My dog used to chase people on a bike a lot. It got so bad I had to take his bike away.',
     status: 200,
   });
-  const [url, setUrl] = useState('https://icanhazdadjoke.com');
+  const defaultUrl = 'https://icanhazdadjoke.com';
+  const [url, setUrl] = useState(defaultUrl);
   const [activeLanguage, setActiveLanguage] = useState('Javascript');
 
   // TODO: needs better error handling
@@ -127,12 +137,15 @@ function DialogContentNewFileFromApi({ children }: any) {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    setIsLoading(true);
+    setLoadState('loading');
     fetch(url, { headers: { Accept: 'application/json' } })
       .then((res) => res.json())
       .then((newJson) => {
         setJson(newJson);
-        setIsLoading(false);
+        setLoadState('idle');
+      })
+      .catch((err) => {
+        setLoadState('error');
       });
   };
 
@@ -145,8 +158,8 @@ function DialogContentNewFileFromApi({ children }: any) {
           way you want including custom headers, authentication, and more.
         </DialogDescription>
       </DialogHeader>
-      <div className="flex flex-col gap-2">
-        <form className="flex items-center justify-between gap-8 rounded-lg text-sm" onSubmit={handleSubmit}>
+      <div className="relative flex flex-col gap-2">
+        <form className="flex items-center justify-between gap-8 rounded-lg text-sm " onSubmit={handleSubmit}>
           <div className="flex items-center gap-2 self-stretch rounded-md bg-accent p-0.5">
             {['Python', 'Javascript'].map((language) => (
               <Label
@@ -162,11 +175,28 @@ function DialogContentNewFileFromApi({ children }: any) {
           </div>
           <div className="flex flex-grow gap-2">
             <Input value={url} onChange={(e) => setUrl(e.target.value)} />
-            <Button type="submit" variant="secondary" disabled={isLoading}>
+            <Button type="submit" variant="secondary" disabled={loadState === 'loading'}>
               GET
             </Button>
           </div>
         </form>
+        {loadState === 'error' && (
+          <div className="color-foreground absolute bottom-0 left-0 right-0 flex items-center justify-between gap-2 bg-destructive px-3 py-1 text-sm text-background">
+            Error retrieiving data. Start a file anyway to continue debugging.
+            <Tooltip>
+              <TooltipTrigger
+                className="flex items-center"
+                onClick={() => {
+                  setLoadState('idle');
+                  setUrl(defaultUrl);
+                }}
+              >
+                <UndoIcon />
+              </TooltipTrigger>
+              <TooltipContent>Reset</TooltipContent>
+            </Tooltip>
+          </div>
+        )}
 
         <div className="border-l border-r border-t border-border p-3">
           <pre className="text-xs">
@@ -182,9 +212,14 @@ return [
 ];`
               : `import requests
 import pandas as pd
-response = requests.get('${url}')
-df = pd.DataFrame(response.json())
-df
+res = requests.get(
+  'https://icanhazdadjoke.com',
+  headers={"Accept": "application/json"}
+)
+df = pd.DataFrame([response.json()])
+keys = df.columns.tolist()
+values = df.iloc[0].tolist()
+[keys, values]
 `}
           </pre>
         </div>
