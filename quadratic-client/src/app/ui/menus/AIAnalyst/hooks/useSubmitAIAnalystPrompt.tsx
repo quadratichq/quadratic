@@ -147,10 +147,9 @@ export function useSubmitAIAnalystPrompt() {
           });
           let toolCalls: AIMessagePrompt['toolCalls'] = response.toolCalls;
 
-          let toolCallIterations = 0;
-
           // Handle tool calls
-          while (toolCalls.length > 0 && toolCallIterations <= MAX_TOOL_CALL_ITERATIONS) {
+          let toolCallIterations = 0;
+          while (toolCalls.length > 0 && toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             toolCallIterations++;
 
             // Message containing tool call results

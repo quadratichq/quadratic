@@ -48,17 +48,17 @@ export const AIAnalyst = () => {
       >
         <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
 
-        <div className="grid h-full w-full grid-rows-[auto_1fr_auto]">
+        <div className="flex h-full w-full flex-col">
           <AIAnalystHeader textareaRef={textareaRef} />
 
           {showChatHistory ? (
             <AIAnalystChatHistory />
           ) : (
-            <>
+            <div className="grid h-full w-full grid-rows-[1fr_auto]">
               <AIAnalystMessages textareaRef={textareaRef} />
 
               <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
-            </>
+            </div>
           )}
         </div>
       </div>

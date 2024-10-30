@@ -43,7 +43,7 @@ export const AIAnalystChatHistory = () => {
                   >
                     {editingChatId === chat.id ? (
                       <input
-                        className="bg-transparent text-sm text-foreground outline-0"
+                        className="flex-grow bg-transparent text-sm text-foreground outline-0"
                         value={editingChatName}
                         onChange={(e) => setEditingChatName(e.target.value)}
                         onKeyDown={(e) => {
@@ -67,10 +67,12 @@ export const AIAnalystChatHistory = () => {
                         autoFocus
                       />
                     ) : (
-                      <span className="text-sm text-foreground">{chat.name ? chat.name : DEFAULT_CHAT_NAME}</span>
+                      <div className="flex-shrink truncate text-sm text-foreground">
+                        {chat.name ? chat.name : DEFAULT_CHAT_NAME}
+                      </div>
                     )}
 
-                    <div>
+                    <div className="flex flex-shrink-0 items-center gap-1">
                       <TooltipPopover label="Edit name" side="bottom">
                         <Button
                           variant="ghost"
