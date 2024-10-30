@@ -9,7 +9,6 @@ import { apiClient } from '@/shared/api/apiClient';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
-import { useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
@@ -172,9 +171,6 @@ export const Component = () => {
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
 
-  // Trigger the theme in the root of the app
-  useTheme();
-
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
     setIsOpen((prevIsOpen) => (prevIsOpen ? false : prevIsOpen));
@@ -281,6 +277,7 @@ export const ErrorBoundary = () => {
           description="Reach out to the team owner for permission to access this team."
           Icon={InfoCircledIcon}
           actions={actions}
+          showLoggedInUser
         />
       );
     if (error.status === 404 || error.status === 400)
@@ -290,6 +287,7 @@ export const ErrorBoundary = () => {
           description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
           Icon={ExclamationTriangleIcon}
           actions={actions}
+          showLoggedInUser
         />
       );
   }
@@ -307,6 +305,7 @@ export const ErrorBoundary = () => {
         </Button>
       }
       severity="error"
+      showLoggedInUser
     />
   );
 };
