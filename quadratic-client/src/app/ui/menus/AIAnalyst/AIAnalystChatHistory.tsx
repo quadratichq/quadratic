@@ -12,11 +12,11 @@ const DEFAULT_CHAT_NAME = 'Untitled chat';
 
 export const AIAnalystChatHistory = () => {
   const [chats, setChats] = useRecoilState(aiAnalystChatsAtom);
-  const groupedChats = useMemo(() => groupChatsByTime(chats), [chats]);
   const [currentChat, setCurrentChat] = useRecoilState(aiAnalystCurrentChatAtom);
   const [searchValue, setSearchValue] = useState('');
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingChatName, setEditingChatName] = useState('');
+  const groupedChats = useMemo(() => groupChatsByTime(chats, searchValue), [chats, searchValue]);
 
   return (
     <div className="mx-2 flex flex-col gap-2">
@@ -112,8 +112,10 @@ export const AIAnalystChatHistory = () => {
   );
 };
 
-const groupChatsByTime = (chats: Chat[]) => {
-  chats = [...chats].sort((a, b) => b.lastUpdated - a.lastUpdated);
+const groupChatsByTime = (chats: Chat[], searchValue: string) => {
+  chats = [...chats]
+    .filter((chat) => chat.name.toLowerCase().includes(searchValue.toLowerCase()))
+    .sort((a, b) => b.lastUpdated - a.lastUpdated);
 
   const groups: Record<string, Chat[]> = {};
   const addToGroup = (group: string, chat: Chat) => {

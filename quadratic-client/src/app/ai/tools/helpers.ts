@@ -56,9 +56,10 @@ export function getAIProviderEndpoint(model: AIModel, stream: boolean): string {
 }
 
 export const getSystemMessages = (messages: ChatMessage[]): string[] => {
-  const systemMessages = messages.filter(
-    (message) => message.role === 'user' && message.contextType !== 'userPrompt' && message.contextType !== 'toolResult'
-  ) as SystemMessage[];
+  const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
+    (message): message is SystemMessage =>
+      message.role === 'user' && message.contextType !== 'userPrompt' && message.contextType !== 'toolResult'
+  );
   return systemMessages.map((message) => message.content);
 };
 
@@ -72,7 +73,6 @@ export const getMessagesForModel = (
 ): { system?: string | { text: string }[]; messages: AIPromptMessage[] } => {
   const systemMessages: string[] = getSystemMessages(messages);
   const promptMessages = getPromptMessages(messages);
-  messages = [];
 
   const isBedrock = isBedrockModel(model);
   if (isBedrock) {
