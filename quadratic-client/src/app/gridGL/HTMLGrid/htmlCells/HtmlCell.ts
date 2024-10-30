@@ -288,9 +288,7 @@ export class HtmlCell {
 
   updateOffsets() {
     const offset = this.sheet.getCellOffsets(this.x, this.y);
-
-    // the 0.5 is adjustment for the border
-    this.div.style.left = `${offset.x - 0.5}px`;
-    this.div.style.top = `${offset.y + offset.height - 0.5}px`;
+    this.div.style.left = `${offset.x}px`;
+    this.div.style.top = `${offset.y}px`;
   }
 }
