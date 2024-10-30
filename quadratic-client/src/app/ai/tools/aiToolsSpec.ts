@@ -6,6 +6,7 @@ import { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
+  internalTool: boolean; // tools meant to get structured data from AI, but meant to be used during chat
   description: string;
   parameters: {
     type: 'object';
@@ -31,6 +32,9 @@ export const AIToolsArgsSchema = {
     y: z.number(),
     values: z.array(z.array(z.string())),
   }),
+  [AITool.SetChatName]: z.object({
+    name: z.string(),
+  }),
 } as const;
 
 export type AIToolSpecRecord = {
@@ -39,6 +43,7 @@ export type AIToolSpecRecord = {
 
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetCodeCellValue]: {
+    internalTool: false,
     description:
       'Set the value of a code cell and run it in the spreadsheet, requires the cell position (x, y), codeString and language',
     parameters: {
@@ -103,6 +108,7 @@ The required location (x,y) for this code cell is one which satisfies the follow
 `,
   },
   [AITool.SetCellValues]: {
+    internalTool: false,
     description:
       'Set the values of a spreadsheet cells to a 2d array of strings, requires the cell position (x, y) and the 2d array of strings. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.',
     parameters: {
@@ -141,6 +147,31 @@ The required location (x,y) for this code cell is one which satisfies the follow
 You can use the SetCellValues function to set the values of a spreadsheet cells to a 2d array of strings.
 
 This function requires the cell position (x, y) and the 2d array of strings. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.
+`,
+  },
+  [AITool.SetChatName]: {
+    internalTool: true,
+    description: 'Set the name of the user chat with AI assistant, this is the name of the chat in the chat history',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'The name of the chat',
+        },
+      },
+      required: ['name'],
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetChatName],
+    action: async (args) => {
+      // no action as this tool is only meant to get structured data from AI
+      return `Executed set chat name tool successfully with name: ${args.name}`;
+    },
+    prompt: `
+You can use the SetChatName function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
+This function requires the name of the chat, this should be concise and descriptive of the conversation, and should be easily understandable by a non-technical user.\n
+The chat name should be based on user's messages and should reflect his/her queries and goals.\n
+This name should be from user's perspective, not the assistant's.\n
 `,
   },
 } as const;

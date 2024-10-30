@@ -1,26 +1,19 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalyst';
 import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
+import { Chat, ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 
 export const defaultAIAnalystContext: Context = {
   quadraticDocs: true,
-  connections: false,
-  allSheets: false,
+  currentFile: false,
   currentSheet: true,
+  connections: false,
   visibleData: true,
   toolUse: true,
   selection: [],
 };
-
-export interface Chat {
-  id: string;
-  name: string;
-  lastUpdated: number;
-  messages: ChatMessage[];
-}
 
 export interface AIAnalystState {
   showAIAnalyst: boolean;
@@ -108,23 +101,18 @@ export const aiAnalystLoadingAtom = selector<boolean>({
         return prev;
       }
 
-      let chats: Chat[] = prev.chats;
       if (prev.loading && !newValue) {
+        // save chat after new message is finished loading
         const currentChat = prev.currentChat;
         if (currentChat.id) {
           aiAnalystOfflineChats.saveChats([currentChat]).catch((error) => {
             console.error('[AIAnalystOfflineChats]: ', error);
           });
         }
-
-        if (!prev.currentChat.name) {
-          console.log('TODO(ayush): update name from AI');
-        }
       }
 
       return {
         ...prev,
-        chats,
         loading: newValue,
       };
     });
@@ -140,11 +128,35 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
         return prev;
       }
 
+      // find deleted chats that are not in the new value
       const deletedChatIds = prev.chats
         .filter((chat) => !newValue.some((newChat) => newChat.id === chat.id))
         .map((chat) => chat.id);
+      // delete offline chats
       if (deletedChatIds.length > 0) {
         aiAnalystOfflineChats.deleteChats(deletedChatIds).catch((error) => {
+          console.error('[AIAnalystOfflineChats]: ', error);
+        });
+      }
+
+      // find changed chats
+      const changedChats = newValue.reduce<Chat[]>((acc, chat) => {
+        const prevChat = prev.chats.find((prevChat) => prevChat.id === chat.id);
+        if (!prevChat) {
+          acc.push(chat);
+        } else if (
+          prevChat.name !== chat.name ||
+          prevChat.lastUpdated !== chat.lastUpdated ||
+          prevChat.messages !== chat.messages
+        ) {
+          acc.push(chat);
+        }
+
+        return acc;
+      }, []);
+      // save changed chats
+      if (changedChats.length > 0) {
+        aiAnalystOfflineChats.saveChats(changedChats).catch((error) => {
           console.error('[AIAnalystOfflineChats]: ', error);
         });
       }
@@ -203,17 +215,20 @@ export const aiAnalystCurrentChatNameAtom = selector<string>({
         return prev;
       }
 
+      // update current chat
       const currentChat: Chat = {
         ...prev.currentChat,
         id: !!prev.currentChat.id ? prev.currentChat.id : v4(),
         name: newValue,
       };
 
+      // update chats
+      const chats = [...prev.chats.filter((chat) => chat.id !== currentChat.id), currentChat];
+
+      // save chat with new name
       aiAnalystOfflineChats.saveChats([currentChat]).catch((error) => {
         console.error('[AIAnalystOfflineChats]: ', error);
       });
-
-      const chats = [...prev.chats.filter((chat) => chat.id !== currentChat.id), currentChat];
 
       return {
         ...prev,
@@ -233,6 +248,7 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         return prev;
       }
 
+      // update current chat
       const currentChat: Chat = {
         id: prev.currentChat.id ? prev.currentChat.id : v4(),
         name: prev.currentChat.name,
@@ -240,6 +256,7 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
         messages: newValue,
       };
 
+      // update chats
       const chats = [...prev.chats.filter((chat) => chat.id !== currentChat.id), currentChat];
 
       return {

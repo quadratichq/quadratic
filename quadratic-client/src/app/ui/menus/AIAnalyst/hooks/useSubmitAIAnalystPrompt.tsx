@@ -55,8 +55,9 @@ export function useSubmitAIAnalystPrompt() {
           prevMessages = prevMessages.filter(
             (message) =>
               message.contextType !== 'quadraticDocs' &&
-              message.contextType !== 'allSheets' &&
+              message.contextType !== 'currentFile' &&
               message.contextType !== 'currentSheet' &&
+              message.contextType !== 'connections' &&
               message.contextType !== 'visibleData' &&
               message.contextType !== 'toolUse'
           );

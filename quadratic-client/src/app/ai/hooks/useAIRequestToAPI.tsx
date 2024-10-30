@@ -349,7 +349,7 @@ export function useAIRequestToAPI() {
             ? canStreamWithToolCalls && (useStream ?? canStream)
             : useStream ?? canStream
           : false;
-        const tools = !useTools ? undefined : getTools(model);
+        const tools = !useTools ? undefined : getTools(model, toolChoice);
         const tool_choice = !useTools ? undefined : getToolChoice(model, toolChoice);
         const endpoint = getAIProviderEndpoint(model, stream);
         const response = await fetch(endpoint, {

@@ -1,6 +1,7 @@
 import { aiAnalystShowChatHistoryAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
+import { AIAnalystEffects } from '@/app/ui/menus/AIAnalyst/AIAnalystEffects';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
@@ -33,31 +34,34 @@ export const AIAnalyst = () => {
     return null;
   }
 
-  // Designed to live in a box that takes up the full height of its container
   return (
-    <div
-      ref={aiPanelRef}
-      className="relative hidden h-full shrink-0 overflow-hidden lg:block"
-      style={{ width: `${panelWidth}px` }}
-      onCopy={(e) => e.stopPropagation()}
-      onCut={(e) => e.stopPropagation()}
-      onPaste={(e) => e.stopPropagation()}
-    >
-      <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
+    <>
+      <AIAnalystEffects />
 
-      <div className="grid h-full w-full grid-rows-[auto_1fr_auto]">
-        <AIAnalystHeader textareaRef={textareaRef} />
+      <div
+        ref={aiPanelRef}
+        className="relative hidden h-full shrink-0 overflow-hidden lg:block"
+        style={{ width: `${panelWidth}px` }}
+        onCopy={(e) => e.stopPropagation()}
+        onCut={(e) => e.stopPropagation()}
+        onPaste={(e) => e.stopPropagation()}
+      >
+        <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
 
-        {showChatHistory ? (
-          <AIAnalystChatHistory />
-        ) : (
-          <>
-            <AIAnalystMessages textareaRef={textareaRef} />
+        <div className="grid h-full w-full grid-rows-[auto_1fr_auto]">
+          <AIAnalystHeader textareaRef={textareaRef} />
 
-            <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
-          </>
-        )}
+          {showChatHistory ? (
+            <AIAnalystChatHistory />
+          ) : (
+            <>
+              <AIAnalystMessages textareaRef={textareaRef} />
+
+              <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };

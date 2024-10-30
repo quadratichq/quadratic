@@ -55,21 +55,12 @@ export function AIAnalystSelectContextMenu({
         </DropdownMenuCheckboxItem>
 
         <DropdownMenuCheckboxItem
-          key={'connection'}
-          checked={context.connections}
-          onCheckedChange={() => setContext((prev) => ({ ...prev, connections: !prev.connections }))}
-          disabled={true} // TODO: enable after implementing connections
-        >
-          <span>Connections</span>
-        </DropdownMenuCheckboxItem>
-
-        <DropdownMenuCheckboxItem
-          key={'all sheets'}
-          checked={context.allSheets}
-          onCheckedChange={() => setContext((prev) => ({ ...prev, allSheets: !prev.allSheets }))}
+          key={'current file'}
+          checked={context.currentFile}
+          onCheckedChange={() => setContext((prev) => ({ ...prev, currentFile: !prev.currentFile }))}
           disabled={true} // TODO: enable after implementing all sheets
         >
-          <span>All sheets</span>
+          <span>Current file</span>
         </DropdownMenuCheckboxItem>
 
         <DropdownMenuCheckboxItem
@@ -78,6 +69,15 @@ export function AIAnalystSelectContextMenu({
           onCheckedChange={() => setContext((prev) => ({ ...prev, currentSheet: !prev.currentSheet }))}
         >
           <span>Current sheet</span>
+        </DropdownMenuCheckboxItem>
+
+        <DropdownMenuCheckboxItem
+          key={'connection'}
+          checked={context.connections}
+          onCheckedChange={() => setContext((prev) => ({ ...prev, connections: !prev.connections }))}
+          disabled={true} // TODO: enable after implementing connections
+        >
+          <span>Connections</span>
         </DropdownMenuCheckboxItem>
 
         <DropdownMenuCheckboxItem

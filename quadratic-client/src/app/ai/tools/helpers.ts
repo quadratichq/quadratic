@@ -207,10 +207,17 @@ export const getMessagesForModel = (model: AIModel, messages: ChatMessage[]): AI
   throw new Error(`Unknown model: ${model}`);
 };
 
-export const getTools = (model: AIModel): AITool[] => {
+export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
+  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+    if (toolChoice === undefined) {
+      return !toolSpec.internalTool;
+    }
+    return name === toolChoice;
+  });
+
   const isBedrock = isBedrockModel(model);
   if (isBedrock) {
-    return Object.entries(aiToolsSpec).map(
+    return tools.map(
       ([name, { description, parameters: input_schema }]): BedrockTool => ({
         toolSpec: {
           name,
@@ -225,7 +232,7 @@ export const getTools = (model: AIModel): AITool[] => {
 
   const isAnthropic = isAnthropicModel(model);
   if (isAnthropic) {
-    return Object.entries(aiToolsSpec).map(
+    return tools.map(
       ([name, { description, parameters: input_schema }]): AnthropicTool => ({
         name,
         description,
@@ -236,7 +243,7 @@ export const getTools = (model: AIModel): AITool[] => {
 
   const isOpenAI = isOpenAIModel(model);
   if (isOpenAI) {
-    return Object.entries(aiToolsSpec).map(
+    return tools.map(
       ([name, { description, parameters }]): OpenAITool => ({
         type: 'function' as const,
         function: {

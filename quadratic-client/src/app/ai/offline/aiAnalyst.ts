@@ -1,4 +1,4 @@
-import { Chat } from '@/app/atoms/aiAnalystAtom';
+import { Chat, ChatSchema } from 'quadratic-shared/typesAndSchemasAI';
 
 const DB_VERSION = 1;
 export const DB_NAME = 'Quadratic-AI-Chats';
@@ -76,7 +76,18 @@ class AIAnalystOfflineChats {
         const getAll = store.getAll(keyRange);
 
         getAll.onsuccess = () => {
-          const chats = getAll.result.filter((chat) => chat.uuid === uuid).map(({ userEmail, uuid, ...chat }) => chat);
+          let chats = getAll.result.filter((chat) => chat.uuid === uuid).map(({ userEmail, uuid, ...chat }) => chat);
+          chats = chats.filter((chat) => {
+            if (ChatSchema.safeParse(chat).success) {
+              return true;
+            } else {
+              // delete chat if it is not valid or schema has changed
+              this.deleteChats([chat.id]).catch((error) => {
+                console.error('[AIAnalystOfflineChats] loadChats: ', error);
+              });
+              return false;
+            }
+          });
           resolve(chats);
         };
         getAll.onerror = () => {

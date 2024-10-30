@@ -1,22 +1,22 @@
-import { aiAnalystChatsAtom, aiAnalystCurrentChatAtom, Chat } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystChatsAtom, aiAnalystCurrentChatAtom } from '@/app/atoms/aiAnalystAtom';
 import { DeleteIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 const DEFAULT_CHAT_NAME = 'Untitled chat';
 
 export const AIAnalystChatHistory = () => {
-  const [searchValue, setSearchValue] = useState('');
-
   const [chats, setChats] = useRecoilState(aiAnalystChatsAtom);
+  const groupedChats = useMemo(() => groupChatsByTime(chats), [chats]);
   const [currentChat, setCurrentChat] = useRecoilState(aiAnalystCurrentChatAtom);
+  const [searchValue, setSearchValue] = useState('');
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingChatName, setEditingChatName] = useState('');
-  const groupedChats = useMemo(() => groupChatsByTime(chats), [chats]);
 
   return (
     <div className="mx-2 flex flex-col gap-2">

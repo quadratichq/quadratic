@@ -26,9 +26,9 @@ export type AIModel = z.infer<typeof AIModelSchema>;
 
 const ContextTypeSchema = z.enum([
   'quadraticDocs',
-  'connections',
-  'allSheets',
+  'currentFile',
   'currentSheet',
+  'connections',
   'visibleData',
   'toolUse',
   'selection',
@@ -40,9 +40,9 @@ export type ContextType = z.infer<typeof ContextTypeSchema>;
 
 const ContextSchema = z.object({
   quadraticDocs: z.boolean(),
-  connections: z.boolean(),
-  allSheets: z.boolean(),
+  currentFile: z.boolean(),
   currentSheet: z.boolean(),
+  connections: z.boolean(),
   visibleData: z.boolean(),
   toolUse: z.boolean(),
   selection: z.array(
@@ -125,6 +125,14 @@ export type AIMessage = z.infer<typeof AIMessageSchema>;
 
 const ChatMessageSchema = UserMessageSchema.or(AIMessageSchema);
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
+export const ChatSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  lastUpdated: z.number(),
+  messages: z.array(ChatMessageSchema),
+});
+export type Chat = z.infer<typeof ChatSchema>;
 
 const BedrockPromptMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),

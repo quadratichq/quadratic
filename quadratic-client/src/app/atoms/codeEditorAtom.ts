@@ -11,9 +11,9 @@ import { atom, DefaultValue, selector } from 'recoil';
 
 export const defaultAIAssistantContext: Context = {
   quadraticDocs: true,
-  connections: false,
-  allSheets: false,
+  currentFile: false,
   currentSheet: true,
+  connections: false,
   visibleData: true,
   toolUse: false,
   selection: [],
