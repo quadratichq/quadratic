@@ -315,6 +315,15 @@ export interface ClientCoreSetCellValue {
   cursor?: string;
 }
 
+export interface ClientCoreSetCellValues {
+  type: 'clientCoreSetCellValues';
+  sheetId: string;
+  x: number;
+  y: number;
+  values: string[][];
+  cursor?: string;
+}
+
 export interface ClientCoreSetCellBold {
   type: 'clientCoreSetCellBold';
   selection: Selection;
@@ -1104,6 +1113,7 @@ export type ClientCoreMessage =
   | ClientCoreCellHasContent
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
+  | ClientCoreSetCellValues
   | ClientCoreGetCellFormatSummary
   | ClientCoreInitMultiplayer
   | ClientCoreSummarizeSelection

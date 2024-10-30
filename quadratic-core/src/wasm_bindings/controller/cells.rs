@@ -35,6 +35,39 @@ impl GridController {
         }
     }
 
+    /// Sets a 2d array of cell values with x and y being the top left corner of the 2d array.
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "setCellValues")]
+    pub fn js_set_cell_values(
+        &mut self,
+        sheet_id: String,
+        x: i32,
+        y: i32,
+        values: JsValue,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let values: Vec<Vec<String>> = serde_wasm_bindgen::from_value(values)
+            .map_err(|_| JsValue::from_str("Invalid values"))?;
+        let values: Vec<Vec<&str>> = values
+            .iter()
+            .map(|row| row.iter().map(|s| s.as_str()).collect())
+            .collect();
+        let pos = Pos {
+            x: x as i64,
+            y: y as i64,
+        };
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            Ok(serde_wasm_bindgen::to_value(&self.set_cell_values(
+                pos.to_sheet_pos(sheet_id),
+                values,
+                cursor,
+            ))?)
+        } else {
+            Err(JsValue::from_str("Invalid sheet id"))
+        }
+    }
+
     /// changes the decimal places
     #[wasm_bindgen(js_name = "setCellNumericDecimals")]
     pub fn js_set_cell_numeric_decimals(

@@ -415,6 +415,17 @@ class QuadraticCore {
     });
   }
 
+  setCellValues(sheetId: string, x: number, y: number, values: string[][], cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellValues',
+      sheetId,
+      x,
+      y,
+      values,
+      cursor,
+    });
+  }
+
   setCodeCellValue(options: {
     sheetId: string;
     x: number;

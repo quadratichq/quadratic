@@ -172,6 +172,10 @@ class CoreClient {
         await core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
         return;
 
+      case 'clientCoreSetCellValues':
+        await core.setCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.values, e.data.cursor);
+        return;
+
       case 'clientCoreGetEditCell':
         this.send({
           type: 'coreClientGetEditCell',

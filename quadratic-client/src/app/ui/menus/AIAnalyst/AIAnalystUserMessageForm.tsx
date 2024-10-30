@@ -79,7 +79,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
 
     return (
       <form
-        className={cn('group z-10 m-2 h-min rounded-lg bg-slate-100 pt-1', edit ? '' : 'select-none')}
+        className={cn('group z-10 m-2 h-min rounded-lg bg-accent pt-1', edit ? '' : 'select-none')}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
           if (edit) {

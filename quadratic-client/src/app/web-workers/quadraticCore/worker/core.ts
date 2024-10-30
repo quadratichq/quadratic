@@ -221,6 +221,16 @@ class Core {
     });
   }
 
+  setCellValues(sheetId: string, x: number, y: number, values: string[][], cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellValues(sheetId, x, y, values, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
   getCellFormatSummary(sheetId: string, x: number, y: number, withSheetInfo: boolean): Promise<CellFormatSummary> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {

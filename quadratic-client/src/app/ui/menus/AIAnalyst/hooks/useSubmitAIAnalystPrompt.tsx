@@ -164,7 +164,7 @@ export function useSubmitAIAnalystPrompt() {
                 const aiTool = toolCall.name as AITool;
                 const argsObject = JSON.parse(toolCall.arguments);
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const result = await aiToolsSpec[aiTool].action(args);
+                const result = await aiToolsSpec[aiTool].action(args as any);
                 toolResultMessage.content.push({
                   id: toolCall.id,
                   content: result,

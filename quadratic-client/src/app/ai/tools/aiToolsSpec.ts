@@ -2,21 +2,22 @@ import { AITool } from '@/app/ai/tools/aiTools';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
-type AIToolSpec<T extends AITool> = {
+type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   description: string;
   parameters: {
     type: 'object';
-    properties: Record<string, { type: string; description: string }>;
+    properties: Record<string, AIToolArgs>;
     required: string[];
   };
-  responseSchema: (typeof AIToolsResponseSchema)[T];
-  action: (args: z.infer<(typeof AIToolsResponseSchema)[T]>) => Promise<string>;
+  responseSchema: (typeof AIToolsArgsSchema)[T];
+  action: (args: z.infer<(typeof AIToolsArgsSchema)[T]>) => Promise<string>;
   prompt: string;
 };
 
-const AIToolsResponseSchema = {
+export const AIToolsArgsSchema = {
   [AITool.SetCodeCellValue]: z.object({
     language: z.enum(['Python', 'Javascript', 'Formula']),
     x: z.number(),
@@ -25,9 +26,18 @@ const AIToolsResponseSchema = {
     width: z.number(),
     height: z.number(),
   }),
+  [AITool.SetCellValues]: z.object({
+    x: z.number(),
+    y: z.number(),
+    values: z.array(z.array(z.string())),
+  }),
 } as const;
 
-export const aiToolsSpec: Record<AITool, AIToolSpec<AITool>> = {
+export type AIToolSpecRecord = {
+  [K in AITool]: AIToolSpec<K>;
+};
+
+export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetCodeCellValue]: {
     description:
       'Set the value of a code cell and run it in the spreadsheet, requires the cell position (x, y), codeString and language',
@@ -62,7 +72,7 @@ export const aiToolsSpec: Record<AITool, AIToolSpec<AITool>> = {
       },
       required: ['language', 'x', 'y', 'codeString', 'width', 'height'],
     },
-    responseSchema: AIToolsResponseSchema[AITool.SetCodeCellValue],
+    responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     action: async (args) => {
       const { language, codeString, x, y, width, height } = args;
       quadraticCore.setCodeCellValue({
@@ -90,6 +100,47 @@ The required location (x,y) for this code cell is one which satisfies the follow
  - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.
  - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the sheet.
  - Consider the overall layout and organization of the sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.
+`,
+  },
+  [AITool.SetCellValues]: {
+    description:
+      'Set the values of a spreadsheet cells to a 2d array of strings, requires the cell position (x, y) and the 2d array of strings. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.',
+    parameters: {
+      type: 'object',
+      properties: {
+        x: {
+          type: 'number',
+          description:
+            'The x position of the cell, which is the column index of the current spreadsheet. This is the column index of the top left corner of the added 2d array of values on the spreadsheet',
+        },
+        y: {
+          type: 'number',
+          description:
+            'The y position of the cell, which is the row index of the current spreadsheet. This is the row index of the top left corner of the added 2d array of values on the spreadsheet',
+        },
+        values: {
+          type: 'array',
+          items: {
+            type: 'array',
+            items: {
+              type: 'string',
+              description: 'The string that is the value to set in the cell',
+            },
+          },
+        },
+      },
+      required: ['x', 'y', 'values'],
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
+    action: async (args) => {
+      const { x, y, values } = args;
+      quadraticCore.setCellValues(sheets.current, x, y, values, sheets.getCursorPosition());
+      return 'Executed set cell values tool successfully';
+    },
+    prompt: `
+You can use the SetCellValues function to set the values of a spreadsheet cells to a 2d array of strings.
+
+This function requires the cell position (x, y) and the 2d array of strings. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.
 `,
   },
 } as const;

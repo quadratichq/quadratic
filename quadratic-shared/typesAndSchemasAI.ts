@@ -205,6 +205,32 @@ const OpenAIPromptMessageSchema = z
   );
 export type OpenAIPromptMessage = z.infer<typeof OpenAIPromptMessageSchema>;
 
+const AIToolArgsSchema = z
+  .object({
+    type: z.string(),
+    description: z.string(),
+  })
+  .or(
+    z.object({
+      type: z.literal('array'),
+      items: z
+        .object({
+          type: z.string(),
+          description: z.string(),
+        })
+        .or(
+          z.object({
+            type: z.literal('array'),
+            items: z.object({
+              type: z.string(),
+              description: z.string(),
+            }),
+          })
+        ),
+    })
+  );
+export type AIToolArgs = z.infer<typeof AIToolArgsSchema>;
+
 const BedrockToolSchema = z.object({
   toolSpec: z.object({
     name: z.string(),
@@ -212,12 +238,7 @@ const BedrockToolSchema = z.object({
     inputSchema: z.object({
       json: z.object({
         type: z.literal('object'),
-        properties: z.record(
-          z.object({
-            type: z.string(),
-            description: z.string(),
-          })
-        ),
+        properties: z.record(AIToolArgsSchema),
         required: z.array(z.string()),
       }),
     }),
@@ -246,12 +267,7 @@ const AnthropicToolSchema = z.object({
   input_schema: z
     .object({
       type: z.literal('object'),
-      properties: z.record(
-        z.object({
-          type: z.string(),
-          description: z.string(),
-        })
-      ),
+      properties: z.record(AIToolArgsSchema),
       required: z.array(z.string()),
     })
     .and(z.record(z.unknown())),
@@ -281,12 +297,7 @@ const OpenAIToolSchema = z.object({
     description: z.string(),
     parameters: z.object({
       type: z.literal('object'),
-      properties: z.record(
-        z.object({
-          type: z.string(),
-          description: z.string(),
-        })
-      ),
+      properties: z.record(AIToolArgsSchema),
       required: z.array(z.string()),
       additionalProperties: z.boolean(),
     }),
