@@ -237,7 +237,10 @@ class PixiAppSettings {
   };
 
   isRenamingTable(): boolean {
-    return !!(this.contextMenu.type === ContextMenuType.Table && this.contextMenu.rename);
+    return !!(
+      (this.contextMenu.type === ContextMenuType.Table || this.contextMenu.type === ContextMenuType.TableColumn) &&
+      this.contextMenu.rename
+    );
   }
 }
 

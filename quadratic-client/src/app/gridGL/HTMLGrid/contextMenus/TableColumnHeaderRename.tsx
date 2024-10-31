@@ -11,7 +11,7 @@ export const TableColumnHeaderRename = () => {
 
   const position = useMemo(() => {
     if (
-      contextMenu.type !== ContextMenuType.Table ||
+      contextMenu.type !== ContextMenuType.TableColumn ||
       !contextMenu.rename ||
       !contextMenu.table ||
       contextMenu.selectedColumn === undefined
@@ -33,7 +33,7 @@ export const TableColumnHeaderRename = () => {
   }, [contextMenu.selectedColumn, contextMenu.table]);
 
   if (
-    contextMenu.type !== ContextMenuType.Table ||
+    contextMenu.type !== ContextMenuType.TableColumn ||
     !contextMenu.rename ||
     !contextMenu.table ||
     contextMenu.selectedColumn === undefined

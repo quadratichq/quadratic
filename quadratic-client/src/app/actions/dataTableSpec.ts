@@ -165,13 +165,15 @@ export const dataTableSpec: DataTableSpec = {
     run: () => {
       const table = getTable();
       if (table) {
-        setTimeout(() => {
-          const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
-          if (selectedColumn !== undefined) {
-            const contextMenu = { type: ContextMenuType.Table, rename: true, table, selectedColumn };
+        const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+        console.log(selectedColumn);
+        if (selectedColumn !== undefined) {
+          setTimeout(() => {
+            const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
             events.emit('contextMenu', contextMenu);
-          }
-        });
+            console.log('emitting...');
+          });
+        }
       }
     },
   },

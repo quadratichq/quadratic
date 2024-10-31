@@ -312,11 +312,7 @@ export class Tables extends Container<Table> {
         this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
         if (this.actionDataTable) {
           this.actionDataTable.showActive(true);
-          if (options.selectedColumn === undefined) {
-            this.actionDataTable.hideTableName();
-          } else {
-            this.actionDataTable.hideColumnHeaders(options.selectedColumn);
-          }
+          this.actionDataTable.hideTableName();
           this.hoverTable = undefined;
         }
       } else {
@@ -327,6 +323,20 @@ export class Tables extends Container<Table> {
             this.hoverTable = undefined;
           }
         }
+      }
+    } else if (
+      options.type === ContextMenuType.TableColumn &&
+      options.table &&
+      options.rename &&
+      options.selectedColumn !== undefined
+    ) {
+      this.actionDataTable = this.children.find((table) => table.codeCell === options.table);
+      if (this.actionDataTable) {
+        this.actionDataTable.showActive(true);
+        if (this.hoverTable === this.actionDataTable) {
+          this.hoverTable = undefined;
+        }
+        this.actionDataTable.hideColumnHeaders(options.selectedColumn);
       }
     }
     pixiApp.setViewportDirty();

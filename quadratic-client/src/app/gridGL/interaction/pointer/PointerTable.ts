@@ -50,7 +50,7 @@ export class PointerTable {
     }
     if (this.doubleClickTimeout) {
       events.emit('contextMenu', {
-        type: ContextMenuType.Table,
+        type: ContextMenuType.TableColumn,
         world,
         column: tableDown.table.x,
         row: tableDown.table.y,
