@@ -62,7 +62,6 @@ export class Tables extends Container<Table> {
         this.htmlOrImage.add(`${htmlOutput.x},${htmlOutput.y}`);
       }
     });
-    console.log(this.htmlOrImage);
   };
 
   private htmlUpdate = (output: JsHtmlOutput) => {
@@ -177,6 +176,9 @@ export class Tables extends Container<Table> {
 
   // Checks if the mouse cursor is hovering over a table or table heading.
   checkHover(world: Point, event: PointerEvent) {
+    // don't allow hover when the mouse is over the headings
+    if (world.y < pixiApp.viewport.y - pixiApp.headings.headingSize.height) return;
+
     // only allow hover when the mouse is over the canvas (and not menus)
     if (event.target !== pixiApp.canvas) {
       return;
@@ -407,6 +409,8 @@ export class Tables extends Container<Table> {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
     if (table) {
       table.resize(width, height);
+      sheets.sheet.gridOverflowLines.resizeImage(x, y, width, height);
+      pixiApp.gridLines.dirty = true;
     }
   }
 

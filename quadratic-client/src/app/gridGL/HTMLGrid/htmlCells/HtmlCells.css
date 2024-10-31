@@ -26,9 +26,9 @@
 .html-resize-control-right {
   position: absolute;
   width: 5px;
-  height: calc(100% + 2px);
-  top: -1px;
-  right: -6px;
+  height: 100%;
+  top: 0;
+  right: -5px;
 }
 
 .html-resize-control-right-corner {
@@ -42,7 +42,7 @@
 .html-resize-control-bottom {
   position: absolute;
   height: 5px;
-  width: calc(100% + 2px);
-  bottom: -6px;
-  left: -1px;
+  width: 100%;
+  bottom: -5px;
+  left: 0;
 }

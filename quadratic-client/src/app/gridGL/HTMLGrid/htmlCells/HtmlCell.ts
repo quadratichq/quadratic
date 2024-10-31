@@ -13,8 +13,6 @@ const tolerance = 5;
 const DEFAULT_HTML_WIDTH = '600';
 const DEFAULT_HTML_HEIGHT = '460';
 
-const ALLOW_CHART_INTERACTIVITY = import.meta.env.VITE_ALLOW_CHART_INTERACTIVITY === '1';
-
 export class HtmlCell {
   private right: HTMLDivElement;
   private bottom: HTMLDivElement;
@@ -51,7 +49,7 @@ export class HtmlCell {
 
     this.iframe = document.createElement('iframe');
     this.iframe.className = 'html-cell-iframe';
-    this.iframe.style.pointerEvents = ALLOW_CHART_INTERACTIVITY ? 'auto' : 'none';
+    this.iframe.style.pointerEvents = 'none';
     this.iframe.srcdoc = htmlCell.html;
     this.iframe.title = `HTML from ${htmlCell.x}, ${htmlCell.y}}`;
     this.iframe.width = this.width;

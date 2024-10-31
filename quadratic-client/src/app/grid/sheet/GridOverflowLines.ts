@@ -34,6 +34,11 @@ export class GridOverflowLines {
     });
   }
 
+  resizeImage(x: number, y: number, width: number, height: number) {
+    this.updateImageHtml(x, y, width, height);
+  }
+
+  // updates the hash with a rectangle of an image or html table
   updateImageHtml(column: number, row: number, width?: number, height?: number) {
     if (width === undefined || height === undefined) {
       this.overflowImageHtml.delete(`${column},${row}`);
