@@ -143,8 +143,8 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Sort',
     Icon: SortIcon,
     run: () => {
+      const table = getTable();
       setTimeout(() => {
-        const table = getTable();
         const contextMenu = { type: ContextMenuType.TableSort, table };
         events.emit('contextMenu', contextMenu);
       });

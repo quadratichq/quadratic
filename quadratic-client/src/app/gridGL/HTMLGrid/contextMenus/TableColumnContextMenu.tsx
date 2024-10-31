@@ -28,7 +28,7 @@ export const TableColumnContextMenu = () => {
           <DropdownMenuSeparator />
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <TableIcon className="-ml-3 mr-4" />
+              <TableIcon className="mr-4 flex h-6 w-6 items-center justify-center" />
               {contextMenu.table?.language === 'Import' ? 'Data' : 'Code'} Table
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
