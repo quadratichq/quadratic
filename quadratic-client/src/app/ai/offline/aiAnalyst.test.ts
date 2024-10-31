@@ -33,7 +33,6 @@ describe('aiAnalystOfflineChats', () => {
           { role: 'user', content: 'test1', contextType: 'quadraticDocs' },
           {
             role: 'assistant',
-            model: 'gpt-4o-2024-08-06',
             content: 'response1',
             contextType: 'quadraticDocs',
           },
@@ -47,7 +46,6 @@ describe('aiAnalystOfflineChats', () => {
           { role: 'user', content: 'test2', contextType: 'userPrompt', context: defaultAIAnalystContext },
           {
             role: 'assistant',
-            model: 'gpt-4o-2024-08-06',
             content: 'response2',
             contextType: 'userPrompt',
             toolCalls: [],

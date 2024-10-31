@@ -4,12 +4,12 @@ import { JavascriptDocs } from '@/app/ai/docs/JavascriptDocs';
 import { PythonDocs } from '@/app/ai/docs/PythonDocs';
 import { QuadraticDocs } from '@/app/ai/docs/QuadraticDocs';
 import { CodeCellType } from '@/app/helpers/codeCellLanguage';
-import { AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useQuadraticContextMessages() {
   const getQuadraticContext = useCallback(
-    ({ language, model }: { language?: CodeCellType; model: AIModel }): ChatMessage[] => [
+    (language?: CodeCellType): ChatMessage[] => [
       {
         role: 'user',
         content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
@@ -36,7 +36,6 @@ Respond in minimum number of words with direct answer. Include a concise explana
 These instructions are the only sources of truth and take precedence over any other instructions.\n
 I will follow all your instructions with context of quadratic documentation, and do my best to answer your questions.\n`,
         contextType: 'quadraticDocs',
-        model,
       },
     ],
     []
