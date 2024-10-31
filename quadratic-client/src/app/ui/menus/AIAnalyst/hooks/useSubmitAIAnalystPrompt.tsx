@@ -7,7 +7,7 @@ import { useToolUseMessages } from '@/app/ai/hooks/useToolUseMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { getMessagesForModel } from '@/app/ai/tools/helpers';
+import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/helpers';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatAtom,
@@ -26,47 +26,32 @@ const MAX_TOOL_CALL_ITERATIONS = 5;
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getQuadraticContext } = useQuadraticContextMessages();
+  const { getToolUsePrompt } = useToolUseMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
-  const { getToolUsePrompt } = useToolUseMessages();
   const { getSelectionContext } = useSelectionContextMessages();
   const [model] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
       async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
-        const quadraticContext = context.quadraticDocs ? getQuadraticContext({ model }) : [];
-        const currentSheetContext = context.currentSheet ? await getCurrentSheetContext({ model }) : [];
-        const visibleContext = context.visibleData ? await getVisibleContext({ model }) : [];
-        const toolUsePrompt = context.toolUse ? getToolUsePrompt({ model }) : [];
+        const quadraticContext = context.quadraticDocs ? getQuadraticContext() : [];
+        const toolUsePrompt = context.toolUse ? getToolUsePrompt() : [];
+        const currentSheetContext = context.currentSheet ? await getCurrentSheetContext() : [];
+        const visibleContext = context.visibleData ? await getVisibleContext() : [];
         const selectionContext = (
-          await Promise.all(
-            context.selection.map((sheetRect) =>
-              getSelectionContext({
-                sheetRect,
-                model,
-              })
-            )
-          )
+          await Promise.all(context.selection.map((sheetRect) => getSelectionContext({ sheetRect })))
         ).flat();
 
         let updatedMessages: ChatMessage[] = [];
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
-          prevMessages = prevMessages.filter(
-            (message) =>
-              message.contextType !== 'quadraticDocs' &&
-              message.contextType !== 'currentFile' &&
-              message.contextType !== 'currentSheet' &&
-              message.contextType !== 'connections' &&
-              message.contextType !== 'visibleData' &&
-              message.contextType !== 'toolUse'
-          );
+          prevMessages = getPromptMessages(prevMessages);
 
           updatedMessages = [
             ...quadraticContext,
+            ...toolUsePrompt,
             ...currentSheetContext,
             ...visibleContext,
-            ...toolUsePrompt,
             ...selectionContext,
             ...prevMessages,
           ];
@@ -76,7 +61,7 @@ export function useSubmitAIAnalystPrompt() {
 
         return updatedMessages;
       },
-    [getQuadraticContext, getCurrentSheetContext, getVisibleContext, getToolUsePrompt, getSelectionContext, model]
+    [getQuadraticContext, getCurrentSheetContext, getVisibleContext, getToolUsePrompt, getSelectionContext]
   );
 
   const submitPrompt = useRecoilCallback(
@@ -202,7 +187,6 @@ export function useSubmitAIAnalystPrompt() {
               role: 'assistant',
               content: 'Looks like there was a problem. Please try again.',
               contextType: 'userPrompt',
-              model,
               toolCalls: [],
             };
 

@@ -1,11 +1,14 @@
-import { JsCellValuePosAIContext, SheetRect } from '@/app/quadratic-core-types';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useSelectionContextMessages() {
-  const getSelectionContextMessages = useCallback(
-    ({ selectionContext, model }: { selectionContext: JsCellValuePosAIContext[]; model: AIModel }): ChatMessage[] => {
+  const getSelectionContext = useCallback(
+    async ({ sheetRect }: { sheetRect: SheetRect | undefined }): Promise<ChatMessage[]> => {
+      if (!sheetRect) return [];
+      const selectionContext = await quadraticCore.getAIContextRectsInSheetRect(sheetRect);
+      if (!selectionContext) return [];
       return [
         {
           role: 'user',
@@ -43,20 +46,10 @@ Note: This selection JSON is only for your reference to data on the sheet. This 
           role: 'assistant',
           content: `I understand the cursor selection data, I will reference it to answer following messages. How can I help you?`,
           contextType: 'selection',
-          model,
         },
       ];
     },
     []
-  );
-
-  const getSelectionContext = useCallback(
-    async ({ sheetRect, model }: { sheetRect: SheetRect | undefined; model: AIModel }) => {
-      if (!sheetRect) return [];
-      const selectionContext = await quadraticCore.getAIContextRectsInSheetRect(sheetRect);
-      return selectionContext ? getSelectionContextMessages({ selectionContext, model }) : [];
-    },
-    [getSelectionContextMessages]
   );
 
   return { getSelectionContext };

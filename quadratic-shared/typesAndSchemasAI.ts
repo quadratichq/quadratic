@@ -99,7 +99,6 @@ const AIMessageInternalSchema = z.object({
   role: z.literal('assistant'),
   content: z.string(),
   contextType: ContextTypeSchema.exclude(['userPrompt']),
-  model: AIModelSchema,
 });
 export type AIMessageInternal = z.infer<typeof AIMessageInternalSchema>;
 
@@ -107,7 +106,6 @@ const AIMessagePromptSchema = z.object({
   role: z.literal('assistant'),
   content: z.string(),
   contextType: z.literal('userPrompt'),
-  model: AIModelSchema,
   toolCalls: z.array(
     z.object({
       id: z.string(),

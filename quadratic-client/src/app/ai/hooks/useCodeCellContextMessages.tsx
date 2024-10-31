@@ -1,29 +1,32 @@
 import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
-import { AIModel, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useCodeCellContextMessages() {
-  const getCodeCellContextMessages = useCallback(
-    ({
-      pos,
-      cellLanguage,
-      codeString,
-      consoleOutput,
-      schemaJsonForAi,
-      model,
-    }: {
-      pos: Coordinate;
-      cellLanguage: CodeCellLanguage;
-      codeString: string;
-      consoleOutput: { std_out: string; std_err: string };
-      schemaJsonForAi?: string;
-      model: AIModel;
-    }): ChatMessage[] => {
+  const getCodeCellContext = useCallback(
+    async ({ codeCell }: { codeCell: CodeCell | undefined }): Promise<ChatMessage[]> => {
+      if (!codeCell) return [];
+      const { sheetId, pos, language: cellLanguage } = codeCell;
+      const codeCellCore = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
+      const codeString = codeCellCore?.code_string ?? '';
+      const consoleOutput = {
+        std_out: codeCellCore?.std_out ?? '',
+        std_err: codeCellCore?.std_err ?? '',
+      };
+
+      let schemaData;
+      const connection = getConnectionInfo(cellLanguage);
+      if (connection) {
+        schemaData = await connectionClient.schemas.get(
+          connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
+          connection.id
+        );
+      }
+      const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
+
       const { x, y } = pos;
       const language = getConnectionKind(cellLanguage);
       const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
@@ -83,46 +86,10 @@ ${
           role: 'assistant',
           content: `How can I help you?`,
           contextType: 'codeCell',
-          model,
         },
       ];
     },
     []
-  );
-
-  const getCodeCellContext = useCallback(
-    async ({ codeCell, model }: { codeCell: CodeCell | undefined; model: AIModel }) => {
-      if (!codeCell) return [];
-      const { sheetId, pos, language } = codeCell;
-      const codeCellCore = await quadraticCore.getCodeCell(sheetId, pos.x, pos.y);
-      const codeString = codeCellCore?.code_string ?? '';
-      const consoleOutput = {
-        std_out: codeCellCore?.std_out ?? '',
-        std_err: codeCellCore?.std_err ?? '',
-      };
-
-      let schemaData;
-      const connection = getConnectionInfo(language);
-      if (connection) {
-        schemaData = await connectionClient.schemas.get(
-          connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
-          connection.id
-        );
-      }
-      const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
-
-      const codeContext = getCodeCellContextMessages({
-        pos,
-        cellLanguage: language,
-        codeString,
-        consoleOutput,
-        schemaJsonForAi,
-        model,
-      });
-
-      return codeContext;
-    },
-    [getCodeCellContextMessages]
   );
 
   return { getCodeCellContext };

@@ -338,7 +338,6 @@ export function useAIRequestToAPI() {
         role: 'assistant',
         content: '',
         contextType: 'userPrompt',
-        model,
         toolCalls: [],
       };
       setMessages?.((prev) => [...prev, { ...responseMessage, content: 'Loading...' }]);

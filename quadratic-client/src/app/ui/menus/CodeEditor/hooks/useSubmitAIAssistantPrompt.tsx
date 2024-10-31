@@ -4,7 +4,7 @@ import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMes
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
-import { getMessagesForModel } from '@/app/ai/tools/helpers';
+import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/helpers';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantLoadingAtom,
@@ -65,23 +65,13 @@ export function useSubmitAIAssistantPrompt() {
         }
         context = { ...context, codeCell };
 
-        const quadraticContext = context.quadraticDocs
-          ? getQuadraticContext({ language: getLanguage(codeCell.language), model })
-          : [];
-        const currentSheetContext = context.currentSheet ? await getCurrentSheetContext({ model }) : [];
-        const visibleContext = context.visibleData ? await getVisibleContext({ model }) : [];
-        const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell, model }) : [];
+        const quadraticContext = context.quadraticDocs ? getQuadraticContext(getLanguage(codeCell.language)) : [];
+        const currentSheetContext = context.currentSheet ? await getCurrentSheetContext() : [];
+        const visibleContext = context.visibleData ? await getVisibleContext() : [];
+        const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell }) : [];
         let updatedMessages: ChatMessage[] = [];
         set(aiAssistantMessagesAtom, (prevMessages) => {
-          prevMessages = prevMessages.filter(
-            (message) =>
-              message.contextType !== 'quadraticDocs' &&
-              message.contextType !== 'currentFile' &&
-              message.contextType !== 'currentSheet' &&
-              message.contextType !== 'connections' &&
-              message.contextType !== 'visibleData' &&
-              message.contextType !== 'toolUse'
-          );
+          prevMessages = getPromptMessages(prevMessages);
 
           const lastCodeContext = prevMessages
             .filter((message) => message.role === 'user' && message.contextType === 'codeCell')
