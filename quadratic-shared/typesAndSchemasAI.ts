@@ -219,30 +219,32 @@ const OpenAIPromptMessageSchema = z
   );
 export type OpenAIPromptMessage = z.infer<typeof OpenAIPromptMessageSchema>;
 
-const AIToolArgsSchema = z
-  .object({
-    type: z.string(),
-    description: z.string(),
-  })
-  .or(
-    z.object({
-      type: z.literal('array'),
-      items: z
-        .object({
-          type: z.string(),
-          description: z.string(),
-        })
-        .or(
-          z.object({
-            type: z.literal('array'),
-            items: z.object({
-              type: z.string(),
-              description: z.string(),
-            }),
-          })
-        ),
+const AIToolArgsSchema: z.ZodType = z.lazy(() =>
+  z
+    .object({
+      type: z.string(),
+      description: z.string(),
     })
-  );
+    .or(
+      z.object({
+        type: z.literal('array'),
+        items: z
+          .object({
+            type: z.string(),
+            description: z.string(),
+          })
+          .or(AIToolArgsSchema)
+          .or(
+            z.object({
+              type: z.literal('object'),
+              properties: z.record(AIToolArgsSchema),
+              required: z.array(z.string()),
+              additionalProperties: z.boolean(),
+            })
+          ),
+      })
+    )
+);
 export type AIToolArgs = z.infer<typeof AIToolArgsSchema>;
 
 const BedrockToolSchema = z.object({

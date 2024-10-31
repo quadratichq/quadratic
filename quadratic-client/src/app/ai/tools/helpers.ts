@@ -71,8 +71,13 @@ export const getMessagesForModel = (
   model: AIModel,
   messages: ChatMessage[]
 ): { system?: string | { text: string }[]; messages: AIPromptMessage[] } => {
+  // send internal context messages as system messages
   const systemMessages: string[] = getSystemMessages(messages);
   const promptMessages = getPromptMessages(messages);
+
+  // send all messages as prompt messages
+  // const systemMessages: string[] = [];
+  // const promptMessages = messages;
 
   const isBedrock = isBedrockModel(model);
   if (isBedrock) {
@@ -291,10 +296,7 @@ export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
         function: {
           name,
           description,
-          parameters: {
-            ...parameters,
-            additionalProperties: false,
-          },
+          parameters,
           strict: true,
         },
       })

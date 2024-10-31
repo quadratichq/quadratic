@@ -17,20 +17,20 @@ export const AIAnalystChatHistory = () => {
   const [searchValue, setSearchValue] = useState('');
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingChatName, setEditingChatName] = useState('');
-  const groupedChats = useMemo(() => groupChatsByTime(chats, searchValue), [chats, searchValue]);
+  const chatGroups = useMemo(() => groupChatsByTime(chats, searchValue), [chats, searchValue]);
 
   return (
     <div className="mx-2 flex flex-col gap-2">
       <Input autoFocus onChange={(e) => setSearchValue(e.target.value)} value={searchValue} placeholder="Search…" />
 
       <div className="flex flex-col gap-1 text-muted-foreground">
-        {Object.entries(groupedChats).map(
-          ([group, groupChats]) =>
-            groupChats.length > 0 && (
+        {Object.entries(chatGroups).map(
+          ([group, chats]) =>
+            chats.length > 0 && (
               <div key={group} className="flex flex-col gap-1">
                 <span className="pl-3 text-xs font-semibold">{group}</span>
 
-                {groupChats.map((chat) => {
+                {chats.map((chat) => {
                   const isCurrentChat = chat.id === currentChat.id;
                   const isBeingRenamed = editingChatId === chat.id;
 
@@ -45,10 +45,15 @@ export const AIAnalystChatHistory = () => {
                           : 'hover:cursor-pointer'
                       )}
                       onClick={() => {
+                        if (isBeingRenamed) {
+                          return;
+                        }
+
                         if (isCurrentChat) {
                           setShowChatHistory(false);
                           return;
                         }
+
                         setCurrentChat(chat);
                       }}
                     >
