@@ -8,6 +8,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
+import { sharedEvents } from '@/shared/sharedEvents';
 import { BitmapText, Container, Graphics, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 
 export const TABLE_NAME_FONT_SIZE = 12;
@@ -43,10 +44,11 @@ export class TableName extends Container {
     if (sheets.sheet.id === this.table.sheet.id) {
       pixiApp.overHeadingsTableNames.addChild(this);
     }
+    sharedEvents.on('changeThemeAccentColor', this.drawBackground);
     this.visible = false;
   }
 
-  private drawBackground() {
+  private drawBackground = () => {
     const width =
       this.text.width +
       OPEN_SANS_FIX.x +
@@ -60,7 +62,7 @@ export class TableName extends Container {
     this.background.endFill();
 
     this.backgroundWidth = width;
-  }
+  };
 
   private drawSymbol() {
     if (this.symbol) {

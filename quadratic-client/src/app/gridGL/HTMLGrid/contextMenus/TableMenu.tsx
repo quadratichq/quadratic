@@ -12,10 +12,11 @@ import { useMemo } from 'react';
 interface Props {
   defaultRename?: boolean;
   codeCell?: JsRenderCodeCell;
+  selectedColumn?: number;
 }
 
 export const TableMenu = (props: Props) => {
-  const { defaultRename, codeCell } = props;
+  const { defaultRename, codeCell, selectedColumn } = props;
   const cell = getCodeCell(codeCell?.language);
   const isCodeCell = cell && cell.id !== 'Import';
 
@@ -33,7 +34,7 @@ export const TableMenu = (props: Props) => {
     );
   }, [codeCell]);
 
-  if (!codeCell) {
+  if (!codeCell || selectedColumn !== undefined) {
     return null;
   }
 

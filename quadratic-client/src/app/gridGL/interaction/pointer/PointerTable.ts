@@ -85,7 +85,7 @@ export class PointerTable {
     }
     if (event.button === 2 || (isMac && event.button === 0 && event.ctrlKey)) {
       events.emit('contextMenu', {
-        type: ContextMenuType.Table,
+        type: tableDown.type === 'column-name' ? ContextMenuType.TableColumn : ContextMenuType.Table,
         world,
         column: tableDown.table.x,
         row: tableDown.table.y,

@@ -4,6 +4,7 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
+import { sharedEvents } from '@/shared/sharedEvents';
 import { Graphics } from 'pixi.js';
 
 export class TableColumnHeadersGridLines extends Graphics {
@@ -12,9 +13,11 @@ export class TableColumnHeadersGridLines extends Graphics {
   constructor(table: Table) {
     super();
     this.table = table;
+
+    sharedEvents.on('changeThemeAccentColor', this.update);
   }
 
-  update() {
+  update = () => {
     this.clear();
     if (pixiAppSettings.showGridLines && pixiApp.gridLines?.visible) {
       const { y0, y1, lines } = this.table.getColumnHeaderLines();
@@ -39,5 +42,5 @@ export class TableColumnHeadersGridLines extends Graphics {
       this.moveTo(lines[0], y0).lineTo(lines[lines.length - 1], y0);
       this.moveTo(lines[0], y1).lineTo(lines[lines.length - 1], y1);
     }
-  }
+  };
 }

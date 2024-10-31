@@ -2,6 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
+import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { convertColorStringToTint, getCSSVariableTint } from '../../helpers/convertColor';
@@ -64,6 +65,7 @@ export class CellsFills extends Container {
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
     events.on('resizeHeadingRow', this.drawCells);
+    sharedEvents.on('changeThemeAccentColor', this.drawAlternatingColors);
     pixiApp.viewport.on('zoomed', this.setDirty);
     pixiApp.viewport.on('moved', this.setDirty);
   }

@@ -5,6 +5,7 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { generatedTextures } from '@/app/gridGL/generateTextures';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
+import { sharedEvents } from '@/shared/sharedEvents';
 import { Graphics, Rectangle } from 'pixi.js';
 
 const SPILL_HIGHLIGHT_THICKNESS = 2;
@@ -17,6 +18,8 @@ export class TableOutline extends Graphics {
   constructor(table: Table) {
     super();
     this.table = table;
+
+    sharedEvents.on('changeThemeAccentColor', this.update);
   }
 
   activate(active: boolean) {
@@ -25,7 +28,7 @@ export class TableOutline extends Graphics {
     this.update();
   }
 
-  update() {
+  update = () => {
     this.clear();
 
     // draw the table selected outline
@@ -53,7 +56,7 @@ export class TableOutline extends Graphics {
         this.drawDashedRectangle(rectangle, colors.cellColorError);
       });
     }
-  }
+  };
 
   // draw a dashed and filled rectangle to identify the cause of the spill error
   private drawDashedRectangle(rectangle: Rectangle, color: number) {

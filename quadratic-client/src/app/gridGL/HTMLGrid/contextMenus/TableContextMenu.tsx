@@ -7,7 +7,7 @@ import { TableMenu } from '@/app/gridGL/HTMLGrid/contextMenus/TableMenu';
 export const TableContextMenu = () => {
   return (
     <ContextMenuBase contextMenuType={ContextMenuType.Table}>
-      {({ contextMenu }) => <TableMenu codeCell={contextMenu.table} />}
+      {({ contextMenu }) => <TableMenu codeCell={contextMenu.table} selectedColumn={contextMenu.selectedColumn} />}
     </ContextMenuBase>
   );
 };
