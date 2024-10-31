@@ -90,12 +90,13 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
         <div className="flex flex-row items-start justify-between">
           <AIAnalystContext context={context} setContext={setContext} textAreaRef={textareaRef} disabled={!edit} />
 
-          {!edit && (
+          {!edit && !loading && (
             <TooltipPopover label="Edit">
               <Button
                 className="pointer-events-auto h-4 pr-2 opacity-0 transition-opacity group-hover:opacity-100"
                 variant="ghost"
                 onClick={(e) => {
+                  if (loading) return;
                   e.stopPropagation();
                   setEdit(true);
                   textareaRef.current?.focus();

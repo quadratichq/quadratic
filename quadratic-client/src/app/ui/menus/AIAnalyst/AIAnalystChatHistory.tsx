@@ -45,15 +45,11 @@ export const AIAnalystChatHistory = () => {
                           : 'hover:cursor-pointer'
                       )}
                       onClick={() => {
-                        if (isBeingRenamed) {
-                          return;
-                        }
-
+                        if (isBeingRenamed) return;
                         if (isCurrentChat) {
                           setShowChatHistory(false);
                           return;
                         }
-
                         setCurrentChat(chat);
                       }}
                     >
