@@ -344,6 +344,14 @@ export const GoToIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_top_right</Icon>;
 };
 
+export const GridActionIcon: IconComponent = (props) => {
+  return <Icon {...props}>keyboard_double_arrow_right</Icon>;
+};
+
+export const GridDataIcon: IconComponent = (props) => {
+  return <Icon {...props}>reorder</Icon>;
+};
+
 export const GroupIcon: IconComponent = (props) => {
   return <Icon {...props}>group</Icon>;
 };

@@ -3,6 +3,7 @@ import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -72,12 +73,15 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     const partialJson = parsePartialJson(args);
     if (partialJson && 'language' in partialJson) {
       const estimatedNumberOfLines = args.split('\\n').length;
+      const { language, x, y } = partialJson;
       return (
-        <SetCodeCellValueLoadingCard
-          language={partialJson.language}
-          lines={estimatedNumberOfLines}
-          x={partialJson.x}
-          y={partialJson.y}
+        <ToolCard
+          icon={<LanguageIcon language={language} />}
+          label={language}
+          description={
+            `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at (${x}, ${y})`
+          }
+          isLoading={true}
         />
       );
     }
@@ -89,39 +93,22 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     return <div className={className}>Loading...</div>;
   }
 
+  const { language, x, y, codeString } = toolArgs.data;
+
+  const estimatedNumberOfLines = codeString.split('\n').length;
   return (
-    <div className={className}>
-      <div className="flex items-center gap-2">
-        <LanguageIcon language={toolArgs.data.language} />
-
-        <span className="font-bold">{`${toolArgs.data.language} (${toolArgs.data.x}, ${toolArgs.data.y})`}</span>
-      </div>
-
-      <TooltipPopover label={'Apply'}>
-        <Button size="icon-sm" variant="ghost" onClick={() => saveAndRun(toolArgs.data)}>
-          <SaveAndRunIcon />
-        </Button>
-      </TooltipPopover>
-    </div>
-  );
-};
-
-type SetCodeCellValueLoadingProps = {
-  language: string;
-  lines: number;
-  x?: number;
-  y?: number;
-};
-
-const SetCodeCellValueLoadingCard = ({ language, lines, x, y }: SetCodeCellValueLoadingProps) => {
-  return (
-    <div className={className}>
-      <div className="flex items-center gap-2">
-        <LanguageIcon language={language} />
-
-        <span className="font-bold">{`Loading ${language} - ${lines} lines${x && y ? ` for (${x}, ${y})` : ''}`}</span>
-      </div>
-    </div>
+    <ToolCard
+      icon={<LanguageIcon language={language} />}
+      label={language}
+      description={`${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at (${x}, ${y})`}
+      actions={
+        <TooltipPopover label={'Apply'}>
+          <Button size="icon-sm" variant="ghost" onClick={() => saveAndRun(toolArgs.data)}>
+            <SaveAndRunIcon />
+          </Button>
+        </TooltipPopover>
+      }
+    />
   );
 };
 

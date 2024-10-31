@@ -11,20 +11,23 @@ interface LanguageIconProps extends SvgIconProps {
 export function LanguageIcon({ language, ...props }: LanguageIconProps) {
   language = language ? language.toLowerCase() : language;
 
+  // matches size of default material symbols icons
+  const internalSx = { width: 20, height: 20, ...(props.sx ? props.sx : {}) };
+
   return language === 'python' ? (
-    <Python {...props} sx={{ color: colors.languagePython, ...(props.sx ? props.sx : {}) }} />
+    <Python {...props} sx={{ color: colors.languagePython, ...internalSx }} />
   ) : language === 'formula' ? (
-    <Formula {...props} sx={{ color: colors.languageFormula, ...(props.sx ? props.sx : {}) }} />
+    <Formula {...props} sx={{ color: colors.languageFormula, ...internalSx }} />
   ) : language === 'javascript' ? (
-    <JavaScript className="text-gray-700" sx={{ color: colors.languageJavascript }} />
+    <JavaScript className="text-gray-700" sx={{ color: colors.languageJavascript, ...internalSx }} />
   ) : language === 'postgres' ? (
-    <PostgresIcon {...props} sx={{ color: colors.languagePostgres, ...(props.sx ? props.sx : {}) }} />
+    <PostgresIcon {...props} sx={{ color: colors.languagePostgres, ...internalSx }} />
   ) : language === 'mysql' ? (
-    <MysqlIcon {...props} sx={{ color: colors.languageMysql, ...(props.sx ? props.sx : {}) }} />
+    <MysqlIcon {...props} sx={{ color: colors.languageMysql, ...internalSx }} />
   ) : language === 'mssql' ? (
-    <MssqlIcon sx={{ color: colors.languageMssql, ...(props.sx ? props.sx : {}) }} />
+    <MssqlIcon sx={{ color: colors.languageMssql, ...internalSx }} />
   ) : language === 'snowflake' ? (
-    <SnowflakeIcon sx={{ color: colors.languageSnowflake, ...(props.sx ? props.sx : {}) }} />
+    <SnowflakeIcon sx={{ color: colors.languageSnowflake, ...internalSx }} />
   ) : (
     <Subject {...props} />
   );

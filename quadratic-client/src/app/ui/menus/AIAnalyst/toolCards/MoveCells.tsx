@@ -1,5 +1,7 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
+import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { GridActionIcon } from '@/shared/components/Icons';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
@@ -46,16 +48,20 @@ export const MoveCells = ({ args, loading }: MoveCellsProps) => {
     return <div className={className}>Loading...</div>;
   }
 
+  const rows = toolArgs.data.sourceBottomRightY - toolArgs.data.sourceTopLeftY + 1;
+  const cols = toolArgs.data.sourceBottomRightX - toolArgs.data.sourceTopLeftX + 1;
   return (
-    <div className={className}>
-      <div className="flex items-center gap-2">
-        <span className="font-bold">
-          {toolArgs.data.sourceTopLeftX === toolArgs.data.sourceBottomRightX &&
-          toolArgs.data.sourceTopLeftY === toolArgs.data.sourceBottomRightY
-            ? `Cell (${toolArgs.data.sourceTopLeftX}, ${toolArgs.data.sourceTopLeftY}) moved to (${toolArgs.data.targetTopLeftX}, ${toolArgs.data.targetTopLeftY})`
-            : `Cells ((${toolArgs.data.sourceTopLeftX}, ${toolArgs.data.sourceTopLeftY}), (${toolArgs.data.sourceBottomRightX}, ${toolArgs.data.sourceBottomRightY})) moved to (${toolArgs.data.targetTopLeftX}, ${toolArgs.data.targetTopLeftY})`}
-        </span>
-      </div>
-    </div>
+    <ToolCard
+      icon={<GridActionIcon />}
+      label="Action: move"
+      description={
+        toolArgs.data.sourceTopLeftX === toolArgs.data.sourceBottomRightX &&
+        toolArgs.data.sourceTopLeftY === toolArgs.data.sourceBottomRightY
+          ? `1 cell`
+          : `${rows}x${cols} cells`
+        // ? `Cell (${toolArgs.data.sourceTopLeftX}, ${toolArgs.data.sourceTopLeftY}) moved to (${toolArgs.data.targetTopLeftX}, ${toolArgs.data.targetTopLeftY})`
+        // : `Cells ((${toolArgs.data.sourceTopLeftX}, ${toolArgs.data.sourceTopLeftY}), (${toolArgs.data.sourceBottomRightX}, ${toolArgs.data.sourceBottomRightY})) moved to (${toolArgs.data.targetTopLeftX}, ${toolArgs.data.targetTopLeftY})`
+      }
+    />
   );
 };

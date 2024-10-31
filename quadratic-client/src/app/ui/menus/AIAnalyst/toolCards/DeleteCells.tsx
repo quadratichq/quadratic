@@ -1,5 +1,7 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
+import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { GridActionIcon } from '@/shared/components/Icons';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
@@ -46,11 +48,13 @@ export const DeleteCells = ({ args, loading }: DeleteCellsProps) => {
     return <div className={className}>Loading...</div>;
   }
 
+  const { rects } = toolArgs.data;
+  const deletedCount = rects.length;
   return (
-    <div className={className}>
-      <div className="flex items-center gap-2">
-        <span className="font-bold">{`Delete rects: ${toolArgs.data.rects.length}`}</span>
-      </div>
-    </div>
+    <ToolCard
+      icon={<GridActionIcon />}
+      label={'Action: delete'}
+      description={`${deletedCount} cell${deletedCount === 1 ? '' : 's'}`}
+    />
   );
 };

@@ -1,5 +1,7 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
+import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { GridDataIcon } from '@/shared/components/Icons';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
@@ -46,13 +48,14 @@ export const SetCellValues = ({ args, loading }: SetCellValuesProps) => {
     return <div className={className}>Loading...</div>;
   }
 
+  const { x, y, values } = toolArgs.data;
+  const rows = values.length;
+  const cols = values[0]?.length ?? 0;
   return (
-    <div className={className}>
-      <div className="flex items-center gap-2">
-        <span className="font-bold">{`Values ${toolArgs.data.values.length} x ${
-          toolArgs.data.values[0]?.length ?? 0
-        } set for (${toolArgs.data.x}, ${toolArgs.data.y})`}</span>
-      </div>
-    </div>
+    <ToolCard
+      icon={<GridDataIcon />}
+      label={'Data'}
+      description={`${rows === 1 && cols === 1 ? '1 cell' : `${rows}×${cols} cells`} at (${x}, ${y})`}
+    />
   );
 };
