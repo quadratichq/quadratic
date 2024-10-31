@@ -1,6 +1,5 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { MODEL_OPTIONS } from '@/app/ai/MODELS';
-import { getModelIcon } from '@/app/ai/tools/helpers';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -24,21 +23,14 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
     return models.filter((model) => MODEL_OPTIONS[model].enabled);
   }, []);
 
-  const SelectedModelIcon = useMemo(() => getModelIcon(selectedMode), [selectedMode]);
-
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild disabled={loading}>
-        <div className={`flex items-center text-xs ${loading ? 'opacity-60' : ''}`}>
-          {selectedMode && (
-            <>
-              <SelectedModelIcon fontSize="inherit" />
-
-              <span className="pl-2 pr-1">{selectedModelDisplayName}</span>
-            </>
-          )}
-          <CaretDownIcon />
-        </div>
+      <DropdownMenuTrigger
+        disabled={loading}
+        className={`flex items-center text-xs text-muted-foreground hover:text-foreground`}
+      >
+        {selectedMode && <>{selectedModelDisplayName}</>}
+        <CaretDownIcon />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
@@ -51,7 +43,7 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
       >
         {enabledModels.map((enabledModel) => {
           const displayName = MODEL_OPTIONS[enabledModel].displayName;
-          const ModelIcon = getModelIcon(enabledModel);
+
           return (
             <DropdownMenuCheckboxItem
               key={enabledModel}
@@ -60,8 +52,6 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
             >
               <div className="flex w-full items-center justify-between text-xs">
                 <span className="pr-4">{displayName}</span>
-
-                <ModelIcon fontSize="inherit" />
               </div>
             </DropdownMenuCheckboxItem>
           );

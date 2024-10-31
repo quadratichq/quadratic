@@ -7,7 +7,6 @@
 import { MODEL_OPTIONS } from '@/app/ai/MODELS';
 import { AITool as AIToolName } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { Anthropic, Bedrock, OpenAI } from '@/app/ui/icons';
 import { AI } from '@/shared/constants/routes';
 import {
   AIModel,
@@ -323,22 +322,6 @@ export const getToolChoice = (model: AIModel, name?: AIToolName): AIToolChoice =
   if (isOpenAI) {
     const toolChoice: OpenAIToolChoice = name === undefined ? 'auto' : { type: 'function', function: { name } };
     return toolChoice;
-  }
-
-  throw new Error(`Unknown model: ${model}`);
-};
-
-export const getModelIcon = (model: AIModel) => {
-  if (isBedrockModel(model)) {
-    return Bedrock;
-  }
-
-  if (isAnthropicModel(model)) {
-    return Anthropic;
-  }
-
-  if (isOpenAIModel(model)) {
-    return OpenAI;
   }
 
   throw new Error(`Unknown model: ${model}`);
