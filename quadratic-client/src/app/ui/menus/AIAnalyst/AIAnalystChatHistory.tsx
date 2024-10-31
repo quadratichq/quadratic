@@ -39,10 +39,9 @@ export const AIAnalystChatHistory = () => {
                       key={chat.id}
                       className={cn(
                         'relative flex h-8 items-center justify-between rounded pl-3 hover:bg-muted',
-                        isBeingRenamed && 'bg-muted',
-                        isCurrentChat
-                          ? 'cursor-default after:absolute after:left-0 after:top-1/2 after:h-1.5 after:w-1.5 after:-translate-y-1/2 after:rounded-full after:bg-primary after:content-[""]'
-                          : 'hover:cursor-pointer'
+                        isBeingRenamed ? 'bg-muted' : 'hover:cursor-pointer',
+                        isCurrentChat &&
+                          'cursor-default after:absolute after:left-0 after:top-1/2 after:h-1.5 after:w-1.5 after:-translate-y-1/2 after:rounded-full after:bg-primary after:content-[""]'
                       )}
                       onClick={() => {
                         if (isBeingRenamed) return;
