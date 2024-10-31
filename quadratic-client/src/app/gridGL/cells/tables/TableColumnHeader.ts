@@ -53,7 +53,7 @@ export class TableColumnHeader extends Container {
     this.h = height;
     this.position.set(x, 0);
 
-    const tint = getCSSVariableTint('table-column-header-foreground');
+    const tint = getCSSVariableTint('foreground');
     this.columnName = this.addChild(
       new BitmapText(name, {
         fontName: 'OpenSans-Bold',

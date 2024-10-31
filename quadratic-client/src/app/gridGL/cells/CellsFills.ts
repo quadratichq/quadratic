@@ -21,6 +21,8 @@ interface ColumnRow {
   timestamp: number;
 }
 
+const ALTERNATING_COLOR_LUMINOSITY = 1.85;
+
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   private cells: JsRenderFill[] = [];
@@ -209,7 +211,7 @@ export class CellsFills extends Container {
 
   private drawAlternatingColors = () => {
     this.alternatingColorsGraphics.clear();
-    const color = getCSSVariableTint('table-alternating-background');
+    const color = getCSSVariableTint('primary', { luminosity: ALTERNATING_COLOR_LUMINOSITY });
     this.alternatingColors.forEach((table) => {
       const bounds = this.sheet.getScreenRectangle(table.x, table.y + 1, table.w - 1, table.y);
       let yOffset = bounds.y;

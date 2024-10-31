@@ -9,7 +9,11 @@ import { Coordinate } from '@/app/gridGL/types/size';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { JsDataTableColumn, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
+
+// used to make the column header background a bit darker than the primary color
+const COLUMN_HEADER_BACKGROUND_LUMINOSITY = 1.75;
 
 export class TableColumnHeaders extends Container {
   private table: Table;
@@ -24,11 +28,14 @@ export class TableColumnHeaders extends Container {
     this.table = table;
     this.background = this.addChild(new Graphics());
     this.columns = this.addChild(new Container<TableColumnHeader>());
+
+    sharedEvents.on('changeThemeAccentColor', this.drawBackground);
   }
 
   drawBackground = () => {
     this.background.clear();
-    const color = getCSSVariableTint('table-column-header-background');
+    const color = getCSSVariableTint('primary', { luminosity: COLUMN_HEADER_BACKGROUND_LUMINOSITY });
+
     this.background.beginFill(color);
     // need to adjust so the outside border is still visible
     this.background.drawShape(new Rectangle(0.5, 0, this.table.tableBounds.width - 1, this.headerHeight));
