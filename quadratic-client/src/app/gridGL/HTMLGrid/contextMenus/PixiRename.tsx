@@ -83,7 +83,7 @@ export const PixiRename = (props: Props) => {
         close();
         e.stopPropagation();
         e.preventDefault();
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
         saveAndClose();
         e.stopPropagation();
         e.preventDefault();
