@@ -97,7 +97,7 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssi
               </TooltipPopover>
             </div>
           ) : (
-            <div className="flex items-center gap-3 text-xs text-slate-500">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="hidden @sm:block">
                 {KeyboardSymbols.Shift}
                 {KeyboardSymbols.Enter} new line
