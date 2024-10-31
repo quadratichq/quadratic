@@ -27,7 +27,7 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
 
   return (
     <div className="flex items-center justify-between p-3">
-      <span className="flexz items-centerz text-sm font-bold">
+      <span className="flex items-center text-sm font-bold">
         {showChatHistory ? (
           'Chat history'
         ) : (
