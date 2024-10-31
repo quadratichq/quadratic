@@ -73,9 +73,21 @@ export function convertRgbaToTint(rgba: Rgba): { tint: number; alpha: number } {
   return { tint: Color(rgb).rgbNumber(), alpha: rgba.alpha };
 }
 
-export function getCSSVariableTint(variable: string): number {
-  // Add this function to get CSS variable value
-  const color = getComputedStyle(document.documentElement).getPropertyValue(`--${variable}`).trim();
-  const parsed = Color.hsl(color.split(' ').map(parseFloat));
-  return parsed.rgbNumber();
+/**
+ * Given the name of a CSS variable that maps to an HSL string, return the tint
+ * we can use in pixi.
+ * @param cssVariableName - CSS var without the `--` prefix
+ */
+export function getCSSVariableTint(cssVariableName: string): number {
+  if (cssVariableName.startsWith('--')) {
+    console.warn(
+      '`getCSSVariableTint` expects a CSS variable name without the `--` prefix. Are you sure you meant: `%s`',
+      cssVariableName
+    );
+  }
+
+  const hslColorString = getComputedStyle(document.documentElement).getPropertyValue(`--${cssVariableName}`).trim();
+  const parsed = Color.hsl(hslColorString.split(' ').map(parseFloat));
+  const out = parsed.rgbNumber();
+  return out;
 }
