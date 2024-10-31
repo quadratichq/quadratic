@@ -6,6 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import { useMemo } from 'react';
 
@@ -27,7 +28,7 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
     <DropdownMenu>
       <DropdownMenuTrigger
         disabled={loading}
-        className={`flex items-center text-xs text-muted-foreground hover:text-foreground`}
+        className={cn(`flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
       >
         {selectedMode && <>{selectedModelDisplayName}</>}
         <CaretDownIcon />
