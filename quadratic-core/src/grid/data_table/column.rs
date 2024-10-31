@@ -233,6 +233,7 @@ pub mod test {
             show_header: true,
             header_is_first_row: true,
             alternating_colors: true,
+            formats: Default::default(),
         };
         sheet.set_cell_value(
             pos,

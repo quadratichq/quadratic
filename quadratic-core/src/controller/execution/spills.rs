@@ -114,7 +114,7 @@ mod tests {
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::GridController;
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
-    use crate::grid::{CellAlign, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
+    use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
     use crate::{Array, CellValue, Pos, Rect, SheetPos, Value};
 
@@ -143,6 +143,7 @@ mod tests {
             align: Some(CellAlign::Right),
             number: Some(JsNumber::default()),
             special,
+            wrap: Some(CellWrap::Clip),
             ..Default::default()
         }]
     }
@@ -295,13 +296,7 @@ mod tests {
         // should be B0: "1" since spill was removed
         assert_eq!(
             render_cells,
-            output_number(
-                0,
-                0,
-                "1",
-                Some(CodeCellLanguage::Formula),
-                Some(JsRenderCellSpecial::TableAlternatingColor)
-            ),
+            output_number(0, 0, "1", Some(CodeCellLanguage::Formula), None),
         );
     }
 
@@ -338,13 +333,7 @@ mod tests {
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
         assert_eq!(
             render_cells,
-            output_number(
-                0,
-                0,
-                "1",
-                Some(CodeCellLanguage::Formula),
-                Some(JsRenderCellSpecial::TableAlternatingColor)
-            )
+            output_number(0, 0, "1", Some(CodeCellLanguage::Formula), None)
         );
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 1 }));
         assert_eq!(render_cells, output_number(0, 1, "2", None, None));
@@ -430,13 +419,7 @@ mod tests {
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 11, y: 9 }));
         assert_eq!(
             render_cells,
-            output_number(
-                11,
-                9,
-                "1",
-                Some(CodeCellLanguage::Formula),
-                Some(JsRenderCellSpecial::TableAlternatingColor)
-            )
+            output_number(11, 9, "1", Some(CodeCellLanguage::Formula), None)
         );
     }
 

@@ -35,7 +35,7 @@ mod tests {
         controller::{
             execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
         },
-        grid::js_types::{JsRenderCell, JsRenderCellSpecial},
+        grid::js_types::JsRenderCell,
         ArraySize, CellValue, Pos, Rect,
     };
     use bigdecimal::BigDecimal;
@@ -338,24 +338,15 @@ mod tests {
         assert_eq!(cells.len(), 3);
         assert_eq!(
             cells[0],
-            JsRenderCell::new_number(
-                0,
-                0,
-                1,
-                Some(CodeCellLanguage::Javascript),
-                Some(JsRenderCellSpecial::TableAlternatingColor)
-            )
+            JsRenderCell::new_number(0, 0, 1, Some(CodeCellLanguage::Javascript), None, true)
         );
-        assert_eq!(cells[1], JsRenderCell::new_number(0, 1, 2, None, None));
+        assert_eq!(
+            cells[1],
+            JsRenderCell::new_number(0, 1, 2, None, None, true)
+        );
         assert_eq!(
             cells[2],
-            JsRenderCell::new_number(
-                0,
-                2,
-                3,
-                None,
-                Some(JsRenderCellSpecial::TableAlternatingColor)
-            )
+            JsRenderCell::new_number(0, 2, 3, None, None, true)
         );
     }
 

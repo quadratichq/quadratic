@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::grid::file::v1_7;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -39,9 +41,7 @@ pub type BorderStyleTimestampSchema = v1_7::schema::BorderStyleTimestampSchema;
 pub type CellBorderLineSchema = v1_7::schema::CellBorderLineSchema;
 pub type RgbaSchema = v1_7::schema::RgbaSchema;
 pub type BorderStyleCell = v1_7::schema::BorderStyleCellSchema;
-
 pub type SelectionSchema = v1_7::SelectionSchema;
-
 pub type ValidationSchema = v1_7::ValidationSchema;
 pub type ValidationStyleSchema = v1_7::ValidationStyleSchema;
 pub type ValidationMessageSchema = v1_7::ValidationMessageSchema;
@@ -119,6 +119,13 @@ pub struct DataTableSortOrderSchema {
     pub direction: SortDirectionSchema,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TableFormatsSchema {
+    pub table: Option<FormatSchema>,
+    pub columns: Vec<FormatSchema>,
+    pub cells: Vec<HashMap<i64, ColumnRepeatSchema<FormatSchema>>>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataTableSchema {
     pub kind: DataTableKindSchema,
@@ -133,6 +140,7 @@ pub struct DataTableSchema {
     pub spill_error: bool,
     pub last_modified: Option<DateTime<Utc>>,
     pub alternating_colors: bool,
+    pub formats: TableFormatsSchema,
 }
 
 impl From<i8> for AxisSchema {

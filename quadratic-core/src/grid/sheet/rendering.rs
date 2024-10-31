@@ -97,6 +97,17 @@ impl Sheet {
                     None
                 };
                 let value = Self::value_date_time(value, format.date_time);
+                // force clipping for cells in tables
+                let wrap = if from_table {
+                    // we allow wrap or clip in tables, but not overflow
+                    match format.wrap {
+                        Some(CellWrap::Wrap) => Some(CellWrap::Wrap),
+                        _ => Some(CellWrap::Clip),
+                    }
+                } else {
+                    format.wrap
+                };
+
                 JsRenderCell {
                     x,
                     y,
@@ -104,7 +115,7 @@ impl Sheet {
                     language,
                     align,
                     vertical_align: format.vertical_align,
-                    wrap: format.wrap,
+                    wrap,
                     bold: format.bold,
                     italic: format.italic,
                     text_color: format.text_color,
@@ -138,7 +149,11 @@ impl Sheet {
                 };
                 // force clipping for cells in tables
                 let wrap = if from_table {
-                    Some(CellWrap::Clip)
+                    // we allow wrap or clip in tables, but not overflow
+                    match format.wrap {
+                        Some(CellWrap::Wrap) => Some(CellWrap::Wrap),
+                        _ => Some(CellWrap::Clip),
+                    }
                 } else {
                     format.wrap
                 };
@@ -241,11 +256,7 @@ impl Sheet {
                             let special = if y == code_rect.min.y && data_table.show_header {
                                 Some(JsRenderCellSpecial::TableColumnHeader)
                             } else {
-                                if (y - code_rect.min.y) % 2 == 0 {
-                                    Some(JsRenderCellSpecial::TableAlternatingColor)
-                                } else {
-                                    None
-                                }
+                                None
                             };
                             cells.push(
                                 self.get_render_cell(x, y, column, &value, language, special, true),
@@ -1042,7 +1053,7 @@ mod tests {
                 language: Some(CodeCellLanguage::Formula),
                 align: Some(CellAlign::Right),
                 number: Some(JsNumber::default()),
-                special: Some(JsRenderCellSpecial::TableAlternatingColor),
+                wrap: Some(CellWrap::Clip),
                 ..Default::default()
             }]
         );
@@ -1219,21 +1230,24 @@ mod tests {
                 y: 0,
                 value: "true".to_string(),
                 language: Some(CodeCellLanguage::Formula),
-                special: Some(JsRenderCellSpecial::TableAlternatingColor),
+                wrap: Some(CellWrap::Clip),
+                special: Some(JsRenderCellSpecial::Logical),
                 ..Default::default()
             },
             JsRenderCell {
                 x: 1,
                 y: 0,
                 value: "false".to_string(),
-                special: Some(JsRenderCellSpecial::TableAlternatingColor),
+                wrap: Some(CellWrap::Clip),
+                special: Some(JsRenderCellSpecial::Logical),
                 ..Default::default()
             },
             JsRenderCell {
                 x: 2,
                 y: 0,
                 value: "true".to_string(),
-                special: Some(JsRenderCellSpecial::TableAlternatingColor),
+                wrap: Some(CellWrap::Clip),
+                special: Some(JsRenderCellSpecial::Logical),
                 ..Default::default()
             },
         ];

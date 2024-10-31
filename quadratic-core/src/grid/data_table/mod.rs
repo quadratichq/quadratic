@@ -7,7 +7,7 @@
 pub mod column;
 pub mod display_value;
 pub mod sort;
-
+pub mod table_formats;
 use std::num::NonZeroU32;
 
 use crate::cellvalue::Import;
@@ -23,6 +23,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
+use table_formats::TableFormats;
 use tabled::{
     builder::Builder,
     settings::{Color, Modify, Style},
@@ -82,6 +83,7 @@ pub struct DataTable {
     pub spill_error: bool,
     pub last_modified: DateTime<Utc>,
     pub alternating_colors: bool,
+    pub formats: TableFormats,
 }
 
 impl From<(Import, Array, &Grid)> for DataTable {
@@ -129,6 +131,7 @@ impl DataTable {
             spill_error,
             alternating_colors: true,
             last_modified: Utc::now(),
+            formats: Default::default(),
         };
 
         if header_is_first_row {

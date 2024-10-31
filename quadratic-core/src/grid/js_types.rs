@@ -20,7 +20,6 @@ pub enum JsRenderCellSpecial {
     Checkbox,
     List,
     TableColumnHeader,
-    TableAlternatingColor,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -102,6 +101,7 @@ impl JsRenderCell {
         value: isize,
         language: Option<CodeCellLanguage>,
         special: Option<JsRenderCellSpecial>,
+        table: bool,
     ) -> Self {
         Self {
             x,
@@ -111,6 +111,7 @@ impl JsRenderCell {
             align: Some(CellAlign::Right),
             number: Some(JsNumber::default()),
             special,
+            wrap: if table { Some(CellWrap::Clip) } else { None },
             ..Default::default()
         }
     }
