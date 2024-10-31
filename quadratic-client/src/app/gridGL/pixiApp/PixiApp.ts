@@ -52,7 +52,7 @@ export class PixiApp {
 
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
-  gridLines!: GridLines;
+  gridLines: GridLines;
   axesLines!: AxesLines;
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
@@ -93,6 +93,7 @@ export class PixiApp {
   constructor() {
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
+    this.gridLines = new GridLines();
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
     this.overHeadingsColumnsHeaders = new Container();
@@ -157,7 +158,7 @@ export class PixiApp {
     this.debug = this.viewportContents.addChild(new Graphics());
 
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
-    this.gridLines = this.viewportContents.addChild(new GridLines());
+    this.gridLines = this.viewportContents.addChild(this.gridLines);
     this.viewportContents.addChild(this.overHeadingsColumnsHeaders);
 
     // this is a hack to ensure that table column names appears over the column
