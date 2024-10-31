@@ -179,14 +179,38 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Sort column ascending',
     Icon: UpArrowIcon,
     run: () => {
-      console.log('TODO: sort column ascending');
+      const table = getTable();
+      if (table) {
+        const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+        if (selectedColumn !== undefined) {
+          quadraticCore.sortDataTable(
+            sheets.sheet.id,
+            table.x,
+            table.y,
+            [{ column_index: selectedColumn, direction: 'Ascending' }],
+            sheets.getCursorPosition()
+          );
+        }
+      }
     },
   },
   [Action.SortTableColumnDescending]: {
     label: 'Sort column descending',
     Icon: DownArrowIcon,
     run: () => {
-      console.log('TODO: sort column descending');
+      const table = getTable();
+      if (table) {
+        const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+        if (selectedColumn !== undefined) {
+          quadraticCore.sortDataTable(
+            sheets.sheet.id,
+            table.x,
+            table.y,
+            [{ column_index: selectedColumn, direction: 'Descending' }],
+            sheets.getCursorPosition()
+          );
+        }
+      }
     },
   },
   [Action.HideTableColumn]: {
