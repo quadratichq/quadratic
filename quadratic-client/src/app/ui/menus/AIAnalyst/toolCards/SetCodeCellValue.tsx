@@ -20,7 +20,7 @@ type SetCodeCellValueProps = {
 };
 
 const className =
-  'mx-2 my-1 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow';
+  'mx-2 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow';
 
 export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();

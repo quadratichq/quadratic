@@ -7,6 +7,7 @@ import { colors } from '@/app/theme/colors';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { cn } from '@/shared/shadcn/utils';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -60,7 +61,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   return (
     <div
       ref={ref}
-      className="select-text overflow-y-auto outline-none"
+      className="flex select-text flex-col gap-1 overflow-y-auto outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -84,19 +85,25 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
         return (
           <div
             key={`${index}-${message.role}-${message.contextType}`}
+            id={`${index}-${message.role}-${message.contextType}`}
+            className={cn(
+              'flex flex-col gap-1',
+              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'pl-2 pr-2'
+            )}
             style={{
               backgroundColor: message.contextType === 'userPrompt' ? 'white' : colors.lightGray,
-              borderRadius: '0.5rem',
             }}
           >
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
-                <AIAnalystUserMessageForm
-                  initialPrompt={message.content}
-                  initialContext={message.context}
-                  messageIndex={index}
-                  textareaRef={textareaRef}
-                />
+                <>
+                  <AIAnalystUserMessageForm
+                    initialPrompt={message.content}
+                    initialContext={message.context}
+                    messageIndex={index}
+                    textareaRef={textareaRef}
+                  />
+                </>
               ) : Array.isArray(message.content) ? (
                 message.content.map((messageContent) => (
                   <Markdown
@@ -113,9 +120,11 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
               )
             ) : (
               <>
-                <Markdown className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm">
-                  {message.content}
-                </Markdown>
+                {message.content && (
+                  <Markdown className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm">
+                    {message.content}
+                  </Markdown>
+                )}
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall) => (
