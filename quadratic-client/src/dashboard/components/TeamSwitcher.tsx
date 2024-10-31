@@ -1,29 +1,26 @@
+import { sidebarItemClasses } from '@/dashboard/components/DashboardSidebar';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { useRootRouteLoaderData } from '@/routes/_root';
 import { TeamAction } from '@/routes/teams.$teamUuid';
-import { AddIcon, ArrowDropDownIcon, CheckIcon, LogoutIcon, RefreshIcon } from '@/shared/components/Icons';
+import { AddIcon, ArrowDropDownIcon, CheckIcon, RefreshIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { ReactNode } from 'react';
-import { Link, useFetcher, useNavigate, useSubmit } from 'react-router-dom';
+import { Link, useFetcher, useNavigate } from 'react-router-dom';
 
 type Props = {
   appIsLoading: boolean;
 };
 
 export function TeamSwitcher({ appIsLoading }: Props) {
-  const submit = useSubmit();
-  const { loggedInUser } = useRootRouteLoaderData();
   const { teams } = useDashboardRouteLoaderData();
   const {
     activeTeam: {
@@ -40,22 +37,21 @@ export function TeamSwitcher({ appIsLoading }: Props) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="flex justify-between px-3 font-semibold">
-          <div className="select-none truncate">{optimisticActiveTeamName}</div>
-          <div className="relative flex items-center">
-            <ArrowDropDownIcon />
-            <RefreshIcon
-              className={`absolute left-0 top-0 ml-auto animate-spin bg-background text-primary transition-opacity ${
-                appIsLoading ? '' : ' opacity-0'
-              }`}
-            />
-          </div>
-        </Button>
+      <DropdownMenuTrigger className={cn(`gap-2 py-1 text-sm font-semibold`, sidebarItemClasses.base)}>
+        <div className="mx-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-foreground capitalize text-background">
+          {activeTeamName.slice(0, 1)}
+        </div>
+        <div className="select-none truncate">{optimisticActiveTeamName}</div>
+        <div className="relative ml-auto mr-0.5 flex items-center">
+          <ArrowDropDownIcon />
+          <RefreshIcon
+            className={`absolute left-0 top-0 ml-auto animate-spin bg-accent text-primary transition-opacity ${
+              appIsLoading ? '' : ' opacity-0'
+            }`}
+          />
+        </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-72">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">{loggedInUser?.email}</DropdownMenuLabel>
-
+      <DropdownMenuContent className="min-w-72" align="start" alignOffset={-4}>
         {teams.map(({ team: { uuid, name }, users }) => {
           const isActive = activeTeamUuid === uuid;
           return (
@@ -76,16 +72,21 @@ export function TeamSwitcher({ appIsLoading }: Props) {
                   {isPaid ? <DotFilledIcon className="text-success" /> : <DotIcon className="text-warning" />}
                 </IconWrapper> */}
 
-                <IconWrapper>{isActive && <CheckIcon />}</IconWrapper>
+                <IconWrapper
+                  className={cn(
+                    'h-5 w-5 rounded border border-border capitalize',
+                    isActive && 'border-foreground bg-foreground text-background'
+                  )}
+                >
+                  {name.slice(0, 1)}
+                </IconWrapper>
                 <div className="flex flex-col">
                   <div>{name}</div>
                   <Type variant="caption">
                     {users} member{users === 1 ? '' : 's'}
                   </Type>
                 </div>
-                {/* <div className="ml-auto flex h-6 w-6 items-center justify-center">
-                  {isActive && <CheckCircledIcon />}
-                </div> */}
+                <div className="ml-auto flex h-6 w-6 items-center justify-center">{isActive && <CheckIcon />}</div>
               </Link>
             </DropdownMenuItem>
           );
@@ -104,23 +105,11 @@ export function TeamSwitcher({ appIsLoading }: Props) {
           </IconWrapper>
           Create team
         </DropdownMenuItem>
-
-        <DropdownMenuItem
-          className="flex gap-3 text-muted-foreground"
-          onClick={() => {
-            submit('', { method: 'POST', action: ROUTES.LOGOUT });
-          }}
-        >
-          <IconWrapper>
-            <LogoutIcon />
-          </IconWrapper>
-          Log out
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-function IconWrapper({ children }: { children: ReactNode }) {
-  return <div className="flex h-6 w-6 items-center justify-center">{children}</div>;
+function IconWrapper({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn('flex h-6 w-6 items-center justify-center', className)}>{children}</div>;
 }
