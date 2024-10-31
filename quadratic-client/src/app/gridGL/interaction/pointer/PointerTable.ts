@@ -15,6 +15,7 @@ export class PointerTable {
   cursor: string | undefined;
 
   private doubleClickTimeout: number | undefined;
+  private tableNameDown: { column: number; row: number; point: Point } | undefined;
 
   private pointerDownTableName(world: Point, tableDown: TablePointerDownResult) {
     pixiApp.cellsSheet().tables.ensureActive(tableDown.table);
@@ -31,6 +32,7 @@ export class PointerTable {
       this.doubleClickTimeout = window.setTimeout(() => {
         this.doubleClickTimeout = undefined;
       }, DOUBLE_CLICK_TIME);
+      this.tableNameDown = { column: tableDown.table.x, row: tableDown.table.y, point: world };
     }
   }
 
@@ -111,6 +113,15 @@ export class PointerTable {
     if (this.doubleClickTimeout) {
       clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
+    }
+    if (this.tableNameDown) {
+      pixiApp.pointer.pointerCellMoving.tableMove(
+        this.tableNameDown.column,
+        this.tableNameDown.row,
+        this.tableNameDown.point
+      );
+      this.tableNameDown = undefined;
+      return true;
     }
     const result = pixiApp.cellsSheet().tables.pointerMove(world);
     this.cursor = pixiApp.cellsSheet().tables.tableCursor;
