@@ -13,6 +13,6 @@ function create_user_and_database() {
 if [ -n "$ADDITIONAL_DATABASES" ]; then
     for i in ${ADDITIONAL_DATABASES//,/ }
     do
-        create_user_and_database $1
+        create_user_and_database $i
     done
 fi
