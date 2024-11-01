@@ -1,4 +1,4 @@
-import { aiAnalystLoadingAtom, aiAnalystShowInternalContextAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -6,7 +6,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 type AIAnalystSelectContextMenuProps = {
   context: Context;
@@ -21,7 +21,6 @@ export function AIAnalystSelectContextMenu({
   disabled,
   onClose,
 }: AIAnalystSelectContextMenuProps) {
-  const [showInternalContext, setShowInternalContext] = useRecoilState(aiAnalystShowInternalContextAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
@@ -38,14 +37,6 @@ export function AIAnalystSelectContextMenu({
           onClose();
         }}
       >
-        <DropdownMenuCheckboxItem
-          key={'internal context'}
-          checked={showInternalContext}
-          onCheckedChange={() => setShowInternalContext((prev) => !prev)}
-        >
-          <span>Show internal context</span>
-        </DropdownMenuCheckboxItem>
-
         <DropdownMenuCheckboxItem
           key={'quadratic docs'}
           checked={context.quadraticDocs}

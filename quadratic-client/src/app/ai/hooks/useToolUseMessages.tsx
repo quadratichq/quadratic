@@ -17,6 +17,7 @@ Don't include tool details in your response. Reply in layman's terms what action
 Don't use multiple tools in a single response. You can use same tool multiple times in a single response. You should wait for the tool result message and then use another tool to complete the action.\n
           
 ${Object.entries(aiToolsSpec)
+  .filter(([_, { internalTool }]) => !internalTool)
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)
   .join('\n\n')}
 `,

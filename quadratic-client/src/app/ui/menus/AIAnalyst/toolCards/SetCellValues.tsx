@@ -48,14 +48,14 @@ export const SetCellValues = ({ args, loading }: SetCellValuesProps) => {
     return <div className={className}>Loading...</div>;
   }
 
-  const { x, y, values } = toolArgs.data;
-  const rows = values.length;
-  const cols = values[0]?.length ?? 0;
+  const { top_left_x, top_left_y, cell_values } = toolArgs.data;
+  const rows = cell_values.length;
+  const cols = cell_values[0]?.length ?? 0;
   return (
     <ToolCard
       icon={<GridDataIcon />}
       label={'Data'}
-      description={`${rows === 1 && cols === 1 ? '1 cell' : `${rows}×${cols} cells`} at (${x}, ${y})`}
+      description={`${rows === 1 && cols === 1 ? '1 cell' : `${rows}×${cols} cells`} at (${top_left_x}, ${top_left_y})`}
     />
   );
 };

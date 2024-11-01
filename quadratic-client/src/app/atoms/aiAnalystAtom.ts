@@ -1,4 +1,5 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalyst';
+import { getPromptMessages } from '@/app/ai/tools/helpers';
 import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Chat, ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -18,7 +19,6 @@ export const defaultAIAnalystContext: Context = {
 export interface AIAnalystState {
   showAIAnalyst: boolean;
   showChatHistory: boolean;
-  showInternalContext: boolean;
   abortController?: AbortController;
   loading: boolean;
   chats: Chat[];
@@ -28,7 +28,6 @@ export interface AIAnalystState {
 export const defaultAIAnalystState: AIAnalystState = {
   showAIAnalyst: true,
   showChatHistory: false,
-  showInternalContext: false,
   abortController: undefined,
   loading: false,
   chats: [],
@@ -89,7 +88,6 @@ const createSelector = <T extends keyof AIAnalystState>(key: T) =>
   });
 export const showAIAnalystAtom = createSelector('showAIAnalyst');
 export const aiAnalystShowChatHistoryAtom = createSelector('showChatHistory');
-export const aiAnalystShowInternalContextAtom = createSelector('showInternalContext');
 export const aiAnalystAbortControllerAtom = createSelector('abortController');
 
 export const aiAnalystLoadingAtom = selector<boolean>({
@@ -270,6 +268,5 @@ export const aiAnalystCurrentChatMessagesAtom = selector<ChatMessage[]>({
 
 export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAnalystCurrentChatMessagesCountAtom',
-  get: ({ get }) =>
-    get(aiAnalystCurrentChatAtom).messages.filter((message) => message.contextType === 'userPrompt').length,
+  get: ({ get }) => getPromptMessages(get(aiAnalystCurrentChatAtom).messages).length,
 });

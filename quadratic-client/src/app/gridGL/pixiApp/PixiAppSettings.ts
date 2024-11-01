@@ -1,3 +1,4 @@
+import { AIAnalystState, defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
 import { defaultEditorInteractionState, EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
@@ -50,6 +51,9 @@ class PixiAppSettings {
 
   codeEditorState = defaultCodeEditorState;
   setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
+
+  aiAnalystState = defaultAIAnalystState;
+  setAIAnalystState?: SetterOrUpdater<AIAnalystState>;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -131,6 +135,11 @@ class PixiAppSettings {
   updateCodeEditorState(codeEditorState: CodeEditorState, setCodeEditorState: SetterOrUpdater<CodeEditorState>): void {
     this.codeEditorState = codeEditorState;
     this.setCodeEditorState = setCodeEditorState;
+  }
+
+  updateAIAnalystState(aiAnalystState: AIAnalystState, setAIAnalystState: SetterOrUpdater<AIAnalystState>): void {
+    this.aiAnalystState = aiAnalystState;
+    this.setAIAnalystState = setAIAnalystState;
   }
 
   get showGridLines(): boolean {

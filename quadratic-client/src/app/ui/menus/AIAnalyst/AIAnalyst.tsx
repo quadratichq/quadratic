@@ -1,4 +1,5 @@
 import { aiAnalystShowChatHistoryAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystEffects } from '@/app/ui/menus/AIAnalyst/AIAnalystEffects';
@@ -12,6 +13,7 @@ import { useRecoilValue } from 'recoil';
 
 export const AIAnalyst = () => {
   const showAIAnalyst = useRecoilValue(showAIAnalystAtom);
+  const presentationMode = useRecoilValue(presentationModeAtom);
   const showChatHistory = useRecoilValue(aiAnalystShowChatHistoryAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -31,7 +33,7 @@ export const AIAnalyst = () => {
     [setPanelWidth]
   );
 
-  if (!showAIAnalyst) {
+  if (!showAIAnalyst || presentationMode) {
     return null;
   }
 

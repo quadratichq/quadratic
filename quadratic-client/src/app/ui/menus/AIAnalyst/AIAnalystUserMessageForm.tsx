@@ -1,3 +1,4 @@
+import { Action } from '@/app/actions/actions';
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import {
   aiAnalystAbortControllerAtom,
@@ -5,7 +6,9 @@ import {
   aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
   defaultAIAnalystContext,
+  showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
@@ -18,7 +21,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import { Context, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 type AIAnalystUserMessageFormProps = {
   initialPrompt?: string;
@@ -35,6 +38,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
     const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+    const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
 
     const [edit, setEdit] = useState(!initialPrompt);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
@@ -64,6 +68,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
       }
     }, [loading, initialPrompt]);
 
+    // use last user message context as initial context in the bottom user message form
     useEffect(() => {
       if (initialPrompt === undefined && messagesCount > 0) {
         const lastUserMessage = messages
@@ -79,7 +84,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
 
     return (
       <form
-        className={cn('group z-10 m-2 h-min rounded-lg bg-accent pt-1', edit ? '' : 'select-none')}
+        className={cn('group m-2 h-min rounded-lg bg-accent pt-1', edit ? '' : 'select-none')}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
           if (edit) {
@@ -133,6 +138,9 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
                 setEdit(false);
                 bottomTextareaRef.current?.focus();
               }
+            } else if (matchShortcut(Action.ToggleAIAnalyst, event)) {
+              event.preventDefault();
+              setShowAIAnalyst((prev) => !prev);
             }
           }}
           autoComplete="off"

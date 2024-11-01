@@ -14,19 +14,19 @@ export function LanguageIcon({ language, ...props }: LanguageIconProps) {
   // matches size of default material symbols icons
   const internalSx = { width: 20, height: 20, ...(props.sx ? props.sx : {}) };
 
-  return language === 'python' ? (
+  return language && 'python'.startsWith(language) ? (
     <Python {...props} sx={{ color: colors.languagePython, ...internalSx }} />
-  ) : language === 'formula' ? (
+  ) : language && 'formula'.startsWith(language) ? (
     <Formula {...props} sx={{ color: colors.languageFormula, ...internalSx }} />
-  ) : language === 'javascript' ? (
+  ) : language && 'javascript'.startsWith(language) ? (
     <JavaScript className="text-gray-700" sx={{ color: colors.languageJavascript, ...internalSx }} />
-  ) : language === 'postgres' ? (
+  ) : language && 'postgres'.startsWith(language) ? (
     <PostgresIcon {...props} sx={{ color: colors.languagePostgres, ...internalSx }} />
-  ) : language === 'mysql' ? (
+  ) : language && 'mysql'.startsWith(language) ? (
     <MysqlIcon {...props} sx={{ color: colors.languageMysql, ...internalSx }} />
-  ) : language === 'mssql' ? (
+  ) : language && 'mssql'.startsWith(language) ? (
     <MssqlIcon sx={{ color: colors.languageMssql, ...internalSx }} />
-  ) : language === 'snowflake' ? (
+  ) : language && 'snowflake'.startsWith(language) ? (
     <SnowflakeIcon sx={{ color: colors.languageSnowflake, ...internalSx }} />
   ) : (
     <Subject {...props} />

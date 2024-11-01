@@ -48,15 +48,15 @@ export const MoveCells = ({ args, loading }: MoveCellsProps) => {
     return <div className={className}>Loading...</div>;
   }
 
-  const rows = toolArgs.data.sourceBottomRightY - toolArgs.data.sourceTopLeftY + 1;
-  const cols = toolArgs.data.sourceBottomRightX - toolArgs.data.sourceTopLeftX + 1;
+  const rows = toolArgs.data.source_bottom_right_y - toolArgs.data.source_top_left_y + 1;
+  const cols = toolArgs.data.source_bottom_right_x - toolArgs.data.source_top_left_x + 1;
   return (
     <ToolCard
       icon={<GridActionIcon />}
       label="Action: move"
       description={
-        toolArgs.data.sourceTopLeftX === toolArgs.data.sourceBottomRightX &&
-        toolArgs.data.sourceTopLeftY === toolArgs.data.sourceBottomRightY
+        toolArgs.data.source_top_left_x === toolArgs.data.source_bottom_right_x &&
+        toolArgs.data.source_top_left_y === toolArgs.data.source_bottom_right_y
           ? `1 cell`
           : `${rows}x${cols} cells`
         // ? `Cell (${toolArgs.data.sourceTopLeftX}, ${toolArgs.data.sourceTopLeftY}) moved to (${toolArgs.data.targetTopLeftX}, ${toolArgs.data.targetTopLeftY})`

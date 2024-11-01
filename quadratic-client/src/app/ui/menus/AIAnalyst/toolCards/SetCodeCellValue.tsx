@@ -40,7 +40,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   const saveAndRun = useRecoilCallback(
     ({ set }) =>
       async (toolArgs: SetCodeCellValueResponse) => {
-        const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, toolArgs.x, toolArgs.y);
+        const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, toolArgs.code_cell_x, toolArgs.code_cell_y);
 
         set(codeEditorAtom, (prev) => ({
           ...prev,
@@ -48,21 +48,21 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,
-              pos: { x: toolArgs.x, y: toolArgs.y },
-              language: toolArgs.language,
+              pos: { x: toolArgs.code_cell_x, y: toolArgs.code_cell_y },
+              language: toolArgs.code_cell_language,
             },
             showCellTypeMenu: false,
             inlineEditor: false,
-            initialCode: toolArgs.codeString,
+            initialCode: toolArgs.code_string,
           },
         }));
 
         quadraticCore.setCodeCellValue({
           sheetId: sheets.current,
-          x: toolArgs.x,
-          y: toolArgs.y,
-          codeString: toolArgs.codeString,
-          language: toolArgs.language,
+          x: toolArgs.code_cell_x,
+          y: toolArgs.code_cell_y,
+          codeString: toolArgs.code_string,
+          language: toolArgs.code_cell_language,
           cursor: sheets.getCursorPosition(),
         });
       },
@@ -93,14 +93,18 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     return <div className={className}>Loading...</div>;
   }
 
-  const { language, x, y, codeString } = toolArgs.data;
+  const { code_cell_language, code_cell_x, code_cell_y, code_string } = toolArgs.data;
 
-  const estimatedNumberOfLines = codeString.split('\n').length;
+  const estimatedNumberOfLines = code_string.split('\n').length;
   return (
     <ToolCard
-      icon={<LanguageIcon language={language} />}
-      label={language}
-      description={`${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at (${x}, ${y})`}
+      icon={<LanguageIcon language={code_cell_language} />}
+      label={code_cell_language}
+      description={
+        `${estimatedNumberOfLines} line` +
+        (estimatedNumberOfLines === 1 ? '' : 's') +
+        ` at (${code_cell_x}, ${code_cell_y})`
+      }
       actions={
         <TooltipPopover label={'Apply'}>
           <Button size="icon-sm" variant="ghost" onClick={() => saveAndRun(toolArgs.data)}>

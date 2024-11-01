@@ -28,7 +28,7 @@ type ViewActionSpec = Pick<
   | Action.PageDown
   | Action.ShowGoToMenu
   | Action.ShowCellTypeMenu
-  | Action.ToggleAIChat
+  | Action.ToggleAIAnalyst
 >;
 
 export const viewActionsSpec: ViewActionSpec = {
@@ -177,11 +177,11 @@ export const viewActionsSpec: ViewActionSpec = {
       openCodeEditor();
     },
   },
-  [Action.ToggleAIChat]: {
+  [Action.ToggleAIAnalyst]: {
     label: 'Chat',
     run: () => {
-      // TODO: wire this up to the recoil state
-      window.alert('Toggle AI chat');
+      if (!pixiAppSettings.setAIAnalystState) return;
+      pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));
     },
   },
 };

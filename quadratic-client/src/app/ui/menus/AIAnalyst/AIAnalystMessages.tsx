@@ -1,8 +1,9 @@
 import {
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
-  aiAnalystShowInternalContextAtom,
+  aiAnalystLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { colors } from '@/app/theme/colors';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
@@ -16,43 +17,55 @@ type AIAnalystMessagesProps = {
 };
 
 export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
-  const showInternalContext = useRecoilValue(aiAnalystShowInternalContextAtom);
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
-  const ref = useCallback((node: HTMLDivElement | null) => {
-    setDiv(node);
-    node?.scrollTo({
-      top: node.scrollHeight,
+  const ref = useCallback((div: HTMLDivElement | null) => {
+    setDiv(div);
+    div?.scrollTo({
+      top: div.scrollHeight,
       behavior: 'smooth',
     });
   }, []);
 
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
-  const handleUserInteraction = useCallback(() => {
-    if (!div) return;
+  const handleScrollEnd = useCallback((e: Event) => {
+    const div = e.target as HTMLDivElement;
     const isScrolledToBottom = div.scrollHeight - div.scrollTop === div.clientHeight;
     setShouldAutoScroll(isScrolledToBottom);
-  }, [div]);
+  }, []);
 
-  const scrollToBottom = useCallback(() => {
-    if (!shouldAutoScroll || !div) return;
-    div.scrollTo({
-      top: div.scrollHeight,
-      behavior: 'smooth',
-    });
-  }, [div, shouldAutoScroll]);
+  useEffect(() => {
+    div?.addEventListener('scrollend', handleScrollEnd);
+    return () => {
+      div?.removeEventListener('scrollend', handleScrollEnd);
+    };
+  }, [div, handleScrollEnd]);
+
+  const scrollToBottom = useCallback(
+    (force = false) => {
+      if (force || shouldAutoScroll) {
+        div?.scrollTo({
+          top: div.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    },
+    [div, shouldAutoScroll]
+  );
+
+  useEffect(() => {
+    if (messagesCount === 0 || loading) {
+      setShouldAutoScroll(true);
+      scrollToBottom(true);
+    }
+  }, [messagesCount, loading, scrollToBottom]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
-
-  useEffect(() => {
-    if (messagesCount === 0) {
-      setShouldAutoScroll(true);
-    }
-  }, [messagesCount]);
 
   if (messagesCount === 0) {
     return null;
@@ -61,7 +74,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   return (
     <div
       ref={ref}
-      className="flex select-text flex-col gap-1 overflow-y-auto outline-none"
+      className="flex select-text flex-col gap-1 overflow-y-auto pb-3 outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -70,15 +83,13 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
           e.preventDefault();
         }
       }}
-      onWheel={handleUserInteraction}
-      onPointerDown={handleUserInteraction}
       // Disable Grammarly
       data-gramm="false"
       data-gramm_editor="false"
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!showInternalContext && message.contextType !== 'userPrompt') {
+        if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
           return null;
         }
 
@@ -88,22 +99,21 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             id={`${index}-${message.role}-${message.contextType}`}
             className={cn(
               'flex flex-col gap-1',
-              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'pl-2 pr-2'
+              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-2'
             )}
+            // For debugging internal context
             style={{
               backgroundColor: message.contextType === 'userPrompt' ? 'white' : colors.lightGray,
             }}
           >
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
-                <>
-                  <AIAnalystUserMessageForm
-                    initialPrompt={message.content}
-                    initialContext={message.context}
-                    messageIndex={index}
-                    textareaRef={textareaRef}
-                  />
-                </>
+                <AIAnalystUserMessageForm
+                  initialPrompt={message.content}
+                  initialContext={message.context}
+                  messageIndex={index}
+                  textareaRef={textareaRef}
+                />
               ) : Array.isArray(message.content) ? (
                 message.content.map((messageContent) => (
                   <Markdown

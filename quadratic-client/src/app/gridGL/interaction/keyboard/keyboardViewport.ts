@@ -55,8 +55,8 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
   }
 
   // Toggle global AI chat
-  if (matchShortcut(Action.ToggleAIChat, event)) {
-    viewActionsSpec[Action.ToggleAIChat].run();
+  if (matchShortcut(Action.ToggleAIAnalyst, event)) {
+    viewActionsSpec[Action.ToggleAIAnalyst].run();
     return true;
   }
 

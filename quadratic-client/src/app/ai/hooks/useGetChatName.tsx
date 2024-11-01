@@ -45,7 +45,7 @@ export const useGetChatName = () => {
           try {
             const argsObject = JSON.parse(setChatNameToolCall.arguments);
             const args = aiToolsSpec[AITool.SetChatName].responseSchema.parse(argsObject);
-            return args.name;
+            return args.chat_name;
           } catch (error) {
             console.error('[useGetChatName] toolCall: ', error);
           }

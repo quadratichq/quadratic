@@ -32,11 +32,13 @@ export function useSubmitAIAssistantPrompt() {
       async ({
         userPrompt,
         context = defaultAIAssistantContext,
+        messageIndex,
         clearMessages,
         codeCell,
       }: {
         userPrompt: string;
         context?: Context;
+        messageIndex?: number;
         clearMessages?: boolean;
         codeCell?: CodeCell;
       }) => {
@@ -51,6 +53,11 @@ export function useSubmitAIAssistantPrompt() {
 
         if (clearMessages) {
           set(aiAssistantMessagesAtom, []);
+        }
+
+        // fork chat, if we are editing an existing chat
+        if (messageIndex !== undefined) {
+          set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
         }
 
         if (codeCell) {

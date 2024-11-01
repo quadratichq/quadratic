@@ -1,3 +1,4 @@
+import { getPromptMessages } from '@/app/ai/tools/helpers';
 import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
@@ -30,7 +31,6 @@ export interface CodeEditorState {
     abortController?: AbortController;
     loading: boolean;
     messages: ChatMessage[];
-    prompt: string;
   };
   showCodeEditor: boolean;
   escapePressed: boolean;
@@ -63,7 +63,6 @@ export const defaultCodeEditorState: CodeEditorState = {
     abortController: undefined,
     loading: false,
     messages: [],
-    prompt: '',
   },
   showCodeEditor: false,
   escapePressed: false,
@@ -134,7 +133,10 @@ const createAIAssistantSelector = <T extends keyof CodeEditorState['aiAssistant'
 export const aiAssistantAbortControllerAtom = createAIAssistantSelector('abortController');
 export const aiAssistantLoadingAtom = createAIAssistantSelector('loading');
 export const aiAssistantMessagesAtom = createAIAssistantSelector('messages');
-export const aiAssistantPromptAtom = createAIAssistantSelector('prompt');
+export const aiAssistantCurrentChatMessagesCountAtom = selector<number>({
+  key: 'aiAssistantCurrentChatMessagesCountAtom',
+  get: ({ get }) => getPromptMessages(get(aiAssistantMessagesAtom)).length,
+});
 
 const createCodeEditorSelector = <T extends keyof CodeEditorState>(key: T) =>
   selector<CodeEditorState[T]>({
