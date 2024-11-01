@@ -66,7 +66,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
 
     return (
       <form
-        className={cn('group m-2 h-min rounded-lg bg-accent pt-1', editing ? '' : 'select-none')}
+        className={cn('group m-2 h-min rounded-lg bg-accent pt-1.5', editing ? '' : 'select-none')}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
           if (editing) {
@@ -87,7 +87,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
           {!editing && !loading && (
             <TooltipPopover label="Edit">
               <Button
-                className="pointer-events-auto h-4 pr-2 opacity-0 transition-opacity group-hover:opacity-100"
+                className="pointer-events-auto h-4 pr-2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
                 variant="ghost"
                 onClick={(e) => {
                   if (loading) return;

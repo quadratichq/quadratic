@@ -1,4 +1,6 @@
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { AddIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -26,7 +28,9 @@ export function AIAnalystSelectContextMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={disabled || loading}>
-        <span>{'[+]'}</span>
+        <Button size="icon-sm" className="h-5 w-5 shadow-none" variant="outline">
+          <AddIcon />
+        </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent

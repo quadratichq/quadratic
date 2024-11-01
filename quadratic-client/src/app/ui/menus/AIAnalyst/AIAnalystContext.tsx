@@ -7,6 +7,9 @@ import {
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
+import { CloseIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { Context, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -80,31 +83,79 @@ export const AIAnalystContext = ({
 
   return (
     <div
-      className={`z-10 ml-2 flex select-none flex-wrap items-center gap-2 text-xs ${
-        disabled || loading ? 'opacity-60' : ''
-      } `}
+      className={cn(
+        `z-10 ml-2 flex select-none flex-wrap items-center gap-1 text-xs`,
+        disabled && 'select-none',
+        loading && 'select-none opacity-60'
+      )}
     >
-      <AIAnalystSelectContextMenu
-        context={context}
-        setContext={setContext}
-        onClose={() => textAreaRef.current?.focus()}
+      {editing && (
+        <AIAnalystSelectContextMenu
+          context={context}
+          setContext={setContext}
+          onClose={() => textAreaRef.current?.focus()}
+          disabled={disabled}
+        />
+      )}
+
+      <ContextPill
+        key="cursor"
+        primary={
+          context.selection
+            ? `(${context.selection.min.x}, ${context.selection.min.y}), (${context.selection.max.x}, ${context.selection.max.y}) `
+            : // TODO: (ayush) add code to get cursor position
+              '(0,0)'
+        }
+        secondary="Cursor"
+        onClick={() => {}}
         disabled={disabled}
       />
 
-      <div>
-        {`[`}
-        {context.selection &&
-          `(${context.selection.min.x}, ${context.selection.min.y}), (${context.selection.max.x}, ${context.selection.max.y}) `}
-        {`Cursor]`}
-      </div>
-
       {editing && !context.sheets.includes(sheets.sheet.name) && (
-        <div key={sheets.sheet.name}>{`[${sheets.sheet.name}]`}</div>
+        <ContextPill
+          key={sheets.sheet.name}
+          primary={sheets.sheet.name}
+          secondary={'Sheet'}
+          onClick={() => {}}
+          disabled={disabled}
+        />
       )}
 
       {context.sheets.map((sheet) => (
-        <div key={sheet}>{`[${sheet}]`}</div>
+        <ContextPill key={sheet} primary={sheet} secondary={'Sheet'} disabled={disabled} onClick={() => {}} />
       ))}
     </div>
   );
 };
+
+function ContextPill({
+  primary,
+  secondary,
+  onClick,
+  disabled,
+}: {
+  primary: string;
+  secondary: string;
+  onClick?: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
+      <span>{primary}</span>
+      <span className="ml-0.5 text-muted-foreground">{secondary}</span>
+      {onClick && !disabled && (
+        <Button
+          size="icon-sm"
+          className="-mr-0.5 ml-0 h-4 w-4 items-center shadow-none"
+          variant="ghost"
+          onClick={() => {
+            // TODO: (ayush) add code to remove context
+            window.alert('TODO(ayush): add code to remove context');
+          }}
+        >
+          <CloseIcon className="!h-4 !w-4 !text-xs" />
+        </Button>
+      )}
+    </div>
+  );
+}
