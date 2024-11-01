@@ -1,6 +1,6 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { getRowColSentence, ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -32,33 +32,33 @@ export const MoveCells = ({ args, loading }: MoveCellsProps) => {
     }
   }, [args, loading]);
 
+  const icon = <GridActionIcon />;
+  const label = 'Action: move';
+
   if (loading) {
-    return (
-      <div className={className}>
-        <div className="flex items-center gap-2">
-          <span className="font-bold">{`Loading...`}</span>
-        </div>
-      </div>
-    );
+    return <ToolCard icon={icon} label={label} isLoading />;
   }
 
   if (!!toolArgs && !toolArgs.success) {
-    return <div className={className}>Something went wrong</div>;
+    return <ToolCard icon={icon} label={label} hasError />;
   } else if (!toolArgs || !toolArgs.data) {
-    return <div className={className}>Loading...</div>;
+    return <ToolCard icon={icon} label={label} isLoading />;
   }
 
   const rows = toolArgs.data.source_bottom_right_y - toolArgs.data.source_top_left_y + 1;
   const cols = toolArgs.data.source_bottom_right_x - toolArgs.data.source_top_left_x + 1;
   return (
     <ToolCard
-      icon={<GridActionIcon />}
-      label="Action: move"
+      icon={icon}
+      label={label}
       description={
-        toolArgs.data.source_top_left_x === toolArgs.data.source_bottom_right_x &&
-        toolArgs.data.source_top_left_y === toolArgs.data.source_bottom_right_y
-          ? `1 cell`
-          : `${rows}x${cols} cells`
+        getRowColSentence({ rows, cols }) +
+        ` from (${toolArgs.data.source_top_left_x}, ${toolArgs.data.source_top_left_y})` +
+        ` to (${toolArgs.data.target_top_left_x}, ${toolArgs.data.target_top_left_y})`
+        // toolArgs.data.source_top_left_x === toolArgs.data.source_bottom_right_x &&
+        // toolArgs.data.source_top_left_y === toolArgs.data.source_bottom_right_y
+        //   ? `1 cell`
+        //   : `${rows}×${cols} cells`
         // ? `Cell (${toolArgs.data.sourceTopLeftX}, ${toolArgs.data.sourceTopLeftY}) moved to (${toolArgs.data.targetTopLeftX}, ${toolArgs.data.targetTopLeftY})`
         // : `Cells ((${toolArgs.data.sourceTopLeftX}, ${toolArgs.data.sourceTopLeftY}), (${toolArgs.data.sourceBottomRightX}, ${toolArgs.data.sourceBottomRightY})) moved to (${toolArgs.data.targetTopLeftX}, ${toolArgs.data.targetTopLeftY})`
       }

@@ -80,7 +80,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   return (
     <div
       ref={ref}
-      className="flex select-text flex-col gap-1 overflow-y-auto pb-3 outline-none"
+      className="flex select-text flex-col gap-3 overflow-y-auto outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -104,7 +104,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             key={`${index}-${message.role}-${message.contextType}`}
             id={`${index}-${message.role}-${message.contextType}`}
             className={cn(
-              'flex flex-col gap-1',
+              'flex flex-col gap-2',
               message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-2'
             )}
             // For debugging internal context
@@ -121,26 +121,13 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
                   textareaRef={textareaRef}
                 />
               ) : Array.isArray(message.content) ? (
-                message.content.map((messageContent) => (
-                  <Markdown
-                    key={messageContent.content}
-                    className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm"
-                  >
-                    {messageContent.content}
-                  </Markdown>
-                ))
+                message.content.map(({ content }) => <MarkdownContent key={content}>{content}</MarkdownContent>)
               ) : (
-                <Markdown className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm">
-                  {message.content}
-                </Markdown>
+                <MarkdownContent key={message.content}>{message.content}</MarkdownContent>
               )
             ) : (
               <>
-                {message.content && (
-                  <Markdown className="mx-2 flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm">
-                    {message.content}
-                  </Markdown>
-                )}
+                {message.content && <MarkdownContent key={message.content}>{message.content}</MarkdownContent>}
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall) => (
@@ -156,6 +143,18 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
           </div>
         );
       })}
+
+      <div className={cn('flex flex-row gap-1 px-2 transition-opacity', !loading && 'opacity-0')}>
+        <span className="h-2 w-2 animate-bounce bg-primary" />
+        <span className="h-2 w-2 animate-bounce bg-primary/60 delay-100" />
+        <span className="h-2 w-2 animate-bounce bg-primary/20 delay-200" />
+      </div>
     </div>
+  );
+}
+
+function MarkdownContent({ children }: { children: string }) {
+  return (
+    <Markdown className="flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm">{children}</Markdown>
   );
 }

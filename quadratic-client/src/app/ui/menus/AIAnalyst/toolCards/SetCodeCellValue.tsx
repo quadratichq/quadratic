@@ -20,9 +20,6 @@ type SetCodeCellValueProps = {
   loading: boolean;
 };
 
-const className =
-  'mx-2 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow';
-
 export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
 
@@ -71,15 +68,17 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
 
   if (loading) {
     const partialJson = parsePartialJson(args);
-    if (partialJson && 'language' in partialJson) {
+    if (partialJson && 'code_cell_language' in partialJson) {
       const estimatedNumberOfLines = args.split('\\n').length;
-      const { language, x, y } = partialJson;
+      const { code_cell_language: language, code_cell_x: x, code_cell_y: y } = partialJson;
       return (
         <ToolCard
           icon={<LanguageIcon language={language} />}
           label={language}
           description={
-            `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at (${x}, ${y})`
+            `${estimatedNumberOfLines} line` +
+            (estimatedNumberOfLines === 1 ? '' : 's') +
+            (x && y ? ` at (${x}, ${y})` : '')
           }
           isLoading={true}
         />
@@ -88,13 +87,12 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   }
 
   if (!!toolArgs && !toolArgs.success) {
-    return <div className={className}>Something went wrong</div>;
+    return <ToolCard icon={<LanguageIcon language="" />} label="Code" hasError />;
   } else if (!toolArgs || !toolArgs.data) {
-    return <div className={className}>Loading...</div>;
+    return <ToolCard isLoading />;
   }
 
   const { code_cell_language, code_cell_x, code_cell_y, code_string } = toolArgs.data;
-
   const estimatedNumberOfLines = code_string.split('\n').length;
   return (
     <ToolCard
@@ -116,7 +114,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   );
 };
 
-const parsePartialJson = (args: string) => {
+const parsePartialJson = (args: string): Partial<SetCodeCellValueResponse> | null => {
   try {
     const parsed = parse(args, STR | OBJ);
     return parsed;
@@ -125,11 +123,12 @@ const parsePartialJson = (args: string) => {
   }
 };
 
-const parseFullJson = (args: string) => {
+const parseFullJson = (args: string): Partial<SetCodeCellValueResponse> | null => {
   try {
     const json = JSON.parse(args);
     return json;
   } catch (error) {
     console.error('[SetCodeCellValue] Failed to parse args: ', error);
+    return null;
   }
 };

@@ -26,7 +26,7 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   return (
-    <div className="flex items-center justify-between p-3">
+    <div className="flex items-center justify-between">
       <span className="flex items-center text-sm font-bold">
         {showChatHistory ? (
           'Chat history'

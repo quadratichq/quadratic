@@ -340,7 +340,7 @@ export function useAIRequestToAPI() {
         contextType: 'userPrompt',
         toolCalls: [],
       };
-      setMessages?.((prev) => [...prev, { ...responseMessage, content: 'Loading...' }]);
+      setMessages?.((prev) => [...prev, { ...responseMessage, content: '' }]);
 
       try {
         const token = await authClient.getTokenOrRedirect();

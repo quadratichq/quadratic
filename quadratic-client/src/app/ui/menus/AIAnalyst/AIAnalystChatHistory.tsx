@@ -20,8 +20,14 @@ export const AIAnalystChatHistory = () => {
   const chatGroups = useMemo(() => groupChatsByTime(chats, searchValue), [chats, searchValue]);
 
   return (
-    <div className="mx-2 flex flex-col gap-2">
-      <Input autoFocus onChange={(e) => setSearchValue(e.target.value)} value={searchValue} placeholder="Search…" />
+    <div className="flex flex-col gap-2 pt-0.5">
+      <Input
+        autoFocus
+        onChange={(e) => setSearchValue(e.target.value)}
+        value={searchValue}
+        placeholder="Search…"
+        className="sticky top-0.5 z-10 bg-background"
+      />
 
       <div className="flex flex-col gap-1 text-muted-foreground">
         {Object.entries(chatGroups).map(

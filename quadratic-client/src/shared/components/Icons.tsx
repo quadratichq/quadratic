@@ -348,10 +348,6 @@ export const GridActionIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_right</Icon>;
 };
 
-export const GridDataIcon: IconComponent = (props) => {
-  return <Icon {...props}>reorder</Icon>;
-};
-
 export const GroupIcon: IconComponent = (props) => {
   return <Icon {...props}>group</Icon>;
 };
@@ -481,6 +477,10 @@ export const StopIcon: IconComponent = (props) => {
 
 export const StopCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>stop_circle</Icon>;
+};
+
+export const TableIcon: IconComponent = (props) => {
+  return <Icon {...props}>table</Icon>;
 };
 
 export const ThemeIcon: IconComponent = (props) => {

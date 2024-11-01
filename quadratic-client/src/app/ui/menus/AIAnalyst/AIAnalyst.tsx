@@ -51,16 +51,29 @@ export const AIAnalyst = () => {
       >
         <ResizeControl position="VERTICAL" style={{ left: `${panelWidth - 2}px` }} setState={handleResize} />
 
-        <div className={cn('h-full w-full', showChatHistory ? 'flex flex-col' : 'grid grid-rows-[auto_1fr_auto]')}>
-          <AIAnalystHeader textareaRef={textareaRef} />
+        <div
+          className={cn(
+            'h-full w-full',
+            showChatHistory ? 'grid grid-rows-[auto_1fr]' : 'grid grid-rows-[auto_1fr_auto]'
+          )}
+        >
+          <div className="px-4 py-2">
+            <AIAnalystHeader textareaRef={textareaRef} />
+          </div>
 
           {showChatHistory ? (
-            <AIAnalystChatHistory />
+            <div className="overflow-y-auto px-2">
+              <AIAnalystChatHistory />
+            </div>
           ) : (
             <>
-              <AIAnalystMessages textareaRef={textareaRef} />
+              <div className="overflow-y-auto px-2 pb-3">
+                <AIAnalystMessages textareaRef={textareaRef} />
+              </div>
 
-              <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+              <div className="p-2 pt-1">
+                <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+              </div>
             </>
           )}
         </div>

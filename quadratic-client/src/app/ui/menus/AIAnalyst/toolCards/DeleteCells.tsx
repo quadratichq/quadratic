@@ -1,6 +1,6 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { getRowColSentence, ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -11,9 +11,6 @@ type DeleteCellsProps = {
   args: string;
   loading: boolean;
 };
-
-const className =
-  'mx-2 my-1 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow';
 
 export const DeleteCells = ({ args, loading }: DeleteCellsProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<DeleteCellsResponse, DeleteCellsResponse>>();
@@ -32,29 +29,30 @@ export const DeleteCells = ({ args, loading }: DeleteCellsProps) => {
     }
   }, [args, loading]);
 
+  const icon = <GridActionIcon />;
+  const label = 'Action: delete';
+
   if (loading) {
-    return (
-      <div className={className}>
-        <div className="flex items-center gap-2">
-          <span className="font-bold">{`Loading...`}</span>
-        </div>
-      </div>
-    );
+    return <ToolCard icon={icon} label={label} isLoading />;
   }
 
   if (!!toolArgs && !toolArgs.success) {
-    return <div className={className}>Something went wrong</div>;
+    return <ToolCard icon={icon} label={label} hasError />;
   } else if (!toolArgs || !toolArgs.data) {
-    return <div className={className}>Loading...</div>;
+    return <ToolCard icon={icon} label={label} isLoading />;
   }
 
+  // TODO: (ayush) is this right? why would you have more than 1 rect?
   const { rects } = toolArgs.data;
-  const deletedCount = rects.length;
+  const rect = rects[0];
+  const rows = rect.rect_height;
+  const cols = rect.rect_width;
+  console.log(toolArgs.data.rects);
   return (
     <ToolCard
       icon={<GridActionIcon />}
       label={'Action: delete'}
-      description={`${deletedCount} cell${deletedCount === 1 ? '' : 's'}`}
+      description={`${getRowColSentence({ rows, cols })} at (${rect.top_left_x}, ${rect.top_left_y})`}
     />
   );
 };
