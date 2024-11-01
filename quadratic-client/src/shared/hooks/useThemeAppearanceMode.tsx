@@ -1,5 +1,6 @@
 import { useFeatureFlag } from '@/shared/hooks/useFeatureFlag';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { getCSSVariableAsHexColor } from '@/shared/utils/colors';
 import { useEffect } from 'react';
 
 const DEFAULT_APPEARANCE_MODE = 'light';
@@ -51,6 +52,20 @@ export const ThemeAppearanceModeEffects = () => {
     return () => {
       userPrefesDarkMode.removeEventListener('change', handleMatch);
     };
+  }, [appearanceMode, userPrefesDarkMode]);
+
+  useEffect(() => {
+    const metaTag = document.querySelector('meta[name="theme-color"]');
+    const hexColor = getCSSVariableAsHexColor('background');
+
+    if (metaTag) {
+      metaTag.setAttribute('content', hexColor);
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      meta.content = hexColor;
+      document.head.appendChild(meta);
+    }
   }, [appearanceMode, userPrefesDarkMode]);
 
   return null;
