@@ -2,8 +2,6 @@ import { Action } from '@/app/actions/actions';
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import {
   aiAnalystAbortControllerAtom,
-  aiAnalystCurrentChatMessagesAtom,
-  aiAnalystCurrentChatMessagesCountAtom,
   aiAnalystLoadingAtom,
   defaultAIAnalystContext,
   showAIAnalystAtom,
@@ -19,7 +17,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
-import { Context, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -36,11 +34,9 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
     const { initialPrompt, initialContext, messageIndex, autoFocus, textareaRef: bottomTextareaRef } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
-    const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-    const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
     const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
 
-    const [edit, setEdit] = useState(!initialPrompt);
+    const [editing, setEditing] = useState(!initialPrompt);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
     const [prompt, setPrompt] = useState(initialPrompt ?? '');
     const { submitPrompt } = useSubmitAIAnalystPrompt();
@@ -64,38 +60,31 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
 
     useEffect(() => {
       if (loading && initialPrompt !== undefined) {
-        setEdit(false);
+        setEditing(false);
       }
     }, [loading, initialPrompt]);
 
-    // use last user message context as initial context in the bottom user message form
-    useEffect(() => {
-      if (initialPrompt === undefined && messagesCount > 0) {
-        const lastUserMessage = messages
-          .filter(
-            (message): message is UserMessagePrompt => message.role === 'user' && message.contextType === 'userPrompt'
-          )
-          .at(-1);
-        if (lastUserMessage) {
-          setContext(lastUserMessage.context);
-        }
-      }
-    }, [initialPrompt, messages, messagesCount]);
-
     return (
       <form
-        className={cn('group m-2 h-min rounded-lg bg-accent pt-1', edit ? '' : 'select-none')}
+        className={cn('group m-2 h-min rounded-lg bg-accent pt-1', editing ? '' : 'select-none')}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
-          if (edit) {
+          if (editing) {
             textareaRef.current?.focus();
           }
         }}
       >
         <div className="flex flex-row items-start justify-between">
-          <AIAnalystContext context={context} setContext={setContext} textAreaRef={textareaRef} disabled={!edit} />
+          <AIAnalystContext
+            context={context}
+            setContext={setContext}
+            initialContext={initialContext}
+            editing={editing}
+            disabled={!editing}
+            textAreaRef={textareaRef}
+          />
 
-          {!edit && !loading && (
+          {!editing && !loading && (
             <TooltipPopover label="Edit">
               <Button
                 className="pointer-events-auto h-4 pr-2 opacity-0 transition-opacity group-hover:opacity-100"
@@ -103,7 +92,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
                 onClick={(e) => {
                   if (loading) return;
                   e.stopPropagation();
-                  setEdit(true);
+                  setEditing(true);
                   textareaRef.current?.focus();
                 }}
               >
@@ -118,7 +107,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
           value={prompt}
           className={cn(
             'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-            edit ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
+            editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
           )}
           onChange={(event) => setPrompt(event.target.value)}
           onKeyDown={(event) => {
@@ -135,7 +124,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
                 setPrompt('');
                 textareaRef.current?.focus();
               } else {
-                setEdit(false);
+                setEditing(false);
                 bottomTextareaRef.current?.focus();
               }
             } else if (matchShortcut(Action.ToggleAIAnalyst, event)) {
@@ -145,11 +134,11 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
           }}
           autoComplete="off"
           placeholder="Ask a question..."
-          autoHeight={edit}
-          maxHeight={edit ? '120px' : 'unset'}
+          autoHeight={editing}
+          maxHeight={editing ? '120px' : 'unset'}
         />
 
-        {edit && (
+        {editing && (
           <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
             <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 

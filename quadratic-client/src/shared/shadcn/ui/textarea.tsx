@@ -62,7 +62,6 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           }
         }}
         value={value}
-        rows={autoHeight === false ? value?.split('\n').length ?? 1 : undefined}
         {...props}
       />
     );

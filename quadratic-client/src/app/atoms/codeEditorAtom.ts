@@ -7,19 +7,8 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
-
-export const defaultAIAssistantContext: Context = {
-  quadraticDocs: true,
-  currentFile: false,
-  currentSheet: true,
-  connections: false,
-  visibleData: true,
-  toolUse: false,
-  selection: [],
-  codeCell: undefined,
-};
 
 export interface ConsoleOutput {
   stdOut?: string;

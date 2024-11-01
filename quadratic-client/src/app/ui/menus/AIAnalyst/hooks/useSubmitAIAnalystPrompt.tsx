@@ -17,7 +17,7 @@ import {
   defaultAIAnalystContext,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { SheetRect } from '@/app/quadratic-core-types';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { AIMessage, AIMessagePrompt, ChatMessage, Context, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
@@ -35,13 +35,21 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     ({ set }) =>
       async ({ context }: { context: Context }): Promise<ChatMessage[]> => {
-        const quadraticContext = context.quadraticDocs ? getQuadraticContext() : [];
-        const toolUsePrompt = context.toolUse ? getToolUsePrompt() : [];
-        const currentSheetContext = context.currentSheet ? await getCurrentSheetContext() : [];
-        const visibleContext = context.visibleData ? await getVisibleContext() : [];
-        const selectionContext = (
-          await Promise.all(context.selection.map((sheetRect) => getSelectionContext({ sheetRect })))
-        ).flat();
+        const quadraticContext = getQuadraticContext();
+        const toolUsePrompt = getToolUsePrompt();
+        const currentSheetContext = await getCurrentSheetContext();
+        const visibleContext = await getVisibleContext();
+
+        const selection = sheets.getRustSelection();
+        const rect = selection.rects?.[0];
+        const selectionContext = rect
+          ? await getSelectionContext({
+              sheetRect: {
+                sheet_id: selection.sheet_id,
+                ...rect,
+              },
+            })
+          : [];
 
         let updatedMessages: ChatMessage[] = [];
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
@@ -71,13 +79,11 @@ export function useSubmitAIAnalystPrompt() {
         context = defaultAIAnalystContext,
         messageIndex,
         clearMessages,
-        selectionSheetRect,
       }: {
         userPrompt: string;
         context?: Context;
         messageIndex?: number;
         clearMessages?: boolean;
-        selectionSheetRect?: SheetRect;
       }) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
@@ -112,12 +118,13 @@ export function useSubmitAIAnalystPrompt() {
 
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => [
           ...prevMessages,
-          { role: 'user' as const, content: userPrompt, contextType: 'userPrompt' as const, context },
+          {
+            role: 'user' as const,
+            content: userPrompt,
+            contextType: 'userPrompt' as const,
+            context: { ...context, sheets: [sheets.sheet.name, ...context.sheets] },
+          },
         ]);
-
-        if (selectionSheetRect) {
-          context = { ...context, selection: [...context.selection, selectionSheetRect] };
-        }
 
         try {
           // Send user prompt to API

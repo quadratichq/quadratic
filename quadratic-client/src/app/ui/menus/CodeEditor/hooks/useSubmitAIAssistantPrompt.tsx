@@ -11,12 +11,11 @@ import {
   aiAssistantMessagesAtom,
   codeEditorCodeCellAtom,
   codeEditorWaitingForEditorClose,
-  defaultAIAssistantContext,
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export function useSubmitAIAssistantPrompt() {
@@ -31,13 +30,11 @@ export function useSubmitAIAssistantPrompt() {
     ({ set, snapshot }) =>
       async ({
         userPrompt,
-        context = defaultAIAssistantContext,
         messageIndex,
         clearMessages,
         codeCell,
       }: {
         userPrompt: string;
-        context?: Context;
         messageIndex?: number;
         clearMessages?: boolean;
         codeCell?: CodeCell;
@@ -70,12 +67,11 @@ export function useSubmitAIAssistantPrompt() {
         } else {
           codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         }
-        context = { ...context, codeCell };
 
-        const quadraticContext = context.quadraticDocs ? getQuadraticContext(getLanguage(codeCell.language)) : [];
-        const currentSheetContext = context.currentSheet ? await getCurrentSheetContext() : [];
-        const visibleContext = context.visibleData ? await getVisibleContext() : [];
-        const codeContext = context.codeCell ? await getCodeCellContext({ codeCell: context.codeCell }) : [];
+        const quadraticContext = getQuadraticContext(getLanguage(codeCell.language));
+        const currentSheetContext = await getCurrentSheetContext();
+        const visibleContext = await getVisibleContext();
+        const codeContext = await getCodeCellContext({ codeCell });
         let updatedMessages: ChatMessage[] = [];
         set(aiAssistantMessagesAtom, (prevMessages) => {
           prevMessages = getPromptMessages(prevMessages);
@@ -94,7 +90,7 @@ export function useSubmitAIAssistantPrompt() {
             ...visibleContext,
             ...prevMessages,
             ...newContextMessages,
-            { role: 'user', content: userPrompt, contextType: 'userPrompt', context },
+            { role: 'user', content: userPrompt, contextType: 'userPrompt' },
           ];
 
           return updatedMessages;

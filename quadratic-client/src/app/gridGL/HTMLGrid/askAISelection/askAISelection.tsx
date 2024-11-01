@@ -75,8 +75,8 @@ export function AskAISelection() {
 
   const updateSelection = useCallback(() => {
     clearTimeout(timeoutRef.current);
-    setDisplayPos(undefined);
     setSheetRect(undefined);
+    setDisplayPos(undefined);
 
     timeoutRef.current = setTimeout(() => {
       showAskAISelection();
@@ -89,16 +89,15 @@ export function AskAISelection() {
       submitPrompt({
         userPrompt: prompt,
         clearMessages: true,
-        selectionSheetRect: sheetRect,
       })
         .catch(console.error)
         .finally(() => {
           setLoading(false);
-          setDisplayPos(undefined);
           setSheetRect(undefined);
+          setDisplayPos(undefined);
         });
     },
-    [sheetRect, submitPrompt]
+    [submitPrompt]
   );
 
   useEffect(() => {

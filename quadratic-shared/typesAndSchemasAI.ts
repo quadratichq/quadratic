@@ -39,30 +39,16 @@ const ContextTypeSchema = z.enum([
 export type ContextType = z.infer<typeof ContextTypeSchema>;
 
 const ContextSchema = z.object({
-  quadraticDocs: z.boolean(),
-  currentFile: z.boolean(),
-  currentSheet: z.boolean(),
-  connections: z.boolean(),
-  visibleData: z.boolean(),
-  toolUse: z.boolean(),
-  selection: z.array(
-    z.object({
-      sheet_id: z.object({ id: z.string() }),
-      min: z.object({ x: z.bigint(), y: z.bigint() }),
-      max: z.object({ x: z.bigint(), y: z.bigint() }),
-    })
-  ),
-  codeCell: z
+  selection: z
     .object({
-      sheetId: z.string(),
-      pos: z.object({ x: z.number(), y: z.number() }),
-      language: z.enum(['Python', 'Javascript', 'Formula']).or(
-        z.object({
-          Connection: z.object({ kind: z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE']), id: z.string() }),
-        })
-      ),
+      sheet_id: z.object({
+        id: z.string().uuid(),
+      }),
+      min: z.object({ x: z.number(), y: z.number() }),
+      max: z.object({ x: z.number(), y: z.number() }),
     })
     .optional(),
+  sheets: z.array(z.string()),
 });
 export type Context = z.infer<typeof ContextSchema>;
 
@@ -88,7 +74,7 @@ const UserMessagePromptSchema = z.object({
   role: z.literal('user'),
   content: z.string(),
   contextType: z.literal('userPrompt'),
-  context: ContextSchema,
+  context: ContextSchema.optional(),
 });
 export type UserMessagePrompt = z.infer<typeof UserMessagePromptSchema>;
 

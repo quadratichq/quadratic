@@ -7,13 +7,8 @@ import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 
 export const defaultAIAnalystContext: Context = {
-  quadraticDocs: true,
-  currentFile: false,
-  currentSheet: true,
-  connections: false,
-  visibleData: true,
-  toolUse: true,
-  selection: [],
+  selection: undefined,
+  sheets: [],
 };
 
 export interface AIAnalystState {
