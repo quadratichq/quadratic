@@ -225,7 +225,7 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
         "%d.%m.%Y",
         "%Y %m %d",
         "%m %d %Y",
-        "%d %m %Y",
+        "%d %m %G",
         "%Y %b %d",
         "%b %d %Y",
         "%d %b %Y",
@@ -319,8 +319,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_parse_date() {
-        let date = "12/23/2024".to_string();
-        let parsed_date = parse_date(&date).unwrap();
+        let parsed_date = parse_date("12/23/2024").unwrap();
         assert_eq!(parsed_date, NaiveDate::from_ymd_opt(2024, 12, 23).unwrap());
         assert_eq!(
             parse_date("12/23/2024"),
@@ -413,5 +412,12 @@ mod tests {
         let format = "%H:%M:%S %Y %B %d %A";
         let formatted_date = date_to_date_string(date.unwrap(), Some(format.to_string()));
         assert_eq!(formatted_date, "2024 December 23 Monday".to_string());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_parse_date_time() {
+        assert_eq!(parse_date("1893-01"), None);
+        assert_eq!(parse_date("1902-01"), None);
     }
 }
