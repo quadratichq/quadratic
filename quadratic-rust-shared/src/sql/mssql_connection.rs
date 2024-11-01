@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
@@ -6,14 +7,14 @@ use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::{StreamExt, TryStreamExt};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use tiberius::xml::XmlData;
 use tiberius::ColumnData;
-use uuid::Uuid;
-
 use tiberius::{AuthMethod, Client, Column, Config, FromSql, FromSqlOwned, Row};
 use tokio::net::TcpStream;
 use tokio_util::compat::{Compat, TokioAsyncWriteCompatExt};
+use uuid::Uuid;
 
 use crate::arrow::arrow_type::ArrowType;
 use crate::error::{Result, SharedError, Sql};
@@ -236,7 +237,9 @@ ORDER BY
                 ColumnData::F32(_) => convert_mssql_type::<f32, _>(column_data, ArrowType::Float32),
                 ColumnData::F64(_) => convert_mssql_type::<f64, _>(column_data, ArrowType::Float64),
                 ColumnData::Numeric(_) => {
-                    convert_mssql_type::<BigDecimal, _>(column_data, ArrowType::BigDecimal)
+                    convert_mssql_type::<Decimal, _>(column_data, |decimal| {
+                        ArrowType::BigDecimal(BigDecimal::from_str(&decimal.to_string()).unwrap())
+                    })
                 }
                 ColumnData::Guid(_) => convert_mssql_type::<Uuid, _>(column_data, ArrowType::Uuid),
                 ColumnData::String(_) => {
@@ -436,7 +439,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_mysql_schema() {
+    async fn test_mssql_schema() {
         let connection = new_mssql_connection();
         let mut client = connection.connect().await.unwrap();
         let schema = connection.schema(&mut client).await.unwrap();

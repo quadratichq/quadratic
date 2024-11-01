@@ -224,7 +224,17 @@ class QuadraticCore {
   }
 
   // Loads a Grid file and initializes renderWebWorker upon response
-  async load(url: string, version: string, sequenceNumber: number): Promise<{ version?: string; error?: string }> {
+  async load({
+    fileId,
+    url,
+    version,
+    sequenceNumber,
+  }: {
+    fileId: string;
+    url: string;
+    version: string;
+    sequenceNumber: number;
+  }): Promise<{ version?: string; error?: string }> {
     // this is the channel between the core worker and the render worker
     const port = new MessageChannel();
     renderWebWorker.init(port.port2);
@@ -249,7 +259,7 @@ class QuadraticCore {
         version,
         sequenceNumber,
         id,
-        fileId: window.location.pathname.split('/')[2],
+        fileId,
       };
       if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);

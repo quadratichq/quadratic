@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::{
     cell_values::CellValues,
     controller::{
@@ -7,7 +5,6 @@ use crate::{
         operations::operation::{CopyFormats, Operation},
     },
     grid::{formats::Formats, Sheet},
-    renderer_constants::CELL_SHEET_HEIGHT,
     selection::Selection,
     Pos, Rect, SheetPos,
 };
@@ -101,11 +98,7 @@ impl Sheet {
         }
         if !changed.is_empty() && !transaction.is_server() {
             changed.iter().for_each(|(index, size)| {
-                transaction
-                    .offsets_modified
-                    .entry(self.id)
-                    .or_default()
-                    .insert((Some(*index), None), *size);
+                transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
             });
         }
     }
@@ -142,7 +135,8 @@ impl Sheet {
                 });
         }
 
-        let mut updated_cols = HashSet::new();
+        // mark hashes of existing columns dirty
+        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         // remove the column's data from the sheet
         if let Some(c) = self.columns.get(&column) {
@@ -150,7 +144,6 @@ impl Sheet {
                 transaction.fill_cells.insert(self.id);
             }
             self.columns.remove(&column);
-            updated_cols.insert(column);
         }
 
         // remove the column's code runs from the sheet
@@ -176,7 +169,6 @@ impl Sheet {
                 transaction.fill_cells.insert(self.id);
             }
             self.formats_columns.remove(&column);
-            updated_cols.insert(column);
         }
 
         // remove the column's borders from the sheet
@@ -198,7 +190,6 @@ impl Sheet {
                     transaction.fill_cells.insert(self.id);
                 }
                 self.columns.insert(col - 1, column_data);
-                updated_cols.insert(col - 1);
             }
         }
 
@@ -243,22 +234,11 @@ impl Sheet {
         for col in formats_to_update {
             if let Some(format) = self.formats_columns.remove(&col) {
                 self.formats_columns.insert(col - 1, format);
-                updated_cols.insert(col);
-                updated_cols.insert(col - 1);
             }
         }
 
-        // send the value hashes that have changed to the client
-        let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
-        updated_cols.iter().for_each(|col| {
-            if let Some((start, end)) = self.column_bounds(*col, false) {
-                for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
-                    let mut pos = Pos { x: *col, y };
-                    pos.to_quadrant();
-                    dirty_hashes.insert(pos);
-                }
-            }
-        });
+        // mark hashes of new columns dirty
+        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         self.validations.remove_column(transaction, self.id, column);
     }
@@ -314,7 +294,8 @@ impl Sheet {
                 });
         }
 
-        let mut updated_cols = HashSet::new();
+        // mark hashes of existing columns dirty
+        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         // update the indices of all columns impacted by the insertion
         let mut columns_to_update = Vec::new();
@@ -328,7 +309,6 @@ impl Sheet {
             if let Some(mut column_data) = self.columns.remove(&col) {
                 column_data.x += 1;
                 self.columns.insert(col + 1, column_data);
-                updated_cols.insert(col + 1);
             }
         }
 
@@ -374,7 +354,6 @@ impl Sheet {
         for col in formats_to_update {
             if let Some(format) = self.formats_columns.remove(&col) {
                 self.formats_columns.insert(col + 1, format);
-                updated_cols.insert(col + 1);
             }
         }
 
@@ -383,17 +362,8 @@ impl Sheet {
             transaction.sheet_borders.insert(self.id);
         }
 
-        // signal client to update the hashes for changed columns
-        let dirty_hashes = transaction.dirty_hashes.entry(self.id).or_default();
-        updated_cols.iter().for_each(|col| {
-            if let Some((start, end)) = self.column_bounds(*col, false) {
-                for y in (start..=end).step_by(CELL_SHEET_HEIGHT as usize) {
-                    let mut pos = Pos { x: *col, y };
-                    pos.to_quadrant();
-                    dirty_hashes.insert(pos);
-                }
-            }
-        });
+        // mark hashes of new columns dirty
+        transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         self.validations.insert_column(transaction, self.id, column);
 
@@ -402,11 +372,7 @@ impl Sheet {
         let changes = self.offsets.insert_column(column);
         if !changes.is_empty() {
             changes.iter().for_each(|(index, size)| {
-                transaction
-                    .offsets_modified
-                    .entry(self.id)
-                    .or_default()
-                    .insert((Some(*index), None), *size);
+                transaction.offsets_modified(self.id, Some(*index), None, Some(*size));
             });
         }
     }
