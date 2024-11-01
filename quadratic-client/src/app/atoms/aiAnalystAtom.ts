@@ -156,6 +156,7 @@ export const aiAnalystChatsAtom = selector<Chat[]>({
 
       return {
         ...prev,
+        showChatHistory: newValue.length > 0 ? prev.showChatHistory : false,
         chats: newValue,
         currentChat: deletedChatIds.includes(prev.currentChat.id)
           ? {

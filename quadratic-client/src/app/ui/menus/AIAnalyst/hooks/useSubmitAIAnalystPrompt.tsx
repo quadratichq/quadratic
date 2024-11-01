@@ -116,13 +116,18 @@ export function useSubmitAIAnalystPrompt() {
           });
         }
 
+        const currentSheetName = sheets.sheet.name;
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => [
           ...prevMessages,
           {
             role: 'user' as const,
             content: userPrompt,
             contextType: 'userPrompt' as const,
-            context: { ...context, sheets: [sheets.sheet.name, ...context.sheets] },
+            context: {
+              ...context,
+              // prepend current sheet name which is always included in context
+              sheets: [currentSheetName, ...context.sheets.filter((sheet) => sheet !== currentSheetName)],
+            },
           },
         ]);
 
