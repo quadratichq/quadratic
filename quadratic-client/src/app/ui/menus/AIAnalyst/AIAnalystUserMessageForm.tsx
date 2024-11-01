@@ -102,41 +102,45 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
           )}
         </div>
 
-        <Textarea
-          ref={textareaRef}
-          value={prompt}
-          className={cn(
-            'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-            editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
-          )}
-          onChange={(event) => setPrompt(event.target.value)}
-          onKeyDown={(event) => {
-            event.stopPropagation();
+        {editing ? (
+          <Textarea
+            ref={textareaRef}
+            value={prompt}
+            className={cn(
+              'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+              editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
+            )}
+            onChange={(event) => setPrompt(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
 
-            if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
-              event.preventDefault();
+              if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+                event.preventDefault();
 
-              if (prompt.trim().length === 0) return;
+                if (prompt.trim().length === 0) return;
 
-              submitPrompt({ userPrompt: prompt, context, messageIndex });
+                submitPrompt({ userPrompt: prompt, context, messageIndex });
 
-              if (initialPrompt === undefined) {
-                setPrompt('');
-                textareaRef.current?.focus();
-              } else {
-                setEditing(false);
-                bottomTextareaRef.current?.focus();
+                if (initialPrompt === undefined) {
+                  setPrompt('');
+                  textareaRef.current?.focus();
+                } else {
+                  setEditing(false);
+                  bottomTextareaRef.current?.focus();
+                }
+              } else if (matchShortcut(Action.ToggleAIAnalyst, event)) {
+                event.preventDefault();
+                setShowAIAnalyst((prev) => !prev);
               }
-            } else if (matchShortcut(Action.ToggleAIAnalyst, event)) {
-              event.preventDefault();
-              setShowAIAnalyst((prev) => !prev);
-            }
-          }}
-          autoComplete="off"
-          placeholder="Ask a question..."
-          autoHeight={editing}
-          maxHeight={editing ? '120px' : 'unset'}
-        />
+            }}
+            autoComplete="off"
+            placeholder="Ask a question..."
+            autoHeight={true}
+            maxHeight="120px"
+          />
+        ) : (
+          <div className="pointer-events-none p-2 text-sm">{prompt}</div>
+        )}
 
         {editing && (
           <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">

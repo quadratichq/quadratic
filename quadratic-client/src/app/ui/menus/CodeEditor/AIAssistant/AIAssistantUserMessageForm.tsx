@@ -27,7 +27,7 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssi
     const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
 
-    const [edit, setEdit] = useState(!initialPrompt);
+    const [editing, setEditing] = useState(!initialPrompt);
     const [prompt, setPrompt] = useState(initialPrompt ?? '');
     const { submitPrompt } = useSubmitAIAssistantPrompt();
 
@@ -50,21 +50,21 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssi
 
     useEffect(() => {
       if (loading && initialPrompt !== undefined) {
-        setEdit(false);
+        setEditing(false);
       }
     }, [loading, initialPrompt]);
 
     return (
       <form
-        className={cn('group relative m-2 h-min rounded-lg bg-accent', edit ? '' : 'select-none')}
+        className={cn('group relative m-2 h-min rounded-lg bg-accent', editing ? '' : 'select-none')}
         onSubmit={(e) => e.preventDefault()}
         onClick={() => {
-          if (edit) {
+          if (editing) {
             textareaRef.current?.focus();
           }
         }}
       >
-        {!edit && !loading && (
+        {!editing && !loading && (
           <TooltipPopover label="Edit">
             <Button
               className="pointer-events-auto absolute right-2 top-2 h-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
@@ -73,7 +73,7 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssi
               onClick={(e) => {
                 if (loading) return;
                 e.stopPropagation();
-                setEdit(true);
+                setEditing(true);
                 textareaRef.current?.focus();
               }}
             >
@@ -82,40 +82,44 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssi
           </TooltipPopover>
         )}
 
-        <Textarea
-          ref={textareaRef}
-          value={prompt}
-          className={cn(
-            'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-            edit ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
-          )}
-          onChange={(event) => setPrompt(event.target.value)}
-          onKeyDown={(event) => {
-            event.stopPropagation();
+        {editing ? (
+          <Textarea
+            ref={textareaRef}
+            value={prompt}
+            className={cn(
+              'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+              editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
+            )}
+            onChange={(event) => setPrompt(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
 
-            if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
-              event.preventDefault();
+              if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+                event.preventDefault();
 
-              if (prompt.trim().length === 0) return;
+                if (prompt.trim().length === 0) return;
 
-              submitPrompt({ userPrompt: prompt, messageIndex });
+                submitPrompt({ userPrompt: prompt, messageIndex });
 
-              if (initialPrompt === undefined) {
-                setPrompt('');
-                textareaRef.current?.focus();
-              } else {
-                setEdit(false);
-                bottomTextareaRef.current?.focus();
+                if (initialPrompt === undefined) {
+                  setPrompt('');
+                  textareaRef.current?.focus();
+                } else {
+                  setEditing(false);
+                  bottomTextareaRef.current?.focus();
+                }
               }
-            }
-          }}
-          autoComplete="off"
-          placeholder="Ask a question..."
-          autoHeight={edit}
-          maxHeight={edit ? '120px' : 'unset'}
-        />
+            }}
+            autoComplete="off"
+            placeholder="Ask a question..."
+            autoHeight={true}
+            maxHeight="120px"
+          />
+        ) : (
+          <div className="pointer-events-none p-2 text-sm">{prompt}</div>
+        )}
 
-        {edit && (
+        {editing && (
           <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
             <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
