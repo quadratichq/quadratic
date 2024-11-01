@@ -9,7 +9,7 @@ import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { cn } from '@/shared/shadcn/utils';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
@@ -30,11 +30,11 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
     });
   }, []);
 
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const shouldAutoScroll = useRef(true);
   const handleScrollEnd = useCallback((e: Event) => {
     const div = e.target as HTMLDivElement;
     const isScrolledToBottom = div.scrollHeight - div.scrollTop === div.clientHeight;
-    setShouldAutoScroll(isScrolledToBottom);
+    shouldAutoScroll.current = isScrolledToBottom;
   }, []);
 
   useEffect(() => {
@@ -46,22 +46,28 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
 
   const scrollToBottom = useCallback(
     (force = false) => {
-      if (force || shouldAutoScroll) {
+      if (force || shouldAutoScroll.current) {
         div?.scrollTo({
           top: div.scrollHeight,
           behavior: 'smooth',
         });
       }
     },
-    [div, shouldAutoScroll]
+    [div]
   );
 
   useEffect(() => {
-    if (messagesCount === 0 || loading) {
-      setShouldAutoScroll(true);
+    if (loading) {
+      shouldAutoScroll.current = true;
       scrollToBottom(true);
     }
-  }, [messagesCount, loading, scrollToBottom]);
+  }, [loading, scrollToBottom]);
+
+  useEffect(() => {
+    if (messagesCount === 0) {
+      shouldAutoScroll.current = true;
+    }
+  }, [messagesCount]);
 
   useEffect(() => {
     scrollToBottom();

@@ -59,9 +59,9 @@ export const AIAnalystChatHistory = () => {
                           onChange={(e) => setEditingChatName(e.target.value)}
                           onKeyDown={(e) => {
                             e.stopPropagation();
-                            if (e.code === 'Enter') {
+                            if (e.key === 'Enter') {
                               e.currentTarget.blur();
-                            } else if (e.code === 'Escape') {
+                            } else if (e.key === 'Escape') {
                               setEditingChatId(null);
                             }
                           }}
