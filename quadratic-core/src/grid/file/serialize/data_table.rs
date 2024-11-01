@@ -155,16 +155,16 @@ pub(crate) fn import_formats(
 }
 
 fn import_data_table_formats(formats: current::TableFormatsSchema) -> TableFormats {
-    let table = formats.table.map(|format| import_format(format));
-    let columns = formats
+    let table = formats.table.map(import_format);
+    let columns: HashMap<usize, Format> = formats
         .columns
         .into_iter()
-        .map(|format| import_format(format))
+        .map(|(key, format)| (key as usize, import_format(format)))
         .collect();
-    let cells = formats
+    let cells: HashMap<usize, ColumnData<SameValue<Format>>> = formats
         .cells
         .into_iter()
-        .map(|formats| import_formats(formats))
+        .map(|(key, formats)| (key as usize, import_formats(formats)))
         .collect();
     TableFormats {
         table,
@@ -388,9 +388,13 @@ pub(crate) fn export_data_table_formats(formats: TableFormats) -> current::Table
         columns: formats
             .columns
             .into_iter()
-            .filter_map(export_format)
+            .filter_map(|(key, format)| export_format(format).map(|f| (key as i64, f)))
             .collect(),
-        cells: formats.cells.into_iter().map(export_formats).collect(),
+        cells: formats
+            .cells
+            .into_iter()
+            .map(|(key, formats)| (key as i64, export_formats(formats)))
+            .collect(),
     }
 }
 
@@ -491,8 +495,8 @@ mod tests {
     fn test_empty_table_formats_serialized() {
         let formats = TableFormats {
             table: None,
-            columns: vec![],
-            cells: vec![],
+            columns: HashMap::new(),
+            cells: HashMap::new(),
         };
         let serialized = export_data_table_formats(formats.clone());
         let import = import_data_table_formats(serialized);

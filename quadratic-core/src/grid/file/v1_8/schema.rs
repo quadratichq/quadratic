@@ -122,8 +122,8 @@ pub struct DataTableSortOrderSchema {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableFormatsSchema {
     pub table: Option<FormatSchema>,
-    pub columns: Vec<FormatSchema>,
-    pub cells: Vec<HashMap<i64, ColumnRepeatSchema<FormatSchema>>>,
+    pub columns: HashMap<i64, FormatSchema>,
+    pub cells: HashMap<i64, HashMap<i64, ColumnRepeatSchema<FormatSchema>>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
