@@ -5,7 +5,11 @@
 
 use std::collections::HashMap;
 
-use crate::grid::{block::SameValue, formats::format::Format, ColumnData};
+use crate::grid::{
+    block::SameValue,
+    formats::{format::Format, format_update::FormatUpdate},
+    ColumnData,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -28,7 +32,7 @@ impl TableFormats {
             .get(&column_index)
             .and_then(|value| value.get(unsorted_row_index));
         let column = self.columns.get(&column_index);
-        let format = Format::combine(cell.as_ref(), column, None, self.table.as_ref());
+        let format = Format::combine(vec![self.table.as_ref(), column, cell.as_ref()]);
         if format.is_default() {
             None
         } else {
@@ -36,45 +40,61 @@ impl TableFormats {
         }
     }
 
-    // /// Sets the format for the given column and row in a table.
-    // pub fn set_format_cell(
-    //     &mut self,
-    //     column_index: usize,
-    //     unsorted_row_index: i64,
-    //     format: FormatUpdate,
-    // ) -> Option<FormatUpdate> {
-    //     let column = self
-    //         .cells
-    //         .entry(column_index)
-    //         .or_insert_with(ColumnData::default);
+    /// Sets the format for the given column and row in a table. Returns the
+    /// undo for the change.
+    pub fn set_format_cell(
+        &mut self,
+        column_index: usize,
+        unsorted_row_index: i64,
+        format: FormatUpdate,
+    ) -> Option<FormatUpdate> {
+        let column = self
+            .cells
+            .entry(column_index)
+            .or_insert_with(ColumnData::default);
 
-    //     if let Some(cell) = column.get(unsorted_row_index) {
-    //         let replace = cell.merge_update_into(&format);
-    //         column.set(unsorted_row_index, Some(replace.to_replace()));
-    //         Some(replace)
-    //     } else {
-    //         None
-    //     }
-    //     //     .get(unsorted_row_index)
-    //     //     .unwrap_or_default()
-    //     //     .merge_update_into(&format);
-    //     // self.cells
-    //     //     .entry(column_index)
-    //     //     .or_insert_with(ColumnData::default)
-    //     //     .set(unsorted_row_index, Some(new_format.to_replace()))
-    //     //     .map(|f| FormatUpdate::from(f))
-    // }
+        if let Some(mut cell) = column.get(unsorted_row_index) {
+            let replace = cell.merge_update_into(&format);
+            column.set(unsorted_row_index, Some(cell));
+            Some(replace)
+        } else {
+            None
+        }
+    }
 
-    // /// Sets the format for the given column.
-    // pub fn set_format_column(
-    //     &mut self,
-    //     column_index: usize,
-    //     format: Option<FormatUpdate>,
-    // ) -> Option<FormatUpdate> {
-    //     self.columns
-    //         .insert(column_index, format)
-    //         .map(|f| FormatUpdate::from(f))
-    // }
+    /// Sets the format for the given column. Returns the undo for the change.
+    pub fn set_format_column(
+        &mut self,
+        column_index: usize,
+        format: FormatUpdate,
+    ) -> Option<FormatUpdate> {
+        let column = self
+            .columns
+            .entry(column_index)
+            .or_insert_with(Format::default);
+        let undo = column.merge_update_into(&format);
+        if undo.is_default() {
+            None
+        } else {
+            Some(undo)
+        }
+    }
+
+    /// Sets the table format. Returns the undo for the change.
+    pub fn set_format_table(&mut self, format: FormatUpdate) -> Option<FormatUpdate> {
+        let mut table = self.table.clone().unwrap_or_default();
+        let replace = table.merge_update_into(&format);
+        if table.is_default() {
+            self.table = None;
+        } else {
+            self.table = Some(table);
+        }
+        if !replace.is_default() {
+            Some(replace)
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -88,5 +108,15 @@ mod tests {
     fn test_format() {
         let table_formats = TableFormats::default();
         assert_eq!(table_formats.format(0, 0), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_set_format_cell() {
+        let mut table_formats = TableFormats::default();
+        assert_eq!(
+            table_formats.set_format_cell(0, 0, FormatUpdate::default()),
+            None
+        );
     }
 }

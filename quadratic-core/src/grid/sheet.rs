@@ -322,12 +322,12 @@ impl Sheet {
                 _ => None,
             });
         let format = if include_sheet_info {
-            Format::combine(
-                cell.as_ref(),
-                self.try_format_column(pos.x).as_ref(),
-                self.try_format_row(pos.y).as_ref(),
+            Format::combine(vec![
                 self.format_all.as_ref(),
-            )
+                self.try_format_row(pos.y).as_ref(),
+                self.try_format_column(pos.x).as_ref(),
+                cell.as_ref(),
+            ])
         } else {
             cell.unwrap_or_default()
         };

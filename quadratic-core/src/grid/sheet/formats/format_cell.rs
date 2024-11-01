@@ -17,7 +17,7 @@ impl Sheet {
             let column = self.try_format_column(x);
             let row = self.try_format_row(y);
             let sheet = self.format_all.as_ref();
-            let format = Format::combine(None, column.as_ref(), row.as_ref(), sheet);
+            let format = Format::combine(vec![sheet, row.as_ref(), column.as_ref()]);
             if format.numeric_decimals.is_some() {
                 format.numeric_decimals
             } else {
@@ -48,7 +48,7 @@ impl Sheet {
             let column = self.try_format_column(x);
             let row = self.try_format_row(y);
             let sheet = self.format_all.as_ref();
-            Format::combine(format.as_ref(), column.as_ref(), row.as_ref(), sheet)
+            Format::combine(vec![sheet, row.as_ref(), column.as_ref(), format.as_ref()])
         } else {
             format.unwrap_or_default()
         }
@@ -286,7 +286,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn decimal_places() {
+    fn test_decimal_places() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.decimal_places(0, 0), None);
 

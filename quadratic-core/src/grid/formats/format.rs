@@ -184,27 +184,16 @@ impl Format {
         }
     }
 
-    /// Combines formatting from a cell, column, or, and sheet (in that order)
-    pub fn combine(
-        cell: Option<&Format>,
-        column: Option<&Format>,
-        row: Option<&Format>,
-        sheet: Option<&Format>,
-    ) -> Format {
-        let mut format = Format::default();
-        if let Some(sheet) = sheet {
-            format.merge_update_into(&sheet.into());
+    /// Combines formatting from least significant to most significant (ie,
+    /// sheet, row, column, cell, table, table-column, table-cell)
+    pub fn combine(formats: Vec<Option<&Format>>) -> Format {
+        let mut combined_format = Format::default();
+        for format in formats {
+            if let Some(format) = format {
+                combined_format.merge_update_into(&format.into());
+            }
         }
-        if let Some(row) = row {
-            format.merge_update_into(&row.into());
-        }
-        if let Some(column) = column {
-            format.merge_update_into(&column.into());
-        }
-        if let Some(cell) = cell {
-            format.merge_update_into(&cell.into());
-        }
-        format
+        combined_format
     }
 
     /// Turns a Format into a FormatUpdate, with None set to Some(None) to
@@ -525,13 +514,13 @@ mod test {
 
     #[test]
     #[parallel]
-    fn combine() {
+    fn test_combine() {
         let cell = Format {
             bold: Some(false),
             ..Default::default()
         };
         assert_eq!(
-            Format::combine(Some(&cell), None, None, None),
+            Format::combine(vec![Some(&cell)]),
             Format {
                 bold: Some(false),
                 ..Default::default()
@@ -552,28 +541,28 @@ mod test {
         };
         let cell = Format::default();
         assert_eq!(
-            Format::combine(Some(&cell), Some(&column), Some(&row), Some(&sheet)),
+            Format::combine(vec![Some(&sheet), Some(&row), Some(&column), Some(&cell)]),
             Format {
                 align: Some(CellAlign::Right),
                 ..Default::default()
             }
         );
         assert_eq!(
-            Format::combine(None, Some(&column), Some(&row), Some(&sheet)),
+            Format::combine(vec![Some(&sheet), Some(&row), Some(&column)]),
             Format {
                 align: Some(CellAlign::Right),
                 ..Default::default()
             }
         );
         assert_eq!(
-            Format::combine(None, None, None, Some(&sheet)),
+            Format::combine(vec![Some(&sheet)]),
             Format {
                 align: Some(CellAlign::Center),
                 ..Default::default()
             }
         );
 
-        assert_eq!(Format::combine(None, None, None, None), Format::default());
+        assert_eq!(Format::combine(vec![]), Format::default());
     }
 
     #[test]

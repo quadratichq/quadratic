@@ -84,12 +84,11 @@ impl Sheet {
 
         match column {
             None => {
-                let format = Format::combine(
-                    None,
-                    self.try_format_column(x).as_ref(),
-                    self.try_format_row(y).as_ref(),
+                let format = Format::combine(vec![
                     self.format_all.as_ref(),
-                );
+                    self.try_format_row(y).as_ref(),
+                    self.try_format_column(x).as_ref(),
+                ]);
                 let align = format.align.or(align);
                 let number: Option<JsNumber> = if matches!(value, CellValue::Number(_)) {
                     Some((&format).into())
@@ -127,12 +126,12 @@ impl Sheet {
             }
             Some(column) => {
                 let format_cell = column.format(y);
-                let mut format = Format::combine(
-                    format_cell.as_ref(),
-                    self.try_format_column(x).as_ref(),
-                    self.try_format_row(y).as_ref(),
+                let mut format = Format::combine(vec![
                     self.format_all.as_ref(),
-                );
+                    self.try_format_row(y).as_ref(),
+                    self.try_format_column(x).as_ref(),
+                    format_cell.as_ref(),
+                ]);
                 let mut number: Option<JsNumber> = None;
                 let value = match &value {
                     CellValue::Number(_) => {
