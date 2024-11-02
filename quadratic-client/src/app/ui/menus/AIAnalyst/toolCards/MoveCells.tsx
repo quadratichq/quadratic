@@ -12,9 +12,6 @@ type MoveCellsProps = {
   loading: boolean;
 };
 
-const className =
-  'mx-2 my-1 flex items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow';
-
 export const MoveCells = ({ args, loading }: MoveCellsProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<MoveCellsResponse, MoveCellsResponse>>();
 
