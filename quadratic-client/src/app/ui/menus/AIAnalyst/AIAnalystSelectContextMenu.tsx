@@ -1,4 +1,6 @@
 import { aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { AddIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -8,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Context } from 'quadratic-shared/typesAndSchemasAI';
+import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAnalystSelectContextMenuProps = {
@@ -24,6 +27,23 @@ export function AIAnalystSelectContextMenu({
   onClose,
 }: AIAnalystSelectContextMenuProps) {
   const loading = useRecoilValue(aiAnalystLoadingAtom);
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    const updateSheets = () => {
+      setSheetNames(sheets.getSheetListItems().map((sheet) => sheet.name));
+    };
+    updateSheets();
+
+    events.on('addSheet', updateSheets);
+    events.on('deleteSheet', updateSheets);
+    events.on('sheetInfoUpdate', updateSheets);
+    return () => {
+      events.off('addSheet', updateSheets);
+      events.off('deleteSheet', updateSheets);
+      events.off('sheetInfoUpdate', updateSheets);
+    };
+  }, []);
 
   return (
     <DropdownMenu>
@@ -41,9 +61,30 @@ export function AIAnalystSelectContextMenu({
           onClose();
         }}
       >
-        <DropdownMenuCheckboxItem key={'sheet'} onCheckedChange={() => window.alert('TODO(ayush): add sheets')}>
-          <span>TODO(ayush): add sheets</span>
-        </DropdownMenuCheckboxItem>
+        {sheetNames.map((sheetName) => (
+          <DropdownMenuCheckboxItem
+            key={sheetName}
+            checked={context.currentSheet === sheetName || context.sheets.includes(sheetName)}
+            onCheckedChange={() =>
+              setContext((prev) => {
+                const isCurrentSheet = sheets.sheet.name === sheetName;
+                const currentSheet = !isCurrentSheet ? prev.currentSheet : prev.currentSheet ? '' : sheetName;
+                const nextSheets = isCurrentSheet
+                  ? prev.sheets
+                  : prev.sheets.includes(sheetName)
+                  ? prev.sheets.filter((prevSheet) => prevSheet !== sheetName)
+                  : [...prev.sheets, sheetName];
+                return {
+                  ...prev,
+                  sheets: nextSheets,
+                  currentSheet,
+                };
+              })
+            }
+          >
+            <span>{sheetName}</span>
+          </DropdownMenuCheckboxItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

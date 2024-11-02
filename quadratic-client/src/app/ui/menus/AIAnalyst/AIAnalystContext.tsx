@@ -111,8 +111,8 @@ export const AIAnalystContext = ({
         <AIAnalystSelectContextMenu
           context={context}
           setContext={setContext}
-          onClose={() => textAreaRef.current?.focus()}
           disabled={disabled}
+          onClose={() => textAreaRef.current?.focus()}
         />
       )}
 
