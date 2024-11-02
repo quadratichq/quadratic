@@ -18,7 +18,13 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { AIMessage, AIMessagePrompt, ChatMessage, Context, UserMessage } from 'quadratic-shared/typesAndSchemasAI';
+import {
+  AIMessage,
+  AIMessagePrompt,
+  ChatMessage,
+  Context,
+  ToolResultMessage,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 const MAX_TOOL_CALL_ITERATIONS = 5;
@@ -116,7 +122,6 @@ export function useSubmitAIAnalystPrompt() {
           });
         }
 
-        const currentSheetName = sheets.sheet.name;
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => [
           ...prevMessages,
           {
@@ -125,8 +130,8 @@ export function useSubmitAIAnalystPrompt() {
             contextType: 'userPrompt' as const,
             context: {
               ...context,
-              // prepend current sheet name which is always included in context
-              sheets: [currentSheetName, ...context.sheets.filter((sheet) => sheet !== currentSheetName)],
+              sheets: context.currentSheet ? [context.currentSheet, ...context.sheets] : context.sheets,
+              currentSheet: '',
             },
           },
         ]);
@@ -152,7 +157,7 @@ export function useSubmitAIAnalystPrompt() {
             toolCallIterations++;
 
             // Message containing tool call results
-            const toolResultMessage: UserMessage = {
+            const toolResultMessage: ToolResultMessage = {
               role: 'user',
               content: [],
               contextType: 'toolResult',

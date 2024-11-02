@@ -20,7 +20,7 @@ export const useGetChatName = () => {
         const messages: AIPromptMessage[] = [
           {
             role: 'user',
-            content: `Use SetChatName tool to set the name for this chat based on the following chat messages between AI assistant and the user.\n
+            content: `Use set_chat_name tool to set the name for this chat based on the following chat messages between AI assistant and the user.\n
   Previous messages:\n
   \`\`\`json
   ${JSON.stringify(prevMessages)}

@@ -7,8 +7,9 @@ import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 
 export const defaultAIAnalystContext: Context = {
-  selection: undefined,
   sheets: [],
+  currentSheet: '',
+  selection: undefined,
 };
 
 export interface AIAnalystState {

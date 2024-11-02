@@ -21,10 +21,10 @@ export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
 const OpenAIModelSchema = z.enum(['gpt-4o-2024-08-06', 'o1-preview']).default('gpt-4o-2024-08-06');
 export type OpenAIModel = z.infer<typeof OpenAIModelSchema>;
 
-const AIModelSchema = BedrockModelSchema.or(AnthropicModelSchema).or(OpenAIModelSchema);
+const AIModelSchema = z.union([BedrockModelSchema, AnthropicModelSchema, OpenAIModelSchema]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
-const ContextTypeSchema = z.enum([
+const InternalContextTypeSchema = z.enum([
   'quadraticDocs',
   'currentFile',
   'currentSheet',
@@ -33,12 +33,19 @@ const ContextTypeSchema = z.enum([
   'toolUse',
   'selection',
   'codeCell',
-  'toolResult',
-  'userPrompt',
+]);
+const ToolResultContextTypeSchema = z.literal('toolResult');
+const UserPromptContextTypeSchema = z.literal('userPrompt');
+const ContextTypeSchema = z.union([
+  InternalContextTypeSchema,
+  ToolResultContextTypeSchema,
+  UserPromptContextTypeSchema,
 ]);
 export type ContextType = z.infer<typeof ContextTypeSchema>;
 
 const ContextSchema = z.object({
+  sheets: z.array(z.string()),
+  currentSheet: z.string(),
   selection: z
     .object({
       sheet_id: z.object({
@@ -48,14 +55,13 @@ const ContextSchema = z.object({
       max: z.object({ x: z.number(), y: z.number() }),
     })
     .optional(),
-  sheets: z.array(z.string()),
 });
 export type Context = z.infer<typeof ContextSchema>;
 
 const SystemMessageSchema = z.object({
   role: z.literal('user'),
   content: z.string(),
-  contextType: ContextTypeSchema.exclude(['toolResult', 'userPrompt']),
+  contextType: InternalContextTypeSchema,
 });
 export type SystemMessage = z.infer<typeof SystemMessageSchema>;
 
@@ -67,31 +73,32 @@ const ToolResultSchema = z.object({
       content: z.string(),
     })
   ),
-  contextType: z.literal('toolResult'),
+  contextType: ToolResultContextTypeSchema,
 });
+export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
 
 const UserMessagePromptSchema = z.object({
   role: z.literal('user'),
   content: z.string(),
-  contextType: z.literal('userPrompt'),
+  contextType: UserPromptContextTypeSchema,
   context: ContextSchema.optional(),
 });
 export type UserMessagePrompt = z.infer<typeof UserMessagePromptSchema>;
 
-const UserMessageSchema = SystemMessageSchema.or(ToolResultSchema).or(UserMessagePromptSchema);
+const UserMessageSchema = z.union([SystemMessageSchema, ToolResultSchema, UserMessagePromptSchema]);
 export type UserMessage = z.infer<typeof UserMessageSchema>;
 
 const AIMessageInternalSchema = z.object({
   role: z.literal('assistant'),
   content: z.string(),
-  contextType: ContextTypeSchema.exclude(['userPrompt']),
+  contextType: InternalContextTypeSchema,
 });
 export type AIMessageInternal = z.infer<typeof AIMessageInternalSchema>;
 
 const AIMessagePromptSchema = z.object({
   role: z.literal('assistant'),
   content: z.string(),
-  contextType: z.literal('userPrompt'),
+  contextType: UserPromptContextTypeSchema,
   toolCalls: z.array(
     z.object({
       id: z.string(),
@@ -103,10 +110,10 @@ const AIMessagePromptSchema = z.object({
 });
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 
-const AIMessageSchema = AIMessageInternalSchema.or(AIMessagePromptSchema);
+const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema]);
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
-const ChatMessageSchema = UserMessageSchema.or(AIMessageSchema);
+const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema]);
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatSchema = z.object({

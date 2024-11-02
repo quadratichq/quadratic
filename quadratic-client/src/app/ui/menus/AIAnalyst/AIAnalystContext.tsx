@@ -40,18 +40,14 @@ export const AIAnalystContext = ({
     const updateSelection = () => {
       const selection = sheets.getRustSelection();
       const rect = selection.rects?.[0];
-      if (!rect || (rect.min.x === rect.max.x && rect.min.y === rect.max.y)) {
-        setContext((prev) => ({
-          ...prev,
-          selection: undefined,
-        }));
-        return;
+      let sheetRect = undefined;
+      if (rect && (rect.min.x !== rect.max.x || rect.min.y !== rect.max.y)) {
+        sheetRect = {
+          sheet_id: selection.sheet_id,
+          min: { x: Number(rect.min.x), y: Number(rect.min.y) },
+          max: { x: Number(rect.max.x), y: Number(rect.max.y) },
+        };
       }
-      const sheetRect = {
-        sheet_id: selection.sheet_id,
-        min: { x: Number(rect.min.x), y: Number(rect.min.y) },
-        max: { x: Number(rect.max.x), y: Number(rect.max.y) },
-      };
       setContext((prev) => ({
         ...prev,
         selection: sheetRect,
@@ -67,6 +63,23 @@ export const AIAnalystContext = ({
     };
   }, [editing, setContext]);
 
+  useEffect(() => {
+    if (!editing) return;
+    const updateCurrentSheet = () => {
+      setContext((prev) => ({
+        ...prev,
+        sheets: prev.sheets.filter((sheet) => sheet !== sheets.sheet.name),
+        currentSheet: sheets.sheet.name,
+      }));
+    };
+    updateCurrentSheet();
+
+    events.on('changeSheet', updateCurrentSheet);
+    return () => {
+      events.off('changeSheet', updateCurrentSheet);
+    };
+  }, [editing, setContext]);
+
   // use last user message context as initial context in the bottom user message form
   useEffect(() => {
     if (initialContext === undefined && messagesCount > 0) {
@@ -76,7 +89,12 @@ export const AIAnalystContext = ({
         )
         .at(-1);
       if (lastUserMessage) {
-        setContext(lastUserMessage.context ?? defaultAIAnalystContext);
+        const prevContext = lastUserMessage.context ?? defaultAIAnalystContext;
+        setContext({
+          ...prevContext,
+          sheets: prevContext.sheets.filter((sheet) => sheet !== sheets.sheet.name),
+          currentSheet: sheets.sheet.name,
+        });
       }
     }
   }, [initialContext, messages, messagesCount, setContext]);
@@ -103,26 +121,36 @@ export const AIAnalystContext = ({
         primary={
           context.selection
             ? `(${context.selection.min.x}, ${context.selection.min.y}), (${context.selection.max.x}, ${context.selection.max.y}) `
-            : // TODO: (ayush) add code to get cursor position
-              '(0,0)'
+            : `(${sheets.sheet.cursor.cursorPosition.x}, ${sheets.sheet.cursor.cursorPosition.y})`
         }
         secondary="Cursor"
-        onClick={() => {}}
+        onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
         disabled={disabled}
       />
 
-      {editing && !context.sheets.includes(sheets.sheet.name) && (
+      {!!context.currentSheet && (
         <ContextPill
-          key={sheets.sheet.name}
-          primary={sheets.sheet.name}
+          key={context.currentSheet}
+          primary={context.currentSheet}
           secondary={'Sheet'}
-          onClick={() => {}}
+          onClick={() => setContext((prev) => ({ ...prev, currentSheet: '' }))}
           disabled={disabled}
         />
       )}
 
       {context.sheets.map((sheet) => (
-        <ContextPill key={sheet} primary={sheet} secondary={'Sheet'} disabled={disabled} onClick={() => {}} />
+        <ContextPill
+          key={sheet}
+          primary={sheet}
+          secondary={'Sheet'}
+          disabled={disabled}
+          onClick={() =>
+            setContext((prev) => ({
+              ...prev,
+              sheets: prev.sheets.filter((prevSheet) => prevSheet !== sheet),
+            }))
+          }
+        />
       ))}
     </div>
   );
@@ -136,22 +164,21 @@ function ContextPill({
 }: {
   primary: string;
   secondary: string;
-  onClick?: () => void;
+  onClick: () => void;
   disabled: boolean;
 }) {
   return (
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
       <span>{primary}</span>
+
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
-      {onClick && !disabled && (
+
+      {!disabled && (
         <Button
           size="icon-sm"
           className="-mr-0.5 ml-0 h-4 w-4 items-center shadow-none"
           variant="ghost"
-          onClick={() => {
-            // TODO: (ayush) add code to remove context
-            window.alert('TODO(ayush): add code to remove context');
-          }}
+          onClick={onClick}
         >
           <CloseIcon className="!h-4 !w-4 !text-xs" />
         </Button>
