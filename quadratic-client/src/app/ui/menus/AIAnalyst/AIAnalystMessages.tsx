@@ -4,7 +4,6 @@ import {
   aiAnalystLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
-import { colors } from '@/app/theme/colors';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
@@ -105,12 +104,10 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             id={`${index}-${message.role}-${message.contextType}`}
             className={cn(
               'flex flex-col gap-2',
-              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-2'
+              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-2',
+              // For debugging internal context
+              message.contextType === 'userPrompt' ? '' : 'bg-accent'
             )}
-            // For debugging internal context
-            style={{
-              backgroundColor: message.contextType === 'userPrompt' ? 'white' : colors.lightGray,
-            }}
           >
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
