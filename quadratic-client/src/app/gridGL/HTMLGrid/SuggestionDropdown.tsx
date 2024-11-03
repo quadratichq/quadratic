@@ -25,7 +25,6 @@ export const SuggestionDropDown = () => {
         inlineEditorMonaco.autocompleteShowingList = false;
         return;
       }
-      console.log('populateList');
 
       const pos = cursor.cursorPosition;
 

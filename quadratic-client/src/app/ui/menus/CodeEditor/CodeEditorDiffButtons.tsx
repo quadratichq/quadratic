@@ -1,5 +1,6 @@
 import {
   codeEditorCodeCellAtom,
+  codeEditorCodeStringAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
@@ -18,6 +19,7 @@ export const CodeEditorDiffButtons = () => {
         if (!diffEditorContent) return;
 
         if (diffEditorContent.isApplied) {
+          set(codeEditorCodeStringAtom, diffEditorContent.editorContent);
           set(codeEditorEditorContentAtom, diffEditorContent.editorContent);
 
           const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
@@ -43,6 +45,7 @@ export const CodeEditorDiffButtons = () => {
         if (!diffEditorContent) return;
 
         if (!diffEditorContent.isApplied) {
+          set(codeEditorCodeStringAtom, diffEditorContent.editorContent);
           set(codeEditorEditorContentAtom, diffEditorContent.editorContent);
 
           const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);

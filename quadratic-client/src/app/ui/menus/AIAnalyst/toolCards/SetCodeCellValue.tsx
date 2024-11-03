@@ -5,7 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { SaveAndRunIcon } from '@/shared/components/Icons';
+import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { OBJ, parse, STR } from 'partial-json';
@@ -34,14 +34,13 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     }
   }, [args, loading]);
 
-  const saveAndRun = useRecoilCallback(
+  const openDiffInEditor = useRecoilCallback(
     ({ set }) =>
-      async (toolArgs: SetCodeCellValueResponse) => {
-        const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, toolArgs.code_cell_x, toolArgs.code_cell_y);
-
+      (toolArgs: SetCodeCellValueResponse) => {
+        // const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, toolArgs.code_cell_x, toolArgs.code_cell_y);
         set(codeEditorAtom, (prev) => ({
           ...prev,
-          diffEditorContent: { editorContent: codeCell?.code_string ?? '', isApplied: true },
+          diffEditorContent: { editorContent: toolArgs.code_string, isApplied: false },
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,
@@ -50,19 +49,24 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
             },
             showCellTypeMenu: false,
             inlineEditor: false,
-            initialCode: toolArgs.code_string,
+            initialCode: '',
           },
         }));
-
-        quadraticCore.setCodeCellValue({
-          sheetId: sheets.current,
-          x: toolArgs.code_cell_x,
-          y: toolArgs.code_cell_y,
-          codeString: toolArgs.code_string,
-          language: toolArgs.code_cell_language,
-          cursor: sheets.getCursorPosition(),
-        });
       },
+    []
+  );
+
+  const saveAndRun = useRecoilCallback(
+    () => (toolArgs: SetCodeCellValueResponse) => {
+      quadraticCore.setCodeCellValue({
+        sheetId: sheets.current,
+        x: toolArgs.code_cell_x,
+        y: toolArgs.code_cell_y,
+        codeString: toolArgs.code_string,
+        language: toolArgs.code_cell_language,
+        cursor: sheets.getCursorPosition(),
+      });
+    },
     []
   );
 
@@ -104,11 +108,19 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
         ` at (${code_cell_x}, ${code_cell_y})`
       }
       actions={
-        <TooltipPopover label={'Apply'}>
-          <Button size="icon-sm" variant="ghost" onClick={() => saveAndRun(toolArgs.data)}>
-            <SaveAndRunIcon />
-          </Button>
-        </TooltipPopover>
+        <div className="flex gap-1">
+          <TooltipPopover label={'Open diff in editor'}>
+            <Button size="icon-sm" variant="ghost" onClick={() => openDiffInEditor(toolArgs.data)}>
+              <CodeIcon />
+            </Button>
+          </TooltipPopover>
+
+          <TooltipPopover label={'Apply'}>
+            <Button size="icon-sm" variant="ghost" onClick={() => saveAndRun(toolArgs.data)}>
+              <SaveAndRunIcon />
+            </Button>
+          </TooltipPopover>
+        </div>
       }
     />
   );
