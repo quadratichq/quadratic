@@ -1,8 +1,8 @@
 import { events } from '@/app/events/events';
+import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import { Container, Graphics } from 'pixi.js';
-import { CellsImage } from '../cells/cellsImages/CellsImage';
-import { pixiApp } from '../pixiApp/PixiApp';
 
 // These should be consistent with ResizeControl.tsx
 export const IMAGE_BORDER_WIDTH = 5;
@@ -27,6 +27,11 @@ export class UICellImages extends Container {
     this.borders = this.addChild(new Graphics());
     this.resizing = this.addChild(new Graphics());
     events.on('changeSheet', this.changeSheet);
+  }
+
+  destroy() {
+    events.off('changeSheet', this.changeSheet);
+    super.destroy();
   }
 
   private changeSheet = () => {
