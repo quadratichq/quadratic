@@ -8,10 +8,9 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import BottomBarItem from './BottomBarItem';
 
 const SHOW_SELECTION_SUMMARY_DELAY = 500;
+const DECIMAL_PLACES = 2;
 
 export const SelectionSummary = () => {
-  const decimal_places = 9;
-
   const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
   const [count, setCount] = useState<string | undefined>('');
   const [sum, setSum] = useState<string | undefined>('');
@@ -29,7 +28,7 @@ export const SelectionSummary = () => {
       return;
     }
 
-    let result = await quadraticCore.summarizeSelection(decimal_places, sheets.sheet.cursor.getRustSelection());
+    let result = await quadraticCore.summarizeSelection(DECIMAL_PLACES, cursor.getRustSelection());
     if (result) {
       setCount(result.count.toString());
       setSum(result.sum === null ? undefined : result.sum.toString());
@@ -64,12 +63,12 @@ export const SelectionSummary = () => {
     };
   }, [updateSelectionSummary]);
 
-  const handleOnClick = (valueToCopy: string) => {
+  const handleOnClick = useCallback((valueToCopy: string) => {
     navigator.clipboard.writeText(valueToCopy).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  };
+  }, []);
 
   const tooltipTitle = useMemo(() => (copied ? 'Copied!' : 'Copy to clipboard'), [copied]);
 
