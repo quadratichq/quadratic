@@ -108,10 +108,9 @@ class AIAnalystOfflineChats {
   };
 
   // Save or update a chat
-  saveChats = (chats: Chat[]): Promise<void> => {
+  saveChats = async (chats: Chat[]) => {
     const { userEmail, uuid } = this.validateState('saveChats');
-
-    return this.createTransaction('readwrite', (store) => {
+    await this.createTransaction('readwrite', (store) => {
       chats.forEach((chat) => {
         const chatEntry = {
           userEmail,
@@ -127,19 +126,28 @@ class AIAnalystOfflineChats {
   };
 
   // Delete a list of chats
-  deleteChats = (chatIds: string[]): Promise<void> => {
+  deleteChats = async (chatIds: string[]) => {
     const { userEmail, uuid } = this.validateState('deleteChats');
-
-    return this.createTransaction('readwrite', (store) => {
+    await this.createTransaction('readwrite', (store) => {
       chatIds.forEach((chatId) => {
         store.delete([userEmail, uuid, chatId]);
       });
     });
   };
 
+  // Delete all chats for a file
+  deleteFile = async (userEmail: string, uuid: string) => {
+    if (this.userEmail !== userEmail || this.uuid !== uuid) {
+      await this.init(userEmail, uuid);
+    }
+    const chats = await this.loadChats();
+    const chatIds = chats.map((chat) => chat.id);
+    await this.deleteChats(chatIds);
+  };
+
   // Used by tests to clear all entries from the indexedDb for this fileId
-  testClear = (): Promise<void> => {
-    return this.createTransaction('readwrite', (store) => {
+  testClear = async () => {
+    await this.createTransaction('readwrite', (store) => {
       store.clear();
     });
   };

@@ -1,16 +1,19 @@
 import { createNewFileAction, deleteFile, duplicateFileAction } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateAtom,
+  editorInteractionStateUserAtom,
+  editorInteractionStateUuidAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarSeparator, MenubarTrigger } from '@/shared/shadcn/ui/menubar';
 import { useSubmit } from 'react-router-dom';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 // TODO: (enhancement) move these into `fileActionsSpec` by making the `.run()`
 // function of each accessible from outside of react
@@ -20,9 +23,8 @@ export const FileMenubarMenu = () => {
   const submit = useSubmit();
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const { isAuthenticated } = useRootRouteLoaderData();
-  const {
-    file: { uuid: fileUuid },
-  } = useFileRouteLoaderData();
+  const uuid = useRecoilValue(editorInteractionStateUuidAtom);
+  const user = useRecoilValue(editorInteractionStateUserAtom);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const isAvailableArgs = useIsAvailableArgs();
 
@@ -38,7 +40,7 @@ export const FileMenubarMenu = () => {
           </MenubarItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => duplicateFileAction.run({ uuid: fileUuid, submit })}>
+          <MenubarItem onClick={() => duplicateFileAction.run({ uuid, submit })}>
             <FileCopyIcon />
             Duplicate
           </MenubarItem>
@@ -53,7 +55,7 @@ export const FileMenubarMenu = () => {
         <MenubarSeparator />
 
         {deleteFile.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => deleteFile.run({ uuid: fileUuid, addGlobalSnackbar })}>
+          <MenubarItem onClick={() => deleteFile.run({ uuid, userEmail: user?.email ?? '', addGlobalSnackbar })}>
             <DeleteIcon />
             Delete
           </MenubarItem>

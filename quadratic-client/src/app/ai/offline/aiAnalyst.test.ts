@@ -100,6 +100,34 @@ describe('aiAnalystOfflineChats', () => {
     expect(loadedChats[1].id).toBe('3');
   });
 
+  it('deletes file', async () => {
+    const testChats: Chat[] = [
+      {
+        id: '1',
+        name: 'Chat 1',
+        lastUpdated: Date.now(),
+        messages: [{ role: 'user', content: 'test1', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+      },
+      {
+        id: '2',
+        name: 'Chat 2',
+        lastUpdated: Date.now(),
+        messages: [{ role: 'user', content: 'test2', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+      },
+      {
+        id: '3',
+        name: 'Chat 3',
+        lastUpdated: Date.now(),
+        messages: [{ role: 'user', content: 'test3', contextType: 'userPrompt', context: defaultAIAnalystContext }],
+      },
+    ];
+    await aiAnalystOfflineChats.saveChats(testChats);
+    expect((await aiAnalystOfflineChats.loadChats()).length).toBe(3);
+
+    await aiAnalystOfflineChats.deleteFile('test@example.com', 'test-uuid');
+    expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
+  });
+
   it('filters chats by userEmail', async () => {
     // Save chats with current userEmail
     const testChats: Chat[] = [

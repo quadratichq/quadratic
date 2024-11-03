@@ -20,7 +20,7 @@ export const AIAnalystChatHistory = () => {
   const chatGroups = useMemo(() => groupChatsByTime(chats, searchValue), [chats, searchValue]);
 
   return (
-    <div className="flex flex-col gap-2 pt-0.5">
+    <div className="flex flex-col gap-2 overflow-y-auto px-2 pt-0.5">
       <Input
         autoFocus
         onChange={(e) => setSearchValue(e.target.value)}

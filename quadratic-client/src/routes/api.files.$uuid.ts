@@ -31,7 +31,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'delete') {
     try {
-      await apiClient.files.delete(uuid);
+      const { userEmail } = json;
+      await apiClient.files.delete(uuid, userEmail);
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -106,8 +107,9 @@ export const getActionFileDuplicate = ({ isPrivate, redirect }: { isPrivate: boo
   };
 };
 
-export const getActionFileDelete = () => {
+export const getActionFileDelete = ({ userEmail }: { userEmail: string }) => {
   return {
     action: 'delete' as const,
+    userEmail,
   };
 };

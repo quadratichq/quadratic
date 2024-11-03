@@ -1,13 +1,17 @@
 import { createNewFileAction, deleteFile, duplicateFileAction, isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import {
+  editorInteractionStateAtom,
+  editorInteractionStateUserAtom,
+  editorInteractionStateUuidAtom,
+} from '@/app/atoms/editorInteractionStateAtom';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
 import { useParams, useSubmit } from 'react-router-dom';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 // TODO: make the types better here so it knows whether this exists
 const renameFileActionSpec = defaultActionSpec[Action.FileRename];
@@ -69,9 +73,10 @@ const commands: CommandGroup = {
       label: deleteFile.label,
       isAvailable: deleteFile.isAvailable,
       Component: (props: any) => {
-        const { uuid } = useParams() as { uuid: string };
+        const uuid = useRecoilValue(editorInteractionStateUuidAtom);
+        const user = useRecoilValue(editorInteractionStateUserAtom);
         const { addGlobalSnackbar } = useGlobalSnackbar();
-        const action = () => deleteFile.run({ uuid, addGlobalSnackbar });
+        const action = () => deleteFile.run({ uuid, userEmail: user?.email ?? '', addGlobalSnackbar });
         return <CommandPaletteListItem {...props} action={action} icon={<DeleteIcon />} />;
       },
     },

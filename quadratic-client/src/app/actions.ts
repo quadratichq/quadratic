@@ -85,10 +85,18 @@ export const deleteFile = {
   label: 'Delete',
   isAvailable: ({ filePermissions }: IsAvailableArgs) => filePermissions.includes(FILE_DELETE),
   // TODO: (enhancement) handle this async operation in the UI similar to /files/create
-  async run({ uuid, addGlobalSnackbar }: { uuid: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
+  async run({
+    uuid,
+    userEmail,
+    addGlobalSnackbar,
+  }: {
+    uuid: string;
+    userEmail: string;
+    addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
+  }) {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {
-        await apiClient.files.delete(uuid);
+        await apiClient.files.delete(uuid, userEmail);
         window.location.href = '/';
       } catch (e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });

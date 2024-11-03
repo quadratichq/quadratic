@@ -57,23 +57,15 @@ export const AIAnalyst = () => {
             showChatHistory ? 'grid grid-rows-[auto_1fr]' : 'grid grid-rows-[auto_1fr_auto]'
           )}
         >
-          <div className="px-4 py-2">
-            <AIAnalystHeader textareaRef={textareaRef} />
-          </div>
+          <AIAnalystHeader textareaRef={textareaRef} />
 
           {showChatHistory ? (
-            <div className="overflow-y-auto px-2">
-              <AIAnalystChatHistory />
-            </div>
+            <AIAnalystChatHistory />
           ) : (
             <>
-              <div className="overflow-y-auto px-2 pb-3">
-                <AIAnalystMessages textareaRef={textareaRef} />
-              </div>
+              <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div className="p-2 pt-1">
-                <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
-              </div>
+              <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
             </>
           )}
         </div>

@@ -79,7 +79,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   return (
     <div
       ref={ref}
-      className="flex select-text flex-col gap-3 overflow-y-auto outline-none"
+      className="flex select-text flex-col gap-3 overflow-y-auto px-2 pb-3 outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
