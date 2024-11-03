@@ -27,6 +27,7 @@ export type AIModel = z.infer<typeof AIModelSchema>;
 const InternalContextTypeSchema = z.enum([
   'quadraticDocs',
   'currentFile',
+  'otherSheets',
   'currentSheet',
   'connections',
   'visibleData',

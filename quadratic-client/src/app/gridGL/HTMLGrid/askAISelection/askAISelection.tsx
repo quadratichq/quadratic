@@ -4,7 +4,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { SheetRect } from '@/app/quadratic-core-types';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { AIIcon } from '@/shared/components/Icons';
 import {
@@ -13,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -34,7 +34,7 @@ const ASK_AI_SELECTION_DELAY = 500;
 export function AskAISelection() {
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
   const [currentSheet, setCurrentSheet] = useState(sheets.current);
-  const [sheetRect, setSheetRect] = useState<SheetRect | undefined>();
+  const [selection, setSelection] = useState<Context['selection']>();
   const [displayPos, setDisplayPos] = useState<Coordinate | undefined>();
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | undefined>();
@@ -49,33 +49,34 @@ export function AskAISelection() {
       !(selection.rects[0].min.x === selection.rects[0].max.x && selection.rects[0].min.y === selection.rects[0].max.y)
     ) {
       const rect = selection.rects[0];
-      const sheetRect: SheetRect = {
+      const sheetRect: Context['selection'] = {
         sheet_id: selection.sheet_id,
-        ...rect,
+        min: { x: Number(rect.min.x), y: Number(rect.min.y) },
+        max: { x: Number(rect.max.x), y: Number(rect.max.y) },
       };
       const hasContent = pixiApp.cellsSheets.getById(selection.sheet_id.id)?.cellsLabels.hasCellInRect(rect);
       const column = Math.max(Number(rect.min.x), Number(rect.max.x));
       const row = Math.min(Number(rect.min.y), Number(rect.max.y));
       const rectangle = sheets.getById(selection.sheet_id.id)?.getCellOffsets(column, row);
       if (hasContent && rectangle && !inlineEditorState.visible) {
-        setSheetRect(sheetRect);
+        setSelection(sheetRect);
         setDisplayPos({
           x: rectangle.x + rectangle.width,
           y: rectangle.y,
         });
       } else {
-        setSheetRect(undefined);
+        setSelection(undefined);
         setDisplayPos(undefined);
       }
     } else {
-      setSheetRect(undefined);
+      setSelection(undefined);
       setDisplayPos(undefined);
     }
   }, [inlineEditorState.visible]);
 
   const updateSelection = useCallback(() => {
     clearTimeout(timeoutRef.current);
-    setSheetRect(undefined);
+    setSelection(undefined);
     setDisplayPos(undefined);
 
     timeoutRef.current = setTimeout(() => {
@@ -88,16 +89,21 @@ export function AskAISelection() {
       setLoading(true);
       submitPrompt({
         userPrompt: prompt,
+        context: {
+          sheets: [],
+          currentSheet: sheets.sheet.name,
+          selection,
+        },
         clearMessages: true,
       })
         .catch(console.error)
         .finally(() => {
           setLoading(false);
-          setSheetRect(undefined);
+          setSelection(undefined);
           setDisplayPos(undefined);
         });
     },
-    [submitPrompt]
+    [selection, submitPrompt]
   );
 
   useEffect(() => {
@@ -134,7 +140,7 @@ export function AskAISelection() {
     };
   }, [currentSheet, updateSelection]);
 
-  if (sheetRect?.sheet_id.id !== currentSheet || displayPos === undefined) return null;
+  if (selection?.sheet_id.id !== currentSheet || displayPos === undefined) return null;
 
   return (
     <div

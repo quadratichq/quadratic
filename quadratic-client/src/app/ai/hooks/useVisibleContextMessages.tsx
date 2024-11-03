@@ -8,14 +8,14 @@ export function useVisibleContextMessages() {
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
     const visibleSheetRect = sheets.getVisibleSheetRect();
     const visibleRectContext = visibleSheetRect
-      ? await quadraticCore.getAIContextRectsInSheetRect(visibleSheetRect)
+      ? await quadraticCore.getAIContextRectsInSheetRects([visibleSheetRect])
       : undefined;
-    const { cursorPosition } = sheets.sheet.cursor;
+
     return [
       {
         role: 'user',
         content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
-I have an open sheet with the following characteristics:
+I have an open sheet with the following data:
 ${
   sheetBounds.type === 'nonEmpty'
     ? `- Data range: from (${sheetBounds.min.x}, ${sheetBounds.min.y}) to (${sheetBounds.max.x}, ${sheetBounds.max.y})
@@ -24,11 +24,12 @@ ${
 }\n\n
 
 ${
-  visibleRectContext
+  visibleRectContext && visibleRectContext.length === 1
     ? `
 Visible data in the viewport:\n
 
 I am sharing visible data as an array of tabular data rectangles, each tabular data rectangle in this array has following properties:\n
+- sheet_name: This is the name of the sheet.\n
 - rect_origin: This is a JSON object having x and y properties. x is the column index and y is the row index of the top left cell of the rectangle.\n
 - rect_width: This is the width of the rectangle in number of columns.\n
 - rect_height: This is the height of the rectangle in number of rows.\n
@@ -47,14 +48,12 @@ Use this visible data in the context of following messages. Refer to cells if re
 
 Current visible data is:\n
 \`\`\`json
-${JSON.stringify(visibleRectContext)}
+${JSON.stringify(visibleRectContext[0])}
 \`\`\`
 Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference functions, like \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions, to reference cells in code.\n\n
 `
     : `This visible part of the sheet is empty.\n`
 }\n
-
-My cursor is on cell x:${cursorPosition.x} and y:${cursorPosition.y}.\n 
 `,
         contextType: 'visibleData',
       },

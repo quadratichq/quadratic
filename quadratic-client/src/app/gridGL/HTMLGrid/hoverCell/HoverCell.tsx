@@ -193,7 +193,7 @@ export function HoverCell() {
     <div
       ref={ref}
       className={cn(
-        'absolute z-50 box-border w-64 select-none rounded-md border bg-popover text-popover-foreground shadow-md outline-none',
+        'absolute z-50 box-border w-64 rounded-md border bg-popover text-popover-foreground shadow-md outline-none',
         cell || hovering ? 'opacity-100' : 'opacity-0',
         allowPointerEvents ? 'pointer-events-auto' : 'pointer-events-none'
       )}

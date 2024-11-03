@@ -601,11 +601,11 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreGetAIContextRectsInSheetRect':
+      case 'clientCoreGetAIContextRectsInSheetRects':
         this.send({
-          type: 'coreClientGetAIContextRectsInSheetRect',
+          type: 'coreClientGetAIContextRectsInSheetRects',
           id: e.data.id,
-          value: core.getAIContextRectsInSheetRect(e.data.sheetRect),
+          value: core.getAIContextRectsInSheetRects(e.data.sheetRects),
         });
         return;
 

@@ -97,10 +97,10 @@ This name should be from user's perspective, not the assistant's.\n
   [AITool.SetCellValues]: {
     internalTool: false,
     description: `
-Sets the values of the current spreadsheet cells to a 2d array of strings, requires the cell position (x, y) and the 2d array of strings.\n
-Use set_cell_values function to add data to the current spreadsheet. Don't use code cell for adding data. Always add data using this function.\n
+Sets the values of the currently open sheet cells to a 2d array of strings, requires the cell position (x, y) and the 2d array of strings.\n
+Use set_cell_values function to add data to the currently open sheet. Don't use code cell for adding data. Always add data using this function.\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
-(x,y) is the position of the top left corner of the 2d array of values on the current spreadsheet. Each sub array represents a row of values.\n
+(x,y) is the position of the top left corner of the 2d array of values on the currently open sheet. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its (x,y) position. Don't add values manually in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
 `,
@@ -110,12 +110,12 @@ To clear the values of a cell, set the value to an empty string.\n
         top_left_x: {
           type: 'number',
           description:
-            'The x position of the cell, which is the column index of the current spreadsheet. This is the column index of the top left corner of the added 2d array of values on the spreadsheet',
+            'The x position of the cell, which is the column index of the currently open sheet. This is the column index of the top left corner of the added 2d array of values on the currently open sheet',
         },
         top_left_y: {
           type: 'number',
           description:
-            'The y position of the cell, which is the row index of the current spreadsheet. This is the row index of the top left corner of the added 2d array of values on the spreadsheet',
+            'The y position of the cell, which is the row index of the currently open sheet. This is the row index of the top left corner of the added 2d array of values on the currently open sheet',
         },
         cell_values: {
           type: 'array',
@@ -142,8 +142,8 @@ To clear the values of a cell, set the value to an empty string.\n
       return 'Executed set cell values tool successfully';
     },
     prompt: `
-You should use the set_cell_values function to set the values of the current spreadsheet cells to a 2d array of strings.\n
-Use this function to add data to the current spreadsheet. Don't use code cell for adding data. Always add data using this function.\n
+You should use the set_cell_values function to set the values of the currently open sheet cells to a 2d array of strings.\n
+Use this function to add data to the currently open sheet. Don't use code cell for adding data. Always add data using this function.\n
 This function requires the cell position (x, y) and the 2d array of strings. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its (x,y) position. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
@@ -152,10 +152,10 @@ To clear the values of a cell, set the value to an empty string.\n
   [AITool.SetCodeCellValue]: {
     internalTool: false,
     description: `
-Sets the value of a code cell and run it in the current spreadsheet, requires the cell position (x, y), codeString and language\n
+Sets the value of a code cell and run it in the currently open sheet, requires the cell position (x, y), codeString and language\n
 You should use the set_code_cell_value function to set this code cell value. Use this function instead of responding with code.\n
-Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add static data to the current spreadsheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
-Always refer to the cell by its (x,y) position from the spreadsheet. Don't add values manually in code cells.\n
+Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add static data to the currently open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
+Always refer to the cell by its (x,y) position from the respective sheet. Don't add values manually in code cells.\n
 `,
     parameters: {
       type: 'object',
@@ -167,11 +167,11 @@ Always refer to the cell by its (x,y) position from the spreadsheet. Don't add v
         },
         code_cell_x: {
           type: 'number',
-          description: 'The x position of the cell, which is the column index of the current spreadsheet',
+          description: 'The x position of the cell, which is the column index of the currently open spreadsheet',
         },
         code_cell_y: {
           type: 'number',
-          description: 'The y position of the cell, which is the row index of the current spreadsheet',
+          description: 'The y position of the cell, which is the row index of the currently open spreadsheet',
         },
         code_string: {
           type: 'string',
@@ -180,12 +180,12 @@ Always refer to the cell by its (x,y) position from the spreadsheet. Don't add v
         output_width: {
           type: 'number',
           description:
-            'The width, i.e. number of columns, of the code output on running this Code in the current spreadsheet',
+            'The width, i.e. number of columns, of the code output on running this Code in the currently open spreadsheet',
         },
         output_height: {
           type: 'number',
           description:
-            'The height, i.e. number of rows, of the code output on running this Code in the current spreadsheet',
+            'The height, i.e. number of rows, of the code output on running this Code in the currently open spreadsheet',
         },
       },
       required: ['code_cell_language', 'code_cell_x', 'code_cell_y', 'code_string', 'output_width', 'output_height'],
@@ -210,28 +210,28 @@ Always refer to the cell by its (x,y) position from the spreadsheet. Don't add v
     },
     prompt: `
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
-Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add data to the current spreadsheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
-set_code_cell_value function requires language, codeString, the cell position (x, y) and the width and height of the code output on running this Code in the current spreadsheet.\n
-Always refer to the cell by its (x,y) position from the current spreadsheet. Don't add values manually in code cells.\n
+Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add data to the currently open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
+set_code_cell_value function requires language, codeString, the cell position (x, y) and the width and height of the code output on running this Code in the currently open sheet.\n
+Always refer to the cell by its (x,y) position from the respective sheet. Don't add values manually in code cells.\n
 The required location (x,y) for this code cell is one which satisfies the following conditions:\n
- - The code cell location (x,y) should be empty and should have enough space to the right and below to accommodate the code result. If there is a value in a single cell where the code result is suppose to go, it will result in spill error. Use current sheet context to identify empty space.\n
+ - The code cell location (x,y) should be empty and should have enough space to the right and below to accommodate the code result. If there is a value in a single cell where the code result is suppose to go, it will result in spill error. Use currently open sheet context to identify empty space.\n
  - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
  - If the referenced data is portrait in a table format, the code cell should be next to the top right corner of the table.\n
  - If the referenced data is landscape in a table format, the code cell should be below the bottom left corner of the table.\n
  - Always leave a blank row / column between the code cell and the data it references.\n
  - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
- - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the sheet.\n
- - Consider the overall layout and organization of the sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
+ - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the currently open sheet.\n
+ - Consider the overall layout and organization of the currently open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
  - A plot returned by the code cell occupies just one cell, the plot overlay is larger but the code cell is always just one cell.\n
  `,
   },
   [AITool.MoveCells]: {
     internalTool: false,
     description: `
-Moves a rectangular selection of cells from one location to another on the current spreadsheet, requires the source and target locations.\n
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current spreadsheet.\n
+Moves a rectangular selection of cells from one location to another on the currently open sheet, requires the source and target locations.\n
+You should use the move_cells function to move a rectangular selection of cells from one location to another on the currently open sheet.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
-Target location is the top left corner of the target location on the current spreadsheet.\n
+Target location is the top left corner of the target location on the currently open sheet.\n
 `,
     parameters: {
       type: 'object',
@@ -239,32 +239,32 @@ Target location is the top left corner of the target location on the current spr
         source_top_left_x: {
           type: 'number',
           description:
-            'The x position of the cell, which is the column index of the current spreadsheet. This is the column index of the top left corner of the rectangular selection of cells to move',
+            'The x position of the cell, which is the column index of the currently open sheet. This is the column index of the top left corner of the rectangular selection of cells to move',
         },
         source_top_left_y: {
           type: 'number',
           description:
-            'The y position of the cell, which is the row index of the current spreadsheet. This is the row index of the top left corner of the rectangular selection of cells to move',
+            'The y position of the cell, which is the row index of the currently open sheet. This is the row index of the top left corner of the rectangular selection of cells to move',
         },
         source_bottom_right_x: {
           type: 'number',
           description:
-            'The x position of the cell, which is the column index of the current spreadsheet. This is the column index of the bottom right corner of the rectangular selection of cells to move',
+            'The x position of the cell, which is the column index of the currently open sheet. This is the column index of the bottom right corner of the rectangular selection of cells to move',
         },
         source_bottom_right_y: {
           type: 'number',
           description:
-            'The y position of the cell, which is the row index of the current spreadsheet. This is the row index of the bottom right corner of the rectangular selection of cells to move',
+            'The y position of the cell, which is the row index of the currently open sheet. This is the row index of the bottom right corner of the rectangular selection of cells to move',
         },
         target_top_left_x: {
           type: 'number',
           description:
-            'The x position of the cell, which is the column index of the current spreadsheet. This is the column index of the top left corner of the target location on the spreadsheet',
+            'The x position of the cell, which is the column index of the currently open sheet. This is the column index of the top left corner of the target location on the currently open sheet',
         },
         target_top_left_y: {
           type: 'number',
           description:
-            'The y position of the cell, which is the row index of the current spreadsheet. This is the row index of the top left corner of the target location on the spreadsheet',
+            'The y position of the cell, which is the row index of the currently open sheet. This is the row index of the top left corner of the target location on the currently open sheet',
         },
       },
       required: [
@@ -304,16 +304,16 @@ Target location is the top left corner of the target location on the current spr
       return `Executed move cells tool successfully.`;
     },
     prompt: `
-You should use the move_cells function to move a rectangular selection of cells from one location to another on the current spreadsheet.\n
+You should use the move_cells function to move a rectangular selection of cells from one location to another on the currently open sheet.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
-Target location is the top left corner of the target location on the current spreadsheet.\n
+Target location is the top left corner of the target location on the currently open sheet.\n
 `,
   },
   [AITool.DeleteCells]: {
     internalTool: false,
     description: `
 Deletes the value(s) of a rectangular selection of cells, requires an array of rectangular selection of cells to delete.\n
-You should use the delete_cells function to delete the value(s) of a rectangular selection of cells on the current spreadsheet.\n
+You should use the delete_cells function to delete the value(s) of a rectangular selection of cells on the currently open sheet.\n
 delete_cells functions requires an array of rectangular selection of cells to delete. Each rectangular selection of cells is defined by its top left corner (x,y) and the width and height.\n
 `,
     parameters: {
@@ -327,12 +327,12 @@ delete_cells functions requires an array of rectangular selection of cells to de
               top_left_x: {
                 type: 'number',
                 description:
-                  'The x position of the cell, which is the column index of the current spreadsheet. This is the column index of the top left corner of the rectangular selection of cells to delete',
+                  'The x position of the cell, which is the column index of the currently open sheet. This is the column index of the top left corner of the rectangular selection of cells to delete',
               },
               top_left_y: {
                 type: 'number',
                 description:
-                  'The y position of the cell, which is the row index of the current spreadsheet. This is the row index of the top left corner of the rectangular selection of cells to delete',
+                  'The y position of the cell, which is the row index of the currently open sheet. This is the row index of the top left corner of the rectangular selection of cells to delete',
               },
               rect_width: {
                 type: 'number',
@@ -382,7 +382,7 @@ delete_cells functions requires an array of rectangular selection of cells to de
       return `Executed delete cells tool successfully.`;
     },
     prompt: `
-You should use the delete_cells function to delete the value(s) of a rectangular selection of cells on the current spreadsheet.\n
+You should use the delete_cells function to delete the value(s) of a rectangular selection of cells on the currently open sheet.\n
 delete_cells functions requires an array of rectangular selection of cells to delete. Each rectangular selection of cells is defined by its top left corner (x,y) and the width and height.\n
 `,
   },

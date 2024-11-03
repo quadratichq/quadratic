@@ -149,15 +149,21 @@ impl GridController {
     }
 
     /// gets values, types with position for all cells in selection
-    /// returns a stringified array of JsCellValuePosAIContext
-    #[wasm_bindgen(js_name = "getAIContextRectsInSheetRect")]
-    pub fn js_ai_context_rects_in_sheet_rect(&self, sheet_rect: String) -> Result<String, JsValue> {
-        let sheet_rect = SheetRect::from_str(&sheet_rect)?;
-        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-            let ai_context_rects = sheet.js_ai_context_rects_in_sheet_rect(sheet_rect.into());
-            Ok(serde_json::to_string(&ai_context_rects).unwrap_or_default())
-        } else {
-            Ok(String::new())
+    /// returns a stringified array of JsCellValuePosAIContext for all sheet_rects
+    #[wasm_bindgen(js_name = "getAIContextRectsInSheetRects")]
+    pub fn js_ai_context_rects_in_sheet_rects(
+        &self,
+        sheet_rects: String,
+    ) -> Result<String, JsValue> {
+        let sheet_rects: Vec<SheetRect> = serde_json::from_str::<Vec<SheetRect>>(&sheet_rects)
+            .map_err(|_| JsValue::from_str("Invalid sheet rects"))?;
+        let mut all_ai_context_rects = Vec::new();
+        for sheet_rect in sheet_rects {
+            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+                let ai_context_rects = sheet.js_ai_context_rects_in_sheet_rect(sheet_rect.into());
+                all_ai_context_rects.push(ai_context_rects);
+            }
         }
+        Ok(serde_json::to_string(&all_ai_context_rects).unwrap_or_default())
     }
 }

@@ -5,22 +5,25 @@ import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useCurrentSheetContextMessages() {
-  const getCurrentSheetContext = useCallback(async (): Promise<ChatMessage[]> => {
-    const sheetBounds = sheets.sheet.boundsWithoutFormatting;
-    const sheetRect: SheetRect | undefined =
-      sheetBounds.type === 'empty'
-        ? undefined
-        : {
-            sheet_id: { id: sheets.current },
-            min: sheetBounds.min,
-            max: sheetBounds.max,
-          };
-    const sheetRectContext = sheetRect ? await quadraticCore.getAIContextRectsInSheetRect(sheetRect) : undefined;
-    return [
-      {
-        role: 'user',
-        content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
-I have an open sheet with the following characteristics:
+  const getCurrentSheetContext = useCallback(
+    async ({ currentSheetName }: { currentSheetName: string }): Promise<ChatMessage[]> => {
+      const sheet = sheets.getSheetByName(currentSheetName);
+      if (!sheet) return [];
+      const sheetBounds = sheet.boundsWithoutFormatting;
+      const sheetRect: SheetRect | undefined =
+        sheetBounds.type === 'empty'
+          ? undefined
+          : {
+              sheet_id: { id: sheet.id },
+              min: sheetBounds.min,
+              max: sheetBounds.max,
+            };
+      const sheetRectContext = sheetRect ? await quadraticCore.getAIContextRectsInSheetRects([sheetRect]) : undefined;
+      return [
+        {
+          role: 'user',
+          content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
+I have an open sheet, with sheet name '${currentSheetName}', with the following data:
 ${
   sheetBounds.type === 'nonEmpty'
     ? `- Data range: from (${sheetBounds.min.x}, ${sheetBounds.min.y}) to (${sheetBounds.max.x}, ${sheetBounds.max.y})
@@ -34,6 +37,7 @@ ${
 Data in the currently open sheet:\n
 
 I am sharing current sheet data as an array of tabular data rectangles, each tabular data rectangle in this array has following properties:\n
+- sheet_name: This is the name of the sheet.\n
 - rect_origin: This is a JSON object having x and y properties. x is the column index and y is the row index of the top left cell of the rectangle.\n
 - rect_width: This is the width of the rectangle in number of columns.\n
 - rect_height: This is the height of the rectangle in number of rows.\n
@@ -59,15 +63,17 @@ Note: All this data is only for your reference to data on the sheet. This data c
     : `This currently open sheet is empty.\n`
 }\n
 `,
-        contextType: 'currentSheet',
-      },
-      {
-        role: 'assistant',
-        content: `I understand the current sheet data, I will reference it to answer following messages. How can I help you?`,
-        contextType: 'currentSheet',
-      },
-    ];
-  }, []);
+          contextType: 'currentSheet',
+        },
+        {
+          role: 'assistant',
+          content: `I understand the current sheet data, I will reference it to answer following messages. How can I help you?`,
+          contextType: 'currentSheet',
+        },
+      ];
+    },
+    []
+  );
 
   return { getCurrentSheetContext };
 }

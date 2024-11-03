@@ -20,6 +20,8 @@ ${Object.entries(aiToolsSpec)
   .filter(([_, { internalTool }]) => !internalTool)
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)
   .join('\n\n')}
+
+All tool actions take place in the currently open sheet only.\n
 `,
         contextType: 'toolUse',
       },

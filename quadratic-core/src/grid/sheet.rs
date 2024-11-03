@@ -277,6 +277,7 @@ impl Sheet {
         let tabular_data_rects = self.find_tabular_data_rects(rect);
         for rect in tabular_data_rects {
             let js_cell_value_pos_ai_context = JsCellValuePosAIContext {
+                sheet_name: self.name.clone(),
                 rect_origin: rect.min.into(),
                 rect_width: rect.width(),
                 rect_height: rect.height(),

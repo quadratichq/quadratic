@@ -67,6 +67,7 @@ pub struct JsCellValuePos {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsCellValuePosAIContext {
+    pub sheet_name: String,
     pub rect_origin: JsPos,
     pub rect_width: u32,
     pub rect_height: u32,

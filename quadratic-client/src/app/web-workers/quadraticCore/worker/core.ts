@@ -1155,9 +1155,11 @@ class Core {
     }
   }
 
-  getAIContextRectsInSheetRect(sheetRect: SheetRect): JsCellValuePosAIContext[] | undefined {
+  getAIContextRectsInSheetRects(sheetRects: SheetRect[]): JsCellValuePosAIContext[][] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const aiContextRects = this.gridController.getAIContextRectsInSheetRect(JSON.stringify(sheetRect, bigIntReplacer));
+    const aiContextRects = this.gridController.getAIContextRectsInSheetRects(
+      JSON.stringify(sheetRects, bigIntReplacer)
+    );
     if (aiContextRects) {
       return JSON.parse(aiContextRects);
     }

@@ -1051,16 +1051,16 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
-export interface ClientCoreGetAIContextRectsInSheetRect {
-  type: 'clientCoreGetAIContextRectsInSheetRect';
+export interface ClientCoreGetAIContextRectsInSheetRects {
+  type: 'clientCoreGetAIContextRectsInSheetRects';
   id: number;
-  sheetRect: SheetRect;
+  sheetRects: SheetRect[];
 }
 
-export interface CoreClientGetAIContextRectsInSheetRect {
-  type: 'coreClientGetAIContextRectsInSheetRect';
+export interface CoreClientGetAIContextRectsInSheetRects {
+  type: 'coreClientGetAIContextRectsInSheetRects';
   id: number;
-  value: JsCellValuePosAIContext[] | undefined;
+  value: JsCellValuePosAIContext[][] | undefined;
 }
 
 export interface ClientCoreNeighborText {
@@ -1189,7 +1189,7 @@ export type ClientCoreMessage =
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
   | ClientCoreGetCellValue
-  | ClientCoreGetAIContextRectsInSheetRect
+  | ClientCoreGetAIContextRectsInSheetRects
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
@@ -1257,7 +1257,7 @@ export type CoreClientMessage =
   | CoreClientNeighborText
   | CoreClientBordersSheet
   | CoreClientGetCellValue
-  | CoreClientGetAIContextRectsInSheetRect
+  | CoreClientGetAIContextRectsInSheetRects
   | CoreClientFindNextColumnForRect
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically
