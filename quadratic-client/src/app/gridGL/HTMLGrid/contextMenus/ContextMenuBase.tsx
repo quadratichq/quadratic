@@ -44,6 +44,7 @@ export const ContextMenuBase = ({
     };
   }, [onClose]);
 
+  const bounds = pixiApp.viewport.getVisibleBounds();
   const left = contextMenu.world?.x ?? 0;
   const top = contextMenu.world?.y ?? 0;
 
@@ -56,7 +57,6 @@ export const ContextMenuBase = ({
         if (!dropdownOpen) onClose();
       }}
     >
-      {/* Radix wants the trigger for positioning the content, so we hide it visibly */}
       <DropdownMenuTrigger
         ref={ref}
         style={{ left, top, transform: `scale(${1 / pixiApp.viewport.scale.x})`, display: open ? 'block' : 'none' }}
@@ -65,11 +65,15 @@ export const ContextMenuBase = ({
       <DropdownMenuContent
         ref={refContent}
         animate={false}
-        side="bottom"
-        sideOffset={0}
-        align="start"
+        side={left < bounds.x + bounds.width / 2 ? 'right' : 'left'}
+        sideOffset={4}
+        align={top < bounds.y + bounds.height / 2 ? 'start' : 'end'}
         alignOffset={0}
         onCloseAutoFocus={(e) => e.preventDefault()}
+        collisionBoundary={document.querySelector('.grid-container')}
+        collisionPadding={8}
+        hideWhenDetached={false}
+        avoidCollisions={true}
       >
         {children({ contextMenu })}
       </DropdownMenuContent>
