@@ -18,8 +18,8 @@ import {
   CommandItem,
   CommandList,
 } from '@/shared/shadcn/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { Popover, PopoverContent } from '@/shared/shadcn/ui/popover';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import mixpanel from 'mixpanel-browser';
 import * as monaco from 'monaco-editor';
 import { ReactNode, useEffect, useMemo } from 'react';
@@ -46,21 +46,16 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
   );
   return (
     <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="text-muted-foreground"
-              onClick={() => setShowSnippetsPopover(true)}
-            >
-              <SnippetsIcon />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">Snippets</TooltipContent>
-      </Tooltip>
+      <TooltipPopover label={`Snippets`} side="bottom">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="text-muted-foreground"
+          onClick={() => setShowSnippetsPopover(true)}
+        >
+          <SnippetsIcon />
+        </Button>
+      </TooltipPopover>
 
       <PopoverContent className="w-[250px] p-0">
         <Command

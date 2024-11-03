@@ -4,10 +4,10 @@ import {
   codeEditorEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { ThumbDownOutlined, ThumbUpOutlined } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
 import { useRecoilCallback } from 'recoil';
 
 export const CodeEditorDiffButtons = () => {
@@ -63,21 +63,17 @@ export const CodeEditorDiffButtons = () => {
 
   return (
     <div className="code-editor-diff-button flex items-center">
-      <TooltipHint title={'Reject'} placement="bottom">
-        <span>
-          <IconButton size="small" color="error" onClick={handleDiffReject}>
-            <ThumbDownOutlined fontSize="small" />
-          </IconButton>
-        </span>
-      </TooltipHint>
+      <TooltipPopover label={'Reject'} side="bottom">
+        <Button onClick={handleDiffReject} size="icon-sm" variant="ghost">
+          <ThumbDownOutlined fontSize="small" color="error" />
+        </Button>
+      </TooltipPopover>
 
-      <TooltipHint title={'Accept'} placement="bottom">
-        <span>
-          <IconButton size="small" color="success" onClick={handleDiffAccept}>
-            <ThumbUpOutlined fontSize="small" />
-          </IconButton>
-        </span>
-      </TooltipHint>
+      <TooltipPopover label={'Accept'} side="bottom">
+        <Button onClick={handleDiffAccept} size="icon-sm" variant="ghost">
+          <ThumbUpOutlined fontSize="small" color="success" />
+        </Button>
+      </TooltipPopover>
     </div>
   );
 };

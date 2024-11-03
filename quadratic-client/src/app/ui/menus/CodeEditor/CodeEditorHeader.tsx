@@ -10,7 +10,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
@@ -24,7 +23,7 @@ import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multipla
 import { CloseIcon, SaveAndRunIcon, SaveAndRunStopIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
@@ -169,11 +168,11 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
             `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
         )}
       >
-        <TooltipHint title={`${codeCell?.label}${unsavedChanges ? ' · Unsaved changes' : ''}`} placement="bottom">
+        <TooltipPopover label={`${codeCell?.label}${unsavedChanges ? ' · Unsaved changes' : ''}`} side="bottom">
           <div className="flex items-center">
             <LanguageIcon language={codeCell?.id} fontSize="small" />
           </div>
-        </TooltipHint>
+        </TooltipPopover>
       </div>
 
       <div className="mx-2 flex flex-col truncate">
@@ -191,12 +190,9 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="ml-auto flex flex-shrink-0 items-center gap-1 py-1">
         {isRunningComputation && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{`${language} executing…`}</TooltipContent>
-          </Tooltip>
+          <TooltipPopover label={`${language} executing…`} side="bottom">
+            <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
+          </TooltipPopover>
         )}
 
         {hasPermission && (
@@ -210,55 +206,43 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
                 {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
 
                 {!isRunningComputation ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        id="QuadraticCodeEditorRunButtonID"
-                        onClick={saveAndRunCell}
-                        size="icon-sm"
-                        className="mx-1 rounded-full"
-                      >
-                        <SaveAndRunIcon />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      Save & run{' '}
-                      <span className="opacity-50">({`${KeyboardSymbols.Command}${KeyboardSymbols.Enter}`})</span>
-                    </TooltipContent>
-                  </Tooltip>
+                  <TooltipPopover
+                    label={`Save & run`}
+                    shortcut={`${KeyboardSymbols.Command}${KeyboardSymbols.Enter}`}
+                    side="bottom"
+                  >
+                    <Button
+                      id="QuadraticCodeEditorRunButtonID"
+                      onClick={saveAndRunCell}
+                      size="icon-sm"
+                      className="mx-1 rounded-full"
+                    >
+                      <SaveAndRunIcon />
+                    </Button>
+                  </TooltipPopover>
                 ) : (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button onClick={cancelRun} size="icon-sm" className="mx-1 rounded-full">
-                        <SaveAndRunStopIcon />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      Cancel execution <span className="opacity-50">({`${KeyboardSymbols.Command} Esc`})</span>
-                    </TooltipContent>
-                  </Tooltip>
+                  <TooltipPopover label={`Cancel execution`} shortcut={`${KeyboardSymbols.Command} Esc`} side="bottom">
+                    <Button onClick={cancelRun} size="icon-sm" className="mx-1 rounded-full">
+                      <SaveAndRunStopIcon />
+                    </Button>
+                  </TooltipPopover>
                 )}
               </>
             )}
           </>
         )}
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              id="QuadraticCodeEditorCloseButtonID"
-              onClick={() => closeEditor(false)}
-              size="icon-sm"
-              className="text-muted-foreground"
-            >
-              <CloseIcon />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            Close <span className="opacity-50">(ESC)</span>
-          </TooltipContent>
-        </Tooltip>
+        <TooltipPopover label={`Close`} shortcut={`Esc`} side="bottom">
+          <Button
+            variant="ghost"
+            id="QuadraticCodeEditorCloseButtonID"
+            onClick={() => closeEditor(false)}
+            size="icon-sm"
+            className="text-muted-foreground"
+          >
+            <CloseIcon />
+          </Button>
+        </TooltipPopover>
       </div>
     </div>
   );

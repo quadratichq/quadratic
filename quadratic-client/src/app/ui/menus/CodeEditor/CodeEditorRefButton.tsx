@@ -4,7 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { InsertCellRefIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -38,29 +38,25 @@ export const CodeEditorRefButton = () => {
   }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId]);
 
   const tooltip = useMemo(
-    () => (!disabled ? <>Insert cell reference</> : <>Select cell(s) on the grid to insert a reference.</>),
+    () => (!disabled ? 'Insert cell reference' : 'Select cell(s) on the grid to insert a reference.'),
     [disabled]
   );
 
   return (
     <div className="code-editor-ref-button flex items-center">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-muted-foreground"
-            onClick={() => {
-              if (disabled) return;
-              insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language, true);
-            }}
-          >
-            <InsertCellRefIcon />
-          </Button>
-        </TooltipTrigger>
-
-        <TooltipContent side="bottom">{tooltip}</TooltipContent>
-      </Tooltip>
+      <TooltipPopover label={tooltip} side="bottom">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="text-muted-foreground"
+          onClick={() => {
+            if (disabled) return;
+            insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language, true);
+          }}
+        >
+          <InsertCellRefIcon />
+        </Button>
+      </TooltipPopover>
     </div>
   );
 };

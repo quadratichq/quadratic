@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';
 // import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
 import { events } from '@/app/events/events';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import BottomBarItem from './BottomBarItem';
 
 export const SelectionSummary = () => {
@@ -21,7 +21,13 @@ export const SelectionSummary = () => {
   // Run async calculations to get the count/avg/sum meta info
   useEffect(() => {
     const runCalculationOnActiveSelection = async () => {
-      if (!cursor.multiCursor && !cursor.columnRow) return;
+      if (!cursor.multiCursor && !cursor.columnRow) {
+        setCount(undefined);
+        setSum(undefined);
+        setAvg(undefined);
+        return;
+      }
+
       let result = await quadraticCore.summarizeSelection(decimal_places, sheets.sheet.cursor.getRustSelection());
       if (result) {
         setCount(result.count.toString());
@@ -53,19 +59,21 @@ export const SelectionSummary = () => {
     return (
       <>
         {sum && (
-          <TooltipHint title={tooltipTitle}>
+          <TooltipPopover label={tooltipTitle}>
             <BottomBarItem onClick={() => handleOnClick(sum)}>Sum: {sum}</BottomBarItem>
-          </TooltipHint>
+          </TooltipPopover>
         )}
+
         {avg && (
-          <TooltipHint title={tooltipTitle}>
+          <TooltipPopover label={tooltipTitle}>
             <BottomBarItem onClick={() => handleOnClick(avg)}>Avg: {avg}</BottomBarItem>
-          </TooltipHint>
+          </TooltipPopover>
         )}
+
         {count && (
-          <TooltipHint title={tooltipTitle}>
+          <TooltipPopover label={tooltipTitle}>
             <BottomBarItem onClick={() => handleOnClick(count)}>Count: {count}</BottomBarItem>
-          </TooltipHint>
+          </TooltipPopover>
         )}
       </>
     );
