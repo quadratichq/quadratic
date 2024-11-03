@@ -28,7 +28,7 @@ export const ValidationsHeader = () => {
       <div className="relative font-medium leading-4">Data Validations{sheetName}</div>
 
       <TooltipPopover label={'Close'} shortcut="Esc" side="bottom">
-        <Button onClick={close} size="icon-sm" variant="ghost">
+        <Button onClick={close} size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
           <Close />
         </Button>
       </TooltipPopover>

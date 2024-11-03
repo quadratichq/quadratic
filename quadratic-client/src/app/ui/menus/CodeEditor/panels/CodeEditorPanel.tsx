@@ -54,7 +54,13 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
   return (
     <>
       {/* Panel position (left/bottom) control */}
-      <div className={cn('absolute z-10', panelPosition === 'bottom' ? 'right-1.5 top-1' : 'right-0.5 top-0.5')}>
+      <div
+        className={cn(
+          'absolute z-10',
+          panelPosition === 'bottom' ? 'right-1.5 top-1' : 'right-0.5 top-0.5',
+          'text-muted-foreground hover:text-foreground'
+        )}
+      >
         <TooltipPopover label={panelPosition === 'bottom' ? 'Move panel left' : 'Move panel bottom'} side="bottom">
           <Button onClick={changePanelPosition} size="icon-sm" variant="ghost">
             {panelPosition === 'left' ? <PanelPositionBottomIcon /> : <PanelPositionLeftIcon />}

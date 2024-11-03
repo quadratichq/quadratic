@@ -60,19 +60,55 @@ export const SelectionSummary = () => {
       <>
         {sum && (
           <TooltipPopover label={tooltipTitle}>
-            <BottomBarItem onClick={() => handleOnClick(sum)}>Sum: {sum}</BottomBarItem>
+            <BottomBarItem
+              onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleOnClick(sum);
+              }}
+              onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+            >
+              Sum: {sum}
+            </BottomBarItem>
           </TooltipPopover>
         )}
 
         {avg && (
           <TooltipPopover label={tooltipTitle}>
-            <BottomBarItem onClick={() => handleOnClick(avg)}>Avg: {avg}</BottomBarItem>
+            <BottomBarItem
+              onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleOnClick(avg);
+              }}
+              onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+            >
+              Avg: {avg}
+            </BottomBarItem>
           </TooltipPopover>
         )}
 
         {count && (
           <TooltipPopover label={tooltipTitle}>
-            <BottomBarItem onClick={() => handleOnClick(count)}>Count: {count}</BottomBarItem>
+            <BottomBarItem
+              onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleOnClick(count);
+              }}
+              onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+            >
+              Count: {count}
+            </BottomBarItem>
           </TooltipPopover>
         )}
       </>

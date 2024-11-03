@@ -26,7 +26,7 @@ export const ValidationHeader = (props: { validationData: ValidationData }) => {
     <div className="mb-2 flex items-center justify-between border-b border-b-gray-100 pb-2">
       <div className="flex items-center gap-1">
         <TooltipPopover label={'Back to Data Validations for the sheet'} side="bottom">
-          <Button onClick={back} size="icon-sm" variant="ghost">
+          <Button onClick={back} size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
             <ArrowBackIcon />
           </Button>
         </TooltipPopover>
@@ -43,7 +43,7 @@ export const ValidationHeader = (props: { validationData: ValidationData }) => {
       </div>
 
       <TooltipPopover label={'Close'} shortcut="Esc" side="bottom">
-        <Button onClick={close} size="icon-sm" variant="ghost">
+        <Button onClick={close} size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
           <Close />
         </Button>
       </TooltipPopover>

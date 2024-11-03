@@ -238,7 +238,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
             id="QuadraticCodeEditorCloseButtonID"
             onClick={() => closeEditor(false)}
             size="icon-sm"
-            className="text-muted-foreground"
+            className="text-muted-foreground hover:text-foreground"
           >
             <CloseIcon />
           </Button>
