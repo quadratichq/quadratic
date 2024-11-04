@@ -59,13 +59,15 @@ class Core {
   private clientQueue: Function[] = [];
   private renderQueue: Function[] = [];
 
-  private async loadGridFile(file: string): Promise<Uint8Array> {
+  private async loadGridFile(file: string, addToken: boolean): Promise<Uint8Array> {
     const jwt = await coreClient.getJwt();
-    const res = await fetch(file, {
-      headers: {
-        Authorization: `Bearer ${jwt}`,
-      },
-    });
+    let requestInit = {};
+
+    if (addToken) {
+      requestInit = { headers: { Authorization: `Bearer ${jwt}` } };
+    }
+
+    const res = await fetch(file, requestInit);
     return new Uint8Array(await res.arrayBuffer());
   }
 
@@ -88,9 +90,13 @@ class Core {
   };
 
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
-  async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
+  async loadFile(
+    message: ClientCoreLoad,
+    renderPort: MessagePort,
+    addToken: boolean
+  ): Promise<{ version: string } | { error: string }> {
     coreRender.init(renderPort);
-    const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
+    const results = await Promise.all([this.loadGridFile(message.url, addToken), initCore()]);
     try {
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {

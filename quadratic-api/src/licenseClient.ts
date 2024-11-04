@@ -7,7 +7,7 @@ import { LicenseSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from './dbClient';
 import { LICENSE_API_URI, LICENSE_KEY } from './env-vars';
-import { encryptFromEnv, hash } from './utils/crypto';
+import { hash } from './utils/crypto';
 
 type LicenseResponse = z.infer<typeof LicenseSchema>;
 
@@ -25,7 +25,7 @@ export const licenseClient = {
       return LicenseSchema.parse(response.data) as LicenseResponse;
     } catch (err) {
       if (err instanceof Error) {
-        console.error('Failed to get the license info from the license service', err.message);
+        console.error('Failed to get the license info from the license service:', err.message);
       }
 
       return null;
