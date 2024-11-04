@@ -6,12 +6,14 @@ import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { AIIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -19,13 +21,13 @@ import { useRecoilValue } from 'recoil';
 const SELECTION_PROMPTS: { label: string; prompt: string }[] = [
   { label: 'Create a chart', prompt: 'Create a chart from my selected data using Plotly in Python' },
   { label: 'Summarize data', prompt: 'Generate insights on my selected data using Python code' },
-  { label: 'Tell me about the data', prompt: 'What kind of data is this, do not use code' },
-  { label: 'Add a column', prompt: 'Add a column to my selected data, use Python' },
-  { label: 'Add a row', prompt: 'Add a row to my selected data, use Python' },
-  {
-    label: 'Perform EDA',
-    prompt: 'Use Python to perform EDA on my selected data, do not create any charts in the process',
-  },
+  { label: 'Tell me about this data', prompt: 'What kind of data is this, do not use code' },
+  // { label: 'Add a column', prompt: 'Add a column to my selected data, use Python' },
+  // { label: 'Add a row', prompt: 'Add a row to my selected data, use Python' },
+  // {
+  //   label: 'Perform EDA',
+  //   prompt: 'Use Python to perform EDA on my selected data, do not create any charts in the process',
+  // },
   { label: 'Clean data', prompt: 'Clean my selected data using Python' },
 ];
 
@@ -60,6 +62,7 @@ export function AskAISelection() {
       const rectangle = sheets.getById(selection.sheet_id.id)?.getCellOffsets(column, row);
       if (hasContent && rectangle && !inlineEditorState.visible) {
         setSelection(sheetRect);
+        console.log('rectangle', rectangle);
         setDisplayPos({
           x: rectangle.x + rectangle.width,
           y: rectangle.y,
@@ -144,9 +147,7 @@ export function AskAISelection() {
 
   return (
     <div
-      className={`ask-ai-selection-container pointer-events-auto z-10 cursor-pointer select-none rounded border border-accent bg-accent ${
-        loading ? 'animate-pulse' : ''
-      }`}
+      className={`pointer-events-auto z-10 cursor-pointer select-none ${loading ? 'animate-pulse' : ''}`}
       style={{
         position: 'absolute',
         left: `${displayPos.x}px`,
@@ -156,11 +157,13 @@ export function AskAISelection() {
       }}
     >
       <DropdownMenu>
-        <DropdownMenuTrigger asChild disabled={loading}>
-          <div className="flex items-center px-2 py-1">
-            <AIIcon />
-          </div>
-        </DropdownMenuTrigger>
+        <TooltipPopover label={'Chat with AI'}>
+          <DropdownMenuTrigger asChild disabled={loading}>
+            <Button variant="outline" size="icon" className="bg-background">
+              <AIIcon />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipPopover>
 
         <DropdownMenuContent
           align="start"
@@ -169,10 +172,6 @@ export function AskAISelection() {
             focusGrid();
           }}
         >
-          <div className="relative select-none items-center rounded-sm p-2 text-base font-bold">
-            Take action on you selected data
-          </div>
-
           {SELECTION_PROMPTS.map(({ label, prompt }) => (
             <DropdownMenuItem
               key={label}
