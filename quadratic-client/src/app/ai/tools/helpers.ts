@@ -78,8 +78,7 @@ export const getMessagesForModel = (
   // const systemMessages: string[] = [];
   // const promptMessages = messages;
 
-  const isBedrock = isBedrockModel(model);
-  if (isBedrock) {
+  if (isBedrockModel(model)) {
     const bedrockMessages: BedrockPromptMessage[] = promptMessages.map<BedrockPromptMessage>((message) => {
       if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
         const bedrockMessage: BedrockPromptMessage = {
@@ -136,8 +135,7 @@ export const getMessagesForModel = (
     return { messages: bedrockMessages, system: systemMessages.map((message) => ({ text: message })) };
   }
 
-  const isAnthropic = isAnthropicModel(model);
-  if (isAnthropic) {
+  if (isAnthropicModel(model)) {
     const anthropicMessages: AnthropicPromptMessage[] = promptMessages.reduce<AnthropicPromptMessage[]>(
       (acc, message) => {
         if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
@@ -200,8 +198,7 @@ export const getMessagesForModel = (
     return { messages: anthropicMessages, system: systemMessages.join('\n\n') };
   }
 
-  const isOpenAI = isOpenAIModel(model);
-  if (isOpenAI) {
+  if (isOpenAIModel(model)) {
     const messages: OpenAIPromptMessage[] = promptMessages.reduce<OpenAIPromptMessage[]>((acc, message) => {
       if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {
         const openaiMessages: OpenAIPromptMessage[] = [
@@ -261,8 +258,7 @@ export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
     return name === toolChoice;
   });
 
-  const isBedrock = isBedrockModel(model);
-  if (isBedrock) {
+  if (isBedrockModel(model)) {
     return tools.map(
       ([name, { description, parameters: input_schema }]): BedrockTool => ({
         toolSpec: {
@@ -276,8 +272,7 @@ export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
     );
   }
 
-  const isAnthropic = isAnthropicModel(model);
-  if (isAnthropic) {
+  if (isAnthropicModel(model)) {
     return tools.map(
       ([name, { description, parameters: input_schema }]): AnthropicTool => ({
         name,
@@ -287,8 +282,7 @@ export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
     );
   }
 
-  const isOpenAI = isOpenAIModel(model);
-  if (isOpenAI) {
+  if (isOpenAIModel(model)) {
     return tools.map(
       ([name, { description, parameters }]): OpenAITool => ({
         type: 'function' as const,
@@ -306,20 +300,17 @@ export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
 };
 
 export const getToolChoice = (model: AIModel, name?: AIToolName): AIToolChoice => {
-  const isBedrock = isBedrockModel(model);
-  if (isBedrock) {
+  if (isBedrockModel(model)) {
     const toolChoice: BedrockToolChoice = name === undefined ? { auto: {} } : { tool: { name } };
     return toolChoice;
   }
 
-  const isAnthropic = isAnthropicModel(model);
-  if (isAnthropic) {
+  if (isAnthropicModel(model)) {
     const toolChoice: AnthropicToolChoice = name === undefined ? { type: 'auto' } : { type: 'tool', name };
     return toolChoice;
   }
 
-  const isOpenAI = isOpenAIModel(model);
-  if (isOpenAI) {
+  if (isOpenAIModel(model)) {
     const toolChoice: OpenAIToolChoice = name === undefined ? 'auto' : { type: 'function', function: { name } };
     return toolChoice;
   }

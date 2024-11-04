@@ -32,7 +32,7 @@
   "author": "David Kircos",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.2",
-    "@aws-sdk/client-bedrock-runtime": "^3.679.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.682.0",
     "@aws-sdk/client-s3": "^3.427.0",
     "@aws-sdk/client-secrets-manager": "^3.441.0",
     "@aws-sdk/s3-request-presigner": "^3.427.0",

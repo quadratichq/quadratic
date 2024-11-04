@@ -40,7 +40,7 @@ export const MODEL_OPTIONS: {
     provider: 'anthropic',
   },
   'anthropic.claude-3-5-sonnet-20240620-v1:0': {
-    displayName: 'Anthropic: Claude 3.5 Sonnet',
+    displayName: 'Anthropic(Bedrock): Claude 3.5 Sonnet',
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
@@ -49,7 +49,7 @@ export const MODEL_OPTIONS: {
     provider: 'bedrock',
   },
   'anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    displayName: 'Anthropic: Claude 3.5 Sonnet (new)',
+    displayName: 'Anthropic(Bedrock): Claude 3.5 Sonnet (new)',
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
