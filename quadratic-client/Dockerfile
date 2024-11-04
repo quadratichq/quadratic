@@ -7,6 +7,8 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+RUN echo 'wasm-pack version:' && wasm-pack --version
+RUN echo 'wasm-opt version:' && wasm-opt --version
 
 # Install wasm32-unknown-unknown target
 # RUN rustup target add wasm32-unknown-unknown
