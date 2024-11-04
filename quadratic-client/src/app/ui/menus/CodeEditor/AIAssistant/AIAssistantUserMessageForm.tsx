@@ -116,7 +116,7 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssi
             maxHeight="120px"
           />
         ) : (
-          <div className="pointer-events-none p-2 text-sm">{prompt}</div>
+          <div className="pointer-events-none whitespace-pre-wrap p-2 text-sm">{prompt}</div>
         )}
 
         {editing && (
