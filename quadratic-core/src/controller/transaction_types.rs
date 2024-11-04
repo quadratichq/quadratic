@@ -16,38 +16,7 @@ pub struct JsCodeResult {
     pub chart_output: Option<(u32, u32)>,
 }
 
-impl JsCodeResult {
-    #[cfg(test)]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        transaction_id: String,
-        success: bool,
-        std_err: Option<String>,
-        std_out: Option<String>,
-        output_value: Option<Vec<String>>,
-        output_array: Option<Vec<Vec<Vec<String>>>>,
-        line_number: Option<u32>,
-        output_display_type: Option<String>,
-        cancel_compute: Option<bool>,
-        chart_output: Option<(u32, u32)>,
-    ) -> Self {
-        JsCodeResult {
-            transaction_id,
-            success,
-            std_err,
-            std_out,
-            output_value,
-            output_array,
-            line_number,
-            output_display_type,
-            cancel_compute,
-            chart_output,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Debug, Serialize, Deserialize, TS)]
 pub struct JsConnectionResult {
     pub transaction_id: String,
     pub data: Vec<u8>,

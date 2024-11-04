@@ -10,7 +10,7 @@ use std::collections::HashSet;
 use strum_macros::Display;
 use wasm_bindgen::{convert::IntoWasmAbi, JsValue};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeRun {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,

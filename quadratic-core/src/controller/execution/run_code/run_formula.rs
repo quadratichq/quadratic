@@ -51,7 +51,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashSet, str::FromStr};
+    use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
@@ -253,14 +253,9 @@ mod test {
             CodeCellLanguage::Javascript,
         );
         let code_run = CodeRun {
-            std_out: None,
-            std_err: None,
-            formatted_code_string: None,
-            cells_accessed: HashSet::new(),
             return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-            error: None,
+            output_type: Some("number".into()),
+            ..Default::default()
         };
         assert_eq!(
             result,
@@ -326,14 +321,10 @@ mod test {
             CodeCellLanguage::Javascript,
         );
         let code_run = CodeRun {
-            std_out: None,
-            std_err: None,
             formatted_code_string: None,
-            error: None,
             return_type: Some("array".into()),
-            line_number: None,
-            output_type: None,
-            cells_accessed: HashSet::new(),
+            output_type: Some("array".into()),
+            ..Default::default()
         };
         assert_eq!(
             result,
