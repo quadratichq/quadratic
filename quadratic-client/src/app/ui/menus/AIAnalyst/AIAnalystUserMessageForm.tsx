@@ -154,6 +154,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalys
                   <TooltipPopover label="Stop generating">
                     <Button
                       size="icon-sm"
+                      className="rounded-full"
                       onClick={(e) => {
                         e.stopPropagation();
                         abortPrompt();
