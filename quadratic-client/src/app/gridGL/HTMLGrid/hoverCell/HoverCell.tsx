@@ -1,4 +1,4 @@
-import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -8,18 +8,17 @@ import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlVal
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AIIcon, ArrowDoubleDown, ArrowDoubleRight, ArrowDown, ArrowRight, CodeIcon } from '@/shared/components/Icons';
+import { AIIcon, SpillErrorMoveIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import './HoverCell.css';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const HOVER_CELL_FADE_IN_OUT_DELAY = 500;
 
@@ -90,7 +89,7 @@ export function HoverCell() {
         setOnlyCode(false);
         if (validation) {
           setText(
-            <div className="relative">
+            <div className="relative p-3">
               <HtmlValidationMessage
                 column={errorValidationCell.x}
                 row={errorValidationCell.y}
@@ -119,22 +118,18 @@ export function HoverCell() {
           } else {
             setOnlyCode(true);
             setText(
-              <>
-                <div className="hover-cell-header">{language} Code</div>
-                <div className="code-body">{codeCell?.code_string}</div>
-              </>
+              <HoverCellDisplay title={`${language} Code`}>
+                <HoverCellDisplayCode language={language}>{codeCell?.code_string}</HoverCellDisplayCode>
+              </HoverCellDisplay>
             );
           }
         }
       } else if (editingCell) {
         setOnlyCode(false);
         setText(
-          <>
-            <div className="hover-cell-header">Multiplayer Edit</div>
-            <div className="hover-cell-body">
-              {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
-            </div>
-          </>
+          <HoverCellDisplay title="Multiplayer edit">
+            {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
+          </HoverCellDisplay>
         );
       }
 
@@ -209,14 +204,14 @@ export function HoverCell() {
       onMouseMove={handleHover}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="p-4">{text}</div>
+      {text}
     </div>
   );
 }
 
 function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCodeCell; onClick: () => void }) {
-  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const language = getLanguage(codeCellCore.language);
+  const cell = getCodeCell(codeCellCore.language);
+  const language = cell?.label;
   const x = Number(codeCellCore.x);
   const y = Number(codeCellCore.y);
 
@@ -230,54 +225,26 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
   );
 
   return (
-    <>
-      <div className="hover-cell-header">
-        <span>Run Error</span>
-
-        <div className="hover-cell-header-buttons">
-          <TooltipPopover label={'Ask AI to fix error'}>
-            <Button
-              size="sm"
-              onClick={() => {
-                events.emit('askAICodeCell', codeCell);
-                onClick();
-              }}
-            >
-              <AIIcon />
-            </Button>
-          </TooltipPopover>
-
-          <TooltipPopover label={'Open in code editor'}>
-            <Button
-              size="sm"
-              onClick={() => {
-                setCodeEditorState((prev) => ({
-                  ...prev,
-                  diffEditorContent: undefined,
-                  waitingForEditorClose: {
-                    codeCell,
-                    showCellTypeMenu: false,
-                    inlineEditor: false,
-                    initialCode: codeCellCore.code_string,
-                  },
-                }));
-                onClick();
-              }}
-            >
-              <CodeIcon />
-            </Button>
-          </TooltipPopover>
-        </div>
-      </div>
-
-      <div className="hover-cell-body">
-        <div>There was an error running the code in this cell.</div>
-        <div className="hover-cell-error-msg">{codeCellCore.std_err}</div>
-      </div>
-
-      <div className="hover-cell-header-space">{language} Code</div>
-      <div className="code-body">{codeCellCore.code_string}</div>
-    </>
+    <HoverCellDisplay
+      title={language ? `${language} error` : 'Error'}
+      actions={
+        <TooltipPopover label={'Fix with AI'}>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={() => {
+              events.emit('askAICodeCell', codeCell);
+              onClick();
+            }}
+          >
+            <AIIcon />
+          </Button>
+        </TooltipPopover>
+      }
+    >
+      <HoverCellDisplayError>{codeCellCore.std_err}</HoverCellDisplayError>
+      <HoverCellDisplayCode language={language}>{codeCellCore.code_string}</HoverCellDisplayCode>
+    </HoverCellDisplay>
   );
 }
 
@@ -361,53 +328,80 @@ function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRe
   }
 
   return (
-    <>
-      <div className="hover-cell-header">
-        <span>Spill Error</span>
-
-        <div className="flex gap-3">
-          <TooltipPopover label={'Fix spill error - move down after all data'}>
-            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellDown(true)}>
-              <ArrowDoubleDown />
+    <HoverCellDisplay
+      title="Spill error"
+      actions={
+        <>
+          <TooltipPopover label={'Move down until fixed'}>
+            <Button size="icon-sm" variant="ghost" onClick={() => handleModeCodeCellDown(true)}>
+              <SpillErrorMoveIcon />
             </Button>
           </TooltipPopover>
 
-          <TooltipPopover label={'Fix spill error - move down to nearest empty space'}>
-            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellDown(false)}>
-              <ArrowDown />
+          <TooltipPopover label={'Move right until fixed'}>
+            <Button size="icon-sm" variant="ghost" onClick={() => handleModeCodeCellRight(true)}>
+              <SpillErrorMoveIcon className="-rotate-90" />
             </Button>
           </TooltipPopover>
+        </>
+      }
+    >
+      <p>Array output could not expand because it would overwrite existing values.</p>
 
-          <TooltipPopover label={'Fix spill error - move right to nearest empty space'}>
-            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellRight(false)}>
-              <ArrowRight />
-            </Button>
-          </TooltipPopover>
+      <p>
+        To fix: remove content in {pluralize('cell', spillError.length)}{' '}
+        {spillError.map((pos, index) => (
+          <span key={`${pos.x},${pos.y}`}>
+            <code className="hover-cell-code">
+              ({String(pos.x)}, {String(pos.y)})
+            </code>
 
-          <TooltipPopover label={'Fix spill error - move right after all data'}>
-            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellRight(true)}>
-              <ArrowDoubleRight />
-            </Button>
-          </TooltipPopover>
-        </div>
-      </div>
-
-      <div className="hover-cell-body">
-        <div>Array output could not expand because it would overwrite existing values.</div>
-
-        <div>
-          To fix this, remove content in {pluralize('cell', spillError.length)}{' '}
-          {spillError.map((pos, index) => (
-            <span key={`${pos.x},${pos.y}`}>
-              <code className="hover-cell-code">
-                ({String(pos.x)}, {String(pos.y)})
-              </code>
-
-              {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
-            </span>
-          ))}
-        </div>
-      </div>
-    </>
+            {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
+          </span>
+        ))}
+      </p>
+    </HoverCellDisplay>
   );
+}
+
+function HoverCellDisplay({ title, children, actions }: any) {
+  return (
+    <div className="flex flex-col gap-1 p-3">
+      <div className="flex items-center justify-between">
+        {title}
+        {actions && <div className="flex items-center gap-0.5">{actions}</div>}
+      </div>
+      <div className="flex flex-col gap-2 text-xs">{children}</div>
+    </div>
+  );
+}
+
+function HoverCellDisplayCode({ language, children }: { language?: string; children: string | undefined }) {
+  if (!children) return null;
+
+  const lines = children?.split('\n').length;
+  return (
+    <div
+      className={cn(
+        'flex max-h-48 flex-row overflow-hidden whitespace-pre rounded-md border-t border-border px-3 pt-2 font-mono text-[11px]',
+        lines > 11 &&
+          "-mb-3 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-16 after:bg-gradient-to-t after:from-background after:to-transparent after:content-['']"
+      )}
+    >
+      <ol className="-ml-3 mr-3 text-right text-muted-foreground/50">
+        {Array.from({ length: lines }).map((_, index) => (
+          <li key={index}>{index + 1}</li>
+        ))}
+      </ol>
+      <pre className={cn('relative whitespace-pre')}>{children}</pre>
+    </div>
+  );
+}
+
+function HoverCellDisplayError({ children }: { children: string | null }) {
+  if (!children) {
+    return null;
+  }
+
+  return <p className="font-mono text-[11px] text-destructive">{children}</p>;
 }

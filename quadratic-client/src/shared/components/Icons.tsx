@@ -471,6 +471,10 @@ export const SnippetsIcon: IconComponent = (props) => {
   return <Icon {...props}>integration_instructions</Icon>;
 };
 
+export const SpillErrorMoveIcon: IconComponent = (props) => {
+  return <Icon {...props}>vertical_align_bottom</Icon>;
+};
+
 export const StopIcon: IconComponent = (props) => {
   return <Icon {...props}>stop</Icon>;
 };

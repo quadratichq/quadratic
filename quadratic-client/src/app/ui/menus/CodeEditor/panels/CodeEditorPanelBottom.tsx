@@ -1,17 +1,13 @@
 import {
-  codeEditorCodeCellAtom,
   codeEditorConsoleOutputAtom,
   codeEditorPanelBottomActiveTabAtom,
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { events } from '@/app/events/events';
 import { AIAssistant } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
-import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
 import { ReactNode, useMemo } from 'react';
@@ -26,7 +22,6 @@ interface CodeEditorPanelBottomProps {
 
 export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEditorPanelBottomProps) {
   const { bottomHidden, setBottomHidden } = useCodeEditorPanelData();
-  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
   const [panelBottomActiveTab, setPanelBottomActiveTab] = useRecoilState(codeEditorPanelBottomActiveTabAtom);
@@ -69,14 +64,6 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
           >
             Console
           </TabsTrigger>
-
-          {consoleOutput?.stdErr ? (
-            <TooltipPopover label={'Ask AI to fix error'}>
-              <Button className="ml-2" size="sm" onClick={() => events.emit('askAICodeCell', codeCell)}>
-                <AIIcon />
-              </Button>
-            </TooltipPopover>
-          ) : null}
         </TabsList>
       </div>
 
