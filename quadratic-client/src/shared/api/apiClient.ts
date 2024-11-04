@@ -1,4 +1,4 @@
-import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalyst';
+import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import * as Sentry from '@sentry/react';
