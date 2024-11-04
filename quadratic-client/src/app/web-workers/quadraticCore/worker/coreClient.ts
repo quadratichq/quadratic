@@ -593,8 +593,16 @@ class CoreClient {
         core.gridToDataTable(e.data.selection, e.data.cursor);
         return;
 
-      case 'clientCoreUpdateDataTableName':
-        core.updateDataTableName(e.data.sheetId, e.data.x, e.data.y, e.data.name, e.data.cursor);
+      case 'clientCoreDataTableMeta':
+        core.dataTableMeta(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.name,
+          e.data.alternatingColors,
+          e.data.columns,
+          e.data.cursor
+        );
         return;
 
       case 'clientCoreSortDataTable':

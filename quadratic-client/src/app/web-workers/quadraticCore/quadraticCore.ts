@@ -1209,14 +1209,22 @@ class QuadraticCore {
     });
   }
 
-  updateDataTableName(sheetId: string, x: number, y: number, name: string, cursor: string) {
+  dataTableMeta(
+    sheetId: string,
+    x: number,
+    y: number,
+    name?: string,
+    alternatingColors?: boolean,
+    columns?: { name: string; display: boolean; valueIndex: number }[],
+    cursor?: string
+  ) {
     this.send({
-      type: 'clientCoreUpdateDataTableName',
+      type: 'clientCoreDataTableMeta',
       sheetId,
       x,
       y,
       name,
-      cursor,
+      cursor: cursor || '',
     });
   }
 

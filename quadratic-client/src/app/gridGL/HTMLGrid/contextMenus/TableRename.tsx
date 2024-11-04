@@ -34,11 +34,13 @@ export const TableRename = () => {
       styles={{ fontSize: TABLE_NAME_FONT_SIZE, paddingLeft: TABLE_NAME_PADDING[0] }}
       onSave={(value: string) => {
         if (contextMenu.table && pixiApp.cellsSheets.current) {
-          quadraticCore.updateDataTableName(
+          quadraticCore.dataTableMeta(
             pixiApp.cellsSheets.current?.sheetId,
             contextMenu.table.x,
             contextMenu.table.y,
             value,
+            undefined,
+            undefined,
             ''
           );
         }

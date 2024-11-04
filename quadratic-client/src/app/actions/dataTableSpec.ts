@@ -65,7 +65,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
     label: 'Flatten to sheet',
     Icon: FlattenTableIcon,
-    run: async () => {
+    run: () => {
       const table = getTable();
       if (table) {
         quadraticCore.flattenDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
@@ -75,7 +75,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.GridToDataTable]: {
     label: 'Convert to table',
     Icon: TableConvertIcon,
-    run: async () => {
+    run: () => {
       quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
     },
   },
@@ -113,7 +113,7 @@ export const dataTableSpec: DataTableSpec = {
   [Action.ToggleHeaderTable]: {
     label: 'Show column headings',
     checkbox: isHeadingShowing,
-    run: async () => {
+    run: () => {
       // const table = getTable();
       // quadraticCore.dataTableShowHeadings(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
     },

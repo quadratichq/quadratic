@@ -1038,12 +1038,18 @@ export interface ClientCoreGridToDataTable {
   cursor: string;
 }
 
-export interface ClientCoreUpdateDataTableName {
-  type: 'clientCoreUpdateDataTableName';
+export interface ClientCoreDataTableMeta {
+  type: 'clientCoreDataTableMeta';
   sheetId: string;
   x: number;
   y: number;
-  name: string;
+  name?: string;
+  alternatingColors?: boolean;
+  columns?: {
+    name: string;
+    display: boolean;
+    valueIndex: number;
+  }[];
   cursor: string;
 }
 
@@ -1148,7 +1154,7 @@ export type ClientCoreMessage =
   | ClientCoreFlattenDataTable
   | ClientCoreCodeDataTableToDataTable
   | ClientCoreGridToDataTable
-  | ClientCoreUpdateDataTableName
+  | ClientCoreDataTableMeta
   | ClientCoreSortDataTable
   | ClientCoreDataTableFirstRowAsHeader;
 
