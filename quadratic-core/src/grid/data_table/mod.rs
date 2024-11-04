@@ -39,7 +39,7 @@ impl Grid {
             .flat_map(|sheet| sheet.data_tables.values().map(|table| table.name.as_str()))
             .collect_vec();
 
-        return unique_name(name, all_names, require_number);
+        unique_name(name, all_names, require_number)
     }
 
     pub fn update_data_table_name(
@@ -63,6 +63,7 @@ impl Grid {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display)]
 pub enum DataTableKind {
     CodeRun(CodeRun),
@@ -315,7 +316,8 @@ impl DataTable {
 
         // bold the headers if they exist
         if data_table.header_is_first_row {
-            [0..table.count_columns()]
+            (0..table.count_columns())
+                .collect::<Vec<usize>>()
                 .iter()
                 .enumerate()
                 .for_each(|(index, _)| {
@@ -392,7 +394,7 @@ pub mod test {
         let kind = data_table.kind.clone();
         let values = data_table.value.clone().into_array().unwrap();
 
-        let expected_values = Value::Array(values.clone().into());
+        let expected_values = Value::Array(values.clone());
         let expected_data_table = DataTable::new(
             kind.clone(),
             "test.csv",

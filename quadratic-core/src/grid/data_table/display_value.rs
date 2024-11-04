@@ -1,4 +1,14 @@
+//! Display value for DataTable
 //!
+//! The display value is the value that is displayed in the DataTable and may
+//! be different from the actual value.
+//!
+//! The `display_buffer` is an option mapping row indices to display values.
+//! If the `display_buffer` is `None`, then the display value is the same as the
+//! actual value. If the `display_buffer` is `Some(display_buffer)`, then the
+//! display value is the value at the index specified by the `display_buffer`
+//! at the given row and column.  This pattern enables a single copy of the
+//! DataTable to exist in memory and be used for both display and execution.
 
 use crate::{Array, CellValue, Pos, Value};
 use anyhow::{anyhow, Ok, Result};
@@ -6,17 +16,12 @@ use anyhow::{anyhow, Ok, Result};
 use super::DataTable;
 
 impl DataTable {
-    pub fn display_value_from_buffer(&self, display_buffer: &Vec<u64>) -> Result<Value> {
+    pub fn display_value_from_buffer(&self, display_buffer: &[u64]) -> Result<Value> {
         let value = self.value.to_owned().into_array()?;
 
         let values = display_buffer
             .iter()
-            .filter_map(|index| {
-                value
-                    .get_row(*index as usize)
-                    .map(|row| row.into_iter().cloned().collect::<Vec<CellValue>>())
-                    .ok()
-            })
+            .filter_map(|index| value.get_row(*index as usize).map(|row| row.to_vec()).ok())
             .collect::<Vec<Vec<CellValue>>>();
 
         let array = Array::from(values);
@@ -26,7 +31,7 @@ impl DataTable {
 
     pub fn display_value_from_buffer_at(
         &self,
-        display_buffer: &Vec<u64>,
+        display_buffer: &[u64],
         pos: Pos,
     ) -> Result<&CellValue> {
         let y = display_buffer
@@ -59,7 +64,7 @@ impl DataTable {
         }
 
         if !self.header_is_first_row && self.show_header {
-            pos.y = pos.y - 1;
+            pos.y -= 1;
         }
 
         match self.display_buffer {

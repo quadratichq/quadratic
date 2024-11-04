@@ -140,10 +140,10 @@ pub(crate) mod tests {
         );
 
         let first_row = vec!["city", "region", "country", "population"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 0, first_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 0, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 10, last_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 10, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
@@ -504,7 +504,7 @@ pub(crate) mod tests {
     #[parallel]
     fn should_import_utf16_with_invalid_characters() {
         let file_name = "encoding_issue.csv";
-        let csv_file = read_test_csv_file(&file_name);
+        let csv_file = read_test_csv_file(file_name);
 
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;

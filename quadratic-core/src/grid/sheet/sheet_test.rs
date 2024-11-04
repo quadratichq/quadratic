@@ -71,7 +71,7 @@ impl Sheet {
             crate::Pos { x, y },
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "Table 1".into(),
+                "Table 1",
                 Value::Single(value),
                 false,
                 false,
@@ -130,7 +130,7 @@ impl Sheet {
             Pos { x, y },
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "Table 1".into(),
+                "Table 1",
                 Value::Array(array),
                 false,
                 false,
@@ -176,7 +176,7 @@ impl Sheet {
             Pos { x, y },
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "Table 1".into(),
+                "Table 1",
                 Value::Array(array),
                 false,
                 false,

@@ -1,4 +1,4 @@
-//!
+//! DataTable columns
 
 use crate::grid::js_types::JsDataTableColumn;
 use crate::{CellValue, Value};
@@ -101,13 +101,14 @@ impl DataTable {
         //     .collect_vec();
         // let name = unique_name(&name, all_names);
 
-        self.columns
+        if let Some(column) = self
+            .columns
             .as_mut()
             .and_then(|columns| columns.get_mut(index))
-            .map(|column| {
-                column.name = CellValue::Text(name);
-                column.display = display;
-            });
+        {
+            column.name = CellValue::Text(name);
+            column.display = display;
+        }
 
         Ok(())
     }
@@ -116,12 +117,13 @@ impl DataTable {
     pub fn set_header_display_at(&mut self, index: usize, display: bool) -> anyhow::Result<()> {
         self.check_index(index, true)?;
 
-        self.columns
+        if let Some(column) = self
+            .columns
             .as_mut()
             .and_then(|columns| columns.get_mut(index))
-            .map(|column| {
-                column.display = display;
-            });
+        {
+            column.display = display;
+        }
 
         Ok(())
     }
@@ -183,7 +185,7 @@ pub mod test {
         assert_eq!(data_table.columns, Some(expected_columns));
 
         // test column headings taken from first row
-        let value = Value::Array(values.clone().into());
+        let value = Value::Array(values.clone());
         let mut data_table = DataTable::new(kind.clone(), "Table 1", value, false, true, true)
             .with_last_modified(data_table.last_modified);
 
@@ -211,7 +213,7 @@ pub mod test {
 
         // test setting header display at index
         data_table.set_header_display_at(0, false).unwrap();
-        assert_eq!(data_table.columns.as_ref().unwrap()[0].display, false);
+        assert!(!data_table.columns.as_ref().unwrap()[0].display);
     }
 
     #[test]
