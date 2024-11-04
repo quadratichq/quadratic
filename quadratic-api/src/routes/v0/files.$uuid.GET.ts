@@ -1,3 +1,4 @@
+import { ResponseError } from '@sendgrid/mail';
 import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
@@ -9,7 +10,6 @@ import { validateOptionalAccessToken } from '../../middleware/validateOptionalAc
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import { RequestWithOptionalUser } from '../../types/Request';
-import { ResponseError } from '@sendgrid/mail';
 import { ApiError } from '../../utils/ApiError';
 
 export default [

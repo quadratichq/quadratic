@@ -138,7 +138,7 @@ class CoreClient {
       case 'clientCoreLoad':
         await offline.init(e.data.fileId);
 
-        const addToken = this.env.STORAGE_TYPE === 'file-system';
+        const addToken = this.env.VITE_STORAGE_TYPE === 'file-system';
 
         this.send({
           type: 'coreClientLoad',

@@ -65,7 +65,7 @@ export const licenseClient = {
     const result = await licenseClient.checkFromServer();
 
     // don't cache errors or non-active licenses
-    if (!result || result.status !== 'active') {
+    if (!result || result.status === 'revoked') {
       return null;
     }
 
