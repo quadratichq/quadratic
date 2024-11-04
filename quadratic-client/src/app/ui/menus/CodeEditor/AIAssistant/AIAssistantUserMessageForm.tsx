@@ -130,6 +130,7 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIAssi
                 <TooltipPopover label="Stop generating">
                   <Button
                     size="icon-sm"
+                    className="rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
                       abortPrompt();
