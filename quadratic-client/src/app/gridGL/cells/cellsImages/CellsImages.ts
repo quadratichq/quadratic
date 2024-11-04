@@ -42,7 +42,8 @@ export class CellsImages extends Container<CellsImage> {
   private updateImage = (message: CoreClientImage) => {
     if (message.sheetId === this.cellsSheet.sheetId) {
       let sprite = this.children.find(
-        (sprite) => (sprite as CellsImage).column === message.x && (sprite as CellsImage).row === message.y
+        (sprite) =>
+          (sprite as CellsImage).gridBounds.x === message.x && (sprite as CellsImage).gridBounds.y === message.y
       );
       if (sprite) {
         if (message.image) {
@@ -74,7 +75,17 @@ export class CellsImages extends Container<CellsImage> {
     }
   }
 
-  isImageCell(x: number, y: number): boolean {
-    return this.children.some((child) => child.column === x && child.row === y);
+  // determines whether a column,row is inside the output of an image cell
+  isImageCell(column: number, row: number): boolean {
+    return this.children.some((child) => child.isImageCell(column, row));
+  }
+
+  // finds the image cell that contains a column,row
+  findCodeCell(column: number, row: number): CellsImage | undefined {
+    for (const image of this.children) {
+      if (image.isImageCell(column, row)) {
+        return image;
+      }
+    }
   }
 }

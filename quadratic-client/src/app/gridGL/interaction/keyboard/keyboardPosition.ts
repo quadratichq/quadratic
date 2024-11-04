@@ -3,8 +3,10 @@
 
 import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -46,6 +48,18 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
   if (deltaX === 1) {
     let x = keyboardX;
     const y = cursor.keyboardMovePosition.y;
+
+    // adjust the jump position if it is inside an image or html cell
+    const image = pixiApp.cellsSheet().cellsImages.findCodeCell(x, y);
+    if (image) {
+      x = image.gridBounds.x + image.gridBounds.width - 1;
+    } else {
+      const html = htmlCellsHandler.findCodeCell(x, y);
+      if (html) {
+        x = html.gridBounds.x + html.gridBounds.width;
+      }
+    }
+
     // always use the original cursor position to search
     const yCheck = cursor.cursorPosition.y;
     // handle case of cell with content
@@ -86,6 +100,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     if (nextCol === undefined) {
       nextCol = x < 0 ? 0 : x + 1;
     }
+
     x = nextCol;
     if (keyboardX < -1) {
       x = Math.min(x, -1);
@@ -105,6 +120,18 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
   } else if (deltaX === -1) {
     let x = keyboardX;
     const y = cursor.keyboardMovePosition.y;
+
+    // adjust the jump position if it is inside an image or html cell
+    const image = pixiApp.cellsSheet().cellsImages.findCodeCell(x, y);
+    if (image) {
+      x = image.gridBounds.x - 1;
+    } else {
+      const html = htmlCellsHandler.findCodeCell(x, y);
+      if (html) {
+        x = html.gridBounds.x - 1;
+      }
+    }
+
     // always use the original cursor position to search
     const yCheck = cursor.cursorPosition.y;
     // handle case of cell with content
@@ -314,6 +341,52 @@ function expandSelection(deltaX: number, deltaY: number) {
 function moveCursor(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
   const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };
+
+  // need to adjust the cursor position if it is inside an image cell
+  const image = pixiApp.cellsSheet().cellsImages.findCodeCell(newPos.x, newPos.y);
+  if (image) {
+    if (deltaX === 1) {
+      if (newPos.x !== image.gridBounds.x) {
+        newPos.x = image.gridBounds.x + image.gridBounds.width;
+      }
+    } else if (deltaX === -1) {
+      if (newPos.x !== image.gridBounds.x + image.gridBounds.width - 1) {
+        newPos.x = image.gridBounds.x - 1;
+      }
+    }
+    if (deltaY === 1) {
+      if (newPos.y !== image.gridBounds.y) {
+        newPos.y = image.gridBounds.y + image.gridBounds.height;
+      }
+    } else if (deltaY === -1) {
+      if (newPos.y !== image.gridBounds.y + image.gridBounds.height - 1) {
+        newPos.y = image.gridBounds.y - 1;
+      }
+    }
+  }
+
+  // if the cursor is inside an html cell, move the cursor to the top left of the cell
+  const html = htmlCellsHandler.findCodeCell(newPos.x, newPos.y);
+  if (html) {
+    if (deltaX === 1) {
+      if (newPos.x !== html.gridBounds.x) {
+        newPos.x = html.gridBounds.x + html.gridBounds.width + 1;
+      }
+    } else if (deltaX === -1) {
+      if (newPos.x !== html.gridBounds.x + html.gridBounds.width) {
+        newPos.x = html.gridBounds.x - 1;
+      }
+    }
+    if (deltaY === 1) {
+      if (newPos.y !== html.gridBounds.y) {
+        newPos.y = html.gridBounds.y + html.gridBounds.height + 1;
+      }
+    } else if (deltaY === -1) {
+      if (newPos.y !== html.gridBounds.y + html.gridBounds.height) {
+        newPos.y = html.gridBounds.y - 1;
+      }
+    }
+  }
   cursor.changePosition({
     columnRow: null,
     multiCursor: null,

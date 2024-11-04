@@ -147,6 +147,17 @@ export class Tables extends Container<Table> {
     }
     const cursor = sheets.sheet.cursor.cursorPosition;
     this.activeTable = this.children.find((table) => table.intersectsCursor(cursor.x, cursor.y));
+    if (!this.activeTable) {
+      const image = pixiApp.cellsSheet().cellsImages.findCodeCell(cursor.x, cursor.y);
+      const codeCell =
+        htmlCellsHandler.findCodeCell(cursor.x, cursor.y)?.htmlCell ||
+        (image ? { x: image.gridBounds.x, y: image.gridBounds.y } : undefined);
+      if (codeCell) {
+        this.activeTable = this.children.find(
+          (table) => table.codeCell.x === codeCell.x && table.codeCell.y === codeCell.y
+        );
+      }
+    }
     if (this.activeTable) {
       this.activeTable.showActive(true);
     }
@@ -425,6 +436,11 @@ export class Tables extends Container<Table> {
   }
 
   isHtmlOrImage(cell: Coordinate): boolean {
-    return this.htmlOrImage.has(`${cell.x},${cell.y}`);
+    if (this.htmlOrImage.has(`${cell.x},${cell.y}`)) {
+      return true;
+    }
+    return (
+      !!htmlCellsHandler.findCodeCell(cell.x, cell.y) || pixiApp.cellsSheet().cellsImages.isImageCell(cell.x, cell.y)
+    );
   }
 }

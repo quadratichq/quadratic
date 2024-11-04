@@ -144,6 +144,15 @@ class HTMLCellsHandler {
     return this.getCells().some((cell) => cell.x === x && cell.y === y && cell.sheet.id === sheets.sheet.id);
   }
 
+  // returns true if the Pos overlaps with the output of an html cell
+  contains(x: number, y: number): boolean {
+    return this.getCells().some((cell) => cell.contains(x, y));
+  }
+
+  findCodeCell(x: number, y: number): HtmlCell | undefined {
+    return this.getCells().find((cell) => cell.sheet.id === sheets.sheet.id && cell.contains(x, y));
+  }
+
   showActive(codeCell: JsRenderCodeCell, isSelected: boolean) {
     const cell = this.getCells().find(
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id

@@ -1,8 +1,9 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { JsHtmlOutput } from '@/app/quadratic-core-types';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
-import { InteractionEvent } from 'pixi.js';
+import { InteractionEvent, Point, Rectangle } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { Wheel } from '../../pixiOverride/Wheel';
 import { HtmlCellResizing } from './HtmlCellResizing';
@@ -16,9 +17,12 @@ const DEFAULT_HTML_HEIGHT = '460';
 export class HtmlCell {
   private right: HTMLDivElement;
   private bottom: HTMLDivElement;
-  private htmlCell: JsHtmlOutput;
   private resizing: HtmlCellResizing | undefined;
   private hoverSide: 'right' | 'bottom' | 'corner' | undefined;
+  private offset: Point;
+
+  htmlCell: JsHtmlOutput;
+  gridBounds: Rectangle;
 
   sheet: Sheet;
 
@@ -38,6 +42,8 @@ export class HtmlCell {
     this.div.className = 'html-cell';
     this.div.style.boxShadow = 'inset 0 0 0 1px hsl(var(--primary))';
     const offset = this.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
+    this.offset = new Point(offset.x, offset.y);
+    this.gridBounds = new Rectangle(Number(htmlCell.x), Number(htmlCell.y), 0, 0);
 
     this.div.style.left = `${offset.x}px`;
     this.div.style.top = `${offset.y}px`;
@@ -117,43 +123,8 @@ export class HtmlCell {
         },
         { passive: false }
       );
-
-      // move margin to the div holding the iframe to avoid pinch-to-zoom issues at the iframe margins
-      // const style = window.getComputedStyle(this.iframe.contentWindow.document.body);
-      // if (style.marginLeft) {
-      //   this.div.style.paddingLeft = style.marginLeft;
-      // }
-      // if (style.marginTop) {
-      //   this.div.style.paddingTop = style.marginTop;
-      // }
-      // if (style.marginRight) {
-      //   this.div.style.paddingRight = style.marginRight;
-      // }
-      // if (style.marginBottom) {
-      //   this.div.style.paddingBottom = style.marginBottom;
-      // }
-
       this.iframe.contentWindow.document.body.style.margin = '';
-
-      // this is the automatic size calculation -- replaced for *now* with default width/height
-      // if (!this.htmlCell.w) {
-      //   this.iframe.width = (
-      //     this.iframe.contentWindow.document.body.scrollWidth +
-      //     parseInt(style.marginLeft) +
-      //     parseInt(style.marginRight)
-      //   ).toString();
-      // } else {
-      //   this.iframe.width = this.htmlCell.w;
-      // }
-      // if (!this.htmlCell.h) {
-      //   this.iframe.height = (
-      //     this.iframe.contentWindow.document.body.scrollHeight +
-      //     parseInt(style.marginTop) +
-      //     parseInt(style.marginBottom)
-      //   ).toString();
-      // } else {
-      //   this.iframe.height = this.htmlCell.h;
-      // }
+      this.calculateGridBounds();
     } else {
       throw new Error('Expected content window to be defined on iframe');
     }
@@ -169,6 +140,14 @@ export class HtmlCell {
       this.iframe.srcdoc = htmlCell.html;
     }
     this.htmlCell = htmlCell;
+    this.calculateGridBounds();
+  }
+
+  private calculateGridBounds() {
+    const right = this.sheet.offsets.getXPlacement(this.offset.x + this.div.offsetWidth);
+    this.gridBounds.width = right.index - this.gridBounds.x;
+    const bottom = this.sheet.offsets.getYPlacement(this.offset.y + this.div.offsetHeight);
+    this.gridBounds.height = bottom.index - this.gridBounds.y;
   }
 
   changeSheet(sheetId: string) {
@@ -286,7 +265,15 @@ export class HtmlCell {
 
   updateOffsets() {
     const offset = this.sheet.getCellOffsets(this.x, this.y);
+    this.offset.set(offset.x, offset.y);
     this.div.style.left = `${offset.x}px`;
     this.div.style.top = `${offset.y}px`;
+    this.gridBounds.x = offset.x;
+    this.gridBounds.y = offset.y;
+  }
+
+  // checks if the cell contains a grid point
+  contains(x: number, y: number): boolean {
+    return intersects.rectanglePoint(this.gridBounds, new Point(x, y));
   }
 }
