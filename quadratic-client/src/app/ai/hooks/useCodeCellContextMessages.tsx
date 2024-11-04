@@ -36,7 +36,7 @@ export function useCodeCellContextMessages() {
           role: 'user',
           content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 Currently, you are in a code cell that is being edited.\n
-The cell type is ${language}. The cell is located at ${x}, ${y}.\n
+The code cell type is ${language}. The code cell is located at ${x}, ${y}.\n
 ${
   schemaJsonForAi
     ? `The schema for the database is:
@@ -71,12 +71,12 @@ A code cell cannot display multiple charts at the same time.\n
 Do not use any markdown syntax besides triple backticks for ${language} code blocks.\n
 Do not reply code blocks in plain text, use markdown with triple backticks and language name ${language}.`
 }
-The code in the cell is:
+The code in the code cell is:\n
 \`\`\`${language}\n${codeString}\n\`\`\`
 
 ${
   consoleHasOutput
-    ? `Code was run recently and the console output is: 
+    ? `Code was run recently and the console output is:\n
 \`\`\`json\n${JSON.stringify(consoleOutput)}\n\`\`\``
     : ``
 }`,

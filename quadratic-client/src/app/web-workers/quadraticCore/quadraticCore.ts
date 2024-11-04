@@ -377,11 +377,17 @@ class QuadraticCore {
       this.waitingForResponse[id] = (message: { value: JsCellValuePosAIContext[][] | undefined }) => {
         resolve(message.value);
       };
-      this.send({
-        type: 'clientCoreGetAIContextRectsInSheetRects',
-        sheetRects,
-        id,
-      });
+      this.send({ type: 'clientCoreGetAIContextRectsInSheetRects', sheetRects, id });
+    });
+  }
+
+  getErroredCodeCellsInSheetRects(sheetRects: SheetRect[]): Promise<JsCodeCell[][] | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { value: JsCodeCell[][] | undefined }) => {
+        resolve(message.value);
+      };
+      this.send({ type: 'clientCoreGetErroredCodeCellsInSheetRects', sheetRects, id });
     });
   }
 

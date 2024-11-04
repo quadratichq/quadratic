@@ -26,7 +26,7 @@ export function useOtherSheetsContextMessages() {
       if (sheetsRects.length === 0) return [];
 
       const sheetsRectContext = await quadraticCore.getAIContextRectsInSheetRects(sheetsRects);
-      if (!sheetsRectContext || sheetsRectContext.length === 0) return [];
+      if (!sheetsRectContext || sheetsRectContext.length === 0 || sheetsRectContext[0].length === 0) return [];
 
       return [
         {

@@ -1,19 +1,19 @@
 import { getPromptMessages } from '@/app/ai/tools/helpers';
 import { Chat, ChatSchema } from 'quadratic-shared/typesAndSchemasAI';
 
+const DB_NAME = 'Quadratic-AI';
 const DB_VERSION = 1;
-export const DB_NAME = 'Quadratic-AI-Chats';
 const DB_STORE = 'aiAnalystChats';
 
 class AIAnalystOfflineChats {
   private db?: IDBDatabase;
   userEmail?: string;
-  uuid?: string;
+  fileId?: string;
 
-  init = (userEmail: string, uuid: string): Promise<undefined> => {
+  init = (userEmail: string, fileId: string): Promise<undefined> => {
     return new Promise((resolve, reject) => {
       this.userEmail = userEmail;
-      this.uuid = uuid;
+      this.fileId = fileId;
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onerror = (event) => {
@@ -30,10 +30,10 @@ class AIAnalystOfflineChats {
         try {
           const db = request.result;
           const objectStore = db.createObjectStore(DB_STORE, {
-            keyPath: ['userEmail', 'uuid', 'id'],
+            keyPath: ['userEmail', 'fileId', 'id'],
           });
           objectStore.createIndex('userEmail', 'userEmail');
-          objectStore.createIndex('uuid', 'uuid');
+          objectStore.createIndex('fileId', 'fileId');
         } catch (error) {
           console.error('Error during database upgrade:', error);
           reject(error);
@@ -44,10 +44,10 @@ class AIAnalystOfflineChats {
 
   // Helper method to validate required properties
   private validateState = (methodName: string) => {
-    if (!this.db || !this.userEmail || !this.uuid) {
-      throw new Error(`Expected db, userEmail and uuid to be set in ${methodName} method.`);
+    if (!this.db || !this.userEmail || !this.fileId) {
+      throw new Error(`Expected db, userEmail and fileId to be set in ${methodName} method.`);
     }
-    return { db: this.db, userEmail: this.userEmail, uuid: this.uuid };
+    return { db: this.db, userEmail: this.userEmail, fileId: this.fileId };
   };
 
   // Helper method to create transactions
@@ -67,7 +67,7 @@ class AIAnalystOfflineChats {
 
   // Load all chats for current user
   loadChats = (): Promise<Chat[]> => {
-    const { db, userEmail, uuid } = this.validateState('loadChats');
+    const { db, userEmail, fileId } = this.validateState('loadChats');
 
     return new Promise((resolve, reject) => {
       try {
@@ -77,7 +77,9 @@ class AIAnalystOfflineChats {
         const getAll = store.getAll(keyRange);
 
         getAll.onsuccess = () => {
-          let chats = getAll.result.filter((chat) => chat.uuid === uuid).map(({ userEmail, uuid, ...chat }) => chat);
+          let chats = getAll.result
+            .filter((chat) => chat.fileId === fileId)
+            .map(({ userEmail, fileId, ...chat }) => chat);
           chats = chats.filter((chat) => {
             if (ChatSchema.safeParse(chat).success) {
               return true;
@@ -109,12 +111,12 @@ class AIAnalystOfflineChats {
 
   // Save or update a chat
   saveChats = async (chats: Chat[]) => {
-    const { userEmail, uuid } = this.validateState('saveChats');
+    const { userEmail, fileId } = this.validateState('saveChats');
     await this.createTransaction('readwrite', (store) => {
       chats.forEach((chat) => {
         const chatEntry = {
           userEmail,
-          uuid,
+          fileId,
           ...{
             ...chat,
             messages: getPromptMessages(chat.messages),
@@ -127,18 +129,18 @@ class AIAnalystOfflineChats {
 
   // Delete a list of chats
   deleteChats = async (chatIds: string[]) => {
-    const { userEmail, uuid } = this.validateState('deleteChats');
+    const { userEmail, fileId } = this.validateState('deleteChats');
     await this.createTransaction('readwrite', (store) => {
       chatIds.forEach((chatId) => {
-        store.delete([userEmail, uuid, chatId]);
+        store.delete([userEmail, fileId, chatId]);
       });
     });
   };
 
   // Delete all chats for a file
-  deleteFile = async (userEmail: string, uuid: string) => {
-    if (this.userEmail !== userEmail || this.uuid !== uuid) {
-      await this.init(userEmail, uuid);
+  deleteFile = async (userEmail: string, fileId: string) => {
+    if (this.userEmail !== userEmail || this.fileId !== fileId) {
+      await this.init(userEmail, fileId);
     }
     const chats = await this.loadChats();
     const chatIds = chats.map((chat) => chat.id);

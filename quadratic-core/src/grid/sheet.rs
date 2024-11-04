@@ -14,7 +14,7 @@ use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::{
-    CellFormatSummary, CellType, JsCellValue, JsCellValuePos, JsCellValuePosAIContext,
+    CellFormatSummary, CellType, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsCodeCell,
 };
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
@@ -269,6 +269,38 @@ impl Sheet {
             }
         }
         rect_values
+    }
+
+    /// Returns JsCodeCell for all code cells in a rect that have errors
+    pub fn js_errored_code_cell_rect(&self, rect: Rect) -> Vec<JsCodeCell> {
+        let mut code_cells = Vec::new();
+        for x in rect.x_range() {
+            if let Some(column) = self.get_column(x) {
+                for y in rect.y_range() {
+                    // check if there is a code cell
+                    if let Some(CellValue::Code(_)) = column.values.get(&y) {
+                        // if there is a code cell, then check if it has an error
+                        if self
+                            .code_run((x, y).into())
+                            .map(|code_run| {
+                                code_run
+                                    .std_err
+                                    .as_ref()
+                                    .map(|err| !err.is_empty())
+                                    .unwrap_or(false)
+                            })
+                            .unwrap_or(false)
+                        {
+                            // if there is an error, then add the code cell to the vec
+                            if let Some(code_cell) = self.edit_code_value((x, y).into()) {
+                                code_cells.push(code_cell);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        code_cells
     }
 
     /// Returns tabular data rects of JsCellValuePos in a sheet rect

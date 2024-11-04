@@ -6,17 +6,17 @@ import { aiAnalystOfflineChats } from './aiAnalyst';
 
 describe('aiAnalystOfflineChats', () => {
   beforeAll(async () => {
-    await aiAnalystOfflineChats.init('test@example.com', 'test-uuid');
+    await aiAnalystOfflineChats.init('test@example.com', 'test-fileId');
   });
 
   beforeEach(async () => {
     await aiAnalystOfflineChats.testClear();
   });
 
-  it('properly defines user email and uuid', () => {
+  it('properly defines user email and fileId', () => {
     expect(aiAnalystOfflineChats).toBeDefined();
     expect(aiAnalystOfflineChats.userEmail).toBe('test@example.com');
-    expect(aiAnalystOfflineChats.uuid).toBe('test-uuid');
+    expect(aiAnalystOfflineChats.fileId).toBe('test-fileId');
   });
 
   it('loads empty chats', async () => {
@@ -124,7 +124,7 @@ describe('aiAnalystOfflineChats', () => {
     await aiAnalystOfflineChats.saveChats(testChats);
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(3);
 
-    await aiAnalystOfflineChats.deleteFile('test@example.com', 'test-uuid');
+    await aiAnalystOfflineChats.deleteFile('test@example.com', 'test-fileId');
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
   });
 
@@ -142,12 +142,12 @@ describe('aiAnalystOfflineChats', () => {
     await aiAnalystOfflineChats.saveChats(testChats);
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(1);
 
-    await aiAnalystOfflineChats.init('different@example.com', 'test-uuid');
+    await aiAnalystOfflineChats.init('different@example.com', 'test-fileId');
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
   });
 
-  it('filters chats by uuid', async () => {
-    // Save chats with current uuid
+  it('filters chats by fileId', async () => {
+    // Save chats with current fileId
     const testChats: Chat[] = [
       {
         id: '1',
@@ -159,8 +159,8 @@ describe('aiAnalystOfflineChats', () => {
     await aiAnalystOfflineChats.saveChats(testChats);
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(1);
 
-    // Init with different uuid
-    await aiAnalystOfflineChats.init('test@example.com', 'different-uuid');
+    // Init with different fileId
+    await aiAnalystOfflineChats.init('test@example.com', 'different-fileId');
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(0);
   });
 });

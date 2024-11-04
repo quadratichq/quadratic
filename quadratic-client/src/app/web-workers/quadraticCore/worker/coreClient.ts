@@ -609,6 +609,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetErroredCodeCellsInSheetRects':
+        this.send({
+          type: 'coreClientGetErroredCodeCellsInSheetRects',
+          id: e.data.id,
+          value: core.getErroredCodeCellsInSheetRects(e.data.sheetRects),
+        });
+        return;
+
       case 'clientCoreDeleteColumns':
         core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
         return;

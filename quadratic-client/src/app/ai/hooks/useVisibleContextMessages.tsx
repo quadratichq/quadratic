@@ -7,9 +7,12 @@ export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
     const visibleSheetRect = sheets.getVisibleSheetRect();
-    const visibleRectContext = visibleSheetRect
-      ? await quadraticCore.getAIContextRectsInSheetRects([visibleSheetRect])
-      : undefined;
+    const [visibleRectContext, erroredCodeCells] = visibleSheetRect
+      ? await Promise.all([
+          quadraticCore.getAIContextRectsInSheetRects([visibleSheetRect]),
+          quadraticCore.getErroredCodeCellsInSheetRects([visibleSheetRect]),
+        ])
+      : [undefined, undefined];
 
     return [
       {
@@ -24,7 +27,7 @@ ${
 }\n\n
 
 ${
-  visibleRectContext && visibleRectContext.length === 1
+  visibleRectContext && visibleRectContext.length === 1 && visibleRectContext[0].length > 0
     ? `
 Visible data in the viewport:\n
 
@@ -52,8 +55,39 @@ ${JSON.stringify(visibleRectContext[0])}
 \`\`\`
 Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference functions, like \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions, to reference cells in code.\n\n
 `
-    : `This visible part of the sheet is empty.\n`
+    : `This visible part of the sheet has no data.\n`
 }\n
+
+${
+  erroredCodeCells && erroredCodeCells.length === 1 && erroredCodeCells[0].length > 0
+    ? `
+Note: There are code cells in the visible part of the sheet that have errors. Use this to understand if the code cell has any errors and take action when prompted by user to specifically solve the error.\n\n
+
+Add imports to the top of the code cell and do not use any libraries or functions that are not listed in the Quadratic documentation.\n
+Use any functions that are part of the code cell language library.\n
+A code cell can return only one type of value as specified in the Quadratic documentation.\n
+A code cell cannot display both a chart and return a data frame at the same time.\n
+A code cell cannot display multiple charts at the same time.\n
+Do not use any markdown syntax besides triple backticks for code cell language code blocks.\n
+Do not reply code blocks in plain text, use markdown with triple backticks and language name code cell language.
+
+${erroredCodeCells[0].map(({ x, y, language, code_string, std_out, std_err }) => {
+  const consoleOutput = {
+    std_out: std_out ?? '',
+    std_err: std_err ?? '',
+  };
+  return `
+The code cell type is ${language}. The code cell is located at ${x}, ${y}.\n
+
+The code in the code cell is:\n
+\`\`\`${language}\n${code_string}\n\`\`\`
+
+Code was run recently and the console output is:\n
+\`\`\`json\n${JSON.stringify(consoleOutput)}\n\`\`\`
+`;
+})}`
+    : ''
+}
 `,
         contextType: 'visibleData',
       },

@@ -166,4 +166,23 @@ impl GridController {
         }
         Ok(serde_json::to_string(&all_ai_context_rects).unwrap_or_default())
     }
+
+    /// gets JsCodeCell for all cells in sheet_rects that have errors
+    /// returns a stringified array of JsCodeCell for all sheet_rects
+    #[wasm_bindgen(js_name = "getErroredCodeCellsInSheetRects")]
+    pub fn js_errored_code_cells_in_sheet_rects(
+        &self,
+        sheet_rects: String,
+    ) -> Result<String, JsValue> {
+        let sheet_rects: Vec<SheetRect> = serde_json::from_str::<Vec<SheetRect>>(&sheet_rects)
+            .map_err(|_| JsValue::from_str("Invalid sheet rects"))?;
+        let mut all_errored_code_cells = Vec::new();
+        for sheet_rect in sheet_rects {
+            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+                let errored_code_cells = sheet.js_errored_code_cell_rect(sheet_rect.into());
+                all_errored_code_cells.push(errored_code_cells);
+            }
+        }
+        Ok(serde_json::to_string(&all_errored_code_cells).unwrap_or_default())
+    }
 }
