@@ -14,8 +14,7 @@ export class CellsImage extends Container {
   private background: Graphics;
   private sprite: Sprite;
 
-  column: number;
-  row: number;
+  gridBounds: Rectangle;
 
   // these are user set values for the image size
   imageWidth?: number;
@@ -28,8 +27,7 @@ export class CellsImage extends Container {
   constructor(cellsSheet: CellsSheet, message: CoreClientImage) {
     super();
     this.cellsSheet = cellsSheet;
-    this.column = message.x;
-    this.row = message.y;
+    this.gridBounds = new Rectangle(message.x, message.y, 0, 0);
     this.background = this.addChild(new Graphics());
     this.sprite = this.addChild(new Sprite(Texture.EMPTY));
 
@@ -46,6 +44,13 @@ export class CellsImage extends Container {
 
   get sheetId(): string {
     return this.cellsSheet.sheetId;
+  }
+
+  get column(): number {
+    return this.gridBounds.x;
+  }
+  get row(): number {
+    return this.gridBounds.y;
   }
 
   updateMessage(message: CoreClientImage) {
@@ -116,23 +121,41 @@ export class CellsImage extends Container {
     if (!sheet) {
       throw new Error(`Expected sheet to be defined in CellsImage.resizeImage`);
     }
-    sheet.gridOverflowLines.updateImageHtml(this.column, this.row, this.sprite.width, this.sprite.height);
-    this.cellsSheet.tables.resizeTable(this.column, this.row, this.sprite.width, this.sprite.height);
+    sheet.gridOverflowLines.updateImageHtml(
+      this.gridBounds.x,
+      this.gridBounds.y,
+      this.sprite.width,
+      this.sprite.height
+    );
+    this.cellsSheet.tables.resizeTable(this.gridBounds.x, this.gridBounds.y, this.sprite.width, this.sprite.height);
     if (this.cellsSheet.sheetId === sheets.current) {
       pixiApp.setViewportDirty();
     }
+    const right = this.sheet.offsets.getXPlacement(this.viewRight.x + IMAGE_BORDER_WIDTH).index;
+    const bottom = this.sheet.offsets.getYPlacement(this.viewBottom.y + IMAGE_BORDER_WIDTH).index;
+    this.gridBounds.width = right - this.gridBounds.x + 1;
+    this.gridBounds.height = bottom - this.gridBounds.y + 1;
   };
 
   reposition() {
-    const screen = this.sheet.getCellOffsets(this.column, this.row);
+    const screen = this.sheet.getCellOffsets(this.gridBounds.x, this.gridBounds.y);
     this.position.set(screen.x, screen.y);
     this.resizeImage();
   }
 
   contains(world: Point): Coordinate | undefined {
     if (intersects.rectanglePoint(this.viewBounds, world)) {
-      return { x: this.column, y: this.row };
+      return { x: this.gridBounds.x, y: this.gridBounds.y };
     }
     return undefined;
+  }
+
+  isImageCell(x: number, y: number): boolean {
+    return (
+      x >= this.gridBounds.x &&
+      x < this.gridBounds.right &&
+      y >= this.gridBounds.y &&
+      y < this.gridBounds.bottom
+    );
   }
 }

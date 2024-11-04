@@ -32,6 +32,8 @@ export class Table extends Container {
   codeCell: JsRenderCodeCell;
   tableCursor: string | undefined;
 
+  imageHtmlGridBounds?: [number, number];
+
   constructor(sheet: Sheet, codeCell: JsRenderCodeCell) {
     super();
     this.codeCell = codeCell;
@@ -107,14 +109,7 @@ export class Table extends Container {
 
   intersectsCursor(x: number, y: number) {
     const rect = new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1);
-    if (
-      intersects.rectanglePoint(rect, { x, y }) ||
-      intersects.rectangleRectangle(rect, this.tableName.tableNameBounds)
-    ) {
-      this.showActive(false);
-      return true;
-    }
-    return false;
+    return intersects.rectanglePoint(rect, { x, y });
   }
 
   // Checks whether the mouse cursor is hovering over the table or the table name
@@ -253,5 +248,16 @@ export class Table extends Container {
     this.tableBounds.width = width;
     this.tableBounds.height = height;
     this.outline.update();
+  }
+
+  // Checks whether the cell is within the table
+  contains(cell: Coordinate): boolean {
+    // first check if we're even in the right x/y range
+    return (
+      cell.x >= this.codeCell.x &&
+      cell.y >= this.codeCell.y &&
+      cell.x < this.codeCell.x + this.codeCell.w &&
+      cell.y < this.codeCell.y + this.codeCell.h
+    );
   }
 }
