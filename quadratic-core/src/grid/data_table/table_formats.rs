@@ -51,7 +51,7 @@ impl TableFormats {
         let column = self
             .cells
             .entry(column_index)
-            .or_insert_with(ColumnData::default);
+            .or_default();
 
         if let Some(mut cell) = column.get(unsorted_row_index) {
             let replace = cell.merge_update_into(&format);
@@ -71,7 +71,7 @@ impl TableFormats {
         let column = self
             .columns
             .entry(column_index)
-            .or_insert_with(Format::default);
+            .or_default();
         let undo = column.merge_update_into(&format);
         if undo.is_default() {
             None

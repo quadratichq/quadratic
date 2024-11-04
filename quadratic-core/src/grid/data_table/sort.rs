@@ -1,4 +1,4 @@
-//!
+//! DataTable sorting
 
 use anyhow::{Ok, Result};
 use itertools::Itertools;
@@ -82,7 +82,7 @@ impl DataTable {
                 .iter()
                 .position(|sort| sort.column_index == column_index);
 
-            index.and_then(|index| Some(sort.remove(index)))
+            index.map(|index| sort.remove(index))
         });
 
         match self.sort {

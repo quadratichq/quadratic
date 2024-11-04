@@ -338,7 +338,7 @@ impl GridController {
         for (x, header) in headers.into_iter().enumerate() {
             cell_values
                 .set(x as u32, 0, header)
-                .map_err(|e| error(e.to_string()))?
+                .map_err(|e| error(e.to_string()))?;
         }
 
         let reader = builder.build()?;
@@ -517,7 +517,7 @@ mod test {
                 sheet_pos,
                 code_run,
                 ..
-            } => (sheet_pos.clone(), code_run.clone().unwrap()),
+            } => (*sheet_pos, code_run.clone().unwrap()),
             _ => panic!("Expected SetCodeRun operation"),
         };
         assert_eq!(sheet_pos.x, 1);

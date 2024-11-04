@@ -100,6 +100,7 @@ pub struct DataTableColumnSchema {
     pub value_index: u32,
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DataTableKindSchema {
     CodeRun(CodeRunSchema),

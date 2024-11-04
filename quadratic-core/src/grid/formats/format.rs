@@ -188,11 +188,11 @@ impl Format {
     /// sheet, row, column, cell, table, table-column, table-cell)
     pub fn combine(formats: Vec<Option<&Format>>) -> Format {
         let mut combined_format = Format::default();
-        for format in formats {
-            if let Some(format) = format {
-                combined_format.merge_update_into(&format.into());
-            }
+
+        for format in formats.into_iter().flatten() {
+            combined_format.merge_update_into(&format.into());
         }
+
         combined_format
     }
 

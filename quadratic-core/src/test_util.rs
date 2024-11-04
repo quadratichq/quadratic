@@ -263,7 +263,6 @@ pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rec
         );
     } else {
         println!("Sheet not found");
-        return;
     }
 }
 
@@ -312,7 +311,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, disply_cell_values: bool) {
                 true => sheet.cell_value(pos),
                 false => sheet
                     .data_table(rect.min)
-                    .expect(&format!("Data table not found at {:?}", rect.min))
+                    .unwrap_or_else(|| panic!("Data table not found at {:?}", rect.min))
                     .cell_value_at(x as u32, y as u32),
             };
 

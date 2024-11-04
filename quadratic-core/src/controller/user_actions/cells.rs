@@ -22,15 +22,11 @@ impl GridController {
         let is_data_table = if let Some(cell_value) = cell_value {
             matches!(cell_value, CellValue::Code(_) | CellValue::Import(_))
         } else {
-            sheet
-                .data_tables
-                .iter()
-                .find(|(code_cell_pos, data_table)| {
-                    data_table
-                        .output_rect(**code_cell_pos, false)
-                        .contains(Pos::from(sheet_pos))
-                })
-                .is_some()
+            sheet.data_tables.iter().any(|(code_cell_pos, data_table)| {
+                data_table
+                    .output_rect(*code_cell_pos, false)
+                    .contains(Pos::from(sheet_pos))
+            })
         };
 
         match is_data_table {

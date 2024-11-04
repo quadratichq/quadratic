@@ -54,7 +54,7 @@ impl Sheet {
                 data_table
                     .output_rect(*data_table_pos, false)
                     .contains(pos)
-                    .then(|| *data_table_pos)
+                    .then_some(*data_table_pos)
             })
             .collect();
 

@@ -17,7 +17,7 @@ impl GridController {
         sheet_rect: &SheetRect,
     ) -> Result<()> {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            self.send_updated_bounds_rect(&sheet_rect, false);
+            self.send_updated_bounds_rect(sheet_rect, false);
             transaction.add_dirty_hashes_from_sheet_rect(*sheet_rect);
 
             if transaction.is_user() {
@@ -55,7 +55,7 @@ impl GridController {
             transaction.reverse_operations.extend(reverse_operations);
         }
 
-        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
     }
 
     // delete any code runs within the sheet_rect.
@@ -369,7 +369,7 @@ impl GridController {
                 .to_sheet_rect(sheet_id);
 
             self.send_to_wasm(transaction, &data_table_rect)?;
-            transaction.add_code_cell(sheet_id, data_table_pos.into());
+            transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::DataTableMeta {
@@ -411,7 +411,7 @@ impl GridController {
             data_table.sort_all()?;
 
             self.send_to_wasm(transaction, &data_table_sheet_rect)?;
-            transaction.add_code_cell(sheet_id, data_table_pos.into());
+            transaction.add_code_cell(sheet_id, data_table_pos);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SortDataTable {
@@ -509,7 +509,7 @@ mod tests {
         let op = Operation::FlattenDataTable { sheet_pos };
         let mut transaction = PendingTransaction::default();
 
-        assert_simple_csv(&gc, sheet_id, pos, file_name);
+        assert_simple_csv(gc, sheet_id, pos, file_name);
 
         gc.execute_flatten_data_table(&mut transaction, op).unwrap();
 
@@ -518,9 +518,9 @@ mod tests {
 
         assert!(gc.sheet(sheet_id).first_data_table_within(pos).is_err());
 
-        assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
+        assert_flattened_simple_csv(gc, sheet_id, pos, file_name);
 
-        print_table(&gc, sheet_id, Rect::new(0, 0, 2, 2));
+        print_table(gc, sheet_id, Rect::new(0, 0, 2, 2));
 
         transaction
     }
@@ -536,10 +536,10 @@ mod tests {
         assert!(gc.sheet(sheet_id).first_data_table_within(pos).is_err());
 
         let first_row = vec!["city", "region", "country", "population"];
-        assert_cell_value_row(&gc, sheet_id, 0, 3, 0, first_row);
+        assert_cell_value_row(gc, sheet_id, 0, 3, 0, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_cell_value_row(&gc, sheet_id, 0, 3, 10, last_row);
+        assert_cell_value_row(gc, sheet_id, 0, 3, 10, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
@@ -552,16 +552,16 @@ mod tests {
         file_name: &'a str,
     ) -> (&'a GridController, SheetId, Pos, &'a str) {
         let first_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 1, first_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 1, first_row);
 
         let second_row = vec!["Marlborough", "MA", "United States", "38334"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 2, second_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 2, second_row);
 
         let third_row = vec!["Northbridge", "MA", "United States", "14061"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 3, third_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 3, third_row);
 
         let last_row = vec!["Westborough", "MA", "United States", "29313"];
-        assert_data_table_cell_value_row(&gc, sheet_id, 0, 3, 10, last_row);
+        assert_data_table_cell_value_row(gc, sheet_id, 0, 3, 10, last_row);
         (gc, sheet_id, pos, file_name)
     }
 

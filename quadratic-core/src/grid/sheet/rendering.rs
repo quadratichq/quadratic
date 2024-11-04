@@ -20,6 +20,7 @@ impl Sheet {
     }
 
     /// creates a render for a single cell
+    #[allow(clippy::too_many_arguments)]
     fn get_render_cell(
         &self,
         x: i64,
@@ -71,15 +72,13 @@ impl Sheet {
             None
         };
         let special = special.or_else(|| {
-            self.validations
-                .render_special_pos(Pos { x, y })
-                .or_else(|| {
-                    if matches!(value, CellValue::Logical(_)) {
-                        Some(JsRenderCellSpecial::Logical)
-                    } else {
-                        None
-                    }
-                })
+            self.validations.render_special_pos(Pos { x, y }).or({
+                if matches!(value, CellValue::Logical(_)) {
+                    Some(JsRenderCellSpecial::Logical)
+                } else {
+                    None
+                }
+            })
         });
 
         match column {
@@ -727,7 +726,7 @@ mod tests {
             Pos { x: 2, y: 3 },
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "Table 1".into(),
+                "Table 1",
                 Value::Single(CellValue::Text("hello".to_string())),
                 false,
                 false,
@@ -941,7 +940,7 @@ mod tests {
         // data_table is always 3x2
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
-            "Table 1".into(),
+            "Table 1",
             Value::Array(vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into()),
             false,
             false,
@@ -997,7 +996,7 @@ mod tests {
 
         let code_run = DataTable::new(
             DataTableKind::CodeRun(code_run),
-            "Table 1".into(),
+            "Table 1",
             Value::Single(CellValue::Number(1.into())),
             false,
             false,
@@ -1124,7 +1123,7 @@ mod tests {
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
-            "Table 1".into(),
+            "Table 1",
             Value::Single(CellValue::Number(2.into())),
             false,
             false,
@@ -1185,7 +1184,7 @@ mod tests {
         };
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
-            "Table 1".into(),
+            "Table 1",
             Value::Single(CellValue::Image(image.clone())),
             false,
             false,

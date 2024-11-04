@@ -214,12 +214,12 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
 /// Starts at 1, and checks if the name is unique, then 2, etc.
 /// If `require_number` is true, the name will always have an appended number.
 pub fn unique_name(name: &str, all_names: &[&str], require_number: bool) -> String {
-    let base = MATCH_NUMBERS.replace(&name, "");
+    let base = MATCH_NUMBERS.replace(name, "");
     let contains_number = base != name;
-    let should_short_circuit = !(require_number && !contains_number);
+    let should_short_circuit = !require_number || contains_number;
 
     // short circuit if the name is unique
-    if should_short_circuit && !all_names.contains(&&name) {
+    if should_short_circuit && !all_names.contains(&name) {
         return name.to_string();
     }
 
@@ -227,7 +227,7 @@ pub fn unique_name(name: &str, all_names: &[&str], require_number: bool) -> Stri
     let mut num = 1;
     let mut name = String::from("");
 
-    while name == "" {
+    while name.is_empty() {
         let new_name = format!("{}{}", base, num);
         let new_name_alt = format!("{} {}", base, num);
         let new_names = [new_name.as_str(), new_name_alt.as_str()];

@@ -53,7 +53,7 @@ impl GridController {
                 Operation::DataTableFirstRowAsHeader { .. } => {
                     Self::handle_execution_operation_result(
                         self.execute_data_table_first_row_as_header(transaction, op),
-                    )
+                    );
                 }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
@@ -111,14 +111,18 @@ impl GridController {
 
 #[cfg(test)]
 pub fn execute_reverse_operations(gc: &mut GridController, transaction: &PendingTransaction) {
-    let mut undo_transaction = PendingTransaction::default();
-    undo_transaction.operations = transaction.reverse_operations.clone().into();
+    let mut undo_transaction = PendingTransaction {
+        operations: transaction.reverse_operations.clone().into(),
+        ..Default::default()
+    };
     gc.execute_operation(&mut undo_transaction);
 }
 
 #[cfg(test)]
 pub fn execute_forward_operations(gc: &mut GridController, transaction: &mut PendingTransaction) {
-    let mut undo_transaction = PendingTransaction::default();
-    undo_transaction.operations = transaction.forward_operations.clone().into();
+    let mut undo_transaction = PendingTransaction {
+        operations: transaction.forward_operations.clone().into(),
+        ..Default::default()
+    };
     gc.execute_operation(&mut undo_transaction);
 }
