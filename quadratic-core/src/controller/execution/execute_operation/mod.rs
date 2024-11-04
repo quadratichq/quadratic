@@ -44,9 +44,6 @@ impl GridController {
                 Operation::GridToDataTable { .. } => Self::handle_execution_operation_result(
                     self.execute_grid_to_data_table(transaction, op),
                 ),
-                Operation::UpdateDataTableName { .. } => Self::handle_execution_operation_result(
-                    self.execute_update_data_table_name(transaction, op),
-                ),
                 Operation::DataTableMeta { .. } => Self::handle_execution_operation_result(
                     self.execute_data_table_meta(transaction, op),
                 ),

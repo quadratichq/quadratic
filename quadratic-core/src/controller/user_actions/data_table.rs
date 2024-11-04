@@ -1,6 +1,6 @@
 use crate::{
     controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::sort::DataTableSort,
+    grid::{data_table::column::DataTableColumn, sort::DataTableSort},
     Pos, SheetPos, SheetRect,
 };
 
@@ -47,14 +47,22 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
     }
 
-    pub fn update_data_table_name(
+    pub fn data_table_meta(
         &mut self,
         sheet_pos: SheetPos,
-        name: String,
+        name: Option<String>,
+        alternating_colors: Option<bool>,
+        columns: Option<Vec<DataTableColumn>>,
         cursor: Option<String>,
     ) {
-        let ops = self.update_data_table_name_operations(sheet_pos, name, cursor.to_owned());
-        self.start_user_transaction(ops, cursor, TransactionName::UpdateDataTableName);
+        let ops = self.data_table_meta_operations(
+            sheet_pos,
+            name,
+            alternating_colors,
+            columns,
+            cursor.to_owned(),
+        );
+        self.start_user_transaction(ops, cursor, TransactionName::DataTableMeta);
     }
 
     pub fn sort_data_table(

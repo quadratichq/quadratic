@@ -1,3 +1,4 @@
+use grid::data_table::column::DataTableColumn;
 use selection::Selection;
 use sort::DataTableSort;
 
@@ -62,13 +63,9 @@ impl GridController {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
 
-        let mut sort = None;
-
-        if let Some(sort_js) = sort_js {
-            sort = Some(
-                serde_json::from_str::<Vec<DataTableSort>>(&sort_js).map_err(|e| e.to_string())?,
-            );
-        }
+        let sort = sort_js
+            .map(|s| serde_json::from_str::<Vec<DataTableSort>>(&s).map_err(|e| e.to_string()))
+            .transpose()?;
 
         self.sort_data_table(pos.to_sheet_pos(sheet_id), sort, cursor);
 
@@ -95,18 +92,30 @@ impl GridController {
         Ok(())
     }
     /// Update a Data Table's name
-    #[wasm_bindgen(js_name = "updateDataTableName")]
-    pub fn js_update_data_table_name(
+    #[wasm_bindgen(js_name = "dataTableMeta")]
+    pub fn js_data_table_meta(
         &mut self,
         sheet_id: String,
         pos: String,
-        name: String,
+        name: Option<String>,
+        alternating_colors: Option<bool>,
+        columns_js: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
 
-        self.update_data_table_name(pos.to_sheet_pos(sheet_id), name, cursor);
+        let columns = columns_js
+            .map(|c| serde_json::from_str::<Vec<DataTableColumn>>(&c).map_err(|e| e.to_string()))
+            .transpose()?;
+
+        self.data_table_meta(
+            pos.to_sheet_pos(sheet_id),
+            name,
+            alternating_colors,
+            columns,
+            cursor,
+        );
 
         Ok(())
     }

@@ -19,7 +19,7 @@ pub enum TransactionName {
     FlattenDataTable,
     SwitchDataTableKind,
     GridToDataTable,
-    UpdateDataTableName,
+    DataTableMeta,
     DataTableFirstRowAsHeader,
     Import,
 

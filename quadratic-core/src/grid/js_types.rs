@@ -262,6 +262,16 @@ impl From<DataTableColumn> for JsDataTableColumn {
     }
 }
 
+impl From<JsDataTableColumn> for DataTableColumn {
+    fn from(column: JsDataTableColumn) -> Self {
+        DataTableColumn {
+            name: column.name.into(),
+            display: column.display,
+            value_index: column.value_index,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 pub struct JsRowHeight {
     pub row: i64,

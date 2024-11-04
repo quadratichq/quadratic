@@ -2,7 +2,10 @@ use super::operation::Operation;
 use crate::{
     cellvalue::Import,
     controller::GridController,
-    grid::{data_table::sort::DataTableSort, DataTableKind},
+    grid::{
+        data_table::{column::DataTableColumn, sort::DataTableSort},
+        DataTableKind,
+    },
     CellValue, SheetPos, SheetRect,
 };
 
@@ -43,13 +46,20 @@ impl GridController {
         vec![Operation::GridToDataTable { sheet_rect }]
     }
 
-    pub fn update_data_table_name_operations(
+    pub fn data_table_meta_operations(
         &self,
         sheet_pos: SheetPos,
-        name: String,
+        name: Option<String>,
+        alternating_colors: Option<bool>,
+        columns: Option<Vec<DataTableColumn>>,
         _cursor: Option<String>,
     ) -> Vec<Operation> {
-        vec![Operation::UpdateDataTableName { sheet_pos, name }]
+        vec![Operation::DataTableMeta {
+            sheet_pos,
+            name,
+            alternating_colors,
+            columns,
+        }]
     }
 
     pub fn sort_data_table_operations(
