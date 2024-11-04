@@ -59,6 +59,7 @@ fn upgrade_code_runs(
                 last_modified: code_run.last_modified,
                 alternating_colors: true,
                 formats: Default::default(),
+                chart_output: None,
             };
             Ok((v1_8::PosSchema::from(pos), new_data_table))
         })

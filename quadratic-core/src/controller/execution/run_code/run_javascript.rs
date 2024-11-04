@@ -56,17 +56,12 @@ mod tests {
         gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
 
         let transaction = gc.async_transactions().first().unwrap();
-        gc.calculation_complete(JsCodeResult::new(
-            transaction.id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["test".into(), "text".into()]),
-            None,
-            None,
-            None,
-            None,
-        ))
+        gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction.id.to_string(),
+            success: true,
+            output_value: Some(vec!["test".into(), "text".into()]),
+            ..Default::default()
+        })
         .ok();
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
@@ -107,17 +102,12 @@ mod tests {
         // transaction for its id
         let transaction_id = gc.async_transactions()[0].id;
 
-        let summary = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["hello world".into(), "text".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let summary = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["hello world".into(), "text".into()]),
+            ..Default::default()
+        });
         assert!(summary.is_ok());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
@@ -174,17 +164,12 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["10".into(), "number".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["10".into(), "number".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
         // check that the value at (0, 1) contains the expected output
@@ -230,17 +215,12 @@ mod tests {
         // mock the get_cells to populate dependencies
         let _ = gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
         // mock the calculation_complete
-        let _ = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["10".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let _ = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["10".into(), "number".into()]),
+            ..Default::default()
+        });
 
         // replace the value in (0, 0) to trigger the python calculation
         gc.set_cell_value(
@@ -268,17 +248,12 @@ mod tests {
             }])
         );
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["11".into(), "number".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["11".into(), "number".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
         // check that the value at (0, 1) contains the expected output
@@ -319,17 +294,12 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                None,
-                Some(python_array(vec![1, 2, 3])),
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_array: Some(python_array(vec![1, 2, 3])),
+                ..Default::default()
+            })
             .is_ok());
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -368,17 +338,13 @@ mod tests {
         );
         let transaction_id = gc.async_transactions()[0].id;
         // mock the python result
-        let result = JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["".into(), "blank".into()]),
-            None,
-            None,
-            None,
-            Some(true),
-        );
+        let result = JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["".into(), "blank".into()]),
+            cancel_compute: Some(true),
+            ..Default::default()
+        };
         gc.calculation_complete(result).unwrap();
         assert!(gc.async_transactions().is_empty());
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -411,17 +377,12 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["original output".into(), "text".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["original output".into(), "text".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
         // check that the value at (0, 0) contains the expected output
@@ -452,17 +413,12 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["new output".into(), "text".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["new output".into(), "text".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
         // repeat the same action to find a bug that occurs on second change
@@ -493,17 +449,12 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["new output second time".into(), "text".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["new output second time".into(), "text".into()]),
+                ..Default::default()
+            })
             .is_ok());
 
         // check that the value at (0, 0) contains the original output
@@ -555,17 +506,12 @@ mod tests {
                 type_name: "number".into(),
             }
         );
-        let result = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["2".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["2".into(), "number".into()]),
+            ..Default::default()
+        });
         assert!(result.is_ok());
 
         // todo...
@@ -596,17 +542,12 @@ mod tests {
                 type_name: "number".into(),
             }
         );
-        let result = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["3".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["3".into(), "number".into()]),
+            ..Default::default()
+        });
         assert!(result.is_ok());
 
         // todo...

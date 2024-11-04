@@ -505,17 +505,12 @@ mod tests {
 
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["1".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        ));
+        let result = gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["1".into(), "number".into()]),
+            ..Default::default()
+        });
         assert!(result.is_ok());
     }
 

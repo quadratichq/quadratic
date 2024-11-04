@@ -141,6 +141,7 @@ pub struct DataTableSchema {
     pub last_modified: Option<DateTime<Utc>>,
     pub alternating_colors: bool,
     pub formats: TableFormatsSchema,
+    pub chart_output: Option<(u32, u32)>,
 }
 
 impl From<i8> for AxisSchema {

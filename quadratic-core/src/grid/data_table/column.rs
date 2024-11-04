@@ -234,6 +234,7 @@ pub mod test {
             header_is_first_row: true,
             alternating_colors: true,
             formats: Default::default(),
+            chart_output: None,
         };
         sheet.set_cell_value(
             pos,

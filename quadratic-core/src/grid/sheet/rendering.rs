@@ -869,17 +869,12 @@ mod tests {
             None,
         );
         let transaction_id = gc.async_transactions()[0].id;
-        gc.calculation_complete(JsCodeResult::new(
-            transaction_id.to_string(),
-            true,
-            None,
-            None,
-            Some(vec!["<html></html>".into(), "text".into()]),
-            None,
-            None,
-            None,
-            None,
-        ))
+        gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["<html></html>".into(), "text".into()]),
+            ..Default::default()
+        })
         .ok();
         let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_html_output();

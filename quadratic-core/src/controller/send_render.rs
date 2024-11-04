@@ -574,13 +574,8 @@ mod test {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            std_err: None,
-            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            output_array: None,
-            line_number: None,
-            output_display_type: None,
-            cancel_compute: None,
+            ..Default::default()
         });
 
         expect_js_call(
@@ -614,13 +609,8 @@ mod test {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            std_err: None,
-            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            output_array: None,
-            line_number: None,
-            output_display_type: None,
-            cancel_compute: None,
+            ..Default::default()
         });
 
         gc.set_cell_render_size(

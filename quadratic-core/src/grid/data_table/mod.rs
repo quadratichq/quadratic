@@ -84,6 +84,9 @@ pub struct DataTable {
     pub last_modified: DateTime<Utc>,
     pub alternating_colors: bool,
     pub formats: TableFormats,
+
+    // width and height of the chart (html or image) output
+    pub chart_output: Option<(u32, u32)>,
 }
 
 impl From<(Import, Array, &Grid)> for DataTable {
@@ -132,6 +135,7 @@ impl DataTable {
             alternating_colors: true,
             last_modified: Utc::now(),
             formats: Default::default(),
+            chart_output: None,
         };
 
         if header_is_first_row {
@@ -244,15 +248,19 @@ impl DataTable {
     /// Returns the size of the output array, or defaults to `_1X1` (since output always includes the code_cell).
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
-        match &self.value {
-            Value::Array(a) => {
-                let mut size = a.size();
-                if self.show_header && !self.header_is_first_row {
-                    size.h = NonZeroU32::new(size.h.get() + 1).unwrap();
+        if let Some((w, h)) = self.chart_output {
+            ArraySize::new(w, h).unwrap()
+        } else {
+            match &self.value {
+                Value::Array(a) => {
+                    let mut size = a.size();
+                    if self.show_header && !self.header_is_first_row {
+                        size.h = NonZeroU32::new(size.h.get() + 1).unwrap();
+                    }
+                    size
                 }
-                size
+                Value::Single(_) | Value::Tuple(_) => ArraySize::_1X1,
             }
-            Value::Single(_) | Value::Tuple(_) => ArraySize::_1X1,
         }
     }
 

@@ -507,17 +507,12 @@ mod tests {
         assert_eq!(transaction.has_async, 1);
 
         assert!(gc
-            .calculation_complete(JsCodeResult::new(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                Some(vec!["10".into(), "number".into()]),
-                None,
-                None,
-                None,
-                None,
-            ))
+            .calculation_complete(JsCodeResult {
+                transaction_id: transaction_id.to_string(),
+                success: true,
+                output_value: Some(vec!["10".into(), "number".into()]),
+                ..Default::default()
+            })
             .is_ok());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(

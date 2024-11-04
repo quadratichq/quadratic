@@ -231,17 +231,13 @@ mod test {
     fn test_js_code_result_to_code_cell_value_single() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let result = JsCodeResult::new(
-            Uuid::new_v4().into(),
-            true,
-            None,
-            None,
-            Some(vec!["$12".into(), "number".into()]),
-            None,
-            None,
-            None,
-            None,
-        );
+        let result = JsCodeResult {
+            transaction_id: Uuid::new_v4().into(),
+            success: true,
+            output_value: Some(vec!["$12".into(), "number".into()]),
+            output_display_type: Some("number".into()),
+            ..Default::default()
+        };
         let mut transaction = PendingTransaction::default();
         let sheet_pos = SheetPos {
             x: 0,
@@ -296,17 +292,13 @@ mod test {
             ],
         ];
         let mut transaction = PendingTransaction::default();
-        let result = JsCodeResult::new(
-            transaction.id.to_string(),
-            true,
-            None,
-            None,
-            None,
-            Some(array_output),
-            None,
-            None,
-            None,
-        );
+        let result = JsCodeResult {
+            transaction_id: transaction.id.to_string(),
+            success: true,
+            output_array: Some(array_output),
+            output_display_type: Some("array".into()),
+            ..Default::default()
+        };
 
         let sheet_pos = SheetPos {
             x: 0,

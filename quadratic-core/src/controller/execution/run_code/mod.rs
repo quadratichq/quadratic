@@ -499,13 +499,8 @@ mod test {
         let result = JsCodeResult {
             transaction_id: transaction.id.to_string(),
             success: true,
-            std_out: None,
-            std_err: None,
-            line_number: None,
             output_value: Some(vec!["test".into(), "image".into()]),
-            output_array: None,
-            output_display_type: None,
-            cancel_compute: None,
+            ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
         expect_js_call_count("jsSendImage", 1, true);
