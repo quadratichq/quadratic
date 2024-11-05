@@ -52,6 +52,7 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumn>>,
+        show_header: Option<bool>,
         _cursor: Option<String>,
     ) -> Vec<Operation> {
         vec![Operation::DataTableMeta {
@@ -59,6 +60,7 @@ impl GridController {
             name,
             alternating_colors,
             columns,
+            show_header,
         }]
     }
 
