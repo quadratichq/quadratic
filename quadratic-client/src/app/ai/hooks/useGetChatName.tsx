@@ -2,7 +2,7 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/helpers';
+import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/message.helper';
 import { aiAnalystCurrentChatMessagesAtom } from '@/app/atoms/aiAnalystAtom';
 import { AIPromptMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';

@@ -254,23 +254,25 @@ function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRe
   const [codeCell, setCodeCell] = useRecoilState(codeEditorCodeCellAtom);
 
   const handleModeCodeCellDown = useCallback(
-    (sheetEnd: boolean) => {
+    ({ sheetEnd, reverse }: { sheetEnd: boolean; reverse: boolean }) => {
       const sheetId = sheets.current;
-      quadraticCore.moveCodeCellVertically(sheetId, renderCodeCell.x, renderCodeCell.y, sheetEnd, false).then((pos) => {
-        const min = { x: Number(pos.x), y: Number(pos.y) };
-        if (min.x !== renderCodeCell.x || min.y !== renderCodeCell.y) {
-          if (
-            showCodeEditor &&
-            codeCell.sheetId === sheetId &&
-            codeCell.pos.x === renderCodeCell.x &&
-            codeCell.pos.y === renderCodeCell.y
-          ) {
-            setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
+      quadraticCore
+        .moveCodeCellVertically({ sheetId, x: renderCodeCell.x, y: renderCodeCell.y, sheetEnd, reverse })
+        .then((pos) => {
+          const min = { x: Number(pos.x), y: Number(pos.y) };
+          if (min.x !== renderCodeCell.x || min.y !== renderCodeCell.y) {
+            if (
+              showCodeEditor &&
+              codeCell.sheetId === sheetId &&
+              codeCell.pos.x === renderCodeCell.x &&
+              codeCell.pos.y === renderCodeCell.y
+            ) {
+              setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
+            }
+            const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
+            ensureRectVisible(min, max);
           }
-          const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
-          ensureRectVisible(min, max);
-        }
-      });
+        });
       onClick();
     },
     [
@@ -288,10 +290,10 @@ function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRe
   );
 
   const handleModeCodeCellRight = useCallback(
-    (sheetEnd: boolean) => {
+    ({ sheetEnd, reverse }: { sheetEnd: boolean; reverse: boolean }) => {
       const sheetId = sheets.current;
       quadraticCore
-        .moveCodeCellHorizontally(sheetId, renderCodeCell.x, renderCodeCell.y, sheetEnd, false)
+        .moveCodeCellHorizontally({ sheetId, x: renderCodeCell.x, y: renderCodeCell.y, sheetEnd, reverse })
         .then((pos) => {
           const min = { x: Number(pos.x), y: Number(pos.y) };
           if (min.x !== renderCodeCell.x || min.y !== renderCodeCell.y) {
@@ -333,13 +335,21 @@ function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRe
       actions={
         <>
           <TooltipPopover label={'Move down until fixed'}>
-            <Button size="icon-sm" variant="ghost" onClick={() => handleModeCodeCellDown(true)}>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              onClick={() => handleModeCodeCellDown({ sheetEnd: false, reverse: false })}
+            >
               <SpillErrorMoveIcon />
             </Button>
           </TooltipPopover>
 
           <TooltipPopover label={'Move right until fixed'}>
-            <Button size="icon-sm" variant="ghost" onClick={() => handleModeCodeCellRight(true)}>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              onClick={() => handleModeCodeCellRight({ sheetEnd: false, reverse: false })}
+            >
               <SpillErrorMoveIcon className="-rotate-90" />
             </Button>
           </TooltipPopover>
@@ -377,7 +387,9 @@ function HoverCellDisplay({ title, children, actions }: any) {
 }
 
 function HoverCellDisplayCode({ language, children }: { language?: string; children: string | undefined }) {
-  if (!children) return null;
+  if (!children) {
+    return null;
+  }
 
   const lines = children?.split('\n').length;
   return (

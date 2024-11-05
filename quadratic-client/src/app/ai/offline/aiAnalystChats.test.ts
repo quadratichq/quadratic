@@ -1,6 +1,7 @@
 import { defaultAIAnalystContext } from '@/app/atoms/aiAnalystAtom';
 import 'fake-indexeddb/auto';
 import { Chat } from 'quadratic-shared/typesAndSchemasAI';
+import { v4 } from 'uuid';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { aiAnalystOfflineChats } from './aiAnalystChats';
 
@@ -26,7 +27,7 @@ describe('aiAnalystOfflineChats', () => {
   it('saves and loads chats', async () => {
     const testChats: Chat[] = [
       {
-        id: '1',
+        id: v4(),
         name: 'Chat 1',
         lastUpdated: Date.now(),
         messages: [
@@ -39,7 +40,7 @@ describe('aiAnalystOfflineChats', () => {
         ],
       },
       {
-        id: '2',
+        id: v4(),
         name: 'Chat 2',
         lastUpdated: Date.now(),
         messages: [
@@ -58,31 +59,33 @@ describe('aiAnalystOfflineChats', () => {
     const loadedChats = await aiAnalystOfflineChats.loadChats();
 
     expect(loadedChats.length).toBe(2);
-    expect(loadedChats[0].id).toBe('1');
-    expect(loadedChats[0].name).toBe('Chat 1');
-    expect(loadedChats[0].messages.length).toBe(0); // Only userPrompt messages are stored
-    expect(loadedChats[1].id).toBe('2');
-    expect(loadedChats[1].name).toBe('Chat 2');
-    expect(loadedChats[1].messages[0].content).toBe('test2');
-    expect(loadedChats[1].messages[1].content).toBe('response2');
+    const testChat1 = loadedChats.find((chat) => chat.id === testChats[0].id);
+    const testChat2 = loadedChats.find((chat) => chat.id === testChats[1].id);
+    expect(testChat1).toBeDefined();
+    expect(testChat2).toBeDefined();
+    expect(testChat1?.name).toBe('Chat 1');
+    expect(testChat1?.messages.length).toBe(0); // Only userPrompt messages are stored
+    expect(testChat2?.name).toBe('Chat 2');
+    expect(testChat2?.messages[0].content).toBe('test2');
+    expect(testChat2?.messages[1].content).toBe('response2');
   });
 
   it('deletes chats', async () => {
     const testChats: Chat[] = [
       {
-        id: '1',
+        id: v4(),
         name: 'Chat 1',
         lastUpdated: Date.now(),
         messages: [{ role: 'user', content: 'test1', contextType: 'userPrompt', context: defaultAIAnalystContext }],
       },
       {
-        id: '2',
+        id: v4(),
         name: 'Chat 2',
         lastUpdated: Date.now(),
         messages: [{ role: 'user', content: 'test2', contextType: 'userPrompt', context: defaultAIAnalystContext }],
       },
       {
-        id: '3',
+        id: v4(),
         name: 'Chat 3',
         lastUpdated: Date.now(),
         messages: [{ role: 'user', content: 'test3', contextType: 'userPrompt', context: defaultAIAnalystContext }],
@@ -92,30 +95,34 @@ describe('aiAnalystOfflineChats', () => {
     await aiAnalystOfflineChats.saveChats(testChats);
     expect((await aiAnalystOfflineChats.loadChats()).length).toBe(3);
 
-    await aiAnalystOfflineChats.deleteChats(['2']);
+    await aiAnalystOfflineChats.deleteChats([testChats[1].id]);
 
     const loadedChats = await aiAnalystOfflineChats.loadChats();
     expect(loadedChats.length).toBe(2);
-    expect(loadedChats[0].id).toBe('1');
-    expect(loadedChats[1].id).toBe('3');
+    const testChat1 = loadedChats.find((chat) => chat.id === testChats[0].id);
+    const testChat2 = loadedChats.find((chat) => chat.id === testChats[2].id);
+    expect(testChat1).toBeDefined();
+    expect(testChat2).toBeDefined();
+    expect(testChat1?.id).toBe(testChats[0].id);
+    expect(testChat2?.id).toBe(testChats[2].id);
   });
 
   it('deletes file', async () => {
     const testChats: Chat[] = [
       {
-        id: '1',
+        id: v4(),
         name: 'Chat 1',
         lastUpdated: Date.now(),
         messages: [{ role: 'user', content: 'test1', contextType: 'userPrompt', context: defaultAIAnalystContext }],
       },
       {
-        id: '2',
+        id: v4(),
         name: 'Chat 2',
         lastUpdated: Date.now(),
         messages: [{ role: 'user', content: 'test2', contextType: 'userPrompt', context: defaultAIAnalystContext }],
       },
       {
-        id: '3',
+        id: v4(),
         name: 'Chat 3',
         lastUpdated: Date.now(),
         messages: [{ role: 'user', content: 'test3', contextType: 'userPrompt', context: defaultAIAnalystContext }],
@@ -132,7 +139,7 @@ describe('aiAnalystOfflineChats', () => {
     // Save chats with current userEmail
     const testChats: Chat[] = [
       {
-        id: '1',
+        id: v4(),
         name: 'Chat 1',
         lastUpdated: Date.now(),
         messages: [{ role: 'user', content: 'test1', contextType: 'userPrompt', context: defaultAIAnalystContext }],
@@ -150,7 +157,7 @@ describe('aiAnalystOfflineChats', () => {
     // Save chats with current fileId
     const testChats: Chat[] = [
       {
-        id: '1',
+        id: v4(),
         name: 'Chat 1',
         lastUpdated: Date.now(),
         messages: [{ role: 'user', content: 'test1', contextType: 'userPrompt', context: defaultAIAnalystContext }],

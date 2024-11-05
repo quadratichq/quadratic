@@ -8,7 +8,7 @@ import { useToolUseMessages } from '@/app/ai/hooks/useToolUseMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/helpers';
+import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/message.helper';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatAtom,

@@ -62,7 +62,6 @@ export function AskAISelection() {
       const rectangle = sheets.getById(selection.sheet_id.id)?.getCellOffsets(column, row);
       if (hasContent && rectangle && !inlineEditorState.visible) {
         setSelection(sheetRect);
-        console.log('rectangle', rectangle);
         setDisplayPos({
           x: rectangle.x + rectangle.width,
           y: rectangle.y,

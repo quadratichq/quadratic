@@ -20,7 +20,13 @@ export const CodeEditorFixSpillError = () => {
   const handleModeCodeCellDown = useCallback(
     (sheetEnd: boolean) => {
       quadraticCore
-        .moveCodeCellVertically(sheets.current, codeCell.pos.x, codeCell.pos.y, sheetEnd, false)
+        .moveCodeCellVertically({
+          sheetId: sheets.current,
+          x: codeCell.pos.x,
+          y: codeCell.pos.y,
+          sheetEnd,
+          reverse: false,
+        })
         .then((pos) => {
           const min = { x: Number(pos.x), y: Number(pos.y) };
           if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
@@ -39,7 +45,13 @@ export const CodeEditorFixSpillError = () => {
   const handleModeCodeCellRight = useCallback(
     (sheetEnd: boolean) => {
       quadraticCore
-        .moveCodeCellHorizontally(sheets.current, codeCell.pos.x, codeCell.pos.y, sheetEnd, false)
+        .moveCodeCellHorizontally({
+          sheetId: sheets.current,
+          x: codeCell.pos.x,
+          y: codeCell.pos.y,
+          sheetEnd,
+          reverse: false,
+        })
         .then((pos) => {
           const min = { x: Number(pos.x), y: Number(pos.y) };
           if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {

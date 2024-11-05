@@ -1,5 +1,5 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
-import { getPromptMessages } from '@/app/ai/tools/helpers';
+import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Chat, ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';

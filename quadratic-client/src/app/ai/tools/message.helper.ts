@@ -1,58 +1,13 @@
-/**
- * Helpers for converting messages and tools to the format required by the AI API
- * This is used to interface with the AI API, and is not part of the main logic of the app
- * Currently Bedrock, Anthropic and OpenAI are supported
- */
-
-import { MODEL_OPTIONS } from '@/app/ai/MODELS';
-import { AITool as AIToolName } from '@/app/ai/tools/aiTools';
-import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { AI } from '@/shared/constants/routes';
 import {
   AIModel,
   AIPromptMessage,
-  AITool,
-  AIToolChoice,
-  AnthropicModel,
   AnthropicPromptMessage,
-  AnthropicTool,
-  AnthropicToolChoice,
-  BedrockModel,
   BedrockPromptMessage,
-  BedrockTool,
-  BedrockToolChoice,
   ChatMessage,
-  OpenAIModel,
   OpenAIPromptMessage,
-  OpenAITool,
-  OpenAIToolChoice,
   SystemMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
-
-export function isBedrockModel(model: AIModel): model is BedrockModel {
-  return MODEL_OPTIONS[model].provider === 'bedrock';
-}
-
-export function isAnthropicModel(model: AIModel): model is AnthropicModel {
-  return MODEL_OPTIONS[model].provider === 'anthropic';
-}
-
-export function isOpenAIModel(model: AIModel): model is OpenAIModel {
-  return MODEL_OPTIONS[model].provider === 'openai';
-}
-
-export function getAIProviderEndpoint(model: AIModel, stream: boolean): string {
-  if (isBedrockModel(model)) {
-    return stream ? AI.BEDROCK.STREAM : AI.BEDROCK.CHAT;
-  }
-  if (isAnthropicModel(model)) {
-    return stream ? AI.ANTHROPIC.STREAM : AI.ANTHROPIC.CHAT;
-  }
-  if (isOpenAIModel(model)) {
-    return stream ? AI.OPENAI.STREAM : AI.OPENAI.CHAT;
-  }
-  throw new Error(`Unknown model: ${model}`);
-}
+import { isAnthropicModel, isBedrockModel, isOpenAIModel } from './model.helper';
 
 export const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
@@ -245,74 +200,6 @@ export const getMessagesForModel = (
     ];
 
     return { messages: openaiMessages };
-  }
-
-  throw new Error(`Unknown model: ${model}`);
-};
-
-export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
-    if (toolChoice === undefined) {
-      return !toolSpec.internalTool;
-    }
-    return name === toolChoice;
-  });
-
-  if (isBedrockModel(model)) {
-    return tools.map(
-      ([name, { description, parameters: input_schema }]): BedrockTool => ({
-        toolSpec: {
-          name,
-          description,
-          inputSchema: {
-            json: input_schema,
-          },
-        },
-      })
-    );
-  }
-
-  if (isAnthropicModel(model)) {
-    return tools.map(
-      ([name, { description, parameters: input_schema }]): AnthropicTool => ({
-        name,
-        description,
-        input_schema,
-      })
-    );
-  }
-
-  if (isOpenAIModel(model)) {
-    return tools.map(
-      ([name, { description, parameters }]): OpenAITool => ({
-        type: 'function' as const,
-        function: {
-          name,
-          description,
-          parameters,
-          strict: true,
-        },
-      })
-    );
-  }
-
-  throw new Error(`Unknown model: ${model}`);
-};
-
-export const getToolChoice = (model: AIModel, name?: AIToolName): AIToolChoice => {
-  if (isBedrockModel(model)) {
-    const toolChoice: BedrockToolChoice = name === undefined ? { auto: {} } : { tool: { name } };
-    return toolChoice;
-  }
-
-  if (isAnthropicModel(model)) {
-    const toolChoice: AnthropicToolChoice = name === undefined ? { type: 'auto' } : { type: 'tool', name };
-    return toolChoice;
-  }
-
-  if (isOpenAIModel(model)) {
-    const toolChoice: OpenAIToolChoice = name === undefined ? 'auto' : { type: 'function', function: { name } };
-    return toolChoice;
   }
 
   throw new Error(`Unknown model: ${model}`);
