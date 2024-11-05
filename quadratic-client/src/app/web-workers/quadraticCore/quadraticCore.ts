@@ -954,7 +954,19 @@ class QuadraticCore {
     });
   }
 
-  moveCodeCellVertically(sheetId: string, x: number, y: number, sheetEnd: boolean, reverse: boolean): Promise<JsPos> {
+  moveCodeCellVertically({
+    sheetId,
+    x,
+    y,
+    sheetEnd,
+    reverse,
+  }: {
+    sheetId: string;
+    x: number;
+    y: number;
+    sheetEnd: boolean;
+    reverse: boolean;
+  }): Promise<JsPos> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellVertically) => {
@@ -973,7 +985,19 @@ class QuadraticCore {
     });
   }
 
-  moveCodeCellHorizontally(sheetId: string, x: number, y: number, sheetEnd: boolean, reverse: boolean): Promise<JsPos> {
+  moveCodeCellHorizontally({
+    sheetId,
+    x,
+    y,
+    sheetEnd,
+    reverse,
+  }: {
+    sheetId: string;
+    x: number;
+    y: number;
+    sheetEnd: boolean;
+    reverse: boolean;
+  }): Promise<JsPos> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellHorizontally) => {
