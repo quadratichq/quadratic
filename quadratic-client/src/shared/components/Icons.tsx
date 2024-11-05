@@ -32,6 +32,10 @@ const Icon = (props: BaseIconProps) => {
 type IconProps = Omit<BaseIconProps, 'children'>;
 export type IconComponent = React.FC<IconProps>;
 
+export const AccountIcon: IconComponent = (props) => {
+  return <Icon {...props}>account_circle</Icon>;
+};
+
 export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
 };
