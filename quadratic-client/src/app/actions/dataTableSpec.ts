@@ -276,8 +276,8 @@ export const dataTableSpec: DataTableSpec = {
       if (table && columns) {
         columns.forEach((column) => {
           column.display = true;
-        }
-        
+        });
+
         quadraticCore.dataTableMeta(
           sheets.sheet.id,
           table.x,
