@@ -201,7 +201,7 @@ pub struct JsRenderCodeCell {
     pub state: JsRenderCodeCellState,
     pub spill_error: Option<Vec<Pos>>,
     pub name: String,
-    pub column_names: Vec<JsDataTableColumn>,
+    pub columns: Vec<JsDataTableColumn>,
     pub first_row_header: bool,
     pub show_header: bool,
     pub sort: Option<Vec<DataTableSort>>,

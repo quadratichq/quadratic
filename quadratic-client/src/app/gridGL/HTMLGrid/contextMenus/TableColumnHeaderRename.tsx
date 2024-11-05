@@ -29,7 +29,7 @@ export const TableColumnHeaderRename = () => {
     if (!contextMenu.table || contextMenu.selectedColumn === undefined) {
       return;
     }
-    return contextMenu.table.column_names[contextMenu.selectedColumn].name;
+    return contextMenu.table.columns[contextMenu.selectedColumn].name;
   }, [contextMenu.selectedColumn, contextMenu.table]);
 
   if (

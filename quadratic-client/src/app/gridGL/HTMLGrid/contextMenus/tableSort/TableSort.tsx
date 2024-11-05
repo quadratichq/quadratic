@@ -35,7 +35,7 @@ export const TableSort = () => {
       const sort = contextMenu.table.sort
         ? [...contextMenu.table.sort.filter((item) => item.direction !== 'None')]
         : [];
-      if (sort.length !== contextMenu.table.column_names.length) {
+      if (sort.length !== contextMenu.table.columns.length) {
         sort.push({ column_index: -1, direction: 'Ascending' });
       }
       setSort(sort);
@@ -91,7 +91,7 @@ export const TableSort = () => {
     };
   }, [contextMenu.table]);
 
-  const columnNames = useMemo(() => contextMenu.table?.column_names ?? [], [contextMenu.table]);
+  const columnNames = useMemo(() => contextMenu.table?.columns ?? [], [contextMenu.table]);
 
   const availableColumns = useMemo(() => {
     const availableColumns = columnNames.filter((_, index) => !sort.some((item) => item.column_index === index));
@@ -126,7 +126,7 @@ export const TableSort = () => {
     setSort((prev) => {
       const sort = prev.filter((_, i) => i !== index);
       if (
-        sort.length !== contextMenu.table?.column_names.length &&
+        sort.length !== contextMenu.table?.columns.length &&
         sort.length &&
         sort[sort.length - 1].column_index !== -1
       ) {
@@ -169,7 +169,7 @@ export const TableSort = () => {
       <div className="mb-4 text-lg font-semibold">Table Sort</div>
       <div className="flex max-h-96 flex-col gap-2 overflow-y-auto">
         {sort.map((entry, index) => {
-          const name = entry.column_index === -1 ? '' : contextMenu.table?.column_names[entry.column_index]?.name ?? '';
+          const name = entry.column_index === -1 ? '' : contextMenu.table?.columns[entry.column_index]?.name ?? '';
           const columns = name ? [name, ...availableColumns] : availableColumns;
           return (
             <TableSortEntry

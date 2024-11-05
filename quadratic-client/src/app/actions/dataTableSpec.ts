@@ -46,6 +46,11 @@ const getTable = (): JsRenderCodeCell | undefined => {
   return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
+const getColumns = (): { name: string; display: boolean; valueIndex: number }[] => {
+  const table = getTable();
+  return table?.columns ?? [];
+};
+
 const isHeadingShowing = (): boolean => {
   const table = getTable();
   return !!table?.show_header;

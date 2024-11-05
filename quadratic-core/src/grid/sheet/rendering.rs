@@ -468,7 +468,7 @@ impl Sheet {
             state,
             spill_error,
             name: data_table.name.clone(),
-            column_names: data_table.send_columns(),
+            columns: data_table.send_columns(),
             first_row_header: data_table.header_is_first_row,
             show_header: data_table.show_header,
             sort: data_table.sort.clone(),
@@ -516,7 +516,7 @@ impl Sheet {
                                 state,
                                 spill_error,
                                 name: data_table.name.clone(),
-                                column_names: data_table.send_columns(),
+                                columns: data_table.send_columns(),
                                 first_row_header: data_table.header_is_first_row,
                                 show_header: data_table.show_header,
                                 sort: data_table.sort.clone(),
@@ -1143,7 +1143,7 @@ mod tests {
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
                 name: "Table 1".to_string(),
-                column_names: vec![JsDataTableColumn {
+                columns: vec![JsDataTableColumn {
                     name: "Column 1".into(),
                     display: true,
                     value_index: 0,
