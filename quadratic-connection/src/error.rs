@@ -9,7 +9,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use quadratic_rust_shared::SharedError;
+use quadratic_rust_shared::{clean_errors, SharedError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -50,17 +50,6 @@ pub enum ConnectionError {
 
 pub(crate) fn proxy_error(e: impl ToString) -> ConnectionError {
     ConnectionError::Proxy(e.to_string())
-}
-
-fn clean_errors(error: impl ToString) -> String {
-    let mut cleaned = error.to_string();
-    let remove = vec!["error returned from database: "];
-
-    for r in remove {
-        cleaned = format!("{:?}", cleaned).replace(r, "");
-    }
-
-    cleaned
 }
 
 impl From<SharedError> for ConnectionError {
