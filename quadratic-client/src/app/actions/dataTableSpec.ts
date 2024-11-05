@@ -194,8 +194,6 @@ export const dataTableSpec: DataTableSpec = {
       if (table) {
         const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
 
-        console.log(selectedColumn);
-
         if (selectedColumn !== undefined) {
           setTimeout(() => {
             const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
@@ -248,7 +246,24 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Hide column',
     Icon: HideIcon,
     run: () => {
-      console.log('TODO: hide column');
+      const table = getTable();
+      const columns = getColumns();
+      const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+
+      if (table && columns && selectedColumn) {
+        columns[selectedColumn].display = false;
+
+        quadraticCore.dataTableMeta(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          undefined,
+          columns,
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
   [Action.ShowAllColumns]: {
