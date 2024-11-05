@@ -154,8 +154,18 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Toggle alternating colors',
     checkbox: isAlternatingColorsShowing,
     run: () => {
-      console.log('TODO: toggle alternating colors');
-      // quadraticCore.dataTableToggleAlternatingColors(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+      const table = getTable();
+      if (table) {
+        quadraticCore.dataTableMeta(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          !isAlternatingColorsShowing(),
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
   [Action.RenameTableColumn]: {
