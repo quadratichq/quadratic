@@ -60,10 +60,10 @@ class Core {
   private renderQueue: Function[] = [];
 
   private async loadGridFile(file: string, addToken: boolean): Promise<Uint8Array> {
-    const jwt = await coreClient.getJwt();
     let requestInit = {};
 
     if (addToken) {
+      const jwt = await coreClient.getJwt();
       requestInit = { headers: { Authorization: `Bearer ${jwt}` } };
     }
 
