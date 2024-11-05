@@ -4,7 +4,7 @@ import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMes
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
-import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/helpers';
+import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/message.helper';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantLoadingAtom,

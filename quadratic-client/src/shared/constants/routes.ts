@@ -1,7 +1,5 @@
-import { isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/helpers';
 import { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
 import { apiClient } from '@/shared/api/apiClient';
-import { AIModel } from 'quadratic-shared/typesAndSchemasAI';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
@@ -78,16 +76,3 @@ export const AI = {
     STREAM: `${apiClient.getApiUrl()}/ai/openai/chat/stream`,
   },
 };
-
-export function getAIProviderEndpoint(model: AIModel, stream: boolean): string {
-  if (isBedrockModel(model)) {
-    return stream ? AI.BEDROCK.STREAM : AI.BEDROCK.CHAT;
-  }
-  if (isAnthropicModel(model)) {
-    return stream ? AI.ANTHROPIC.STREAM : AI.ANTHROPIC.CHAT;
-  }
-  if (isOpenAIModel(model)) {
-    return stream ? AI.OPENAI.STREAM : AI.OPENAI.CHAT;
-  }
-  throw new Error(`Unknown model: ${model}`);
-}

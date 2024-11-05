@@ -1,4 +1,4 @@
-import { getPromptMessages } from '@/app/ai/tools/helpers';
+import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCell } from '@/app/gridGL/types/codeCell';

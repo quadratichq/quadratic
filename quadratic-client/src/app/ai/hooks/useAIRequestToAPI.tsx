@@ -1,8 +1,9 @@
 import { MODEL_OPTIONS } from '@/app/ai/MODELS';
 import { AITool } from '@/app/ai/tools/aiTools';
-import { getToolChoice, getTools, isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/helpers';
+import { getAIProviderEndpoint } from '@/app/ai/tools/endpoint.helper';
+import { isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/model.helper';
+import { getToolChoice, getTools } from '@/app/ai/tools/tool.helpers';
 import { authClient } from '@/auth';
-import { getAIProviderEndpoint } from '@/shared/constants/routes';
 import { AIMessagePrompt, AIModel, AIPromptMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
