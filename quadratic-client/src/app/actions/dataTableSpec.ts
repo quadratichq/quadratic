@@ -270,7 +270,25 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Show all columns',
     Icon: ShowIcon,
     run: () => {
-      console.log('TODO: show all columns');
+      const table = getTable();
+      const columns = getColumns();
+
+      if (table && columns) {
+        columns.forEach((column) => {
+          column.display = true;
+        }
+        
+        quadraticCore.dataTableMeta(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          undefined,
+          columns,
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
   [Action.EditTableCode]: {
