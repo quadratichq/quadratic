@@ -7,7 +7,6 @@
 import { MODEL_OPTIONS } from '@/app/ai/MODELS';
 import { AITool as AIToolName } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { AI } from '@/shared/constants/routes';
 import {
   AIModel,
   AIPromptMessage,
@@ -39,19 +38,6 @@ export function isAnthropicModel(model: AIModel): model is AnthropicModel {
 
 export function isOpenAIModel(model: AIModel): model is OpenAIModel {
   return MODEL_OPTIONS[model].provider === 'openai';
-}
-
-export function getAIProviderEndpoint(model: AIModel, stream: boolean): string {
-  if (isBedrockModel(model)) {
-    return stream ? AI.BEDROCK.STREAM : AI.BEDROCK.CHAT;
-  }
-  if (isAnthropicModel(model)) {
-    return stream ? AI.ANTHROPIC.STREAM : AI.ANTHROPIC.CHAT;
-  }
-  if (isOpenAIModel(model)) {
-    return stream ? AI.OPENAI.STREAM : AI.OPENAI.CHAT;
-  }
-  throw new Error(`Unknown model: ${model}`);
 }
 
 export const getSystemMessages = (messages: ChatMessage[]): string[] => {

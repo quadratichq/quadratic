@@ -1,8 +1,13 @@
-import { defaultAIAnalystContext } from '@/app/atoms/aiAnalystAtom';
 import 'fake-indexeddb/auto';
-import { Chat } from 'quadratic-shared/typesAndSchemasAI';
+import { Chat, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { aiAnalystOfflineChats } from './aiAnalystChats';
+
+export const defaultAIAnalystContext: Context = {
+  sheets: [],
+  currentSheet: '',
+  selection: undefined,
+};
 
 describe('aiAnalystOfflineChats', () => {
   beforeAll(async () => {
