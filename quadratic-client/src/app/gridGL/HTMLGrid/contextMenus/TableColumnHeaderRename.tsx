@@ -1,7 +1,9 @@
+import { getColumns } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FONT_SIZE } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -51,10 +53,24 @@ export const TableColumnHeaderRename = () => {
         color: 'var(--table-column-header-foreground)',
         backgroundColor: 'var(--table-column-header-background)',
       }}
-      onSave={() => {
-        if (contextMenu.table) {
-          console.log('TODO: rename column heading');
-          // quadraticCore.renameDataTable(contextMenu.table.id, contextMenu.table.name);
+      onSave={(value: string) => {
+        if (contextMenu.table && contextMenu.selectedColumn && pixiApp.cellsSheets.current) {
+          const columns = getColumns();
+
+          if (columns) {
+            columns[contextMenu.selectedColumn].name = value;
+
+            quadraticCore.dataTableMeta(
+              pixiApp.cellsSheets.current?.sheetId,
+              contextMenu.table.x,
+              contextMenu.table.y,
+              undefined,
+              undefined,
+              columns,
+              undefined,
+              ''
+            );
+          }
         }
       }}
       onClose={() => events.emit('contextMenu', {})}
