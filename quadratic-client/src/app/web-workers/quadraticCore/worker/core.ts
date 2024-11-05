@@ -954,6 +954,7 @@ class Core {
       line_number: null,
       output_display_type: null,
       cancel_compute: true,
+      chart_output: null,
     };
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }
@@ -1137,6 +1138,7 @@ class Core {
     name?: string,
     alternatingColors?: boolean,
     columns?: { name: string; display: boolean; valueIndex: number }[],
+    showHeader?: boolean,
     cursor?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -1146,6 +1148,7 @@ class Core {
       name,
       alternatingColors,
       JSON.stringify(columns),
+      showHeader,
       cursor
     );
   }

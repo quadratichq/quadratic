@@ -28,7 +28,7 @@ export interface JsBordersSheet { all: BorderStyleCell | null, columns: Record<s
 export interface JsCellValue { value: string, kind: string, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<SheetRect> | null, }
-export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
+export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_output: [number, number] | null, }
 export interface JsDataTableColumn { name: string, display: boolean, valueIndex: number, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: string | null, h: string | null, }

@@ -114,8 +114,19 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Show column headings',
     checkbox: isHeadingShowing,
     run: () => {
-      // const table = getTable();
-      // quadraticCore.dataTableShowHeadings(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+      const table = getTable();
+      if (table) {
+        quadraticCore.dataTableMeta(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          undefined,
+          undefined,
+          !isHeadingShowing(),
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
   [Action.DeleteDataTable]: {
@@ -162,6 +173,7 @@ export const dataTableSpec: DataTableSpec = {
           table.y,
           undefined,
           !isAlternatingColorsShowing(),
+          undefined,
           undefined,
           sheets.getCursorPosition()
         );

@@ -41,6 +41,7 @@ export const TableRename = () => {
             value,
             undefined,
             undefined,
+            undefined,
             ''
           );
         }

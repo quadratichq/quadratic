@@ -1216,6 +1216,7 @@ class QuadraticCore {
     name?: string,
     alternatingColors?: boolean,
     columns?: { name: string; display: boolean; valueIndex: number }[],
+    showHeader?: boolean,
     cursor?: string
   ) {
     this.send({
@@ -1224,6 +1225,9 @@ class QuadraticCore {
       x,
       y,
       name,
+      alternatingColors,
+      columns,
+      showHeader,
       cursor: cursor || '',
     });
   }
