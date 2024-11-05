@@ -1,3 +1,19 @@
+.markdown {
+  @apply flex flex-col gap-2 break-words text-sm;
+
+  /**
+   * Lists
+   * We use `list-style-position: outside` because the AI may return
+   * `<li><p>...</p></li>` which will make the list markers and <p> be on separate lines
+   */
+  ol {
+    @apply list-decimal pl-4;
+  }
+  ul {
+    @apply list-disc pl-4;
+  }
+}
+
 .markdown pre {
   white-space: pre-wrap;
   word-break: break-word;
