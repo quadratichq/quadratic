@@ -472,7 +472,6 @@ impl Sheet {
             first_row_header: data_table.header_is_first_row,
             show_header: data_table.show_header,
             sort: data_table.sort.clone(),
-            display_buffer: data_table.display_buffer.clone(),
             alternating_colors: data_table.alternating_colors,
         })
     }
@@ -521,7 +520,6 @@ impl Sheet {
                                 first_row_header: data_table.header_is_first_row,
                                 show_header: data_table.show_header,
                                 sort: data_table.sort.clone(),
-                                display_buffer: data_table.display_buffer.clone(),
                                 alternating_colors: data_table.alternating_colors,
                             })
                         }
@@ -1153,7 +1151,6 @@ mod tests {
                 first_row_header: false,
                 show_header: true,
                 sort: None,
-                display_buffer: None,
                 alternating_colors: true,
             })
         );

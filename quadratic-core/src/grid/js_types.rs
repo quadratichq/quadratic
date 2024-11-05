@@ -205,7 +205,6 @@ pub struct JsRenderCodeCell {
     pub first_row_header: bool,
     pub show_header: bool,
     pub sort: Option<Vec<DataTableSort>>,
-    pub display_buffer: Option<Vec<u64>>,
     pub alternating_colors: bool,
 }
 

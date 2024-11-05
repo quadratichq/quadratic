@@ -51,19 +51,6 @@ export const getColumns = (): { name: string; display: boolean; valueIndex: numb
   return table?.columns;
 };
 
-const calculateRowIndex = (rowIndex: number): number => {
-  const displayBuffer = getTable()?.display_buffer;
-
-  if (!displayBuffer) {
-    return rowIndex;
-  }
-
-  const displayRowIndex = displayBuffer.indexOf(BigInt(rowIndex));
-
-  // TODO(ddimaria): handle case where row is not in display buffer
-  return displayRowIndex === -1 ? rowIndex : displayRowIndex;
-};
-
 const isHeadingShowing = (): boolean => {
   const table = getTable();
   return !!table?.show_header;
@@ -311,8 +298,7 @@ export const dataTableSpec: DataTableSpec = {
       const table = getTable();
       if (table) {
         const column = table.x;
-        const row = calculateRowIndex(table.y);
-
+        const row = table.y;
         quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
           if (code) {
             doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });

@@ -120,6 +120,16 @@ impl GridController {
 
             let data_table = sheet.data_table_result(data_table_pos)?;
 
+            if let Some(display_buffer) = &data_table.display_buffer {
+                // if there is a display buffer, use it to find the source row index
+                let row_index = display_buffer
+                    .iter()
+                    .position(|&i| i == pos.y as u64)
+                    .unwrap_or(pos.y as usize);
+
+                pos.y = row_index as i64;
+            }
+
             if data_table.show_header && !data_table.header_is_first_row {
                 pos.y -= 1;
             }
@@ -127,7 +137,7 @@ impl GridController {
             let value = values.safe_get(0, 0).cloned()?;
             let old_value = sheet.get_code_cell_value(pos).unwrap_or(CellValue::Blank);
 
-            // sen the new value
+            // send the new value
             sheet.set_code_cell_value(pos, value.to_owned());
 
             let data_table_rect = SheetRect::from_numbers(
