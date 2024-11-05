@@ -92,6 +92,7 @@ impl GridController {
         Ok(())
     }
     /// Update a Data Table's name
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "dataTableMeta")]
     pub fn js_data_table_meta(
         &mut self,
