@@ -126,10 +126,6 @@ impl GridController {
                     .get(pos.y as usize)
                     .unwrap_or(&(pos.y as u64));
 
-                println!("row_index: {:?}", row_index);
-                println!("pos.y: {:?}", pos.y);
-                println!("display_buffer: {:?}", display_buffer);
-
                 pos.y = row_index as i64;
             }
 
@@ -139,8 +135,6 @@ impl GridController {
 
             let value = values.safe_get(0, 0).cloned()?;
             let old_value = sheet.get_code_cell_value(pos).unwrap_or(CellValue::Blank);
-            println!("old_value: {:?}", old_value);
-            println!("value: {:?}", value);
 
             // send the new value
             sheet.set_code_cell_value(pos, value.to_owned());
@@ -604,12 +598,12 @@ mod tests {
         // the initial value from the csv
         assert_data_table_cell_value(&gc, sheet_id, x, y, "MA");
 
-        print_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
         gc.execute_set_data_table_at(&mut transaction, op.clone())
             .unwrap();
 
-        print_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
         // expect the value to be "1"
         assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
@@ -634,9 +628,9 @@ mod tests {
         gc.execute_sort_data_table(&mut transaction, sort_op)
             .unwrap();
 
-        print_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
         gc.execute_set_data_table_at(&mut transaction, op).unwrap();
-        print_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        print_data_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
         assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
     }
 
