@@ -484,6 +484,7 @@ impl Sheet {
                     .find_next_row(pos.y - 1, pos.x, true, false)
                     .unwrap_or(pos.y - 1)
                     + 1;
+
                 let footer_row = self
                     .find_next_row(pos.y + 1, pos.x, false, false)
                     .unwrap_or(pos.y + 1)
@@ -540,7 +541,7 @@ mod test {
             BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
         selection::Selection,
-        CellValue, Pos, Rect, SheetPos, SheetRect,
+        Array, CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use serial_test::parallel;
@@ -1230,5 +1231,63 @@ mod test {
         let rect = Rect::from_numbers(0, 0, 1, 10);
         let result = sheet.find_next_row_for_rect(0, 1, false, rect);
         assert_eq!(result, 10);
+    }
+
+    #[test]
+    #[parallel]
+    fn find_tabular_data_rects() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_values(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10, y: 1000 },
+            },
+            &Array::from(
+                (1..=1000)
+                    .map(|row| {
+                        (1..=10)
+                            .map(|_| {
+                                if row == 1 {
+                                    "heading1".to_string()
+                                } else {
+                                    "value1".to_string()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            ),
+        );
+
+        sheet.set_cell_values(
+            Rect {
+                min: Pos { x: 31, y: 101 },
+                max: Pos { x: 35, y: 1203 },
+            },
+            &Array::from(
+                (101..=1203)
+                    .map(|row| {
+                        (31..=35)
+                            .map(|_| {
+                                if row == 101 {
+                                    "heading2".to_string()
+                                } else {
+                                    "value2".to_string()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            ),
+        );
+
+        let tabular_data_rects = sheet.find_tabular_data_rects(Rect::new(1, 1, 10000, 10000));
+        assert_eq!(tabular_data_rects.len(), 2);
+
+        let expected_rects = vec![
+            Rect::from_numbers(1, 1, 10, 1000),
+            Rect::from_numbers(31, 101, 5, 1103),
+        ];
+        assert_eq!(tabular_data_rects, expected_rects);
     }
 }

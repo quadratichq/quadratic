@@ -1249,14 +1249,14 @@ mod test {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 1, y: 1 },
-                max: Pos { x: 11, y: 1001 },
+                max: Pos { x: 10, y: 1000 },
             },
             &Array::from(
-                (0..1000)
+                (1..=1000)
                     .map(|row| {
-                        (0..10)
+                        (1..=10)
                             .map(|_| {
-                                if row == 0 {
+                                if row == 1 {
                                     "heading".to_string()
                                 } else {
                                     "value".to_string()
@@ -1280,17 +1280,17 @@ mod test {
 
         assert_eq!(js_cell_value_pos_rect.len(), max_rows as usize);
 
-        let expected_js_cell_value_pos_rect: Vec<Vec<JsCellValuePos>> = (0..max_rows)
+        let expected_js_cell_value_pos_rect: Vec<Vec<JsCellValuePos>> = (1..=max_rows)
             .map(|row| {
-                (0..10)
+                (1..=10)
                     .map(|col| {
-                        if row == 0 {
+                        if row == 1 {
                             JsCellValuePos {
                                 value: "heading".to_string(),
                                 kind: "text".to_string(),
                                 pos: JsPos {
-                                    x: col as i64 + 1,
-                                    y: row as i64 + 1,
+                                    x: col,
+                                    y: row as i64,
                                 },
                             }
                         } else {
@@ -1298,8 +1298,8 @@ mod test {
                                 value: "value".to_string(),
                                 kind: "text".to_string(),
                                 pos: JsPos {
-                                    x: col as i64 + 1,
-                                    y: row as i64 + 1,
+                                    x: col,
+                                    y: row as i64,
                                 },
                             }
                         }
@@ -1318,14 +1318,14 @@ mod test {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 1, y: 1 },
-                max: Pos { x: 11, y: 1001 },
+                max: Pos { x: 10, y: 1000 },
             },
             &Array::from(
-                (0..1000)
+                (1..=1000)
                     .map(|row| {
-                        (0..10)
+                        (1..=10)
                             .map(|_| {
-                                if row == 0 {
+                                if row == 1 {
                                     "heading1".to_string()
                                 } else {
                                     "value1".to_string()
@@ -1340,14 +1340,14 @@ mod test {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 31, y: 101 },
-                max: Pos { x: 41, y: 1101 },
+                max: Pos { x: 40, y: 1100 },
             },
             &Array::from(
-                (0..1000)
+                (1..=1000)
                     .map(|row| {
-                        (0..10)
+                        (1..=10)
                             .map(|_| {
-                                if row == 0 {
+                                if row == 1 {
                                     "heading2".to_string()
                                 } else {
                                     "value3".to_string()
@@ -1361,7 +1361,7 @@ mod test {
 
         let js_ai_context_rects_in_sheet_rect = sheet.js_ai_context_rects_in_sheet_rect(Rect {
             min: Pos { x: 1, y: 1 },
-            max: Pos { x: 1001, y: 1001 },
+            max: Pos { x: 10000, y: 10000 },
         });
 
         let max_rows = 3;
@@ -1375,7 +1375,7 @@ mod test {
                 starting_rect_values: sheet.js_cell_value_pos_rect(
                     Rect {
                         min: Pos { x: 1, y: 1 },
-                        max: Pos { x: 11, y: 1001 },
+                        max: Pos { x: 10, y: 1000 },
                     },
                     Some(max_rows),
                 ),
@@ -1388,7 +1388,7 @@ mod test {
                 starting_rect_values: sheet.js_cell_value_pos_rect(
                     Rect {
                         min: Pos { x: 31, y: 101 },
-                        max: Pos { x: 41, y: 1101 },
+                        max: Pos { x: 40, y: 1100 },
                     },
                     Some(max_rows),
                 ),
