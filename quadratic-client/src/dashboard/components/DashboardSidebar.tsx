@@ -1,4 +1,3 @@
-import { colors } from '@/app/theme/colors';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
@@ -15,6 +14,7 @@ import {
   FilePrivateIcon,
   FileSharedWithMeIcon,
   GroupIcon,
+  LabsIcon,
   SettingsIcon,
 } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
@@ -28,6 +28,8 @@ import { cn } from '@/shared/shadcn/utils';
 import { ReactNode, useState } from 'react';
 import { NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
+
+const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
 
 /**
  * Dashboard Navbar
@@ -48,11 +50,11 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   const classNameIcons = `mx-0.5 text-muted-foreground`;
 
   return (
-    <nav className={`flex h-full flex-col gap-4 overflow-auto`}>
-      <div className="sticky top-0 z-10 flex flex-col bg-background px-4 pt-4">
+    <nav className={`flex h-full flex-col gap-4 overflow-auto bg-accent`}>
+      <div className="sticky top-0 z-10 flex flex-col bg-accent px-3 pt-3">
         <TeamSwitcher appIsLoading={isLoading} />
       </div>
-      <div className={`flex flex-col px-4`}>
+      <div className={`flex flex-col px-3`}>
         <Type
           as="h3"
           variant="overline"
@@ -112,7 +114,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           Resources
         </Type>
         <div className="grid gap-0.5">
-          {canEditTeam && (
+          {canEditTeam && SHOW_EXAMPLES && (
             <SidebarNavLink to={ROUTES.EXAMPLES}>
               <ExamplesIcon className={classNameIcons} />
               Examples
@@ -128,7 +130,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
         </div>
       </div>
-      <div className="mt-auto flex flex-col gap-1 bg-background px-4 pb-2">
+      <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -150,18 +152,16 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             </Badge>
           </SidebarNavLink>
         )}
-        <SidebarNavLink to={ROUTES.ACCOUNT}>
-          <Avatar
-            src={user?.picture}
-            alt={user?.name}
-            style={{
-              backgroundColor: colors.quadraticSecondary,
-            }}
-          >
+        <SidebarNavLink to="/labs">
+          <LabsIcon className={classNameIcons} />
+          Labs
+        </SidebarNavLink>
+        <SidebarNavLink to="/account">
+          <Avatar src={user?.picture} alt={user?.name}>
             {user?.name}
           </Avatar>
 
-          <div className={`flex flex-col overflow-hidden`}>
+          <div className={`flex flex-col overflow-hidden text-left`}>
             {user?.name || 'You'}
             {user?.email && <p className={`truncate ${TYPE.caption} text-muted-foreground`}>{user?.email}</p>}
           </div>
@@ -179,7 +179,7 @@ function SidebarNavLinkCreateButton({ children, isPrivate }: { children: ReactNo
         <Button
           variant="ghost"
           size="icon-sm"
-          className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100"
+          className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
           onClick={() => setNewFileDialogState({ show: true, isPrivate })}
         >
           <AddIcon />
@@ -189,6 +189,12 @@ function SidebarNavLinkCreateButton({ children, isPrivate }: { children: ReactNo
     </Tooltip>
   );
 }
+
+export const sidebarItemClasses = {
+  base: `dark:hover:brightness-125 hover:brightness-95 hover:saturate-150 dark:hover:saturate-100 bg-accent relative flex items-center gap-2 p-2 no-underline rounded`,
+  active: `bg-accent dark:brightness-125 brightness-95 saturate-150 dark:saturate-100`,
+  dragging: `bg-primary text-primary-foreground`,
+};
 
 function SidebarNavLink({
   to,
@@ -251,11 +257,10 @@ function SidebarNavLink({
     : {};
 
   const classes = cn(
-    isActive && !isLogo && 'bg-muted',
-    !isLogo && 'hover:bg-accent',
-    isDraggingOver && 'bg-primary text-primary-foreground',
+    sidebarItemClasses.base,
+    isActive && sidebarItemClasses.active,
+    isDraggingOver && sidebarItemClasses.dragging,
     TYPE.body2,
-    `relative flex items-center gap-2 p-2 no-underline rounded`,
     className
   );
 

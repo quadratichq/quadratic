@@ -1,31 +1,14 @@
-import { Request, Response } from 'express';
-import multer, { StorageEngine } from 'multer';
-import multerS3 from 'multer-s3';
+import { Response } from 'express';
 import { ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { s3Client } from '../../aws/s3';
 import dbClient from '../../dbClient';
-import { AWS_S3_BUCKET_NAME } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { uploadMiddleware } from '../../storage/storage';
 import { RequestWithFile, RequestWithUser } from '../../types/Request';
 const { FILE_EDIT } = FilePermissionSchema.enum;
-
-const uploadThumbnailToS3: multer.Multer = multer({
-  storage: multerS3({
-    s3: s3Client,
-    bucket: AWS_S3_BUCKET_NAME,
-    metadata: (req: Request, file: Express.Multer.File, cb: (error: Error | null, metadata: any) => void) => {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: (req: Request, file: Express.Multer.File, cb: (error: Error | null, key: string) => void) => {
-      const fileUuid = req.params.uuid;
-      cb(null, `${fileUuid}-${file.originalname}`);
-    },
-  }) as StorageEngine,
-});
 
 async function handler(req: RequestWithUser & RequestWithFile, res: Response) {
   const {
@@ -65,6 +48,6 @@ export default [
   ),
   validateAccessToken,
   userMiddleware,
-  uploadThumbnailToS3.single('thumbnail'),
+  uploadMiddleware().single('thumbnail'),
   handler,
 ];

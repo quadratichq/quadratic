@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { uploadStringAsFileS3 } from '../aws/s3';
 import dbClient from '../dbClient';
+import { uploadFile } from '../storage/storage';
 
 export async function createFile({
   contents,
@@ -10,6 +10,7 @@ export async function createFile({
   version,
   teamId,
   isPrivate,
+  jwt,
 }: {
   contents?: string;
   name: string;
@@ -17,6 +18,7 @@ export async function createFile({
   version: string;
   teamId: number;
   isPrivate?: boolean;
+  jwt: string;
 }) {
   return await dbClient.$transaction(async (transaction) => {
     // Create file in db
@@ -44,7 +46,7 @@ export async function createFile({
 
     // Upload file contents to S3 and create a checkpoint
     const { uuid, id: fileId } = dbFile;
-    const response = await uploadStringAsFileS3(`${uuid}-0.grid`, contents);
+    const response = await uploadFile(`${uuid}-0.grid`, contents, jwt);
 
     await transaction.fileCheckpoint.create({
       data: {

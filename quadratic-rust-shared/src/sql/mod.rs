@@ -16,6 +16,7 @@ use self::{
     postgres_connection::PostgresConnection,
 };
 
+pub mod error;
 pub mod mssql_connection;
 pub mod mysql_connection;
 pub mod postgres_connection;

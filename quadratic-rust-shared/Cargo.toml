@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+aes = "0.8.4"
 arrow = "53.0.0"
 arrow-array = "53.0.0"
 async-trait = "0.1.80"
@@ -13,8 +14,10 @@ aws-config = { version = "1.1.1", features = ["behavior-version-latest"] }
 aws-sdk-s3 = { version = "1.12.0", features = ["behavior-version-latest", "rt-tokio"] }
 bigdecimal = "0.4.5" # need this fixed to the sqlx dependency
 bytes = "1.6.0"
+cbc = { version = "0.1.2", features = ["alloc"] }
 chrono = "0.4.31"
 futures-util = "0.3.30"
+hex = "0.4.3"
 httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-alpha.1", features = [
   "proxy",
   "record",
@@ -51,7 +54,12 @@ test = ["httpmock"]
 
 [dev-dependencies]
 arrow = { version = "53.0.0", features = ["prettyprint"] }
+aws-smithy-async = { version = "1.2.1", features = ["test-util"] }
+aws-smithy-runtime = {version = "1.6.2", features = ["test-util"] }
+aws-smithy-runtime-api = "1.7.1"
 httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-alpha.1", features = [
   "proxy",
   "record",
 ] }
+http = "1.1.0"
+tracing-test = "0.2.4"
