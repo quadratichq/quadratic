@@ -17,6 +17,9 @@ export const FixSpillError = () => {
   const [codeCell, setCodeCell] = useRecoilState(codeEditorCodeCellAtom);
   const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
 
+  // TODO: ayush, can you make it so these buttons work either way, whether it's
+  // in the code cell hover, or in the code editor?
+
   const handleModeCodeCellDown = useCallback(
     (sheetEnd: boolean) => {
       quadraticCore
@@ -86,27 +89,3 @@ export const FixSpillError = () => {
     </DropdownMenu>
   );
 };
-
-/* <TooltipPopover label={'Fix spill error - move down after all data'}>
-            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellDown(true)}>
-              <ArrowDoubleDown />
-            </Button>
-          </TooltipPopover>
-
-          <TooltipPopover label={'Fix spill error - move down to nearest empty space'}>
-            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellDown(false)}>
-              <ArrowDown />
-            </Button>
-          </TooltipPopover>
-
-          <TooltipPopover label={'Fix spill error - move right to nearest empty space'}>
-            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellRight(false)}>
-              <ArrowRight />
-            </Button>
-          </TooltipPopover>
-
-          <TooltipPopover label={'Fix spill error - move right after all data'}>
-            <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellRight(true)}>
-              <ArrowDoubleRight />
-            </Button>
-          </TooltipPopover> */
