@@ -104,7 +104,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             id={`${index}-${message.role}-${message.contextType}`}
             className={cn(
               'flex flex-col gap-2',
-              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-2',
+              message.role === 'user' && message.contextType === 'userPrompt' ? '-mx-2' : 'px-2',
               // For debugging internal context
               message.contextType === 'userPrompt' ? '' : 'bg-accent'
             )}
@@ -151,7 +151,6 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
 }
 
 function MarkdownContent({ children }: { children: string }) {
-  return (
-    <Markdown className="flex select-text flex-col gap-2 whitespace-pre-wrap break-words text-sm">{children}</Markdown>
-  );
+  // Classes applied in Markdown.scss
+  return <Markdown>{children}</Markdown>;
 }
