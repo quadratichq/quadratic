@@ -5,6 +5,7 @@
     "bigdecimal",
     "bincode",
     "bindgen",
+    "cellvalue",
     "dashmap",
     "dbgjs",
     "dcell",

@@ -122,6 +122,7 @@ mod tests {
             false,
             false,
             true,
+            None,
         );
 
         let mut gc = GridController::test();

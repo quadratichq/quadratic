@@ -42,6 +42,11 @@ pub enum Operation {
         code_run: Option<DataTable>,
         index: usize,
     },
+    SetChartSize {
+        sheet_pos: SheetPos,
+        pixel_width: f32,
+        pixel_height: f32,
+    },
     SetDataTableAt {
         sheet_pos: SheetPos,
         values: CellValues,
@@ -406,6 +411,15 @@ impl fmt::Display for Operation {
                     "InsertRow {{ sheet_id: {sheet_id}, row: {row}, copy_formats: {copy_formats:?} }}"
                 )
             }
+            Operation::SetChartSize {
+                sheet_pos,
+                pixel_width,
+                pixel_height,
+            } => write!(
+                fmt,
+                "SetChartSize {{ sheet_pos: {}, pixel_width: {}, pixel_height: {} }}",
+                sheet_pos, pixel_width, pixel_height
+            ),
         }
     }
 }

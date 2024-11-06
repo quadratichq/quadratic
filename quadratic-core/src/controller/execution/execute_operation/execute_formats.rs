@@ -183,11 +183,11 @@ mod test {
 
     use super::*;
     use crate::wasm_bindings::js::expect_js_call;
-    use crate::{CellValue, CodeCellValue, Pos, SheetRect, Value};
+    use crate::{CellValue, CodeCellValue, Pos, SheetPos, Value};
 
     #[test]
     #[serial]
-    fn execute_set_formats_render_size() {
+    fn test_execute_set_chart_size() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
@@ -219,15 +219,18 @@ mod test {
                 false,
                 false,
                 true,
+                None,
             )),
         );
 
-        gc.set_cell_render_size(
-            SheetRect::from_numbers(0, 0, 1, 1, sheet_id),
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            }),
+        gc.set_chart_size(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            1.0,
+            2.0,
             None,
         );
         let args = format!(
@@ -236,8 +239,8 @@ mod test {
             0,
             0,
             true,
-            Some("1".to_string()),
-            Some("2".to_string())
+            Some(1.0),
+            Some(2.0)
         );
         expect_js_call("jsSendImage", args, true);
     }

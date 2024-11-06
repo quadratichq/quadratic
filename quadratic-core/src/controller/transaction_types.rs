@@ -13,7 +13,7 @@ pub struct JsCodeResult {
     pub output_array: Option<Vec<Vec<Vec<String>>>>,
     pub output_display_type: Option<String>,
     pub cancel_compute: Option<bool>,
-    pub chart_output: Option<(u32, u32)>,
+    pub chart_pixel_output: Option<(f32, f32)>,
 }
 
 #[derive(Debug, Serialize, Deserialize, TS)]

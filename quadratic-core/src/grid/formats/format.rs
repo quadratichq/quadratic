@@ -19,10 +19,12 @@ pub struct Format {
     pub italic: Option<bool>,
     pub text_color: Option<String>,
     pub fill_color: Option<String>,
-    pub render_size: Option<RenderSize>,
     pub date_time: Option<String>,
     pub underline: Option<bool>,
     pub strike_through: Option<bool>,
+
+    // deprecated but still used in existing Operations
+    pub render_size: Option<RenderSize>,
 }
 
 impl Format {

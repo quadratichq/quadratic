@@ -84,6 +84,7 @@ mod test {
                 false,
                 false,
                 true,
+                None,
             )),
         );
         let sheet_pos_02 = SheetPos {

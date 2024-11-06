@@ -16,6 +16,7 @@ export function javascriptErrorResult(transactionId: string, message: string, li
     line_number: lineNumber ?? null,
     output_display_type: null,
     cancel_compute: false,
+    chart_pixel_output: null,
   };
   javascriptCore.sendJavascriptResults(transactionId, codeResult);
   javascriptClient.sendState('ready');
@@ -27,7 +28,8 @@ export function javascriptResults(
   y: number,
   result: any,
   consoleOutput: string,
-  lineNumber?: number
+  lineNumber?: number,
+  chartPixelOutput?: [number, number]
 ) {
   const message: string[] = [];
   const outputType = javascriptConvertOutputType(message, result, x, y);
@@ -46,6 +48,7 @@ export function javascriptResults(
 
     output_display_type: outputType?.displayType || outputArray?.displayType || null,
     cancel_compute: false,
+    chart_pixel_output: chartPixelOutput || null,
   };
   javascriptCore.sendJavascriptResults(transactionId, codeResult);
   javascriptClient.sendState('ready', { current: undefined });

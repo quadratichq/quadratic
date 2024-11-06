@@ -5,13 +5,13 @@ use itertools::Itertools;
 use crate::{
     grid::{
         js_types::{JsOffset, JsPos, JsRenderFill},
-        RenderSize, SheetId,
+        SheetId,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::Selection,
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    CellValue, Pos, Rect, SheetPos, SheetRect,
+    Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
@@ -359,30 +359,7 @@ impl GridController {
     pub fn send_image(&self, sheet_pos: SheetPos) {
         if cfg!(target_family = "wasm") || cfg!(test) {
             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                let image = sheet.data_table(sheet_pos.into()).and_then(|code_run| {
-                    code_run
-                        .cell_value_at(0, 0)
-                        .and_then(|cell_value| match cell_value {
-                            CellValue::Image(image) => Some(image.clone()),
-                            _ => None,
-                        })
-                });
-                let (w, h) = if let Some(size) =
-                    sheet.get_formatting_value::<RenderSize>(sheet_pos.into())
-                {
-                    (Some(size.w), Some(size.h))
-                } else {
-                    (None, None)
-                };
-
-                crate::wasm_bindings::js::jsSendImage(
-                    sheet_pos.sheet_id.to_string(),
-                    sheet_pos.x as i32,
-                    sheet_pos.y as i32,
-                    image,
-                    w,
-                    h,
-                );
+                sheet.send_image(sheet_pos.into());
             }
         }
     }
@@ -401,11 +378,11 @@ mod test {
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            RenderSize, SheetId,
+            SheetId,
         },
         selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        Pos, Rect,
+        Pos, Rect, SheetPos,
     };
     use serial_test::serial;
     use std::collections::HashSet;
@@ -613,12 +590,14 @@ mod test {
             ..Default::default()
         });
 
-        gc.set_cell_render_size(
-            (0, 0, 1, 1, sheet_id).into(),
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            }),
+        gc.set_chart_size(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            1.0,
+            2.0,
             None,
         );
 
@@ -629,8 +608,8 @@ mod test {
                 x: 0,
                 y: 0,
                 html: Some("<html></html>".to_string()),
-                w: Some("1".to_string()),
-                h: Some("2".to_string()),
+                w: Some(1.0),
+                h: Some(2.0),
             })
             .unwrap(),
             true,

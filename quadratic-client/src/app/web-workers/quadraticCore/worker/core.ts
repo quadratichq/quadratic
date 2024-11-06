@@ -44,7 +44,7 @@ import {
 import { coreClient } from './coreClient';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
-import { numbersToRectStringified, pointsToRect, posToPos, posToRect } from './rustConversions';
+import { numbersToRectStringified, pointsToRect, posToPos, posToRect, toSheetPos } from './rustConversions';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -777,17 +777,11 @@ class Core {
     });
   }
 
-  setCellRenderSize(sheetId: string, x: number, y: number, width: number, height: number, cursor: string) {
+  setChartSize(sheetId: string, x: number, y: number, width: number, height: number, cursor: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellRenderSize(
-          sheetId,
-          numbersToRectStringified(x, y, 1, 1),
-          width.toString(),
-          height.toString(),
-          cursor
-        );
+        this.gridController.setChartSize(toSheetPos(x, y, sheetId), width, height, cursor);
         resolve(undefined);
       });
     });
@@ -954,6 +948,7 @@ class Core {
       line_number: null,
       output_display_type: null,
       cancel_compute: true,
+      chart_pixel_output: null,
     };
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }

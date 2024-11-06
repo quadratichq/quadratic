@@ -122,7 +122,8 @@ export class Javascript {
             message.y,
             e.data.results,
             e.data.console,
-            e.data.lineNumber
+            e.data.lineNumber,
+            e.data.chartPixelOutput
           );
           this.state = 'ready';
           setTimeout(this.next, 0);

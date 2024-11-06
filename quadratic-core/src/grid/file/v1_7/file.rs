@@ -5,8 +5,33 @@ use crate::grid::file::{
     v1_8::schema::{self as v1_8},
 };
 
+fn render_size_to_chart_size(
+    columns: &Vec<(i64, v1_7::ColumnSchema)>,
+    pos: v1_7::PosSchema,
+) -> Option<(f32, f32)> {
+    columns
+        .iter()
+        .find(|(x, _)| *x == pos.x)
+        .and_then(|(_, column)| {
+            column.render_size.iter().find_map(|(y, render_size)| {
+                if let Ok(y) = y.parse::<i64>() {
+                    if pos.y >= y && pos.y < y + render_size.len as i64 {
+                        if let (Ok(w), Ok(h)) = (
+                            render_size.value.w.parse::<f32>(),
+                            render_size.value.h.parse::<f32>(),
+                        ) {
+                            return Some((w, h));
+                        }
+                    }
+                }
+                None
+            })
+        })
+}
+
 fn upgrade_code_runs(
     code_runs: Vec<(v1_7::PosSchema, v1_7::CodeRunSchema)>,
+    columns: &Vec<(i64, v1_7::ColumnSchema)>,
 ) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
     code_runs
         .into_iter()
@@ -45,6 +70,8 @@ fn upgrade_code_runs(
             } else {
                 v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank)
             };
+
+            let chart_pixel_output = render_size_to_chart_size(columns, pos.clone());
             let new_data_table = v1_8::DataTableSchema {
                 kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
                 name: format!("Table{}", i),
@@ -59,6 +86,7 @@ fn upgrade_code_runs(
                 last_modified: code_run.last_modified,
                 alternating_colors: true,
                 formats: Default::default(),
+                chart_pixel_output,
                 chart_output: None,
             };
             Ok((v1_8::PosSchema::from(pos), new_data_table))
@@ -73,8 +101,8 @@ pub fn upgrade_sheet(sheet: v1_7::SheetSchema) -> Result<v1_8::SheetSchema> {
         color: sheet.color,
         order: sheet.order,
         offsets: sheet.offsets,
+        data_tables: upgrade_code_runs(sheet.code_runs, &sheet.columns)?,
         columns: sheet.columns,
-        data_tables: upgrade_code_runs(sheet.code_runs)?,
         formats_all: sheet.formats_all,
         formats_columns: sheet.formats_columns,
         formats_rows: sheet.formats_rows,

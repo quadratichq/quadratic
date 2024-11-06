@@ -26,6 +26,7 @@ export interface RunnerJavascriptResults {
   results: any;
   console: string;
   lineNumber?: number;
+  chartPixelOutput?: [number, number];
 }
 
 export interface RunnerJavascriptError {

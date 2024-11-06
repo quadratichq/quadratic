@@ -32,6 +32,7 @@ impl GridController {
             match op {
                 Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
+                Operation::SetChartSize { .. } => self.execute_set_chart_size(transaction, op),
                 Operation::SetDataTableAt { .. } => Self::handle_execution_operation_result(
                     self.execute_set_data_table_at(transaction, op),
                 ),

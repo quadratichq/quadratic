@@ -53,6 +53,40 @@ impl GridController {
         }
     }
 
+    pub(super) fn execute_set_chart_size(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetChartSize {
+            sheet_pos,
+            pixel_width,
+            pixel_height,
+        } = op
+        {
+            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                if let Some((index, (_, dt))) =
+                    sheet.data_tables.iter().enumerate().find(|(_, (pos, _))| {
+                        **pos
+                            == Pos {
+                                x: sheet_pos.x,
+                                y: sheet_pos.y,
+                            }
+                    })
+                {
+                    let mut new_data_table = dt.clone();
+                    new_data_table.chart_pixel_output = Some((pixel_width, pixel_height));
+                    self.finalize_code_run(
+                        transaction,
+                        sheet_pos,
+                        Some(new_data_table),
+                        Some(index),
+                    );
+                }
+            }
+        }
+    }
+
     pub(super) fn execute_compute_code(
         &mut self,
         transaction: &mut PendingTransaction,

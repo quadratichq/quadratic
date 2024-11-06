@@ -42,7 +42,6 @@ export const OPEN_SANS_FIX = { x: 1.8, y: -1.8 };
 
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
-const CHART_TEXT = ' CHART';
 
 // values based on line position and thickness in monaco editor
 const HORIZONTAL_LINE_THICKNESS = 1;
@@ -131,7 +130,7 @@ export class CellLabel {
       case 'RunError':
         return RUN_ERROR_TEXT;
       case 'Chart':
-        return CHART_TEXT;
+        return '';
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;

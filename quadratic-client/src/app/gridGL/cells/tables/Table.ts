@@ -108,6 +108,9 @@ export class Table extends Container {
   };
 
   intersectsCursor(x: number, y: number) {
+    if (this.codeCell.spill_error && (this.codeCell.x !== x || this.codeCell.y !== y)) {
+      return false;
+    }
     const rect = new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1);
     return intersects.rectanglePoint(rect, { x, y });
   }

@@ -242,6 +242,7 @@ pub(crate) fn import_data_table_builder(
             display_buffer: data_table.display_buffer,
             alternating_colors: data_table.alternating_colors,
             formats: import_data_table_formats(data_table.formats),
+            chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
         };
 
@@ -478,6 +479,7 @@ pub(crate) fn export_data_tables(
                 value,
                 alternating_colors: data_table.alternating_colors,
                 formats: export_data_table_formats(data_table.formats),
+                chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
             };
 

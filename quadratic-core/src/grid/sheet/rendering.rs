@@ -346,19 +346,15 @@ impl Sheet {
         if !run.is_html() {
             return None;
         }
-        let (w, h) = if let Some(render_size) = self.render_size(pos) {
-            (Some(render_size.w), Some(render_size.h))
-        } else {
-            (None, None)
-        };
+        let size = run.chart_pixel_output;
         let output = run.cell_value_at(0, 0)?;
         Some(JsHtmlOutput {
             sheet_id: self.id.to_string(),
             x: pos.x,
             y: pos.y,
             html: Some(output.to_display()),
-            w,
-            h,
+            w: size.map(|(w, _)| w),
+            h: size.map(|(_, h)| h),
         })
     }
 
@@ -370,18 +366,14 @@ impl Sheet {
                 if !matches!(output, CellValue::Html(_)) {
                     return None;
                 }
-                let (w, h) = if let Some(render_size) = self.render_size(*pos) {
-                    (Some(render_size.w), Some(render_size.h))
-                } else {
-                    (None, None)
-                };
+                let size = run.chart_pixel_output;
                 Some(JsHtmlOutput {
                     sheet_id: self.id.to_string(),
                     x: pos.x,
                     y: pos.y,
                     html: Some(output.to_display()),
-                    w,
-                    h,
+                    w: size.map(|(w, _)| w),
+                    h: size.map(|(_, h)| h),
                 })
             })
             .collect()
@@ -543,21 +535,46 @@ impl Sheet {
 
         self.data_tables.iter().for_each(|(pos, run)| {
             if let Some(CellValue::Image(image)) = run.cell_value_at(0, 0) {
-                let (w, h) = if let Some(render_size) = self.render_size(*pos) {
-                    (Some(render_size.w), Some(render_size.h))
-                } else {
-                    (None, None)
-                };
+                let size = run.chart_pixel_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
                     pos.x as i32,
                     pos.y as i32,
                     Some(image),
-                    w,
-                    h,
+                    size.map(|(w, _)| w),
+                    size.map(|(_, h)| h),
                 );
             }
         });
+    }
+
+    /// Sends an image to the client.
+    pub fn send_image(&self, pos: Pos) {
+        let mut sent = false;
+        if let Some(table) = self.data_table(pos) {
+            if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
+                let chart_size = table.chart_pixel_output;
+                crate::wasm_bindings::js::jsSendImage(
+                    self.id.to_string(),
+                    pos.x as i32,
+                    pos.y as i32,
+                    Some(image),
+                    chart_size.map(|(w, _)| w),
+                    chart_size.map(|(_, h)| h),
+                );
+                sent = true;
+            }
+        }
+        if !sent {
+            crate::wasm_bindings::js::jsSendImage(
+                self.id.to_string(),
+                pos.x as i32,
+                pos.y as i32,
+                None,
+                None,
+                None,
+            );
+        }
     }
 
     /// Sends all validations for this sheet to the client.
@@ -679,7 +696,7 @@ mod tests {
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableKind, Italic, RenderSize,
+            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableKind, Italic,
         },
         selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
@@ -731,6 +748,7 @@ mod tests {
                 false,
                 false,
                 true,
+                None,
             )),
         );
         assert!(sheet.has_render_cells(rect));
@@ -889,17 +907,14 @@ mod tests {
                 h: None,
             }
         );
-        gc.set_cell_render_size(
+        gc.set_chart_size(
             SheetPos {
                 x: 1,
                 y: 2,
                 sheet_id,
-            }
-            .into(),
-            Some(RenderSize {
-                w: "1".into(),
-                h: "2".into(),
-            }),
+            },
+            1.0,
+            2.0,
             None,
         );
         let sheet = gc.sheet(sheet_id);
@@ -912,8 +927,8 @@ mod tests {
                 x: 1,
                 y: 2,
                 html: Some("<html></html>".to_string()),
-                w: Some("1".into()),
-                h: Some("2".into()),
+                w: Some(1.0),
+                h: Some(2.0),
             }
         );
     }
@@ -945,6 +960,7 @@ mod tests {
             false,
             false,
             false,
+            None,
         );
 
         // render rect is larger than code rect
@@ -1001,6 +1017,7 @@ mod tests {
             false,
             false,
             false,
+            None,
         );
         let code_cells = sheet.get_code_cells(
             &code_cell,
@@ -1128,6 +1145,7 @@ mod tests {
             false,
             false,
             true,
+            None,
         );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -1189,6 +1207,7 @@ mod tests {
             false,
             false,
             false,
+            None,
         );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -1386,6 +1405,45 @@ mod tests {
         expect_js_call(
             "jsValidationWarning",
             format!("{},{}", sheet.id, warnings),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_send_image() {
+        let mut sheet = Sheet::test();
+        let sheet_id = sheet.id;
+        let pos = (0, 0).into();
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            error: None,
+            return_type: Some("image".into()),
+            line_number: None,
+            output_type: None,
+        };
+        sheet.set_data_table(
+            pos,
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table 1",
+                Value::Single(CellValue::Image("image".to_string())),
+                false,
+                false,
+                true,
+                None,
+            )),
+        );
+        sheet.send_image(pos);
+        expect_js_call(
+            "jsSendImage",
+            format!(
+                "{},{},{},{:?},{:?},{:?}",
+                sheet_id, pos.x as u32, pos.y as u32, true, None::<f32>, None::<f32>
+            ),
             true,
         );
     }

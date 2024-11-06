@@ -21,19 +21,19 @@ impl Sheet {
         Ok(())
     }
 
-    /// Returns a DatatTable at a Pos
+    /// Returns a DataTable at a Pos
     pub fn data_table(&self, pos: Pos) -> Option<&DataTable> {
         self.data_tables.get(&pos)
     }
 
-    /// Returns a DatatTable at a Pos
+    /// Returns a DataTable at a Pos
     pub fn data_table_result(&self, pos: Pos) -> Result<&DataTable> {
         self.data_tables
             .get(&pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?}", pos))
     }
 
-    /// Returns a mutable DatatTable at a Pos
+    /// Returns a mutable DataTable at a Pos
     pub fn data_table_mut(&mut self, pos: Pos) -> Result<&mut DataTable> {
         self.data_tables
             .get_mut(&pos)
@@ -106,6 +106,7 @@ mod test {
             false,
             false,
             true,
+            None,
         );
         let old = sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(old, None);
@@ -137,6 +138,7 @@ mod test {
             false,
             false,
             true,
+            None,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(

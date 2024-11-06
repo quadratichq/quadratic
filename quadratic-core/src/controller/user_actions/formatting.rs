@@ -4,7 +4,7 @@ use crate::controller::GridController;
 use crate::grid::formatting::CellFmtArray;
 use crate::grid::{
     Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap, FillColor, Italic, NumericDecimals,
-    NumericFormat, RenderSize, StrikeThrough, TextColor, Underline,
+    NumericFormat, StrikeThrough, TextColor, Underline,
 };
 use crate::{RunLengthEncoding, SheetPos, SheetRect};
 
@@ -61,18 +61,6 @@ impl GridController {
         let ops = self.toggle_commas_operations(source, sheet_rect);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
-
-    pub fn set_cell_render_size(
-        &mut self,
-        sheet_rect: SheetRect,
-        value: Option<RenderSize>,
-        cursor: Option<String>,
-    ) {
-        let attr = CellFmtArray::RenderSize(RunLengthEncoding::repeat(value, sheet_rect.len()));
-        let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
-        self.send_html_output_rect(&sheet_rect);
-    }
 }
 
 macro_rules! impl_set_cell_fmt_method {
@@ -105,8 +93,6 @@ impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor
 impl_set_cell_fmt_method!(set_cell_underline<Underline>(CellFmtArray::Underline));
 impl_set_cell_fmt_method!(set_cell_strike_through<StrikeThrough>(CellFmtArray::StrikeThrough));
 
-// impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderSize));
-
 #[cfg(test)]
 mod test {
     use serial_test::parallel;
@@ -115,7 +101,7 @@ mod test {
     use crate::grid::formats::format::Format;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::js_types::{JsNumber, JsRenderCell};
-    use crate::grid::{CellAlign, RenderSize, SheetId, TextColor};
+    use crate::grid::{CellAlign, SheetId, TextColor};
     use crate::{Pos, Rect, SheetPos, SheetRect};
 
     #[test]
@@ -433,59 +419,6 @@ mod test {
                 sheet_id: SheetId::new(),
             },
             Some("$".to_string()),
-            None,
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn test_set_output_size() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_render_size(
-            SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id),
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            }),
-            None,
-        );
-    }
-
-    #[test]
-    #[parallel]
-    fn test_set_cell_render_size() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_render_size(
-            SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id),
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            }),
-            None,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.get_formatting_value::<RenderSize>(Pos { x: 0, y: 0 }),
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string()
-            })
-        );
-
-        // ensure not found sheet_id fails silently
-        gc.set_cell_render_size(
-            SheetRect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 0 },
-                sheet_id: SheetId::new(),
-            },
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            }),
             None,
         );
     }
