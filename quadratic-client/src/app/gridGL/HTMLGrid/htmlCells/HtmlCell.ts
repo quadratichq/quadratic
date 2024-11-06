@@ -11,8 +11,8 @@ import { HtmlCellResizing } from './HtmlCellResizing';
 // number of screen pixels to trigger the resize cursor
 const tolerance = 5;
 
-const DEFAULT_HTML_WIDTH = '600';
-const DEFAULT_HTML_HEIGHT = '460';
+const DEFAULT_HTML_WIDTH = 600;
+const DEFAULT_HTML_HEIGHT = 460;
 
 export class HtmlCell {
   private right: HTMLDivElement;
@@ -58,8 +58,8 @@ export class HtmlCell {
     this.iframe.style.pointerEvents = 'none';
     this.iframe.srcdoc = htmlCell.html;
     this.iframe.title = `HTML from ${htmlCell.x}, ${htmlCell.y}}`;
-    this.iframe.width = this.width;
-    this.iframe.height = this.height;
+    this.iframe.width = this.width.toString();
+    this.iframe.height = this.height.toString();
     this.iframe.setAttribute('border', '0');
     this.iframe.setAttribute('scrolling', 'no');
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
@@ -87,10 +87,10 @@ export class HtmlCell {
     return Number(this.htmlCell.y);
   }
 
-  private get width(): string {
+  private get width(): number {
     return this.htmlCell.w ?? DEFAULT_HTML_WIDTH;
   }
-  private get height(): string {
+  private get height(): number {
     return this.htmlCell.h ?? DEFAULT_HTML_HEIGHT;
   }
 
@@ -133,8 +133,8 @@ export class HtmlCell {
   update(htmlCell: JsHtmlOutput) {
     if (!htmlCell.html) throw new Error('Expected html to be defined in HtmlCell.update');
     if (htmlCell.w !== this.htmlCell.w && htmlCell.h !== this.htmlCell.h) {
-      this.iframe.width = htmlCell.w ?? DEFAULT_HTML_WIDTH;
-      this.iframe.height = htmlCell.h ?? DEFAULT_HTML_HEIGHT;
+      this.iframe.width = (htmlCell.w ?? DEFAULT_HTML_WIDTH).toString();
+      this.iframe.height = (htmlCell.h ?? DEFAULT_HTML_HEIGHT).toString();
     }
     if (htmlCell.html !== this.htmlCell.html) {
       this.iframe.srcdoc = htmlCell.html;
