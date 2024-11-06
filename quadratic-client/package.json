@@ -146,7 +146,7 @@
     "fake-indexeddb": "^5.0.2",
     "fontkit": "^2.0.2",
     "fs-extra": "^11.1.0",
-    "happy-dom": "^13.0.0",
+    "happy-dom": "^15.10.1",
     "jest-environment-jsdom": "^29.7.0",
     "msdf-bmfont-xml": "^2.7.0",
     "msw": "^2.4.11",
