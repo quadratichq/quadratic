@@ -76,11 +76,11 @@ export const FixSpillError = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => handleModeCodeCellDown(false)}>
-          <SpillErrorMoveIcon className="mr-2" /> Move down to nearest fix
+          <SpillErrorMoveIcon className="mr-2" /> Move down to nearest free space
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => handleModeCodeCellRight(false)}>
           <SpillErrorMoveIcon className="mr-2 -rotate-90" />
-          Move right to nearest fix
+          Move right to nearest free space
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
