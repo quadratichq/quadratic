@@ -7,7 +7,7 @@ import {
   OpenAIPromptMessage,
   SystemMessage,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { isAnthropicModel, isBedrockModel, isOpenAIModel } from './model.helper';
+import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from './model.helper';
 
 export const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
@@ -90,7 +90,7 @@ export const getMessagesForModel = (
     return { messages: bedrockMessages, system: systemMessages.map((message) => ({ text: message })) };
   }
 
-  if (isAnthropicModel(model)) {
+  if (isAnthropicModel(model) || isAnthropicBedrockModel(model)) {
     const anthropicMessages: AnthropicPromptMessage[] = promptMessages.reduce<AnthropicPromptMessage[]>(
       (acc, message) => {
         if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.toolCalls.length > 0) {

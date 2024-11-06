@@ -66,6 +66,10 @@ export const AI = {
   BEDROCK: {
     CHAT: `${apiClient.getApiUrl()}/ai/bedrock/chat`,
     STREAM: `${apiClient.getApiUrl()}/ai/bedrock/chat/stream`,
+    ANTHROPIC: {
+      CHAT: `${apiClient.getApiUrl()}/ai/bedrock/anthropic/chat`,
+      STREAM: `${apiClient.getApiUrl()}/ai/bedrock/anthropic/chat/stream`,
+    },
   },
   ANTHROPIC: {
     CHAT: `${apiClient.getApiUrl()}/ai/anthropic/chat`,

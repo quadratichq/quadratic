@@ -1,7 +1,7 @@
 import { MODEL_OPTIONS } from '@/app/ai/MODELS';
 import { AITool } from '@/app/ai/tools/aiTools';
 import { getAIProviderEndpoint } from '@/app/ai/tools/endpoint.helper';
-import { isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/model.helper';
+import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/model.helper';
 import { getToolChoice, getTools } from '@/app/ai/tools/tool.helpers';
 import { authClient } from '@/auth';
 import { AIMessagePrompt, AIModel, AIPromptMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -371,6 +371,7 @@ export function useAIRequestToAPI() {
         }
 
         const isBedrock = isBedrockModel(model);
+        const isBedrockAnthropic = isAnthropicBedrockModel(model);
         const isAnthropic = isAnthropicModel(model);
         const isOpenAI = isOpenAIModel(model);
 
@@ -385,7 +386,7 @@ export function useAIRequestToAPI() {
           }
 
           // handle streaming Anthropic response
-          else if (isAnthropic) {
+          else if (isAnthropic || isBedrockAnthropic) {
             return parseAnthropicStream(reader, responseMessage, setMessages);
           }
 
@@ -437,7 +438,7 @@ export function useAIRequestToAPI() {
             );
           }
           // handle non-streaming Anthropic response
-          else if (isAnthropic) {
+          else if (isAnthropic || isBedrockAnthropic) {
             data?.forEach(
               (
                 message: { type: 'text'; text: string } | { type: 'tool_use'; id: string; name: string; input: unknown }

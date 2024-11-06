@@ -4,7 +4,6 @@ import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { getMessagesForModel, getPromptMessages } from '@/app/ai/tools/message.helper';
 import { aiAnalystCurrentChatMessagesAtom } from '@/app/atoms/aiAnalystAtom';
-import { AIPromptMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export const useGetChatName = () => {
@@ -17,7 +16,7 @@ export const useGetChatName = () => {
         const chatMessages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
         const chatPromptMessages = getPromptMessages(chatMessages);
         const { system, messages: prevMessages } = getMessagesForModel(model, chatPromptMessages);
-        const messages: AIPromptMessage[] = [
+        const { messages } = getMessagesForModel(model, [
           {
             role: 'user',
             content: `Use set_chat_name tool to set the name for this chat based on the following chat messages between AI assistant and the user.\n
@@ -26,8 +25,9 @@ export const useGetChatName = () => {
   ${JSON.stringify(prevMessages)}
   \`\`\`
   `,
+            contextType: 'userPrompt',
           },
-        ];
+        ]);
 
         const abortController = new AbortController();
         const response = await handleAIRequestToAPI({

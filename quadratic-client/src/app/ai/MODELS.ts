@@ -46,7 +46,7 @@ export const MODEL_OPTIONS: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: debug,
-    provider: 'bedrock',
+    provider: 'bedrock-anthropic',
   },
   'anthropic.claude-3-5-sonnet-20241022-v2:0': {
     displayName: 'Anthropic(Bedrock): Claude 3.5 Sonnet (new)',
@@ -55,7 +55,7 @@ export const MODEL_OPTIONS: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: debug,
-    provider: 'bedrock',
+    provider: 'bedrock-anthropic',
   },
   'ai21.jamba-1-5-large-v1:0': {
     displayName: 'AI21: Jamba 1.5 Large',

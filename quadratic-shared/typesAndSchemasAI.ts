@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const AIProvidersSchema = z.enum(['bedrock', 'anthropic', 'openai']).default('openai');
+const AIProvidersSchema = z.enum(['bedrock', 'bedrock-anthropic', 'anthropic', 'openai']).default('openai');
 export type AIProviders = z.infer<typeof AIProvidersSchema>;
 
 const BedrockModelSchema = z
@@ -14,6 +14,11 @@ const BedrockModelSchema = z
   ])
   .default('anthropic.claude-3-5-sonnet-20241022-v2:0');
 export type BedrockModel = z.infer<typeof BedrockModelSchema>;
+
+const BedrockAnthropicModelSchema = z
+  .enum(['anthropic.claude-3-5-sonnet-20241022-v2:0', 'anthropic.claude-3-5-sonnet-20240620-v1:0'])
+  .default('anthropic.claude-3-5-sonnet-20241022-v2:0');
+export type BedrockAnthropicModel = z.infer<typeof BedrockAnthropicModelSchema>;
 
 const AnthropicModelSchema = z.enum(['claude-3-5-sonnet-20241022']).default('claude-3-5-sonnet-20241022');
 export type AnthropicModel = z.infer<typeof AnthropicModelSchema>;
@@ -292,6 +297,16 @@ export type AnthropicToolChoice = z.infer<typeof AnthropicToolChoiceSchema>;
 
 export const AnthropicAutoCompleteRequestBodySchema = z.object({
   model: AnthropicModelSchema,
+  system: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
+  messages: z.array(AnthropicPromptMessageSchema),
+  temperature: z.number().min(0).max(1).default(1),
+  max_tokens: z.number(),
+  tools: z.array(AnthropicToolSchema).optional(),
+  tool_choice: AnthropicToolChoiceSchema.optional(),
+});
+
+export const BedrockAnthropicAutoCompleteRequestBodySchema = z.object({
+  model: BedrockAnthropicModelSchema,
   system: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
   messages: z.array(AnthropicPromptMessageSchema),
   temperature: z.number().min(0).max(1).default(1),

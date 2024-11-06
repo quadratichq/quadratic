@@ -11,7 +11,7 @@ import {
   OpenAITool,
   OpenAIToolChoice,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { isAnthropicModel, isBedrockModel, isOpenAIModel } from './model.helper';
+import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from './model.helper';
 
 export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
@@ -35,7 +35,7 @@ export const getTools = (model: AIModel, toolChoice?: AIToolName): AITool[] => {
     );
   }
 
-  if (isAnthropicModel(model)) {
+  if (isAnthropicModel(model) || isAnthropicBedrockModel(model)) {
     return tools.map(
       ([name, { description, parameters: input_schema }]): AnthropicTool => ({
         name,
@@ -68,7 +68,7 @@ export const getToolChoice = (model: AIModel, name?: AIToolName): AIToolChoice =
     return toolChoice;
   }
 
-  if (isAnthropicModel(model)) {
+  if (isAnthropicModel(model) || isAnthropicBedrockModel(model)) {
     const toolChoice: AnthropicToolChoice = name === undefined ? { type: 'auto' } : { type: 'tool', name };
     return toolChoice;
   }
