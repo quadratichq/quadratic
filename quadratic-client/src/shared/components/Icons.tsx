@@ -32,8 +32,24 @@ const Icon = (props: BaseIconProps) => {
 type IconProps = Omit<BaseIconProps, 'children'>;
 export type IconComponent = React.FC<IconProps>;
 
+export const AccountIcon: IconComponent = (props) => {
+  return <Icon {...props}>account_circle</Icon>;
+};
+
 export const AddIcon: IconComponent = (props) => {
   return <Icon {...props}>add</Icon>;
+};
+
+export const AppearanceLightModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>light_mode</Icon>;
+};
+
+export const AppearanceDarkModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>dark_mode</Icon>;
+};
+
+export const AppearanceSystemModeIcon: IconComponent = (props) => {
+  return <Icon {...props}>discover_tune</Icon>;
 };
 
 export const ApiIcon: IconComponent = (props) => {
@@ -359,6 +375,10 @@ export const FileSharedWithMeIcon: IconComponent = (props) => {
   return <Icon {...props}>move_to_inbox</Icon>;
 };
 
+export const LabsIcon: IconComponent = (props) => {
+  return <Icon {...props}>experiment</Icon>;
+};
+
 export const PasteIcon: IconComponent = (props) => {
   return <Icon {...props}>content_paste</Icon>;
 };
@@ -393,6 +413,10 @@ export const SheetIcon: IconComponent = (props) => {
 
 export const StopCircleIcon: IconComponent = (props) => {
   return <Icon {...props}>stop_circle</Icon>;
+};
+
+export const ThemeIcon: IconComponent = (props) => {
+  return <Icon {...props}>contrast</Icon>;
 };
 
 export const VerticalAlignBottomIcon: IconComponent = (props) => {

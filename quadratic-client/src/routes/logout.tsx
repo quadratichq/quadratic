@@ -1,4 +1,4 @@
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import { redirect } from 'react-router-dom';
 
 export const loader = async () => {

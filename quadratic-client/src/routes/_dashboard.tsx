@@ -1,4 +1,4 @@
-import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
+import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
@@ -8,8 +8,7 @@ import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { apiClient } from '@/shared/api/apiClient';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import { CONTACT_URL } from '@/shared/constants/urls';
-import { useTheme } from '@/shared/hooks/useTheme';
+import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
@@ -172,9 +171,6 @@ export const Component = () => {
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
 
-  // Trigger the theme in the root of the app
-  useTheme();
-
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
     setIsOpen((prevIsOpen) => (prevIsOpen ? false : prevIsOpen));
@@ -273,7 +269,31 @@ export const ErrorBoundary = () => {
     </div>
   );
 
+  const actionsLicenseRevoked = (
+    <div className="flex justify-center gap-1">
+      <Button asChild variant="outline">
+        <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+          Contact Support
+        </a>
+      </Button>
+      <Button asChild>
+        <a href={SCHEDULE_MEETING} target="_blank" rel="noreferrer">
+          Schedule Meeting
+        </a>
+      </Button>
+    </div>
+  );
+
   if (isRouteErrorResponse(error)) {
+    if (error.status === 402)
+      return (
+        <Empty
+          title="License Revoked"
+          description="Your license has been revoked. Please contact Quadratic Support."
+          Icon={InfoCircledIcon}
+          actions={actionsLicenseRevoked}
+        />
+      );
     if (error.status === 403)
       return (
         <Empty

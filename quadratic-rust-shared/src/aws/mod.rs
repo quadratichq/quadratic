@@ -1,3 +1,4 @@
+pub mod error;
 pub mod s3;
 
 pub use aws_config::{retry::RetryConfig, BehaviorVersion, Region};

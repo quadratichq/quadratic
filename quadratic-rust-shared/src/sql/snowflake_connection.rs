@@ -11,7 +11,8 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use crate::arrow::arrow_type::ArrowType;
-use crate::error::{Result, SharedError, Sql};
+use crate::error::{Result, SharedError};
+use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::Connection;
 use crate::utils::array::transpose;
@@ -86,7 +87,9 @@ impl Connection for SnowflakeConnection {
             &self.password,
         )
         .map_err(|e| {
-            SharedError::Sql(Sql::Connect(format!("Error connecting to snowflake: {e}")))
+            SharedError::Sql(SqlError::Connect(format!(
+                "Error connecting to snowflake: {e}"
+            )))
         })?;
 
         Ok(client)
@@ -98,7 +101,7 @@ impl Connection for SnowflakeConnection {
         sql: &str,
         max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool, usize)> {
-        let query_error = |e: String| SharedError::Sql(Sql::Query(e));
+        let query_error = |e: String| SharedError::Sql(SqlError::Query(e));
 
         #[cfg(any(test, feature = "test"))]
         let (mut _client, _recording) = tests::get_mocked(&self, "snowflake-connection").await;
@@ -152,7 +155,7 @@ impl Connection for SnowflakeConnection {
             }
         }
 
-        Err(SharedError::Sql(Sql::Query(
+        Err(SharedError::Sql(SqlError::Query(
             "Could not convert to Arrow".to_string(),
         )))
     }
@@ -196,7 +199,7 @@ impl Connection for SnowflakeConnection {
         let row_stream = _client
             .exec(&sql)
             .await
-            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+            .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?;
 
         #[cfg(all(any(test, feature = "test"), feature = "record-request-mock"))]
         record_stop(scenario, _recording).await;

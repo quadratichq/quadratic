@@ -1,5 +1,6 @@
 import { app } from './app';
-import { PORT } from './env-vars';
+import { ENCRYPTION_KEY, LICENSE_KEY, PORT } from './env-vars';
+import { encryptFromEnv, hash } from './utils/crypto';
 
 // Start the server
 app.listen(PORT, () => {
