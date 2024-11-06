@@ -308,9 +308,15 @@ impl DataTable {
         let array = data_table.display_value().unwrap().into_array().unwrap();
         let max = max.unwrap_or(array.height() as usize);
         let title = title.unwrap_or("Data Table");
+        let display_buffer = data_table
+            .display_buffer
+            .clone()
+            .unwrap_or((0..array.height() as u64).collect::<Vec<_>>());
 
         for (index, row) in array.rows().take(max).enumerate() {
             let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+            let display_index = vec![display_buffer[index].to_string()];
+            let row = [display_index, row].concat();
 
             if index == 0 && data_table.header_is_first_row {
                 builder.set_header(row);
@@ -324,12 +330,14 @@ impl DataTable {
 
         // bold the headers if they exist
         if data_table.header_is_first_row {
+            table.with(Modify::new((0, 0)).with(Color::BOLD));
+
             (0..table.count_columns())
                 .collect::<Vec<usize>>()
                 .iter()
                 .enumerate()
                 .for_each(|(index, _)| {
-                    table.with(Modify::new((0, index)).with(Color::BOLD));
+                    table.with(Modify::new((0, index + 1)).with(Color::BOLD));
                 });
         }
 
