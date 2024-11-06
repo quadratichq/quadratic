@@ -1,6 +1,11 @@
 import { debug } from '@/app/debugFlags';
 import { AIModel, AIProviders } from 'quadratic-shared/typesAndSchemasAI';
 
+export const DEFAULT_MODEL: AIModel = 'claude-3-5-sonnet-20241022';
+
+// updating this will force the model to be reset to the default model in local storage
+export const DEFAULT_MODEL_VERSION = 1;
+
 export const MODEL_OPTIONS: {
   [key in AIModel]: {
     displayName: string;
@@ -39,8 +44,8 @@ export const MODEL_OPTIONS: {
     enabled: true,
     provider: 'anthropic',
   },
-  'anthropic.claude-3-5-sonnet-20240620-v1:0': {
-    displayName: 'Anthropic(Bedrock): Claude 3.5 Sonnet',
+  'anthropic.claude-3-5-sonnet-20241022-v2:0': {
+    displayName: `Anthropic${debug ? '(Bedrock)' : ''}: Claude 3.5 Sonnet (new)`,
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
@@ -48,8 +53,8 @@ export const MODEL_OPTIONS: {
     enabled: debug,
     provider: 'bedrock-anthropic',
   },
-  'anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    displayName: 'Anthropic(Bedrock): Claude 3.5 Sonnet (new)',
+  'anthropic.claude-3-5-sonnet-20240620-v1:0': {
+    displayName: `Anthropic${debug ? '(Bedrock)' : ''}: Claude 3.5 Sonnet`,
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
