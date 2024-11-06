@@ -2,6 +2,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
+use ts_rs::TS;
 
 use super::block::SameValue;
 use super::{Column, ColumnData};
@@ -231,8 +232,10 @@ pub struct NumericFormat {
     pub symbol: Option<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+// Deprecated. This needs to remain here b/c Format and Formats rely on it and
+// it is included in existing Operations. It can only be removed if we rework
+// Format and Formats.
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 /// Measures DOM element size in pixels.
 pub struct RenderSize {
     pub w: String,

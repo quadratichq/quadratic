@@ -1,4 +1,4 @@
-//! CodeRun is the output of a CellValue::Code type
+//! CodeRun is the output of a CellValue::Code or CellValue::Import type
 //!
 //! This lives in sheet.data_tables. CodeRun is optional within sheet.data_tables for
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
@@ -87,6 +87,7 @@ pub struct DataTable {
     pub formats: TableFormats,
 
     // width and height of the chart (html or image) output
+    pub chart_pixel_output: Option<(f32, f32)>,
     pub chart_output: Option<(u32, u32)>,
 }
 
@@ -101,6 +102,7 @@ impl From<(Import, Array, &Grid)> for DataTable {
             false,
             false,
             true,
+            None,
         )
     }
 }
@@ -116,6 +118,7 @@ impl DataTable {
         spill_error: bool,
         header_is_first_row: bool,
         show_header: bool,
+        chart_pixel_output: Option<(f32, f32)>,
     ) -> Self {
         let readonly = match kind {
             DataTableKind::CodeRun(_) => true,
@@ -137,6 +140,7 @@ impl DataTable {
             last_modified: Utc::now(),
             formats: Default::default(),
             chart_output: None,
+            chart_pixel_output,
         };
 
         if header_is_first_row {
@@ -250,7 +254,11 @@ impl DataTable {
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
         if let Some((w, h)) = self.chart_output {
-            ArraySize::new(w, h).unwrap()
+            if w == 0 || h == 0 {
+                ArraySize::_1X1
+            } else {
+                ArraySize::new(w, h).unwrap()
+            }
         } else {
             match &self.value {
                 Value::Array(a) => {
@@ -277,6 +285,10 @@ impl DataTable {
             Some(code_cell_value) => code_cell_value.is_image(),
             None => false,
         }
+    }
+
+    pub fn is_html_or_image(&self) -> bool {
+        self.is_html() || self.is_image()
     }
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
@@ -418,6 +430,7 @@ pub mod test {
             false,
             false,
             true,
+            None,
         )
         .with_last_modified(data_table.last_modified);
         let expected_array_size = ArraySize::new(4, 5).unwrap();
@@ -453,6 +466,7 @@ pub mod test {
             false,
             false,
             true,
+            None,
         );
 
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
@@ -486,6 +500,7 @@ pub mod test {
             false,
             false,
             true,
+            None,
         );
 
         assert_eq!(data_table.output_size().w.get(), 10);
@@ -524,6 +539,7 @@ pub mod test {
             true,
             false,
             true,
+            None,
         );
         let sheet_pos = SheetPos::from((1, 2, sheet_id));
 

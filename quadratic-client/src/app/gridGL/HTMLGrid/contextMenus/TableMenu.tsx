@@ -34,6 +34,8 @@ export const TableMenu = (props: Props) => {
     );
   }, [codeCell]);
 
+  const spillError = codeCell?.spill_error;
+
   if (!codeCell || selectedColumn !== undefined) {
     return null;
   }
@@ -52,17 +54,19 @@ export const TableMenu = (props: Props) => {
         </>
       )}
       <ContextMenuItemAction action={Action.RenameTable} overrideDefaultOption={defaultRename} />
-      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.SortTable} />}
+      {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.SortTable} />}
 
-      {!isImageOrHtmlCell && hasHiddenColumns && <ContextMenuItemAction action={Action.ShowAllColumns} />}
-      {!isImageOrHtmlCell && <DropdownMenuSeparator />}
-      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.ToggleHeaderTable} />}
-      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />}
-      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />}
-      {!isImageOrHtmlCell && <DropdownMenuSeparator />}
-      {!isImageOrHtmlCell && isCodeCell && <ContextMenuItemAction action={Action.CodeToDataTable} />}
-      {!isImageOrHtmlCell && <ContextMenuItemAction action={Action.FlattenTable} />}
-      <ContextMenuItemAction action={Action.DeleteDataTable} />
+      {!isImageOrHtmlCell && hasHiddenColumns && !spillError && (
+        <ContextMenuItemAction action={Action.ShowAllColumns} />
+      )}
+      {!isImageOrHtmlCell && !spillError && <DropdownMenuSeparator />}
+      {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleHeaderTable} />}
+      {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />}
+      {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />}
+      {!isImageOrHtmlCell && !spillError && <DropdownMenuSeparator />}
+      {!isImageOrHtmlCell && !spillError && isCodeCell && <ContextMenuItemAction action={Action.CodeToDataTable} />}
+      {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.FlattenTable} />}
+      {<ContextMenuItemAction action={Action.DeleteDataTable} />}
     </>
   );
 };

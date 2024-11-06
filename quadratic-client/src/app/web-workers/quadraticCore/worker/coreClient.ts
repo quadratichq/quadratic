@@ -385,7 +385,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellRenderResize':
-        await core.setCellRenderSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        await core.setChartSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
 
       case 'clientCoreAutocomplete':

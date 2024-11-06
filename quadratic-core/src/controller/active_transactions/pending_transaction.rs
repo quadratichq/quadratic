@@ -12,9 +12,7 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{
-        sheet::validations::validation::Validation, CodeCellLanguage, DataTable, Sheet, SheetId,
-    },
+    grid::{sheet::validations::validation::Validation, CodeCellLanguage, Sheet, SheetId},
     selection::Selection,
     Pos, SheetPos, SheetRect,
 };
@@ -276,23 +274,24 @@ impl PendingTransaction {
         }
     }
 
-    /// Adds a code cell, html cell and image cell to the transaction from a CodeRun
+    /// Adds a code cell, html cell and image cell to the transaction from a
+    /// CodeRun. If the code_cell no longer exists, then it sends the empty code
+    /// cell so the client can remove it.
     pub fn add_from_code_run(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
-        data_table: &Option<DataTable>,
+        is_image: bool,
+        is_html: bool,
     ) {
-        if let Some(data_table) = &data_table {
-            self.add_code_cell(sheet_id, pos);
+        self.add_code_cell(sheet_id, pos);
 
-            if data_table.is_html() {
-                self.add_html_cell(sheet_id, pos);
-            }
+        if is_html {
+            self.add_html_cell(sheet_id, pos);
+        }
 
-            if data_table.is_image() {
-                self.add_image_cell(sheet_id, pos);
-            }
+        if is_image {
+            self.add_image_cell(sheet_id, pos);
         }
     }
 
@@ -360,7 +359,7 @@ impl PendingTransaction {
 mod tests {
     use crate::{
         controller::operations::operation::Operation,
-        grid::{CodeRun, DataTableKind, Sheet, SheetId},
+        grid::{CodeRun, DataTable, DataTableKind, Sheet, SheetId},
         CellValue, Value,
     };
 
@@ -483,8 +482,8 @@ mod tests {
         let sheet_id = SheetId::new();
         let pos = Pos { x: 0, y: 0 };
 
-        transaction.add_from_code_run(sheet_id, pos, &None);
-        assert_eq!(transaction.code_cells.len(), 0);
+        transaction.add_from_code_run(sheet_id, pos, false, false);
+        assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 0);
         assert_eq!(transaction.image_cells.len(), 0);
 
@@ -506,8 +505,9 @@ mod tests {
             false,
             false,
             true,
+            None,
         );
-        transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
+        transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 0);
@@ -530,8 +530,9 @@ mod tests {
             false,
             false,
             true,
+            None,
         );
-        transaction.add_from_code_run(sheet_id, pos, &Some(data_table));
+        transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 1);

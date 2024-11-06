@@ -346,19 +346,15 @@ impl Sheet {
         if !run.is_html() {
             return None;
         }
-        let (w, h) = if let Some(render_size) = self.render_size(pos) {
-            (Some(render_size.w), Some(render_size.h))
-        } else {
-            (None, None)
-        };
+        let size = run.chart_pixel_output;
         let output = run.cell_value_at(0, 0)?;
         Some(JsHtmlOutput {
             sheet_id: self.id.to_string(),
             x: pos.x,
             y: pos.y,
             html: Some(output.to_display()),
-            w,
-            h,
+            w: size.map(|(w, _)| w),
+            h: size.map(|(_, h)| h),
         })
     }
 
@@ -370,18 +366,14 @@ impl Sheet {
                 if !matches!(output, CellValue::Html(_)) {
                     return None;
                 }
-                let (w, h) = if let Some(render_size) = self.render_size(*pos) {
-                    (Some(render_size.w), Some(render_size.h))
-                } else {
-                    (None, None)
-                };
+                let size = run.chart_pixel_output;
                 Some(JsHtmlOutput {
                     sheet_id: self.id.to_string(),
                     x: pos.x,
                     y: pos.y,
                     html: Some(output.to_display()),
-                    w,
-                    h,
+                    w: size.map(|(w, _)| w),
+                    h: size.map(|(_, h)| h),
                 })
             })
             .collect()
@@ -431,8 +423,8 @@ impl Sheet {
         JsSheetFill { columns, rows, all }
     }
 
-    pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
-        let data_table = self.data_tables.get(&pos)?;
+    // Returns data for rendering a code cell.
+    fn render_code_cell(&self, pos: Pos, data_table: &DataTable) -> Option<JsRenderCodeCell> {
         let code = self.cell_value(pos)?;
         let output_size = data_table.output_size();
         let (state, w, h, spill_error) = if data_table.spill_error {
@@ -448,13 +440,21 @@ impl Sheet {
         {
             (JsRenderCodeCellState::RunError, 1, 1, None)
         } else {
-            (
-                JsRenderCodeCellState::Success,
-                output_size.w.get(),
-                output_size.h.get(),
-                None,
-            )
+            let state = if data_table.is_image() {
+                JsRenderCodeCellState::Image
+            } else if data_table.is_html() {
+                JsRenderCodeCellState::HTML
+            } else {
+                JsRenderCodeCellState::Success
+            };
+            (state, output_size.w.get(), output_size.h.get(), None)
         };
+        let alternating_colors = !data_table.spill_error
+            && !data_table.has_error()
+            && !data_table.is_image()
+            && !data_table.is_html()
+            && data_table.alternating_colors;
+
         Some(JsRenderCodeCell {
             x: pos.x as i32,
             y: pos.y as i32,
@@ -472,63 +472,21 @@ impl Sheet {
             first_row_header: data_table.header_is_first_row,
             show_header: data_table.show_header,
             sort: data_table.sort.clone(),
-            alternating_colors: data_table.alternating_colors,
+            alternating_colors,
         })
+    }
+
+    // Returns a single code cell for rendering.
+    pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
+        let data_table = self.data_tables.get(&pos)?;
+        self.render_code_cell(pos, data_table)
     }
 
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.data_tables
             .iter()
-            .filter_map(|(pos, data_table)| {
-                if let Some(code) = self.cell_value(*pos) {
-                    match code.code_cell_value() {
-                        Some(code_cell_value) => {
-                            let output_size = data_table.output_size();
-                            let (state, w, h, spill_error) = if data_table.spill_error {
-                                let reasons = self.find_spill_error_reasons(
-                                    &data_table.output_rect(*pos, true),
-                                    *pos,
-                                );
-                                (
-                                    JsRenderCodeCellState::SpillError,
-                                    output_size.w.get(),
-                                    output_size.h.get(),
-                                    Some(reasons),
-                                )
-                            } else if data_table.has_error() {
-                                (JsRenderCodeCellState::RunError, 1, 1, None)
-                            } else {
-                                (
-                                    JsRenderCodeCellState::Success,
-                                    output_size.w.get(),
-                                    output_size.h.get(),
-                                    None,
-                                )
-                            };
-
-                            Some(JsRenderCodeCell {
-                                x: pos.x as i32,
-                                y: pos.y as i32,
-                                w,
-                                h,
-                                language: code_cell_value.language,
-                                state,
-                                spill_error,
-                                name: data_table.name.clone(),
-                                columns: data_table.send_columns(),
-                                first_row_header: data_table.header_is_first_row,
-                                show_header: data_table.show_header,
-                                sort: data_table.sort.clone(),
-                                alternating_colors: data_table.alternating_colors,
-                            })
-                        }
-                        _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
-                    }
-                } else {
-                    None // this should not happen. A CodeRun should always have a CellValue::Code.
-                }
-            })
+            .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
             .collect()
     }
 
@@ -543,21 +501,46 @@ impl Sheet {
 
         self.data_tables.iter().for_each(|(pos, run)| {
             if let Some(CellValue::Image(image)) = run.cell_value_at(0, 0) {
-                let (w, h) = if let Some(render_size) = self.render_size(*pos) {
-                    (Some(render_size.w), Some(render_size.h))
-                } else {
-                    (None, None)
-                };
+                let size = run.chart_pixel_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
                     pos.x as i32,
                     pos.y as i32,
                     Some(image),
-                    w,
-                    h,
+                    size.map(|(w, _)| w),
+                    size.map(|(_, h)| h),
                 );
             }
         });
+    }
+
+    /// Sends an image to the client.
+    pub fn send_image(&self, pos: Pos) {
+        let mut sent = false;
+        if let Some(table) = self.data_table(pos) {
+            if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
+                let chart_size = table.chart_pixel_output;
+                crate::wasm_bindings::js::jsSendImage(
+                    self.id.to_string(),
+                    pos.x as i32,
+                    pos.y as i32,
+                    Some(image),
+                    chart_size.map(|(w, _)| w),
+                    chart_size.map(|(_, h)| h),
+                );
+                sent = true;
+            }
+        }
+        if !sent {
+            crate::wasm_bindings::js::jsSendImage(
+                self.id.to_string(),
+                pos.x as i32,
+                pos.y as i32,
+                None,
+                None,
+                None,
+            );
+        }
     }
 
     /// Sends all validations for this sheet to the client.
@@ -679,7 +662,7 @@ mod tests {
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableKind, Italic, RenderSize,
+            Bold, CellVerticalAlign, CellWrap, CodeRun, DataTableKind, Italic,
         },
         selection::Selection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
@@ -731,6 +714,7 @@ mod tests {
                 false,
                 false,
                 true,
+                None,
             )),
         );
         assert!(sheet.has_render_cells(rect));
@@ -889,17 +873,14 @@ mod tests {
                 h: None,
             }
         );
-        gc.set_cell_render_size(
+        gc.set_chart_size(
             SheetPos {
                 x: 1,
                 y: 2,
                 sheet_id,
-            }
-            .into(),
-            Some(RenderSize {
-                w: "1".into(),
-                h: "2".into(),
-            }),
+            },
+            1.0,
+            2.0,
             None,
         );
         let sheet = gc.sheet(sheet_id);
@@ -912,8 +893,8 @@ mod tests {
                 x: 1,
                 y: 2,
                 html: Some("<html></html>".to_string()),
-                w: Some("1".into()),
-                h: Some("2".into()),
+                w: Some(1.0),
+                h: Some(2.0),
             }
         );
     }
@@ -945,6 +926,7 @@ mod tests {
             false,
             false,
             false,
+            None,
         );
 
         // render rect is larger than code rect
@@ -1001,6 +983,7 @@ mod tests {
             false,
             false,
             false,
+            None,
         );
         let code_cells = sheet.get_code_cells(
             &code_cell,
@@ -1128,6 +1111,7 @@ mod tests {
             false,
             false,
             true,
+            None,
         );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -1189,6 +1173,7 @@ mod tests {
             false,
             false,
             false,
+            None,
         );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -1386,6 +1371,45 @@ mod tests {
         expect_js_call(
             "jsValidationWarning",
             format!("{},{}", sheet.id, warnings),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_send_image() {
+        let mut sheet = Sheet::test();
+        let sheet_id = sheet.id;
+        let pos = (0, 0).into();
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            error: None,
+            return_type: Some("image".into()),
+            line_number: None,
+            output_type: None,
+        };
+        sheet.set_data_table(
+            pos,
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table 1",
+                Value::Single(CellValue::Image("image".to_string())),
+                false,
+                false,
+                true,
+                None,
+            )),
+        );
+        sheet.send_image(pos);
+        expect_js_call(
+            "jsSendImage",
+            format!(
+                "{},{},{},{:?},{:?},{:?}",
+                sheet_id, pos.x as u32, pos.y as u32, true, None::<f32>, None::<f32>
+            ),
             true,
         );
     }

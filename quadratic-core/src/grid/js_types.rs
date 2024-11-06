@@ -208,14 +208,14 @@ pub struct JsRenderCodeCell {
     pub alternating_colors: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsHtmlOutput {
     pub sheet_id: String,
     pub x: i64,
     pub y: i64,
     pub html: Option<String>,
-    pub w: Option<String>,
-    pub h: Option<String>,
+    pub w: Option<f32>,
+    pub h: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
@@ -224,6 +224,8 @@ pub enum JsRenderCodeCellState {
     RunError,
     SpillError,
     Success,
+    HTML,
+    Image,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

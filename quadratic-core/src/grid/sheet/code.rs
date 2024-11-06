@@ -6,7 +6,7 @@ use crate::{
     grid::{
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
-        CodeCellLanguage, DataTableKind, RenderSize,
+        CodeCellLanguage, DataTableKind,
     },
     CellValue, Pos, Rect,
 };
@@ -101,12 +101,6 @@ impl Sheet {
                     .intersects(rect)
                     .then_some((output_rect, data_table))
             })
-    }
-
-    /// returns the render-size for a html-like cell
-    pub fn render_size(&self, pos: Pos) -> Option<RenderSize> {
-        let column = self.get_column(pos.x)?;
-        column.render_size.get(pos.y)
     }
 
     /// Returns whether a rect overlaps the output of a code cell.
@@ -222,44 +216,12 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRun, RenderSize},
+        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRun},
         Array, CodeCellValue, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
     use std::{collections::HashSet, vec};
-
-    #[test]
-    #[parallel]
-    fn test_render_size() {
-        use crate::Pos;
-
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_render_size(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            }
-            .into(),
-            Some(crate::grid::RenderSize {
-                w: "10".to_string(),
-                h: "20".to_string(),
-            }),
-            None,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.render_size(Pos { x: 0, y: 0 }),
-            Some(RenderSize {
-                w: "10".to_string(),
-                h: "20".to_string()
-            })
-        );
-        assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
-    }
 
     #[test]
     #[parallel]
@@ -284,6 +246,7 @@ mod test {
             false,
             false,
             true,
+            None,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(
@@ -324,6 +287,7 @@ mod test {
             false,
             false,
             true,
+            None,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         assert_eq!(
@@ -417,6 +381,7 @@ mod test {
             false,
             false,
             false,
+            None,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
@@ -454,6 +419,7 @@ mod test {
             false,
             false,
             false,
+            None,
         );
         sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));

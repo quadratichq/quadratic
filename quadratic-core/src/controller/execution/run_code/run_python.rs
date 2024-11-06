@@ -544,7 +544,7 @@ mod tests {
             line_number: None,
             output_display_type: None,
             cancel_compute: None,
-            chart_output: None,
+            chart_pixel_output: None,
         });
         assert!(result.is_ok());
 
@@ -586,7 +586,7 @@ mod tests {
             line_number: None,
             output_display_type: None,
             cancel_compute: None,
-            chart_output: None,
+            chart_pixel_output: None,
         });
         assert!(result.is_ok());
 

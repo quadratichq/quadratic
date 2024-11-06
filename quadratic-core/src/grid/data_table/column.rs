@@ -186,8 +186,9 @@ pub mod test {
 
         // test column headings taken from first row
         let value = Value::Array(values.clone());
-        let mut data_table = DataTable::new(kind.clone(), "Table 1", value, false, true, true)
-            .with_last_modified(data_table.last_modified);
+        let mut data_table =
+            DataTable::new(kind.clone(), "Table 1", value, false, true, true, None)
+                .with_last_modified(data_table.last_modified);
 
         data_table.apply_first_row_as_header();
         let expected_columns = vec![
@@ -237,6 +238,7 @@ pub mod test {
             alternating_colors: true,
             formats: Default::default(),
             chart_output: None,
+            chart_pixel_output: None,
         };
         sheet.set_cell_value(
             pos,

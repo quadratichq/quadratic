@@ -25,7 +25,6 @@ export class PointerHtmlCells {
     }
 
     this.clicked = undefined;
-    if (this.active) return true;
 
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {

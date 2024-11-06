@@ -49,7 +49,7 @@ impl GridController {
 
             if transaction.is_user() {
                 self.add_compute_operations(transaction, sheet_rect, None);
-                self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                self.check_all_spills(transaction, sheet_rect.sheet_id);
             }
 
             transaction.reverse_operations.extend(reverse_operations);
@@ -673,6 +673,7 @@ mod tests {
             false,
             false,
             true,
+            None,
         );
 
         let mut gc = GridController::test();

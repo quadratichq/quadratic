@@ -11,8 +11,8 @@ import { HtmlCellResizing } from './HtmlCellResizing';
 // number of screen pixels to trigger the resize cursor
 const tolerance = 5;
 
-const DEFAULT_HTML_WIDTH = '600';
-const DEFAULT_HTML_HEIGHT = '460';
+const DEFAULT_HTML_WIDTH = 600;
+const DEFAULT_HTML_HEIGHT = 460;
 
 export class HtmlCell {
   private right: HTMLDivElement;
@@ -20,6 +20,16 @@ export class HtmlCell {
   private resizing: HtmlCellResizing | undefined;
   private hoverSide: 'right' | 'bottom' | 'corner' | undefined;
   private offset: Point;
+
+  // used during resizing to store the temporary width and height
+  private temporaryWidth: number | undefined;
+  private temporaryHeight: number | undefined;
+
+  // whether pointer events are allowed on the iframe (currently when selected
+  // but not resizing)
+  pointerEvents: 'auto' | 'none' = 'none';
+
+  border: HTMLDivElement;
 
   htmlCell: JsHtmlOutput;
   gridBounds: Rectangle;
@@ -40,7 +50,7 @@ export class HtmlCell {
 
     this.div = document.createElement('div');
     this.div.className = 'html-cell';
-    this.div.style.boxShadow = 'inset 0 0 0 1px hsl(var(--primary))';
+
     const offset = this.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
     this.offset = new Point(offset.x, offset.y);
     this.gridBounds = new Rectangle(Number(htmlCell.x), Number(htmlCell.y), 0, 0);
@@ -58,16 +68,21 @@ export class HtmlCell {
     this.iframe.style.pointerEvents = 'none';
     this.iframe.srcdoc = htmlCell.html;
     this.iframe.title = `HTML from ${htmlCell.x}, ${htmlCell.y}}`;
-    this.iframe.width = this.width;
-    this.iframe.height = this.height;
+    this.iframe.width = `${this.width}px`;
+    this.iframe.height = `${this.height}px`;
     this.iframe.setAttribute('border', '0');
     this.iframe.setAttribute('scrolling', 'no');
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
 
+    this.border = document.createElement('div');
+    this.border.className = 'w-full h-full absolute top-0 left-0';
+    this.border.style.border = '1px solid hsl(var(--primary))';
+
     this.div.append(this.right);
     this.div.append(this.iframe);
     this.div.append(this.bottom);
+    this.div.append(this.border);
 
     if (this.iframe.contentWindow?.document.readyState === 'complete') {
       this.afterLoad();
@@ -75,9 +90,16 @@ export class HtmlCell {
       this.iframe.addEventListener('load', this.afterLoad);
     }
 
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, this.width, this.height);
+
     if (this.sheet.id !== sheets.sheet.id) {
       this.div.style.visibility = 'hidden';
     }
+  }
+
+  destroy() {
+    this.div.remove();
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, 0, 0);
   }
 
   get x(): number {
@@ -87,10 +109,10 @@ export class HtmlCell {
     return Number(this.htmlCell.y);
   }
 
-  private get width(): string {
+  private get width(): number {
     return this.htmlCell.w ?? DEFAULT_HTML_WIDTH;
   }
-  private get height(): string {
+  private get height(): number {
     return this.htmlCell.h ?? DEFAULT_HTML_HEIGHT;
   }
 
@@ -132,15 +154,18 @@ export class HtmlCell {
 
   update(htmlCell: JsHtmlOutput) {
     if (!htmlCell.html) throw new Error('Expected html to be defined in HtmlCell.update');
-    if (htmlCell.w !== this.htmlCell.w && htmlCell.h !== this.htmlCell.h) {
-      this.iframe.width = htmlCell.w ?? DEFAULT_HTML_WIDTH;
-      this.iframe.height = htmlCell.h ?? DEFAULT_HTML_HEIGHT;
-    }
     if (htmlCell.html !== this.htmlCell.html) {
       this.iframe.srcdoc = htmlCell.html;
     }
     this.htmlCell = htmlCell;
+    this.iframe.width = this.width.toString();
+    this.iframe.height = this.height.toString();
+    this.border.style.width = `${this.width}px`;
+    this.border.style.height = `${this.height}px`;
     this.calculateGridBounds();
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, this.width, this.height);
+    this.temporaryWidth = undefined;
+    this.temporaryHeight = undefined;
   }
 
   private calculateGridBounds() {
@@ -227,6 +252,7 @@ export class HtmlCell {
     if (!this.hoverSide) {
       throw new Error('Expected hoverSide to be defined in HtmlCell.startResizing');
     }
+    this.iframe.style.pointerEvents = 'none';
     this.resizing = new HtmlCellResizing(
       this,
       this.hoverSide,
@@ -245,6 +271,7 @@ export class HtmlCell {
     this.bottom.classList.remove('html-resize-control-bottom-corner');
     this.resizing.cancelResizing();
     this.resizing = undefined;
+    this.iframe.style.pointerEvents = this.pointerEvents;
   }
 
   completeResizing() {
@@ -253,14 +280,21 @@ export class HtmlCell {
     }
     this.resizing.completeResizing();
     this.resizing = undefined;
+    this.iframe.style.pointerEvents = this.pointerEvents;
   }
 
   setWidth(width: number) {
+    this.temporaryWidth = width;
     this.iframe.width = width.toString();
+    this.border.style.width = `${width}px`;
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, width, this.temporaryHeight ?? this.height);
   }
 
   setHeight(height: number) {
+    this.temporaryHeight = height;
     this.iframe.height = height.toString();
+    this.border.style.height = `${height}px`;
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, this.temporaryWidth ?? this.width, height);
   }
 
   updateOffsets() {

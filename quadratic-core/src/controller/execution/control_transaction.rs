@@ -325,6 +325,7 @@ impl GridController {
                 false,
                 true,
                 true,
+                None,
             );
 
             self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);

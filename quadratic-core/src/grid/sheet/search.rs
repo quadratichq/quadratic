@@ -512,6 +512,7 @@ mod test {
             false,
             false,
             false,
+            None,
         );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
 
@@ -560,6 +561,7 @@ mod test {
             false,
             false,
             false,
+            None,
         );
         sheet.set_data_table(Pos { x: 1, y: 2 }, Some(data_table));
 

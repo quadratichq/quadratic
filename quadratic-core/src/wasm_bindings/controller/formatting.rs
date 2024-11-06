@@ -174,29 +174,17 @@ impl GridController {
     }
 
     /// Sets cell render size (used for Html-style cells).
-    #[wasm_bindgen(js_name = "setCellRenderSize")]
-    pub fn js_set_render_size(
+    #[wasm_bindgen(js_name = "setChartSize")]
+    pub fn js_set_chart_size(
         &mut self,
-        sheet_id: String,
-        rect: String,
-        w: Option<String>,
-        h: Option<String>,
+        sheet_pos: String,
+        w: f32,
+        h: f32,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let rect = serde_json::from_str::<Rect>(&rect).map_err(|_| "Invalid rect")?;
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        let value = if let (Some(w), Some(h)) = (w, h) {
-            Some(RenderSize {
-                w: w.to_owned(),
-                h: h.to_owned(),
-            })
-        } else {
-            None
-        };
-
-        self.set_cell_render_size(rect.to_sheet_rect(sheet_id), value, cursor);
+        let sheet_pos =
+            serde_json::from_str::<SheetPos>(&sheet_pos).map_err(|_| "Invalid sheet pos")?;
+        self.set_chart_size(sheet_pos, w, h, cursor);
         Ok(())
     }
 

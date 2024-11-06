@@ -2,6 +2,7 @@
 //! of overflow of text, images, and html tables..
 
 import { Sheet } from '@/app/grid/sheet/Sheet';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 
@@ -34,10 +35,6 @@ export class GridOverflowLines {
     });
   }
 
-  resizeImage(x: number, y: number, width: number, height: number) {
-    this.updateImageHtml(x, y, width, height);
-  }
-
   // updates the hash with a rectangle of an image or html table
   updateImageHtml(column: number, row: number, width?: number, height?: number) {
     if (width === undefined || height === undefined) {
@@ -47,6 +44,7 @@ export class GridOverflowLines {
     const start = this.sheet.offsets.getCellOffsets(column, row);
     const end = this.sheet.getColumnRow(start.x + width, start.y + height);
     this.overflowImageHtml.set(`${column},${row}`, new Rectangle(column, row, end.x - column, end.y - row));
+    pixiApp.gridLines.dirty = true;
   }
 
   // returns a list of ranges of y-values that need to be drawn (excluding the

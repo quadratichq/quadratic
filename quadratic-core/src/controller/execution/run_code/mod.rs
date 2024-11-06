@@ -18,7 +18,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        new_data_table: Option<DataTable>,
+        mut new_data_table: Option<DataTable>,
         index: Option<usize>,
     ) {
         let sheet_id = sheet_pos.sheet_id;
@@ -36,6 +36,16 @@ impl GridController {
                 .position(|(p, _)| p == &pos)
                 .unwrap_or(sheet.data_tables.len()),
         );
+
+        if let Some(new_data_table) = new_data_table.as_mut() {
+            if let Some((pixel_width, pixel_height)) = new_data_table.chart_pixel_output {
+                let chart_output =
+                    sheet
+                        .offsets
+                        .calculate_grid_size(pos, pixel_width, pixel_height);
+                new_data_table.chart_output = Some(chart_output);
+            }
+        }
 
         let old_data_table = if let Some(new_data_table) = &new_data_table {
             let (old_index, old_data_table) =
@@ -79,8 +89,18 @@ impl GridController {
         };
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            transaction.add_from_code_run(sheet_id, pos, &old_data_table);
-            transaction.add_from_code_run(sheet_id, pos, &new_data_table);
+            transaction.add_from_code_run(
+                sheet_id,
+                pos,
+                old_data_table.as_ref().map_or(false, |dt| dt.is_image()),
+                old_data_table.as_ref().map_or(false, |dt| dt.is_html()),
+            );
+            transaction.add_from_code_run(
+                sheet_id,
+                pos,
+                new_data_table.as_ref().map_or(false, |dt| dt.is_image()),
+                new_data_table.as_ref().map_or(false, |dt| dt.is_html()),
+            );
 
             self.send_updated_bounds_rect(&sheet_rect, false);
             transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
@@ -110,7 +130,7 @@ impl GridController {
 
             if transaction.is_user() {
                 self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-                self.check_all_spills(transaction, sheet_pos.sheet_id, true);
+                self.check_all_spills(transaction, sheet_pos.sheet_id);
             }
         }
 
@@ -240,6 +260,7 @@ impl GridController {
             false,
             false,
             false,
+            None,
         );
         transaction.waiting_for_async = None;
         self.finalize_code_run(transaction, sheet_pos, Some(new_data_table), None);
@@ -279,7 +300,6 @@ impl GridController {
                 std_err: None,
                 cells_accessed: transaction.cells_accessed.clone(),
             };
-            // todo: this should be true sometimes...
             let show_header = false;
             return DataTable::new(
                 DataTableKind::CodeRun(code_run),
@@ -288,6 +308,7 @@ impl GridController {
                 false,
                 false,
                 show_header,
+                None,
             );
         };
 
@@ -350,14 +371,21 @@ impl GridController {
 
         // todo: this should be true sometimes...
         let show_header = false;
-        let data_table = DataTable::new(
+        let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
             false,
             false,
             show_header,
+            js_code_result.chart_pixel_output,
         );
+
+        // set alternating colors to false if chart_pixel_output is set.
+        if js_code_result.chart_pixel_output.is_some() {
+            data_table.alternating_colors = false;
+        }
+
         transaction.cells_accessed.clear();
         data_table
     }
@@ -416,6 +444,7 @@ mod test {
             false,
             false,
             true,
+            None,
         );
         gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
@@ -451,6 +480,7 @@ mod test {
             false,
             false,
             true,
+            None,
         );
         gc.finalize_code_run(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);

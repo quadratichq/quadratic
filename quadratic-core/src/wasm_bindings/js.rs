@@ -110,8 +110,8 @@ extern "C" {
         x: i32,
         y: i32,
         image: Option<String>,
-        w: Option<String>,
-        h: Option<String>,
+        w: Option<f32>,
+        h: Option<f32>,
     );
 
     // rows: Vec<i64>
@@ -572,8 +572,8 @@ pub fn jsSendImage(
     x: i32,
     y: i32,
     image: Option<String>,
-    w: Option<String>,
-    h: Option<String>,
+    w: Option<f32>,
+    h: Option<f32>,
 ) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendImage",
@@ -584,7 +584,7 @@ pub fn jsSendImage(
             y,
             image.is_some(),
             w,
-            h
+            h,
         ),
     ));
 }

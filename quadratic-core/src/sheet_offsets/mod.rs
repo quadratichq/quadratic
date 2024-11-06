@@ -273,11 +273,21 @@ impl SheetOffsets {
     pub fn delete_row(&mut self, row: i64) -> (Vec<(i64, f64)>, Option<f64>) {
         self.row_heights.delete(row)
     }
+
+    /// Calculates the grid width and height for a given grid position and pixel size.
+    pub fn calculate_grid_size(&self, pos: Pos, width: f32, height: f32) -> (u32, u32) {
+        let start = self.cell_offsets(pos.x, pos.y);
+        let (end_x, _) = self.column_from_x(start.x + width as f64);
+        let (end_y, _) = self.row_from_y(start.y + height as f64);
+        ((end_x - pos.x + 1) as u32, (end_y - pos.y + 1) as u32)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use serial_test::parallel;
+
+    use crate::Pos;
 
     #[test]
     #[parallel]
@@ -315,5 +325,14 @@ mod test {
         assert_eq!(rect.min.y, 0);
         assert_eq!(rect.max.x, 200);
         assert_eq!(rect.max.y, 42);
+    }
+
+    #[test]
+    #[parallel]
+    fn calculate_grid_size() {
+        let sheet = super::SheetOffsets::default();
+        let (width, height) = sheet.calculate_grid_size(Pos { x: 0, y: 0 }, 100.0, 21.0);
+        assert_eq!(width, 1);
+        assert_eq!(height, 1);
     }
 }

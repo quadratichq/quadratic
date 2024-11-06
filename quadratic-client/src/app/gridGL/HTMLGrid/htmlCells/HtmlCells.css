@@ -13,6 +13,7 @@
 
 .html-cell-iframe {
   margin: 0;
+  overflow: hidden;
 }
 
 .html-resize-control-right,
@@ -32,7 +33,7 @@
 }
 
 .html-resize-control-right-corner {
-  height: calc(100% + 7px);
+  height: calc(100% + 5px);
 }
 
 .html-resize-control-bottom-corner {

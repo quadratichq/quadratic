@@ -4,6 +4,7 @@ import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
+import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { isMac } from '@/shared/utils/isMac';
@@ -79,8 +80,17 @@ export class PointerTable {
     if (!tableDown?.table) {
       const image = pixiApp.cellsSheet().cellsImages.contains(world);
       if (image) {
-        pixiApp.cellsSheet().tables.ensureActiveCoordinate(image);
-        sheets.sheet.cursor.changePosition({ cursorPosition: image });
+        if (this.doubleClickTimeout) {
+          clearTimeout(this.doubleClickTimeout);
+          this.doubleClickTimeout = undefined;
+          doubleClickCell({ column: image.x, row: image.y, language: 'Javascript' });
+        } else {
+          pixiApp.cellsSheet().tables.ensureActiveCoordinate(image);
+          sheets.sheet.cursor.changePosition({ cursorPosition: image });
+          this.doubleClickTimeout = window.setTimeout(() => {
+            this.doubleClickTimeout = undefined;
+          }, DOUBLE_CLICK_TIME);
+        }
         return true;
       }
       return false;

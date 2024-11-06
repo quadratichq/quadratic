@@ -117,6 +117,7 @@ export class Tables extends Container<Table> {
       } else if (renderCodeCell) {
         this.addChild(new Table(this.sheet, renderCodeCell));
       }
+      pixiApp.setViewportDirty();
     }
   };
 
@@ -171,6 +172,7 @@ export class Tables extends Container<Table> {
     if (sheetId === this.sheet.id) {
       this.children.map((table) => table.updateCodeCell());
     }
+    pixiApp.setViewportDirty();
   };
 
   private changeSheet = (sheetId: string) => {
@@ -430,7 +432,7 @@ export class Tables extends Container<Table> {
     const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
     if (table) {
       table.resize(width, height);
-      sheets.sheet.gridOverflowLines.resizeImage(x, y, width, height);
+      sheets.sheet.gridOverflowLines.updateImageHtml(x, y, width, height);
       pixiApp.gridLines.dirty = true;
     }
   }
