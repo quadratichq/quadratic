@@ -104,7 +104,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             id={`${index}-${message.role}-${message.contextType}`}
             className={cn(
               'flex flex-col gap-2',
-              message.role === 'user' && message.contextType === 'userPrompt' ? '-mx-2' : 'px-2',
+              message.role === 'user' && message.contextType === 'userPrompt' ? '-mx-2 -mb-2' : 'px-2',
               // For debugging internal context
               message.contextType === 'userPrompt' ? '' : 'bg-accent'
             )}
