@@ -1,24 +1,21 @@
-import { codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { usePositionCellMessage } from '@/app/gridGL/HTMLGrid/usePositionCellMessage';
 import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
-import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { FixSpillError } from '@/app/ui/components/FixSpillError';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AIIcon, SpillErrorMoveIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 export const HOVER_CELL_FADE_IN_OUT_DELAY = 500;
 
@@ -227,19 +224,18 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
   return (
     <HoverCellDisplay
       title={language ? `${language} error` : 'Error'}
+      isError
       actions={
-        <TooltipPopover label={'Fix with AI'}>
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            onClick={() => {
-              events.emit('askAICodeCell', codeCell);
-              onClick();
-            }}
-          >
-            <AIIcon />
-          </Button>
-        </TooltipPopover>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={() => {
+            events.emit('askAICodeCell', codeCell);
+            onClick();
+          }}
+        >
+          Fix with AI
+        </Button>
       }
     >
       <HoverCellDisplayError>{codeCellCore.std_err}</HoverCellDisplayError>
@@ -250,112 +246,13 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
 
 function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRenderCodeCell; onClick: () => void }) {
   const spillError = renderCodeCell.spill_error;
-  const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const [codeCell, setCodeCell] = useRecoilState(codeEditorCodeCellAtom);
-
-  const handleModeCodeCellDown = useCallback(
-    ({ sheetEnd, reverse }: { sheetEnd: boolean; reverse: boolean }) => {
-      const sheetId = sheets.current;
-      quadraticCore
-        .moveCodeCellVertically({ sheetId, x: renderCodeCell.x, y: renderCodeCell.y, sheetEnd, reverse })
-        .then((pos) => {
-          const min = { x: Number(pos.x), y: Number(pos.y) };
-          if (min.x !== renderCodeCell.x || min.y !== renderCodeCell.y) {
-            if (
-              showCodeEditor &&
-              codeCell.sheetId === sheetId &&
-              codeCell.pos.x === renderCodeCell.x &&
-              codeCell.pos.y === renderCodeCell.y
-            ) {
-              setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
-            }
-            const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
-            ensureRectVisible(min, max);
-          }
-        });
-      onClick();
-    },
-    [
-      renderCodeCell.x,
-      renderCodeCell.y,
-      renderCodeCell.w,
-      renderCodeCell.h,
-      onClick,
-      showCodeEditor,
-      codeCell.sheetId,
-      codeCell.pos.x,
-      codeCell.pos.y,
-      setCodeCell,
-    ]
-  );
-
-  const handleModeCodeCellRight = useCallback(
-    ({ sheetEnd, reverse }: { sheetEnd: boolean; reverse: boolean }) => {
-      const sheetId = sheets.current;
-      quadraticCore
-        .moveCodeCellHorizontally({ sheetId, x: renderCodeCell.x, y: renderCodeCell.y, sheetEnd, reverse })
-        .then((pos) => {
-          const min = { x: Number(pos.x), y: Number(pos.y) };
-          if (min.x !== renderCodeCell.x || min.y !== renderCodeCell.y) {
-            if (
-              showCodeEditor &&
-              codeCell.sheetId === sheetId &&
-              codeCell.pos.x === renderCodeCell.x &&
-              codeCell.pos.y === renderCodeCell.y
-            ) {
-              setCodeCell((prev) => ({ ...prev, pos: { x: min.x, y: min.y } }));
-            }
-            const max = { x: Number(pos.x) + renderCodeCell.w - 1, y: Number(pos.y) + renderCodeCell.h - 1 };
-            ensureRectVisible(min, max);
-          }
-        });
-      onClick();
-    },
-    [
-      renderCodeCell.x,
-      renderCodeCell.y,
-      renderCodeCell.w,
-      renderCodeCell.h,
-      onClick,
-      showCodeEditor,
-      codeCell.sheetId,
-      codeCell.pos.x,
-      codeCell.pos.y,
-      setCodeCell,
-    ]
-  );
 
   if (!spillError) {
     return null;
   }
 
   return (
-    <HoverCellDisplay
-      title="Spill error"
-      actions={
-        <>
-          <TooltipPopover label={'Move down until fixed'}>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              onClick={() => handleModeCodeCellDown({ sheetEnd: false, reverse: false })}
-            >
-              <SpillErrorMoveIcon />
-            </Button>
-          </TooltipPopover>
-
-          <TooltipPopover label={'Move right until fixed'}>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              onClick={() => handleModeCodeCellRight({ sheetEnd: false, reverse: false })}
-            >
-              <SpillErrorMoveIcon className="-rotate-90" />
-            </Button>
-          </TooltipPopover>
-        </>
-      }
-    >
+    <HoverCellDisplay title="Spill error" actions={<FixSpillError />} isError>
       <p>Array output could not expand because it would overwrite existing values.</p>
 
       <p>
@@ -368,17 +265,28 @@ function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRe
 
             {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
           </span>
-        ))}
+        ))}{' '}
+        Or move this cell.
       </p>
     </HoverCellDisplay>
   );
 }
 
-function HoverCellDisplay({ title, children, actions }: any) {
+function HoverCellDisplay({
+  title,
+  children,
+  actions,
+  isError,
+}: {
+  title: string;
+  children: ReactNode;
+  actions?: ReactNode;
+  isError?: boolean;
+}) {
   return (
     <div className="flex flex-col gap-1 p-3">
       <div className="flex items-center justify-between">
-        {title}
+        <span className={cn(isError ? 'text-destructive' : '')}>{title}</span>
         {actions && <div className="flex items-center gap-0.5">{actions}</div>}
       </div>
       <div className="flex flex-col gap-2 text-xs">{children}</div>

@@ -3,18 +3,13 @@ import {
   codeEditorConsoleOutputAtom,
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { events } from '@/app/events/events';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { colors } from '@/app/theme/colors';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
-import { AIIcon } from '@/shared/components/Icons';
-import { Button } from '@/shared/shadcn/ui/button';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export function Console() {
-  const codeCellRecoil = useRecoilValue(codeEditorCodeCellAtom);
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const spillError = useRecoilValue(codeEditorSpillErrorAtom);
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
@@ -46,18 +41,6 @@ export function Console() {
     >
       {hasOutput ? (
         <>
-          {consoleOutput?.stdErr && (
-            <TooltipPopover label={'Fix with AI'}>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                onClick={() => events.emit('askAICodeCell', codeCellRecoil)}
-                className="mb-2"
-              >
-                <AIIcon />
-              </Button>
-            </TooltipPopover>
-          )}
           {spillError && (
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
               SPILL ERROR: Array output could not expand because it would overwrite existing content. To fix this,
