@@ -13,7 +13,7 @@ import {
   createRoutesFromElements,
   redirect,
 } from 'react-router-dom';
-import { protectedRouteLoaderWrapper } from './auth';
+import { protectedRouteLoaderWrapper } from './auth/auth';
 import * as RootRoute from './routes/_root';
 
 export const router = createBrowserRouter(
@@ -85,6 +85,7 @@ export const router = createBrowserRouter(
               lazy={() => import('./routes/account')}
               shouldRevalidate={dontRevalidateDialogs}
             />
+            <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
 
             <Route path="teams">
               <Route path="create" lazy={() => import('./routes/teams.create')} />
