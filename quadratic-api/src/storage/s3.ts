@@ -24,8 +24,16 @@ const getS3Client = () => {
         accessKeyId: AWS_S3_ACCESS_KEY_ID,
         secretAccessKey: AWS_S3_SECRET_ACCESS_KEY,
       },
-      endpoint,
-      forcePathStyle: true,
+      ...(endpoint === undefined
+        ? // for aws, using transfer acceleration
+          {
+            useAccelerateEndpoint: true,
+          }
+        : // for localstack, using path style
+          {
+            endpoint,
+            forcePathStyle: true,
+          }),
     });
   }
 
