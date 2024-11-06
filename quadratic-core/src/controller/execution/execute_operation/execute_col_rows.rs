@@ -148,7 +148,7 @@ impl GridController {
                         sheet_rect.min.x = column;
                         self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -185,7 +185,7 @@ impl GridController {
                         sheet_rect.min.y = row;
                         self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -227,7 +227,7 @@ impl GridController {
                         sheet_rect.min.x = column + 1;
                         self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }
@@ -269,7 +269,7 @@ impl GridController {
                         sheet_rect.min.y = row + 1;
                         self.check_deleted_data_tables(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id, true);
+                        self.check_all_spills(transaction, sheet_rect.sheet_id);
                     }
                 }
             }

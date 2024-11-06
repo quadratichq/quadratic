@@ -89,8 +89,18 @@ impl GridController {
         };
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            transaction.add_from_code_run(sheet_id, pos, &old_data_table);
-            transaction.add_from_code_run(sheet_id, pos, &new_data_table);
+            transaction.add_from_code_run(
+                sheet_id,
+                pos,
+                old_data_table.as_ref().map_or(false, |dt| dt.is_image()),
+                old_data_table.as_ref().map_or(false, |dt| dt.is_html()),
+            );
+            transaction.add_from_code_run(
+                sheet_id,
+                pos,
+                new_data_table.as_ref().map_or(false, |dt| dt.is_image()),
+                new_data_table.as_ref().map_or(false, |dt| dt.is_html()),
+            );
 
             self.send_updated_bounds_rect(&sheet_rect, false);
             transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
@@ -120,7 +130,7 @@ impl GridController {
 
             if transaction.is_user() {
                 self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-                self.check_all_spills(transaction, sheet_pos.sheet_id, true);
+                self.check_all_spills(transaction, sheet_pos.sheet_id);
             }
         }
 

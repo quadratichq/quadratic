@@ -117,6 +117,7 @@ export class Tables extends Container<Table> {
       } else if (renderCodeCell) {
         this.addChild(new Table(this.sheet, renderCodeCell));
       }
+      pixiApp.setViewportDirty();
     }
   };
 
@@ -171,6 +172,7 @@ export class Tables extends Container<Table> {
     if (sheetId === this.sheet.id) {
       this.children.map((table) => table.updateCodeCell());
     }
+    pixiApp.setViewportDirty();
   };
 
   private changeSheet = (sheetId: string) => {

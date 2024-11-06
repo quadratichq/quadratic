@@ -447,6 +447,15 @@ impl Sheet {
                 None,
             )
         };
+        let alternating_colors = if data_table.spill_error
+            || data_table.has_error()
+            || data_table.is_image()
+            || data_table.is_html()
+        {
+            false
+        } else {
+            data_table.alternating_colors
+        };
         Some(JsRenderCodeCell {
             x: pos.x as i32,
             y: pos.y as i32,
@@ -464,7 +473,7 @@ impl Sheet {
             first_row_header: data_table.header_is_first_row,
             show_header: data_table.show_header,
             sort: data_table.sort.clone(),
-            alternating_colors: data_table.alternating_colors,
+            alternating_colors,
         })
     }
 
@@ -498,7 +507,15 @@ impl Sheet {
                                     None,
                                 )
                             };
-
+                            let alternating_colors = if data_table.spill_error
+                                || data_table.has_error()
+                                || data_table.is_image()
+                                || data_table.is_html()
+                            {
+                                false
+                            } else {
+                                data_table.alternating_colors
+                            };
                             Some(JsRenderCodeCell {
                                 x: pos.x as i32,
                                 y: pos.y as i32,
@@ -512,7 +529,7 @@ impl Sheet {
                                 first_row_header: data_table.header_is_first_row,
                                 show_header: data_table.show_header,
                                 sort: data_table.sort.clone(),
-                                alternating_colors: data_table.alternating_colors,
+                                alternating_colors,
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
