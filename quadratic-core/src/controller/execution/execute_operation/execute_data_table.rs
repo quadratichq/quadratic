@@ -5,6 +5,7 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::{DataTable, DataTableKind},
+    util::dbgjs,
     ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
@@ -122,11 +123,12 @@ impl GridController {
 
             if let Some(display_buffer) = &data_table.display_buffer {
                 // if there is a display buffer, use it to find the source row index
+                let index_to_find = pos.y - data_table_pos.y;
                 let row_index = *display_buffer
-                    .get(pos.y as usize)
+                    .get(index_to_find as usize)
                     .unwrap_or(&(pos.y as u64));
 
-                pos.y = row_index as i64;
+                pos.y = row_index as i64 + data_table_pos.y;
             }
 
             if data_table.show_header && !data_table.header_is_first_row {

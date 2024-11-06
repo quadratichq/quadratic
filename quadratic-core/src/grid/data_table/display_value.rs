@@ -18,10 +18,30 @@ use super::DataTable;
 impl DataTable {
     pub fn display_value_from_buffer(&self, display_buffer: &[u64]) -> Result<Value> {
         let value = self.value.to_owned().into_array()?;
+        let columns_to_show = self
+            .columns
+            .iter()
+            .flatten()
+            .enumerate()
+            .filter(|(_, c)| c.display)
+            .map(|(index, _)| index)
+            .collect::<Vec<_>>();
 
         let values = display_buffer
             .iter()
-            .filter_map(|index| value.get_row(*index as usize).map(|row| row.to_vec()).ok())
+            .filter_map(|index| {
+                value
+                    .get_row(*index as usize)
+                    .map(|row| {
+                        row.to_vec()
+                            .into_iter()
+                            .enumerate()
+                            .filter(|(i, _)| columns_to_show.contains(&i))
+                            .map(|(_, v)| v)
+                            .collect::<Vec<CellValue>>()
+                    })
+                    .ok()
+            })
             .collect::<Vec<Vec<CellValue>>>();
 
         let array = Array::from(values);
