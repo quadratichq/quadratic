@@ -1,21 +1,21 @@
-import {
-  codeEditorCodeCellAtom,
-  codeEditorEvaluationResultAtom,
-  codeEditorSpillErrorAtom,
-} from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom, codeEditorEvaluationResultAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { ArrowDoubleDown, ArrowDoubleRight, ArrowDown, ArrowRight } from '@/shared/components/Icons';
+import { ArrowDropDownIcon, SpillErrorMoveIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import { useCallback } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-export const CodeEditorFixSpillError = () => {
+export const FixSpillError = () => {
   const [codeCell, setCodeCell] = useRecoilState(codeEditorCodeCellAtom);
   const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
-  const spillError = useRecoilValue(codeEditorSpillErrorAtom);
 
   const handleModeCodeCellDown = useCallback(
     (sheetEnd: boolean) => {
@@ -67,17 +67,27 @@ export const CodeEditorFixSpillError = () => {
     [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, setCodeCell]
   );
 
-  if (!spillError) {
-    return null;
-  }
-
   return (
-    <>
-      <div className="flex items-center justify-end px-3 py-1">
-        <span className="px-2 text-sm font-medium">Fix spill error: </span>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="destructive" size="sm">
+          Fix <ArrowDropDownIcon className="-mr-1" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => handleModeCodeCellDown(false)}>
+          <SpillErrorMoveIcon className="mr-2" /> Move down to nearest fix
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => handleModeCodeCellRight(false)}>
+          <SpillErrorMoveIcon className="mr-2 -rotate-90" />
+          Move right to nearest fix
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
-        <div className="flex gap-3">
-          <TooltipPopover label={'Fix spill error - move down after all data'}>
+/* <TooltipPopover label={'Fix spill error - move down after all data'}>
             <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellDown(true)}>
               <ArrowDoubleDown />
             </Button>
@@ -99,9 +109,4 @@ export const CodeEditorFixSpillError = () => {
             <Button className="h-6 w-6" size="sm" variant="success" onClick={() => handleModeCodeCellRight(true)}>
               <ArrowDoubleRight />
             </Button>
-          </TooltipPopover>
-        </div>
-      </div>
-    </>
-  );
-};
+          </TooltipPopover> */
