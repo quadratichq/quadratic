@@ -1,4 +1,3 @@
-import { codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -16,7 +15,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { Rectangle } from 'pixi.js';
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilValue } from 'recoil';
 
 export const HOVER_CELL_FADE_IN_OUT_DELAY = 500;
 
@@ -247,8 +246,8 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
 
 function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRenderCodeCell; onClick: () => void }) {
   const spillError = renderCodeCell.spill_error;
-  const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const [codeCell, setCodeCell] = useRecoilState(codeEditorCodeCellAtom);
+  // const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
+  // const [codeCell, setCodeCell] = useRecoilState(codeEditorCodeCellAtom);
 
   /* commenting out for now 
   const handleModeCodeCellDown = useCallback(
