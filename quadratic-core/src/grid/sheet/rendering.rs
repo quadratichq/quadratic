@@ -423,8 +423,8 @@ impl Sheet {
         JsSheetFill { columns, rows, all }
     }
 
-    pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
-        let data_table = self.data_tables.get(&pos)?;
+    // Returns data for rendering a code cell.
+    fn render_code_cell(&self, pos: Pos, data_table: &DataTable) -> Option<JsRenderCodeCell> {
         let code = self.cell_value(pos)?;
         let output_size = data_table.output_size();
         let (state, w, h, spill_error) = if data_table.spill_error {
@@ -440,22 +440,21 @@ impl Sheet {
         {
             (JsRenderCodeCellState::RunError, 1, 1, None)
         } else {
-            (
-                JsRenderCodeCellState::Success,
-                output_size.w.get(),
-                output_size.h.get(),
-                None,
-            )
+            let state = if data_table.is_image() {
+                JsRenderCodeCellState::Image
+            } else if data_table.is_html() {
+                JsRenderCodeCellState::HTML
+            } else {
+                JsRenderCodeCellState::Success
+            };
+            (state, output_size.w.get(), output_size.h.get(), None)
         };
-        let alternating_colors = if data_table.spill_error
-            || data_table.has_error()
-            || data_table.is_image()
-            || data_table.is_html()
-        {
-            false
-        } else {
-            data_table.alternating_colors
-        };
+        let alternating_colors = !data_table.spill_error
+            && !data_table.has_error()
+            && !data_table.is_image()
+            && !data_table.is_html()
+            && data_table.alternating_colors;
+
         Some(JsRenderCodeCell {
             x: pos.x as i32,
             y: pos.y as i32,
@@ -477,67 +476,17 @@ impl Sheet {
         })
     }
 
+    // Returns a single code cell for rendering.
+    pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
+        let data_table = self.data_tables.get(&pos)?;
+        self.render_code_cell(pos, data_table)
+    }
+
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.data_tables
             .iter()
-            .filter_map(|(pos, data_table)| {
-                if let Some(code) = self.cell_value(*pos) {
-                    match code.code_cell_value() {
-                        Some(code_cell_value) => {
-                            let output_size = data_table.output_size();
-                            let (state, w, h, spill_error) = if data_table.spill_error {
-                                let reasons = self.find_spill_error_reasons(
-                                    &data_table.output_rect(*pos, true),
-                                    *pos,
-                                );
-                                (
-                                    JsRenderCodeCellState::SpillError,
-                                    output_size.w.get(),
-                                    output_size.h.get(),
-                                    Some(reasons),
-                                )
-                            } else if data_table.has_error() {
-                                (JsRenderCodeCellState::RunError, 1, 1, None)
-                            } else {
-                                (
-                                    JsRenderCodeCellState::Success,
-                                    output_size.w.get(),
-                                    output_size.h.get(),
-                                    None,
-                                )
-                            };
-                            let alternating_colors = if data_table.spill_error
-                                || data_table.has_error()
-                                || data_table.is_image()
-                                || data_table.is_html()
-                            {
-                                false
-                            } else {
-                                data_table.alternating_colors
-                            };
-                            Some(JsRenderCodeCell {
-                                x: pos.x as i32,
-                                y: pos.y as i32,
-                                w,
-                                h,
-                                language: code_cell_value.language,
-                                state,
-                                spill_error,
-                                name: data_table.name.clone(),
-                                columns: data_table.send_columns(),
-                                first_row_header: data_table.header_is_first_row,
-                                show_header: data_table.show_header,
-                                sort: data_table.sort.clone(),
-                                alternating_colors,
-                            })
-                        }
-                        _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
-                    }
-                } else {
-                    None // this should not happen. A CodeRun should always have a CellValue::Code.
-                }
-            })
+            .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
             .collect()
     }
 

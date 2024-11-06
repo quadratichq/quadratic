@@ -9,7 +9,6 @@ import { HtmlCell } from './HtmlCell';
 class HTMLCellsHandler {
   // used to attach the html-cells to react
   private div: HTMLDivElement;
-
   private cells: Set<HtmlCell> = new Set();
 
   constructor() {
@@ -43,7 +42,7 @@ class HTMLCellsHandler {
         if (data.html) {
           cell.update(data);
         } else {
-          this.getParent().removeChild(cell.div);
+          cell.destroy();
           this.cells.delete(cell);
         }
         return;
@@ -158,8 +157,9 @@ class HTMLCellsHandler {
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
     );
     if (cell) {
-      cell.div.style.boxShadow = 'inset 0 0 0 2px hsl(var(--primary))';
-      cell.iframe.style.pointerEvents = isSelected ? 'auto' : 'none';
+      cell.border.style.border = '2px solid hsl(var(--primary))';
+      cell.pointerEvents = isSelected ? 'auto' : 'none';
+      cell.iframe.style.pointerEvents = cell.pointerEvents;
     }
   }
 
@@ -168,8 +168,9 @@ class HTMLCellsHandler {
       (cell) => cell.x === codeCell.x && cell.y === codeCell.y && cell.sheet.id === sheets.sheet.id
     );
     if (cell) {
-      cell.div.style.boxShadow = 'inset 0 0 0 1px hsl(var(--primary))';
-      cell.iframe.style.pointerEvents = 'none';
+      cell.border.style.border = '1px solid hsl(var(--primary))';
+      cell.pointerEvents = 'none';
+      cell.iframe.style.pointerEvents = cell.pointerEvents;
     }
   }
 }

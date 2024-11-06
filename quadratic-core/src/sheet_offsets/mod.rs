@@ -279,7 +279,7 @@ impl SheetOffsets {
         let start = self.cell_offsets(pos.x, pos.y);
         let (end_x, _) = self.column_from_x(start.x + width as f64);
         let (end_y, _) = self.row_from_y(start.y + height as f64);
-        ((end_x - pos.x) as u32, (end_y - pos.y) as u32)
+        ((end_x - pos.x + 1) as u32, (end_y - pos.y + 1) as u32)
     }
 }
 

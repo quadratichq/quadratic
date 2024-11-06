@@ -224,6 +224,8 @@ pub enum JsRenderCodeCellState {
     RunError,
     SpillError,
     Success,
+    HTML,
+    Image,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

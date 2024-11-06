@@ -13,6 +13,7 @@
 
 .html-cell-iframe {
   margin: 0;
+  overflow: hidden;
 }
 
 .html-resize-control-right,

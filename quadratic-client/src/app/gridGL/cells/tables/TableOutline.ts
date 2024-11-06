@@ -34,8 +34,12 @@ export class TableOutline extends Graphics {
     // draw the table selected outline
     const width = this.active ? 2 : 1;
 
-    this.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 0 });
-    this.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.table.tableBounds.height));
+    const image = this.table.codeCell.state === 'Image';
+    const chart = this.table.codeCell.state === 'HTML';
+    if (!chart) {
+      this.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 0 });
+      this.drawShape(new Rectangle(0, 0, this.table.tableBounds.width, this.table.tableBounds.height));
+    }
 
     // draw the spill error boundaries
     if (this.active && this.table.codeCell.spill_error) {
@@ -48,7 +52,12 @@ export class TableOutline extends Graphics {
 
       // draw outline around where the code cell would spill
       this.lineStyle({ color: getCSSVariableTint('primary'), width: 1, alignment: 0 });
-      this.drawRect(0, 0, full.width, full.height);
+      this.drawRect(
+        0,
+        0,
+        chart || image ? this.table.codeCell.w : full.width,
+        chart || image ? this.table.codeCell.h : full.height
+      );
 
       // box and shade what is causing the spill errors
       this.table.codeCell.spill_error.forEach((error) => {
