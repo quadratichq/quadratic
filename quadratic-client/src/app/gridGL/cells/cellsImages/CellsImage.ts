@@ -151,11 +151,6 @@ export class CellsImage extends Container {
   }
 
   isImageCell(x: number, y: number): boolean {
-    return (
-      x >= this.gridBounds.x &&
-      x < this.gridBounds.right &&
-      y >= this.gridBounds.y &&
-      y < this.gridBounds.bottom
-    );
+    return x >= this.gridBounds.x && x < this.gridBounds.right && y >= this.gridBounds.y && y < this.gridBounds.bottom;
   }
 }

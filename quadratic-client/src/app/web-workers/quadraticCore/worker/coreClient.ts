@@ -601,6 +601,7 @@ class CoreClient {
           e.data.name,
           e.data.alternatingColors,
           e.data.columns,
+          e.data.showHeader,
           e.data.cursor
         );
         return;

@@ -53,6 +53,7 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumn>>,
+        show_header: Option<bool>,
         cursor: Option<String>,
     ) {
         let ops = self.data_table_meta_operations(
@@ -60,6 +61,7 @@ impl GridController {
             name,
             alternating_colors,
             columns,
+            show_header,
             cursor.to_owned(),
         );
         self.start_user_transaction(ops, cursor, TransactionName::DataTableMeta);

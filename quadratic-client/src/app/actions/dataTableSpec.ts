@@ -46,6 +46,11 @@ const getTable = (): JsRenderCodeCell | undefined => {
   return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
+export const getColumns = (): { name: string; display: boolean; valueIndex: number }[] | undefined => {
+  const table = getTable();
+  return table?.columns;
+};
+
 const isHeadingShowing = (): boolean => {
   const table = getTable();
   return !!table?.show_header;
@@ -114,8 +119,19 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Show column headings',
     checkbox: isHeadingShowing,
     run: () => {
-      // const table = getTable();
-      // quadraticCore.dataTableShowHeadings(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+      const table = getTable();
+      if (table) {
+        quadraticCore.dataTableMeta(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          undefined,
+          undefined,
+          !isHeadingShowing(),
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
   [Action.DeleteDataTable]: {
@@ -154,8 +170,19 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Toggle alternating colors',
     checkbox: isAlternatingColorsShowing,
     run: () => {
-      console.log('TODO: toggle alternating colors');
-      // quadraticCore.dataTableToggleAlternatingColors(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+      const table = getTable();
+      if (table) {
+        quadraticCore.dataTableMeta(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          !isAlternatingColorsShowing(),
+          undefined,
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
   [Action.RenameTableColumn]: {
@@ -166,7 +193,7 @@ export const dataTableSpec: DataTableSpec = {
       const table = getTable();
       if (table) {
         const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
-        console.log(selectedColumn);
+
         if (selectedColumn !== undefined) {
           setTimeout(() => {
             const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
@@ -219,14 +246,49 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Hide column',
     Icon: HideIcon,
     run: () => {
-      console.log('TODO: hide column');
+      const table = getTable();
+      const columns = getColumns();
+      const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+
+      if (table && columns && selectedColumn) {
+        columns[selectedColumn].display = false;
+
+        quadraticCore.dataTableMeta(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          undefined,
+          columns,
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
   [Action.ShowAllColumns]: {
     label: 'Show all columns',
     Icon: ShowIcon,
     run: () => {
-      console.log('TODO: show all columns');
+      const table = getTable();
+      const columns = getColumns();
+
+      if (table && columns) {
+        columns.forEach((column) => {
+          column.display = true;
+        });
+
+        quadraticCore.dataTableMeta(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          undefined,
+          columns,
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
     },
   },
   [Action.EditTableCode]: {

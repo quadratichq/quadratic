@@ -1050,6 +1050,7 @@ export interface ClientCoreDataTableMeta {
     display: boolean;
     valueIndex: number;
   }[];
+  showHeader?: boolean;
   cursor: string;
 }
 

@@ -92,6 +92,7 @@ impl GridController {
         Ok(())
     }
     /// Update a Data Table's name
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "dataTableMeta")]
     pub fn js_data_table_meta(
         &mut self,
@@ -100,6 +101,7 @@ impl GridController {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns_js: Option<String>,
+        show_header: Option<bool>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
@@ -114,6 +116,7 @@ impl GridController {
             name,
             alternating_colors,
             columns,
+            show_header,
             cursor,
         );
 

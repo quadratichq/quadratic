@@ -66,6 +66,7 @@ pub enum Operation {
         name: Option<String>,
         alternating_colors: Option<bool>,
         columns: Option<Vec<DataTableColumn>>,
+        show_header: Option<bool>,
     },
     SortDataTable {
         sheet_pos: SheetPos,
@@ -249,11 +250,12 @@ impl fmt::Display for Operation {
                 name,
                 alternating_colors,
                 columns,
+                show_header,
             } => {
                 write!(
                     fmt,
-                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} }}",
-                    sheet_pos, name, alternating_colors, columns
+                    "DataTableMeta {{ sheet_pos: {} name: {:?} alternating_colors: {:?} columns: {:?} show_header: {:?} }}",
+                    sheet_pos, name, alternating_colors, columns, show_header
                 )
             }
             Operation::SortDataTable { sheet_pos, sort } => {

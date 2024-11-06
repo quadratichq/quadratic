@@ -82,12 +82,12 @@ export class TableColumnHeaders extends Container {
       this.columns.visible = false;
       return;
     }
-    while (this.columns.children.length > this.table.codeCell.column_names.length) {
+    while (this.columns.children.length > this.table.codeCell.columns.length) {
       this.columns.children.pop();
     }
     let x = 0;
     const codeCell = this.table.codeCell;
-    codeCell.column_names.forEach((column, index) => {
+    codeCell.columns.forEach((column, index) => {
       const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + index);
       if (index >= this.columns.children.length) {
         // if this is a new column, then add it

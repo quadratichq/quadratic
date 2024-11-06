@@ -120,14 +120,29 @@ impl GridController {
 
             let data_table = sheet.data_table_result(data_table_pos)?;
 
+            if let Some(display_buffer) = &data_table.display_buffer {
+                // if there is a display buffer, use it to find the source row index
+                let row_index = *display_buffer
+                    .get(pos.y as usize)
+                    .unwrap_or(&(pos.y as u64));
+
+                println!("row_index: {:?}", row_index);
+                println!("pos.y: {:?}", pos.y);
+                println!("display_buffer: {:?}", display_buffer);
+
+                pos.y = row_index as i64;
+            }
+
             if data_table.show_header && !data_table.header_is_first_row {
                 pos.y -= 1;
             }
 
             let value = values.safe_get(0, 0).cloned()?;
             let old_value = sheet.get_code_cell_value(pos).unwrap_or(CellValue::Blank);
+            println!("old_value: {:?}", old_value);
+            println!("value: {:?}", value);
 
-            // sen the new value
+            // send the new value
             sheet.set_code_cell_value(pos, value.to_owned());
 
             let data_table_rect = SheetRect::from_numbers(
@@ -331,6 +346,7 @@ impl GridController {
             ref name,
             ref alternating_colors,
             ref columns,
+            ref show_header,
         } = op
         {
             // get unique name first since it requires an immutable reference to the grid
@@ -364,6 +380,13 @@ impl GridController {
                 old_columns
             });
 
+            let old_show_header = show_header.map(|show_header| {
+                let old_show_header = data_table.show_header.to_owned();
+                data_table.show_header = show_header;
+
+                old_show_header
+            });
+
             let data_table_rect = data_table
                 .output_rect(sheet_pos.into(), true)
                 .to_sheet_rect(sheet_id);
@@ -377,6 +400,7 @@ impl GridController {
                 name: old_name,
                 alternating_colors: old_alternating_colors,
                 columns: old_columns,
+                show_header: old_show_header,
             }];
 
             self.data_table_operations(
@@ -580,7 +604,12 @@ mod tests {
         // the initial value from the csv
         assert_data_table_cell_value(&gc, sheet_id, x, y, "MA");
 
-        gc.execute_set_data_table_at(&mut transaction, op).unwrap();
+        print_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+
+        gc.execute_set_data_table_at(&mut transaction, op.clone())
+            .unwrap();
+
+        print_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
 
         // expect the value to be "1"
         assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
@@ -591,6 +620,23 @@ mod tests {
 
         // redo, the value should be "1" again
         execute_forward_operations(&mut gc, &mut transaction);
+        assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
+
+        // sort the data table and see if the value is still correct
+        let sort = vec![DataTableSort {
+            column_index: 0,
+            direction: SortDirection::Descending,
+        }];
+        let sort_op = Operation::SortDataTable {
+            sheet_pos,
+            sort: Some(sort),
+        };
+        gc.execute_sort_data_table(&mut transaction, sort_op)
+            .unwrap();
+
+        print_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
+        gc.execute_set_data_table_at(&mut transaction, op).unwrap();
+        print_table(&gc, sheet_id, Rect::new(0, 0, 3, 10));
         assert_data_table_cell_value(&gc, sheet_id, x, y, "1");
     }
 
@@ -756,6 +802,7 @@ mod tests {
             name: Some(updated_name.into()),
             alternating_colors: None,
             columns: None,
+            show_header: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op.clone())
@@ -791,6 +838,7 @@ mod tests {
             name: Some("ABC".into()),
             alternating_colors: None,
             columns: None,
+            show_header: None,
         };
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
