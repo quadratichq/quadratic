@@ -1,4 +1,4 @@
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';

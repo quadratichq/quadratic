@@ -30,7 +30,7 @@ import {
   SummarizeSelectionResult,
   Validation,
 } from '@/app/quadratic-core-types';
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
   ClientCoreCellHasContent,

@@ -3,7 +3,7 @@ import { AITool } from '@/app/ai/tools/aiTools';
 import { getAIProviderEndpoint } from '@/app/ai/tools/endpoint.helper';
 import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/model.helper';
 import { getToolChoice, getTools } from '@/app/ai/tools/tool.helpers';
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import { AIMessagePrompt, AIModel, AIPromptMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';

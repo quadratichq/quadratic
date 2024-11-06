@@ -39,6 +39,7 @@ quadratic-connection/target/
 quadratic-core/target/
 quadratic-core/tmp.txt
 quadratic-files/target/
+quadratic-files/storage
 quadratic-multiplayer/target/
 quadratic-multiplayer/updateAlertVersion.json
 
@@ -64,6 +65,7 @@ docker/mysql/data
 docker/postgres/data
 docker/redis/data
 docker/static/html
+docker/file-storage
 docker/postgres-connection/data
 docker/mysql-connection/data
 docker/snowflake-connection/data

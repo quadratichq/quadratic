@@ -37,6 +37,7 @@
     "@aws-sdk/client-s3": "^3.427.0",
     "@aws-sdk/client-secrets-manager": "^3.441.0",
     "@aws-sdk/s3-request-presigner": "^3.427.0",
+    "@ory/kratos-client": "^1.2.1",
     "@prisma/client": "^4.12.0",
     "@sendgrid/mail": "^8.1.0",
     "@sentry/node": "^7.50.0",

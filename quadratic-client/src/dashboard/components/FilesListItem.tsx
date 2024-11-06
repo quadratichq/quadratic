@@ -49,6 +49,7 @@ export function FilesListItems({
 export function FilesListItemUserFile({
   file,
   filterValue,
+  setFilterValue,
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   lazyLoad,
@@ -56,6 +57,7 @@ export function FilesListItemUserFile({
 }: {
   file: FilesListUserFile;
   filterValue: string;
+  setFilterValue: Function;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
@@ -196,6 +198,8 @@ export function FilesListItemUserFile({
             key={uuid}
             creator={file.creator}
             filterValue={filterValue}
+            setFilterValue={setFilterValue}
+            filterMatch={file.filterMatch}
             name={displayName}
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}

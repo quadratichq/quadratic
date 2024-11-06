@@ -62,6 +62,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
     users,
     invites,
     team: { uuid },
+    license,
   } = data;
   const action = useMemo(() => ROUTES.TEAM(uuid), [uuid]);
   const numberOfOwners = useMemo(() => users.filter((user) => user.role === 'OWNER').length, [users]);
@@ -116,6 +117,27 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
           ]}
           roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
         />
+      )}
+
+      {license.status === 'exceeded' && (
+        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700" role="alert">
+          <div>
+            <strong className="font-bold">Over the user limit!</strong>
+          </div>
+          <span className="block sm:inline">
+            You are over your user limit of {license.limits.seats}. Please contact Quadratic Support to increase your
+            limit.
+          </span>
+        </div>
+      )}
+
+      {license.status === 'revoked' && (
+        <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700" role="alert">
+          <div>
+            <strong className="font-bold">License Revoked!</strong>
+          </div>
+          <span className="block sm:inline">Your license has been revoked. Please contact Quadratic Support.</span>
+        </div>
       )}
 
       {users.map((user) => {
