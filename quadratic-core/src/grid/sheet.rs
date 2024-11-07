@@ -216,6 +216,19 @@ impl Sheet {
             .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (pos, code_run)))
     }
 
+    /// Returns true if the cell at Pos has content (ie, not blank). Also checks
+    /// tables. Ignores Blanks.
+    pub fn has_content(&self, pos: Pos) -> bool {
+        if self
+            .get_column(pos.x)
+            .and_then(|column| column.values.get(&pos.y))
+            .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string())
+        {
+            return true;
+        }
+        self.has_table_content(pos)
+    }
+
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
@@ -521,10 +534,10 @@ mod test {
     use crate::controller::GridController;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::formats::Formats;
-    use crate::grid::{Bold, CodeCellLanguage, Italic, NumericFormat};
+    use crate::grid::{Bold, CodeCellLanguage, DataTableKind, Italic, NumericFormat};
     use crate::selection::Selection;
     use crate::test_util::print_table;
-    use crate::{CodeCellValue, SheetPos};
+    use crate::{CodeCellValue, SheetPos, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -1124,5 +1137,54 @@ mod test {
                 kind: "text".to_string()
             })
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_has_content() {
+        let mut sheet = Sheet::test();
+        let pos = Pos { x: 0, y: 0 };
+
+        // Empty cell should have no content
+        assert!(!sheet.has_content(pos));
+
+        // Text content
+        sheet.set_cell_value(pos, "test");
+        assert!(sheet.has_content(pos));
+
+        // Blank value should count as no content
+        sheet.set_cell_value(pos, CellValue::Blank);
+        assert!(!sheet.has_content(pos));
+
+        // Empty string should count as no content
+        sheet.set_cell_value(pos, "");
+        assert!(!sheet.has_content(pos));
+
+        // Number content
+        sheet.set_cell_value(pos, CellValue::Text("test".to_string()));
+        assert!(sheet.has_content(pos));
+
+        // Table content
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Array(Array::from(vec![vec!["test", "test"]])),
+            false,
+            false,
+            true,
+            None,
+        );
+        sheet.data_tables.insert(pos, dt.clone());
+        assert!(sheet.has_content(pos));
+        assert!(sheet.has_content(Pos { x: 1, y: 1 }));
+        assert!(!sheet.has_content(Pos { x: 2, y: 1 }));
+
+        let mut dt = dt.clone();
+        dt.chart_output = Some((5, 5));
+        sheet.data_tables.insert(pos, dt);
+        assert!(sheet.has_content(pos));
+        assert!(sheet.has_content(Pos { x: 1, y: 1 }));
+        assert!(sheet.has_content(Pos { x: 5, y: 1 }));
+        assert!(!sheet.has_content(Pos { x: 6, y: 1 }));
     }
 }

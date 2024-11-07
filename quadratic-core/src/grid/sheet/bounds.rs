@@ -350,7 +350,11 @@ impl Sheet {
         let mut y = row_start;
         while (reverse && y >= bounds.0) || (!reverse && y <= bounds.1) {
             let mut has_content = self.display_value(Pos { x: column, y });
-            if !has_content.is_some() {
+            if has_content.is_none()
+                || has_content
+                    .as_ref()
+                    .is_some_and(|cell_value| *cell_value == CellValue::Blank)
+            {
                 // we use a dummy CellValue::Logical to share that there is
                 // content here (so we don't have to check for the actual
                 // Table content--as it's not really needed except for a
@@ -431,7 +435,7 @@ mod test {
             DataTable, DataTableKind, GridBounds, Sheet,
         },
         selection::Selection,
-        CellValue, Pos, Rect, SheetPos, SheetRect, Value,
+        CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect, Value,
     };
     use proptest::proptest;
     use serial_test::parallel;
@@ -1011,10 +1015,7 @@ mod test {
         assert_eq!(sheet.data_bounds, GridBounds::Empty);
     }
 
-    #[test]
-    #[parallel]
-    fn find_next_column_with_table() {
-        let mut sheet = Sheet::test();
+    fn chart_5x5_dt() -> DataTable {
         let mut dt = DataTable::new(
             DataTableKind::CodeRun(CodeRun::default()),
             "test",
@@ -1026,16 +1027,134 @@ mod test {
             Some((100.0 * 5.0, 20.0 * 5.0)),
         );
         dt.chart_output = Some((5, 5));
+        dt
+    }
+
+    #[test]
+    #[parallel]
+    fn find_next_column_with_table() {
+        let mut sheet = Sheet::test();
+        let dt = chart_5x5_dt();
+        sheet.set_cell_value(
+            Pos { x: 5, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
         sheet.recalculate_bounds();
 
         // should find the anchor of the table
         assert_eq!(sheet.find_next_column(1, 5, false, true), Some(5));
 
+        // ensure we're not finding the table if we're in the wrong row
+        assert_eq!(sheet.find_next_column(1, 1, false, true), None);
+
         // should find the chart-sized table
         assert_eq!(sheet.find_next_column(1, 7, false, true), Some(5));
 
         // should not find the table if we're already inside the table
         assert_eq!(sheet.find_next_column(6, 5, false, true), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn find_next_column_with_two_tables() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(
+            Pos { x: 5, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 5, y: 5 }, Some(chart_5x5_dt()));
+        sheet.set_cell_value(
+            Pos { x: 20, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 20, y: 5 }, Some(chart_5x5_dt()));
+        sheet.recalculate_bounds();
+
+        // should find the first table
+        assert_eq!(sheet.find_next_column(1, 6, false, true), Some(5));
+
+        // should find the second table even though we're inside the first
+        assert_eq!(sheet.find_next_column(6, 6, false, true), Some(20));
+
+        // should find the second table moving backwards
+        assert_eq!(sheet.find_next_column(30, 6, true, true), Some(24));
+
+        // should find the first table moving backwards even though we're inside
+        // the second table
+        assert_eq!(sheet.find_next_column(24, 6, true, true), Some(9));
+    }
+
+    #[test]
+    #[parallel]
+    fn find_next_row_with_table() {
+        let mut sheet = Sheet::test();
+        let dt = chart_5x5_dt();
+        sheet.set_cell_value(
+            Pos { x: 5, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
+        sheet.recalculate_bounds();
+
+        // should find the anchor of the table
+        assert_eq!(sheet.find_next_row(1, 5, false, true), Some(5));
+
+        // ensure we're not finding the table if we're in the wrong column
+        assert_eq!(sheet.find_next_column(1, 1, false, true), None);
+
+        // should find the chart-sized table
+        assert_eq!(sheet.find_next_row(1, 7, false, true), Some(5));
+
+        // should not find the table if we're already inside the table
+        assert_eq!(sheet.find_next_row(6, 6, false, true), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn find_next_row_with_two_tables() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(
+            Pos { x: 5, y: 5 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 5, y: 5 }, Some(chart_5x5_dt()));
+        sheet.set_cell_value(
+            Pos { x: 5, y: 20 },
+            CellValue::Code(CodeCellValue::new(
+                CodeCellLanguage::Javascript,
+                "".to_string(),
+            )),
+        );
+        sheet.set_data_table(Pos { x: 5, y: 20 }, Some(chart_5x5_dt()));
+        sheet.recalculate_bounds();
+
+        // should find the first table
+        assert_eq!(sheet.find_next_row(1, 6, false, true), Some(5));
+
+        // should find the second table even though we're inside the first
+        assert_eq!(sheet.find_next_row(6, 6, false, true), Some(20));
+
+        // should find the second table moving backwards
+        assert_eq!(sheet.find_next_row(30, 6, true, true), Some(24));
+
+        // should find the first table moving backwards even though we're inside
+        // the second table
+        assert_eq!(sheet.find_next_row(24, 6, true, true), Some(9));
     }
 }

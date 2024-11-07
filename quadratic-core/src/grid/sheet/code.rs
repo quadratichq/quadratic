@@ -12,7 +12,7 @@ use crate::{
 };
 
 impl Sheet {
-    /// Gets column bounds for data_tables that output to the columns
+    /// Gets column bounds (ie, a range of rows) for data_tables that output to the columns
     pub fn code_columns_bounds(&self, column_start: i64, column_end: i64) -> Option<Range<i64>> {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
@@ -54,6 +54,15 @@ impl Sheet {
         } else {
             None
         }
+    }
+
+    /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
+    /// the DataTable's output_rect for the check to ensure that charts are
+    /// included.
+    pub fn has_table_content(&self, pos: Pos) -> bool {
+        self.data_tables.iter().any(|(code_cell_pos, data_table)| {
+            data_table.output_rect(*code_cell_pos, false).contains(pos)
+        })
     }
 
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
