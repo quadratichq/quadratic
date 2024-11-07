@@ -108,8 +108,9 @@ export class CellLabel {
   textHeight = 0;
   unwrappedTextWidth = 0;
 
-  overflowRight = 0;
-  overflowLeft = 0;
+  // overflow values
+  private overflowRight = 0;
+  private overflowLeft = 0;
 
   // bounds with overflow
   private actualLeft: number;
@@ -118,8 +119,8 @@ export class CellLabel {
   private actualBottom: number;
 
   // bounds after clipping
-  private textLeft: number;
-  private textRight: number;
+  textLeft: number;
+  textRight: number;
   private textTop: number;
   private textBottom: number;
 

@@ -235,7 +235,6 @@ export class CellsTextHash {
 
     this.labelMeshes.clear();
     this.labels.forEach((label) => label.updateText(this.labelMeshes));
-    this.overflowClip();
 
     const columnsMax = new Map<number, number>();
     const rowsMax = new Map<number, number>();
@@ -255,20 +254,79 @@ export class CellsTextHash {
     this.rowsMaxCache = rowsMax;
   };
 
-  private overflowClip = () => {
-    if (!this.loaded) return;
+  updateBuffers = (): void => {
+    if (!this.loaded || this.dirty || this.dirtyText) {
+      this.sendCellsTextHashClear();
+      return;
+    }
+    this.dirtyBuffers = false;
+
+    this.links = [];
+    this.drawRects = [];
 
     this.labels.forEach((cellLabel) => this.checkClip(cellLabel));
 
-    // calculate grid line overflow after clipping the hash
-    this.overflowGridLines = [];
-    const offsets = this.cellsLabels.sheetOffsets;
+    // creates labelMeshes webGL buffers based on size
+    this.labelMeshes.prepare();
+
+    // populate labelMeshes webGL buffers
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+
     this.labels.forEach((cellLabel) => {
-      const overflowRight = (cellLabel.overflowRight ?? 0) - (cellLabel.clipRight ?? 0);
-      if (overflowRight) {
-        // get the column from the overflowRight (which is in screen coordinates)
-        const label = offsets.getColumnPlacement(cellLabel.location.x).position;
-        const column = offsets.getXPlacement(label + overflowRight).index + 1;
+      const bounds = cellLabel.updateLabelMesh(this.labelMeshes);
+      if (bounds) {
+        minX = Math.min(minX, bounds.minX);
+        minY = Math.min(minY, bounds.minY);
+        maxX = Math.max(maxX, bounds.maxX);
+        maxY = Math.max(maxY, bounds.maxY);
+      }
+      if (cellLabel.link) {
+        this.links.push({ pos: cellLabel.location, textRectangle: cellLabel.textRectangle });
+      }
+      this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
+    });
+    if (minX !== Infinity && minY !== Infinity) {
+      this.viewRectangle.x = minX;
+      this.viewRectangle.y = minY;
+      this.viewRectangle.width = maxX - minX;
+      this.viewRectangle.height = maxY - minY;
+    }
+
+    this.overflowClip();
+
+    this.special.extendViewRectangle(this.viewRectangle);
+
+    // prepares the client's CellsTextHash for new content
+    this.sendCellsTextHashClear();
+
+    // completes the rendering for the CellsTextHash
+    this.labelMeshes.finalize();
+
+    // signals that all updates have been sent to the client
+    renderClient.finalizeCellsTextHash(
+      this.cellsLabels.sheetId,
+      this.hashX,
+      this.hashY,
+      this.special.isEmpty() ? undefined : this.special.special
+    );
+
+    this.clientLoaded = true;
+  };
+
+  private overflowClip = () => {
+    this.overflowGridLines = [];
+
+    const offsets = this.cellsLabels.sheetOffsets;
+
+    // calculate grid line overflow after clipping the hash
+    this.labels.forEach((cellLabel) => {
+      const isOverflowRight = cellLabel.textRight > cellLabel.AABB.right;
+      if (isOverflowRight) {
+        // get the column from the textRight (which is in screen coordinates)
+        const column = offsets.getXPlacement(cellLabel.textRight).index;
 
         // we need to add all columns that are overlapped
         for (let i = cellLabel.location.x + 1; i <= column; i++) {
@@ -276,14 +334,13 @@ export class CellsTextHash {
         }
       }
 
-      const overflowLeft = (cellLabel.overflowLeft ?? 0) - (cellLabel.clipLeft ?? 0);
-      if (overflowLeft) {
-        // get the column from the overflowLeft (which is in screen coordinates)
-        const label = offsets.getColumnPlacement(cellLabel.location.x).position;
-        const column = offsets.getXPlacement(label - overflowLeft).index + 1;
+      const isOverflowLeft = cellLabel.textLeft < cellLabel.AABB.left;
+      if (isOverflowLeft) {
+        // get the column from the textLeft (which is in screen coordinates)
+        const column = offsets.getXPlacement(cellLabel.textLeft).index;
 
         // we need to add all columns that are overlapped
-        for (let i = column; i <= cellLabel.location.x; i++) {
+        for (let i = column + 1; i <= cellLabel.location.x; i++) {
           this.overflowGridLines.push({ x: i, y: cellLabel.location.y });
         }
       }
@@ -334,63 +391,6 @@ export class CellsTextHash {
       column++;
     }
   }
-
-  updateBuffers = (): void => {
-    if (!this.loaded || this.dirty || this.dirtyText) {
-      this.sendCellsTextHashClear();
-      return;
-    }
-    this.dirtyBuffers = false;
-
-    this.links = [];
-    this.drawRects = [];
-
-    // creates labelMeshes webGL buffers based on size
-    this.labelMeshes.prepare();
-
-    // populate labelMeshes webGL buffers
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-    this.labels.forEach((cellLabel) => {
-      const bounds = cellLabel.updateLabelMesh(this.labelMeshes);
-      if (bounds) {
-        minX = Math.min(minX, bounds.minX);
-        minY = Math.min(minY, bounds.minY);
-        maxX = Math.max(maxX, bounds.maxX);
-        maxY = Math.max(maxY, bounds.maxY);
-      }
-      if (cellLabel.link) {
-        this.links.push({ pos: cellLabel.location, textRectangle: cellLabel.textRectangle });
-      }
-      this.drawRects.push({ rects: cellLabel.horizontalLines, tint: cellLabel.tint });
-    });
-    if (minX !== Infinity && minY !== Infinity) {
-      this.viewRectangle.x = minX;
-      this.viewRectangle.y = minY;
-      this.viewRectangle.width = maxX - minX;
-      this.viewRectangle.height = maxY - minY;
-    }
-
-    this.special.extendViewRectangle(this.viewRectangle);
-
-    // prepares the client's CellsTextHash for new content
-    this.sendCellsTextHashClear();
-
-    // completes the rendering for the CellsTextHash
-    this.labelMeshes.finalize();
-
-    // signals that all updates have been sent to the client
-    renderClient.finalizeCellsTextHash(
-      this.cellsLabels.sheetId,
-      this.hashX,
-      this.hashY,
-      this.special.isEmpty() ? undefined : this.special.special
-    );
-
-    this.clientLoaded = true;
-  };
 
   adjustHeadings = (options: { delta: number; column?: number; row?: number }): boolean => {
     const { delta, column, row } = options;
