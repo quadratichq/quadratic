@@ -56,6 +56,14 @@ impl Sheet {
         }
     }
 
+    /// Returns the DataTable that overlaps the Pos if it is an HTML or image chart.
+    pub fn chart_at(&self, pos: Pos) -> Option<(&Pos, &DataTable)> {
+        self.data_tables.iter().find(|(code_cell_pos, data_table)| {
+            data_table.is_html_or_image()
+                && data_table.output_rect(**code_cell_pos, false).contains(pos)
+        })
+    }
+
     /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
     /// the DataTable's output_rect for the check to ensure that charts are
     /// included.
@@ -441,5 +449,36 @@ mod test {
         assert_eq!(sheet.code_rows_bounds(-10, 0), Some(0..3));
         assert_eq!(sheet.code_rows_bounds(2, 5), Some(3..6));
         assert_eq!(sheet.code_rows_bounds(10, 10), None);
+    }
+
+    #[test]
+    #[parallel]
+    fn chart_at() {
+        let mut sheet = Sheet::test();
+        assert_eq!(sheet.chart_at(Pos { x: 1, y: 1 }), None);
+
+        let mut dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "Table 1",
+            CellValue::Html("<html></html>".to_string()).into(),
+            false,
+            false,
+            false,
+            None,
+        );
+        dt.chart_output = Some((2, 2));
+
+        let pos = Pos { x: 1, y: 1 };
+        sheet.set_cell_value(
+            pos,
+            CellValue::Code(CodeCellValue {
+                code: "".to_string(),
+                language: CodeCellLanguage::Javascript,
+            }),
+        );
+        sheet.set_data_table(pos, Some(dt.clone()));
+
+        assert_eq!(sheet.chart_at(pos), Some((&pos, &dt)));
+        assert_eq!(sheet.chart_at(Pos { x: 2, y: 2 }), Some((&pos, &dt)));
     }
 }
