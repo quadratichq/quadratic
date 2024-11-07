@@ -3,7 +3,7 @@
 // (x,y) position with the code, so `pos()` and `relCell()` can be calculated
 // within the worker using getCells.
 
-import { JsGetCellResponse } from '@/app/quadratic-core-types';
+import { CellValueType } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascriptOutput';
 import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
 import { Javascript } from './javascript';
@@ -19,7 +19,7 @@ export class JavascriptAPI {
   }
 
   private convertType(entry: JsGetCellResponse): CellType | undefined {
-    if (entry.type_name === 'blank') return undefined;
+    if (entry.type_name === CellValueType.Blank) return undefined;
     if (entry.type_name === 'date time' || entry.type_name === 'date')
       return `___date___${new Date(entry.value).getTime()}`;
     return entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;

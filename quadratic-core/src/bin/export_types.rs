@@ -33,7 +33,6 @@ use grid::{
 };
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
-use quadratic_core::controller::execution::run_code::get_cells::JsGetCellResponse;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::grid::js_types::{
     JsCodeCell, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
@@ -96,7 +95,6 @@ fn main() {
         JsCodeCell,
         JsCodeResult,
         JsDataTableColumn,
-        JsGetCellResponse,
         JsHtmlOutput,
         JsNumber,
         JsOffset,

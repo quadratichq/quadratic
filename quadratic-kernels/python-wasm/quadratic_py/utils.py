@@ -1,16 +1,30 @@
 import ast
-import operator
 import re
 import traceback
 from datetime import date, datetime, time, timedelta
-from dateutil.relativedelta import relativedelta
-from decimal import Decimal, DecimalException
+from enum import Enum
 from typing import Tuple
 
 import numpy as np
 import pandas as pd
-import pytz
+from dateutil.relativedelta import relativedelta
 
+
+# CellValueType from cellvalue.rs
+class CellValueType(Enum):
+    Blank = 0
+    Text = 1
+    Number = 2
+    Boolean = 3
+    DateTime = 4
+    Date = 5
+    Time = 6
+    Duration = 7
+    Error = 8
+    Html = 9
+    Code = 10
+    Image = 11
+    Import = 12
 
 def attempt_fix_await(code: str) -> str:
     # Convert c((x,y), ...) cell((x,y), ...) to cells((x,y), ...)
@@ -102,64 +116,65 @@ def to_quadratic_type(
 ) -> Tuple[str, str]:
     try:
         if value == None or value == "":
-            return ("", "blank")
+            return ("", CellValueType.Blank)
 
         if type(value) == str:
-            return (str(value), "text")
+            return (str(value), CellValueType.Text)
 
         value = ast.literal_eval(value)
 
     except:
         pass
 
+    # TODO: type numbers should be defined in python based on cellvalue.rs's CellValueType
     try:
         if type(value) == int or type(value) == float or isinstance(value, np.number):
-            return (str(value), "number")
+            return (str(value), CellValueType.Number)
         elif type(value) == bool:
-            return (str(bool(value)), "logical")
+            return (str(bool(value)), CellValueType.Boolean)
         elif isinstance(value, np.datetime64):
-            return (to_iso_format(pd.Timestamp(value)), "date time")
+            return (to_iso_format(pd.Timestamp(value)), CellValueType.DateTime)
         elif isinstance(value, pd.Timestamp) or pd.api.types.is_datetime64_dtype(value):
-            return (to_iso_format(value), "date time")
+            return (to_iso_format(value), CellValueType.DateTime)
         elif isinstance(value, datetime):
-            return (to_iso_format(value), "date time")
+            return (to_iso_format(value), CellValueType.DateTime)
         elif isinstance(value, date):
-            return (to_iso_format(value), "date")
+            return (to_iso_format(value), CellValueType.Date)
         elif isinstance(value, time):
-            return (to_iso_format(value), "time")
+            return (to_iso_format(value), CellValueType.Time)
         elif isinstance(value, timedelta):
-            return (f"{value.days}d {value.seconds}s {value.microseconds}µs", "duration")
+            return (f"{value.days}d {value.seconds}s {value.microseconds}µs", CellValueType.Duration)
         elif isinstance(value.normalized(), relativedelta):
             # Exclude `value.weeks` because it is redundant with `value.days`
             return (f"{value.years}y {value.months}mo "
                     f"{value.days}d {value.hours}h {value.minutes}m "
-                    f"{value.seconds}s {value.microseconds}µs", "duration")
+                    f"{value.seconds}s {value.microseconds}µs", CellValueType.Duration)
         else:
-            return (str(value), "text")
+            return (str(value), CellValueType.Text)
     except Exception as e:
-        return (str(value), "text")
+        return (str(value), CellValueType.Text)
 
 
 # Convert from quadratic types to python types
 def to_python_type(value: str, value_type: str) -> int | float | str | bool:
     try:
-        if value_type == "blank":
+        if value_type == CellValueType.Blank:
             return None
-        elif value_type == "number":
+        elif value_type == CellValueType.Number:
             return number_type(value)
-        elif value_type == "text":
+        elif value_type == CellValueType.Text:
             return str(value)
-        elif value_type == "logical":
+        elif value_type == CellValueType.Boolean:
             return ast.literal_eval(normalize_bool(value))
-        elif value_type == "time":
+        elif value_type == CellValueType.Time:
             return datetime.fromisoformat(
                 value,
             ).time()
-        elif value_type == "date":
+        elif value_type == CellValueType.Date:
             return datetime.fromisoformat(value)
-        elif value_type == "date time":
+        elif value_type == CellValueType.DateTime:
             return datetime.fromisoformat(value)
-        elif value_type == "duration":
+        elif value_type == CellValueType.Duration:
             return parse_duration(value)
         else:
             return value
@@ -168,21 +183,21 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
 
 
 # Convert from quadratic types to python df types
-def to_python_type_df(value: str, value_type: str) -> int | float | str | bool:
+def to_python_type_df(value: str, value_type: CellValueType) -> int | float | str | bool:
     try:
-        if value_type == "blank":
+        if value_type == CellValueType.Blank:
             return None
-        elif value_type == "number":
+        elif value_type == CellValueType.Number:
             return number_type(value)
-        elif value_type == "text":
+        elif value_type == CellValueType.Text:
             return str(value)
-        elif value_type == "logical":
+        elif value_type == CellValueType.Boolean:
             return ast.literal_eval(normalize_bool(value))
-        elif value_type == "time":
+        elif value_type == CellValueType.Time:
             return str(value)
-        elif value_type == "date":
+        elif value_type == CellValueType.Date:
             return pd.to_datetime(value)
-        elif value_type == "date time":
+        elif value_type == CellValueType.DateTime:
             return pd.to_datetime(value)
         else:
             return value

@@ -8,10 +8,10 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import numpy as np
 import pandas as pd
-
 from inspect_python_test import *
 from process_output_test import *
-from quadratic_py.utils import attempt_fix_await, to_python_type, to_quadratic_type
+from quadratic_py.utils import (CellValueType, attempt_fix_await,
+                                to_python_type, to_quadratic_type)
 
 
 #  Mock definitions
@@ -241,58 +241,57 @@ class TestPos(IsolatedAsyncioTestCase):
 class TestUtils(TestCase):
     def test_to_quadratic_type(self):
         # number
-        assert to_quadratic_type(1) == ("1", "number")
-        assert to_quadratic_type(1.1) == ("1.1", "number")
-        assert to_quadratic_type(-1) == ("-1", "number")
-        assert to_quadratic_type(np.float64("1.1")) == ("1.1", "number")
+        assert to_quadratic_type(1) == ("1", CellValueType.Number)
+        assert to_quadratic_type(1.1) == ("1.1", CellValueType.Number)
+        assert to_quadratic_type(-1) == ("-1", CellValueType.Number)
+        assert to_quadratic_type(np.float64("1.1")) == ("1.1", CellValueType.Number)
 
         # logical
-        assert to_quadratic_type(True) == ("True", "logical")
-        assert to_quadratic_type(False) == ("False", "logical")
+        assert to_quadratic_type(True) == ("True", CellValueType.Boolean)
+        assert to_quadratic_type(False) == ("False", CellValueType.Boolean)
 
         # string
-        assert to_quadratic_type("abc") == ("abc", "text")
-        assert to_quadratic_type("123abc") == ("123abc", "text")
-        assert to_quadratic_type("abc123") == ("abc123", "text")
-        assert to_quadratic_type("1") == ("1", "text")
-        assert to_quadratic_type("1.1") == ("1.1", "text")
-        assert to_quadratic_type("-1") == ("-1", "text")
-        assert to_quadratic_type("True") == ("True", "text")
-        assert to_quadratic_type("False") == ("False", "text")
-        assert to_quadratic_type("true") == ("true", "text")
-        assert to_quadratic_type("false") == ("false", "text")
+        assert to_quadratic_type("abc") == ("abc", CellValueType.Text)
+        assert to_quadratic_type("123abc") == ("123abc", CellValueType.Text)
+        assert to_quadratic_type("abc123") == ("abc123", CellValueType.Text)
+        assert to_quadratic_type("1") == ("1", CellValueType.Text)
+        assert to_quadratic_type("1.1") == ("1.1", CellValueType.Text)
+        assert to_quadratic_type("-1") == ("-1", CellValueType.Text)
+        assert to_quadratic_type("True") == ("True", CellValueType.Text)
+        assert to_quadratic_type("False") == ("False", CellValueType.Text)
+        assert to_quadratic_type("true") == ("true", CellValueType.Text)
+        assert to_quadratic_type("false") == ("false", CellValueType.Text)
 
         # date time
         assert to_quadratic_type(pd.Timestamp("2012-11-10")) == (
             "2012-11-10T00:00:00",
-            "date time",
+            CellValueType.DateTime,
         )
         assert to_quadratic_type(pd.Timestamp("2012-11-10T03:30")) == (
             "2012-11-10T03:30:00",
-            "date time",
+            CellValueType.DateTime,
         )
         assert to_quadratic_type(np.datetime64("2012-11-10")) == (
             "2012-11-10T00:00:00",
-            "date time",
+            CellValueType.DateTime,
         )
         assert to_quadratic_type(np.datetime64("2012-11-10T03:30")) == (
             "2012-11-10T03:30:00",
-            "date time",
+            CellValueType.DateTime,
         )
         assert to_quadratic_type(datetime.strptime("2012-11-10", "%Y-%m-%d")) == (
             "2012-11-10T00:00:00",
-            "date time",
+            CellValueType.DateTime,
         )
         assert to_quadratic_type(
             datetime.strptime("2012-11-10 03:30", "%Y-%m-%d %H:%M")
-        ) == ("2012-11-10T03:30:00", "date time")
+        ) == ("2012-11-10T03:30:00", CellValueType.DateTime)
 
         # date
-        assert to_quadratic_type(date(2012, 12, 21)) == ("2012-12-21", "date")
+        assert to_quadratic_type(date(2012, 12, 21)) == ("2012-12-21", CellValueType.Date)
 
         # time
-        assert to_quadratic_type(time(3, 30)) == ("03:30:00", "time")
-        assert to_quadratic_type(time(3, 30)) == ("03:30:00", "time")
+        assert to_quadratic_type(time(3, 30)) == ("03:30:00", CellValueType.Time)
 
         # duration
         assert to_quadratic_type(relativedelta(
@@ -304,37 +303,37 @@ class TestUtils(TestCase):
             minutes=6,
             seconds=7.5,
             microseconds=155,
-        )) == ("1y 2mo 25d 5h 6m 7.5s 155µs", "duration")
+        )) == ("1y 2mo 25d 5h 6m 7.5s 155µs", CellValueType.Duration)
 
     def test_to_python_type(self):
         # blank
-        assert to_python_type("", "blank") is None
+        assert to_python_type("", CellValueType.Blank) is None
 
         # number
-        assert to_python_type("1", "number") == 1
-        assert to_python_type("1.1", "number") == 1.1
-        assert to_python_type("-1", "number") == -1
-        assert to_python_type("-1.1", "number") == -1.1
+        assert to_python_type("1", CellValueType.Number) == 1
+        assert to_python_type("1.1", CellValueType.Number) == 1.1
+        assert to_python_type("-1", CellValueType.Number) == -1
+        assert to_python_type("-1.1", CellValueType.Number) == -1.1
 
         # logical
-        assert to_python_type("True", "logical") == True
-        assert to_python_type("False", "logical") == False
-        assert to_python_type("true", "logical") == True
-        assert to_python_type("false", "logical") == False
+        assert to_python_type("True", CellValueType.Boolean) == True
+        assert to_python_type("False", CellValueType.Boolean) == False
+        assert to_python_type("true", CellValueType.Boolean) == True
+        assert to_python_type("false", CellValueType.Boolean) == False
 
         # string
-        assert to_python_type("abc", "text") == "abc"
-        assert to_python_type("123abc", "text") == "123abc"
-        assert to_python_type("abc123", "text") == "abc123"
+        assert to_python_type("abc", CellValueType.Text) == "abc"
+        assert to_python_type("123abc", CellValueType.Text) == "123abc"
+        assert to_python_type("abc123", CellValueType.Text) == "abc123"
 
         # date
-        assert to_python_type("2012-11-10T00:00:00", "date") == datetime(2012, 11, 10)
-        assert to_python_type("2012-11-10T03:30:00", "date") == datetime(
+        assert to_python_type("2012-11-10T00:00:00", CellValueType.DateTime) == datetime(2012, 11, 10)
+        assert to_python_type("2012-11-10T03:30:00", CellValueType.DateTime) == datetime(
             2012, 11, 10, 3, 30
         )
 
         # duration
-        assert to_python_type("1y 2mo 3w 4d 5h 6m 7.5s 3ms 4µs", "duration") == relativedelta(
+        assert to_python_type("1y 2mo 3w 4d 5h 6m 7.5s 3ms 4µs", CellValueType.Duration) == relativedelta(
             years=1,
             months=2,
             days=25, # no weeks!
@@ -343,7 +342,7 @@ class TestUtils(TestCase):
             seconds=7.5,
             microseconds=3004,
         )
-        assert to_python_type("1µs 2ns 3ps 4fs 5as", "duration") == relativedelta(
+        assert to_python_type("1µs 2ns 3ps 4fs 5as", CellValueType.Duration) == relativedelta(
             microseconds=1.002003004005,
         )
 

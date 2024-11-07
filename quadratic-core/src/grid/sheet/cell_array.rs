@@ -3,7 +3,8 @@ use std::collections::HashSet;
 use anyhow::{anyhow, Result};
 
 use crate::{
-    controller::execution::run_code::get_cells::JsGetCellResponse, Array, CellValue, Pos, Rect,
+    cellvalue::CellValueType, controller::execution::run_code::get_cells::JsGetCellResponse, Array,
+    CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -42,14 +43,14 @@ impl Sheet {
                         x,
                         y,
                         value: cell.to_get_cells(),
-                        type_name: cell.type_name().into(),
+                        type_name: cell.type_enum(),
                     });
                 } else {
                     response.push(JsGetCellResponse {
                         x,
                         y,
                         value: "".into(),
-                        type_name: "blank".into(),
+                        type_name: CellValueType::Blank,
                     });
                 }
             }
@@ -196,55 +197,55 @@ mod tests {
             x: 0,
             y: 0,
             value: "1".into(),
-            type_name: "number".into(),
+            type_name: CellValueType::Number,
         }));
         assert!(response.contains(&JsGetCellResponse {
             x: 1,
             y: 0,
             value: "2".into(),
-            type_name: "number".into(),
+            type_name: CellValueType::Number,
         }));
         assert!(response.contains(&JsGetCellResponse {
             x: 0,
             y: 1,
             value: "3".into(),
-            type_name: "number".into(),
+            type_name: CellValueType::Number,
         }));
         assert!(response.contains(&JsGetCellResponse {
             x: 1,
             y: 1,
             value: "4".into(),
-            type_name: "number".into(),
+            type_name: CellValueType::Number,
         }));
         assert!(response.contains(&JsGetCellResponse {
             x: 2,
             y: 0,
             value: "test".into(),
-            type_name: "text".into(),
+            type_name: CellValueType::Text,
         }));
         assert!(response.contains(&JsGetCellResponse {
             x: 3,
             y: 1,
             value: "2024-08-15T01:20:00.000".into(),
-            type_name: "date time".into(),
+            type_name: CellValueType::DateTime,
         }));
         assert!(response.contains(&JsGetCellResponse {
             x: 2,
             y: 1,
             value: "true".into(),
-            type_name: "logical".into(),
+            type_name: CellValueType::Boolean,
         }));
         assert!(response.contains(&JsGetCellResponse {
             x: 2,
             y: 2,
             value: "2024-08-15".into(),
-            type_name: "date".into(),
+            type_name: CellValueType::Date,
         }));
         assert!(response.contains(&JsGetCellResponse {
             x: 3,
             y: 0,
             value: "01:20:00.000".into(),
-            type_name: "time".into(),
+            type_name: CellValueType::Time,
         }));
     }
 

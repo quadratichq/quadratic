@@ -12,6 +12,7 @@ export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" |
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, }
 export interface CellRef { sheet: string | null, x: CellRefCoord, y: CellRefCoord, }
 export type CellRefCoord = { "type": "Relative", "coord": bigint } | { "type": "Absolute", "coord": bigint };
+export type CellValueType = "Blank" | "Text" | "Number" | "Boolean" | "DateTime" | "Date" | "Time" | "Duration" | "Error" | "Html" | "Code" | "Image" | "Import";
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript" | "Import";
@@ -30,7 +31,7 @@ export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<SheetRect> | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
 export interface JsDataTableColumn { name: string, display: boolean, valueIndex: number, }
-export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
+export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: CellValueType, }
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: string | null, h: string | null, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
 export interface JsOffset { column: number | null, row: number | null, size: number, }

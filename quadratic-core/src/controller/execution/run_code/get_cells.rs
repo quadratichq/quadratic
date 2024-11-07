@@ -1,15 +1,19 @@
 use uuid::Uuid;
 
-use crate::{controller::GridController, error_core::CoreError, Rect, RunError, RunErrorMsg};
+use crate::{
+    cellvalue::CellValueType, controller::GridController, error_core::CoreError, Rect, RunError,
+    RunErrorMsg,
+};
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::wasm_bindgen;
 
+#[wasm_bindgen]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsGetCellResponse {
     pub x: i64,
     pub y: i64,
     pub value: String,
-    pub type_name: String,
+    pub type_name: CellValueType,
 }
 
 impl GridController {
@@ -274,7 +278,7 @@ mod test {
                 x: 0,
                 y: 0,
                 value: "test".into(),
-                type_name: "text".into()
+                type_name: CellValueType::Text
             }])
         );
     }
@@ -344,19 +348,19 @@ mod test {
                     x: 0,
                     y: 0,
                     value: "test1".into(),
-                    type_name: "text".into()
+                    type_name: CellValueType::Text
                 },
                 JsGetCellResponse {
                     x: 0,
                     y: 1,
                     value: "test2".into(),
-                    type_name: "text".into()
+                    type_name: CellValueType::Text
                 },
                 JsGetCellResponse {
                     x: 0,
                     y: 2,
                     value: "test3".into(),
-                    type_name: "text".into()
+                    type_name: CellValueType::Text
                 }
             ])
         );

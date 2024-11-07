@@ -31,6 +31,7 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
+        cellvalue::CellValueType,
         controller::{
             execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
         },
@@ -176,7 +177,7 @@ mod tests {
                 x: 0,
                 y: 0,
                 value: "9".into(),
-                type_name: "number".into(),
+                type_name: CellValueType::Number,
             }])
         );
 
@@ -276,7 +277,7 @@ mod tests {
                 x: 0,
                 y: 0,
                 value: "10".into(),
-                type_name: "number".into(),
+                type_name: CellValueType::Number,
             }])
         );
         assert!(gc
@@ -579,7 +580,7 @@ mod tests {
                 x: 0,
                 y: 0,
                 value: "1".into(),
-                type_name: "number".into(),
+                type_name: CellValueType::Number,
             }
         );
         let result = gc.calculation_complete(JsCodeResult::new(
@@ -620,7 +621,7 @@ mod tests {
                 x: 0,
                 y: 1,
                 value: "2".into(),
-                type_name: "number".into(),
+                type_name: CellValueType::Number,
             }
         );
         let result = gc.calculation_complete(JsCodeResult::new(

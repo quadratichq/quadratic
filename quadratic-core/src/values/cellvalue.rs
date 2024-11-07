@@ -6,6 +6,8 @@ use anyhow::Result;
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::{Duration, Instant, IsBlank};
 use crate::{
@@ -17,6 +19,25 @@ use crate::{
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
+
+#[wasm_bindgen]
+#[repr(u8)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CellValueType {
+    Blank = 0,
+    Text = 1,
+    Number = 2,
+    Boolean = 3,
+    DateTime = 4,
+    Date = 5,
+    Time = 6,
+    Duration = 7,
+    Error = 8,
+    Html = 9,
+    Code = 10,
+    Image = 11,
+    Import = 12,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeCellValue {
@@ -136,6 +157,24 @@ impl CellValue {
             CellValue::Time(_) => "time",
             CellValue::DateTime(_) => "date time",
             CellValue::Import(_) => "import",
+        }
+    }
+    pub fn type_enum(&self) -> CellValueType {
+        match self {
+            CellValue::Blank => CellValueType::Blank,
+            CellValue::Text(_) => CellValueType::Text,
+            CellValue::Number(_) => CellValueType::Number,
+            CellValue::Logical(_) => CellValueType::Boolean,
+            CellValue::Instant(_) => CellValueType::Time,
+            CellValue::Duration(_) => CellValueType::Duration,
+            CellValue::Error(_) => CellValueType::Error,
+            CellValue::Html(_) => CellValueType::Html,
+            CellValue::Code(_) => CellValueType::Code,
+            CellValue::Image(_) => CellValueType::Image,
+            CellValue::Date(_) => CellValueType::Date,
+            CellValue::Time(_) => CellValueType::Time,
+            CellValue::DateTime(_) => CellValueType::DateTime,
+            CellValue::Import(_) => CellValueType::Import,
         }
     }
     /// Returns a formula-source-code representation of the value.

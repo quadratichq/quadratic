@@ -74,6 +74,7 @@ mod tests {
     use bigdecimal::BigDecimal;
     use serial_test::serial;
 
+    use crate::cellvalue::CellValueType;
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::execution::run_code::get_cells::JsGetCellResponse;
     use crate::controller::operations::operation::Operation;
@@ -499,7 +500,7 @@ mod tests {
                 x: 0,
                 y: 0,
                 value: "9".into(),
-                type_name: "number".into(),
+                type_name: CellValueType::Number,
             }])
         );
         // pending cal

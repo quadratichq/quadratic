@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { javascriptConvertOutputArray, javascriptConvertOutputType } from './javascriptOutput';
+import { CellValueType, javascriptConvertOutputArray, javascriptConvertOutputType } from './javascriptOutput';
 
 describe('javascriptConvertOutputType', () => {
   it('should convert numbers', () => {
@@ -38,7 +38,7 @@ describe('javascriptConvertOutputType', () => {
     message = [];
     expect(javascriptConvertOutputType(message, 'hello', 0, 0)).toEqual({
       displayType: 'string',
-      output: ['hello', 'text'],
+      output: ['hello', CellValueType.Text],
     });
     expect(message.length).toBe(0);
 
@@ -47,7 +47,7 @@ describe('javascriptConvertOutputType', () => {
 
     expect(javascriptConvertOutputType(message, true, 0, 0)).toEqual({
       displayType: 'boolean',
-      output: ['true', 'logical'],
+      output: ['true', CellValueType.Boolean],
     });
     expect(message.length).toBe(0);
 
@@ -56,13 +56,13 @@ describe('javascriptConvertOutputType', () => {
 
     expect(javascriptConvertOutputType(message, [], 0, 0)).toEqual({
       displayType: 'empty array',
-      output: ['', 'array'],
+      output: ['', CellValueType.Blank],
     });
     expect(message.length).toBe(0);
 
     expect(javascriptConvertOutputType(message, [[], [], []], 0, 0)).toEqual({
       displayType: 'empty array',
-      output: ['', 'array'],
+      output: ['', CellValueType.Blank],
     });
     expect(message.length).toBe(0);
   });
@@ -71,7 +71,7 @@ describe('javascriptConvertOutputType', () => {
     let message: string[] = [];
     expect(javascriptConvertOutputArray(message, [1, 2, 3], 0, 0)).toEqual({
       displayType: 'number[]',
-      output: [[['1', 'number']], [['2', 'number']], [['3', 'number']]],
+      output: [[['1', CellValueType.Number]], [['2', CellValueType.Number]], [['3', CellValueType.Number]]],
     });
     expect(message.length).toBe(0);
 
