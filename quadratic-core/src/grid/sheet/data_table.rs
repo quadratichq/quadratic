@@ -69,6 +69,39 @@ impl Sheet {
             None => bail!("No data tables found within {:?}", pos),
         }
     }
+
+    /// Checks whether a table intersects a position. We ignore the table if it
+    /// includes either exclude_x or exclude_y.
+    pub fn table_intersects(
+        &self,
+        x: i64,
+        y: i64,
+        exclude_x: Option<i64>,
+        exclude_y: Option<i64>,
+    ) -> bool {
+        self.data_tables.iter().any(|(data_table_pos, data_table)| {
+            // we only care about html or image tables
+            if !data_table.is_html_or_image() {
+                return false;
+            }
+            let output_rect = data_table.output_rect(*data_table_pos, false);
+            if output_rect.contains(Pos { x, y }) {
+                if let Some(exclude_x) = exclude_x {
+                    if exclude_x >= output_rect.min.x && exclude_x <= output_rect.max.x {
+                        return false;
+                    }
+                }
+                if let Some(exclude_y) = exclude_y {
+                    if exclude_y >= output_rect.min.y && exclude_y <= output_rect.max.y {
+                        return false;
+                    }
+                }
+                true
+            } else {
+                false
+            }
+        })
+    }
 }
 
 #[cfg(test)]

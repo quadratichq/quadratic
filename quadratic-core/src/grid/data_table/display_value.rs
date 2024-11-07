@@ -70,14 +70,15 @@ impl DataTable {
     }
 
     pub fn display_value_at(&self, mut pos: Pos) -> Result<&CellValue> {
-        // println!("pos: {:?}", pos);
-        // println!("self.columns: {:?}", self.columns);
+        // If the DataTable contains HTML or images, then only the first cell is
+        // displayed.
+        if self.is_html_or_image() && (pos.x != 0 || pos.y != 0) {
+            return Ok(&CellValue::Blank);
+        }
 
         if pos.y == 0 && self.show_header {
             if let Some(columns) = &self.columns {
-                // println!("columns: {:?}", columns);
                 if let Some(column) = columns.get(pos.x as usize) {
-                    // println!("column: {:?}", column);
                     return Ok(column.name.as_ref());
                 }
             }
@@ -95,4 +96,51 @@ impl DataTable {
 }
 
 #[cfg(test)]
-pub mod test {}
+pub mod test {
+    use serial_test::parallel;
+
+    use crate::{
+        controller::{transaction_types::JsCodeResult, GridController},
+        grid::CodeCellLanguage,
+        CellValue, Pos, SheetPos,
+    };
+
+    #[test]
+    #[parallel]
+    fn test_display_value_at_html_or_image() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Python,
+            "code".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        gc.calculation_complete(JsCodeResult {
+            transaction_id: transaction_id.to_string(),
+            success: true,
+            output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
+            ..Default::default()
+        })
+        .unwrap();
+        gc.set_chart_size(sheet_pos, 100.0, 100.0, None);
+
+        let sheet = gc.sheet(sheet_id);
+
+        assert_eq!(
+            sheet.display_value(sheet_pos.into()).unwrap(),
+            CellValue::Html("<html></html>".to_string())
+        );
+
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 1 }).unwrap(),
+            CellValue::Blank
+        )
+    }
+}

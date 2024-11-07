@@ -279,6 +279,8 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
+    /// For charts, is uses the chart's bounds for intersection test (since charts are considered a single cell)
+    ///
     /// Returns the found column matching the criteria of with_content
     pub fn find_next_column(
         &self,
@@ -296,7 +298,20 @@ impl Sheet {
         };
         let mut x = column_start;
         while (reverse && x >= bounds.0) || (!reverse && x <= bounds.1) {
-            let has_content = self.display_value(Pos { x, y: row });
+            let mut has_content = self.display_value(Pos { x, y: row });
+            if !has_content.is_some()
+                || has_content
+                    .as_ref()
+                    .is_some_and(|cell_value| *cell_value == CellValue::Blank)
+            {
+                if self.table_intersects(x, row, Some(column_start), None) {
+                    // we use a dummy CellValue::Logical to share that there is
+                    // content here (so we don't have to check for the actual
+                    // Table content--as it's not really needed except for a
+                    // Blank check)
+                    has_content = Some(CellValue::Logical(true));
+                }
+            }
             if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                 if with_content {
                     return Some(x);
@@ -306,8 +321,11 @@ impl Sheet {
             }
             x += if reverse { -1 } else { 1 };
         }
-        let has_content = self.display_value(Pos { x, y: row });
-        if with_content == has_content.is_some() {
+
+        // final check when we've exited the loop
+        let has_content = self.display_value(Pos { x, y: row }).is_some()
+            || self.table_intersects(x, row, Some(column_start), None);
+        if with_content == has_content {
             Some(x)
         } else {
             None
@@ -331,7 +349,16 @@ impl Sheet {
         };
         let mut y = row_start;
         while (reverse && y >= bounds.0) || (!reverse && y <= bounds.1) {
-            let has_content = self.display_value(Pos { x: column, y });
+            let mut has_content = self.display_value(Pos { x: column, y });
+            if !has_content.is_some() {
+                // we use a dummy CellValue::Logical to share that there is
+                // content here (so we don't have to check for the actual
+                // Table content--as it's not really needed except for a
+                // Blank check)
+                if self.table_intersects(column, y, None, Some(row_start)) {
+                    has_content = Some(CellValue::Logical(true));
+                }
+            }
             if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                 if with_content {
                     return Some(y);
@@ -341,8 +368,11 @@ impl Sheet {
             }
             y += if reverse { -1 } else { 1 };
         }
-        let has_content = self.display_value(Pos { x: column, y });
-        if with_content == has_content.is_some() {
+
+        // final check when we've exited the loop
+        let has_content = self.display_value(Pos { x: column, y }).is_some()
+            || self.table_intersects(column, y, None, Some(row_start));
+        if with_content == has_content {
             Some(y)
         } else {
             None
@@ -397,10 +427,11 @@ mod test {
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
+            BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, CodeRun,
+            DataTable, DataTableKind, GridBounds, Sheet,
         },
         selection::Selection,
-        CellValue, Pos, Rect, SheetPos, SheetRect,
+        CellValue, Pos, Rect, SheetPos, SheetRect, Value,
     };
     use proptest::proptest;
     use serial_test::parallel;
@@ -978,5 +1009,33 @@ mod test {
 
         // Check that the data bounds are still empty
         assert_eq!(sheet.data_bounds, GridBounds::Empty);
+    }
+
+    #[test]
+    #[parallel]
+    fn find_next_column_with_table() {
+        let mut sheet = Sheet::test();
+        let mut dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Single(CellValue::Html("html".to_string())),
+            false,
+            false,
+            true,
+            // make the chart take up 5x5 cells
+            Some((100.0 * 5.0, 20.0 * 5.0)),
+        );
+        dt.chart_output = Some((5, 5));
+        sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
+        sheet.recalculate_bounds();
+
+        // should find the anchor of the table
+        assert_eq!(sheet.find_next_column(1, 5, false, true), Some(5));
+
+        // should find the chart-sized table
+        assert_eq!(sheet.find_next_column(1, 7, false, true), Some(5));
+
+        // should not find the table if we're already inside the table
+        assert_eq!(sheet.find_next_column(6, 5, false, true), None);
     }
 }
