@@ -110,6 +110,7 @@ export class CellsArray extends Container {
     this.cellsSheet.cellsMarkers.clear();
     const codeCells = this.codeCells;
     if (codeCells.size === 0) {
+      pixiApp.cursor.dirty = true;
       pixiApp.setViewportDirty();
       return;
     }
@@ -120,6 +121,7 @@ export class CellsArray extends Container {
       const editingCell = cell && codeCell.x === cell.x && codeCell.y === cell.y && cell.sheetId === this.sheetId;
       this.draw(codeCell, cursor, editingCell);
     });
+    pixiApp.cursor.dirty = true;
     pixiApp.setViewportDirty();
   }
 
