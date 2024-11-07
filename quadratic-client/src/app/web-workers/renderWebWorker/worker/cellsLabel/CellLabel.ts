@@ -54,6 +54,8 @@ const STRIKE_THROUGH_OFFSET = 32;
 export const FONT_SIZE = 14;
 export const LINE_HEIGHT = 16;
 
+const URL_REGEX = /^(https?:\/\/|www\.)[^\s<>'"]+\.[^\s<>'"]+$/i;
+
 export class CellLabel {
   private cellsLabels: CellsLabels;
   private position = new Point();
@@ -218,6 +220,7 @@ export class CellLabel {
 
   private isLink = (cell: JsRenderCell): boolean => {
     if (cell.number !== undefined || cell.special !== undefined) return false;
+    if (!URL_REGEX.test(cell.value)) return false;
     try {
       new URL(cell.value);
       return true;
