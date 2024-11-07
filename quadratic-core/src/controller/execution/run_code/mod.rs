@@ -157,7 +157,7 @@ impl GridController {
             }
             Some(waiting_for_async) => match waiting_for_async {
                 CodeCellLanguage::Python | CodeCellLanguage::Javascript => {
-                    let new_data_table = self.js_code_result_to_code_cell_value(
+                    let mut new_data_table = self.js_code_result_to_code_cell_value(
                         transaction,
                         result,
                         current_sheet_pos,
@@ -165,6 +165,20 @@ impl GridController {
                     );
 
                     transaction.waiting_for_async = None;
+
+                    // this is a hack to ensure that the chart size remains the
+                    // same if there is an existing chart in the same cell
+                    if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
+                        if let Some(old_chart_pixel_output) = sheet
+                            .data_tables
+                            .iter()
+                            .find(|(p, _)| **p == current_sheet_pos.into())
+                            .and_then(|(_, dt)| dt.chart_pixel_output)
+                        {
+                            new_data_table.chart_pixel_output = Some(old_chart_pixel_output);
+                        }
+                    }
+
                     self.finalize_code_run(
                         transaction,
                         current_sheet_pos,
@@ -534,5 +548,50 @@ mod test {
         };
         gc.calculation_complete(result).unwrap();
         expect_js_call_count("jsSendImage", 1, true);
+    }
+
+    #[test]
+    #[parallel]
+    fn ensure_chart_size_remains_same_if_same_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 1,
+            sheet_id,
+        };
+
+        let languages = vec![CodeCellLanguage::Javascript, CodeCellLanguage::Python];
+
+        for language in languages {
+            gc.set_code_cell(sheet_pos, language.clone(), "code".to_string(), None);
+            let transaction = gc.last_transaction().unwrap();
+            let result = JsCodeResult {
+                transaction_id: transaction.id.to_string(),
+                success: true,
+                output_value: Some(vec!["test".into(), "image".into()]),
+                chart_pixel_output: Some((100.0, 100.0)),
+                ..Default::default()
+            };
+            gc.calculation_complete(result).unwrap();
+            let sheet = gc.try_sheet(sheet_id).unwrap();
+            let dt = sheet.data_table(sheet_pos.into()).unwrap();
+            assert_eq!(dt.chart_pixel_output, Some((100.0, 100.0)));
+
+            // change the cell
+            gc.set_code_cell(sheet_pos, language, "code".to_string(), None);
+            let transaction = gc.last_transaction().unwrap();
+            let result = JsCodeResult {
+                transaction_id: transaction.id.to_string(),
+                success: true,
+                output_value: Some(vec!["test".into(), "image".into()]),
+                chart_pixel_output: Some((200.0, 200.0)),
+                ..Default::default()
+            };
+            gc.calculation_complete(result).unwrap();
+            let sheet = gc.try_sheet(sheet_id).unwrap();
+            let dt = sheet.data_table(sheet_pos.into()).unwrap();
+            assert_eq!(dt.chart_pixel_output, Some((100.0, 100.0)));
+        }
     }
 }

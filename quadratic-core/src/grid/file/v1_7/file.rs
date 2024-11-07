@@ -6,7 +6,7 @@ use crate::grid::file::{
 };
 
 fn render_size_to_chart_size(
-    columns: &Vec<(i64, v1_7::ColumnSchema)>,
+    columns: &[(i64, v1_7::ColumnSchema)],
     pos: v1_7::PosSchema,
 ) -> Option<(f32, f32)> {
     columns
@@ -31,7 +31,7 @@ fn render_size_to_chart_size(
 
 fn upgrade_code_runs(
     code_runs: Vec<(v1_7::PosSchema, v1_7::CodeRunSchema)>,
-    columns: &Vec<(i64, v1_7::ColumnSchema)>,
+    columns: &[(i64, v1_7::ColumnSchema)],
 ) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
     code_runs
         .into_iter()

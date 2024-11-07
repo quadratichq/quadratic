@@ -274,21 +274,27 @@ impl DataTable {
     }
 
     pub fn is_html(&self) -> bool {
-        match self.cell_value_at(0, 0) {
-            Some(code_cell_value) => code_cell_value.is_html(),
-            None => false,
+        if let Value::Single(value) = &self.value {
+            matches!(value, CellValue::Html(_))
+        } else {
+            false
         }
     }
 
     pub fn is_image(&self) -> bool {
-        match self.cell_value_at(0, 0) {
-            Some(code_cell_value) => code_cell_value.is_image(),
-            None => false,
+        if let Value::Single(value) = &self.value {
+            matches!(value, CellValue::Image(_))
+        } else {
+            false
         }
     }
 
     pub fn is_html_or_image(&self) -> bool {
-        self.is_html() || self.is_image()
+        if let Value::Single(value) = &self.value {
+            matches!(value, CellValue::Html(_) | CellValue::Image(_))
+        } else {
+            false
+        }
     }
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
