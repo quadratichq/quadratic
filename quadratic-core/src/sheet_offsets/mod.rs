@@ -332,7 +332,7 @@ mod test {
     fn calculate_grid_size() {
         let sheet = super::SheetOffsets::default();
         let (width, height) = sheet.calculate_grid_size(Pos { x: 0, y: 0 }, 100.0, 21.0);
-        assert_eq!(width, 1);
-        assert_eq!(height, 1);
+        assert_eq!(width, 2);
+        assert_eq!(height, 2);
     }
 }

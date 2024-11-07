@@ -5,7 +5,6 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::{DataTable, DataTableKind},
-    util::dbgjs,
     ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
