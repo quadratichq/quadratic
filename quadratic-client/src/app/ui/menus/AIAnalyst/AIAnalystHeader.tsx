@@ -33,7 +33,7 @@ export function AIAnalystHeader({ textareaRef }: AIAnalystHeaderProps) {
         ) : (
           <>
             Chat
-            <Badge variant="outline" className="ml-2">
+            <Badge variant="secondary" className="ml-2">
               Experimental
             </Badge>
           </>

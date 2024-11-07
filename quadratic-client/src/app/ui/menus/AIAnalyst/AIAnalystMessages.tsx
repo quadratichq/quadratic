@@ -5,6 +5,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { Markdown } from '@/app/ui/components/Markdown';
+import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { cn } from '@/shared/shadcn/utils';
@@ -73,7 +74,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
   }, [messages, scrollToBottom]);
 
   if (messagesCount === 0) {
-    return null;
+    return <AIAnalystExamplePrompts />;
   }
 
   return (
@@ -104,7 +105,7 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             id={`${index}-${message.role}-${message.contextType}`}
             className={cn(
               'flex flex-col gap-2',
-              message.role === 'user' && message.contextType === 'userPrompt' ? '-mx-2 -mb-2' : 'px-2',
+              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-2',
               // For debugging internal context
               message.contextType === 'userPrompt' ? '' : 'bg-accent'
             )}

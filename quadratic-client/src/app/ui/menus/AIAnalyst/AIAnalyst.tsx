@@ -65,7 +65,9 @@ export const AIAnalyst = () => {
             <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
-              <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+              <div className="p-2 pt-1">
+                <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+              </div>
             </>
           )}
         </div>
