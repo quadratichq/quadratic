@@ -143,7 +143,12 @@ pub mod test {
 
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
-        grid::CodeCellLanguage,
+        grid::{
+            test::{
+                assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
+            },
+            CodeCellLanguage,
+        },
         CellValue, Pos, SheetPos,
     };
 
@@ -184,5 +189,22 @@ pub mod test {
             sheet.display_value(Pos { x: 2, y: 1 }).unwrap(),
             CellValue::Blank
         )
+    }
+
+    #[test]
+    #[parallel]
+    fn test_hide_column() {
+        let (_, mut data_table) = new_data_table();
+        data_table.apply_first_row_as_header();
+        let mut columns = data_table.columns.clone().unwrap();
+        columns[0].display = false;
+        data_table.columns = Some(columns);
+
+        pretty_print_data_table(&data_table, None, None);
+
+        let mut values = test_csv_values();
+        values[0].remove(0);
+
+        assert_data_table_row(&data_table, 0, values[0].clone());
     }
 }
