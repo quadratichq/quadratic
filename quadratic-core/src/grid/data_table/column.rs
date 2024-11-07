@@ -161,7 +161,10 @@ pub mod test {
     use super::*;
     use crate::{
         cellvalue::Import,
-        grid::{test::new_data_table, DataTableKind, Sheet},
+        grid::{
+            test::{new_data_table, pretty_print_data_table},
+            DataTableKind, Sheet,
+        },
         Array, Pos,
     };
     use chrono::Utc;
@@ -264,5 +267,17 @@ pub mod test {
             sheet.display_value(Pos { x: 1, y: 3 }),
             Some(CellValue::Text("second".into()))
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_hide_column() {
+        let (_, mut data_table) = new_data_table();
+        data_table.apply_first_row_as_header();
+        let mut columns = data_table.columns.clone().unwrap();
+        columns[0].display = false;
+        data_table.columns = Some(columns);
+
+        pretty_print_data_table(&data_table, None, None);
     }
 }

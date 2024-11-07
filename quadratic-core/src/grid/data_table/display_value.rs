@@ -16,30 +16,17 @@ use anyhow::{anyhow, Ok, Result};
 use super::DataTable;
 
 impl DataTable {
+    /// Get the display value from the display buffer.
     pub fn display_value_from_buffer(&self, display_buffer: &[u64]) -> Result<Value> {
         let value = self.value.to_owned().into_array()?;
-        let columns_to_show = self
-            .columns
-            .iter()
-            .flatten()
-            .enumerate()
-            .filter(|(_, c)| c.display)
-            .map(|(index, _)| index)
-            .collect::<Vec<_>>();
+        let columns_to_show = self.columns_to_show();
 
         let values = display_buffer
             .iter()
             .filter_map(|index| {
                 value
                     .get_row(*index as usize)
-                    .map(|row| {
-                        row.to_vec()
-                            .into_iter()
-                            .enumerate()
-                            .filter(|(i, _)| columns_to_show.contains(&i))
-                            .map(|(_, v)| v)
-                            .collect::<Vec<CellValue>>()
-                    })
+                    .map(|row| self.display_columns(&columns_to_show, row))
                     .ok()
             })
             .collect::<Vec<Vec<CellValue>>>();
@@ -49,6 +36,7 @@ impl DataTable {
         Ok(array.into())
     }
 
+    /// Get the display value from the display buffer at a given position.
     pub fn display_value_from_buffer_at(
         &self,
         display_buffer: &[u64],
@@ -62,22 +50,43 @@ impl DataTable {
         Ok(cell_value)
     }
 
+    /// Get the display value from the source valuer.
+    pub fn display_value_from_value(&self) -> Result<Value> {
+        let columns_to_show = self.columns_to_show();
+
+        let values = self
+            .value
+            .to_owned()
+            .into_array()?
+            .rows()
+            .map(|row| {
+                row.to_vec()
+                    .into_iter()
+                    .enumerate()
+                    .filter(|(i, _)| columns_to_show.contains(&i))
+                    .map(|(_, v)| v)
+                    .collect::<Vec<CellValue>>()
+            })
+            .collect::<Vec<Vec<CellValue>>>();
+        let array = Array::from(values);
+
+        Ok(array.into())
+    }
+
+    /// Get the display value from the display buffer, falling back to the
+    /// source value if the display buffer is not set.
     pub fn display_value(&self) -> Result<Value> {
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer(display_buffer),
-            None => Ok(self.value.to_owned()),
+            None => self.display_value_from_value(),
         }
     }
 
+    /// Get the display value at a given position.
     pub fn display_value_at(&self, mut pos: Pos) -> Result<&CellValue> {
-        // println!("pos: {:?}", pos);
-        // println!("self.columns: {:?}", self.columns);
-
         if pos.y == 0 && self.show_header {
             if let Some(columns) = &self.columns {
-                // println!("columns: {:?}", columns);
                 if let Some(column) = columns.get(pos.x as usize) {
-                    // println!("column: {:?}", column);
                     return Ok(column.name.as_ref());
                 }
             }
@@ -90,6 +99,35 @@ impl DataTable {
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
             None => Ok(self.value.get(pos.x as u32, pos.y as u32)?),
+        }
+    }
+
+    /// Get the indices of the columns to show.
+    pub fn columns_to_show(&self) -> Vec<usize> {
+        self.columns
+            .iter()
+            .flatten()
+            .enumerate()
+            .filter(|(_, c)| c.display)
+            .map(|(index, _)| index)
+            .collect::<Vec<_>>()
+    }
+
+    /// For a given row of CellValues, return only the columns that should be displayed
+    pub fn display_columns(&self, columns_to_show: &[usize], row: &[CellValue]) -> Vec<CellValue> {
+        row.to_vec()
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| columns_to_show.contains(&i))
+            .map(|(_, v)| v)
+            .collect::<Vec<CellValue>>()
+    }
+
+    /// Transmute an index from the display buffer to the source index.
+    pub fn transmute_index(&self, index: u64) -> u64 {
+        match self.display_buffer {
+            Some(ref display_buffer) => *display_buffer.get(index as usize).unwrap_or(&index),
+            None => index,
         }
     }
 }
