@@ -1,22 +1,15 @@
 import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 import { BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
 import {
   BedrockAnthropicAutoCompleteRequestBodySchema,
   BedrockAutoCompleteRequestBodySchema,
 } from 'quadratic-shared/typesAndSchemasAI';
-
-import {
-  AWS_AI_ACCESS_KEY_ID,
-  AWS_AI_REGION,
-  AWS_AI_SECRET_ACCESS_KEY,
-  RATE_LIMIT_AI_REQUESTS_MAX,
-  RATE_LIMIT_AI_WINDOW_MS,
-} from '../../env-vars';
+import { AWS_AI_ACCESS_KEY_ID, AWS_AI_REGION, AWS_AI_SECRET_ACCESS_KEY } from '../../env-vars';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { Request } from '../../types/Request';
+import { ai_rate_limiter } from './aiRateLimiter';
 
 const bedrock_router = express.Router();
 
@@ -31,16 +24,6 @@ const bedrock_anthropic = new AnthropicBedrock({
   awsSecretKey: AWS_AI_SECRET_ACCESS_KEY,
   awsAccessKey: AWS_AI_ACCESS_KEY_ID,
   awsRegion: AWS_AI_REGION,
-});
-
-const ai_rate_limiter = rateLimit({
-  windowMs: Number(RATE_LIMIT_AI_WINDOW_MS) || 3 * 60 * 60 * 1000, // 3 hours
-  max: Number(RATE_LIMIT_AI_REQUESTS_MAX) || 25, // Limit number of requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: (request: Request) => {
-    return request.auth?.sub || 'anonymous';
-  },
 });
 
 bedrock_router.post('/bedrock/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {

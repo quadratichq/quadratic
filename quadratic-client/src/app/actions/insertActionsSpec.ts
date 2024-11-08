@@ -244,9 +244,7 @@ export const insertActionsSpec: InsertActionSpec = {
   },
   [Action.RemoveInsertedCells]: {
     label: 'Remove inserted cells',
-    run: () => {
-      // TODO(ayush): add this when refactoring shortcuts to use action specs
-    },
+    run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.InsertToday]: {
     label: "Insert today's date",
