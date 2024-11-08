@@ -2,13 +2,12 @@ import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
-import { ArrowUpwardIcon, EditIcon, StopIcon } from '@/shared/components/Icons';
+import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { TRUST_CENTER } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { CircularProgress } from '@mui/material';
 import { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { SetterOrUpdater } from 'recoil';
@@ -153,27 +152,10 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
       )}
 
       {editing && (
-        <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
-          <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
+        <>
+          <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
+            <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
 
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <CircularProgress size="0.8125rem" />
-
-              <TooltipPopover label="Stop generating">
-                <Button
-                  size="icon-sm"
-                  className="rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    abortPrompt();
-                  }}
-                >
-                  <StopIcon />
-                </Button>
-              </TooltipPopover>
-            </div>
-          ) : (
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="hidden @sm:block">
                 {KeyboardSymbols.Shift}
@@ -197,14 +179,27 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
                     e.stopPropagation();
                     submitPrompt(prompt);
                   }}
-                  disabled={prompt.length === 0}
+                  disabled={prompt.length === 0 || loading}
                 >
                   <ArrowUpwardIcon />
                 </Button>
               </ConditionalWrapper>
             </div>
+          </div>
+          {loading && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="absolute -top-9 right-1/2 z-10 translate-x-1/2 bg-background"
+              onClick={(e) => {
+                e.stopPropagation();
+                abortPrompt();
+              }}
+            >
+              <BackspaceIcon className="mr-1" /> Cancel generating
+            </Button>
           )}
-        </div>
+        </>
       )}
     </form>
   );
