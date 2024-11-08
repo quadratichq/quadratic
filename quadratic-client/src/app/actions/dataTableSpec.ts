@@ -203,7 +203,6 @@ export const dataTableSpec: DataTableSpec = {
           setTimeout(() => {
             const contextMenu = { type: ContextMenuType.TableColumn, rename: true, table, selectedColumn };
             events.emit('contextMenu', contextMenu);
-            console.log('emitting...');
           });
         }
       }
@@ -286,8 +285,6 @@ export const dataTableSpec: DataTableSpec = {
         columns.forEach((column) => {
           column.display = true;
         });
-
-        console.log('show all columns', columns);
 
         quadraticCore.dataTableMeta(
           sheets.sheet.id,
