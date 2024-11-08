@@ -269,8 +269,6 @@ export const BedrockAutoCompleteRequestBodySchema = z.object({
   model: BedrockModelSchema,
   system: z.array(z.object({ text: z.string() })),
   messages: z.array(BedrockPromptMessageSchema),
-  temperature: z.number(),
-  max_tokens: z.number(),
   tools: z.array(BedrockToolSchema).optional(),
   tool_choice: BedrockToolChoiceSchema.optional(),
 });
@@ -299,8 +297,6 @@ export const AnthropicAutoCompleteRequestBodySchema = z.object({
   model: AnthropicModelSchema,
   system: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
   messages: z.array(AnthropicPromptMessageSchema),
-  temperature: z.number().min(0).max(1).default(1),
-  max_tokens: z.number(),
   tools: z.array(AnthropicToolSchema).optional(),
   tool_choice: AnthropicToolChoiceSchema.optional(),
 });
@@ -309,8 +305,6 @@ export const BedrockAnthropicAutoCompleteRequestBodySchema = z.object({
   model: BedrockAnthropicModelSchema,
   system: z.string().or(z.array(z.object({ type: z.literal('text'), text: z.string() }))),
   messages: z.array(AnthropicPromptMessageSchema),
-  temperature: z.number().min(0).max(1).default(1),
-  max_tokens: z.number(),
   tools: z.array(AnthropicToolSchema).optional(),
   tool_choice: AnthropicToolChoiceSchema.optional(),
 });
@@ -344,7 +338,6 @@ export type OpenAIToolChoice = z.infer<typeof OpenAIToolChoiceSchema>;
 export const OpenAIAutoCompleteRequestBodySchema = z.object({
   model: OpenAIModelSchema,
   messages: z.array(OpenAIPromptMessageSchema),
-  temperature: z.number().min(0).max(2).default(1),
   tools: z.array(OpenAIToolSchema).optional(),
   tool_choice: OpenAIToolChoiceSchema.optional(),
 });

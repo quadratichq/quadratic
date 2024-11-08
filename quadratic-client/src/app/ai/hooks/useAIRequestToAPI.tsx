@@ -1,9 +1,9 @@
-import { MODEL_OPTIONS } from '@/app/ai/MODELS';
 import { AITool } from '@/app/ai/tools/aiTools';
 import { getAIProviderEndpoint } from '@/app/ai/tools/endpoint.helper';
 import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIModel } from '@/app/ai/tools/model.helper';
 import { getToolChoice, getTools } from '@/app/ai/tools/tool.helpers';
 import { authClient } from '@/auth/auth';
+import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
 import { AIMessagePrompt, AIModel, AIPromptMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
@@ -339,7 +339,7 @@ export function useAIRequestToAPI() {
 
       try {
         const token = await authClient.getTokenOrRedirect();
-        const { temperature, max_tokens, canStream, canStreamWithToolCalls } = MODEL_OPTIONS[model];
+        const { canStream, canStreamWithToolCalls } = MODEL_OPTIONS[model];
         const stream = canStream
           ? useTools
             ? canStreamWithToolCalls && (useStream ?? canStream)
@@ -352,7 +352,7 @@ export function useAIRequestToAPI() {
           method: 'POST',
           signal,
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, system, messages, temperature, max_tokens, tools, tool_choice }),
+          body: JSON.stringify({ model, system, messages, tools, tool_choice }),
         });
 
         if (!response.ok) {

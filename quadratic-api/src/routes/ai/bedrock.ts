@@ -2,6 +2,7 @@ import { AnthropicBedrock } from '@anthropic-ai/bedrock-sdk';
 import { BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand } from '@aws-sdk/client-bedrock-runtime';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
+import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
 import {
   BedrockAnthropicAutoCompleteRequestBodySchema,
   BedrockAutoCompleteRequestBodySchema,
@@ -44,8 +45,8 @@ const ai_rate_limiter = rateLimit({
 
 bedrock_router.post('/bedrock/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
-      BedrockAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, system, messages, tools, tool_choice } = BedrockAutoCompleteRequestBodySchema.parse(request.body);
+    const { temperature, max_tokens } = MODEL_OPTIONS[model];
     const command = new ConverseCommand({
       modelId: model,
       system,
@@ -77,8 +78,8 @@ bedrock_router.post(
   ai_rate_limiter,
   async (request: Request, response) => {
     try {
-      const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
-        BedrockAutoCompleteRequestBodySchema.parse(request.body);
+      const { model, system, messages, tools, tool_choice } = BedrockAutoCompleteRequestBodySchema.parse(request.body);
+      const { temperature, max_tokens } = MODEL_OPTIONS[model];
       const command = new ConverseStreamCommand({
         modelId: model,
         system,
@@ -126,8 +127,10 @@ bedrock_router.post(
 // anthropic-sdk for bedrock
 bedrock_router.post('/bedrock/anthropic/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
-      BedrockAnthropicAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, system, messages, tools, tool_choice } = BedrockAnthropicAutoCompleteRequestBodySchema.parse(
+      request.body
+    );
+    const { temperature, max_tokens } = MODEL_OPTIONS[model];
     const result = await bedrock_anthropic.messages.create({
       model,
       system,
@@ -156,8 +159,10 @@ bedrock_router.post(
   ai_rate_limiter,
   async (request: Request, response) => {
     try {
-      const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
-        BedrockAnthropicAutoCompleteRequestBodySchema.parse(request.body);
+      const { model, system, messages, tools, tool_choice } = BedrockAnthropicAutoCompleteRequestBodySchema.parse(
+        request.body
+      );
+      const { temperature, max_tokens } = MODEL_OPTIONS[model];
       const chunks = await bedrock_anthropic.messages.create({
         model,
         system,

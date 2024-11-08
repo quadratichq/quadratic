@@ -1,4 +1,4 @@
-import { MODEL_OPTIONS } from '@/app/ai/MODELS';
+import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
 import {
   AIModel,
   AnthropicModel,
