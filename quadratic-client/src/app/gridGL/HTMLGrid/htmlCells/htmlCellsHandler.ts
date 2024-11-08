@@ -86,6 +86,7 @@ class HTMLCellsHandler {
 
     // remove old cells
     old.forEach((cell) => {
+      cell.destroy();
       parent.removeChild(cell.div);
       this.cells.delete(cell);
     });

@@ -100,7 +100,7 @@ export class HtmlCell {
 
   destroy() {
     this.div.remove();
-    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y, 0, 0);
+    this.sheet.gridOverflowLines.updateImageHtml(this.x, this.y);
   }
 
   get x(): number {

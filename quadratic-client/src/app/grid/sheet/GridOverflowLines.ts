@@ -39,6 +39,7 @@ export class GridOverflowLines {
   updateImageHtml(column: number, row: number, width?: number, height?: number) {
     if (width === undefined || height === undefined) {
       this.overflowImageHtml.delete(`${column},${row}`);
+      pixiApp.gridLines.dirty = true;
       return;
     }
     const start = this.sheet.offsets.getCellOffsets(column, row);
