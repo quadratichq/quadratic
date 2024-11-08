@@ -6,6 +6,7 @@
  */
 
 import { debugWebWorkers } from '@/app/debugFlags';
+import { Coordinate } from '@/app/gridGL/types/size';
 import {
   BorderSelection,
   BorderStyle,
@@ -19,6 +20,7 @@ import {
   JsCodeCell,
   JsCodeResult,
   JsRenderCell,
+  JumpDirection,
   MinMax,
   SearchOptions,
   Selection,
@@ -34,8 +36,6 @@ import {
 import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import {
-  ClientCoreFindNextColumn,
-  ClientCoreFindNextRow,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
@@ -849,24 +849,18 @@ class Core {
     });
   }
 
-  findNextColumn(data: ClientCoreFindNextColumn): Promise<number | undefined> {
+  jumpCursor(sheetId: string, current: Coordinate, direction: JumpDirection): Promise<Coordinate | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(
-          this.gridController.findNextColumn(data.sheetId, data.columnStart, data.row, data.reverse, data.withContent)
-        );
-      });
-    });
-  }
-
-  findNextRow(data: ClientCoreFindNextRow): Promise<number | undefined> {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(
-          this.gridController.findNextRow(data.sheetId, data.rowStart, data.column, data.reverse, data.withContent)
-        );
+        try {
+          const result = this.gridController.jumpCursor(sheetId, posToPos(current.x, current.y), JSON.stringify(direction));
+          const pos = JSON.parse(result);
+          resolve({ x: Number(pos.x), y: Number(pos.y) });
+        } catch (error: any) {
+          console.warn(error);
+          resolve(undefined);
+        }
       });
     });
   }

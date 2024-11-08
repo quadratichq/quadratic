@@ -43,6 +43,7 @@ export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, colo
 export interface JsRowHeight { row: bigint, height: number, }
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
+export type JumpDirection = "Up" | "Down" | "Left" | "Right";
 export interface MinMax { min: number, max: number, }
 export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };
 export interface NumericFormat { type: NumericFormatKind, symbol: string | null, }

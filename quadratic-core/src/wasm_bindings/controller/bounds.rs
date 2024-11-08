@@ -1,3 +1,5 @@
+use sheet::jump_cursor::JumpDirection;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -69,37 +71,22 @@ impl GridController {
         }
     }
 
-    /// finds nearest column with or without content
-    #[wasm_bindgen(js_name = "findNextColumn")]
-    pub fn js_find_next_column(
+    #[wasm_bindgen(js_name = "jumpCursor")]
+    pub fn js_jump_cursor(
         &self,
         sheet_id: String,
-        column_start: i32,
-        row: i32,
-        reverse: bool,
-        with_content: bool,
-    ) -> Option<i32> {
-        // todo: this should have Result return type and handle no sheet found (which should not happen)
-        let sheet = self.try_sheet_from_string_id(sheet_id)?;
-        sheet
-            .find_next_column(column_start as i64, row as i64, reverse, with_content)
-            .map(|x| x as i32)
-    }
-
-    /// finds nearest row with or without content
-    #[wasm_bindgen(js_name = "findNextRow")]
-    pub fn js_find_next_row(
-        &self,
-        sheet_id: String,
-        row_start: i32,
-        column: i32,
-        reverse: bool,
-        with_content: bool,
-    ) -> Option<i32> {
-        // todo: this should have Result return type and handle no sheet found (which should not happen)
-        let sheet = self.try_sheet_from_string_id(sheet_id)?;
-        sheet
-            .find_next_row(row_start as i64, column as i64, reverse, with_content)
-            .map(|y| y as i32)
+        pos: String,
+        direction: String,
+    ) -> Result<String, JsValue> {
+        let sheet = self
+            .try_sheet_from_string_id(sheet_id)
+            .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
+        let pos: Pos = serde_json::from_str(&pos)
+            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
+        let direction: JumpDirection = serde_json::from_str(&direction)
+            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {}", e)))?;
+        let next = sheet.jump_cursor(pos, direction);
+        serde_json::to_string(&next)
+            .map_err(|e| JsValue::from_str(&format!("Failed to serialize next position: {}", e)))
     }
 }

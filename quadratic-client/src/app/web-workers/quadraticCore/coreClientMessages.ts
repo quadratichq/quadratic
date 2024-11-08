@@ -18,6 +18,7 @@ import {
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
+  JumpDirection,
   MinMax,
   SearchOptions,
   Selection,
@@ -740,20 +741,18 @@ export interface CoreClientGetRowsBounds {
   id: number;
 }
 
-export interface ClientCoreFindNextColumn {
-  type: 'clientCoreFindNextColumn';
+export interface ClientCoreJumpCursor {
+  type: 'clientCoreJumpCursor';
   id: number;
   sheetId: string;
-  columnStart: number;
-  row: number;
-  reverse: boolean;
-  withContent: boolean;
+  current: Coordinate;
+  direction: JumpDirection;
 }
 
-export interface CoreClientFindNextColumn {
-  type: 'coreClientFindNextColumn';
+export interface CoreClientJumpCursor {
+  type: 'coreClientJumpCursor';
   id: number;
-  column?: number;
+  coordinate?: Coordinate;
 }
 
 export interface ClientCoreFindNextRow {
@@ -1123,8 +1122,7 @@ export type ClientCoreMessage =
   | ClientCoreExportCsvSelection
   | ClientCoreGetColumnsBounds
   | ClientCoreGetRowsBounds
-  | ClientCoreFindNextColumn
-  | ClientCoreFindNextRow
+  | ClientCoreJumpCursor
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
   | ClientCoreInit
@@ -1185,8 +1183,7 @@ export type CoreClientMessage =
   | CoreClientExportCsvSelection
   | CoreClientGetColumnsBounds
   | CoreClientGetRowsBounds
-  | CoreClientFindNextColumn
-  | CoreClientFindNextRow
+  | CoreClientJumpCursor
   | CoreClientGenerateThumbnail
   | CoreClientLoad
   | CoreClientSheetRenderCells

@@ -7,6 +7,7 @@
 import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { Coordinate } from '@/app/gridGL/types/size';
 import {
   BorderSelection,
   BorderStyle,
@@ -19,6 +20,7 @@ import {
   JsCellValue,
   JsCodeCell,
   JsRenderCell,
+  JumpDirection,
   MinMax,
   PasteSpecial,
   SearchOptions,
@@ -53,6 +55,7 @@ import {
   CoreClientGetRowsBounds,
   CoreClientGetValidationList,
   CoreClientHasRenderCells,
+  CoreClientJumpCursor,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientNeighborText,
@@ -955,52 +958,18 @@ class QuadraticCore {
     });
   }
 
-  findNextColumn(options: {
-    sheetId: string;
-    columnStart: number;
-    row: number;
-    reverse: boolean;
-    withContent: boolean;
-  }): Promise<number | undefined> {
-    const { sheetId, columnStart, row, reverse, withContent } = options;
+  jumpCursor(sheetId: string, current: Coordinate, direction: JumpDirection): Promise<Coordinate | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { column: number | number }) => {
-        resolve(message.column);
+      this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
+        resolve(message.coordinate);
       };
       this.send({
-        type: 'clientCoreFindNextColumn',
-        id,
+        type: 'clientCoreJumpCursor',
         sheetId,
-        columnStart,
-        row,
-        reverse,
-        withContent,
-      });
-    });
-  }
-
-  findNextRow(options: {
-    sheetId: string;
-    column: number;
-    rowStart: number;
-    reverse: boolean;
-    withContent: boolean;
-  }): Promise<number | undefined> {
-    const { sheetId, column, rowStart, reverse, withContent } = options;
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { row: number | undefined }) => {
-        resolve(message.row);
-      };
-      this.send({
-        type: 'clientCoreFindNextRow',
+        current,
+        direction,
         id,
-        sheetId,
-        column,
-        rowStart,
-        reverse,
-        withContent,
       });
     });
   }

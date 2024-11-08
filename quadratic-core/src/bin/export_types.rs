@@ -10,6 +10,7 @@ use grid::js_types::{
     JsRowHeight, JsSheetFill, JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
+use grid::sheet::jump_cursor::JumpDirection;
 use grid::sheet::validations::validation::{
     Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError, ValidationMessage,
     ValidationStyle,
@@ -109,6 +110,7 @@ fn main() {
         JsRowHeight,
         JsSheetFill,
         JsValidationWarning,
+        JumpDirection,
         MinMax,
         NumberRange,
         NumericFormat,

@@ -71,6 +71,7 @@ impl Sheet {
         }
         // otherwise find the next cell with content
         else {
+            // this is wrong: the table is being excluded where it's starting from (y - 1 instead of y)
             if let Some(prev) = self.find_next_row(y - 1, x, true, true) {
                 prev_y = Some(prev);
             } else {
@@ -359,6 +360,16 @@ mod tests {
 
     #[test]
     #[parallel]
+    fn jump_left_chart() {
+        let mut sheet = Sheet::test();
+
+        create_3x3_chart(&mut sheet, Pos { x: 5, y: 1 });
+
+        assert_eq!(sheet.jump_left(Pos { x: 10, y: 2 }), Pos { x: 7, y: 2 });
+    }
+
+    #[test]
+    #[parallel]
     fn jump_up_empty() {
         let sheet = Sheet::test();
 
@@ -397,6 +408,16 @@ mod tests {
         // Add edge case tests
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 2 }), Pos { x: 3, y: 1 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 1 }), Pos { x: 3, y: 1 });
+    }
+
+    #[test]
+    #[parallel]
+    fn jump_up_chart() {
+        let mut sheet = Sheet::test();
+
+        create_3x3_chart(&mut sheet, Pos { x: 5, y: 1 });
+
+        assert_eq!(sheet.jump_up(Pos { x: 6, y: 4 }), Pos { x: 6, y: 3 });
     }
 
     #[test]

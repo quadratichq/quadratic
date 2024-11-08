@@ -304,7 +304,16 @@ impl Sheet {
                     .as_ref()
                     .is_some_and(|cell_value| *cell_value == CellValue::Blank)
             {
-                if self.table_intersects(x, row, Some(column_start), None) {
+                if self.table_intersects(
+                    x,
+                    row,
+                    Some(if reverse {
+                        column_start + 1
+                    } else {
+                        column_start - 1
+                    }),
+                    None,
+                ) {
                     // we use a dummy CellValue::Logical to share that there is
                     // content here (so we don't have to check for the actual
                     // Table content--as it's not really needed except for a
@@ -359,7 +368,16 @@ impl Sheet {
                 // content here (so we don't have to check for the actual
                 // Table content--as it's not really needed except for a
                 // Blank check)
-                if self.table_intersects(column, y, None, Some(row_start)) {
+                if self.table_intersects(
+                    column,
+                    y,
+                    None,
+                    Some(if reverse {
+                        row_start + 1
+                    } else {
+                        row_start - 1
+                    }),
+                ) {
                     has_content = Some(CellValue::Logical(true));
                 }
             }
