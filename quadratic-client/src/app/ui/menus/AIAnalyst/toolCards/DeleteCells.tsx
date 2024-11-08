@@ -42,17 +42,16 @@ export const DeleteCells = ({ args, loading }: DeleteCellsProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  // TODO: (ayush) is this right? why would you have more than 1 rect?
-  const { rects } = toolArgs.data;
-  const rect = rects[0];
-  const rows = rect.rect_height;
-  const cols = rect.rect_width;
-  console.log(toolArgs.data.rects);
-  return (
-    <ToolCard
-      icon={<GridActionIcon />}
-      label={'Action: delete'}
-      description={`${getRowColSentence({ rows, cols })} at (${rect.top_left_x}, ${rect.top_left_y})`}
-    />
-  );
+  return toolArgs.data.rects.map((rect, index) => {
+    const rows = rect.rect_height;
+    const cols = rect.rect_width;
+    return (
+      <ToolCard
+        key={`${index}-${rect.top_left_x},${rect.top_left_y} ${rect.rect_height}x${rect.rect_width}`}
+        icon={<GridActionIcon />}
+        label={'Action: delete'}
+        description={`${getRowColSentence({ rows, cols })} at (${rect.top_left_x}, ${rect.top_left_y})`}
+      />
+    );
+  });
 };
