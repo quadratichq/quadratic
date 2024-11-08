@@ -58,11 +58,10 @@ export const TableColumnHeaderRename = () => {
       }}
       onSave={(value: string) => {
         if (contextMenu.table && contextMenu.selectedColumn !== undefined && pixiApp.cellsSheets.current) {
-          const columns = JSON.parse(JSON.stringify(getDisplayColumns()));
+          const columns = getDisplayColumns();
 
           if (columns) {
             columns[contextMenu.selectedColumn].name = value;
-            console.log('rename columns', columns);
 
             quadraticCore.dataTableMeta(
               pixiApp.cellsSheets.current?.sheetId,
