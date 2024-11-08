@@ -1,5 +1,6 @@
 import { aiAnalystShowChatHistoryAtom, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageForm';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystEffects } from '@/app/ui/menus/AIAnalyst/AIAnalystEffects';
@@ -65,8 +66,9 @@ export const AIAnalyst = () => {
             <>
               <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div className="p-2 pt-1">
+              <div className="px-2 py-0.5">
                 <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+                <AIUserMessageFormDisclaimer />
               </div>
             </>
           )}

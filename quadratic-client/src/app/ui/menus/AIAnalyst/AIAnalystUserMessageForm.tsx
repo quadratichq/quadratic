@@ -1,5 +1,4 @@
 import { Action } from '@/app/actions/actions';
-import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystLoadingAtom,
@@ -7,196 +6,45 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
-import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
-import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
+import { AIUserMessageForm, AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
-import { ArrowUpwardIcon, EditIcon, StopIcon } from '@/shared/components/Icons';
-import { Button } from '@/shared/shadcn/ui/button';
-import { Textarea } from '@/shared/shadcn/ui/textarea';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { cn } from '@/shared/shadcn/utils';
-import { CircularProgress } from '@mui/material';
 import { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
-type AIAnalystUserMessageFormProps = {
-  initialPrompt?: string;
+type Props = AIUserMessageFormWrapperProps & {
   initialContext?: Context;
-  messageIndex?: number;
-  autoFocus?: boolean;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
 };
 
-export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, AIAnalystUserMessageFormProps>(
-  (props: AIAnalystUserMessageFormProps, ref) => {
-    const { initialPrompt, initialContext, messageIndex, autoFocus, textareaRef: bottomTextareaRef } = props;
-    const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
-    const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
-    const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
+export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: Props, ref) => {
+  const { initialContext, ...rest } = props;
+  const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
+  const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
+  const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
+  const _initialContext = initialContext ?? defaultAIAnalystContext;
+  const [context, setContext] = useState<Context>(_initialContext);
+  const { submitPrompt } = useSubmitAIAnalystPrompt();
 
-    const [editing, setEditing] = useState(!initialPrompt);
-    const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
-    const [prompt, setPrompt] = useState(initialPrompt ?? '');
-    const { submitPrompt } = useSubmitAIAnalystPrompt();
+  const formOnKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (matchShortcut(Action.ToggleAIAnalyst, event)) {
+      event.preventDefault();
+      setShowAIAnalyst((prev) => !prev);
+    }
+  };
 
-    const abortPrompt = useCallback(() => {
-      abortController?.abort();
-      setLoading(false);
-    }, [abortController, setLoading]);
-
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    useImperativeHandle(ref, () => textareaRef.current!);
-
-    // Focus the input when relevant & the tab comes into focus
-    useEffect(() => {
-      if (autoFocus) {
-        window.requestAnimationFrame(() => {
-          textareaRef.current?.focus();
-        });
-      }
-    }, [autoFocus, textareaRef]);
-
-    useEffect(() => {
-      if (loading && initialPrompt !== undefined) {
-        setEditing(false);
-      }
-    }, [loading, initialPrompt]);
-
-    return (
-      <form
-        className={cn('group h-min rounded-lg bg-accent pt-1.5', editing ? '' : 'select-none')}
-        onSubmit={(e) => e.preventDefault()}
-        onClick={() => {
-          if (editing) {
-            textareaRef.current?.focus();
-          }
-        }}
-      >
-        <div className="flex flex-row items-start justify-between">
-          <AIAnalystContext
-            context={context}
-            setContext={setContext}
-            initialContext={initialContext}
-            editing={editing}
-            disabled={!editing}
-            textAreaRef={textareaRef}
-          />
-
-          {!editing && !loading && (
-            <TooltipPopover label="Edit">
-              <Button
-                className="pointer-events-auto h-4 pr-2 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-                variant="ghost"
-                onClick={(e) => {
-                  if (loading) return;
-                  e.stopPropagation();
-                  setEditing(true);
-                  textareaRef.current?.focus();
-                }}
-              >
-                <EditIcon />
-              </Button>
-            </TooltipPopover>
-          )}
-        </div>
-
-        {editing ? (
-          <Textarea
-            ref={textareaRef}
-            value={prompt}
-            className={cn(
-              'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-              editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit'
-            )}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              event.stopPropagation();
-
-              if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
-                event.preventDefault();
-
-                if (prompt.trim().length === 0) return;
-
-                submitPrompt({ userPrompt: prompt, context, messageIndex });
-
-                if (initialPrompt === undefined) {
-                  setPrompt('');
-                  textareaRef.current?.focus();
-                } else {
-                  setEditing(false);
-                  bottomTextareaRef.current?.focus();
-                }
-              } else if (matchShortcut(Action.ToggleAIAnalyst, event)) {
-                event.preventDefault();
-                setShowAIAnalyst((prev) => !prev);
-              }
-            }}
-            autoComplete="off"
-            placeholder="Ask a question..."
-            autoHeight={true}
-            maxHeight="120px"
-          />
-        ) : (
-          <div className="pointer-events-none whitespace-pre-wrap p-2 text-sm">{prompt}</div>
-        )}
-
-        {editing && (
-          <div className="flex w-full select-none items-center justify-between px-2 pb-1 @container">
-            <SelectAIModelMenu loading={loading} textAreaRef={textareaRef} />
-
-            {loading ? (
-              <div className="flex items-center gap-2">
-                <CircularProgress size="0.8125rem" />
-
-                <TooltipPopover label="Stop generating">
-                  <Button
-                    size="icon-sm"
-                    className="rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      abortPrompt();
-                    }}
-                  >
-                    <StopIcon />
-                  </Button>
-                </TooltipPopover>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="hidden @sm:block">
-                  {KeyboardSymbols.Shift}
-                  {KeyboardSymbols.Enter} new line
-                </span>
-
-                <span className="hidden @sm:block">{KeyboardSymbols.Enter} submit</span>
-
-                <ConditionalWrapper
-                  condition={prompt.length !== 0}
-                  Wrapper={({ children }) => (
-                    <TooltipPopover label="Submit" shortcut={`${KeyboardSymbols.Enter}`}>
-                      {children as React.ReactElement}
-                    </TooltipPopover>
-                  )}
-                >
-                  <Button
-                    size="icon-sm"
-                    className="rounded-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      submitPrompt({ userPrompt: prompt, context, messageIndex });
-                    }}
-                    disabled={prompt.length === 0}
-                  >
-                    <ArrowUpwardIcon />
-                  </Button>
-                </ConditionalWrapper>
-              </div>
-            )}
-          </div>
-        )}
-      </form>
-    );
-  }
-);
+  return (
+    <AIUserMessageForm
+      {...rest}
+      abortController={abortController}
+      loading={loading}
+      setLoading={setLoading}
+      submitPrompt={(prompt) => submitPrompt({ userPrompt: prompt, context, messageIndex: props.messageIndex })}
+      formOnKeyDown={formOnKeyDown}
+      ctx={{
+        context,
+        setContext,
+        initialContext: _initialContext,
+      }}
+    />
+  );
+});

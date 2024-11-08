@@ -79,7 +79,7 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
   return (
     <div
       ref={ref}
-      className="select-text overflow-y-auto whitespace-pre-wrap pb-2 text-sm outline-none"
+      className="flex select-text flex-col gap-2 overflow-y-auto whitespace-pre-wrap pb-2 text-sm outline-none"
       spellCheck={false}
       onKeyDown={(e) => {
         if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -103,7 +103,7 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
             key={`${index}-${message.role}-${message.contextType}`}
             className={cn(
               'flex flex-col gap-1',
-              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-4'
+              message.role === 'user' && message.contextType === 'userPrompt' ? 'px-2 py-2' : 'px-4'
             )}
             // For debugging internal context
             style={{
