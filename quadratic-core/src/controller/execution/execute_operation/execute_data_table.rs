@@ -120,13 +120,10 @@ impl GridController {
 
             let data_table = sheet.data_table_result(data_table_pos)?;
 
-            if let Some(display_buffer) = &data_table.display_buffer {
-                // if there is a display buffer, use it to find the source row index
+            // if there is a display buffer, use it to find the source row index
+            if data_table.display_buffer.is_some() {
                 let index_to_find = pos.y - data_table_pos.y;
-                let row_index = *display_buffer
-                    .get(index_to_find as usize)
-                    .unwrap_or(&(pos.y as u64));
-
+                let row_index = data_table.transmute_index(index_to_find as u64);
                 pos.y = row_index as i64 + data_table_pos.y;
             }
 

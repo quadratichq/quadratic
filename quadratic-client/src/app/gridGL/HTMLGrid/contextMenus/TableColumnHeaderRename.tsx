@@ -1,4 +1,4 @@
-import { getColumns } from '@/app/actions/dataTableSpec';
+import { getDisplayColumns } from '@/app/actions/dataTableSpec';
 import { contextMenuAtom, ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { PixiRename } from '@/app/gridGL/HTMLGrid/contextMenus/PixiRename';
@@ -54,11 +54,12 @@ export const TableColumnHeaderRename = () => {
         backgroundColor: 'var(--table-column-header-background)',
       }}
       onSave={(value: string) => {
-        if (contextMenu.table && contextMenu.selectedColumn && pixiApp.cellsSheets.current) {
-          const columns = getColumns();
+        if (contextMenu.table && contextMenu.selectedColumn !== undefined && pixiApp.cellsSheets.current) {
+          const columns = JSON.parse(JSON.stringify(getDisplayColumns()));
 
           if (columns) {
             columns[contextMenu.selectedColumn].name = value;
+            console.log('rename columns', columns);
 
             quadraticCore.dataTableMeta(
               pixiApp.cellsSheets.current?.sheetId,

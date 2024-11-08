@@ -82,10 +82,12 @@ impl Sheet {
             .iter()
             .find_map(|(code_cell_pos, data_table)| {
                 if data_table.output_rect(*code_cell_pos, false).contains(pos) {
-                    data_table.cell_value_at(
+                    let val = data_table.cell_value_at(
                         (pos.x - code_cell_pos.x) as u32,
                         (pos.y - code_cell_pos.y) as u32,
-                    )
+                    );
+                    dbgjs!(format!("get_code_cell_value: {:?}", &val));
+                    val
                 } else {
                     None
                 }

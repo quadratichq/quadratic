@@ -1155,7 +1155,6 @@ class Core {
     cursor: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    console.log('sortDataTable', sheetId, x, y, sort, cursor);
     this.gridController.sortDataTable(sheetId, posToPos(x, y), JSON.stringify(sort), cursor);
   }
 

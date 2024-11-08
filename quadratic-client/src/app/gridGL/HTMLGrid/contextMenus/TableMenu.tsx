@@ -1,4 +1,5 @@
 import { Action } from '@/app/actions/actions';
+import { getColumns } from '@/app/actions/dataTableSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { ContextMenuItem, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/ContextMenuItem';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
@@ -19,12 +20,13 @@ export const TableMenu = (props: Props) => {
   const { defaultRename, codeCell, selectedColumn } = props;
   const cell = getCodeCell(codeCell?.language);
   const isCodeCell = cell && cell.id !== 'Import';
+  const hiddenColumns = useMemo(() => getColumns()?.filter((c) => !c.display), []);
 
   const hasHiddenColumns = useMemo(() => {
-    console.log('TODO: hasHiddenColumns', codeCell);
-    return false;
-    // return codeCell?.;
-  }, [codeCell]);
+    if (!hiddenColumns) return false;
+
+    return hiddenColumns?.length > 0;
+  }, [hiddenColumns]);
 
   const isImageOrHtmlCell = useMemo(() => {
     if (!codeCell) return false;

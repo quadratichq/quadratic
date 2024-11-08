@@ -12,6 +12,7 @@
 
 use crate::{Array, CellValue, Pos, Value};
 use anyhow::{anyhow, Ok, Result};
+use arrow_array::ArrowNativeTypeOp;
 
 use super::DataTable;
 
@@ -45,12 +46,16 @@ impl DataTable {
         let y = display_buffer
             .get(pos.y as usize)
             .ok_or_else(|| anyhow!("Y {} out of bounds: {}", pos.y, display_buffer.len()))?;
-        let cell_value = self.value.get(pos.x as u32, *y as u32)?;
+        let new_pos = Pos {
+            x: pos.x,
+            y: *y as i64,
+        };
+        let cell_value = self.display_value_from_value_at(new_pos)?;
 
         Ok(cell_value)
     }
 
-    /// Get the display value from the source valuer.
+    /// Get the display value from the source value.
     pub fn display_value_from_value(&self) -> Result<Value> {
         let columns_to_show = self.columns_to_show();
 
@@ -59,18 +64,37 @@ impl DataTable {
             .to_owned()
             .into_array()?
             .rows()
-            .map(|row| {
-                row.to_vec()
-                    .into_iter()
-                    .enumerate()
-                    .filter(|(i, _)| columns_to_show.contains(&i))
-                    .map(|(_, v)| v)
-                    .collect::<Vec<CellValue>>()
-            })
+            .map(|row| self.display_columns(&columns_to_show, row))
             .collect::<Vec<Vec<CellValue>>>();
         let array = Array::from(values);
 
         Ok(array.into())
+    }
+
+    /// Get the display value from the source value at a given position.
+    pub fn display_value_from_value_at(&self, pos: Pos) -> Result<&CellValue> {
+        let output_size = self.output_size();
+        let x = pos.x as u32;
+        let y = pos.y as u32;
+        let mut new_x = x;
+
+        // if the x position is out of bounds, return a blank value
+        if x >= output_size.w.get() {
+            return Ok(&CellValue::Blank);
+        }
+
+        let columns = self.columns.iter().flatten().collect::<Vec<_>>();
+
+        // increase the x position if the column before it is not displayed
+        for i in 0..columns.len() {
+            if !columns[i].display && i <= x as usize {
+                new_x = new_x.add_checked(1).unwrap_or(new_x);
+            }
+        }
+
+        let cell_value = self.value.get(new_x, y)?;
+
+        Ok(cell_value)
     }
 
     /// Get the display value from the display buffer, falling back to the
@@ -91,7 +115,9 @@ impl DataTable {
 
         if pos.y == 0 && self.show_header {
             if let Some(columns) = &self.columns {
-                if let Some(column) = columns.get(pos.x as usize) {
+                let display_columns = columns.iter().filter(|c| c.display).collect::<Vec<_>>();
+
+                if let Some(column) = display_columns.get(pos.x as usize) {
                     return Ok(column.name.as_ref());
                 }
             }
@@ -103,7 +129,7 @@ impl DataTable {
 
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
-            None => Ok(self.value.get(pos.x as u32, pos.y as u32)?),
+            None => self.display_value_from_value_at(pos),
         }
     }
 
@@ -147,7 +173,7 @@ pub mod test {
             test::{
                 assert_data_table_row, new_data_table, pretty_print_data_table, test_csv_values,
             },
-            CodeCellLanguage,
+            CodeCellLanguage, DataTable,
         },
         CellValue, Pos, SheetPos,
     };
@@ -196,15 +222,73 @@ pub mod test {
     fn test_hide_column() {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();
+        let width = data_table.output_size().w.get();
         let mut columns = data_table.columns.clone().unwrap();
-        columns[0].display = false;
-        data_table.columns = Some(columns);
 
         pretty_print_data_table(&data_table, None, None);
 
+        // validate display_value()
+        columns[0].display = false;
+        data_table.columns = Some(columns.clone());
         let mut values = test_csv_values();
         values[0].remove(0);
-
         assert_data_table_row(&data_table, 0, values[0].clone());
+
+        // reset values
+        columns[0].display = true;
+        data_table.columns = Some(columns.clone());
+
+        let remove_column = |remove_at: usize, row: u32, data_table: &mut DataTable| {
+            let mut column = columns.clone();
+            column[remove_at].display = false;
+            data_table.columns = Some(column);
+
+            let title = Some(format!("Remove column {}", remove_at));
+            pretty_print_data_table(&data_table, title.as_deref(), None);
+
+            let expected_output_width = data_table.columns_to_show().len();
+            assert_eq!(
+                data_table.output_size().w.get(),
+                expected_output_width as u32
+            );
+
+            (0..width)
+                .map(|x| {
+                    data_table
+                        .display_value_at((x, row).into())
+                        .unwrap()
+                        .to_string()
+                })
+                .collect::<Vec<String>>()
+        };
+
+        // validate display_value_at()
+        let remove_city = remove_column(0, 0, &mut data_table);
+        assert_eq!(remove_city, vec!["region", "country", "population", ""]);
+
+        let remove_region = remove_column(1, 0, &mut data_table);
+        assert_eq!(remove_region, vec!["city", "country", "population", ""]);
+
+        let remove_county = remove_column(2, 0, &mut data_table);
+        assert_eq!(remove_county, vec!["city", "region", "population", ""]);
+
+        let remove_population = remove_column(3, 0, &mut data_table);
+        assert_eq!(remove_population, vec!["city", "region", "country", ""]);
+
+        // "Southborough", "MA", "United States", "1000"
+        let remove_city = remove_column(0, 1, &mut data_table);
+        assert_eq!(remove_city, vec!["MA", "United States", "1000", ""]);
+
+        let remove_city = remove_column(1, 1, &mut data_table);
+        assert_eq!(
+            remove_city,
+            vec!["Southborough", "United States", "1000", ""]
+        );
+
+        let remove_city = remove_column(2, 1, &mut data_table);
+        assert_eq!(remove_city, vec!["Southborough", "MA", "1000", ""]);
+
+        let remove_city = remove_column(3, 1, &mut data_table);
+        assert_eq!(remove_city, vec!["Southborough", "MA", "United States", ""]);
     }
 }
