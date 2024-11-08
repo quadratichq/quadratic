@@ -86,7 +86,6 @@ impl Sheet {
                         (pos.x - code_cell_pos.x) as u32,
                         (pos.y - code_cell_pos.y) as u32,
                     );
-                    dbgjs!(format!("get_code_cell_value: {:?}", &val));
                     val
                 } else {
                     None

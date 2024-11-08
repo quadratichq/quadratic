@@ -31,7 +31,7 @@ pub mod col_row;
 pub mod data_table;
 pub mod formats;
 pub mod formatting;
-pub mod offsets;
+pub mod jump_cursor;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
