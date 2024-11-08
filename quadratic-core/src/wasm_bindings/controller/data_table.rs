@@ -1,4 +1,3 @@
-use grid::data_table::column::DataTableColumn;
 use selection::Selection;
 use sort::DataTableSort;
 
@@ -108,7 +107,11 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
 
         let columns = columns_js
-            .map(|c| serde_json::from_str::<Vec<DataTableColumn>>(&c).map_err(|e| e.to_string()))
+            .map(|c| {
+                serde_json::from_str::<Vec<JsDataTableColumn>>(&c)
+                    .map_err(|e| e.to_string())
+                    .map(|c| c.into_iter().map(|c| c.into()).collect())
+            })
             .transpose()?;
 
         self.data_table_meta(

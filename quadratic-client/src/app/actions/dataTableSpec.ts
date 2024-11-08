@@ -247,10 +247,10 @@ export const dataTableSpec: DataTableSpec = {
     Icon: HideIcon,
     run: () => {
       const table = getTable();
-      const columns = getColumns();
+      const columns = JSON.parse(JSON.stringify(getColumns()));
       const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
 
-      if (table && columns && selectedColumn) {
+      if (table && columns && selectedColumn !== undefined && columns[selectedColumn]) {
         columns[selectedColumn].display = false;
 
         quadraticCore.dataTableMeta(
@@ -271,7 +271,7 @@ export const dataTableSpec: DataTableSpec = {
     Icon: ShowIcon,
     run: () => {
       const table = getTable();
-      const columns = getColumns();
+      let columns = getColumns();
 
       if (table && columns) {
         columns.forEach((column) => {

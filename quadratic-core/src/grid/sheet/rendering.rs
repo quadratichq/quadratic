@@ -245,6 +245,7 @@ impl Sheet {
                             (x - code_rect.min.x) as u32,
                             (y - code_rect.min.y) as u32,
                         );
+
                         if let Some(value) = value {
                             let language = if x == code_rect.min.x && y == code_rect.min.y {
                                 Some(code_cell_value.language.to_owned())
