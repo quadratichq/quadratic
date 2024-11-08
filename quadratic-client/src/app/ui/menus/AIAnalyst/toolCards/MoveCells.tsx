@@ -52,12 +52,6 @@ export const MoveCells = ({ args, loading }: MoveCellsProps) => {
         getRowColSentence({ rows, cols }) +
         ` from (${toolArgs.data.source_top_left_x}, ${toolArgs.data.source_top_left_y})` +
         ` to (${toolArgs.data.target_top_left_x}, ${toolArgs.data.target_top_left_y})`
-        // toolArgs.data.source_top_left_x === toolArgs.data.source_bottom_right_x &&
-        // toolArgs.data.source_top_left_y === toolArgs.data.source_bottom_right_y
-        //   ? `1 cell`
-        //   : `${rows}×${cols} cells`
-        // ? `Cell (${toolArgs.data.sourceTopLeftX}, ${toolArgs.data.sourceTopLeftY}) moved to (${toolArgs.data.targetTopLeftX}, ${toolArgs.data.targetTopLeftY})`
-        // : `Cells ((${toolArgs.data.sourceTopLeftX}, ${toolArgs.data.sourceTopLeftY}), (${toolArgs.data.sourceBottomRightX}, ${toolArgs.data.sourceBottomRightY})) moved to (${toolArgs.data.targetTopLeftX}, ${toolArgs.data.targetTopLeftY})`
       }
     />
   );
