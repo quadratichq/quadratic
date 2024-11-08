@@ -13,7 +13,7 @@ use crate::{
         CodeRun, CodeRunOld, Sheet, SheetBorders, SheetId,
     },
     selection::OldSelection,
-    A1Selection, SheetPos, SheetRect,
+    A1Selection, A1Subspaces, SheetPos, SheetRect,
 };
 
 /// Determine whether to copy the formats during an Insert operation from the
@@ -74,7 +74,8 @@ pub enum Operation {
     },
     /// Updates cell formats for all cells in a selection.
     SetCellFormatsA1 {
-        selection: A1Selection,
+        sheet_id: SheetId,
+        subspaces: A1Subspaces,
         formats: Formats,
     },
 
@@ -90,7 +91,8 @@ pub enum Operation {
     },
     /// Updates borders for all cells in a selection.
     SetBordersA1 {
-        selection: A1Selection,
+        sheet_id: SheetId,
+        subspaces: A1Subspaces,
         borders: BorderStyleCellUpdates,
     },
 
@@ -223,11 +225,15 @@ impl fmt::Display for Operation {
                     selection, formats
                 )
             }
-            Operation::SetCellFormatsA1 { selection, formats } => {
+            Operation::SetCellFormatsA1 {
+                sheet_id,
+                subspaces,
+                formats,
+            } => {
                 write!(
                     fmt,
-                    "SetCellFormatsA1 {{ selection: {:?} formats: {:?} }}",
-                    selection, formats
+                    "SetCellFormatsA1 {{ sheet_id: {:?}, subspaces: {:?} formats: {:?} }}",
+                    sheet_id, subspaces, formats
                 )
             }
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),
@@ -285,10 +291,14 @@ impl fmt::Display for Operation {
                 "SetBordersSelection {{ selection: {:?}, borders: {:?} }}",
                 selection, borders
             ),
-            Operation::SetBordersA1 { selection, borders } => write!(
+            Operation::SetBordersA1 {
+                sheet_id,
+                subspaces,
+                borders,
+            } => write!(
                 fmt,
-                "SetBordersA1 {{ selection: {:?}, borders: {:?} }}",
-                selection, borders
+                "SetBordersA1 {{ sheet_id: {:?}, subspaces: {:?}, borders: {:?} }}",
+                sheet_id, subspaces, borders
             ),
             Operation::SetCursor { sheet_rect } => {
                 write!(fmt, "SetCursor {{ sheet_rect: {} }}", sheet_rect)

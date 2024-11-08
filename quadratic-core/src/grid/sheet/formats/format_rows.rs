@@ -348,7 +348,7 @@ mod tests {
                 ..Default::default()
             },
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         assert_eq!(
             sheet.format_cell(0, 0, false).fill_color,
             Some("red".to_string())

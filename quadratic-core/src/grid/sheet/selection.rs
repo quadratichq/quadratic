@@ -399,6 +399,8 @@ impl Sheet {
         cells.into_iter().collect()
     }
 
+    /// **Deprecated** Nov 2024 in favor of [`Self::selection_to_rects()`].
+    ///
     /// Returns a vec of Rects for a selection. This is useful for creating
     /// Operation::SetCellValues so we don't overlap areas that are not
     /// selected.

@@ -539,7 +539,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(3, 3, 2, 2, vec!["1", "2", "3", "4"]);
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
 
         let (_, html) = sheet
             .copy_to_clipboard(&OldSelection {

@@ -10,8 +10,15 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
-    /// calculates all bounds
-    pub fn calculate_bounds(&mut self) {
+    /// Recalculates all bounds of the sheet.
+    ///
+    /// Returns whether any of the sheet's bounds has changed
+    pub fn recalculate_bounds(&mut self) -> bool {
+        let old_data_bounds = self.data_bounds.to_bounds_rect();
+        let old_format_bounds = self.format_bounds.to_bounds_rect();
+        self.data_bounds.clear();
+        self.format_bounds.clear();
+
         for (&x, column) in &self.columns {
             if let Some(data_range) = column.range(true) {
                 let y = data_range.start;
@@ -26,18 +33,6 @@ impl Sheet {
                 self.format_bounds.add(Pos { x, y });
             }
         }
-    }
-
-    /// Recalculates all bounds of the sheet.
-    ///
-    /// Returns whether any of the sheet's bounds has changed
-    pub fn recalculate_bounds(&mut self) -> bool {
-        let old_data_bounds = self.data_bounds.to_bounds_rect();
-        let old_format_bounds = self.format_bounds.to_bounds_rect();
-        self.data_bounds.clear();
-        self.format_bounds.clear();
-
-        self.calculate_bounds();
 
         self.code_runs.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);
@@ -256,6 +251,9 @@ impl Sheet {
         row_end: i64,
         ignore_formatting: bool,
     ) -> Option<(i64, i64)> {
+        // TODO: Take a range of rows instead of start & end, to make the
+        // boundary conditions and `row_start <= row_end` assumption explicit.
+        // Do the same for `columns_bounds()`.
         let mut min: i64 = i64::MAX;
         let mut max: i64 = i64::MIN;
         let mut found = false;

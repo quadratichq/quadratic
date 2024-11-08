@@ -1,6 +1,3 @@
-use self::{active_transactions::ActiveTransactions, transaction::Transaction};
-use crate::grid::Grid;
-use wasm_bindgen::prelude::*;
 pub mod active_transactions;
 pub mod dependencies;
 pub mod execution;
@@ -15,6 +12,11 @@ pub mod transaction;
 pub mod transaction_types;
 pub mod user_actions;
 pub mod viewport;
+
+use crate::grid::Grid;
+use active_transactions::ActiveTransactions;
+use transaction::Transaction;
+use wasm_bindgen::prelude::*;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -61,7 +63,6 @@ impl GridController {
     }
 
     /// Creates a grid controller for testing purposes in both Rust and TS
-    #[cfg(test)]
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
     }

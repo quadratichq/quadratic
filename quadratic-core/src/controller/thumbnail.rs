@@ -1,25 +1,31 @@
-use crate::{selection::OldSelection, SheetPos, SheetRect};
+use crate::{
+    grid::SheetId, selection::OldSelection, A1Selection, A1Subspaces, Rect, SheetPos, SheetRect,
+};
 
 use super::GridController;
 
 impl GridController {
-    /// whether the thumbnail needs to be updated for this Pos
+    /// Returns whether the thumbnail contains any intersection with
+    /// `sheet_rect`. If this method returns `true`, then updates in
+    /// `sheet_rect` must force the thumbnail to update.
     pub fn thumbnail_dirty_sheet_pos(&self, sheet_pos: SheetPos) -> bool {
-        self.thumbnail_dirty_sheet_rect(&sheet_pos.into())
+        self.thumbnail_dirty_sheet_rect(sheet_pos.into())
     }
 
-    /// whether the thumbnail needs to be updated for this rectangle
-    pub fn thumbnail_dirty_sheet_rect(&self, sheet_rect: &SheetRect) -> bool {
+    /// Returns whether the thumbnail contains any intersection with
+    /// `sheet_rect`. If this method returns `true`, then updates in
+    /// `sheet_rect` must force the thumbnail to update.
+    pub fn thumbnail_dirty_sheet_rect(&self, sheet_rect: SheetRect) -> bool {
         if sheet_rect.sheet_id != self.grid().first_sheet_id() {
             return false;
         }
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return false;
         };
-        sheet_rect.intersects(sheet.offsets.thumbnail().to_sheet_rect(sheet_rect.sheet_id))
+        Rect::from(sheet_rect).intersects(sheet.offsets.thumbnail())
     }
 
-    /// Whether the thumbnail needs to be updated for this Selection
+    /// **Deprecated** Nov 2024 in favor of [`Self::does_thumbnail_overlap()`].
     pub fn thumbnail_dirty_selection(&self, selection: &OldSelection) -> bool {
         if selection.sheet_id != self.grid().first_sheet_id() {
             return false;
@@ -43,6 +49,33 @@ impl GridController {
         } else {
             false
         }
+    }
+
+    /// Returns whether the thumbnail contains any intersection with
+    /// `selection`. If this method returns `true`, then updates in `selection`
+    /// must force the thumbnail to update.
+    pub fn thumbnail_dirty_a1(&self, selection: &A1Selection) -> bool {
+        if selection.sheet != self.grid().first_sheet_id() {
+            return false;
+        }
+        let Some(sheet) = self.try_sheet(selection.sheet) else {
+            return false;
+        };
+
+        selection.ranges.iter().any(|&range| {
+            sheet
+                .cell_ref_range_to_rect(range)
+                .intersects(sheet.offsets.thumbnail())
+        })
+    }
+
+    /// Returns whether the thumbnail contains any intersection with
+    /// `subspaces`. If this method returns `true`, then updates in `subspaces`
+    /// must force the thumbnail to update.
+    pub fn thumbnail_dirty_subspaces(&self, sheet_id: SheetId, subspaces: &A1Subspaces) -> bool {
+        // We could avoid conversion here and work with `subspaces` directly,
+        // but it probably doesn't matter much for perf.
+        self.thumbnail_dirty_a1(&subspaces.to_selection(sheet_id))
     }
 }
 
@@ -86,12 +119,12 @@ mod test {
     fn test_thumbnail_dirty_rect() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        assert!(gc.thumbnail_dirty_sheet_rect(&SheetRect {
+        assert!(gc.thumbnail_dirty_sheet_rect(SheetRect {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 1, y: 1 },
             sheet_id,
         }));
-        assert!(!gc.thumbnail_dirty_sheet_rect(&SheetRect {
+        assert!(!gc.thumbnail_dirty_sheet_rect(SheetRect {
             min: Pos {
                 x: (THUMBNAIL_WIDTH as i64) + 1i64,
                 y: 0
@@ -102,7 +135,7 @@ mod test {
             },
             sheet_id,
         }));
-        assert!(!gc.thumbnail_dirty_sheet_rect(&SheetRect {
+        assert!(!gc.thumbnail_dirty_sheet_rect(SheetRect {
             min: Pos {
                 x: 0,
                 y: (THUMBNAIL_HEIGHT as i64) + 1i64,
@@ -114,7 +147,7 @@ mod test {
             sheet_id,
         }));
         assert!(!gc.thumbnail_dirty_sheet_rect(
-            &SheetPos {
+            SheetPos {
                 x: THUMBNAIL_WIDTH as i64,
                 y: THUMBNAIL_HEIGHT as i64,
                 sheet_id

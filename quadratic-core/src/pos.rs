@@ -2,7 +2,6 @@ use crate::{
     formulas::CellRef,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    CellRefRangeEnd,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -26,11 +25,11 @@ use std::{fmt, str::FromStr};
 )]
 pub struct Pos {
     /// Column
-    #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
+    #[cfg_attr(test, proptest(strategy = "crate::a1::PROPTEST_COORDINATE_I64"))]
     pub x: i64,
 
     /// Row
-    #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
+    #[cfg_attr(test, proptest(strategy = "crate::a1::PROPTEST_COORDINATE_I64"))]
     pub y: i64,
     //
     // We use a small range for proptest because most tests want to see what

@@ -1,10 +1,14 @@
 use std::{collections::HashSet, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
+use smallvec::{smallvec, SmallVec};
 
 use crate::{grid::SheetId, ArraySize, Pos, SheetRect};
 
+// TODO: these methods should take `Rect`, not `&Rect` (because `Rect` is `Copy`)
+
 /// Rectangular region of cells.
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(
     Serialize,
     Deserialize,
@@ -29,10 +33,7 @@ pub struct Rect {
 impl Rect {
     /// Creates a rect from two x, y positions
     pub fn new(x0: i64, y0: i64, x1: i64, y1: i64) -> Rect {
-        Rect {
-            min: Pos { x: x0, y: y0 },
-            max: Pos { x: x1, y: y1 },
-        }
+        Rect::new_span(Pos { x: x0, y: y0 }, Pos { x: x1, y: y1 })
     }
 
     /// Constructs a rectangle spanning two positions
@@ -251,6 +252,28 @@ impl Rect {
         }
     }
 
+    /// Subtracts `other` from `self`. This will result in 0 to 4 rectangles.
+    pub fn subtract(self, other: Rect) -> SmallVec<[Rect; 4]> {
+        if self.intersection(&other).is_none() {
+            smallvec![self]
+        } else {
+            let above_other = (self.min.y < other.min.y)
+                .then(|| Rect::new(self.min.x, self.min.y, self.max.x, other.min.y - 1));
+            let below_other = (self.max.y > other.max.y)
+                .then(|| Rect::new(self.min.x, other.max.y + 1, self.max.x, self.max.y));
+            let lr_top = std::cmp::max(self.min.y, other.min.y);
+            let lr_bottom = std::cmp::min(self.max.y, other.max.y);
+            let left_of_other = (self.min.x < other.min.x)
+                .then(|| Rect::new(self.min.x, lr_top, other.min.x - 1, lr_bottom));
+            let right_of_other = (self.max.x > other.max.x)
+                .then(|| Rect::new(other.max.x + 1, lr_top, self.max.x, lr_bottom));
+            [above_other, below_other, left_of_other, right_of_other]
+                .into_iter()
+                .flatten()
+                .collect()
+        }
+    }
+
     // whether two rects can merge without leaving a gap (but allow overlap)
     pub fn can_merge(&self, other: &Rect) -> bool {
         // Check if the rectangles are adjacent or overlapping in either x or y direction
@@ -301,6 +324,8 @@ impl From<SheetRect> for Rect {
 #[serial_test::parallel]
 mod test {
     use super::*;
+
+    use proptest::prelude::*;
 
     #[test]
     fn test_rect_new_span() {
@@ -546,5 +571,37 @@ mod test {
         let rect = Rect::from_ranges(1..=3, 2..=4);
         assert!(rect.contains_row(3));
         assert!(!rect.contains_row(8));
+    }
+
+    proptest! {
+        #[test]
+        fn test_rect_subtract(r1: Rect, r2: Rect) {
+            let result = r1.subtract(r2);
+            println!("result = {result:?}");
+
+            let mut failed = false;
+
+            for pos in crate::a1::proptest_positions_iter() {
+                let expected = (r1.contains(pos) && !r2.contains(pos)) as u8;
+                let mut actual = 0;
+                for r in &result {
+                    actual += r.contains(pos) as u8;
+                }
+                if actual != expected {
+                    failed = true;
+                    println!("failed at {pos}");
+                }
+            }
+
+            if failed {
+                // println!("FAIL!");
+                // println!("r1 = {r1:?}");
+                // println!("r2 = {r2:?}");
+                // for r in result {
+                //     println!("result: {r:?}");
+                // }
+                panic!("uncomment the lines above for debugging")
+            }
+        }
     }
 }

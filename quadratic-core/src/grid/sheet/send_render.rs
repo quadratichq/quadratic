@@ -267,7 +267,7 @@ mod test {
         clear_js_calls();
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         let mut positions = HashSet::new();
         positions.insert(Pos { x: 1, y: 2 });
         sheet.send_render_cells(&positions);
@@ -286,7 +286,7 @@ mod test {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         sheet.send_all_render_cells();
         expect_render_cell_sheet(&sheet, 0, 0, false);
         expect_render_cell_sheet(&sheet, 1, 0, true);
@@ -304,7 +304,7 @@ mod test {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         sheet.send_column_render_cells(vec![CELL_SHEET_WIDTH as i64 - 1]);
         expect_render_cell_sheet(&sheet, 0, 0, true);
 
@@ -325,7 +325,7 @@ mod test {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         sheet.send_row_render_cells(vec![CELL_SHEET_HEIGHT as i64 - 1]);
         expect_render_cell_sheet(&sheet, 0, 0, true);
 

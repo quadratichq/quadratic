@@ -63,7 +63,7 @@ impl GridController {
                             });
                     }
 
-                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
                     if !transaction.is_server() {
                         self.send_updated_bounds(sheet_rect.sheet_id);

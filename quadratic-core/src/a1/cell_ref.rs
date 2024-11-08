@@ -49,12 +49,21 @@ impl SheetCellRefRange {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(test, proptest(filter = "|range| range.is_valid()"))]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellRefRange {
     pub start: CellRefRangeEnd,
     pub end: Option<CellRefRangeEnd>,
+}
+impl fmt::Debug for CellRefRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "CellRefRange(")?;
+        fmt::Display::fmt(self, f)?;
+        write!(f, ")")?;
+        Ok(())
+    }
 }
 impl fmt::Display for CellRefRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -99,6 +108,13 @@ impl CellRefRange {
         start: CellRefRangeEnd::UNBOUNDED,
         end: Some(CellRefRangeEnd::UNBOUNDED),
     };
+
+    /// Returns whether the range is **valid**.
+    ///
+    /// A range is valid iff it can be represented using a nonempty string.
+    pub fn is_valid(self) -> bool {
+        self.start.col.is_some() || self.start.row.is_some() || self.end.is_some()
+    }
 
     pub fn new_relative_xy(x: u64, y: u64) -> Self {
         let start = CellRefRangeEnd::new_relative_xy(x, y);
@@ -153,7 +169,7 @@ impl CellRefRange {
             }
             None => {
                 range_might_contain_coord(rect.x_range_u64(), start.col)
-                    && range_might_contain_coord(rect.y_range_u64(), start.col)
+                    && range_might_contain_coord(rect.y_range_u64(), start.row)
             }
         }
     }
@@ -273,7 +289,7 @@ impl CellRefRangeEnd {
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellRefCoord {
-    #[cfg_attr(test, proptest(strategy = "1_u64.."))]
+    #[cfg_attr(test, proptest(strategy = "super::PROPTEST_COORDINATE_U64"))]
     pub coord: u64,
     pub is_absolute: bool,
 }
@@ -304,11 +320,16 @@ impl CellRefCoord {
 /// Returns whether `range` might intersect the region from `start` to `end`.
 fn range_might_intersect(
     range: RangeInclusive<u64>,
-    start: Option<CellRefCoord>,
-    end: Option<CellRefCoord>,
+    mut start: Option<CellRefCoord>,
+    mut end: Option<CellRefCoord>,
 ) -> bool {
+    if let (Some(a), Some(b)) = (start, end) {
+        if b.coord < a.coord {
+            std::mem::swap(&mut start, &mut end);
+        }
+    }
     let range_excluded_by_start = start.map_or(false, |a| *range.end() < a.coord);
-    let range_excluded_by_end = end.map_or(false, |b| b.coord > *range.start());
+    let range_excluded_by_end = end.map_or(false, |b| b.coord < *range.start());
     !range_excluded_by_start && !range_excluded_by_end
 }
 

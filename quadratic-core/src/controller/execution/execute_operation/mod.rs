@@ -2,6 +2,28 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 
+/// Asserts that an operation is a particular type, and unpacks its contents
+/// into the current scope.
+///
+/// # Examples
+///
+/// ```ignore
+/// fn set_cell_values(transaction: &mut PendingTransaction, op: Operation) {
+///     // panic if `op` is not `SetCellValues`
+///     unwrap_op!(let SetCellValues { sheet_pos, values } = op);
+///
+///     println!("sheet_pos: {:?}", sheet_pos);
+///     println!("values: {:?}", values);
+/// }
+/// ```
+macro_rules! unwrap_op {
+    (let $op_type:ident $contents:tt = $op:ident) => {
+        let $crate::controller::operations::operation::Operation::$op_type $contents = $op else {
+            unreachable!("expected {}; got {:?}", stringify!($op_type), $op);
+        };
+    };
+}
+
 mod execute_borders;
 mod execute_code;
 mod execute_col_rows;

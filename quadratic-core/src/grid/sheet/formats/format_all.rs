@@ -341,7 +341,7 @@ mod tests {
             },
             false,
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
 
         let update = FormatUpdate {
             bold: Some(Some(true)),
@@ -513,7 +513,7 @@ mod tests {
             },
             false,
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         assert_eq!(
             sheet.format_cell(0, 0, false),
             Format {

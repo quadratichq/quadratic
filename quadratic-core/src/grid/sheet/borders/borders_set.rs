@@ -1,14 +1,19 @@
 //! Functionality to set borders on a selection.
 
+use std::collections::{BTreeMap, HashMap};
+
 use crate::{
-    controller::operations::operation::Operation, selection::OldSelection, RunLengthEncoding,
+    controller::operations::operation::Operation, selection::OldSelection, A1Selection,
+    A1Subspaces, RunLengthEncoding,
 };
 
 use super::{BorderStyle, BorderStyleCell, BorderStyleCellUpdate, BorderStyleCellUpdates, Borders};
 
 impl Borders {
+    /// **Deprecated** Nov 2024 in favor of [`Self::set_borders()`].
+    ///
     /// Sets the borders for a selection.
-    pub fn set_borders(
+    pub fn set_borders_selection(
         &mut self,
         selection: &OldSelection,
         borders: &BorderStyleCellUpdates,
@@ -17,6 +22,8 @@ impl Borders {
         let mut undo_borders = RunLengthEncoding::new();
 
         if selection.all {
+            // BUG: `index` should be incremented here.
+            //      fixing this would be a breaking change.
             let Some(border) = borders.get_at(0) else {
                 panic!("Expected border style for all");
             };
@@ -116,6 +123,18 @@ impl Borders {
         undo
     }
 
+    /// Sets the borders for a selection.
+    pub fn set_borders_a1(
+        &mut self,
+        subspaces: &A1Subspaces,
+        borders: &BorderStyleCellUpdates,
+    ) -> Vec<Operation> {
+        // let mut undo = vec![];
+        // let mut undo_borders = RunLengthEncoding::new();
+
+        todo!("todo todo todo")
+    }
+
     /// Sets the border for a cell. This is used in the upgrade_border for going
     /// from v1_6 to v1_7.
     pub fn set(
@@ -184,9 +203,9 @@ mod tests {
     fn set_borders() {
         let sheet_id = SheetId::test();
         let mut borders = Borders::default();
-        let selection = OldSelection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id));
+        let selection = OldSelection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id)).into();
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 10 * 10);
-        borders.set_borders(&selection, &value);
+        borders.set_borders_selection(&selection, &value);
 
         let border = borders.get(0, 0);
         assert_eq!(border.top.unwrap().line, CellBorderLine::default());
@@ -204,9 +223,9 @@ mod tests {
     fn set_borders_erase() {
         let sheet_id = SheetId::test();
         let mut borders = Borders::default();
-        let selection = OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+        let selection = OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)).into();
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1);
-        borders.set_borders(&selection, &value);
+        borders.set_borders_selection(&selection, &value);
 
         let border = borders.get(1, 1);
         assert!(BorderStyleCell::is_equal_ignore_timestamp(
@@ -215,7 +234,7 @@ mod tests {
         ));
 
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1);
-        borders.set_borders(&selection, &value);
+        borders.set_borders_selection(&selection, &value);
 
         let border = borders.get(1, 1);
         assert!(BorderStyleCell::is_equal_ignore_timestamp(

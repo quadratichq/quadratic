@@ -112,7 +112,7 @@ impl GridController {
                 };
             }
 
-            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
             transaction
                 .forward_operations
@@ -179,7 +179,45 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        todo!("todo todo todo");
+        unwrap_op!(let SetCellFormatsA1 { sheet_id, subspaces, formats } = op);
+
+        transaction.generate_thumbnail |= self.thumbnail_dirty_subspaces(sheet_id, &subspaces);
+
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+            return; // sheet may have been deleted
+        };
+
+        let (reverse_operations, hashes, rows) =
+            sheet.set_formats_a1(sheet_id, &subspaces, &formats);
+        if reverse_operations.is_empty() {
+            return;
+        }
+
+        if !transaction.is_server() {
+            self.send_updated_bounds_a1_subspaces(sheet_id, &subspaces, true);
+
+            if !rows.is_empty() && transaction.is_user() {
+                let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                resize_rows.extend(rows);
+            }
+        }
+
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            let dirty_hashes = transaction.dirty_hashes.entry(sheet_id).or_default();
+            dirty_hashes.extend(hashes);
+        }
+
+        transaction
+            .forward_operations
+            .push(Operation::SetCellFormatsA1 {
+                sheet_id,
+                subspaces,
+                formats,
+            });
+
+        transaction
+            .reverse_operations
+            .extend(reverse_operations.iter().cloned());
     }
 }
 

@@ -7,7 +7,7 @@ use std::str::FromStr;
 use ts_rs::TS;
 
 use super::SheetId;
-use crate::{CellRefRange, Pos, Rect, SheetPos, SheetRect};
+use crate::{CellRefRange, Rect, SheetPos, SheetRect};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsCellsAccessed {

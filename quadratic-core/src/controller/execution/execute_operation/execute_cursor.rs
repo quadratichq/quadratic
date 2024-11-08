@@ -11,10 +11,10 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        if let Operation::SetCursor { sheet_rect } = op {
-            let selection = A1Selection::from_rect(sheet_rect);
-            self.execute_set_cursor_a1(transaction, Operation::SetCursorA1 { selection });
-        }
+        unwrap_op!(let SetCursor { sheet_rect } = op);
+
+        let selection = A1Selection::from_rect(sheet_rect);
+        self.execute_set_cursor_a1(transaction, Operation::SetCursorA1 { selection });
     }
 
     /// **Deprecated** Nov 2024 in favor of [`Self::execute_set_cursor_a1()`].
@@ -23,26 +23,27 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        if let Operation::SetCursorSelection { selection } = op {
-            let selection = A1Selection::from(selection);
-            self.execute_set_cursor_a1(transaction, Operation::SetCursorA1 { selection });
-        }
+        unwrap_op!(let SetCursorSelection { selection } = op);
+
+        let selection = A1Selection::from(selection);
+        self.execute_set_cursor_a1(transaction, Operation::SetCursorA1 { selection });
     }
 
     /// Applies an [`Operation::SetCursorA1`] to `transaction`.
     pub fn execute_set_cursor_a1(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        unwrap_op!(let SetCursorA1 { selection } = op);
+
         // this op should only be called by a user transaction
         if !transaction.is_user() {
             return;
         }
-        if let Operation::SetCursorA1 { selection } = op {
-            if cfg!(target_family = "wasm") && !transaction.is_server() {
-                if let Ok(json) = serde_json::to_string(&selection) {
-                    crate::wasm_bindings::js::jsSetCursorSelection(json);
-                }
-            } else if cfg!(test) {
-                transaction.cursor = Some(serde_json::to_string(&selection).unwrap());
+
+        if cfg!(target_family = "wasm") && !transaction.is_server() {
+            if let Ok(json) = serde_json::to_string(&selection) {
+                crate::wasm_bindings::js::jsSetCursorSelection(json);
             }
+        } else if cfg!(test) {
+            transaction.cursor = Some(serde_json::to_string(&selection).unwrap());
         }
     }
 }

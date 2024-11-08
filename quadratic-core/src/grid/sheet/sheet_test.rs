@@ -36,7 +36,7 @@ impl Sheet {
                 }
             }
         }
-        self.calculate_bounds();
+        self.recalculate_bounds();
     }
 
     #[cfg(test)]

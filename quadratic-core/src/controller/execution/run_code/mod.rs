@@ -121,7 +121,7 @@ impl GridController {
             }
         }
 
-        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
     }
 
     /// continues the calculate cycle after an async call

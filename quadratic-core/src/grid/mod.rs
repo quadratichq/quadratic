@@ -61,7 +61,6 @@ impl Grid {
     }
 
     /// Creates a grid for testing.
-    #[cfg(test)]
     pub fn test() -> Self {
         let mut ret = Grid::new_blank();
         let sheet = Sheet::test();

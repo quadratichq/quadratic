@@ -83,7 +83,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.set_cell_value((1, 1).into(), CellValue::Text("1".to_string()));
         sheet.set_cell_value((2, 3).into(), CellValue::Text("2".to_string()));
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         let all_cells = CellRefRange::ALL;
         assert_eq!(
             sheet.resolve_cell_ref(all_cells),
@@ -98,7 +98,7 @@ mod tests {
         sheet.set_cell_value((1, 1).into(), CellValue::Text("1".to_string()));
         sheet.set_cell_value((2, 3).into(), CellValue::Text("2".to_string()));
         sheet.set_cell_value((5, 1).into(), CellValue::Text("3".to_string()));
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         let columns = CellRefRange::new_relative_column_range(1, 5);
         assert_eq!(sheet.resolve_cell_ref(columns), Some(Rect::new(1, 1, 5, 3)));
     }
@@ -110,7 +110,7 @@ mod tests {
         sheet.set_cell_value((1, 1).into(), CellValue::Text("1".to_string()));
         sheet.set_cell_value((2, 3).into(), CellValue::Text("2".to_string()));
         sheet.set_cell_value((1, 5).into(), CellValue::Text("4".to_string()));
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         let rows = CellRefRange::new_relative_row_range(1, 5);
         assert_eq!(sheet.resolve_cell_ref(rows), Some(Rect::new(1, 1, 2, 5)));
     }
@@ -119,7 +119,7 @@ mod tests {
     #[parallel]
     fn test_a1_cells_rect_empty() {
         let mut sheet = Sheet::test();
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         let all_cells = CellRefRange::ALL;
         assert_eq!(sheet.resolve_cell_ref(all_cells), None);
     }
@@ -128,7 +128,7 @@ mod tests {
     #[parallel]
     fn test_a1_cells_rect_specific() {
         let mut sheet = Sheet::test();
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         let specific_rect = Rect::new(1, 2, 3, 4);
         let rect_cells = CellRefRange::new_relative_rect(Rect::new(1, 2, 3, 4));
         assert_eq!(sheet.resolve_cell_ref(rect_cells), Some(specific_rect));

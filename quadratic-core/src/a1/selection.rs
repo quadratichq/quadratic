@@ -1,22 +1,23 @@
+use std::collections::{btree_map, BTreeMap, BTreeSet};
 #[cfg(test)]
 use std::ops::RangeInclusive;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-#[cfg(test)]
-use crate::Rect;
+use super::A1Subspaces;
 use crate::{
-    grid::SheetId, selection::OldSelection, A1Error, CellRefRange, Pos, SheetCellRefRange,
+    grid::SheetId, selection::OldSelection, A1Error, CellRefRange, Pos, Rect, SheetCellRefRange,
     SheetIdNameMap, SheetNameIdMap, SheetPos, SheetRect,
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ts_rs::TS)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct A1Selection {
     /// Current sheet.
     ///
     /// Selections can only span a single sheet.
+    #[cfg_attr(test, proptest(value = "SheetId::test()"))]
     pub sheet: SheetId,
     /// Cursor position, which is moved using the arrow keys (while not holding
     /// shift).
@@ -25,7 +26,7 @@ pub struct A1Selection {
     /// in the case of an infinite selection it contains information that cannot
     /// be inferred from `ranges`.
     pub cursor: Pos,
-    /// Selected ranges.
+    /// Selected ranges (union).
     ///
     /// The cursor selection must always contain at least one range, and the
     /// last range can be manipulated using the arrow keys.
@@ -224,6 +225,78 @@ impl A1Selection {
             .copied()
             .unwrap_or_else(|| CellRefRange::new_relative_pos(pos![A1]))
     }
+
+    /// Returns whether any range in `self` might contain `pos`.
+    ///
+    /// It's impossible to give an exact answer without knowing the bounds of
+    /// each column and row.
+    pub fn might_contain_pos(&self, pos: Pos) -> bool {
+        self.ranges.iter().any(|range| range.might_contain_pos(pos))
+    }
+
+    /// Returns `true` on exactly the regions/cells that the range includes, and
+    /// `false` or nothing elsewhere.
+    pub fn subspaces(&self) -> A1Subspaces {
+        // TODO: Consider using interval tree for perf. If iteration order is
+        //       the same, then the change would be backwards-compatible.
+        let mut ret = A1Subspaces::default();
+
+        for range in &self.ranges {
+            let start = range.start;
+            match range.end {
+                None => match (start.col, start.row) {
+                    (None, None) => (), // TODO(sentry): empty range
+                    (Some(col), None) => {
+                        ret.add_column(col.coord, 1..);
+                    }
+                    (None, Some(row)) => {
+                        ret.add_row(row.coord, 1..);
+                    }
+                    (Some(col), Some(row)) => {
+                        let pos = Pos::new(col.coord as i64, row.coord as i64);
+                        ret.add_rect(Rect::single_pos(pos));
+                    }
+                },
+                Some(end) => {
+                    let start_col = start.col.map_or(1, |c| c.coord);
+                    let start_row = start.row.map_or(1, |c| c.coord);
+                    match (end.col, end.row) {
+                        (None, None) => {
+                            // Include whole sheet after `start`
+                            ret.add_all(Pos::new(start_col as i64, start_row as i64)..);
+                        }
+                        (Some(end_col), None) => {
+                            let (lo, hi) = crate::util::minmax(start_col, end_col.coord);
+                            for c in lo..=hi {
+                                // Include whole column after `start_row`
+                                ret.add_column(c, start_row..);
+                            }
+                        }
+                        (None, Some(end_row)) => {
+                            let (lo, hi) = crate::util::minmax(start_row, end_row.coord);
+                            for r in lo..=hi {
+                                // Include whole row after `start_col`
+                                ret.add_row(r, start_col..);
+                            }
+                        }
+                        (Some(end_col), Some(end_row)) => {
+                            // Include rectangle
+                            ret.add_rect(Rect::new(
+                                start_col as i64,
+                                start_row as i64,
+                                end_col.coord as i64,
+                                end_row.coord as i64,
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
+        ret.make_disjoint();
+
+        ret
+    }
 }
 
 fn cursor_pos_from_last_range(last_range: CellRefRange) -> Pos {
@@ -236,6 +309,8 @@ fn cursor_pos_from_last_range(last_range: CellRefRange) -> Pos {
 #[serial_test::parallel]
 mod tests {
     use std::collections::HashMap;
+
+    use proptest::prelude::*;
 
     use super::*;
     use crate::CellRefRangeEnd;

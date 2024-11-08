@@ -5,8 +5,9 @@ use crate::{
         operation::Operation,
     },
     grid::formats::{format::Format, format_update::FormatUpdate, Formats},
+    grid::SheetId,
     selection::OldSelection,
-    Pos,
+    A1Subspaces, Pos,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -91,6 +92,41 @@ impl Sheet {
             }
             (ops, dirty_hashes, resize)
         }
+    }
+
+    pub fn set_formats_a1(
+        &mut self,
+        sheet_id: SheetId,
+        subspaces: &A1Subspaces,
+        formats: &Formats,
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
+        // if selection.all {
+        //     self.set_format_all(formats)
+        // } else {
+        //     let mut ops = vec![];
+        //     let mut dirty_hashes = HashSet::new();
+        //     let mut resize = HashSet::new();
+        //     if let Some(columns) = selection.columns.as_ref() {
+        //         let (operations, hashes, resize_rows) = self.set_formats_columns(columns, formats);
+        //         ops.extend(operations);
+        //         dirty_hashes.extend(hashes);
+        //         resize.extend(resize_rows);
+        //     }
+        //     if let Some(rows) = selection.rows.as_ref() {
+        //         let (operations, hashes, resize_rows) = self.set_formats_rows(rows, formats);
+        //         ops.extend(operations);
+        //         dirty_hashes.extend(hashes);
+        //         resize.extend(resize_rows);
+        //     }
+        //     if let Some(rects) = selection.rects.as_ref() {
+        //         let (operations, hashes, resize_rows) = self.set_formats_rects(rects, formats);
+        //         ops.extend(operations);
+        //         dirty_hashes.extend(hashes);
+        //         resize.extend(resize_rows);
+        //     }
+        //     (ops, dirty_hashes, resize)
+        // }
+        todo!("todo todo todo")
     }
 
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.

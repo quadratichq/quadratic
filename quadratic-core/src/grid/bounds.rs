@@ -1,6 +1,8 @@
 use crate::{Pos, Rect};
 use serde::{Deserialize, Serialize};
 
+/// TODO: consider consolidating this with [`Rect`].
+///       if it should stay distinct, document why!
 #[derive(Debug, PartialEq)]
 pub struct BoundsRect {
     pub x: i64,

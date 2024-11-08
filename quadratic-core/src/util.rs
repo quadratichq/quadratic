@@ -121,6 +121,15 @@ macro_rules! impl_display {
     };
 }
 
+/// Returns the minimum and maximum of two values, in that order.
+pub fn minmax<T: PartialOrd>(a: T, b: T) -> (T, T) {
+    if a > b {
+        (b, a)
+    } else {
+        (a, b)
+    }
+}
+
 pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Option<Range<i64>> {
     ranges
         .into_iter()

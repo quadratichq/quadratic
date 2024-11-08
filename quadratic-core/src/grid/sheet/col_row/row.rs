@@ -562,7 +562,7 @@ mod test {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         sheet.delete_and_shift_values(1, &mut HashSet::new());
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
@@ -635,7 +635,7 @@ mod test {
             ),
         );
 
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
 
         let mut transaction = PendingTransaction {
             source: TransactionSource::User,
@@ -690,7 +690,7 @@ mod test {
         );
         sheet.test_set_code_run_array(4, 1, vec!["A", "B"], false);
 
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
 
         let mut transaction = PendingTransaction::default();
 
