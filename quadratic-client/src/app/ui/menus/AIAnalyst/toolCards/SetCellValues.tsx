@@ -1,6 +1,6 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
+import { getRowColSentence, ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { TableIcon } from '@/shared/components/Icons';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -49,7 +49,7 @@ export const SetCellValues = ({ args, loading }: SetCellValuesProps) => {
     <ToolCard
       icon={icon}
       label={label}
-      description={`${rows === 1 && cols === 1 ? '1 cell' : `${rows}×${cols} cells`} at (${top_left_x}, ${top_left_y})`}
+      description={`${getRowColSentence({ rows, cols })} at (${top_left_x}, ${top_left_y})`}
     />
   );
 };
