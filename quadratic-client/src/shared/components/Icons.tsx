@@ -495,6 +495,14 @@ export const ThemeIcon: IconComponent = (props) => {
   return <Icon {...props}>contrast</Icon>;
 };
 
+export const ThumbUpIcon: IconComponent = (props) => {
+  return <Icon {...props}>thumb_up_alt</Icon>;
+};
+
+export const ThumbDownIcon: IconComponent = (props) => {
+  return <Icon {...props}>thumb_down_alt</Icon>;
+};
+
 export const VerticalAlignBottomIcon: IconComponent = (props) => {
   return <Icon {...props}>vertical_align_bottom</Icon>;
 };

@@ -6,9 +6,9 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { ThumbDownOutlined, ThumbUpOutlined } from '@mui/icons-material';
 import { useRecoilCallback } from 'recoil';
 
 export const CodeEditorDiffButtons = () => {
@@ -68,13 +68,13 @@ export const CodeEditorDiffButtons = () => {
     <div className="code-editor-diff-button flex items-center">
       <TooltipPopover label={'Reject'} side="bottom">
         <Button onClick={handleDiffReject} size="icon-sm" variant="ghost">
-          <ThumbDownOutlined fontSize="small" color="error" />
+          <ThumbDownIcon className="text-destructive" />
         </Button>
       </TooltipPopover>
 
       <TooltipPopover label={'Accept'} side="bottom">
         <Button onClick={handleDiffAccept} size="icon-sm" variant="ghost">
-          <ThumbUpOutlined fontSize="small" color="success" />
+          <ThumbUpIcon className="text-success" />
         </Button>
       </TooltipPopover>
     </div>
