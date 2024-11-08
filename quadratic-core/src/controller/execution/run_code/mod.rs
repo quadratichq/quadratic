@@ -41,14 +41,20 @@ impl GridController {
                 .unwrap_or(sheet.data_tables.len()),
         );
 
-        if let Some(new_data_table) = new_data_table.as_mut() {
-            let (pixel_width, pixel_height) = new_data_table
-                .chart_pixel_output
-                .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
-            let chart_output = sheet
-                .offsets
-                .calculate_grid_size(pos, pixel_width, pixel_height);
-            new_data_table.chart_output = Some(chart_output);
+        if new_data_table
+            .as_ref()
+            .is_some_and(|dt| dt.is_html_or_image())
+        {
+            if let Some(new_data_table) = new_data_table.as_mut() {
+                let (pixel_width, pixel_height) = new_data_table
+                    .chart_pixel_output
+                    .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
+                let chart_output =
+                    sheet
+                        .offsets
+                        .calculate_grid_size(pos, pixel_width, pixel_height);
+                new_data_table.chart_output = Some(chart_output);
+            }
         }
 
         let old_data_table = if let Some(new_data_table) = &new_data_table {
