@@ -113,7 +113,7 @@ export const MssqlIcon = (props: SvgIconProps) => (
 
 export const SnowflakeIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
-    <svg version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 200 200" enable-background="new 0 0 200 200">
+    <svg version="1.1" id="Layer_1" x="0px" y="0px" viewBox="0 0 200 200" enableBackground="new 0 0 200 200">
       <g>
         <path
           fill="#0ABEF5"

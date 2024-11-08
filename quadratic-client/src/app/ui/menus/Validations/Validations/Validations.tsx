@@ -29,10 +29,9 @@ export const Validations = () => {
 
       setHighlighted(newHighlighted);
     };
-
-    events.on('cursorPosition', checkValidations);
     checkValidations();
 
+    events.on('cursorPosition', checkValidations);
     return () => {
       events.off('cursorPosition', checkValidations);
     };

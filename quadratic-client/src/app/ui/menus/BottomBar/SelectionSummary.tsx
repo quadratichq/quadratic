@@ -1,11 +1,10 @@
-import { useMediaQuery } from '@mui/material';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { sheets } from '../../../grid/controller/Sheets';
-// import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import BottomBarItem from './BottomBarItem';
+import { useMediaQuery } from '@mui/material';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const SHOW_SELECTION_SUMMARY_DELAY = 500;
 const DECIMAL_PLACES = 2;
