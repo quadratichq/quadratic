@@ -42,13 +42,18 @@ type DataTableSpec = Pick<
   | Action.EditTableCode
 >;
 
-const getTable = (): JsRenderCodeCell | undefined => {
+export const getTable = (): JsRenderCodeCell | undefined => {
   return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
 export const getColumns = (): { name: string; display: boolean; valueIndex: number }[] | undefined => {
   const table = getTable();
   return table?.columns;
+};
+
+export const getDisplayColumns = (): { name: string; display: boolean; valueIndex: number }[] | undefined => {
+  const table = getTable();
+  return table?.columns.filter((c) => c.display);
 };
 
 const isHeadingShowing = (): boolean => {
@@ -247,7 +252,7 @@ export const dataTableSpec: DataTableSpec = {
     Icon: HideIcon,
     run: () => {
       const table = getTable();
-      const columns = JSON.parse(JSON.stringify(getColumns()));
+      const columns = JSON.parse(JSON.stringify(getDisplayColumns()));
       const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
 
       if (table && columns && selectedColumn !== undefined && columns[selectedColumn]) {
@@ -271,12 +276,18 @@ export const dataTableSpec: DataTableSpec = {
     Icon: ShowIcon,
     run: () => {
       const table = getTable();
-      let columns = getColumns();
+      const columns = JSON.parse(JSON.stringify(getColumns())) as {
+        name: string;
+        display: boolean;
+        valueIndex: number;
+      }[];
 
       if (table && columns) {
         columns.forEach((column) => {
           column.display = true;
         });
+
+        console.log('show all columns', columns);
 
         quadraticCore.dataTableMeta(
           sheets.sheet.id,

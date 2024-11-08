@@ -142,7 +142,6 @@ impl DataTable {
         match self.columns.as_ref() {
             Some(columns) => columns
                 .iter()
-                .filter(|column| column.display)
                 .map(|column| JsDataTableColumn::from(column.to_owned()))
                 .collect(),
             // TODO(ddimaria): refacor this to use the default columns

@@ -82,40 +82,42 @@ export class TableColumnHeaders extends Container {
       this.columns.visible = false;
       return;
     }
-    while (this.columns.children.length > this.table.codeCell.columns.length) {
+    while (this.columns.children.length > this.table.codeCell.columns.filter((c) => c.display).length) {
       this.columns.children.pop();
     }
     let x = 0;
     const codeCell = this.table.codeCell;
-    codeCell.columns.forEach((column, index) => {
-      const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + index);
-      if (index >= this.columns.children.length) {
-        // if this is a new column, then add it
-        this.columns.addChild(
-          new TableColumnHeader({
-            table: this.table,
-            index,
+    codeCell.columns
+      .filter((c) => c.display)
+      .forEach((column, index) => {
+        const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + index);
+        if (index >= this.columns.children.length) {
+          // if this is a new column, then add it
+          this.columns.addChild(
+            new TableColumnHeader({
+              table: this.table,
+              index,
+              x,
+              width,
+              height: this.headerHeight,
+              name: column.name,
+              sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
+              onSortPressed: () => this.onSortPressed(column),
+            })
+          );
+        } else {
+          // otherwise, update the existing column header (this is needed to keep
+          // the sort button hover working properly)
+          this.columns.children[index].updateHeader(
             x,
             width,
-            height: this.headerHeight,
-            name: column.name,
-            sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
-            onSortPressed: () => this.onSortPressed(column),
-          })
-        );
-      } else {
-        // otherwise, update the existing column header (this is needed to keep
-        // the sort button hover working properly)
-        this.columns.children[index].updateHeader(
-          x,
-          width,
-          this.height,
-          column.name,
-          codeCell.sort?.find((s) => s.column_index === column.valueIndex)
-        );
-      }
-      x += width;
-    });
+            this.height,
+            column.name,
+            codeCell.sort?.find((s) => s.column_index === column.valueIndex)
+          );
+        }
+        x += width;
+      });
   }
 
   // update appearance when there is an updated code cell
