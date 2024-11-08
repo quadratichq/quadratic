@@ -71,7 +71,6 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
 
           {!isLoading && (
             <div className="absolute right-1.5 top-1.5 flex items-center">
-              {/* <CodeSnippetDiffButton text={code} language={language} /> */}
               <CodeSnippetCopyButton text={code} language={language} />
               <CodeSnippetRunButton text={code} language={language} />
             </div>
@@ -175,34 +174,6 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
     </Button>
   );
 }
-
-// function CodeSnippetDiffButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
-//   const handleReplace = useRecoilCallback(
-//     ({ set }) =>
-//       async () => {
-//         mixpanel.track('[AI].code.insert', { language });
-//         set(codeEditorDiffEditorContentAtom, { editorContent: text, isApplied: false });
-//       },
-//     [language, text]
-//   );
-
-//   return (
-//     <Tooltip>
-//       <TooltipTrigger asChild>
-//         <Button
-//           variant="ghost"
-//           size="icon-sm"
-//           className="text-muted-foreground hover:text-foreground"
-//           onClick={handleReplace}
-//           disabled={!language}
-//         >
-//           <DiffIcon />
-//         </Button>
-//       </TooltipTrigger>
-//       <TooltipContent>Apply diff</TooltipContent>
-//     </Tooltip>
-//   );
-// }
 
 function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
   const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
