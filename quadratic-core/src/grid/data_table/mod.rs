@@ -36,7 +36,12 @@ impl Grid {
         let all_names = &self
             .sheets()
             .iter()
-            .flat_map(|sheet| sheet.data_tables.values().map(|table| table.name.as_str()))
+            .flat_map(|sheet| {
+                sheet
+                    .data_tables
+                    .values()
+                    .map(|table| table.name.to_owned())
+            })
             .collect_vec();
 
         unique_name(name, all_names, require_number)
@@ -53,7 +58,9 @@ impl Grid {
             .try_sheet_mut(sheet_pos.sheet_id)
             .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
 
-        sheet.update_table_name(sheet_pos.into(), &unique_name)?;
+        sheet
+            .data_table_mut(sheet_pos.into())?
+            .update_table_name(&unique_name);
 
         Ok(())
     }

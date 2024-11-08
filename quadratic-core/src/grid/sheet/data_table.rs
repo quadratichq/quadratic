@@ -7,18 +7,13 @@ impl Sheet {
     /// Sets or deletes a data table.
     ///
     /// Returns the old value if it was set.
+    #[cfg(test)]
     pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
         if let Some(data_table) = data_table {
             self.data_tables.insert(pos, data_table)
         } else {
             self.data_tables.shift_remove(&pos)
         }
-    }
-
-    pub fn update_table_name(&mut self, pos: Pos, name: &str) -> Result<()> {
-        self.data_table_mut(pos)?.update_table_name(name);
-
-        Ok(())
     }
 
     /// Returns a DataTable at a Pos

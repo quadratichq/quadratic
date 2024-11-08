@@ -168,6 +168,18 @@ impl Value {
         })
     }
 
+    /// Returns the size of the value.
+    pub fn size(&self) -> ArraySize {
+        match self {
+            Value::Single(_) => ArraySize::_1X1,
+            Value::Array(array) => array.size(),
+            Value::Tuple(t) => t
+                .first()
+                .unwrap_or(&Array::new_empty(ArraySize::_1X1))
+                .size(),
+        }
+    }
+
     /// Returns the contained error, or panics the value is not just a single
     /// error.
     #[cfg(test)]

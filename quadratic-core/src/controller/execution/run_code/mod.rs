@@ -26,6 +26,15 @@ impl GridController {
         index: Option<usize>,
     ) {
         let sheet_id = sheet_pos.sheet_id;
+
+        // enforce unique data table names
+        if let Some(new_data_table) = &mut new_data_table {
+            let unique_name = self
+                .grid()
+                .unique_data_table_name(&new_data_table.name, false);
+            new_data_table.update_table_name(&unique_name);
+        }
+
         let Some(sheet) = self.try_sheet_mut(sheet_id) else {
             // sheet may have been deleted
             return;

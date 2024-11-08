@@ -1,11 +1,11 @@
 //! DataTable columns
 
-use crate::grid::js_types::JsDataTableColumn;
-use crate::{CellValue, Value};
-use anyhow::{anyhow, Ok};
 use serde::{Deserialize, Serialize};
 
 use super::DataTable;
+use crate::grid::js_types::JsDataTableColumn;
+use crate::util::unique_name;
+use crate::{CellValue, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DataTableColumn {
@@ -40,6 +40,8 @@ impl DataTable {
             }),
             _ => None,
         };
+
+        self.normalize_column_names();
     }
 
     pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
@@ -51,81 +53,23 @@ impl DataTable {
         }
     }
 
+    /// Create default column headings for the DataTable.
+    /// For example, the column headings will be "Column 1", "Column 2", etc.
+    pub fn default_header(&self, width: Option<u32>) -> Vec<DataTableColumn> {
+        let width = width.unwrap_or(self.value.size().w.get());
+
+        match self.value {
+            Value::Array(_) => (1..=width)
+                .map(|i| DataTableColumn::new(format!("Column {i}"), true, i - 1))
+                .collect::<Vec<DataTableColumn>>(),
+            _ => vec![],
+        }
+    }
+
     /// Apply default column headings to the DataTable.
     /// For example, the column headings will be "Column 1", "Column 2", etc.
     pub fn apply_default_header(&mut self) {
-        self.columns = match self.value {
-            Value::Array(ref mut array) => Some(
-                (1..=array.width())
-                    .map(|i| DataTableColumn::new(format!("Column {i}"), true, i - 1))
-                    .collect::<Vec<DataTableColumn>>(),
-            ),
-            _ => None,
-        };
-    }
-
-    /// Ensure that the index is within the bounds of the columns.
-    /// If there are no columns, apply default headers first if `apply_default_header` is true.
-    fn check_index(&mut self, index: usize, apply_default_header: bool) -> anyhow::Result<()> {
-        match self.columns {
-            Some(ref mut columns) => {
-                let column_len = columns.len();
-
-                if index >= column_len {
-                    return Err(anyhow!("Column {index} out of bounds: {column_len}"));
-                }
-            }
-            // there are no columns, so we need to apply default headers first
-            None => {
-                apply_default_header.then(|| self.apply_default_header());
-            }
-        };
-
-        Ok(())
-    }
-
-    /// Replace a column header at the given index in place.
-    pub fn set_header_at(
-        &mut self,
-        index: usize,
-        name: String,
-        display: bool,
-    ) -> anyhow::Result<()> {
-        self.check_index(index, true)?;
-        // let all_names = &self
-        //     .columns
-        //     .as_ref()
-        //     .unwrap()
-        //     .iter()
-        //     .map(|column| column.name.to_string().to_owned().as_str())
-        //     .collect_vec();
-        // let name = unique_name(&name, all_names);
-
-        if let Some(column) = self
-            .columns
-            .as_mut()
-            .and_then(|columns| columns.get_mut(index))
-        {
-            column.name = CellValue::Text(name);
-            column.display = display;
-        }
-
-        Ok(())
-    }
-
-    /// Set the display of a column header at the given index.
-    pub fn set_header_display_at(&mut self, index: usize, display: bool) -> anyhow::Result<()> {
-        self.check_index(index, true)?;
-
-        if let Some(column) = self
-            .columns
-            .as_mut()
-            .and_then(|columns| columns.get_mut(index))
-        {
-            column.display = display;
-        }
-
-        Ok(())
+        self.columns = Some(self.default_header(None));
     }
 
     pub fn adjust_for_header(&self, index: usize) -> usize {
@@ -139,19 +83,33 @@ impl DataTable {
     /// Prepares the columns to be sent to the client. If no columns are set, it
     /// will create default columns.
     pub fn send_columns(&self) -> Vec<JsDataTableColumn> {
-        match self.columns.as_ref() {
-            Some(columns) => columns
-                .iter()
-                .map(|column| JsDataTableColumn::from(column.to_owned()))
-                .collect(),
-            // TODO(ddimaria): refacor this to use the default columns
+        let columns = match self.columns.as_ref() {
+            Some(columns) => columns,
             None => {
-                let size = self.output_size();
-                (0..size.w.get())
-                    .map(|i| DataTableColumn::new(format!("Column {}", i + 1), true, i).into())
-                    .collect::<Vec<JsDataTableColumn>>()
+                let width = self.value.size().w.get();
+                &self.default_header(Some(width))
             }
-        }
+        };
+
+        columns
+            .iter()
+            .map(|column| JsDataTableColumn::from(column.to_owned()))
+            .collect()
+    }
+
+    /// Set the display of a column header at the given index.
+    pub fn normalize_column_names(&mut self) {
+        let mut all_names = vec![];
+
+        self.columns
+            .as_mut()
+            .unwrap()
+            .iter_mut()
+            .for_each(|column| {
+                let name = unique_name(&column.name.to_string(), &all_names, false);
+                column.name = CellValue::Text(name.to_owned());
+                all_names.push(name);
+            });
     }
 }
 
@@ -204,17 +162,38 @@ pub mod test {
             data_table.value.clone().into_array().unwrap(),
             expected_values
         );
+    }
 
-        // test setting header at index
-        data_table.set_header_at(0, "new".into(), true).unwrap();
-        assert_eq!(
-            data_table.columns.as_ref().unwrap()[0].name,
-            CellValue::Text("new".into())
-        );
+    #[test]
+    #[parallel]
+    fn test_normalize_column_names() {
+        let mut data_table = new_data_table().1;
 
-        // test setting header display at index
-        data_table.set_header_display_at(0, false).unwrap();
-        assert!(!data_table.columns.as_ref().unwrap()[0].display);
+        let to_cols = |columns: Vec<&str>| {
+            columns
+                .iter()
+                .enumerate()
+                .map(|(i, c)| DataTableColumn::new(c.to_string(), true, i as u32))
+                .collect::<Vec<DataTableColumn>>()
+        };
+
+        let assert_cols =
+            |data_table: &mut DataTable, columns: Vec<&str>, expected_columns: Vec<&str>| {
+                data_table.columns = Some(to_cols(columns));
+                data_table.normalize_column_names();
+                let data_table_cols = data_table.columns.clone().unwrap();
+                expected_columns.iter().enumerate().for_each(|(i, c)| {
+                    assert_eq!(data_table_cols[i].name.to_string(), c.to_string());
+                });
+            };
+
+        let columns = vec!["name", "name", "name", "name"];
+        let expected_columns = vec!["name", "name1", "name2", "name3"];
+        assert_cols(&mut data_table, columns, expected_columns);
+
+        let columns = vec!["name1", "name1", "name2", "name2"];
+        let expected_columns = vec!["name1", "name2", "name3", "name4"];
+        assert_cols(&mut data_table, columns, expected_columns);
     }
 
     #[test]

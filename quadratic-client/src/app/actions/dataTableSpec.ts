@@ -53,7 +53,8 @@ export const getColumns = (): JsDataTableColumn[] | undefined => {
 
 export const getDisplayColumns = (): JsDataTableColumn[] | undefined => {
   const table = getTable();
-  return table?.columns.filter((c) => c.display);
+
+  return table?.columns.filter((c) => c.display).map((c) => ({ ...c }));
 };
 
 const isHeadingShowing = (): boolean => {
@@ -251,7 +252,7 @@ export const dataTableSpec: DataTableSpec = {
     Icon: HideIcon,
     run: () => {
       const table = getTable();
-      const columns = JSON.parse(JSON.stringify(getDisplayColumns()));
+      const columns = getDisplayColumns();
       const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
 
       if (table && columns && selectedColumn !== undefined && columns[selectedColumn]) {
