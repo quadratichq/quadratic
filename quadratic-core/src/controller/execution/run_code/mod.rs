@@ -12,6 +12,10 @@ pub mod run_formula;
 pub mod run_javascript;
 pub mod run_python;
 
+// this should be kept in sync with HtmlCell.ts
+const DEFAULT_HTML_WIDTH: f32 = 600.0;
+const DEFAULT_HTML_HEIGHT: f32 = 460.0;
+
 impl GridController {
     /// finalize changes to a code_run
     pub(crate) fn finalize_code_run(
@@ -38,13 +42,13 @@ impl GridController {
         );
 
         if let Some(new_data_table) = new_data_table.as_mut() {
-            if let Some((pixel_width, pixel_height)) = new_data_table.chart_pixel_output {
-                let chart_output =
-                    sheet
-                        .offsets
-                        .calculate_grid_size(pos, pixel_width, pixel_height);
-                new_data_table.chart_output = Some(chart_output);
-            }
+            let (pixel_width, pixel_height) = new_data_table
+                .chart_pixel_output
+                .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
+            let chart_output = sheet
+                .offsets
+                .calculate_grid_size(pos, pixel_width, pixel_height);
+            new_data_table.chart_output = Some(chart_output);
         }
 
         let old_data_table = if let Some(new_data_table) = &new_data_table {

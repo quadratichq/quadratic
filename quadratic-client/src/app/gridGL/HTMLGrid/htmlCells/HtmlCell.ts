@@ -11,6 +11,7 @@ import { HtmlCellResizing } from './HtmlCellResizing';
 // number of screen pixels to trigger the resize cursor
 const tolerance = 5;
 
+// this should be kept in sync with run_code/mod.rs
 const DEFAULT_HTML_WIDTH = 600;
 const DEFAULT_HTML_HEIGHT = 460;
 
