@@ -8,9 +8,9 @@ import {
   codeEditorSpillErrorAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { events } from '@/app/events/events';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
+import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -33,6 +33,8 @@ export function ReturnTypeInspector() {
   const codeCellRecoil = useRecoilValue(codeEditorCodeCellAtom);
   const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
 
+  const { submitPrompt } = useSubmitAIAssistantPrompt();
+
   const show = evaluationResult?.line_number && evaluationResult?.output_type && !unsavedChanges;
 
   let message: JSX.Element | undefined = undefined;
@@ -51,7 +53,13 @@ export function ReturnTypeInspector() {
         size="sm"
         variant="destructive"
         className="ml-auto"
-        onClick={() => events.emit('askAICodeCell', codeCellRecoil)}
+        onClick={() =>
+          submitPrompt({
+            userPrompt: 'Fix the error in the code cell',
+            clearMessages: true,
+            codeCell: codeCellRecoil,
+          }).catch(console.error)
+        }
         disabled={aiAssistantLoading}
       >
         Fix in AI chat

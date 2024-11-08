@@ -127,9 +127,6 @@ interface EventTypes {
   // context menu opens on a grid heading
   gridContextMenu: (world: Point, row: number | null, column: number | null) => void;
 
-  // ask AI to fix error in code cell
-  askAICodeCell: (codeCell: CodeCell) => void;
-
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;

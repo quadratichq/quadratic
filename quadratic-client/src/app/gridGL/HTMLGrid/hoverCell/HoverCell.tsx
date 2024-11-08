@@ -11,6 +11,7 @@ import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
+import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -224,6 +225,8 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
 
   const loading = useRecoilValue(aiAssistantLoadingAtom);
 
+  const { submitPrompt } = useSubmitAIAssistantPrompt();
+
   return (
     <HoverCellDisplay
       title={language ? `${language} error` : 'Error'}
@@ -233,7 +236,9 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
           size="sm"
           variant="destructive"
           onClick={() => {
-            events.emit('askAICodeCell', codeCell);
+            submitPrompt({ userPrompt: 'Fix the error in the code cell', clearMessages: true, codeCell }).catch(
+              console.error
+            );
             onClick();
           }}
           disabled={loading}
