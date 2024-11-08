@@ -448,6 +448,7 @@ export class CellsTextHash {
           }
         }
       });
+      this.special.adjustHeight(row, delta);
     }
     if (changed && debugShowHashUpdates)
       console.log(
