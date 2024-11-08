@@ -1,4 +1,5 @@
 import {
+  aiAssistantLoadingAtom,
   codeEditorCodeCellAtom,
   codeEditorConsoleOutputAtom,
   codeEditorEditorContentAtom,
@@ -30,6 +31,7 @@ export function ReturnTypeInspector() {
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const codeCellRecoil = useRecoilValue(codeEditorCodeCellAtom);
+  const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
 
   const show = evaluationResult?.line_number && evaluationResult?.output_type && !unsavedChanges;
 
@@ -50,6 +52,7 @@ export function ReturnTypeInspector() {
         variant="destructive"
         className="ml-auto"
         onClick={() => events.emit('askAICodeCell', codeCellRecoil)}
+        disabled={aiAssistantLoading}
       >
         Fix in AI chat
       </Button>

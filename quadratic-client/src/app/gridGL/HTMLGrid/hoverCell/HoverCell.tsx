@@ -1,3 +1,4 @@
+import { aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -221,6 +222,8 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
     [codeCellCore.language, x, y]
   );
 
+  const loading = useRecoilValue(aiAssistantLoadingAtom);
+
   return (
     <HoverCellDisplay
       title={language ? `${language} error` : 'Error'}
@@ -233,6 +236,7 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
             events.emit('askAICodeCell', codeCell);
             onClick();
           }}
+          disabled={loading}
         >
           Fix with AI
         </Button>
