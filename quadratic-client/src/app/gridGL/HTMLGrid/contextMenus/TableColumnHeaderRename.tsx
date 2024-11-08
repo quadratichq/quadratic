@@ -50,7 +50,7 @@ export const TableColumnHeaderRename = () => {
       hasBorder={2}
       defaultValue={originalHeaderName}
       position={position}
-      className="origin-bottom-left border-none p-0 text-sm font-bold text-primary-foreground outline-none"
+      className="darker-selection origin-bottom-left border-none p-0 text-sm font-bold text-primary-foreground outline-none"
       styles={{
         fontSize: FONT_SIZE,
         color: 'var(--primary-foreground)',

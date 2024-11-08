@@ -91,6 +91,10 @@
   background-color: hsl(var(--primary-foreground) / 0.4);
 }
 
+.darker-selection::selection {
+  background-color: hsl(var(--primary) / 0.4);
+}
+
 /**
  * Themes
  */
