@@ -1,5 +1,4 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { MODEL_OPTIONS } from '@/app/ai/MODELS';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -8,6 +7,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
+import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
 import { useMemo } from 'react';
 
 interface SelectAIModelMenuProps {

@@ -1,4 +1,3 @@
-import { debug } from '@/app/debugFlags';
 import { AIModel, AIProviders } from 'quadratic-shared/typesAndSchemasAI';
 
 export const DEFAULT_MODEL: AIModel = 'claude-3-5-sonnet-20241022';
@@ -10,7 +9,7 @@ export const MODEL_OPTIONS: {
   [key in AIModel]: {
     displayName: string;
     temperature: number;
-    max_tokens: number | undefined;
+    max_tokens: number;
     canStream: boolean;
     canStreamWithToolCalls: boolean;
     enabled: boolean;
@@ -20,7 +19,7 @@ export const MODEL_OPTIONS: {
   'gpt-4o-2024-08-06': {
     displayName: 'OpenAI: GPT-4o',
     temperature: 0,
-    max_tokens: undefined,
+    max_tokens: 4096, // not used for openai
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
@@ -29,10 +28,10 @@ export const MODEL_OPTIONS: {
   'o1-preview': {
     displayName: 'OpenAI: o1-preview',
     temperature: 1, // only temperature 1 is supported for o1-preview
-    max_tokens: undefined,
+    max_tokens: 4096, // not used for openai
     canStream: false, // stream is not supported for o1-preview
     canStreamWithToolCalls: true,
-    enabled: debug,
+    enabled: false,
     provider: 'openai',
   },
   'claude-3-5-sonnet-20241022': {
@@ -45,21 +44,21 @@ export const MODEL_OPTIONS: {
     provider: 'anthropic',
   },
   'anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    displayName: `Anthropic${debug ? '(Bedrock)' : ''}: Claude 3.5 Sonnet (new)`,
+    displayName: `Anthropic: Claude 3.5 Sonnet (new)`,
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: debug,
+    enabled: false,
     provider: 'bedrock-anthropic',
   },
   'anthropic.claude-3-5-sonnet-20240620-v1:0': {
-    displayName: `Anthropic${debug ? '(Bedrock)' : ''}: Claude 3.5 Sonnet`,
+    displayName: `Anthropic: Claude 3.5 Sonnet`,
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: debug,
+    enabled: false,
     provider: 'bedrock-anthropic',
   },
   'ai21.jamba-1-5-large-v1:0': {
@@ -68,7 +67,7 @@ export const MODEL_OPTIONS: {
     max_tokens: 4096,
     canStream: true,
     canStreamWithToolCalls: false,
-    enabled: debug,
+    enabled: false,
     provider: 'bedrock',
   },
   'cohere.command-r-plus-v1:0': {
@@ -77,7 +76,7 @@ export const MODEL_OPTIONS: {
     max_tokens: 4096,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: debug,
+    enabled: false,
     provider: 'bedrock',
   },
   'us.meta.llama3-2-90b-instruct-v1:0': {
@@ -86,7 +85,7 @@ export const MODEL_OPTIONS: {
     max_tokens: 2048,
     canStream: true,
     canStreamWithToolCalls: false,
-    enabled: debug,
+    enabled: false,
     provider: 'bedrock',
   },
   'mistral.mistral-large-2407-v1:0': {
@@ -95,7 +94,7 @@ export const MODEL_OPTIONS: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: false,
-    enabled: debug,
+    enabled: false,
     provider: 'bedrock',
   },
 } as const;

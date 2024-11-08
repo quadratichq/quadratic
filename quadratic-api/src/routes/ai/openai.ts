@@ -1,8 +1,10 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import OpenAI from 'openai';
+import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
 import { OpenAIAutoCompleteRequestBodySchema } from 'quadratic-shared/typesAndSchemasAI';
 import { OPENAI_API_KEY, RATE_LIMIT_AI_REQUESTS_MAX, RATE_LIMIT_AI_WINDOW_MS } from '../../env-vars';
+
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { Request } from '../../types/Request';
 
@@ -24,9 +26,8 @@ const ai_rate_limiter = rateLimit({
 
 openai_router.post('/openai/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, messages, temperature, tools, tool_choice } = OpenAIAutoCompleteRequestBodySchema.parse(
-      request.body
-    );
+    const { model, messages, tools, tool_choice } = OpenAIAutoCompleteRequestBodySchema.parse(request.body);
+    const { temperature } = MODEL_OPTIONS[model];
     const result = await openai.chat.completions.create({
       model,
       messages,
@@ -48,9 +49,8 @@ openai_router.post('/openai/chat', validateAccessToken, ai_rate_limiter, async (
 
 openai_router.post('/openai/chat/stream', validateAccessToken, ai_rate_limiter, async (request: Request, response) => {
   try {
-    const { model, messages, temperature, tools, tool_choice } = OpenAIAutoCompleteRequestBodySchema.parse(
-      request.body
-    );
+    const { model, messages, tools, tool_choice } = OpenAIAutoCompleteRequestBodySchema.parse(request.body);
+    const { temperature } = MODEL_OPTIONS[model];
     const completion = await openai.chat.completions.create({
       model,
       messages,

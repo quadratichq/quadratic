@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
+import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
 import { AnthropicAutoCompleteRequestBodySchema } from 'quadratic-shared/typesAndSchemasAI';
 import { ANTHROPIC_API_KEY, RATE_LIMIT_AI_REQUESTS_MAX, RATE_LIMIT_AI_WINDOW_MS } from '../../env-vars';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -24,8 +25,8 @@ const ai_rate_limiter = rateLimit({
 
 anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
   try {
-    const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
-      AnthropicAutoCompleteRequestBodySchema.parse(request.body);
+    const { model, system, messages, tools, tool_choice } = AnthropicAutoCompleteRequestBodySchema.parse(request.body);
+    const { temperature, max_tokens } = MODEL_OPTIONS[model];
     const result = await anthropic.messages.create({
       model,
       system,
@@ -53,8 +54,10 @@ anthropic_router.post(
   ai_rate_limiter,
   async (request: Request, response) => {
     try {
-      const { model, system, messages, temperature, max_tokens, tools, tool_choice } =
-        AnthropicAutoCompleteRequestBodySchema.parse(request.body);
+      const { model, system, messages, tools, tool_choice } = AnthropicAutoCompleteRequestBodySchema.parse(
+        request.body
+      );
+      const { temperature, max_tokens } = MODEL_OPTIONS[model];
       const chunks = await anthropic.messages.create({
         model,
         system,
