@@ -80,6 +80,7 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
 
         <div
           className={cn(
+            'dark-mode-hack',
             isCollapsible &&
               isCollapsed &&
               "relative after:absolute after:inset-0 after:flex after:items-end after:justify-center after:bg-gradient-to-t after:from-white after:to-transparent after:content-['']"

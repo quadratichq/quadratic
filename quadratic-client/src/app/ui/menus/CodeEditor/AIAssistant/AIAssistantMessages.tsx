@@ -107,7 +107,7 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
             )}
             // For debugging internal context
             style={{
-              backgroundColor: message.contextType === 'userPrompt' ? 'white' : colors.lightGray,
+              backgroundColor: message.contextType === 'userPrompt' ? 'transparent' : colors.lightGray,
             }}
           >
             {message.role === 'user' && message.contextType === 'userPrompt' ? (
