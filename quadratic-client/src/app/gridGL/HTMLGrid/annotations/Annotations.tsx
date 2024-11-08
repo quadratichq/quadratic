@@ -16,7 +16,6 @@ export const Annotations = () => {
     updateOffsets();
 
     events.on('cursorPosition', updateOffsets);
-
     return () => {
       events.off('cursorPosition', updateOffsets);
     };
