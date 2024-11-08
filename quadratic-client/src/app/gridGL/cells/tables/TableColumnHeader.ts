@@ -104,7 +104,7 @@ export class TableColumnHeader extends Container {
   }
 
   private updateSortButton(width: number, height: number, sort?: DataTableSort) {
-    this.sortButtonStart = this.columnHeaderBounds.right - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING;
+    this.sortButtonStart = this.columnHeaderBounds.right - SORT_BUTTON_RADIUS * 2 - SORT_BUTTON_PADDING * 2;
     if (!this.sortButton) {
       throw new Error('Expected sortButton to be defined in updateSortButton');
     }
