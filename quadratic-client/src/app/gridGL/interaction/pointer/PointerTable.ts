@@ -29,6 +29,8 @@ export class PointerTable {
         table: tableDown.table,
         rename: true,
       });
+      window.clearTimeout(this.doubleClickTimeout);
+      this.doubleClickTimeout = undefined;
     } else {
       this.doubleClickTimeout = window.setTimeout(() => {
         this.doubleClickTimeout = undefined;
@@ -125,16 +127,29 @@ export class PointerTable {
       this.doubleClickTimeout = undefined;
     }
     if (this.tableNameDown) {
-      pixiApp.pointer.pointerCellMoving.tableMove(
-        this.tableNameDown.column,
-        this.tableNameDown.row,
-        this.tableNameDown.point
-      );
+      if (
+        this.tableNameDown.column !== this.tableNameDown.point.x ||
+        this.tableNameDown.row !== this.tableNameDown.point.y
+      ) {
+        pixiApp.pointer.pointerCellMoving.tableMove(
+          this.tableNameDown.column,
+          this.tableNameDown.row,
+          this.tableNameDown.point
+        );
+      }
       this.tableNameDown = undefined;
       return true;
     }
     const result = pixiApp.cellsSheet().tables.pointerMove(world);
     this.cursor = pixiApp.cellsSheet().tables.tableCursor;
     return result;
+  }
+
+  pointerUp(): boolean {
+    if (this.tableNameDown) {
+      this.tableNameDown = undefined;
+      return true;
+    }
+    return false;
   }
 }

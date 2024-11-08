@@ -43,7 +43,6 @@
 
     /* Sheet Table Colors */
     --table-column-header-foreground: 0 0% 0%;
-    --table-column-header-background: 223 81% 94%;
     --table-alternating-background: 220 75% 98%;
   }
 
@@ -86,6 +85,10 @@
 
 ::selection {
   background-color: hsl(var(--primary) / 0.1);
+}
+
+.reverse-selection::selection {
+  background-color: hsl(var(--primary-foreground) / 0.4);
 }
 
 /**

@@ -13,7 +13,7 @@ import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
 
 // used to make the column header background a bit darker than the primary color
-const COLUMN_HEADER_BACKGROUND_LUMINOSITY = 1.75;
+export const COLUMN_HEADER_BACKGROUND_LUMINOSITY = 1.75;
 
 export class TableColumnHeaders extends Container {
   private table: Table;

@@ -19,10 +19,12 @@ interface Props {
   // if true, the input will be the same scale as the app; otherwise it will
   // scale with the viewport
   noScale?: boolean;
+
+  hasBorder?: number;
 }
 
 export const PixiRename = (props: Props) => {
-  const { position, defaultValue, className, styles, onClose, onSave, noScale } = props;
+  const { position, defaultValue, className, styles, onClose, onSave, noScale, hasBorder } = props;
 
   // ensure we can wait a tick for the rename to close to avoid a conflict
   // between Escape and Blur
@@ -126,10 +128,10 @@ export const PixiRename = (props: Props) => {
       ref={ref}
       className={cn('pointer-events-auto absolute rounded-none border-none outline-none', className)}
       style={{
-        left: position.x,
-        top: position.y,
-        width: position.width,
-        height: position.height,
+        left: position.x + (hasBorder ? hasBorder / 2 : 0),
+        top: position.y + (hasBorder ? hasBorder / 2 : 0),
+        width: position.width - (hasBorder ? hasBorder : 0),
+        height: position.height - (hasBorder ? hasBorder : 0),
         transform: noScale ? `scale(${1 / pixiApp.viewport.scaled})` : undefined,
         ...styles,
       }}

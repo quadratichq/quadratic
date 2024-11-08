@@ -30,7 +30,7 @@ export const TableRename = () => {
     <PixiRename
       defaultValue={contextMenu.table.name}
       position={position}
-      className="origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
+      className="reverse-selection origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
       styles={{ fontSize: TABLE_NAME_FONT_SIZE, paddingLeft: TABLE_NAME_PADDING[0] }}
       onSave={(value: string) => {
         if (contextMenu.table && pixiApp.cellsSheets.current) {

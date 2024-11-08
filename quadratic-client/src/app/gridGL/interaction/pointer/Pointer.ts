@@ -156,6 +156,7 @@ export class Pointer {
     this.pointerHtmlCells.pointerUp(e) ||
       this.pointerImages.pointerUp() ||
       this.pointerCellMoving.pointerUp() ||
+      this.pointerTable.pointerUp() ||
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||
       this.pointerDown.pointerUp(event);

@@ -97,3 +97,24 @@ export function getCSSVariableTint(cssVariableName: string, options?: { luminosi
   const out = parsed.rgbNumber();
   return out;
 }
+
+/**
+ * Given the name of a CSS variable that maps to an HSL string, return the tint
+ * we can use in pixi.
+ * @param cssVariableName - CSS var without the `--` prefix
+ * @param luminosity - If provided, will mulitply the luminosity by this number
+ */
+export function cssVariableWithLuminosity(cssVariableName: string, luminosity: number): string {
+  if (cssVariableName.startsWith('--')) {
+    console.warn(
+      '`getCSSVariableTint` expects a CSS variable name without the `--` prefix. Are you sure you meant: `%s`',
+      cssVariableName
+    );
+  }
+
+  const hslColorString = getComputedStyle(document.documentElement).getPropertyValue(`--${cssVariableName}`).trim();
+  const numbers = hslColorString.split(' ').map(parseFloat);
+  numbers[2] *= luminosity;
+  const parsed = Color.hsl(...numbers);
+  return parsed.rgb().toString();
+}
