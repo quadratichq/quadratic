@@ -80,7 +80,7 @@
 }
 
 ::selection {
-  background-color: hsl(var(--primary) / 0.1);
+  background-color: hsl(var(--primary) / 0.2);
 }
 
 /**
