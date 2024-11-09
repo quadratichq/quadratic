@@ -1,6 +1,6 @@
 import { focusGrid } from '@/app/helpers/focusGrid.js';
 import { SearchOptions } from '@/app/quadratic-core-types';
-import { User } from '@auth0/auth0-spa-js';
+import { User } from '@/auth/auth';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
