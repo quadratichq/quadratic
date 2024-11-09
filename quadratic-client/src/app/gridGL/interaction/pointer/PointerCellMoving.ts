@@ -219,26 +219,22 @@ export class PointerCellMoving {
           sheets.sheet.id
         );
 
-        // if we moved the code cell, we need to repopulate the code editor with
-        // unsaved content.
-        if (pixiAppSettings.unsavedEditorChanges) {
-          const { codeCell } = pixiAppSettings.codeEditorState;
-          if (
-            codeCell.sheetId === sheets.current &&
-            intersects.rectanglePoint(rectangle, new Point(codeCell.pos.x, codeCell.pos.y))
-          ) {
-            pixiAppSettings.setCodeEditorState?.({
-              ...pixiAppSettings.codeEditorState,
-              initialCode: pixiAppSettings.unsavedEditorChanges ?? '',
-              codeCell: {
-                ...codeCell,
-                pos: {
-                  x: codeCell.pos.x + this.movingCells.toColumn - this.movingCells.column,
-                  y: codeCell.pos.y + this.movingCells.toRow - this.movingCells.row,
-                },
+        const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
+        if (
+          showCodeEditor &&
+          codeCell.sheetId === sheets.current &&
+          intersects.rectanglePoint(rectangle, new Point(codeCell.pos.x, codeCell.pos.y))
+        ) {
+          pixiAppSettings.setCodeEditorState?.({
+            ...pixiAppSettings.codeEditorState,
+            codeCell: {
+              ...codeCell,
+              pos: {
+                x: codeCell.pos.x + this.movingCells.toColumn - this.movingCells.column,
+                y: codeCell.pos.y + this.movingCells.toRow - this.movingCells.row,
               },
-            });
-          }
+            },
+          });
         }
       }
       this.reset();

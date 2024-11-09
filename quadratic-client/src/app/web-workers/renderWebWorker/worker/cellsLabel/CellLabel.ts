@@ -54,6 +54,8 @@ const STRIKE_THROUGH_OFFSET = 32;
 export const FONT_SIZE = 14;
 export const LINE_HEIGHT = 16;
 
+const URL_REGEX = /^(https?:\/\/|www\.)[^\s<>'"]+\.[^\s<>'"]+$/i;
+
 export class CellLabel {
   private cellsLabels: CellsLabels;
   private position = new Point();
@@ -108,8 +110,9 @@ export class CellLabel {
   textHeight = 0;
   unwrappedTextWidth = 0;
 
-  overflowRight = 0;
-  overflowLeft = 0;
+  // overflow values
+  private overflowRight = 0;
+  private overflowLeft = 0;
 
   // bounds with overflow
   private actualLeft: number;
@@ -118,8 +121,8 @@ export class CellLabel {
   private actualBottom: number;
 
   // bounds after clipping
-  private textLeft: number;
-  private textRight: number;
+  textLeft: number;
+  textRight: number;
   private textTop: number;
   private textBottom: number;
 
@@ -218,6 +221,7 @@ export class CellLabel {
 
   private isLink = (cell: JsRenderCell): boolean => {
     if (cell.number !== undefined || cell.special !== undefined) return false;
+    if (!URL_REGEX.test(cell.value)) return false;
     try {
       new URL(cell.value);
       return true;

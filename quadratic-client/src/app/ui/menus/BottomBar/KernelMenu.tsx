@@ -30,8 +30,9 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
   useEffect(() => {
     const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.isCursorOnCodeCell());
-    events.on('cursorPosition', checkRunCodeCell);
     checkRunCodeCell();
+
+    events.on('cursorPosition', checkRunCodeCell);
     return () => {
       events.off('cursorPosition', checkRunCodeCell);
     };

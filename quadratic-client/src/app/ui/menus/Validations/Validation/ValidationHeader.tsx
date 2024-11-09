@@ -1,36 +1,36 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { Close } from '@mui/icons-material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { IconButton } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 export const ValidationHeader = (props: { validationData: ValidationData }) => {
   const { unsaved, sheetId } = props.validationData;
   const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
-
   const [sheetName] = useState(` - ${sheets.getById(sheetId)?.name}`);
-
-  const close = useCallback(() => {
-    setShowValidation(false);
-  }, [setShowValidation]);
 
   const back = useCallback(() => {
     setShowValidation(true);
   }, [setShowValidation]);
 
+  const close = useCallback(() => {
+    setShowValidation(false);
+  }, [setShowValidation]);
+
   return (
     <div className="mb-2 flex items-center justify-between border-b border-b-gray-100 pb-2">
       <div className="flex items-center gap-1">
-        <TooltipHint title="Back to Data Validations for the sheet" placement="bottom">
-          <IconButton size="small" onClick={back}>
+        <TooltipPopover label={'Back to Data Validations for the sheet'} side="bottom">
+          <Button onClick={back} size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
             <ArrowBackIcon />
-          </IconButton>
-        </TooltipHint>
+          </Button>
+        </TooltipPopover>
+
         <div
           className={cn(
             `relative font-medium leading-4`,
@@ -41,11 +41,12 @@ export const ValidationHeader = (props: { validationData: ValidationData }) => {
           Data Validation{sheetName}
         </div>
       </div>
-      <TooltipHint title="Close" shortcut="ESC" placement="bottom">
-        <IconButton size="small" onClick={close}>
+
+      <TooltipPopover label={'Close'} shortcut="Esc" side="bottom">
+        <Button onClick={close} size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
           <Close />
-        </IconButton>
-      </TooltipHint>
+        </Button>
+      </TooltipPopover>
     </div>
   );
 };
