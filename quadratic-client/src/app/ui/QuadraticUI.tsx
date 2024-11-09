@@ -20,6 +20,7 @@ import FeedbackMenu from '@/app/ui/menus/FeedbackMenu';
 import SheetBar from '@/app/ui/menus/SheetBar';
 import Toolbar from '@/app/ui/menus/Toolbar';
 import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
+import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
 import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
@@ -99,7 +100,10 @@ export default function QuadraticUI() {
         <DialogRenameItem
           itemLabel="file"
           onClose={() => setShowRenameFileMenu(false)}
-          onSave={(newValue) => renameFile(newValue)}
+          onSave={(newValue) => {
+            updateRecentFiles(uuid, newValue, true);
+            renameFile(newValue);
+          }}
           value={name}
         />
       )}

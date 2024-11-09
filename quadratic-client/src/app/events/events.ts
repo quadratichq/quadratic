@@ -129,6 +129,8 @@ interface EventTypes {
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
+
+  recentFiles: (url: string, name: string, loaded: boolean) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

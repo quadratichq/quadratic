@@ -5,6 +5,7 @@ import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
+import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
@@ -42,6 +43,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     if (error.status === 403 && !isLoggedIn) {
       return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
     }
+    updateRecentFiles(uuid, '', true);
     throw new Response('Failed to load file from server.', { status: error.status });
   }
   if (debugShowMultiplayer || debugShowFileIO)
@@ -69,6 +71,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
         error: result.error,
       },
     });
+    updateRecentFiles(uuid, data.file.name, false);
     throw new Response('Failed to deserialize file from server.', { statusText: result.error });
   } else if (result.version) {
     // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
@@ -77,6 +80,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
         message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
         level: 'log',
       });
+      updateRecentFiles(uuid, data.file.name, false);
       // @ts-expect-error hard reload via `true` only works in some browsers
       window.location.reload(true);
     }
@@ -86,6 +90,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   } else {
     throw new Error('Expected quadraticCore.load to return either a version or an error');
   }
+  updateRecentFiles(uuid, data.file.name, true);
   return data;
 };
 

@@ -26,6 +26,7 @@ import { Link, SubmitOptions, useFetcher, useMatch, useSubmit } from 'react-rout
 import { FilesListExampleFile, FilesListUserFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
+import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 
 export function FilesListItems({
   children,
@@ -126,6 +127,7 @@ export function FilesListItemUserFile({
     // Update on the server and optimistically in the UI
     const data: FileAction['request.rename'] = { action: 'rename', name: value };
     fetcherRename.submit(data, fetcherSubmitOpts);
+    updateRecentFiles(uuid, value, true, true);
   };
 
   const handleDelete = () => {

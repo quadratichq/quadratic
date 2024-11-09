@@ -450,3 +450,7 @@ export const ZoomInIcon: IconComponent = (props) => {
 export const ZoomOutIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_out</Icon>;
 };
+
+export const FileOpenIcon: IconComponent = (props) => {
+  return <Icon {...props}>file_open</Icon>;
+};

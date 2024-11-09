@@ -1,4 +1,5 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -89,6 +90,7 @@ export const deleteFile = {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {
         await apiClient.files.delete(uuid);
+        updateRecentFiles(uuid, '', false);
         window.location.href = '/';
       } catch (e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });

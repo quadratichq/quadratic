@@ -4,11 +4,23 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
+import { RECENT_FILES_KEY, RecentFile } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
+import { DeleteIcon, DraftIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { MenubarContent, MenubarItem, MenubarMenu, MenubarSeparator, MenubarTrigger } from '@/shared/shadcn/ui/menubar';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import {
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
+  MenubarTrigger,
+} from '@/shared/shadcn/ui/menubar';
+import { useMemo } from 'react';
 import { useSubmit } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
@@ -25,6 +37,36 @@ export const FileMenubarMenu = () => {
   } = useFileRouteLoaderData();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const isAvailableArgs = useIsAvailableArgs();
+
+  const [recentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
+  const recentFilesMenuItems = useMemo(() => {
+    if (recentFiles.length === 0) return null;
+
+    return (
+      <>
+        <MenubarSeparator />
+        <MenubarSub>
+          <MenubarSubTrigger>
+            <FileOpenIcon /> Open recent file
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            {recentFiles
+              .filter((file) => file.uuid !== fileUuid)
+              .map((file) => (
+                <MenubarItem
+                  onClick={() => {
+                    window.location.href = `/file/${file.uuid}`;
+                  }}
+                  key={file.uuid}
+                >
+                  {file.name}
+                </MenubarItem>
+              ))}
+          </MenubarSubContent>
+        </MenubarSub>
+      </>
+    );
+  }, [fileUuid, recentFiles]);
 
   if (!isAuthenticated) return null;
 
@@ -43,6 +85,8 @@ export const FileMenubarMenu = () => {
             Duplicate
           </MenubarItem>
         )}
+
+        {recentFilesMenuItems}
 
         <MenubarSeparator />
 
