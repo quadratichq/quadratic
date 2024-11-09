@@ -51,7 +51,7 @@ export const FileMenubarMenu = () => {
           </MenubarSubTrigger>
           <MenubarSubContent>
             {recentFiles
-              .filter((file) => file.uuid !== fileUuid)
+              .filter((file) => file.uuid !== fileUuid && file.name.trim().length > 0)
               .map((file) => (
                 <MenubarItem
                   onClick={() => {
