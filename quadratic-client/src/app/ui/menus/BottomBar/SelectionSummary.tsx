@@ -1,73 +1,134 @@
-import { useMediaQuery } from '@mui/material';
-import { useEffect, useState } from 'react';
-import { sheets } from '../../../grid/controller/Sheets';
-// import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
 import { events } from '@/app/events/events';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { sheets } from '@/app/grid/controller/Sheets';
+import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import BottomBarItem from './BottomBarItem';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { useMediaQuery } from '@mui/material';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+const SHOW_SELECTION_SUMMARY_DELAY = 500;
+const DECIMAL_PLACES = 2;
 
 export const SelectionSummary = () => {
-  const decimal_places = 9;
-
   const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
   const [count, setCount] = useState<string | undefined>('');
   const [sum, setSum] = useState<string | undefined>('');
   const [avg, setAvg] = useState<string | undefined>('');
   const [copied, setCopied] = useState(false);
-
-  const cursor = sheets.sheet.cursor;
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>();
 
   // Run async calculations to get the count/avg/sum meta info
+  const showSelectionSummary = useCallback(async () => {
+    const cursor = sheets.sheet.cursor;
+    if (!cursor.multiCursor && !cursor.columnRow) {
+      setCount(undefined);
+      setSum(undefined);
+      setAvg(undefined);
+      return;
+    }
+
+    let result = await quadraticCore.summarizeSelection(DECIMAL_PLACES, cursor.getRustSelection());
+    if (result) {
+      setCount(result.count.toString());
+      setSum(result.sum === null ? undefined : result.sum.toString());
+      setAvg(result.average === null ? undefined : result.average.toString());
+    } else {
+      setCount(undefined);
+      setSum(undefined);
+      setAvg(undefined);
+    }
+  }, []);
+
+  const updateSelectionSummary = useCallback(() => {
+    clearTimeout(timeoutRef.current);
+    setCount(undefined);
+    setSum(undefined);
+    setAvg(undefined);
+
+    timeoutRef.current = setTimeout(() => {
+      showSelectionSummary();
+    }, SHOW_SELECTION_SUMMARY_DELAY);
+  }, [showSelectionSummary]);
+
   useEffect(() => {
-    const runCalculationOnActiveSelection = async () => {
-      if (!cursor.multiCursor && !cursor.columnRow) return;
-      let result = await quadraticCore.summarizeSelection(decimal_places, sheets.sheet.cursor.getRustSelection());
-      if (result) {
-        setCount(result.count.toString());
-        setSum(result.sum === null ? undefined : result.sum.toString());
-        setAvg(result.average === null ? undefined : result.average.toString());
-      } else {
-        setCount(undefined);
-        setSum(undefined);
-        setAvg(undefined);
-      }
-    };
+    events.on('cursorPosition', updateSelectionSummary);
+    events.on('changeSheet', updateSelectionSummary);
+    events.on('hashContentChanged', updateSelectionSummary);
 
-    events.on('cursorPosition', runCalculationOnActiveSelection);
     return () => {
-      events.off('cursorPosition', runCalculationOnActiveSelection);
+      events.off('cursorPosition', updateSelectionSummary);
+      events.off('changeSheet', updateSelectionSummary);
+      events.off('hashContentChanged', updateSelectionSummary);
     };
-  }, [cursor.columnRow, cursor.multiCursor]);
+  }, [updateSelectionSummary]);
 
-  const handleOnClick = (valueToCopy: string) => {
+  const handleOnClick = useCallback((valueToCopy: string) => {
     navigator.clipboard.writeText(valueToCopy).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  };
+  }, []);
 
-  const tooltipTitle = copied ? 'Copied!' : 'Copy to clipboard';
+  const tooltipTitle = useMemo(() => (copied ? 'Copied!' : 'Copy to clipboard'), [copied]);
 
-  if (isBigEnoughForActiveSelectionStats && (cursor.multiCursor || cursor.columnRow))
-    return (
-      <>
-        {sum && (
-          <TooltipHint title={tooltipTitle}>
-            <BottomBarItem onClick={() => handleOnClick(sum)}>Sum: {sum}</BottomBarItem>
-          </TooltipHint>
-        )}
-        {avg && (
-          <TooltipHint title={tooltipTitle}>
-            <BottomBarItem onClick={() => handleOnClick(avg)}>Avg: {avg}</BottomBarItem>
-          </TooltipHint>
-        )}
-        {count && (
-          <TooltipHint title={tooltipTitle}>
-            <BottomBarItem onClick={() => handleOnClick(count)}>Count: {count}</BottomBarItem>
-          </TooltipHint>
-        )}
-      </>
-    );
-  else return null;
+  if (!isBigEnoughForActiveSelectionStats) return null;
+  if (!sheets.sheet.cursor.multiCursor && !sheets.sheet.cursor.columnRow) return null;
+
+  return (
+    <>
+      {sum && (
+        <TooltipPopover label={tooltipTitle}>
+          <BottomBarItem
+            onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleOnClick(sum);
+            }}
+            onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+          >
+            Sum: {sum}
+          </BottomBarItem>
+        </TooltipPopover>
+      )}
+
+      {avg && (
+        <TooltipPopover label={tooltipTitle}>
+          <BottomBarItem
+            onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleOnClick(avg);
+            }}
+            onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+          >
+            Avg: {avg}
+          </BottomBarItem>
+        </TooltipPopover>
+      )}
+
+      {count && (
+        <TooltipPopover label={tooltipTitle}>
+          <BottomBarItem
+            onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleOnClick(count);
+            }}
+            onPointerDown={(e: React.PointerEvent<HTMLDivElement>) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+          >
+            Count: {count}
+          </BottomBarItem>
+        </TooltipPopover>
+      )}
+    </>
+  );
 };

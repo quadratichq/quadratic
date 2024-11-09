@@ -6,7 +6,14 @@ import { useRecoilCallback } from 'recoil';
 export const useUpdateCodeEditor = () => {
   const updateCodeEditor = useRecoilCallback(
     ({ set }) =>
-      (sheetId: string, x: number, y: number, codeCell?: JsCodeCell, initialCode?: string) => {
+      (
+        sheetId: string,
+        x: number,
+        y: number,
+        codeCell?: JsCodeCell,
+        initialCode?: string,
+        usePrevEditorContent?: boolean
+      ) => {
         if (!sheetId) return;
 
         if (codeCell) {
@@ -21,7 +28,11 @@ export const useUpdateCodeEditor = () => {
               language: codeCell.language,
             },
             codeString: codeCell.code_string,
-            editorContent: initialCode ? initialCode : codeCell.code_string,
+            editorContent: initialCode
+              ? initialCode
+              : usePrevEditorContent && prev.editorContent
+              ? prev.editorContent
+              : codeCell.code_string,
             evaluationResult: { ...newEvaluationResult, ...codeCell.return_info },
             cellsAccessed: codeCell.cells_accessed,
             consoleOutput: { stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined },

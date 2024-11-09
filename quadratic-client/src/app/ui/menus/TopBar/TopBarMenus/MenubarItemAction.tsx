@@ -1,7 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItem, MenubarShortcut } from '@/shared/shadcn/ui/menubar';
@@ -11,10 +10,12 @@ export const MenubarItemAction = <T extends Action>({
   action,
   actionArgs,
   shortcutOverride,
+  disableFocusGridRef,
 }: {
   action: T;
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
   shortcutOverride?: string;
+  disableFocusGridRef?: React.MutableRefObject<boolean>;
 }) => {
   const isAvailableArgs = useIsAvailableArgs();
   const actionSpec = defaultActionSpec[action];
@@ -32,8 +33,10 @@ export const MenubarItemAction = <T extends Action>({
     <MenubarItem
       onClick={() => {
         mixpanel.track('[FileMenu].selected', { label });
+        if (disableFocusGridRef) {
+          disableFocusGridRef.current = true;
+        }
         run(actionArgs);
-        focusGrid();
       }}
     >
       {Icon && <Icon />} {label}

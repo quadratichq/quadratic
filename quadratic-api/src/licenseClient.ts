@@ -8,6 +8,7 @@ import z from 'zod';
 import dbClient from './dbClient';
 import { LICENSE_API_URI, LICENSE_KEY } from './env-vars';
 import { hash } from './utils/crypto';
+import { ApiError } from './utils/ApiError';
 
 type LicenseResponse = z.infer<typeof LicenseSchema>;
 
@@ -26,6 +27,7 @@ export const licenseClient = {
     } catch (err) {
       if (err instanceof Error) {
         console.error('Failed to get the license info from the license service:', err.message);
+        throw new ApiError(402, 'Failed to get the license info from the license service');
       }
 
       return null;
