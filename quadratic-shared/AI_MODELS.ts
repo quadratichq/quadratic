@@ -35,7 +35,7 @@ export const MODEL_OPTIONS: {
     provider: 'openai',
   },
   'claude-3-5-sonnet-20241022': {
-    displayName: 'Anthropic: Claude 3.5 Sonnet (new)',
+    displayName: 'Anthropic: Claude 3.5 Sonnet',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
@@ -44,7 +44,7 @@ export const MODEL_OPTIONS: {
     provider: 'anthropic',
   },
   'anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    displayName: `Anthropic: Claude 3.5 Sonnet (new)`,
+    displayName: `Anthropic: Claude 3.5 Sonnet`,
     temperature: 0,
     max_tokens: 4096,
     canStream: true,
