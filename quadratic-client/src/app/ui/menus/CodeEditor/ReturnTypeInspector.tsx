@@ -72,7 +72,7 @@ export function ReturnTypeInspector() {
         Returned <ReturnType isError>error</ReturnType> (spill)
       </p>
     );
-    action = <FixSpillError />;
+    action = <FixSpillError codeCell={codeCellRecoil} evaluationResult={evaluationResult ?? {}} />;
   } else if (mode === 'Python') {
     message = show ? (
       <>

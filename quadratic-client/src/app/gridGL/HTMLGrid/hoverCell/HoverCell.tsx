@@ -100,15 +100,16 @@ export function HoverCell() {
           );
         }
       } else if (renderCodeCell) {
+        const sheetId = sheets.sheet.id;
+        const { x, y } = renderCodeCell;
+        const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
         if (renderCodeCell.state === 'SpillError') {
           setOnlyCode(false);
-          setText(<HoverCellSpillError renderCodeCell={renderCodeCell} onClick={hideHoverCell} />);
+          if (codeCell) {
+            setText(<HoverCellSpillError codeCell={codeCell} onClick={hideHoverCell} />);
+          }
         } else {
           const language = getLanguage(renderCodeCell.language);
-          const sheetId = sheets.sheet.id;
-          const { x, y } = renderCodeCell;
-          const codeCell = await quadraticCore.getCodeCell(sheetId, x, y);
-
           if (renderCodeCell.state === 'RunError') {
             setOnlyCode(false);
             if (codeCell) {
@@ -209,7 +210,7 @@ export function HoverCell() {
 }
 
 function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCodeCell; onClick: () => void }) {
-  const cell = getCodeCell(codeCellCore.language);
+  const cell = useMemo(() => getCodeCell(codeCellCore.language), [codeCellCore.language]);
   const language = cell?.label;
   const x = Number(codeCellCore.x);
   const y = Number(codeCellCore.y);
@@ -253,15 +254,34 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
   );
 }
 
-function HoverCellSpillError({ renderCodeCell, onClick }: { renderCodeCell: JsRenderCodeCell; onClick: () => void }) {
-  const spillError = renderCodeCell.spill_error;
+function HoverCellSpillError({ codeCell: codeCellCore, onClick }: { codeCell: JsCodeCell; onClick: () => void }) {
+  const x = Number(codeCellCore.x);
+  const y = Number(codeCellCore.y);
+  const codeCell: CodeCell = useMemo(
+    () => ({
+      sheetId: sheets.current,
+      pos: { x, y },
+      language: codeCellCore.language,
+    }),
+    [codeCellCore.language, x, y]
+  );
 
+  const evaluationResult = useMemo(
+    () => (codeCellCore.evaluation_result ? JSON.parse(codeCellCore.evaluation_result) : {}),
+    [codeCellCore.evaluation_result]
+  );
+
+  const spillError = codeCellCore.spill_error;
   if (!spillError) {
     return null;
   }
 
   return (
-    <HoverCellDisplay title="Spill error" actions={<FixSpillError />} isError>
+    <HoverCellDisplay
+      title="Spill error"
+      actions={<FixSpillError codeCell={codeCell} evaluationResult={evaluationResult} onClick={onClick} />}
+      isError
+    >
       <p>Array output could not expand because it would overwrite existing values.</p>
 
       <p>

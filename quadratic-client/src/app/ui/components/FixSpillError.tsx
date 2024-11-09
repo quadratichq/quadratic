@@ -1,6 +1,8 @@
-import { codeEditorCodeCellAtom, codeEditorEvaluationResultAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
+import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDownIcon, SpillErrorMoveIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -11,14 +13,16 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { useCallback } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 
-export const FixSpillError = () => {
-  const [codeCell, setCodeCell] = useRecoilState(codeEditorCodeCellAtom);
-  const evaluationResult = useRecoilValue(codeEditorEvaluationResultAtom);
+type FixSpillErrorProps = {
+  codeCell: CodeCell;
+  evaluationResult: EvaluationResult;
+  onClick?: () => void;
+};
 
-  // TODO: ayush, can you make it so these buttons work either way, whether it's
-  // in the code cell hover, or in the code editor?
+export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillErrorProps) => {
+  const setCodeCell = useSetRecoilState(codeEditorCodeCellAtom);
 
   const handleModeCodeCellDown = useCallback(
     (sheetEnd: boolean) => {
@@ -41,8 +45,9 @@ export const FixSpillError = () => {
             ensureRectVisible(min, max);
           }
         });
+      onClick?.();
     },
-    [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, setCodeCell]
+    [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeCell]
   );
 
   const handleModeCodeCellRight = useCallback(
@@ -66,8 +71,9 @@ export const FixSpillError = () => {
             ensureRectVisible(min, max);
           }
         });
+      onClick?.();
     },
-    [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, setCodeCell]
+    [codeCell.pos.x, codeCell.pos.y, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeCell]
   );
 
   return (
@@ -77,10 +83,12 @@ export const FixSpillError = () => {
           Fix <ArrowDropDownIcon className="-mr-1" />
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => handleModeCodeCellDown(false)}>
           <SpillErrorMoveIcon className="mr-2" /> Move down to nearest free space
         </DropdownMenuItem>
+
         <DropdownMenuItem onClick={() => handleModeCodeCellRight(false)}>
           <SpillErrorMoveIcon className="mr-2 -rotate-90" />
           Move right to nearest free space
