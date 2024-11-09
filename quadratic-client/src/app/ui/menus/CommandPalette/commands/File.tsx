@@ -75,8 +75,10 @@ const commands: CommandGroup = {
       Component: (props: any) => {
         const uuid = useRecoilValue(editorInteractionStateUuidAtom);
         const user = useRecoilValue(editorInteractionStateUserAtom);
+        const submit = useSubmit();
         const { addGlobalSnackbar } = useGlobalSnackbar();
-        const action = () => deleteFile.run({ uuid, userEmail: user?.email ?? '', addGlobalSnackbar });
+        const action = () =>
+          deleteFile.run({ uuid, userEmail: user?.email ?? '', redirect: true, submit, addGlobalSnackbar });
         return <CommandPaletteListItem {...props} action={action} icon={<DeleteIcon />} />;
       },
     },

@@ -1,4 +1,3 @@
-import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import * as Sentry from '@sentry/react';
@@ -148,10 +147,8 @@ export const apiClient = {
       );
     },
 
-    async delete(uuid: string, userEmail: string) {
+    async delete(uuid: string) {
       mixpanel.track('[Files].deleteFile', { id: uuid });
-      // delete ai chat history for this user+file
-      await aiAnalystOfflineChats.deleteFile(userEmail, uuid);
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
     },
 

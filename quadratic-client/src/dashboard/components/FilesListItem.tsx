@@ -130,7 +130,7 @@ export function FilesListItemUserFile({
 
   const handleDelete = () => {
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-      const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '' });
+      const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
       fetcherDelete.submit(data, fetcherSubmitOpts);
     }
   };

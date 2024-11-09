@@ -1,6 +1,5 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { getActionFileDuplicate } from '@/routes/api.files.$uuid';
-import { apiClient } from '@/shared/api/apiClient';
+import { getActionFileDelete, getActionFileDuplicate } from '@/routes/api.files.$uuid';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { ApiTypes, FilePermission, FilePermissionSchema, TeamPermission } from 'quadratic-shared/typesAndSchemas';
@@ -88,16 +87,20 @@ export const deleteFile = {
   async run({
     uuid,
     userEmail,
+    redirect,
+    submit,
     addGlobalSnackbar,
   }: {
     uuid: string;
     userEmail: string;
+    redirect: boolean;
+    submit: SubmitFunction;
     addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
   }) {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {
-        await apiClient.files.delete(uuid, userEmail);
-        window.location.href = '/';
+        const data = getActionFileDelete({ userEmail, redirect });
+        submit(data, { method: 'POST', action: ROUTES.API.FILE(uuid), encType: 'application/json' });
       } catch (e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
       }

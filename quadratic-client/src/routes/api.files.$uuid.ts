@@ -1,3 +1,4 @@
+import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { ActionFunctionArgs, redirectDocument } from 'react-router-dom';
@@ -31,9 +32,9 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'delete') {
     try {
-      const { userEmail } = json;
-      await apiClient.files.delete(uuid, userEmail);
-      return { ok: true };
+      const { userEmail, redirect } = json;
+      await Promise.all([aiAnalystOfflineChats.deleteFile(userEmail, uuid), apiClient.files.delete(uuid)]);
+      return redirect ? redirectDocument('/') : { ok: true };
     } catch (error) {
       return { ok: false };
     }
@@ -107,9 +108,10 @@ export const getActionFileDuplicate = ({ isPrivate, redirect }: { isPrivate: boo
   };
 };
 
-export const getActionFileDelete = ({ userEmail }: { userEmail: string }) => {
+export const getActionFileDelete = ({ userEmail, redirect }: { userEmail: string; redirect: boolean }) => {
   return {
     action: 'delete' as const,
     userEmail,
+    redirect,
   };
 };

@@ -55,7 +55,11 @@ export const FileMenubarMenu = () => {
         <MenubarSeparator />
 
         {deleteFile.isAvailable(isAvailableArgs) && (
-          <MenubarItem onClick={() => deleteFile.run({ uuid, userEmail: user?.email ?? '', addGlobalSnackbar })}>
+          <MenubarItem
+            onClick={() =>
+              deleteFile.run({ uuid, userEmail: user?.email ?? '', redirect: true, submit, addGlobalSnackbar })
+            }
+          >
             <DeleteIcon />
             Delete
           </MenubarItem>
