@@ -227,9 +227,13 @@ export const DateFormat = (props: DateFormatProps) => {
             <ValidationInput
               ref={ref}
               placeholder="%d, %B %Y"
-              onChange={changeCustom}
+              onInput={changeCustom}
               value={custom ?? ''}
-              onEnter={closeMenu}
+              onEnter={(value) => {
+                changeCustom(value);
+                apply();
+                closeMenu();
+              }}
               onKeyDown={(e) => {
                 // ensures that the menu does not close when the user presses keys like arrow
                 e.stopPropagation();

@@ -16,7 +16,7 @@ interface ValidationInputProps {
   // used to update whenever the input is changed (ie, a character is changes within the input box)
   onInput?: (value: string) => void;
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
-  onEnter?: () => void;
+  onEnter?: (value: string) => void;
 
   footer?: string | JSX.Element;
   height?: string;
@@ -106,7 +106,8 @@ export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref
                 }
 
                 // timeout is needed to ensure the state updates before the onEnter function is called
-                setTimeout(onEnter, 0);
+                const savedValue = e.currentTarget.value;
+                setTimeout(() => onEnter?.(savedValue), 0);
                 e.preventDefault();
                 e.stopPropagation();
               }
