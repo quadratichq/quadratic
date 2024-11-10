@@ -230,6 +230,10 @@ export const DateFormat = (props: DateFormatProps) => {
               onChange={changeCustom}
               value={custom ?? ''}
               onEnter={closeMenu}
+              onKeyDown={(e) => {
+                // ensures that the menu does not close when the user presses keys like arrow
+                e.stopPropagation();
+              }}
             />
             <p className="text-xs text-muted-foreground ">
               Learn custom date and time formatting{' '}

@@ -1,6 +1,6 @@
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
-import { FocusEvent, forwardRef, Ref, useCallback, useEffect, useRef } from 'react';
+import { FocusEvent, forwardRef, KeyboardEvent, Ref, useCallback, useEffect, useRef } from 'react';
 
 interface ValidationInputProps {
   className?: string;
@@ -15,7 +15,7 @@ interface ValidationInputProps {
 
   // used to update whenever the input is changed (ie, a character is changes within the input box)
   onInput?: (value: string) => void;
-
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   onEnter?: () => void;
 
   footer?: string | JSX.Element;
@@ -46,6 +46,7 @@ export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref
     readOnly,
     type,
     clear,
+    onKeyDown,
   } = props;
 
   const parentRef = useRef<HTMLDivElement>(null);
@@ -109,6 +110,7 @@ export const ValidationInput = forwardRef((props: ValidationInputProps, ref: Ref
                 e.preventDefault();
                 e.stopPropagation();
               }
+              onKeyDown?.(e);
             }}
           />
         </div>
