@@ -43,7 +43,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     if (error.status === 403 && !isLoggedIn) {
       return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
     }
-    updateRecentFiles(uuid, '', true);
+    updateRecentFiles(uuid, '', false);
     throw new Response('Failed to load file from server.', { status: error.status });
   }
   if (debugShowMultiplayer || debugShowFileIO)

@@ -11,6 +11,9 @@ export interface RecentFile {
 const MAX_RECENT_FILES = 10;
 export const RECENT_FILES_KEY = 'recent_files';
 
+// Updates the recent files list in localStorage. If loaded is false, then the
+// file is deleted. If onlyIfExists = true, then the file is only added if it
+// already exists in the list.
 export const updateRecentFiles = (uuid: string, name: string, loaded: boolean, onlyIfExists = false) => {
   try {
     if (loaded) {
@@ -31,8 +34,15 @@ export const updateRecentFiles = (uuid: string, name: string, loaded: boolean, o
         RECENT_FILES_KEY,
         JSON.stringify(recentFiles.filter((file: RecentFile) => file.uuid !== uuid))
       );
+      window.dispatchEvent(new Event('local-storage'));
     }
   } catch (e) {
     console.warn('Unable to update recent files', e);
   }
+};
+
+// Clears the recent files list in localStorage
+export const clearRecentFiles = () => {
+  localStorage.removeItem(RECENT_FILES_KEY);
+  window.dispatchEvent(new Event('local-storage'));
 };

@@ -4,7 +4,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
-import { RECENT_FILES_KEY, RecentFile } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
+import { clearRecentFiles, RECENT_FILES_KEY, RecentFile } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
@@ -40,14 +40,14 @@ export const FileMenubarMenu = () => {
 
   const [recentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
   const recentFilesMenuItems = useMemo(() => {
-    if (recentFiles.length === 0) return null;
+    if (recentFiles.length <= 1) return null;
 
     return (
       <>
         <MenubarSeparator />
         <MenubarSub>
           <MenubarSubTrigger>
-            <FileOpenIcon /> Open recent file
+            <FileOpenIcon /> Open recent
           </MenubarSubTrigger>
           <MenubarSubContent>
             {recentFiles
@@ -62,6 +62,8 @@ export const FileMenubarMenu = () => {
                   {file.name}
                 </MenubarItem>
               ))}
+            <MenubarSeparator />
+            <MenubarItem onClick={clearRecentFiles}>Clear recently open</MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
       </>

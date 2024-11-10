@@ -1,3 +1,4 @@
+import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import {
   Action as FileAction,
@@ -26,7 +27,6 @@ import { Link, SubmitOptions, useFetcher, useMatch, useSubmit } from 'react-rout
 import { FilesListExampleFile, FilesListUserFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
-import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 
 export function FilesListItems({
   children,
@@ -134,6 +134,7 @@ export function FilesListItemUserFile({
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
       const data = getActionFileDelete();
       fetcherDelete.submit(data, fetcherSubmitOpts);
+      updateRecentFiles(uuid, '', false);
     }
   };
 

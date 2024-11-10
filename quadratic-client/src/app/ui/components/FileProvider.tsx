@@ -1,5 +1,6 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { apiClient } from '@/shared/api/apiClient';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import mixpanel from 'mixpanel-browser';
@@ -42,8 +43,9 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     (newName) => {
       mixpanel.track('[Files].renameCurrentFile', { newFilename: newName });
       setName(newName);
+      updateRecentFiles(uuid, newName, true);
     },
-    [setName]
+    [setName, uuid]
   );
 
   // Create and save the fn used by the sheetController to save the file
