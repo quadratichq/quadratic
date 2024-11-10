@@ -29,7 +29,7 @@ class _FigureHolder:
                 f"Cannot produce multiple figures from a single cell. "
                 f"First produced on line {self._result_set_from_line}, "
                 f"then on {current_result_set_from_line}",
-                source_line=current_result_set_from_line
+                source_line=current_result_set_from_line,
             )
 
         self._result = figure
@@ -46,17 +46,23 @@ class _FigureHolder:
 
 async def intercept_plotly_html(code) -> _FigureHolder | None:
     import pyodide.code
+
     if "plotly" not in pyodide.code.find_imports(code):
         return None
 
     await micropip.install("plotly")
     import plotly.io
+    from plotly.basedatatypes import BaseFigure
 
     # TODO: It would be nice if we could prevent the user from setting the default renderer
     plotly.io.renderers.default = "browser"
     figure_holder = _FigureHolder()
 
-    plotly.io._base_renderers.open_html_in_browser = _make_open_html_patch(figure_holder.set_result)
+    plotly.io._base_renderers.open_html_in_browser = _make_open_html_patch(
+        figure_holder.set_result
+    )
+
+    BaseFigure.show = _custom_show
 
     return figure_holder
 
@@ -66,3 +72,11 @@ def _make_open_html_patch(figure_saver):
         figure_saver(html)
 
     return open_html_in_browser
+
+
+# Override the default show method for plotly figures
+def _custom_show(self):
+    html = self.to_html(include_plotlyjs="cdn", include_mathjax="cdn").replace(
+        ' src="https://', ' crossorigin="anonymous" src="https://'
+    )
+    return html

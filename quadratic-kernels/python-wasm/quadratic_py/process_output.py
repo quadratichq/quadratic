@@ -52,7 +52,9 @@ def process_output_value(output_value):
         import plotly
 
         if isinstance(output_value, plotly.graph_objs._figure.Figure):
-            output_value = output_value.to_html()
+            output_value = output_value.to_html(
+                include_plotlyjs="cdn", include_mathjax="cdn"
+            ).replace(' src="https://', ' crossorigin="anonymous" src="https://')
             output_type = "Chart"
     except:
         pass
