@@ -62,7 +62,7 @@ async def intercept_plotly_html(code) -> _FigureHolder | None:
         figure_holder.set_result
     )
 
-    BaseFigure.show = _custom_show
+    BaseFigure.show = to_html_with_cdn
 
     return figure_holder
 
@@ -75,7 +75,7 @@ def _make_open_html_patch(figure_saver):
 
 
 # Override the default show method for plotly figures
-def _custom_show(self):
+def to_html_with_cdn(self):
     html = self.to_html(include_plotlyjs="cdn", include_mathjax="cdn").replace(
         ' src="https://', ' crossorigin="anonymous" src="https://'
     )
