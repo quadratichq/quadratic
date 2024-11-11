@@ -42,6 +42,14 @@ export const aiAnalystAtom = atom<AIAnalystState>({
   effects: [
     async ({ getPromise, setSelf, trigger }) => {
       if (trigger === 'get') {
+        const isSheetEmpty = sheets.sheet.bounds.type === 'empty';
+        if (isSheetEmpty) {
+          setSelf({
+            ...defaultAIAnalystState,
+            showAIAnalyst: true,
+          });
+        }
+
         const user = await getPromise(editorInteractionStateUserAtom);
         const uuid = await getPromise(editorInteractionStateUuidAtom);
         if (!!user?.email && uuid) {
@@ -50,19 +58,12 @@ export const aiAnalystAtom = atom<AIAnalystState>({
             const chats = await aiAnalystOfflineChats.loadChats();
             setSelf({
               ...defaultAIAnalystState,
+              showAIAnalyst: isSheetEmpty,
               chats,
             });
           } catch (error) {
             console.error('[AIAnalystOfflineChats]: ', error);
           }
-        }
-
-        const isSheetEmpty = sheets.sheet.bounds.type === 'empty';
-        if (isSheetEmpty) {
-          setSelf({
-            ...defaultAIAnalystState,
-            showAIAnalyst: true,
-          });
         }
       }
     },
