@@ -1,7 +1,6 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { createMessageConnection } from 'vscode-jsonrpc';
 import { BrowserMessageReader, BrowserMessageWriter } from 'vscode-jsonrpc/browser';
-import { LogMessageNotification, RegistrationRequest } from 'vscode-languageserver-protocol';
+import { createMessageConnection, LogMessageNotification, RegistrationRequest } from 'vscode-languageserver-protocol';
 import { LanguageServerClient } from './client';
 
 // avoid worker caching
@@ -54,7 +53,7 @@ const pyright = (uri: string, enableLogging: boolean = false): LanguageServerCli
     }
   });
 
-  // start listenen for messages
+  // start listener for messages
   connection.listen();
 
   const client = new LanguageServerClient(connection, '');

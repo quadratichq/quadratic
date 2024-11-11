@@ -71,7 +71,6 @@
     "@smithy/protocol-http": "^3.0.8",
     "@tsconfig/node20": "^1.0.1",
     "@types/auth0": "^3.3.4",
-    "@types/aws-sdk": "^2.7.0",
     "@types/cors": "^2.8.12",
     "@types/multer": "^1.4.8",
     "@types/multer-s3": "^3.0.1",
@@ -82,7 +81,7 @@
     "prisma": "^5.5.2",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.6.3"
   },
   "engines": {
     "node": "18.x"
