@@ -1,6 +1,7 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Chat, ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
@@ -22,7 +23,7 @@ export interface AIAnalystState {
 }
 
 export const defaultAIAnalystState: AIAnalystState = {
-  showAIAnalyst: true,
+  showAIAnalyst: false,
   showChatHistory: false,
   abortController: undefined,
   loading: false,
@@ -54,6 +55,14 @@ export const aiAnalystAtom = atom<AIAnalystState>({
           } catch (error) {
             console.error('[AIAnalystOfflineChats]: ', error);
           }
+        }
+
+        const isSheetEmpty = sheets.sheet.bounds.type === 'empty';
+        if (isSheetEmpty) {
+          setSelf({
+            ...defaultAIAnalystState,
+            showAIAnalyst: true,
+          });
         }
       }
     },
