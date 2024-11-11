@@ -1,3 +1,5 @@
+use std::cmp::Reverse;
+
 use crate::{
     grid::{bounds::BoundsRect, Column, GridBounds},
     selection::Selection,
@@ -480,40 +482,22 @@ impl Sheet {
                     continue;
                 }
 
-                let header_row = self
-                    .find_next_row(pos.y - 1, pos.x, true, false)
-                    .unwrap_or(pos.y - 1)
-                    + 1;
-
-                let footer_row = self
+                let last_row = self
                     .find_next_row(pos.y + 1, pos.x, false, false)
                     .unwrap_or(pos.y + 1)
                     - 1;
 
-                let rect_start_col = [pos.y, header_row, footer_row]
-                    .iter()
-                    .map(|&y| {
-                        self.find_next_column(pos.x - 1, y, true, false)
-                            .map_or(pos.x, |x| x + 1)
-                    })
-                    .max()
-                    .unwrap();
+                let last_col = self
+                    .find_next_column(pos.x + 1, pos.y, false, false)
+                    .unwrap_or(pos.x + 1)
+                    - 1;
 
-                let rect_end_col = [pos.y, header_row, footer_row]
-                    .iter()
-                    .map(|&y| {
-                        self.find_next_column(pos.x + 1, y, false, false)
-                            .map_or(pos.x, |x| x - 1)
-                    })
-                    .min()
-                    .unwrap();
-
-                let tabular_data_rect =
-                    Rect::new(rect_start_col, header_row, rect_end_col, footer_row);
+                let tabular_data_rect = Rect::new(pos.x, pos.y, last_col, last_row);
                 rects.push(tabular_data_rect);
             }
         }
-
+        rects.sort_by_key(|rect| Reverse(rect.len()));
+        rects.truncate(10);
         rects
     }
 
