@@ -48,7 +48,7 @@ export const CodeEditorEffects = () => {
     }) => {
       const { sheetId, x, y, codeCell: codeCellCore } = options;
       if (showCodeEditor && sheetId === codeCell.sheetId && x === codeCell.pos.x && y === codeCell.pos.y) {
-        updateCodeEditor(sheetId, x, y, codeCellCore, undefined);
+        updateCodeEditor(sheetId, x, y, codeCellCore, undefined, true);
       }
     };
 

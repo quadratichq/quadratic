@@ -1,6 +1,16 @@
 import * as Sentry from '@sentry/node';
 import { ManagementClient } from 'auth0';
-import { AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_DOMAIN } from '../env-vars';
+import { Algorithm } from 'jsonwebtoken';
+import jwksRsa, { GetVerificationKey } from 'jwks-rsa';
+import {
+  AUTH0_AUDIENCE,
+  AUTH0_CLIENT_ID,
+  AUTH0_CLIENT_SECRET,
+  AUTH0_DOMAIN,
+  AUTH0_ISSUER,
+  AUTH0_JWKS_URI,
+} from '../env-vars';
+import { ByEmailUser } from './auth';
 
 // Guide to Setting up on Auth0
 // 1. Create an Auth0 Machine to Machine Application
@@ -11,12 +21,20 @@ import { AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_DOMAIN } from '../env-vars'
 // We need to use account linking to ensure only one account per user
 // https://auth0.com/docs/customize/extensions/account-link-extension
 
-const auth0 = new ManagementClient({
-  domain: AUTH0_DOMAIN,
-  clientId: AUTH0_CLIENT_ID,
-  clientSecret: AUTH0_CLIENT_SECRET,
-  scope: 'read:users',
-});
+let auth0: ManagementClient | undefined;
+
+const getAuth0 = () => {
+  if (!auth0) {
+    auth0 = auth0 = new ManagementClient({
+      domain: AUTH0_DOMAIN,
+      clientId: AUTH0_CLIENT_ID,
+      clientSecret: AUTH0_CLIENT_SECRET,
+      scope: 'read:users',
+    });
+  }
+
+  return auth0;
+};
 
 /**
  * Given a list of users from our system, we lookup their info in Auth0.
@@ -45,7 +63,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
 
   // Search for users on Auth0
   const auth0Ids = users.map(({ auth0Id }) => auth0Id);
-  const auth0Users = await auth0.getUsers({
+  const auth0Users = await getAuth0().getUsers({
     q: `user_id:(${auth0Ids.join(' OR ')})`,
   });
 
@@ -92,7 +110,19 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
   return usersById;
 };
 
-export const lookupUsersFromAuth0ByEmail = async (email: string) => {
-  const auth0Users = await auth0.getUsersByEmail(email);
+export const lookupUsersFromAuth0ByEmail = async (email: string): Promise<ByEmailUser[]> => {
+  const auth0Users = await getAuth0().getUsersByEmail(email);
   return auth0Users;
+};
+
+export const jwtConfigAuth0 = {
+  secret: jwksRsa.expressJwtSecret({
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5,
+    jwksUri: AUTH0_JWKS_URI,
+  }) as GetVerificationKey,
+  audience: AUTH0_AUDIENCE,
+  issuer: AUTH0_ISSUER,
+  algorithms: ['RS256'] as Algorithm[],
 };

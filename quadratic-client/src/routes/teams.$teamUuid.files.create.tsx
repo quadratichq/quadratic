@@ -1,4 +1,4 @@
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';

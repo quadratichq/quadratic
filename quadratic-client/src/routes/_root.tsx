@@ -1,4 +1,4 @@
-import { authClient } from '@/auth';
+import { User, authClient } from '@/auth/auth';
 import { Empty } from '@/dashboard/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { MuiTheme } from '@/shared/components/MuiTheme';
@@ -6,7 +6,6 @@ import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
 import { ThemeAccentColorEffects } from '@/shared/hooks/useThemeAccentColor';
 import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMode';
 import { initializeAnalytics } from '@/shared/utils/analytics';
-import { User } from '@auth0/auth0-spa-js';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { LoaderFunctionArgs, Outlet, useRouteError, useRouteLoaderData } from 'react-router-dom';

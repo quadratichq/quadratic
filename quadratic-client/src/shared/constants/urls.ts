@@ -18,3 +18,4 @@ export const CONTACT_URL = 'https://quadratichq.com/contact';
 export const WEBSITE_CONNECTIONS = 'https://www.quadratichq.com/connections';
 export const WEBSITE_EXAMPLES = 'https://www.quadratichq.com/examples';
 export const WEBSITE_CHANGELOG = 'https://www.quadratichq.com/changelog';
+export const SCHEDULE_MEETING = 'https://calendly.com/d/ckz9-g8t-stb/quadratic-demo';

@@ -67,7 +67,7 @@ class PixiAppSettings {
   }
 
   destroy() {
-    window.removeEventListener('gridSettings', this.getSettings);
+    events.off('gridSettings', this.getSettings);
   }
 
   private getSettings = (): void => {

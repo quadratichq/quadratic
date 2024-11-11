@@ -9,7 +9,7 @@ import { InsertMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/InsertMenub
 import { ViewMenubarMenu } from '@/app/ui/menus/TopBar/TopBarMenus/ViewMenubarMenu';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Menubar } from '@/shared/shadcn/ui/menubar';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import './styles.css';
 
@@ -19,11 +19,14 @@ export const TopBarMenus = () => {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEdit = useMemo(() => permissions.includes('FILE_EDIT'), [permissions]);
 
+  // This ref is used to prevent the focus grid when menu closes
+  const disableFocusGridRef = useRef(false);
+
   return (
     <div className="flex items-center">
-      <Menubar className="p-0 pr-1">
+      <Menubar className="p-0 pr-1" disableFocusGridRef={disableFocusGridRef}>
         <FileMenubarMenu />
-        <EditMenubarMenu />
+        <EditMenubarMenu disableFocusGridRef={disableFocusGridRef} />
         <ViewMenubarMenu />
         {canEdit && <InsertMenubarMenu />}
         {canEdit && <FormatMenubarMenu />}

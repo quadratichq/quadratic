@@ -29,6 +29,8 @@ import { ReactNode, useState } from 'react';
 import { NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
+const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
+
 /**
  * Dashboard Navbar
  */
@@ -112,7 +114,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           Resources
         </Type>
         <div className="grid gap-0.5">
-          {canEditTeam && (
+          {canEditTeam && SHOW_EXAMPLES && (
             <SidebarNavLink to={ROUTES.EXAMPLES}>
               <ExamplesIcon className={classNameIcons} />
               Examples

@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { fetchFromApi } from './fetchFromApi';
+import { ApiError, fetchFromApi } from './fetchFromApi';
 
 // TODO(ddimaria): make this dynamic
 const CURRENT_FILE_VERSION = '1.6';
@@ -15,7 +15,17 @@ export const apiClient = {
       return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
     },
     async get(uuid: string) {
-      return fetchFromApi(`/v0/teams/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
+      const response = await fetchFromApi(
+        `/v0/teams/${uuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid.GET.response']
+      );
+
+      if (response.license.status === 'revoked') {
+        throw new ApiError('License Revoked', 402, undefined);
+      }
+
+      return response;
     },
     async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.PATCH.request']) {
       return fetchFromApi(
@@ -92,7 +102,17 @@ export const apiClient = {
       return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
     },
     async get(uuid: string) {
-      return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
+      let response = await fetchFromApi(
+        `/v0/files/${uuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/files/:uuid.GET.response']
+      );
+
+      if (response.license.status === 'revoked') {
+        throw new ApiError('License Revoked', 402, undefined);
+      }
+
+      return response;
     },
     async create({
       file,

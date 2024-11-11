@@ -1,13 +1,13 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import { JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { convertColorStringToTint } from '../../helpers/convertColor';
-import { intersects } from '../helpers/intersects';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsSheet } from './CellsSheet';
 
 interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
@@ -38,24 +38,8 @@ export class CellsFills extends Container {
       new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
     );
 
-    events.on('sheetFills', (sheetId, fills) => {
-      if (sheetId === this.cellsSheet.sheetId) {
-        this.cells = fills;
-        this.drawCells();
-      }
-    });
-    events.on('sheetMetaFills', (sheetId, fills) => {
-      if (sheetId === this.cellsSheet.sheetId) {
-        if (this.isMetaEmpty(fills)) {
-          this.metaFill = undefined;
-          this.meta.clear();
-          pixiApp.setViewportDirty();
-        } else {
-          this.metaFill = fills;
-          this.setDirty();
-        }
-      }
-    });
+    events.on('sheetFills', this.handleSheetFills);
+    events.on('sheetMetaFills', this.handleSheetMetaFills);
     events.on('sheetOffsets', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
@@ -66,8 +50,8 @@ export class CellsFills extends Container {
   }
 
   destroy() {
-    events.off('sheetFills', this.drawCells);
-    events.off('sheetMetaFills', this.drawMeta);
+    events.off('sheetFills', this.handleSheetFills);
+    events.off('sheetMetaFills', this.handleSheetMetaFills);
     events.off('sheetOffsets', this.drawSheetCells);
     events.off('cursorPosition', this.setDirty);
     events.off('resizeHeadingColumn', this.drawCells);
@@ -77,6 +61,26 @@ export class CellsFills extends Container {
     events.off('viewportChanged', this.setDirty);
     super.destroy();
   }
+
+  private handleSheetFills = (sheetId: string, fills: JsRenderFill[]) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      this.cells = fills;
+      this.drawCells();
+    }
+  };
+
+  private handleSheetMetaFills = (sheetId: string, fills: JsSheetFill) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      if (this.isMetaEmpty(fills)) {
+        this.metaFill = undefined;
+        this.meta.clear();
+        pixiApp.setViewportDirty();
+      } else {
+        this.metaFill = fills;
+        this.setDirty();
+      }
+    }
+  };
 
   setDirty = () => {
     this.dirty = true;

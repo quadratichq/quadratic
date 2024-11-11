@@ -133,6 +133,7 @@ interface EventTypes {
 
   // use this only if you need to immediately get the viewport's value (ie, from React)
   viewportChangedReady: () => void;
+  hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

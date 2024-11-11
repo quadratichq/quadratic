@@ -15,11 +15,11 @@ use sqlx::{
     Column, ConnectOptions, MySqlConnection as SqlxMySqlConnection, Row, TypeInfo,
 };
 
-use crate::arrow::arrow_type::ArrowType;
 use crate::convert_mysql_type;
-use crate::error::{Result, SharedError, Sql};
+use crate::error::{Result, SharedError};
+use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
-use crate::sql::Connection;
+use crate::sql::{ArrowType, Connection};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MySqlConnection {
@@ -51,7 +51,7 @@ impl MySqlConnection {
         let rows = sqlx::query(sql)
             .fetch_all(pool)
             .await
-            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+            .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?;
 
         Ok(rows)
     }
@@ -90,14 +90,15 @@ impl Connection for MySqlConnection {
 
         if let Some(ref port) = self.port {
             options = options.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(Sql::Connect("Could not parse port into a number".into()))
+                SharedError::Sql(SqlError::Connect(
+                    "Could not parse port into a number".into(),
+                ))
             })?);
         }
 
-        let pool = options
-            .connect()
-            .await
-            .map_err(|e| SharedError::Sql(Sql::Connect(format!("{:?}: {e}", self.database))))?;
+        let pool = options.connect().await.map_err(|e| {
+            SharedError::Sql(SqlError::Connect(format!("{:?}: {e}", self.database)))
+        })?;
 
         Ok(pool)
     }
@@ -116,7 +117,7 @@ impl Connection for MySqlConnection {
             let mut stream = sqlx::query(sql).fetch(pool);
 
             while let Some(row) = stream.next().await {
-                let row = row.map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+                let row = row.map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?;
                 bytes += row.len() as u64;
 
                 if bytes > max_bytes {

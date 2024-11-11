@@ -62,6 +62,14 @@ export const ValidationEntry = (props: Props) => {
     setShowValidation(validation.id);
   }, [setShowValidation, validation.id]);
 
+  const handleDeleteValidation = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      deleteValidation(validation.id);
+    },
+    [deleteValidation, validation.id]
+  );
+
   const ref = useCallback(
     (node: HTMLButtonElement) => {
       if (active) {
@@ -88,10 +96,7 @@ export const ValidationEntry = (props: Props) => {
             className="invisible px-1 hover:bg-white group-hover:visible"
             asChild
             variant="outline"
-            onClick={(e) => {
-              deleteValidation(validation.id);
-              e.stopPropagation();
-            }}
+            onClick={handleDeleteValidation}
           >
             <span>
               <DeleteIcon className="text-gray-400" />
