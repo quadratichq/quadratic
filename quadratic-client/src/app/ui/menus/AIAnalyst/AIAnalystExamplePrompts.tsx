@@ -1,8 +1,6 @@
-import { defaultAIAnalystContext } from '@/app/atoms/aiAnalystAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { CodeIcon, InsertChartIcon, TableIcon } from '@/shared/components/Icons';
-import { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { useState } from 'react';
 
 const examples = [
   {
@@ -26,7 +24,6 @@ const examples = [
 ];
 
 export function AIAnalystExamplePrompts() {
-  const [context] = useState<Context>(defaultAIAnalystContext);
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   return (
@@ -35,9 +32,15 @@ export function AIAnalystExamplePrompts() {
         <button
           key={title}
           className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
-          onClick={() => submitPrompt({ userPrompt: prompt, context })}
+          onClick={() =>
+            submitPrompt({
+              userPrompt: prompt,
+              context: { sheets: [], currentSheet: sheets.sheet.name, selection: undefined },
+            })
+          }
         >
           {icon}
+
           <div className="flex flex-col text-left text-sm">
             <h3 className="font-semibold">{title}</h3>
             <p className="text-xs text-muted-foreground">{description}</p>

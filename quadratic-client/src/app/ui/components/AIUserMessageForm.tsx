@@ -28,7 +28,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
   ctx?: {
     context: Context;
     setContext: React.Dispatch<React.SetStateAction<Context>>;
-    initialContext: Context;
+    initialContext?: Context;
   };
 };
 
@@ -98,18 +98,8 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
           </Button>
         </TooltipPopover>
       )}
-      <div className="flex flex-row items-start justify-between">
-        {ctx && (
-          <AIAnalystContext
-            context={ctx.context}
-            setContext={ctx.setContext}
-            initialContext={ctx.initialContext}
-            editing={editing}
-            disabled={!editing}
-            textAreaRef={textareaRef}
-          />
-        )}
-      </div>
+
+      {ctx && <AIAnalystContext {...ctx} editing={editing} disabled={!editing} textAreaRef={textareaRef} />}
 
       {editing ? (
         <Textarea
@@ -186,6 +176,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
               </ConditionalWrapper>
             </div>
           </div>
+
           {loading && (
             <Button
               size="sm"

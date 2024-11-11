@@ -125,7 +125,7 @@ export const AIAnalystContext = ({
         }
         secondary="Cursor"
         onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
-        disabled={disabled}
+        disabled={disabled || !context.selection}
       />
 
       {!!context.currentSheet && (
