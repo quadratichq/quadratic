@@ -1,6 +1,6 @@
 import micropip
 
-from quadratic_py import code_trace
+from quadratic_py import code_trace, process_output
 
 
 class FigureDisplayError(Exception):
@@ -62,7 +62,7 @@ async def intercept_plotly_html(code) -> _FigureHolder | None:
         figure_holder.set_result
     )
 
-    BaseFigure.show = to_html_with_cdn
+    BaseFigure.show = process_output.to_html_with_cdn
 
     return figure_holder
 
@@ -72,11 +72,3 @@ def _make_open_html_patch(figure_saver):
         figure_saver(html)
 
     return open_html_in_browser
-
-
-# Override the default show method for plotly figures
-def to_html_with_cdn(self):
-    html = self.to_html(include_plotlyjs="cdn", include_mathjax="cdn").replace(
-        ' src="https://', ' crossorigin="anonymous" src="https://'
-    )
-    return html

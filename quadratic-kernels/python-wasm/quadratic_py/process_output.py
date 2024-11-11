@@ -1,7 +1,6 @@
 import pandas as pd
 
 from .utils import to_quadratic_type
-from quadratic_py import plotly_patch
 
 
 def isListEmpty(inList):
@@ -53,7 +52,7 @@ def process_output_value(output_value):
         import plotly
 
         if isinstance(output_value, plotly.graph_objs._figure.Figure):
-            output_value = plotly_patch.to_html_with_cdn(output_value)
+            output_value = to_html_with_cdn(output_value)
             output_type = "Chart"
     except:
         pass
@@ -103,3 +102,11 @@ def process_output_value(output_value):
         "output_type": output_type,
         "output_size": output_size,
     }
+
+
+# Override the default show method for plotly figures
+def to_html_with_cdn(self):
+    html = self.to_html(include_plotlyjs="cdn", include_mathjax="cdn").replace(
+        ' src="https://', ' crossorigin="anonymous" src="https://'
+    )
+    return html
