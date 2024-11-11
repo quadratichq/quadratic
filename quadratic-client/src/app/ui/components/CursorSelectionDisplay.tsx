@@ -1,23 +1,19 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { useEffect, useState } from 'react';
 
 export const CursorSelectionDisplay = () => {
-  const [cursorPositionString, setCursorPositionString] = useState('');
-  const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
+  const [cursorString, setCursorString] = useState('');
 
   useEffect(() => {
     const updateCursor = () => {
-      const cursor = sheets.sheet.cursor;
-      setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
-      if (cursor.multiCursor && cursor.multiCursor.length === 1) {
-        const multiCursor = cursor.multiCursor[0];
-        setMultiCursorPositionString(
-          `(${multiCursor.left}, ${multiCursor.top}), (${multiCursor.right - 1}, ${multiCursor.bottom - 1})`
-        );
-      } else {
-        setMultiCursorPositionString('');
-      }
+      const a1String = selectionToA1String(
+        sheets.getRustSelectionStringified(),
+        sheets.sheet.id,
+        sheets.getRustSheetMap()
+      );
+      setCursorString(a1String);
     };
     updateCursor();
 
@@ -29,7 +25,5 @@ export const CursorSelectionDisplay = () => {
     };
   }, []);
 
-  return (
-    <span className="truncate">{multiCursorPositionString ? multiCursorPositionString : cursorPositionString}</span>
-  );
+  return <span className="truncate">{cursorString}</span>;
 };
