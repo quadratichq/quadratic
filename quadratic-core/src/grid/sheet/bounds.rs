@@ -465,7 +465,7 @@ impl Sheet {
         }
     }
 
-    pub fn find_tabular_data_rects(&self, rect: Rect) -> Vec<Rect> {
+    pub fn find_tabular_data_rects(&self, rect: Rect, max_rects: Option<usize>) -> Vec<Rect> {
         let mut rects = Vec::new();
 
         for y in rect.y_range() {
@@ -496,8 +496,10 @@ impl Sheet {
                 rects.push(tabular_data_rect);
             }
         }
-        rects.sort_by_key(|rect| Reverse(rect.len()));
-        rects.truncate(10);
+        if let Some(max_rects) = max_rects {
+            rects.sort_by_key(|rect| Reverse(rect.len()));
+            rects.truncate(max_rects);
+        }
         rects
     }
 
@@ -1265,7 +1267,7 @@ mod test {
             ),
         );
 
-        let tabular_data_rects = sheet.find_tabular_data_rects(Rect::new(1, 1, 10000, 10000));
+        let tabular_data_rects = sheet.find_tabular_data_rects(Rect::new(1, 1, 10000, 10000), None);
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![

@@ -1,5 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetRect } from '@/app/quadratic-core-types';
+import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -25,7 +26,7 @@ export function useOtherSheetsContextMessages() {
       }, []);
       if (sheetsRects.length === 0) return [];
 
-      const sheetsRectContext = await quadraticCore.getAIContextRectsInSheetRects(sheetsRects);
+      const sheetsRectContext = await quadraticCore.getAIContextRectsInSheetRects(sheetsRects, maxRects);
       if (!sheetsRectContext || sheetsRectContext.length === 0 || sheetsRectContext[0].length === 0) return [];
 
       return [

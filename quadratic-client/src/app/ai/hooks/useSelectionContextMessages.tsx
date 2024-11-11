@@ -1,4 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -7,13 +8,16 @@ export function useSelectionContextMessages() {
   const getSelectionContext = useCallback(
     async ({ selectionSheetRect }: { selectionSheetRect: Context['selection'] }): Promise<ChatMessage[]> => {
       const selectionContext = selectionSheetRect
-        ? await quadraticCore.getAIContextRectsInSheetRects([
-            {
-              sheet_id: selectionSheetRect.sheet_id,
-              min: { x: BigInt(selectionSheetRect.min.x), y: BigInt(selectionSheetRect.min.y) },
-              max: { x: BigInt(selectionSheetRect.max.x), y: BigInt(selectionSheetRect.max.y) },
-            },
-          ])
+        ? await quadraticCore.getAIContextRectsInSheetRects(
+            [
+              {
+                sheet_id: selectionSheetRect.sheet_id,
+                min: { x: BigInt(selectionSheetRect.min.x), y: BigInt(selectionSheetRect.min.y) },
+                max: { x: BigInt(selectionSheetRect.max.x), y: BigInt(selectionSheetRect.max.y) },
+              },
+            ],
+            maxRects
+          )
         : undefined;
       const { cursorPosition } = sheets.sheet.cursor;
       return [

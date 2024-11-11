@@ -272,9 +272,13 @@ impl Sheet {
     }
 
     /// Returns tabular data rects of JsCellValuePos in a sheet rect
-    pub fn js_ai_context_rects_in_sheet_rect(&self, rect: Rect) -> Vec<JsCellValuePosAIContext> {
+    pub fn js_ai_context_rects_in_sheet_rect(
+        &self,
+        rect: Rect,
+        max_rects: Option<usize>,
+    ) -> Vec<JsCellValuePosAIContext> {
         let mut ai_context_rects = Vec::new();
-        let tabular_data_rects = self.find_tabular_data_rects(rect);
+        let tabular_data_rects = self.find_tabular_data_rects(rect, max_rects);
         for rect in tabular_data_rects {
             let js_cell_value_pos_ai_context = JsCellValuePosAIContext {
                 sheet_name: self.name.clone(),
@@ -1359,10 +1363,13 @@ mod test {
             ),
         );
 
-        let js_ai_context_rects_in_sheet_rect = sheet.js_ai_context_rects_in_sheet_rect(Rect {
-            min: Pos { x: 1, y: 1 },
-            max: Pos { x: 10000, y: 10000 },
-        });
+        let js_ai_context_rects_in_sheet_rect = sheet.js_ai_context_rects_in_sheet_rect(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10000, y: 10000 },
+            },
+            None,
+        );
 
         let max_rows = 3;
 

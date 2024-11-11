@@ -1,4 +1,4 @@
-import { defaultAIAnalystContext } from '@/app/atoms/aiAnalystAtom';
+import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import 'fake-indexeddb/auto';
 import { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';

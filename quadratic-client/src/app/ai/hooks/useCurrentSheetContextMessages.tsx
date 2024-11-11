@@ -1,5 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetRect } from '@/app/quadratic-core-types';
+import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -18,7 +19,9 @@ export function useCurrentSheetContextMessages() {
               min: sheetBounds.min,
               max: sheetBounds.max,
             };
-      const sheetRectContext = sheetRect ? await quadraticCore.getAIContextRectsInSheetRects([sheetRect]) : undefined;
+      const sheetRectContext = sheetRect
+        ? await quadraticCore.getAIContextRectsInSheetRects([sheetRect], maxRects)
+        : undefined;
       return [
         {
           role: 'user',

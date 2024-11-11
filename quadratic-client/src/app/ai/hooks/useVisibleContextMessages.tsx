@@ -1,4 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -9,7 +10,7 @@ export function useVisibleContextMessages() {
     const visibleSheetRect = sheets.getVisibleSheetRect();
     const [visibleRectContext, erroredCodeCells] = visibleSheetRect
       ? await Promise.all([
-          quadraticCore.getAIContextRectsInSheetRects([visibleSheetRect]),
+          quadraticCore.getAIContextRectsInSheetRects([visibleSheetRect], maxRects),
           quadraticCore.getErroredCodeCellsInSheetRects([visibleSheetRect]),
         ])
       : [undefined, undefined];

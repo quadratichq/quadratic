@@ -608,7 +608,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetAIContextRectsInSheetRects',
           id: e.data.id,
-          value: core.getAIContextRectsInSheetRects(e.data.sheetRects),
+          value: core.getAIContextRectsInSheetRects(e.data.sheetRects, e.data.maxRects),
         });
         return;
 

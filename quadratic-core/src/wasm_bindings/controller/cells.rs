@@ -154,13 +154,15 @@ impl GridController {
     pub fn js_ai_context_rects_in_sheet_rects(
         &self,
         sheet_rects: String,
+        max_rects: Option<usize>,
     ) -> Result<String, JsValue> {
         let sheet_rects: Vec<SheetRect> = serde_json::from_str::<Vec<SheetRect>>(&sheet_rects)
             .map_err(|_| JsValue::from_str("Invalid sheet rects"))?;
         let mut all_ai_context_rects = Vec::new();
         for sheet_rect in sheet_rects {
             if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-                let ai_context_rects = sheet.js_ai_context_rects_in_sheet_rect(sheet_rect.into());
+                let ai_context_rects =
+                    sheet.js_ai_context_rects_in_sheet_rect(sheet_rect.into(), max_rects);
                 all_ai_context_rects.push(ai_context_rects);
             }
         }

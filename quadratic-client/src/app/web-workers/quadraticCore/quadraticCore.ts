@@ -371,13 +371,16 @@ class QuadraticCore {
     });
   }
 
-  getAIContextRectsInSheetRects(sheetRects: SheetRect[]): Promise<JsCellValuePosAIContext[][] | undefined> {
+  getAIContextRectsInSheetRects(
+    sheetRects: SheetRect[],
+    maxRects?: number
+  ): Promise<JsCellValuePosAIContext[][] | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { value: JsCellValuePosAIContext[][] | undefined }) => {
         resolve(message.value);
       };
-      this.send({ type: 'clientCoreGetAIContextRectsInSheetRects', sheetRects, id });
+      this.send({ type: 'clientCoreGetAIContextRectsInSheetRects', sheetRects, maxRects, id });
     });
   }
 

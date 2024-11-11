@@ -1055,6 +1055,7 @@ export interface ClientCoreGetAIContextRectsInSheetRects {
   type: 'clientCoreGetAIContextRectsInSheetRects';
   id: number;
   sheetRects: SheetRect[];
+  maxRects: number | undefined;
 }
 
 export interface CoreClientGetAIContextRectsInSheetRects {

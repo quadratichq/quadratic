@@ -1166,10 +1166,11 @@ class Core {
     }
   }
 
-  getAIContextRectsInSheetRects(sheetRects: SheetRect[]): JsCellValuePosAIContext[][] | undefined {
+  getAIContextRectsInSheetRects(sheetRects: SheetRect[], maxRects?: number): JsCellValuePosAIContext[][] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const aiContextRects = this.gridController.getAIContextRectsInSheetRects(
-      JSON.stringify(sheetRects, bigIntReplacer)
+      JSON.stringify(sheetRects, bigIntReplacer),
+      maxRects
     );
     if (aiContextRects) {
       return JSON.parse(aiContextRects);
