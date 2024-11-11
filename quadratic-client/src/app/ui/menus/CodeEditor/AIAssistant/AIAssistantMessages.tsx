@@ -32,7 +32,7 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
   const shouldAutoScroll = useRef(true);
   const handleScrollEnd = useCallback((e: Event) => {
     const div = e.target as HTMLDivElement;
-    const isScrolledToBottom = div.scrollHeight - div.scrollTop === div.clientHeight;
+    const isScrolledToBottom = div.scrollHeight - div.scrollTop <= div.clientHeight;
     shouldAutoScroll.current = isScrolledToBottom;
   }, []);
 
