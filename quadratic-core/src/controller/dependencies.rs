@@ -21,6 +21,8 @@ impl GridController {
             });
         });
 
+        dbgjs!(format!("dependent_cells: {:?}", dependent_cells));
+
         if dependent_cells.is_empty() {
             None
         } else {

@@ -180,8 +180,8 @@ impl Sheet {
 
             // allow copying of code_run values (unless CellValue::Code is also in the clipboard)
             self.iter_code_output_in_rect(bounds)
-                .filter(|(_, code_cell)| !code_cell.spill_error)
-                .for_each(|(output_rect, code_cell)| {
+                .filter(|(_, data_table)| !data_table.spill_error)
+                .for_each(|(output_rect, data_table)| {
                     // only change the cells if the CellValue::Code is not in the selection box
                     let code_pos = Pos {
                         x: output_rect.min.x,
@@ -214,17 +214,19 @@ impl Sheet {
                     // add the code_run output to clipboard.values
                     for y in y_start..=y_end {
                         for x in x_start..=x_end {
-                            if let Some(value) = code_cell
+                            if let Some(value) = data_table
                                 .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
                             {
                                 let pos = Pos {
                                     x: x - bounds.min.x,
                                     y: y - bounds.min.y,
                                 };
+
                                 if selection.contains_pos(Pos { x, y }) {
                                     if include_in_cells {
                                         cells.set(pos.x as u32, pos.y as u32, value.clone());
                                     }
+
                                     values.set(pos.x as u32, pos.y as u32, value);
                                 }
                             }
@@ -252,10 +254,10 @@ impl Sheet {
                 clipboard_origin.column = sheet_bounds.map(|b| b.min.x);
             }
         }
+
         let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
         let borders = self.borders.to_clipboard(selection);
-
         let clipboard = Clipboard {
             cells,
             formats,

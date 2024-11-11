@@ -310,10 +310,10 @@ impl GridController {
 
             let name = match code.language {
                 CodeCellLanguage::Connection { kind, .. } => match kind {
-                    ConnectionKind::Postgres => "Postgres 1",
-                    ConnectionKind::Mysql => "MySQL 1",
-                    ConnectionKind::Mssql => "MSSQL 1",
-                    ConnectionKind::Snowflake => "Snowflake 1",
+                    ConnectionKind::Postgres => "Postgres1",
+                    ConnectionKind::Mysql => "MySQL1",
+                    ConnectionKind::Mssql => "MSSQL1",
+                    ConnectionKind::Snowflake => "Snowflake1",
                 },
                 // this should not happen
                 _ => "Connection 1",

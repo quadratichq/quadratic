@@ -20,8 +20,10 @@ impl GridController {
             // approach.
             let mut operations = VecDeque::new();
             let selection = Selection::rect(source.into(), source.sheet_id);
+
             if let Ok((cut_ops, _, html)) = self.cut_to_clipboard_operations(&selection) {
                 operations.extend(cut_ops);
+
                 if let Ok(paste_ops) = self.paste_html_operations(
                     &Selection::sheet_rect(dest.into()),
                     html,
@@ -29,6 +31,7 @@ impl GridController {
                 ) {
                     operations.extend(paste_ops);
                 }
+
                 operations.extend(transaction.operations.drain(..));
                 transaction.operations = operations;
             }

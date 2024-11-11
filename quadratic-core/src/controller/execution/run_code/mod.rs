@@ -281,10 +281,10 @@ impl GridController {
             },
         };
         let table_name = match code_cell_value.language {
-            CodeCellLanguage::Formula => "Formula 1",
-            CodeCellLanguage::Javascript => "JavaScript 1",
-            CodeCellLanguage::Python => "Python 1",
-            _ => "Table 1",
+            CodeCellLanguage::Formula => "Formula1",
+            CodeCellLanguage::Javascript => "JavaScript1",
+            CodeCellLanguage::Python => "Python1",
+            _ => "Table1",
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
@@ -310,10 +310,10 @@ impl GridController {
         language: CodeCellLanguage,
     ) -> DataTable {
         let table_name = match language {
-            CodeCellLanguage::Formula => "Formula 1",
-            CodeCellLanguage::Javascript => "JavaScript 1",
-            CodeCellLanguage::Python => "Python 1",
-            _ => "Table 1",
+            CodeCellLanguage::Formula => "Formula1",
+            CodeCellLanguage::Javascript => "JavaScript1",
+            CodeCellLanguage::Python => "Python1",
+            _ => "Table1",
         };
         let Some(sheet) = self.try_sheet_mut(start.sheet_id) else {
             // todo: this is probably not the best place to handle this
