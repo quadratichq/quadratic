@@ -6,7 +6,7 @@ import {
   BedrockAnthropicAutoCompleteRequestBodySchema,
   BedrockAutoCompleteRequestBodySchema,
 } from 'quadratic-shared/typesAndSchemasAI';
-import { AWS_AI_ACCESS_KEY_ID, AWS_AI_REGION, AWS_AI_SECRET_ACCESS_KEY } from '../../env-vars';
+import { AWS_S3_ACCESS_KEY_ID, AWS_S3_REGION, AWS_S3_SECRET_ACCESS_KEY } from '../../env-vars';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { Request } from '../../types/Request';
 import { ai_rate_limiter } from './aiRateLimiter';
@@ -15,15 +15,15 @@ const bedrock_router = express.Router();
 
 // aws-sdk for bedrock, generic for all models
 const bedrock = new BedrockRuntimeClient({
-  region: AWS_AI_REGION,
-  credentials: { accessKeyId: AWS_AI_ACCESS_KEY_ID, secretAccessKey: AWS_AI_SECRET_ACCESS_KEY },
+  region: AWS_S3_REGION,
+  credentials: { accessKeyId: AWS_S3_ACCESS_KEY_ID, secretAccessKey: AWS_S3_SECRET_ACCESS_KEY },
 });
 
 // anthropic-sdk for bedrock
 const bedrock_anthropic = new AnthropicBedrock({
-  awsSecretKey: AWS_AI_SECRET_ACCESS_KEY,
-  awsAccessKey: AWS_AI_ACCESS_KEY_ID,
-  awsRegion: AWS_AI_REGION,
+  awsSecretKey: AWS_S3_SECRET_ACCESS_KEY,
+  awsAccessKey: AWS_S3_ACCESS_KEY_ID,
+  awsRegion: AWS_S3_REGION,
 });
 
 bedrock_router.post('/bedrock/chat', validateAccessToken, ai_rate_limiter, async (request, response) => {
