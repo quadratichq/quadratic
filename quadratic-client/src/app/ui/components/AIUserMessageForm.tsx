@@ -3,7 +3,7 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { AIAnalystContext } from '@/app/ui/menus/AIAnalyst/AIAnalystContext';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
-import { TRUST_CENTER } from '@/shared/constants/urls';
+import { AI_SECURITY } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -199,8 +199,8 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 export const AIUserMessageFormDisclaimer = () => {
   return (
     <p className="py-0.5 text-center text-xs text-muted-foreground">
-      Some sheet data is sent to the AI model. {/* TODO: Add proper link */}
-      <a href={TRUST_CENTER} target="_blank" rel="noreferrer" className="underline hover:text-foreground">
+      Some sheet data is sent to the AI model.
+      <a href={AI_SECURITY} target="_blank" rel="noreferrer" className="underline hover:text-foreground">
         Learn more.
       </a>
     </p>
