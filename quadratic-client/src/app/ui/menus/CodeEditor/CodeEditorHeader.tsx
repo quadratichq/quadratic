@@ -3,6 +3,8 @@ import { codeEditorCodeCellAtom, codeEditorUnsavedChangesAtom } from '@/app/atom
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
@@ -153,6 +155,21 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
+  const description = useMemo(() => {
+    if (codeCell) {
+      if (htmlCellsHandler.isHtmlCell(codeCellState.pos.x, codeCellState.pos.y)) {
+        return 'Python chart at';
+      } else if (
+        pixiApp.cellsSheets.getById(codeCellState.sheetId)?.cellsImages.isImageCell(codeCellState.pos.x, codeCellState.pos.y)) {
+        return 'JS chart at';
+      } else {
+        return 'Cell at';
+      }
+    } else {
+      return '';
+    }
+  }, [codeCell, codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
+
   return (
     <div className="flex items-center px-3 py-1">
       <div
@@ -171,7 +188,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
-          Cell ({codeCellState.pos.x}, {codeCellState.pos.y})
+          {description} ({codeCellState.pos.x}, {codeCellState.pos.y})
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}
