@@ -854,7 +854,11 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         try {
-          const result = this.gridController.jumpCursor(sheetId, posToPos(current.x, current.y), JSON.stringify(direction));
+          const result = this.gridController.jumpCursor(
+            sheetId,
+            posToPos(current.x, current.y),
+            JSON.stringify(direction)
+          );
           const pos = JSON.parse(result);
           resolve({ x: Number(pos.x), y: Number(pos.y) });
         } catch (error: any) {

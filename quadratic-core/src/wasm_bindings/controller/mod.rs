@@ -3,6 +3,7 @@ use crate::grid::js_types::*;
 use crate::wasm_bindings::controller::sheet_info::SheetInfo;
 use js_sys::{ArrayBuffer, Uint8Array};
 use std::str::FromStr;
+use util::set_panic_hook;
 
 pub mod auto_complete;
 pub mod borders;
@@ -34,6 +35,8 @@ impl GridController {
         last_sequence_num: u32,
         initialize: bool,
     ) -> Result<GridController, JsValue> {
+        set_panic_hook();
+
         match file::import(file).map_err(|e| e.to_string()) {
             Ok(file) => {
                 let mut grid = GridController::from_grid(file, last_sequence_num as u64);

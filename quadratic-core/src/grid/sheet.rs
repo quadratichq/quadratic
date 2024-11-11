@@ -261,12 +261,15 @@ impl Sheet {
         })
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check or return results within data_tables.
+    /// Returns the cell_value at the Pos in column.values. This does not check
+    /// or return results within data_tables.
     pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(&pos.y).cloned()
     }
 
+    /// Returns the ref of thecell_value at the Pos in column.values. This does
+    /// not check or return results within data_tables.
     pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(&pos.y)

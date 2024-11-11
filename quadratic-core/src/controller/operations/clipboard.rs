@@ -32,7 +32,7 @@ pub enum PasteSpecial {
 ///
 /// For example, this is used to copy and paste a column
 /// on top of another column, or a sheet on top of another sheet.
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct ClipboardOrigin {
     pub x: i64,
     pub y: i64,
@@ -402,6 +402,8 @@ impl GridController {
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
                 drop(decoded);
 
+                let mut has_data_table = false;
+
                 // loop through the clipboard and replace cell references in formulas
                 for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                     for (&y, cell) in col.iter_mut() {
@@ -417,9 +419,16 @@ impl GridController {
                                     );
                                 }
                             }
+                            CellValue::Import(_) => {
+                                has_data_table = true;
+                            }
                             _ => { /* noop */ }
                         };
                     }
+                }
+
+                if has_data_table {
+                    clipboard.cells = clipboard.values.clone();
                 }
 
                 Ok(self.set_clipboard_cells(selection, clipboard, special))
@@ -439,6 +448,7 @@ mod test {
 
     use super::{PasteSpecial, *};
     use crate::controller::active_transactions::transaction_name::TransactionName;
+    use crate::controller::user_actions::import::tests::simple_csv;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::SheetId;
@@ -751,6 +761,41 @@ mod test {
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((6, 9).into()),
             Some(CellValue::Number(BigDecimal::from(6)))
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn paste_clipboard_with_data_table() {
+        let (mut gc, sheet_id, _, _) = simple_csv();
+
+        let (_, html) = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(&Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::new(0, 0, 3, 10)]),
+                ..Default::default()
+            })
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            Selection {
+                sheet_id,
+                x: 20,
+                y: 20,
+                ..Default::default()
+            },
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value((20, 20).into()),
+            Some(CellValue::Text("city".into()))
         );
     }
 }
