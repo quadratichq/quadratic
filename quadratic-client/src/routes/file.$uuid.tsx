@@ -81,7 +81,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       window.location.reload(true);
     }
     if (!data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT')) {
-      thumbnail.generateThumbnail();
+      thumbnail.setThumbnailDirty();
     }
   } else {
     throw new Error('Expected quadraticCore.load to return either a version or an error');

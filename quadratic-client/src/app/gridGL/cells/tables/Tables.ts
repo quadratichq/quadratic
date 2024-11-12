@@ -33,6 +33,13 @@ export class Tables extends Container<Table> {
   // tracks which tables are html or image cells
   private htmlOrImage: Set<string>;
 
+  private saveToggleOutlines?: {
+    active?: Table;
+    hover?: Table;
+    context?: Table;
+    action?: Table;
+  };
+
   tableCursor: string | undefined;
 
   constructor(cellsSheet: CellsSheet) {
@@ -425,6 +432,33 @@ export class Tables extends Container<Table> {
       }
       this.activeTable = table;
       table.showActive(true);
+    }
+  }
+
+  // Toggles the outlines of the table (used during thumbnail generation)
+  toggleOutlines() {
+    if (this.saveToggleOutlines) {
+      this.activeTable = this.saveToggleOutlines.active;
+      this.activeTable?.showActive(true);
+      this.hoverTable = this.saveToggleOutlines.hover;
+      this.hoverTable?.showActive(false);
+      this.contextMenuTable = this.saveToggleOutlines.context;
+      this.contextMenuTable?.showActive(false);
+      this.actionDataTable = this.saveToggleOutlines.action;
+      this.actionDataTable?.showActive(false);
+      pixiApp.setViewportDirty();
+      this.saveToggleOutlines = undefined;
+    } else {
+      this.saveToggleOutlines = {
+        active: this.activeTable,
+        hover: this.hoverTable,
+        context: this.contextMenuTable,
+        action: this.actionDataTable,
+      };
+      this.activeTable?.hideActive();
+      this.hoverTable?.hideActive();
+      this.contextMenuTable?.hideActive();
+      this.actionDataTable?.hideActive();
     }
   }
 

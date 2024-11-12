@@ -18,15 +18,16 @@ class Thumbnail {
   private renderer?: Renderer;
 
   constructor() {
-    events.on('generateThumbnail', this.generateThumbnail);
+    events.on('generateThumbnail', this.setThumbnailDirty);
   }
 
-  generateThumbnail = () => {
+  setThumbnailDirty = () => {
+    console.log('setThumbnailDirty');
     this.thumbnailDirty = true;
   };
 
   destroy() {
-    events.off('generateThumbnail', this.generateThumbnail);
+    events.off('generateThumbnail', this.setThumbnailDirty);
     if (this.renderer) {
       this.renderer.destroy(false);
     }

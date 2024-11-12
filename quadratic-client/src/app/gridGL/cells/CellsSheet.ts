@@ -73,6 +73,7 @@ export class CellsSheet extends Container {
 
   toggleOutlines(off?: boolean) {
     this.cellsMarkers.visible = off ?? true;
+    this.tables.toggleOutlines();
   }
 
   showLabel(x: number, y: number, show: boolean) {
