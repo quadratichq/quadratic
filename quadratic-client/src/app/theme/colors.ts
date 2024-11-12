@@ -24,7 +24,7 @@ export const colors = {
   movingCells: 0x2463eb,
 
   gridBackground: 0xffffff,
-  gridBackgroundOutOfBounds: 0xefefef,
+  gridBackgroundOutOfBounds: 0xfdfdfd,
 
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
