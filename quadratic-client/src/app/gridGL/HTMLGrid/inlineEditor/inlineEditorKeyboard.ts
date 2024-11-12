@@ -337,6 +337,12 @@ class InlineEditorKeyboard {
       inlineEditorMonaco.insertTextAtCursor(formattedTime);
     }
 
+    // prevent browser default behavior for these shortcuts
+    else if (matchShortcut(Action.ShowGoToMenu, e) || matchShortcut(Action.FindInCurrentSheet, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
     // Fallback for all other keys (used to end cursorIsMoving and return
     // control to the formula box)
     else {
@@ -355,13 +361,7 @@ class InlineEditorKeyboard {
   // Resets the keyboard position after cursorIsMoving has ended.
   resetKeyboardPosition(skipFocus?: boolean) {
     const location = inlineEditorHandler.location;
-    if (!location) {
-      return;
-    }
-
-    if (!inlineEditorHandler.cursorIsMoving) {
-      return;
-    }
+    if (!location) return;
 
     inlineEditorHandler.cursorIsMoving = false;
     pixiApp.cellHighlights.clearHighlightedCell();
