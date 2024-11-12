@@ -1,6 +1,7 @@
 import { aiAssistantAbortControllerAtom, aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
 import { AIUserMessageForm, AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
+import mixpanel from 'mixpanel-browser';
 import { forwardRef } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -16,7 +17,10 @@ export const AIAssistantUserMessageForm = forwardRef<HTMLTextAreaElement, AIUser
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
-        submitPrompt={(prompt) => submitPrompt({ userPrompt: prompt, messageIndex: props.messageIndex })}
+        submitPrompt={(prompt) => {
+          mixpanel.track('[AIAssistant].submitPrompt');
+          submitPrompt({ userPrompt: prompt, messageIndex: props.messageIndex });
+        }}
       />
     );
   }
