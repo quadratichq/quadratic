@@ -12,7 +12,6 @@ export type GridSettings = {
   showA1Notation: boolean;
   showCodePeek: boolean;
   presentationMode: boolean;
-  viewportClamping: 'half' | 'all' | 'zoom';
 };
 
 export const defaultGridSettings: GridSettings = {
@@ -22,7 +21,6 @@ export const defaultGridSettings: GridSettings = {
   showA1Notation: false,
   showCodePeek: false,
   presentationMode: false,
-  viewportClamping: 'all',
 };
 
 // Persist the GridSettings
@@ -78,4 +76,3 @@ export const showCellTypeOutlinesAtom = createSelector('showCellTypeOutlines');
 export const showA1NotationAtom = createSelector('showA1Notation');
 export const showCodePeekAtom = createSelector('showCodePeek');
 export const presentationModeAtom = createSelector('presentationMode');
-export const viewportClampingAtom = createSelector('viewportClamping');
