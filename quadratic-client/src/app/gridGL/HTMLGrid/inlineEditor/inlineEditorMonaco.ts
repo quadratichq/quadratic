@@ -2,6 +2,7 @@
 
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -33,6 +34,9 @@ window.MonacoEnvironment = {
 // Pixels needed when growing width to avoid monaco from scrolling the text
 // (determined by experimentation).
 const PADDING_FOR_GROWING_HORIZONTALLY = 20;
+
+// Padding for the inline editor when calling keepCursorVisible, to keep the editor/cursor in view.
+export const PADDING_FOR_INLINE_EDITOR = 5;
 
 class InlineEditorMonaco {
   editor?: editor.IStandaloneCodeEditor;
@@ -150,10 +154,22 @@ class InlineEditorMonaco {
       padding: { top: paddingTop, bottom: 0 },
     });
 
-    // set final width and height
     const scrollWidth = textarea.scrollWidth;
     width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY);
     height = Math.max(contentHeight, height);
+
+    const viewportRectangle = pixiApp.getViewportRectangle();
+    const maxWidthDueToViewport = viewportRectangle.width - 2 * PADDING_FOR_INLINE_EDITOR;
+    if (width > maxWidthDueToViewport) {
+      textWrap = 'wrap';
+      width = maxWidthDueToViewport;
+      this.editor.updateOptions({
+        wordWrap: textWrap === 'wrap' ? 'on' : 'off',
+        padding: { top: paddingTop, bottom: 0 },
+      });
+    }
+
+    // set final width and height
     this.editor.layout({ width, height });
 
     return { width, height };
@@ -296,16 +312,24 @@ class InlineEditorMonaco {
   }
 
   // Gets the position and size of the editor for use in inlineEditorHandler.keepCursorVisible.
-  getEditorBounds(): { bounds: DOMRect } {
+  getEditorSizing(): { bounds: DOMRect; position: { top: number; left: number; height: number } } {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in getEditorPositioning');
+    }
+    const editorPosition = this.editor.getPosition();
+    if (!editorPosition) {
+      throw new Error('Expected editorPosition to be defined in getEditorPositioning');
+    }
+    const position = this.editor.getScrolledVisiblePosition(editorPosition);
+    if (!position) {
+      throw new Error('Expected position to be defined in getEditorPositioning');
     }
     const domNode = this.editor.getDomNode();
     if (!domNode) {
       throw new Error('Expected domNode to be defined in getEditorPositioning');
     }
     const bounds = domNode.getBoundingClientRect();
-    return { bounds };
+    return { bounds, position };
   }
 
   getNonWhitespaceCharBeforeCursor(): string {
