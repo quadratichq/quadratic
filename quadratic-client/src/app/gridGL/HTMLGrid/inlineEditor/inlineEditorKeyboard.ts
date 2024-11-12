@@ -355,7 +355,13 @@ class InlineEditorKeyboard {
   // Resets the keyboard position after cursorIsMoving has ended.
   resetKeyboardPosition(skipFocus?: boolean) {
     const location = inlineEditorHandler.location;
-    if (!location) return;
+    if (!location) {
+      return;
+    }
+
+    if (!inlineEditorHandler.cursorIsMoving) {
+      return;
+    }
 
     inlineEditorHandler.cursorIsMoving = false;
     pixiApp.cellHighlights.clearHighlightedCell();
