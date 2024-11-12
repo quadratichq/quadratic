@@ -11,7 +11,9 @@ import { useRecoilValue } from 'recoil';
 
 export const CodeEditorRefButton = () => {
   const codeEditor = useRecoilValue(codeEditorCodeCellAtom);
-  const [relative, setRelative] = useState(true);
+
+  // todo: relative should not have been removed
+  const [relative] = useState(true);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
 
   const [disabled, setDisabled] = useState(true);
