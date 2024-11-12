@@ -492,12 +492,16 @@ class InlineEditorHandler {
     if (!pixiAppSettings.setCodeEditorState) {
       throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
     }
+    if (!pixiAppSettings.setCodeEditorState) {
+      throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
+    }
     if (!this.location) {
       throw new Error('Expected location to be defined in openCodeEditor');
     }
     const { sheetId, x, y } = this.location;
     pixiAppSettings.setCodeEditorState({
       ...pixiAppSettings.codeEditorState,
+      diffEditorContent: undefined,
       waitingForEditorClose: {
         codeCell: {
           sheetId,

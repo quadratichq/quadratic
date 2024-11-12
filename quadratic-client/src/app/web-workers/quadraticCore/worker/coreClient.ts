@@ -137,10 +137,13 @@ class CoreClient {
     switch (e.data.type) {
       case 'clientCoreLoad':
         await offline.init(e.data.fileId);
+
+        const addToken = this.env.VITE_STORAGE_TYPE === 'file-system';
+
         this.send({
           type: 'coreClientLoad',
           id: e.data.id,
-          ...(await core.loadFile(e.data, e.ports[0])),
+          ...(await core.loadFile(e.data, e.ports[0], addToken)),
         });
         return;
 
@@ -170,6 +173,10 @@ class CoreClient {
 
       case 'clientCoreSetCellValue':
         await core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
+        return;
+
+      case 'clientCoreSetCellValues':
+        await core.setCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.values, e.data.cursor);
         return;
 
       case 'clientCoreGetEditCell':
@@ -440,6 +447,22 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreFindNextColumnForRect':
+        this.send({
+          type: 'coreClientFindNextColumnForRect',
+          id: e.data.id,
+          column: await core.findNextColumnForRect(e.data),
+        });
+        return;
+
+      case 'clientCoreFindNextRowForRect':
+        this.send({
+          type: 'coreClientFindNextRowForRect',
+          id: e.data.id,
+          row: await core.findNextRowForRect(e.data),
+        });
+        return;
+
       case 'clientCoreCommitTransientResize':
         core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
         return;
@@ -499,6 +522,22 @@ class CoreClient {
 
       case 'clientCoreMoveCells':
         core.moveCells(e.data);
+        return;
+
+      case 'clientCoreMoveCodeCellVertically':
+        this.send({
+          type: 'coreClientMoveCodeCellVertically',
+          pos: core.moveCodeCellVertically(e.data),
+          id: e.data.id,
+        });
+        return;
+
+      case 'clientCoreMoveCodeCellHorizontally':
+        this.send({
+          type: 'coreClientMoveCodeCellHorizontally',
+          pos: core.moveCodeCellHorizontally(e.data),
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreSetDateTimeFormat':
@@ -562,6 +601,22 @@ class CoreClient {
           type: 'coreClientGetCellValue',
           id: e.data.id,
           value: core.getCellValue(e.data.sheetId, e.data.x, e.data.y),
+        });
+        return;
+
+      case 'clientCoreGetAIContextRectsInSheetRects':
+        this.send({
+          type: 'coreClientGetAIContextRectsInSheetRects',
+          id: e.data.id,
+          value: core.getAIContextRectsInSheetRects(e.data.sheetRects, e.data.maxRects),
+        });
+        return;
+
+      case 'clientCoreGetErroredCodeCellsInSheetRects':
+        this.send({
+          type: 'coreClientGetErroredCodeCellsInSheetRects',
+          id: e.data.id,
+          value: core.getErroredCodeCellsInSheetRects(e.data.sheetRects),
         });
         return;
 

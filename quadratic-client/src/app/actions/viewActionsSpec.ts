@@ -28,6 +28,7 @@ type ViewActionSpec = Pick<
   | Action.PageDown
   | Action.ShowGoToMenu
   | Action.ShowCellTypeMenu
+  | Action.ToggleAIAnalyst
 >;
 
 export const viewActionsSpec: ViewActionSpec = {
@@ -174,6 +175,13 @@ export const viewActionsSpec: ViewActionSpec = {
     Icon: CodeIcon,
     run: () => {
       openCodeEditor();
+    },
+  },
+  [Action.ToggleAIAnalyst]: {
+    label: 'Chat',
+    run: () => {
+      if (!pixiAppSettings.setAIAnalystState) return;
+      pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));
     },
   },
 };

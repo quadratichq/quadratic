@@ -1,4 +1,5 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import {
   Action as FileAction,
   getActionFileDelete,
@@ -48,6 +49,7 @@ export function FilesListItems({
 export function FilesListItemUserFile({
   file,
   filterValue,
+  setFilterValue,
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   lazyLoad,
@@ -55,6 +57,7 @@ export function FilesListItemUserFile({
 }: {
   file: FilesListUserFile;
   filterValue: string;
+  setFilterValue: Function;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
@@ -68,13 +71,12 @@ export function FilesListItemUserFile({
   const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
+  const fileDragRef = useRef<HTMLDivElement>(null);
+  const { loggedInUser } = useRootRouteLoaderData();
   const {
     activeTeam: {
       team: { uuid: activeTeamUuid },
     },
-  } = useDashboardRouteLoaderData();
-  const fileDragRef = useRef<HTMLDivElement>(null);
-  const {
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
@@ -128,7 +130,7 @@ export function FilesListItemUserFile({
 
   const handleDelete = () => {
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-      const data = getActionFileDelete();
+      const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
       fetcherDelete.submit(data, fetcherSubmitOpts);
     }
   };
@@ -196,6 +198,8 @@ export function FilesListItemUserFile({
             key={uuid}
             creator={file.creator}
             filterValue={filterValue}
+            setFilterValue={setFilterValue}
+            filterMatch={file.filterMatch}
             name={displayName}
             description={description}
             hasNetworkError={Boolean(failedToDelete || failedToRename)}

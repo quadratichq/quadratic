@@ -9,8 +9,8 @@ import {
   ArrowDropDownCircleIcon,
   CheckBoxIcon,
   DataValidationsIcon,
-  SheetIcon,
   FormatDateTimeIcon,
+  SheetIcon,
 } from '@/shared/components/Icons';
 import { quadraticCore } from '../web-workers/quadraticCore/quadraticCore';
 
@@ -42,6 +42,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -63,6 +64,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -84,6 +86,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -105,6 +108,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -126,6 +130,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -147,6 +152,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -168,6 +174,7 @@ export const insertActionsSpec: InsertActionSpec = {
       const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setCodeEditorState((prev) => ({
         ...prev,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -237,9 +244,7 @@ export const insertActionsSpec: InsertActionSpec = {
   },
   [Action.RemoveInsertedCells]: {
     label: 'Remove inserted cells',
-    run: () => {
-      // TODO(ayush): add this when refactoring shortcuts to use action specs
-    },
+    run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.InsertToday]: {
     label: "Insert today's date",
