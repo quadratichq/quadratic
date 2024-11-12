@@ -1,3 +1,5 @@
+use std::cmp::Reverse;
+
 use crate::{
     grid::{bounds::BoundsRect, Column, GridBounds},
     selection::Selection,
@@ -376,6 +378,131 @@ impl Sheet {
         }
     }
 
+    /// finds the nearest column that can be used to place a rect
+    /// if reverse is true it searches to the left of the start
+    ///
+    pub fn find_next_column_for_rect(
+        &self,
+        column_start: i64,
+        row: i64,
+        reverse: bool,
+        rect: Rect,
+    ) -> i64 {
+        let mut rect_start_x = column_start;
+        let bounds = self.bounds(true);
+        match bounds {
+            GridBounds::Empty => rect_start_x,
+            GridBounds::NonEmpty(sheet_rect) => {
+                while (!reverse && rect_start_x <= sheet_rect.max.x)
+                    || (reverse && (rect_start_x - 1 + rect.width() as i64) >= sheet_rect.min.x)
+                {
+                    let mut is_valid = true;
+                    let rect_range = rect_start_x..(rect_start_x + rect.width() as i64);
+                    for x in rect_range {
+                        if let Some(next_row_with_content) = self.find_next_row(row, x, false, true)
+                        {
+                            if (next_row_with_content - row) < rect.height() as i64 {
+                                rect_start_x = if !reverse {
+                                    x + 1
+                                } else {
+                                    x - rect.width() as i64
+                                };
+                                is_valid = false;
+                                break;
+                            }
+                        }
+                    }
+                    if is_valid {
+                        return rect_start_x;
+                    }
+                }
+                rect_start_x
+            }
+        }
+    }
+
+    /// finds the nearest column that can be used to place a rect
+    /// if reverse is true it searches to the left of the start
+    ///
+    pub fn find_next_row_for_rect(
+        &self,
+        row_start: i64,
+        column: i64,
+        reverse: bool,
+        rect: Rect,
+    ) -> i64 {
+        let mut rect_start_y = row_start;
+        let bounds = self.bounds(true);
+        match bounds {
+            GridBounds::Empty => rect_start_y,
+            GridBounds::NonEmpty(sheet_rect) => {
+                while (!reverse && rect_start_y <= sheet_rect.max.y)
+                    || (reverse && (rect_start_y - 1 + rect.height() as i64) >= sheet_rect.min.y)
+                {
+                    let mut is_valid = true;
+                    let rect_range = rect_start_y..(rect_start_y + rect.height() as i64);
+                    for y in rect_range {
+                        if let Some(next_column_with_content) =
+                            self.find_next_column(column, y, false, true)
+                        {
+                            if (next_column_with_content - column) < rect.width() as i64 {
+                                rect_start_y = if !reverse {
+                                    y + 1
+                                } else {
+                                    y - rect.height() as i64
+                                };
+                                is_valid = false;
+                                break;
+                            }
+                        }
+                    }
+                    if is_valid {
+                        return rect_start_y;
+                    }
+                }
+                rect_start_y
+            }
+        }
+    }
+
+    pub fn find_tabular_data_rects(&self, rect: Rect, max_rects: Option<usize>) -> Vec<Rect> {
+        let mut rects = Vec::new();
+
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+
+                let is_visited = rects.iter().any(|rect: &Rect| rect.contains(pos));
+                if is_visited {
+                    continue;
+                }
+
+                let has_value = self.display_value(pos).is_some();
+                if !has_value {
+                    continue;
+                }
+
+                let last_row = self
+                    .find_next_row(pos.y + 1, pos.x, false, false)
+                    .unwrap_or(pos.y + 1)
+                    - 1;
+
+                let last_col = self
+                    .find_next_column(pos.x + 1, pos.y, false, false)
+                    .unwrap_or(pos.x + 1)
+                    - 1;
+
+                let tabular_data_rect = Rect::new(pos.x, pos.y, last_col, last_row);
+                rects.push(tabular_data_rect);
+            }
+        }
+        if let Some(max_rects) = max_rects {
+            rects.sort_by_key(|rect| Reverse(rect.len()));
+            rects.truncate(max_rects);
+        }
+        rects
+    }
+
     /// Returns the bounds of the sheet.
     ///
     /// Returns `(data_bounds, format_bounds)`.
@@ -400,7 +527,7 @@ mod test {
             BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
         selection::Selection,
-        CellValue, Pos, Rect, SheetPos, SheetRect,
+        Array, CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use serial_test::parallel;
@@ -978,5 +1105,175 @@ mod test {
 
         // Check that the data bounds are still empty
         assert_eq!(sheet.data_bounds, GridBounds::Empty);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_find_next_column_for_rect() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set up some cells
+        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
+        gc.set_cell_value((3, 1, sheet_id).into(), "b".to_string(), None);
+        gc.set_cell_value((5, 1, sheet_id).into(), "c".to_string(), None);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Find next column to the right
+        let rect = Rect::from_numbers(0, 0, 1, 1);
+        let result = sheet.find_next_column_for_rect(1, 1, false, rect);
+        assert_eq!(result, 2);
+
+        // Find next column to the left
+        let result = sheet.find_next_column_for_rect(5, 1, true, rect);
+        assert_eq!(result, 4);
+
+        // Find next column with larger rect (right)
+        let rect = Rect::from_numbers(0, 0, 2, 1);
+        let result = sheet.find_next_column_for_rect(1, 1, false, rect);
+        assert_eq!(result, 6);
+
+        // Find next column with larger rect (left)
+        let result = sheet.find_next_column_for_rect(5, 1, true, rect);
+        assert_eq!(result, -1);
+
+        // No available column
+        let rect = Rect::from_numbers(0, 0, 10, 1);
+        let result = sheet.find_next_column_for_rect(0, 1, false, rect);
+        assert_eq!(result, 6);
+
+        // With multiple obstacles
+        gc.set_cell_value((7, 1, sheet_id).into(), "d".to_string(), None);
+        gc.set_cell_value((9, 1, sheet_id).into(), "e".to_string(), None);
+        let rect = Rect::from_numbers(0, 0, 1, 1);
+        let sheet = gc.sheet(sheet_id);
+        let result = sheet.find_next_column_for_rect(0, 1, false, rect);
+        assert_eq!(result, 0);
+        let result = sheet.find_next_column_for_rect(1, 1, false, rect);
+        assert_eq!(result, 2);
+        let result = sheet.find_next_column_for_rect(4, 1, false, rect);
+        assert_eq!(result, 4);
+        let result = sheet.find_next_column_for_rect(7, 1, false, rect);
+        assert_eq!(result, 8);
+
+        // Larger rect and multiple obstacles
+        let rect = Rect::from_numbers(0, 0, 10, 1);
+        let result = sheet.find_next_column_for_rect(0, 1, false, rect);
+        assert_eq!(result, 10);
+    }
+
+    #[test]
+    #[parallel]
+    fn test_find_next_row_for_rect() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // Set up some cells
+        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
+        gc.set_cell_value((1, 3, sheet_id).into(), "b".to_string(), None);
+        gc.set_cell_value((1, 5, sheet_id).into(), "c".to_string(), None);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // Find next row downwards
+        let rect = Rect::from_numbers(0, 0, 1, 1);
+        let result = sheet.find_next_row_for_rect(1, 1, false, rect);
+        assert_eq!(result, 2);
+
+        // Find next row upwards
+        let result = sheet.find_next_row_for_rect(5, 1, true, rect);
+        assert_eq!(result, 4);
+
+        // Find next row with larger rect (down)
+        let rect = Rect::from_numbers(0, 0, 1, 2);
+        let result = sheet.find_next_row_for_rect(1, 1, false, rect);
+        assert_eq!(result, 6);
+
+        // Find next row with larger rect (up)
+        let result = sheet.find_next_row_for_rect(5, 1, true, rect);
+        assert_eq!(result, -1);
+
+        // No available row
+        let rect = Rect::from_numbers(0, 0, 1, 10);
+        let result = sheet.find_next_row_for_rect(0, 1, false, rect);
+        assert_eq!(result, 6);
+
+        // With multiple obstacles
+        gc.set_cell_value((1, 7, sheet_id).into(), "d".to_string(), None);
+        gc.set_cell_value((1, 9, sheet_id).into(), "e".to_string(), None);
+        let rect = Rect::from_numbers(0, 0, 1, 1);
+        let sheet = gc.sheet(sheet_id);
+        let result = sheet.find_next_row_for_rect(0, 1, false, rect);
+        assert_eq!(result, 0);
+        let result = sheet.find_next_row_for_rect(1, 1, false, rect);
+        assert_eq!(result, 2);
+        let result = sheet.find_next_row_for_rect(4, 1, false, rect);
+        assert_eq!(result, 4);
+        let result = sheet.find_next_row_for_rect(7, 1, false, rect);
+        assert_eq!(result, 8);
+
+        // Larger rect and multiple obstacles
+        let rect = Rect::from_numbers(0, 0, 1, 10);
+        let result = sheet.find_next_row_for_rect(0, 1, false, rect);
+        assert_eq!(result, 10);
+    }
+
+    #[test]
+    #[parallel]
+    fn find_tabular_data_rects() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_values(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10, y: 1000 },
+            },
+            &Array::from(
+                (1..=1000)
+                    .map(|row| {
+                        (1..=10)
+                            .map(|_| {
+                                if row == 1 {
+                                    "heading1".to_string()
+                                } else {
+                                    "value1".to_string()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            ),
+        );
+
+        sheet.set_cell_values(
+            Rect {
+                min: Pos { x: 31, y: 101 },
+                max: Pos { x: 35, y: 1203 },
+            },
+            &Array::from(
+                (101..=1203)
+                    .map(|row| {
+                        (31..=35)
+                            .map(|_| {
+                                if row == 101 {
+                                    "heading2".to_string()
+                                } else {
+                                    "value2".to_string()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            ),
+        );
+
+        let tabular_data_rects = sheet.find_tabular_data_rects(Rect::new(1, 1, 10000, 10000), None);
+        assert_eq!(tabular_data_rects.len(), 2);
+
+        let expected_rects = vec![
+            Rect::from_numbers(1, 1, 10, 1000),
+            Rect::from_numbers(31, 101, 5, 1103),
+        ];
+        assert_eq!(tabular_data_rects, expected_rects);
     }
 }

@@ -1,13 +1,17 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { codeEditorCodeCellAtom, codeEditorUnsavedChangesAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorCodeCellAtom,
+  codeEditorShowDiffEditorAtom,
+  codeEditorUnsavedChangesAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
@@ -16,10 +20,12 @@ import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRun
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { CloseIcon, SaveAndRunIcon, SaveAndRunStopIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { Close, PlayArrow, Stop } from '@mui/icons-material';
-import { CircularProgress, IconButton } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -37,6 +43,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const codeCell = useMemo(() => getCodeCell(codeCellState.language), [codeCellState.language]);
   const language = useMemo(() => getLanguage(codeCellState.language), [codeCellState.language]);
   const isConnection = useMemo(() => codeCellIsAConnection(codeCellState.language), [codeCellState.language]);
@@ -153,7 +160,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
   return (
-    <div className="flex items-center px-3 py-1">
+    <div className="flex items-center py-1 pl-3 pr-2">
       <div
         className={cn(
           `relative`,
@@ -161,11 +168,11 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
             `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
         )}
       >
-        <TooltipHint title={`${codeCell?.label}${unsavedChanges ? ' · Unsaved changes' : ''}`} placement="bottom">
+        <TooltipPopover label={`${codeCell?.label}${unsavedChanges ? ' · Unsaved changes' : ''}`} side="bottom">
           <div className="flex items-center">
             <LanguageIcon language={codeCell?.id} fontSize="small" />
           </div>
-        </TooltipHint>
+        </TooltipPopover>
       </div>
 
       <div className="mx-2 flex flex-col truncate">
@@ -181,40 +188,61 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
         )}
       </div>
 
-      <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+      <div className="ml-auto flex flex-shrink-0 items-center gap-1 py-1">
         {isRunningComputation && (
-          <TooltipHint title={`${language} executing…`} placement="bottom">
+          <TooltipPopover label={`${language} executing…`} side="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
-          </TooltipHint>
+          </TooltipPopover>
         )}
 
         {hasPermission && (
           <>
-            {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
-
-            {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
-
-            {!isRunningComputation ? (
-              <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-                  <PlayArrow />
-                </IconButton>
-              </TooltipHint>
+            {showDiffEditor ? (
+              <CodeEditorDiffButtons />
             ) : (
-              <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                  <Stop />
-                </IconButton>
-              </TooltipHint>
+              <>
+                {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
+
+                {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
+
+                {!isRunningComputation ? (
+                  <TooltipPopover
+                    label={`Save & run`}
+                    shortcut={`${KeyboardSymbols.Command}${KeyboardSymbols.Enter}`}
+                    side="bottom"
+                  >
+                    <Button
+                      id="QuadraticCodeEditorRunButtonID"
+                      onClick={saveAndRunCell}
+                      size="icon-sm"
+                      className="mx-1 rounded-full"
+                    >
+                      <SaveAndRunIcon />
+                    </Button>
+                  </TooltipPopover>
+                ) : (
+                  <TooltipPopover label={`Cancel execution`} shortcut={`${KeyboardSymbols.Command} Esc`} side="bottom">
+                    <Button onClick={cancelRun} size="icon-sm" className="mx-1 rounded-full">
+                      <SaveAndRunStopIcon />
+                    </Button>
+                  </TooltipPopover>
+                )}
+              </>
             )}
           </>
         )}
 
-        <TooltipHint title="Close" shortcut="ESC" placement="bottom">
-          <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={() => closeEditor(false)}>
-            <Close />
-          </IconButton>
-        </TooltipHint>
+        <TooltipPopover label={`Close`} shortcut={`Esc`} side="bottom">
+          <Button
+            variant="ghost"
+            id="QuadraticCodeEditorCloseButtonID"
+            onClick={() => closeEditor(false)}
+            size="icon-sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <CloseIcon />
+          </Button>
+        </TooltipPopover>
       </div>
     </div>
   );

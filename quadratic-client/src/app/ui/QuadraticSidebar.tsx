@@ -1,6 +1,7 @@
 import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
+import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCommandPaletteAtom,
@@ -13,7 +14,9 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import {
+  AIIcon,
   CodeCellOutlineOff,
   CodeCellOutlineOn,
   DatabaseIcon,
@@ -32,13 +35,18 @@ import { Link } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
+const toggleAIChat = defaultActionSpec[Action.ToggleAIAnalyst];
 
 export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
+  const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const [showCellTypeOutlines, setShowCellTypeOutlines] = useRecoilState(showCellTypeOutlinesAtom);
   const [showConnectionsMenu, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
+
+  const { isAuthenticated } = useRootRouteLoaderData();
+
   const isAvailableArgs = useIsAvailableArgs();
   const canEditFile = isAvailableBecauseCanEditFile(isAvailableArgs);
   const canDoTeamsStuff = isAvailableBecauseFileLocationIsAccessibleAndWriteable(isAvailableArgs);
@@ -65,6 +73,14 @@ export const QuadraticSidebar = () => {
       </div>
 
       <div className="mt-2 flex flex-col items-center gap-1">
+        {canEditFile && isAuthenticated && (
+          <SidebarTooltip label={toggleAIChat.label} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
+            <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
+              <AIIcon />
+            </SidebarToggle>
+          </SidebarTooltip>
+        )}
+
         {canEditFile && (
           <SidebarTooltip
             label={toggleCodeEditor.label}

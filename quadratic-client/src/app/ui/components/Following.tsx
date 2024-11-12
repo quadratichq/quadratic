@@ -1,5 +1,6 @@
 import { editorInteractionStateFollowAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useMultiplayerUsers } from '@/app/ui/menus/TopBar/useMultiplayerUsers';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { StopCircleIcon } from '@/shared/components/Icons';
 import { displayName } from '@/shared/utils/userUtil';
 import { useMemo } from 'react';
@@ -34,7 +35,10 @@ export const Following = () => {
         <button
           aria-label="Stop following"
           className="flex items-center opacity-80 hover:opacity-100"
-          onClick={() => setFollow(undefined)}
+          onClick={() => {
+            multiplayer.sendFollow('');
+            setFollow(undefined);
+          }}
         >
           <StopCircleIcon />
         </button>
