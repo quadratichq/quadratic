@@ -1,5 +1,6 @@
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
   JsBordersSheet,
@@ -129,6 +130,8 @@ interface EventTypes {
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
+
+  codeEditorCodeCell: (codeCell?: CodeCell) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

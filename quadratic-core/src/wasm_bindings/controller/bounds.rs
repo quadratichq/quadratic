@@ -102,4 +102,44 @@ impl GridController {
             .find_next_row(row_start as i64, column as i64, reverse, with_content)
             .map(|y| y as i32)
     }
+
+    /// finds nearest column that can be used to place a rect
+    #[wasm_bindgen(js_name = "findNextColumnForRect")]
+    pub fn js_find_next_column_for_rect(
+        &self,
+        sheet_id: String,
+        column_start: i32,
+        row: i32,
+        width: i32,
+        height: i32,
+        reverse: bool,
+    ) -> i32 {
+        if let Some(sheet) = self.try_sheet_from_string_id(sheet_id) {
+            let rect =
+                Rect::from_numbers(column_start as i64, row as i64, width as i64, height as i64);
+            sheet.find_next_column_for_rect(column_start as i64, row as i64, reverse, rect) as i32
+        } else {
+            column_start
+        }
+    }
+
+    /// finds nearest row that can be used to place a rect
+    #[wasm_bindgen(js_name = "findNextRowForRect")]
+    pub fn js_find_next_row_for_rect(
+        &self,
+        sheet_id: String,
+        column: i32,
+        row_start: i32,
+        width: i32,
+        height: i32,
+        reverse: bool,
+    ) -> i32 {
+        if let Some(sheet) = self.try_sheet_from_string_id(sheet_id) {
+            let rect =
+                Rect::from_numbers(column as i64, row_start as i64, width as i64, height as i64);
+            sheet.find_next_row_for_rect(row_start as i64, column as i64, reverse, rect) as i32
+        } else {
+            row_start
+        }
+    }
 }
