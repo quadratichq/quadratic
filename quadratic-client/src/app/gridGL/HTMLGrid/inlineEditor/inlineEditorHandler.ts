@@ -4,10 +4,9 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { intersects } from '@/app/gridGL/helpers/intersects';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
+import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
@@ -23,9 +22,6 @@ import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
 import { inlineEditorEvents } from './inlineEditorEvents';
-
-// Minimum amount to scroll viewport when cursor is near the edge.
-const MINIMUM_MOVE_VIEWPORT = 50;
 
 class InlineEditorHandler {
   private div?: HTMLDivElement;
@@ -96,42 +92,61 @@ class InlineEditorHandler {
   keepCursorVisible = () => {
     if (sheets.sheet.id !== this.location?.sheetId || !this.showing) return;
 
-    const { position, bounds } = inlineEditorMonaco.getEditorSizing();
+    const sheetRectangle = pixiApp.getViewportRectangle();
+    const scale = pixiApp.viewport.scale.x;
     const canvas = pixiApp.canvas.getBoundingClientRect();
-    const cursor = position.left + bounds.left;
-    const worldCursorTop = pixiApp.viewport.toWorld(cursor, bounds.top - canvas.top);
-    const worldCursorBottom = pixiApp.viewport.toWorld(cursor, bounds.bottom - canvas.top);
-    const viewportBounds = pixiApp.viewport.getVisibleBounds();
 
-    if (
-      intersects.rectangleRectangle(
-        viewportBounds,
-        new Rectangle(
-          worldCursorTop.x,
-          worldCursorTop.y,
-          worldCursorBottom.x - worldCursorTop.x,
-          worldCursorBottom.y - worldCursorTop.y
-        )
-      )
-    ) {
-      return;
+    // calculate inline editor rectangle, factoring in scale
+    const { bounds, position } = inlineEditorMonaco.getEditorSizing();
+    const editorWidth = this.width * scale;
+    const editorTopLeft = pixiApp.viewport.toWorld(bounds.left - canvas.left, bounds.top - canvas.top);
+    const editorBottomRight = pixiApp.viewport.toWorld(
+      bounds.left + editorWidth - canvas.left,
+      bounds.bottom - canvas.top
+    );
+    const editorRectangle = new Rectangle(
+      editorTopLeft.x,
+      editorTopLeft.y,
+      editorBottomRight.x - editorTopLeft.x,
+      editorBottomRight.y - editorTopLeft.y
+    );
+
+    let x = 0;
+    if (editorRectangle.left - PADDING_FOR_INLINE_EDITOR <= sheetRectangle.left) {
+      x = sheetRectangle.left + -(editorRectangle.left - PADDING_FOR_INLINE_EDITOR);
+    } else if (editorRectangle.right + PADDING_FOR_INLINE_EDITOR >= sheetRectangle.right) {
+      x = sheetRectangle.right - (editorRectangle.right + PADDING_FOR_INLINE_EDITOR);
     }
 
-    let x = 0,
-      y = 0;
-    if (worldCursorTop.x > viewportBounds.right) {
-      x = viewportBounds.right - (worldCursorTop.x + MINIMUM_MOVE_VIEWPORT);
-    } else if (worldCursorTop.x < viewportBounds.left) {
-      x = viewportBounds.left + MINIMUM_MOVE_VIEWPORT - worldCursorTop.x;
+    let y = 0;
+    // check if the editor is too tall to fit in the viewport
+    if (editorRectangle.height + PADDING_FOR_INLINE_EDITOR <= sheetRectangle.height) {
+      // keep the editor in view
+      if (editorRectangle.top - PADDING_FOR_INLINE_EDITOR <= sheetRectangle.top) {
+        y = sheetRectangle.top - (editorRectangle.top - PADDING_FOR_INLINE_EDITOR);
+      } else if (editorRectangle.bottom + PADDING_FOR_INLINE_EDITOR >= sheetRectangle.bottom) {
+        y = sheetRectangle.bottom - (editorRectangle.bottom + PADDING_FOR_INLINE_EDITOR);
+      }
+    } else {
+      // just keep the cursor in view
+      const cursorTop = pixiApp.viewport.toWorld(
+        position.left * scale + bounds.left - canvas.left,
+        position.top * scale + bounds.top - canvas.top
+      );
+      const cursorBottom = pixiApp.viewport.toWorld(
+        position.left * scale + bounds.left - canvas.left,
+        position.top * scale + position.height * scale + bounds.top - canvas.top
+      );
+      if (cursorTop.y < sheetRectangle.top) {
+        y = sheetRectangle.top - cursorTop.y;
+      } else if (cursorBottom.y > sheetRectangle.bottom) {
+        y = sheetRectangle.bottom - cursorBottom.y;
+      }
     }
-    if (worldCursorBottom.y > viewportBounds.bottom) {
-      y = viewportBounds.bottom - (worldCursorBottom.y + MINIMUM_MOVE_VIEWPORT);
-    } else if (worldCursorTop.y < viewportBounds.top) {
-      y = viewportBounds.top + MINIMUM_MOVE_VIEWPORT - worldCursorTop.y;
-    }
+
     if (x || y) {
-      pixiApp.viewport.x += x;
-      pixiApp.viewport.y += y;
+      pixiApp.viewport.x += x * scale;
+      pixiApp.viewport.y += y * scale;
       pixiApp.setViewportDirty();
     }
   };
