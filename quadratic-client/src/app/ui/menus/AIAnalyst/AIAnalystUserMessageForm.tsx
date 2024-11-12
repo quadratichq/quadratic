@@ -4,6 +4,7 @@ import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import { AIUserMessageForm, AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import mixpanel from 'mixpanel-browser';
 import { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
@@ -36,7 +37,10 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((
       abortController={abortController}
       loading={loading}
       setLoading={setLoading}
-      submitPrompt={(prompt) => submitPrompt({ userPrompt: prompt, context, messageIndex: props.messageIndex })}
+      submitPrompt={(prompt) => {
+        mixpanel.track('[AIAnalyst].submitPrompt');
+        submitPrompt({ userPrompt: prompt, context, messageIndex: props.messageIndex });
+      }}
       formOnKeyDown={formOnKeyDown}
       ctx={{
         context,

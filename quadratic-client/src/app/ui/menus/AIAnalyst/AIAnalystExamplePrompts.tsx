@@ -1,6 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { CodeIcon, InsertChartIcon, TableIcon } from '@/shared/components/Icons';
+import mixpanel from 'mixpanel-browser';
 
 const examples = [
   {
@@ -32,12 +33,13 @@ export function AIAnalystExamplePrompts() {
         <button
           key={title}
           className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
-          onClick={() =>
+          onClick={() => {
+            mixpanel.track('[AIAnalyst].submitExamplePrompt', { title });
             submitPrompt({
               userPrompt: prompt,
               context: { sheets: [], currentSheet: sheets.sheet.name, selection: undefined },
-            })
-          }
+            });
+          }}
         >
           {icon}
 

@@ -199,7 +199,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 export const AIUserMessageFormDisclaimer = () => {
   return (
     <p className="py-0.5 text-center text-xs text-muted-foreground">
-      Some sheet data is sent to the AI model.
+      Some sheet data is sent to the AI model.{' '}
       <a href={AI_SECURITY} target="_blank" rel="noreferrer" className="underline hover:text-foreground">
         Learn more.
       </a>
