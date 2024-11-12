@@ -1,14 +1,14 @@
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { getSelectionString, parseSelectionString } from '@/app/grid/sheet/selection';
+import { Selection } from '@/app/quadratic-core-types';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
-import { TooltipHint } from './TooltipHint';
-import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
-import { Button } from '@/shared/shadcn/ui/button';
-import { FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { getSelectionString, parseSelectionString } from '@/app/grid/sheet/selection';
-import { sheets } from '@/app/grid/controller/Sheets';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { Selection } from '@/app/quadratic-core-types';
-import { events } from '@/app/events/events';
+import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
+import { FocusEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 interface Props {
   label?: string;
@@ -128,16 +128,14 @@ export const SheetRange = (props: Props) => {
           />
         </div>
         {!readOnly && (
-          <TooltipHint
-            title={disableButton ? 'Can only insert from original sheet' : 'Insert current selection'}
-            placement="bottom"
+          <TooltipPopover
+            label={disableButton ? 'Can only insert from original sheet' : 'Insert current selection'}
+            side="bottom"
           >
-            <span>
-              <Button size="sm" onClick={onInsert} disabled={disableButton}>
-                <HighlightAltIcon fontSize="small" />
-              </Button>
-            </span>
-          </TooltipHint>
+            <Button size="sm" onClick={onInsert} disabled={disableButton}>
+              <HighlightAltIcon fontSize="small" />
+            </Button>
+          </TooltipPopover>
         )}
       </div>
       {rangeError && <div className="text-xs text-red-500">{rangeError}</div>}

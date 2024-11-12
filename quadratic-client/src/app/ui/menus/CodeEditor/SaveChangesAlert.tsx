@@ -1,5 +1,4 @@
-import { codeEditorShowSaveChangesAlertAtom } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { codeEditorAtom, codeEditorShowSaveChangesAlertAtom } from '@/app/atoms/codeEditorAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { useAfterDialogCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useAfterDialogCodeEditor';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
@@ -17,7 +16,7 @@ export const SaveChangesAlert = ({ editorInst }: SaveChangesAlertProps) => {
   const { afterDialog } = useAfterDialogCodeEditor({
     editorInst,
   });
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const setCodeEditorState = useSetRecoilState(codeEditorAtom);
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useRecoilState(codeEditorShowSaveChangesAlertAtom);
 
   const onDiscard = useCallback(() => {
@@ -31,12 +30,12 @@ export const SaveChangesAlert = ({ editorInst }: SaveChangesAlertProps) => {
 
   const onCancel = useCallback(() => {
     setShowSaveChangesAlert(false);
-    setEditorInteractionState((prev) => ({
+    setCodeEditorState((prev) => ({
       ...prev,
-      editorEscapePressed: false,
+      escapePressed: false,
       waitingForEditorClose: undefined,
     }));
-  }, [setEditorInteractionState, setShowSaveChangesAlert]);
+  }, [setCodeEditorState, setShowSaveChangesAlert]);
 
   const DialogRef = useRef<HTMLDivElement>(null);
 

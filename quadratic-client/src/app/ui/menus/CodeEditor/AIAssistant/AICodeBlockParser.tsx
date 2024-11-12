@@ -1,5 +1,5 @@
-import { CodeSnippet } from '@/app/ui/components/CodeSnippet';
 import { Markdown } from '@/app/ui/components/Markdown';
+import { CodeSnippet } from '@/app/ui/menus/CodeEditor/AIAssistant/CodeSnippet';
 
 // Regular expression to match code blocks
 const CODE_BLOCK_REGEX = /```([a-zA-Z]+)?\n([\s\S]+?)(?:\n*```|$)/g;
@@ -34,5 +34,5 @@ export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
 }
 
 export function AICodeBlockParser({ input }: { input: string }): JSX.Element {
-  return <div className="flex select-text flex-col gap-4 whitespace-normal">{parseCodeBlocks(input)}</div>;
+  return <div className="flex select-text flex-col gap-4 whitespace-normal break-words">{parseCodeBlocks(input)}</div>;
 }

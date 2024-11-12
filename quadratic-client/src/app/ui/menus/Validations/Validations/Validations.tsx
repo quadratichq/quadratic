@@ -29,9 +29,12 @@ export const Validations = () => {
 
       setHighlighted(newHighlighted);
     };
+    checkValidations();
 
     events.on('cursorPosition', checkValidations);
-    checkValidations();
+    return () => {
+      events.off('cursorPosition', checkValidations);
+    };
   }, [sheetId, validations]);
 
   const addValidation = useCallback(() => {

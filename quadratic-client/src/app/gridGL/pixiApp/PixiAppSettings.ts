@@ -1,5 +1,6 @@
+import { AIAnalystState, defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
+import { defaultEditorInteractionState, EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
 import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
@@ -40,7 +41,7 @@ class PixiAppSettings {
   gridSettings = defaultGridSettings;
   setGridSettings?: SetterOrUpdater<GridSettings>;
 
-  editorInteractionState = editorInteractionStateDefault;
+  editorInteractionState = defaultEditorInteractionState;
   setEditorInteractionState?: SetterOrUpdater<EditorInteractionState>;
 
   addGlobalSnackbar?: GlobalSnackbar['addGlobalSnackbar'];
@@ -50,6 +51,9 @@ class PixiAppSettings {
 
   codeEditorState = defaultCodeEditorState;
   setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
+
+  aiAnalystState = defaultAIAnalystState;
+  setAIAnalystState?: SetterOrUpdater<AIAnalystState>;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -65,7 +69,7 @@ class PixiAppSettings {
   }
 
   destroy() {
-    window.removeEventListener('gridSettings', this.getSettings);
+    events.off('gridSettings', this.getSettings);
   }
 
   private getSettings = (): void => {
@@ -131,6 +135,11 @@ class PixiAppSettings {
   updateCodeEditorState(codeEditorState: CodeEditorState, setCodeEditorState: SetterOrUpdater<CodeEditorState>): void {
     this.codeEditorState = codeEditorState;
     this.setCodeEditorState = setCodeEditorState;
+  }
+
+  updateAIAnalystState(aiAnalystState: AIAnalystState, setAIAnalystState: SetterOrUpdater<AIAnalystState>): void {
+    this.aiAnalystState = aiAnalystState;
+    this.setAIAnalystState = setAIAnalystState;
   }
 
   get showGridLines(): boolean {

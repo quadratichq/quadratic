@@ -1,4 +1,8 @@
-import { codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorCodeCellAtom,
+  codeEditorDiffEditorContentAtom,
+  codeEditorEditorContentAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -8,7 +12,7 @@ import { useRecoilCallback } from 'recoil';
 
 export const useSaveAndRunCell = () => {
   const saveAndRunCell = useRecoilCallback(
-    ({ snapshot }) =>
+    ({ snapshot, set }) =>
       async () => {
         const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
         const editorContent = await snapshot.getPromise(codeEditorEditorContentAtom);
@@ -24,6 +28,8 @@ export const useSaveAndRunCell = () => {
           language,
           cursor: sheets.getCursorPosition(),
         });
+
+        set(codeEditorDiffEditorContentAtom, undefined);
 
         mixpanel.track('[CodeEditor].cellRun', {
           type: getLanguage(codeCell.language),
