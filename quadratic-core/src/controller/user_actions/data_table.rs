@@ -7,6 +7,7 @@ use crate::{
 use anyhow::{anyhow, Result};
 
 impl GridController {
+    /// Returns all data tables within the given sheet position.
     pub fn data_tables_within(&self, sheet_pos: SheetPos) -> Result<Vec<Pos>> {
         let sheet = self
             .try_sheet(sheet_pos.sheet_id)

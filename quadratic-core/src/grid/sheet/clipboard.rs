@@ -183,7 +183,7 @@ impl Sheet {
                 .filter(|(_, data_table)| !data_table.spill_error)
                 .for_each(|(output_rect, data_table)| {
                     // only change the cells if the CellValue::Code is not in the selection box
-                    let code_pos = Pos {
+                    let data_table_pos = Pos {
                         x: output_rect.min.x,
                         y: output_rect.min.y,
                     };
@@ -209,14 +209,15 @@ impl Sheet {
                     };
 
                     // add the CellValue to cells if the code is not included in the clipboard
-                    let include_in_cells = !bounds.contains(code_pos);
+                    let include_in_cells = !bounds.contains(data_table_pos);
 
                     // add the code_run output to clipboard.values
                     for y in y_start..=y_end {
                         for x in x_start..=x_end {
-                            if let Some(value) = data_table
-                                .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
-                            {
+                            if let Some(value) = data_table.cell_value_at(
+                                (x - data_table_pos.x) as u32,
+                                (y - data_table_pos.y) as u32,
+                            ) {
                                 let pos = Pos {
                                     x: x - bounds.min.x,
                                     y: y - bounds.min.y,

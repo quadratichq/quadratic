@@ -13,7 +13,7 @@ use crate::grid::formats::format::Format;
 use crate::grid::formats::Formats;
 use crate::grid::sheet::borders::BorderStyleCellUpdates;
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::CodeCellLanguage;
+use crate::grid::{CodeCellLanguage, DataTableKind};
 use crate::selection::Selection;
 use crate::{CellValue, Pos, SheetPos, SheetRect};
 
@@ -109,7 +109,9 @@ impl GridController {
                     .flat_map(|(x, col)| {
                         col.iter()
                             .filter_map(|(y, cell)| match cell {
-                                CellValue::Code(_) => Some((x as u32, *y as u32)),
+                                CellValue::Code(_) | CellValue::Import(_) => {
+                                    Some((x as u32, *y as u32))
+                                }
                                 _ => None,
                             })
                             .collect::<Vec<_>>()
@@ -252,6 +254,7 @@ impl GridController {
                     clipboard.values,
                     special,
                 );
+
                 if let Some(values) = values {
                     ops.push(Operation::SetCellValues {
                         sheet_pos: start_pos.to_sheet_pos(selection.sheet_id),
@@ -259,14 +262,32 @@ impl GridController {
                     });
                 }
 
-                code.iter().for_each(|(x, y)| {
-                    let sheet_pos = SheetPos {
-                        x: start_pos.x + *x as i64,
-                        y: start_pos.y + *y as i64,
-                        sheet_id: selection.sheet_id,
-                    };
-                    ops.push(Operation::ComputeCode { sheet_pos });
-                });
+                if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                    code.iter().for_each(|(x, y)| {
+                        let sheet_pos = SheetPos {
+                            x: start_pos.x + *x as i64,
+                            y: start_pos.y + *y as i64,
+                            sheet_id: selection.sheet_id,
+                        };
+
+                        let source_pos = Pos {
+                            x: clipboard.origin.x + *x as i64,
+                            y: clipboard.origin.y + *y as i64,
+                        };
+
+                        if let Some(data_table) = sheet.data_table(source_pos) {
+                            if matches!(data_table.kind, DataTableKind::Import(_)) {
+                                ops.push(Operation::SetCodeRun {
+                                    sheet_pos,
+                                    code_run: Some(data_table.to_owned()),
+                                    index: 0,
+                                });
+                            }
+                        }
+
+                        ops.push(Operation::ComputeCode { sheet_pos });
+                    });
+                }
             }
             PasteSpecial::Values => {
                 let (values, _) = GridController::cell_values_from_clipboard_cells(
@@ -402,8 +423,6 @@ impl GridController {
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
                 drop(decoded);
 
-                let mut has_data_table = false;
-
                 // loop through the clipboard and replace cell references in formulas
                 for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                     for (&y, cell) in col.iter_mut() {
@@ -419,16 +438,9 @@ impl GridController {
                                     );
                                 }
                             }
-                            CellValue::Import(_) => {
-                                has_data_table = true;
-                            }
                             _ => { /* noop */ }
                         };
                     }
-                }
-
-                if has_data_table {
-                    clipboard.cells = clipboard.values.clone();
                 }
 
                 Ok(self.set_clipboard_cells(selection, clipboard, special))
