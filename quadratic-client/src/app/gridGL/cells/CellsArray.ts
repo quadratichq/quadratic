@@ -121,7 +121,9 @@ export class CellsArray extends Container {
       const editingCell = cell && codeCell.x === cell.x && codeCell.y === cell.y && cell.sheetId === this.sheetId;
       this.draw(codeCell, cursor, editingCell);
     });
-    pixiApp.cursor.dirty = true;
+    if (pixiApp.cursor) {
+      pixiApp.cursor.dirty = true;
+    }
     pixiApp.setViewportDirty();
   }
 

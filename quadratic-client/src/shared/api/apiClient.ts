@@ -146,10 +146,12 @@ export const apiClient = {
         ApiSchemas['/v0/files.POST.response']
       );
     },
+
     async delete(uuid: string) {
       mixpanel.track('[Files].deleteFile', { id: uuid });
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
     },
+
     async download(uuid: string) {
       mixpanel.track('[Files].downloadFile', { id: uuid });
       const { file } = await this.get(uuid);
@@ -157,6 +159,7 @@ export const apiClient = {
       const checkpointData = await fetch(checkpointUrl).then((res) => res.arrayBuffer());
       downloadQuadraticFile(file.name, new Uint8Array(checkpointData));
     },
+
     async duplicate(uuid: string, isPrivate?: boolean) {
       mixpanel.track('[Files].duplicateFile', { id: uuid });
       // Get the file we want to duplicate
@@ -201,6 +204,7 @@ export const apiClient = {
 
       return { uuid: newFileUuid };
     },
+
     async update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
       return fetchFromApi(
         `/v0/files/${uuid}`,
@@ -211,6 +215,7 @@ export const apiClient = {
         ApiSchemas['/v0/files/:uuid.PATCH.response']
       );
     },
+
     thumbnail: {
       async update(uuid: string, thumbnail: Blob) {
         const formData = new FormData();
@@ -226,6 +231,7 @@ export const apiClient = {
         );
       },
     },
+
     sharing: {
       async get(uuid: string) {
         return fetchFromApi(
@@ -248,6 +254,7 @@ export const apiClient = {
         );
       },
     },
+
     invites: {
       async create(uuid: string, body: ApiTypes['/v0/files/:uuid/invites.POST.request']) {
         mixpanel.track('[FileSharing].invite.create');
@@ -271,6 +278,7 @@ export const apiClient = {
         );
       },
     },
+
     users: {
       async update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
         mixpanel.track('[FileSharing].users.updateRole');
@@ -306,6 +314,7 @@ export const apiClient = {
       return fetchFromApi(`/v0/users/acknowledge`, { method: 'GET' }, ApiSchemas['/v0/users/acknowledge.GET.response']);
     },
   },
+
   education: {
     async get() {
       return fetchFromApi(`/v0/education`, { method: 'GET' }, ApiSchemas['/v0/education.GET.response']);

@@ -30,7 +30,6 @@ TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
 /**
  * Convenience component for simple tooltips
- * Eventually this should replace `<TooltipHint>` as used from MUI
  * @example
  * <TooltipPopover label="This is a tooltip">
  *   <Button>Hover me</Button>

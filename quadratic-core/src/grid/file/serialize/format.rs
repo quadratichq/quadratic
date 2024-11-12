@@ -41,6 +41,8 @@ pub(crate) fn import_format(format: current::FormatSchema) -> Format {
         numeric_commas: format.numeric_commas,
         bold: format.bold,
         italic: format.italic,
+        underline: format.underline,
+        strike_through: format.strike_through,
         text_color: format.text_color,
         fill_color: format.fill_color,
         render_size: format.render_size.map(|render_size| RenderSize {
@@ -48,8 +50,6 @@ pub(crate) fn import_format(format: current::FormatSchema) -> Format {
             h: render_size.h,
         }),
         date_time: format.date_time,
-        underline: format.underline,
-        strike_through: format.strike_through,
     }
 }
 
@@ -118,6 +118,8 @@ pub(crate) fn export_format(format: Format) -> Option<current::FormatSchema> {
             numeric_commas: format.numeric_commas,
             bold: format.bold,
             italic: format.italic,
+            underline: format.underline,
+            strike_through: format.strike_through,
             text_color: format.text_color,
             fill_color: format.fill_color,
             render_size: format
@@ -127,8 +129,6 @@ pub(crate) fn export_format(format: Format) -> Option<current::FormatSchema> {
                     h: render_size.h,
                 }),
             date_time: format.date_time,
-            underline: format.underline,
-            strike_through: format.strike_through,
         })
     }
 }

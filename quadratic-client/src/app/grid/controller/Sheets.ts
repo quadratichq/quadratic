@@ -1,8 +1,9 @@
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsOffset, Selection, SheetInfo } from '@/app/quadratic-core-types';
+import { JsOffset, Rect, Selection, SheetInfo, SheetRect } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 
@@ -320,6 +321,42 @@ class Sheets {
 
   getRustSelection(): Selection {
     return this.sheet.cursor.getRustSelection();
+  }
+
+  getVisibleRect(): Rect {
+    const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
+    const scale = pixiApp.viewport.scale.x;
+    let { width: leftHeadingWidth, height: topHeadingHeight } = pixiApp.headings.headingSize;
+    leftHeadingWidth /= scale;
+    topHeadingHeight /= scale;
+    const top_left_cell = this.sheet.getColumnRow(left + 1 + leftHeadingWidth, top + 1 + topHeadingHeight);
+    const bottom_right_cell = this.sheet.getColumnRow(right, bottom);
+    return {
+      min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
+      max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
+    };
+  }
+
+  getVisibleSheetRect(): SheetRect | undefined {
+    const sheetBounds = this.sheet.boundsWithoutFormatting;
+    if (sheetBounds.type === 'empty') {
+      return undefined;
+    }
+    const sheetBoundsRect: Rect = {
+      min: sheetBounds.min,
+      max: sheetBounds.max,
+    };
+
+    const visibleRect = this.getVisibleRect();
+    if (!intersects.rectRect(sheetBoundsRect, visibleRect)) {
+      return undefined;
+    }
+
+    const visibleSheetRect: SheetRect = {
+      sheet_id: { id: this.sheet.id },
+      ...visibleRect,
+    };
+    return visibleSheetRect;
   }
 }
 

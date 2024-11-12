@@ -1,7 +1,7 @@
+import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMode';
 import { Box, LinearProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { TopBarLoading } from '../components/TopBarLoading';
-
 import './styles.css';
 
 export function QuadraticLoading() {
@@ -25,6 +25,7 @@ export function QuadraticLoading() {
   return (
     <>
       {/* ToBarLoading allows window to be moved while loading in electron */}
+      <ThemeAppearanceModeEffects />
       <TopBarLoading></TopBarLoading>
       <div
         style={{
