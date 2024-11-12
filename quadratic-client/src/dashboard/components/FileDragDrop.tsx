@@ -1,5 +1,6 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
+import { CloseIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 import { DragEvent, useCallback } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
@@ -41,40 +42,38 @@ export function FileDragDrop({ className }: FileDragDropProps) {
     [fileDragDropModal, handleFileImport, setFileDragDropModal, setNewFileDialogState]
   );
 
+  const handleClose = useCallback(() => {
+    setFileDragDropModal({ show: false, teamUuid: undefined, isPrivate: undefined });
+  }, [setFileDragDropModal]);
+
   if (!fileDragDropModal.show) return null;
 
   return (
-    <>
+    <div
+      id="file-drag-drop"
+      className={cn(
+        'fixed left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-white opacity-90',
+        className
+      )}
+      onClick={handleClose}
+      onDragEnter={handleDrag}
+      onDragLeave={handleDrag}
+      onDragOver={handleDrag}
+    >
       <div
-        id="file-drag-drop"
-        className={cn(
-          'fixed left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-white opacity-90',
-          className
-        )}
-        onDragEnter={handleDrag}
+        className="relative z-10 h-[90%] w-[90%] select-none rounded-lg border-4 border-dashed border-border bg-white opacity-90"
+        onDrop={handleDrop}
         onDragLeave={handleDrag}
-        onDragOver={handleDrag}
       >
-        <div
-          className="relative z-10 h-[90%] w-[90%] select-none rounded-lg border-4 border-dashed border-border bg-white opacity-90"
-          onDrop={handleDrop}
-          onDragLeave={handleDrag}
-        >
-          <div className="pointer-events-none flex h-full w-full flex-col items-center justify-center gap-4">
-            <span className="text-2xl font-bold text-[#020817]">Drop file here</span>
+        <div className="pointer-events-none flex h-full w-full flex-col items-center justify-center gap-2">
+          <span className="text-2xl font-bold text-[#020817]">Drop file here</span>
 
-            <span className="pl-4 pr-4 text-center text-base font-medium text-[#6A778B]">
-              Start a new spreadsheet by importing a CSV, Parquet, Excel or Grid file(s)
-            </span>
-          </div>
+          <span className="pl-4 pr-4 text-center text-base font-medium text-[#6A778B]">
+            Start a new spreadsheet by importing a CSV, Parquet, Excel or Grid file(s)
+          </span>
         </div>
       </div>
-      <button
-        className="absolute right-6 top-6 z-20"
-        onClick={() => setFileDragDropModal({ show: false, teamUuid: undefined, isPrivate: undefined })}
-      >
-        Close
-      </button>
-    </>
+      <CloseIcon className="absolute right-6 top-6 z-20 text-muted-foreground" />
+    </div>
   );
 }

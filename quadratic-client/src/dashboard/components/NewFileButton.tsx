@@ -1,15 +1,8 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
-import {
-  ApiIcon,
-  ArrowDropDownIcon,
-  CsvIcon,
-  DatabaseIcon,
-  DraftIcon,
-  ExamplesIcon,
-  UndoIcon,
-} from '@/shared/components/Icons';
+import { ApiIcon, ArrowDropDownIcon, DatabaseIcon, DraftIcon, ExamplesIcon, UndoIcon } from '@/shared/components/Icons';
+import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   Dialog,
@@ -25,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
@@ -33,36 +27,34 @@ import { Label } from '@/shared/shadcn/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
 export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
+  const { teamUuid } = useParams() as { teamUuid: string };
   const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-row-reverse gap-2">
+      <Link to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}>
+        <Button variant="default">New file</Button>
+      </Link>
       <Dialog>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="default">
-              New file from… <ArrowDropDownIcon />
+            <Button variant="outline">
+              Import <ArrowDropDownIcon />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <DraftIcon className="mr-3 h-6 w-6 text-primary" />
-              <span className="flex flex-col">
-                Blank
-                <span className="text-xs text-muted-foreground">An empty spreadsheet</span>
-              </span>
-            </DropdownMenuItem>
+          <DropdownMenuContent>
+            <DropdownMenuLabel className="text-xs text-muted-foreground">Data from…</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => setFileDragDropState({ show: true, isPrivate })}>
-              <CsvIcon className="mr-3 h-6 w-6 text-primary" />
+              <DraftIcon className="mr-3 h-6 w-6 text-primary" />
 
               <span className="flex flex-col">
-                Imported data
-                <span className="text-xs text-muted-foreground">.csv, .xlsx, .pqt, .grid files</span>
+                Local file
+                <span className="text-xs text-muted-foreground">.csv, .xlsx, .pqt, .grid</span>
               </span>
             </DropdownMenuItem>
             <DialogTrigger asChild>
@@ -70,8 +62,8 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
                 <ApiIcon className="mr-3 h-6 w-6 text-primary" />
 
                 <span className="flex flex-col">
-                  API data
-                  <span className="text-xs text-muted-foreground">HTTP requests from code</span>
+                  API
+                  <span className="text-xs text-muted-foreground">Fetch data over HTTP with code</span>
                 </span>
               </DropdownMenuItem>
             </DialogTrigger>
@@ -82,11 +74,12 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
 
                 <span className="flex flex-col">
                   Examples
-                  <span className="text-xs text-muted-foreground">Research, analysis, and modeling demos</span>
+                  <span className="text-xs text-muted-foreground">Files from the Quadratic team</span>
                 </span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs text-muted-foreground">Data from connections</DropdownMenuLabel>
             <DropdownMenuItem>
               <LanguageIcon language="POSTGRES" style={{ width: '20px', height: '20px' }} className="mr-3 h-6 w-6" />
               <span className="flex flex-col">
@@ -154,8 +147,8 @@ function DialogContentNewFileFromApi({ children }: any) {
       <DialogHeader>
         <DialogTitle>Fetch data from an API</DialogTitle>
         <DialogDescription>
-          Example showing how to fetch data and put it on a spreadsheet. Create a file then you can tweak the code any
-          way you want including custom headers, authentication, and more.
+          This example shows how to fetch data and output it on the sheet. Once you create the file you can edit the
+          code however you wish, including custom headers, authentication, and more.
         </DialogDescription>
       </DialogHeader>
       <div className="relative flex flex-col gap-2">
@@ -273,7 +266,7 @@ values = df.iloc[0].tolist()
         <DialogClose>
           <Button variant="outline">Cancel</Button>
         </DialogClose>
-        <Button>Start file with API request</Button>
+        <Button>Create file with API request</Button>
       </DialogFooter>
     </DialogContent>
   );

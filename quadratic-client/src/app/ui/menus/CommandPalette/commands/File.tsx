@@ -21,6 +21,7 @@ const commands: CommandGroup = {
       keywords: ['New file', 'Create file'],
       isAvailable: createNewFileAction.isAvailable,
       Component: (props) => {
+        // TODO: create a private file
         const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
         const action = () => createNewFileAction.run({ setEditorInteractionState });
         return <CommandPaletteListItem {...props} icon={<DraftIcon />} action={action} />;

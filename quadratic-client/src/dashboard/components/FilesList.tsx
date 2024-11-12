@@ -3,15 +3,13 @@ import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import { Action as FilesAction } from '@/routes/api.files.$uuid';
-import { AddIcon } from '@/shared/components/Icons';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
-import { ROUTES } from '@/shared/constants/routes';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link, useFetchers, useLocation } from 'react-router-dom';
+import { useFetchers, useLocation } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { Empty } from './Empty';
 import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
@@ -125,18 +123,6 @@ export function FilesList({
       />
 
       <FilesListItems viewPreferences={viewPreferences}>
-        {teamUuid && (
-          <li className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-border hover:bg-muted">
-            <Link
-              to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}
-              className="flex flex-col items-center justify-center rounded border-dashed border-border text-sm text-muted-foreground"
-            >
-              <AddIcon style={{ fontSize: '24px', width: '24px', height: '24px' }} className="mb-2" />
-              New file
-              <em className="text-xs">(or drag and drop)</em>
-            </Link>
-          </li>
-        )}
         {filesToRender.map((file, i) => (
           <FilesListItemUserFile
             key={file.uuid}
