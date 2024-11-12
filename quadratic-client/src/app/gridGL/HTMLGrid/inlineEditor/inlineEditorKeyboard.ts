@@ -2,6 +2,7 @@
 //! handles when the cursorIsMoving outside of the inline formula edit box.
 
 import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getSingleSelection } from '@/app/grid/sheet/selection';
@@ -307,6 +308,24 @@ class InlineEditorKeyboard {
       }
     }
 
+    // show go to menu
+    else if (matchShortcut(Action.ShowGoToMenu, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(0, 0, false).then(() => {
+        defaultActionSpec[Action.ShowGoToMenu].run();
+      });
+    }
+
+    // show find in current sheet
+    else if (matchShortcut(Action.FindInCurrentSheet, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(0, 0, false).then(() => {
+        defaultActionSpec[Action.FindInCurrentSheet].run();
+      });
+    }
+
     // trigger cell type menu
     else if (matchShortcut(Action.ShowCellTypeMenu, e) && inlineEditorMonaco.get().length === 0) {
       e.preventDefault();
@@ -335,12 +354,6 @@ class InlineEditorKeyboard {
       const today = new Date();
       const formattedTime = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
       inlineEditorMonaco.insertTextAtCursor(formattedTime);
-    }
-
-    // prevent browser default behavior for these shortcuts
-    else if (matchShortcut(Action.ShowGoToMenu, e) || matchShortcut(Action.FindInCurrentSheet, e)) {
-      e.stopPropagation();
-      e.preventDefault();
     }
 
     // Fallback for all other keys (used to end cursorIsMoving and return
