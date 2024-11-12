@@ -296,24 +296,16 @@ class InlineEditorMonaco {
   }
 
   // Gets the position and size of the editor for use in inlineEditorHandler.keepCursorVisible.
-  getEditorSizing(): { bounds: DOMRect; position: { top: number; left: number; height: number } } {
+  getEditorBounds(): { bounds: DOMRect } {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in getEditorPositioning');
-    }
-    const editorPosition = this.editor.getPosition();
-    if (!editorPosition) {
-      throw new Error('Expected editorPosition to be defined in getEditorPositioning');
-    }
-    const position = this.editor.getScrolledVisiblePosition(editorPosition);
-    if (!position) {
-      throw new Error('Expected position to be defined in getEditorPositioning');
     }
     const domNode = this.editor.getDomNode();
     if (!domNode) {
       throw new Error('Expected domNode to be defined in getEditorPositioning');
     }
     const bounds = domNode.getBoundingClientRect();
-    return { bounds, position };
+    return { bounds };
   }
 
   getNonWhitespaceCharBeforeCursor(): string {

@@ -4,7 +4,6 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { intersects } from '@/app/gridGL/helpers/intersects';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
@@ -25,7 +24,7 @@ import { Rectangle } from 'pixi.js';
 import { inlineEditorEvents } from './inlineEditorEvents';
 
 // Minimum amount to scroll viewport when cursor is near the edge.
-const MINIMUM_MOVE_VIEWPORT = 50;
+const MINIMUM_MOVE_VIEWPORT = 25;
 
 class InlineEditorHandler {
   private div?: HTMLDivElement;
@@ -96,42 +95,51 @@ class InlineEditorHandler {
   keepCursorVisible = () => {
     if (sheets.sheet.id !== this.location?.sheetId || !this.showing) return;
 
-    const { position, bounds } = inlineEditorMonaco.getEditorSizing();
     const canvas = pixiApp.canvas.getBoundingClientRect();
-    const cursor = position.left + bounds.left;
-    const worldCursorTop = pixiApp.viewport.toWorld(cursor, bounds.top - canvas.top);
-    const worldCursorBottom = pixiApp.viewport.toWorld(cursor, bounds.bottom - canvas.top);
+    const headingSize = pixiApp.headings.headingSize;
+    const scale = pixiApp.viewport.scale.x;
+
+    // calculate sheet rectangle, without heading, factoring in scale
     const viewportBounds = pixiApp.viewport.getVisibleBounds();
+    const sheetRectangle = new Rectangle(
+      viewportBounds.left + headingSize.width / scale,
+      viewportBounds.top + headingSize.height / scale,
+      viewportBounds.width - headingSize.width / scale,
+      viewportBounds.height - headingSize.height / scale
+    );
 
-    if (
-      intersects.rectangleRectangle(
-        viewportBounds,
-        new Rectangle(
-          worldCursorTop.x,
-          worldCursorTop.y,
-          worldCursorBottom.x - worldCursorTop.x,
-          worldCursorBottom.y - worldCursorTop.y
-        )
-      )
-    ) {
-      return;
+    // calculate inline editor rectangle, factoring in scale
+    const { bounds } = inlineEditorMonaco.getEditorBounds();
+    const editorWidth = this.width * scale;
+    const editorTopLeft = pixiApp.viewport.toWorld(bounds.left - canvas.left, bounds.top - canvas.top);
+    const editorBottomRight = pixiApp.viewport.toWorld(
+      bounds.left + editorWidth - canvas.left,
+      bounds.bottom - canvas.top
+    );
+    const editorRectangle = new Rectangle(
+      editorTopLeft.x,
+      editorTopLeft.y,
+      editorBottomRight.x - editorTopLeft.x,
+      editorBottomRight.y - editorTopLeft.y
+    );
+
+    let x = 0;
+    if (editorRectangle.right > sheetRectangle.right) {
+      x = sheetRectangle.right - (editorRectangle.right + MINIMUM_MOVE_VIEWPORT);
+    } else if (editorRectangle.left < sheetRectangle.left) {
+      x = sheetRectangle.left + MINIMUM_MOVE_VIEWPORT - editorRectangle.left;
     }
 
-    let x = 0,
-      y = 0;
-    if (worldCursorTop.x > viewportBounds.right) {
-      x = viewportBounds.right - (worldCursorTop.x + MINIMUM_MOVE_VIEWPORT);
-    } else if (worldCursorTop.x < viewportBounds.left) {
-      x = viewportBounds.left + MINIMUM_MOVE_VIEWPORT - worldCursorTop.x;
+    let y = 0;
+    if (editorRectangle.bottom > sheetRectangle.bottom) {
+      y = sheetRectangle.bottom - (editorRectangle.bottom + MINIMUM_MOVE_VIEWPORT);
+    } else if (editorRectangle.top < sheetRectangle.top) {
+      y = sheetRectangle.top + MINIMUM_MOVE_VIEWPORT - editorRectangle.top;
     }
-    if (worldCursorBottom.y > viewportBounds.bottom) {
-      y = viewportBounds.bottom - (worldCursorBottom.y + MINIMUM_MOVE_VIEWPORT);
-    } else if (worldCursorTop.y < viewportBounds.top) {
-      y = viewportBounds.top + MINIMUM_MOVE_VIEWPORT - worldCursorTop.y;
-    }
+
     if (x || y) {
-      pixiApp.viewport.x += x;
-      pixiApp.viewport.y += y;
+      pixiApp.viewport.x += x * scale;
+      pixiApp.viewport.y += y * scale;
       pixiApp.setViewportDirty();
     }
   };
