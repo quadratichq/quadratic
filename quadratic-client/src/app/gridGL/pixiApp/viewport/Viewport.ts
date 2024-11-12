@@ -133,7 +133,7 @@ export class Viewport extends PixiViewport {
       this.snap(-headings.width / this.scale.x, -headings.height / this.scale.y, {
         topLeft: true,
         time: SNAPPING_TIME,
-        ease: 'easeInOutSine',
+        ease: 'easeInSine',
         removeOnComplete: true,
         interrupt: true,
         friction: 1,
