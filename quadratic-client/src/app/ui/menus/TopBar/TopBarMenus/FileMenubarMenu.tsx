@@ -7,10 +7,9 @@ import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItem
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { MenubarContent, MenubarItem, MenubarMenu, MenubarSeparator, MenubarTrigger } from '@/shared/shadcn/ui/menubar';
-import { Link, useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
 // TODO: (enhancement) move these into `fileActionsSpec` by making the `.run()`
@@ -36,11 +35,9 @@ export const FileMenubarMenu = () => {
       <MenubarTrigger>File</MenubarTrigger>
       <MenubarContent className="pointer-move-ignore">
         {createNewFileAction.isAvailable(isAvailableArgs) && (
-          <MenubarItem asChild>
-            <Link to={ROUTES.CREATE_FILE_PRIVATE(teamUuid)} reloadDocument>
-              <DraftIcon />
-              {createNewFileAction.label}
-            </Link>
+          <MenubarItem onClick={() => createNewFileAction.run({ teamUuid })}>
+            <DraftIcon />
+            {createNewFileAction.label}
           </MenubarItem>
         )}
         {duplicateFileAction.isAvailable(isAvailableArgs) && (

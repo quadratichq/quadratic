@@ -103,7 +103,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             My files
           </SidebarNavLink>
           <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
-            New private file
+            New personal file
           </SidebarNavLinkCreateButton>
         </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
