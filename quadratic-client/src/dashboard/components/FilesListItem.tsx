@@ -1,5 +1,6 @@
 import { updateRecentFiles } from '@/app/ui/menus/TopBar/TopBarMenus/updateRecentFiles';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import {
   Action as FileAction,
   getActionFileDelete,
@@ -71,13 +72,12 @@ export function FilesListItemUserFile({
   const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
+  const fileDragRef = useRef<HTMLDivElement>(null);
+  const { loggedInUser } = useRootRouteLoaderData();
   const {
     activeTeam: {
       team: { uuid: activeTeamUuid },
     },
-  } = useDashboardRouteLoaderData();
-  const fileDragRef = useRef<HTMLDivElement>(null);
-  const {
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
@@ -132,7 +132,7 @@ export function FilesListItemUserFile({
 
   const handleDelete = () => {
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-      const data = getActionFileDelete();
+      const data = getActionFileDelete({ userEmail: loggedInUser?.email ?? '', redirect: false });
       fetcherDelete.submit(data, fetcherSubmitOpts);
       updateRecentFiles(uuid, '', false);
     }

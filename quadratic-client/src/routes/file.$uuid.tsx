@@ -10,6 +10,7 @@ import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
@@ -96,6 +97,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
 export const Component = () => {
   // Initialize recoil with the file's permission we get from the server
+  const { loggedInUser } = useRootRouteLoaderData();
   const {
     userMakingRequest: { filePermissions },
     file: { uuid },
@@ -103,6 +105,7 @@ export const Component = () => {
   const initializeState = ({ set }: MutableSnapshot) => {
     set(editorInteractionStateAtom, (prevState) => ({
       ...prevState,
+      user: loggedInUser,
       uuid,
       permissions: filePermissions,
     }));

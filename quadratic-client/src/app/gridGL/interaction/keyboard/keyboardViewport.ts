@@ -1,5 +1,6 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
+import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import { debug } from '@/app/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets.js';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
@@ -50,6 +51,12 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
       showShareFileMenu: false,
       showCommandPalette: !editorInteractionState.showCommandPalette,
     });
+    return true;
+  }
+
+  // Toggle global AI chat
+  if (matchShortcut(Action.ToggleAIAnalyst, event)) {
+    viewActionsSpec[Action.ToggleAIAnalyst].run();
     return true;
   }
 

@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use super::{Duration, Instant, IsBlank};
 use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-    CodeResult, RunError, RunErrorMsg, Span, Spanned,
+    grid::{js_types::JsCellValuePos, CodeCellLanguage, NumericFormat, NumericFormatKind},
+    CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
 };
 
 // todo: fill this out
@@ -305,6 +305,14 @@ impl CellValue {
             // these should not return a value
             CellValue::Code(_) => String::new(),
             CellValue::Image(_) => String::new(),
+        }
+    }
+
+    pub fn to_cell_value_pos(self, pos: Pos) -> JsCellValuePos {
+        JsCellValuePos {
+            value: self.to_string(),
+            kind: self.type_name().to_string(),
+            pos: pos.into(),
         }
     }
 

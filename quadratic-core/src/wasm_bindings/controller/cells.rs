@@ -2,7 +2,9 @@ use std::str::FromStr;
 
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{controller::GridController, grid::SheetId, selection::Selection, Pos, Rect};
+use crate::{
+    controller::GridController, grid::SheetId, selection::Selection, Pos, Rect, SheetRect,
+};
 
 #[wasm_bindgen]
 impl GridController {
@@ -26,6 +28,39 @@ impl GridController {
             Ok(serde_wasm_bindgen::to_value(&self.set_cell_value(
                 pos.to_sheet_pos(sheet_id),
                 value,
+                cursor,
+            ))?)
+        } else {
+            Err(JsValue::from_str("Invalid sheet id"))
+        }
+    }
+
+    /// Sets a 2d array of cell values with x and y being the top left corner of the 2d array.
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "setCellValues")]
+    pub fn js_set_cell_values(
+        &mut self,
+        sheet_id: String,
+        x: i32,
+        y: i32,
+        values: JsValue,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let values: Vec<Vec<String>> = serde_wasm_bindgen::from_value(values)
+            .map_err(|_| JsValue::from_str("Invalid values"))?;
+        let values: Vec<Vec<&str>> = values
+            .iter()
+            .map(|row| row.iter().map(|s| s.as_str()).collect())
+            .collect();
+        let pos = Pos {
+            x: x as i64,
+            y: y as i64,
+        };
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            Ok(serde_wasm_bindgen::to_value(&self.set_cell_values(
+                pos.to_sheet_pos(sheet_id),
+                values,
                 cursor,
             ))?)
         } else {
@@ -111,5 +146,45 @@ impl GridController {
             Selection::from_str(&selection).map_err(|_| JsValue::from_str("Invalid selection"))?;
         self.delete_cells(&selection, cursor);
         Ok(())
+    }
+
+    /// gets values, types with position for all cells in selection
+    /// returns a stringified array of JsCellValuePosAIContext for all sheet_rects
+    #[wasm_bindgen(js_name = "getAIContextRectsInSheetRects")]
+    pub fn js_ai_context_rects_in_sheet_rects(
+        &self,
+        sheet_rects: String,
+        max_rects: Option<usize>,
+    ) -> Result<String, JsValue> {
+        let sheet_rects: Vec<SheetRect> = serde_json::from_str::<Vec<SheetRect>>(&sheet_rects)
+            .map_err(|_| JsValue::from_str("Invalid sheet rects"))?;
+        let mut all_ai_context_rects = Vec::new();
+        for sheet_rect in sheet_rects {
+            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+                let ai_context_rects =
+                    sheet.js_ai_context_rects_in_sheet_rect(sheet_rect.into(), max_rects);
+                all_ai_context_rects.push(ai_context_rects);
+            }
+        }
+        Ok(serde_json::to_string(&all_ai_context_rects).unwrap_or_default())
+    }
+
+    /// gets JsCodeCell for all cells in sheet_rects that have errors
+    /// returns a stringified array of JsCodeCell for all sheet_rects
+    #[wasm_bindgen(js_name = "getErroredCodeCellsInSheetRects")]
+    pub fn js_errored_code_cells_in_sheet_rects(
+        &self,
+        sheet_rects: String,
+    ) -> Result<String, JsValue> {
+        let sheet_rects: Vec<SheetRect> = serde_json::from_str::<Vec<SheetRect>>(&sheet_rects)
+            .map_err(|_| JsValue::from_str("Invalid sheet rects"))?;
+        let mut all_errored_code_cells = Vec::new();
+        for sheet_rect in sheet_rects {
+            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+                let errored_code_cells = sheet.js_errored_code_cell_rect(sheet_rect.into());
+                all_errored_code_cells.push(errored_code_cells);
+            }
+        }
+        Ok(serde_json::to_string(&all_errored_code_cells).unwrap_or_default())
     }
 }
