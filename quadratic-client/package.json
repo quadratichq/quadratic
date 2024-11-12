@@ -60,6 +60,7 @@
     "mixpanel-browser": "^2.46.0",
     "monaco-editor": "^0.40.0",
     "next-themes": "^0.3.0",
+    "partial-json": "^0.1.7",
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.10",
     "react": "^18.2.0",

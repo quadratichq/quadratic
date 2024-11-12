@@ -16,13 +16,16 @@ import {
   CodeCellLanguage,
   Format,
   JsCellValue,
+  JsCellValuePosAIContext,
   JsCodeCell,
   JsCodeResult,
+  JsPos,
   JsRenderCell,
   MinMax,
   SearchOptions,
   Selection,
   SheetPos,
+  SheetRect,
   SummarizeSelectionResult,
   Validation,
 } from '@/app/quadratic-core-types';
@@ -35,10 +38,14 @@ import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import {
   ClientCoreFindNextColumn,
+  ClientCoreFindNextColumnForRect,
   ClientCoreFindNextRow,
+  ClientCoreFindNextRowForRect,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
+  ClientCoreMoveCodeCellHorizontally,
+  ClientCoreMoveCodeCellVertically,
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
 import { coreClient } from './coreClient';
@@ -220,6 +227,16 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.setCellValue(sheetId, x, y, value, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellValues(sheetId: string, x: number, y: number, values: string[][], cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellValues(sheetId, x, y, values, cursor);
         resolve(undefined);
       });
     });
@@ -888,6 +905,42 @@ class Core {
     });
   }
 
+  findNextColumnForRect(data: ClientCoreFindNextColumnForRect): Promise<number> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        resolve(
+          this.gridController.findNextColumnForRect(
+            data.sheetId,
+            data.columnStart,
+            data.row,
+            data.width,
+            data.height,
+            data.reverse
+          )
+        );
+      });
+    });
+  }
+
+  findNextRowForRect(data: ClientCoreFindNextRowForRect): Promise<number> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        resolve(
+          this.gridController.findNextRowForRect(
+            data.sheetId,
+            data.column,
+            data.rowStart,
+            data.width,
+            data.height,
+            data.reverse
+          )
+        );
+      });
+    });
+  }
+
   commitTransientResize(sheetId: string, transientResize: string, cursor: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -1013,6 +1066,30 @@ class Core {
     });
   }
 
+  moveCodeCellVertically(message: ClientCoreMoveCodeCellVertically): JsPos {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.moveCodeCellVertically(
+      message.sheetId,
+      BigInt(message.x),
+      BigInt(message.y),
+      message.sheetEnd,
+      message.reverse,
+      message.cursor
+    );
+  }
+
+  moveCodeCellHorizontally(message: ClientCoreMoveCodeCellHorizontally): JsPos {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.moveCodeCellHorizontally(
+      message.sheetId,
+      BigInt(message.x),
+      BigInt(message.y),
+      message.sheetEnd,
+      message.reverse,
+      message.cursor
+    );
+  }
+
   getValidations(sheetId: string): Validation[] {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const validations = this.gridController.getValidations(sheetId);
@@ -1086,6 +1163,27 @@ class Core {
     const cellValue = this.gridController.getCellValue(sheetId, posToPos(x, y));
     if (cellValue) {
       return JSON.parse(cellValue);
+    }
+  }
+
+  getAIContextRectsInSheetRects(sheetRects: SheetRect[], maxRects?: number): JsCellValuePosAIContext[][] | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const aiContextRects = this.gridController.getAIContextRectsInSheetRects(
+      JSON.stringify(sheetRects, bigIntReplacer),
+      maxRects
+    );
+    if (aiContextRects) {
+      return JSON.parse(aiContextRects);
+    }
+  }
+
+  getErroredCodeCellsInSheetRects(sheetRects: SheetRect[]): JsCodeCell[][] | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const erroredCodeCells = this.gridController.getErroredCodeCellsInSheetRects(
+      JSON.stringify(sheetRects, bigIntReplacer)
+    );
+    if (erroredCodeCells) {
+      return JSON.parse(erroredCodeCells);
     }
   }
 

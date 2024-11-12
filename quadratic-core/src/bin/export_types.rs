@@ -7,8 +7,10 @@ use controller::operations::clipboard::PasteSpecial;
 use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::formats::format::Format;
 use grid::js_types::{
-    CellFormatSummary, JsCellValue, JsClipboard, JsOffset, JsPos, JsRenderFill, JsRowHeight,
-    JsSheetFill, JsValidationWarning,
+    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
+    JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsPos, JsRenderCell, JsRenderCellSpecial,
+    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsRowHeight, JsSheetFill,
+    JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::validations::validation::{
@@ -36,10 +38,6 @@ use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::run_code::get_cells::JsGetCellResponse;
 use quadratic_core::controller::transaction_types::JsCodeResult;
-use quadratic_core::grid::js_types::{
-    JsCodeCell, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-    JsRenderCodeCellState,
-};
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::{
     BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
@@ -96,6 +94,8 @@ fn main() {
         JsBorderVertical,
         JsBordersSheet,
         JsCellValue,
+        JsCellValuePos,
+        JsCellValuePosAIContext,
         JsClipboard,
         JsCodeCell,
         JsCodeResult,

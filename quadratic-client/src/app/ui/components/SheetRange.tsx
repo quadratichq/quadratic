@@ -1,15 +1,15 @@
-import { Input } from '@/shared/shadcn/ui/input';
-import { Label } from '@/shared/shadcn/ui/label';
-import { TooltipHint } from './TooltipHint';
-import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
-import { Button } from '@/shared/shadcn/ui/button';
-import { FocusEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { cn } from '@/shared/shadcn/utils';
-import { Selection } from '@/app/quadratic-core-types';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Selection } from '@/app/quadratic-core-types';
 import { a1StringToSelection, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Input } from '@/shared/shadcn/ui/input';
+import { Label } from '@/shared/shadcn/ui/label';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
+import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
+import { FocusEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface Props {
   label?: string;
@@ -153,16 +153,14 @@ export const SheetRange = (props: Props) => {
           />
         </div>
         {!readOnly && (
-          <TooltipHint
-            title={disableButton ? 'Can only insert from original sheet' : 'Insert current selection'}
-            placement="bottom"
+          <TooltipPopover
+            label={disableButton ? 'Can only insert from original sheet' : 'Insert current selection'}
+            side="bottom"
           >
-            <span>
-              <Button size="sm" onClick={onInsert} disabled={disableButton}>
-                <HighlightAltIcon fontSize="small" />
-              </Button>
-            </span>
-          </TooltipHint>
+            <Button size="sm" onClick={onInsert} disabled={disableButton}>
+              <HighlightAltIcon fontSize="small" />
+            </Button>
+          </TooltipPopover>
         )}
       </div>
       {rangeError && <div className="text-xs text-red-500">{rangeError}</div>}

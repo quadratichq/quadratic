@@ -39,6 +39,7 @@
     "pyimport",
     "rects",
     "reqwest",
+    "scrollend",
     "shadcn",
     "Signin",
     "smallpop",
@@ -56,13 +57,8 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
-  "rust-analyzer.linkedProjects": [
-    "./Cargo.toml",
-    "./quadratic-files/Cargo.toml",
-    "./quadratic-core/Cargo.toml",
-    "./quadratic-multiplayer/Cargo.toml",
-    "./quadratic-rust-client/Cargo.toml"
-  ],
+  "rust-analyzer.runnables.extraEnv": { "CARGO_TARGET_DIR": "target/rust-analyzer" },
+  "rust-analyzer.check.extraArgs": ["--target-dir=target/rust-analyzer"],
   "rust-analyzer.checkOnSave": true,
   "rust-analyzer.cargo.unsetTest": true,
   // "rust-analyzer.checkOnSave.command": "clippy",

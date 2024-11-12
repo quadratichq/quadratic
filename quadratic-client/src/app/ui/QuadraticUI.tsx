@@ -1,4 +1,6 @@
+import { hasPermissionToEditFile } from '@/app/actions';
 import {
+  editorInteractionStatePermissionsAtom,
   editorInteractionStateShowNewFileMenuAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
@@ -11,6 +13,7 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import CodeEditor from '@/app/ui/menus/CodeEditor';
@@ -24,16 +27,18 @@ import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
 import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { pixiAppSettings } from '../gridGL/pixiApp/PixiAppSettings';
 
 export default function QuadraticUI() {
+  const { isAuthenticated } = useRootRouteLoaderData();
   const {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
@@ -45,6 +50,8 @@ export default function QuadraticUI() {
   const [showNewFileMenu, setShowNewFileMenu] = useRecoilState(editorInteractionStateShowNewFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
 
   // Show negative_offsets warning if present in URL (the result of an imported
   // file)
@@ -84,6 +91,7 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
+          {canEditFile && isAuthenticated && <AIAnalyst />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}

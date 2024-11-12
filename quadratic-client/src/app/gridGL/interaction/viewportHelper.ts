@@ -61,6 +61,44 @@ export function isColumnVisible(column: number): boolean {
   return true;
 }
 
+// Makes a rect visible in the viewport
+export function rectVisible(min: Coordinate, max: Coordinate): boolean {
+  // returns true if the rect is visible in the viewport
+  const { viewport, headings } = pixiApp;
+  const sheet = sheets.sheet;
+  const headingSize = headings.headingSize;
+
+  const topLeftCell = sheet.getCellOffsets(min.x, min.y);
+  const bottomRightCell = sheet.getCellOffsets(max.x, max.y);
+  let is_off_screen = false;
+
+  if (bottomRightCell.right > viewport.right) {
+    viewport.right = bottomRightCell.right;
+    is_off_screen = true;
+  }
+  if (topLeftCell.left + headingSize.width < viewport.left) {
+    viewport.left = topLeftCell.left - headingSize.width / viewport.scale.x;
+    is_off_screen = true;
+  }
+
+  if (bottomRightCell.bottom > viewport.bottom) {
+    viewport.bottom = bottomRightCell.bottom;
+    is_off_screen = true;
+  }
+  if (topLeftCell.top + headingSize.height < viewport.top) {
+    viewport.top = topLeftCell.top - headingSize.height / viewport.scale.x;
+    is_off_screen = true;
+  }
+
+  return !is_off_screen;
+}
+
+export function ensureRectVisible(min: Coordinate, max: Coordinate) {
+  if (!rectVisible(min, max)) {
+    pixiApp.viewportChanged();
+  }
+}
+
 // Makes a cell visible in the viewport
 export function cellVisible(
   coordinate: Coordinate = {

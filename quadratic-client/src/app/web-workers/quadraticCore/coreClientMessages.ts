@@ -10,9 +10,11 @@ import {
   Format,
   JsBordersSheet,
   JsCellValue,
+  JsCellValuePosAIContext,
   JsCodeCell,
   JsHtmlOutput,
   JsOffset,
+  JsPos,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -310,6 +312,15 @@ export interface ClientCoreSetCellValue {
   x: number;
   y: number;
   value: string;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellValues {
+  type: 'clientCoreSetCellValues';
+  sheetId: string;
+  x: number;
+  y: number;
+  values: string[][];
   cursor?: string;
 }
 
@@ -772,6 +783,40 @@ export interface CoreClientFindNextRow {
   row?: number;
 }
 
+export interface ClientCoreFindNextColumnForRect {
+  type: 'clientCoreFindNextColumnForRect';
+  id: number;
+  sheetId: string;
+  columnStart: number;
+  row: number;
+  width: number;
+  height: number;
+  reverse: boolean;
+}
+
+export interface CoreClientFindNextColumnForRect {
+  type: 'coreClientFindNextColumnForRect';
+  id: number;
+  column: number;
+}
+
+export interface ClientCoreFindNextRowForRect {
+  type: 'clientCoreFindNextRowForRect';
+  id: number;
+  sheetId: string;
+  column: number;
+  rowStart: number;
+  width: number;
+  height: number;
+  reverse: boolean;
+}
+
+export interface CoreClientFindNextRowForRect {
+  type: 'coreClientFindNextRowForRect';
+  id: number;
+  row: number;
+}
+
 export interface ClientCoreCommitTransientResize {
   type: 'clientCoreCommitTransientResize';
   sheetId: string;
@@ -853,6 +898,40 @@ export interface ClientCoreMoveCells {
   targetX: number;
   targetY: number;
   cursor: string;
+}
+
+export interface ClientCoreMoveCodeCellVertically {
+  type: 'clientCoreMoveCodeCellVertically';
+  sheetId: string;
+  x: number;
+  y: number;
+  sheetEnd: boolean;
+  reverse: boolean;
+  cursor: string;
+  id: number;
+}
+
+export interface CoreClientMoveCodeCellVertically {
+  type: 'coreClientMoveCodeCellVertically';
+  pos: JsPos;
+  id: number;
+}
+
+export interface ClientCoreMoveCodeCellHorizontally {
+  type: 'clientCoreMoveCodeCellHorizontally';
+  sheetId: string;
+  x: number;
+  y: number;
+  sheetEnd: boolean;
+  reverse: boolean;
+  cursor: string;
+  id: number;
+}
+
+export interface CoreClientMoveCodeCellHorizontally {
+  type: 'coreClientMoveCodeCellHorizontally';
+  pos: JsPos;
+  id: number;
 }
 
 export interface CoreClientSetCursorSelection {
@@ -972,6 +1051,31 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
+export interface ClientCoreGetAIContextRectsInSheetRects {
+  type: 'clientCoreGetAIContextRectsInSheetRects';
+  id: number;
+  sheetRects: SheetRect[];
+  maxRects: number | undefined;
+}
+
+export interface CoreClientGetAIContextRectsInSheetRects {
+  type: 'coreClientGetAIContextRectsInSheetRects';
+  id: number;
+  value: JsCellValuePosAIContext[][] | undefined;
+}
+
+export interface ClientCoreGetErroredCodeCellsInSheetRects {
+  type: 'clientCoreGetErroredCodeCellsInSheetRects';
+  id: number;
+  sheetRects: SheetRect[];
+}
+
+export interface CoreClientGetErroredCodeCellsInSheetRects {
+  type: 'coreClientGetErroredCodeCellsInSheetRects';
+  id: number;
+  value: JsCodeCell[][] | undefined;
+}
+
 export interface ClientCoreNeighborText {
   type: 'clientCoreNeighborText';
   id: number;
@@ -1028,6 +1132,7 @@ export type ClientCoreMessage =
   | ClientCoreCellHasContent
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
+  | ClientCoreSetCellValues
   | ClientCoreGetCellFormatSummary
   | ClientCoreInitMultiplayer
   | ClientCoreSummarizeSelection
@@ -1101,7 +1206,14 @@ export type ClientCoreMessage =
   | ClientCoreDeleteColumns
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
-  | ClientCoreInsertRow;
+  | ClientCoreInsertRow
+  | ClientCoreGetCellValue
+  | ClientCoreGetAIContextRectsInSheetRects
+  | ClientCoreGetErroredCodeCellsInSheetRects
+  | ClientCoreFindNextColumnForRect
+  | ClientCoreFindNextRowForRect
+  | ClientCoreMoveCodeCellVertically
+  | ClientCoreMoveCodeCellHorizontally;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1165,4 +1277,10 @@ export type CoreClientMessage =
   | CoreClientNeighborText
   | CoreClientBordersSheet
   | CoreClientGetCellValue
-  | CoreClientClientMessage;
+  | CoreClientClientMessage
+  | CoreClientGetAIContextRectsInSheetRects
+  | CoreClientGetErroredCodeCellsInSheetRects
+  | CoreClientFindNextColumnForRect
+  | CoreClientFindNextRowForRect
+  | CoreClientMoveCodeCellVertically
+  | CoreClientMoveCodeCellHorizontally;

@@ -1,8 +1,9 @@
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { ColumnRowCursor, SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsOffset, Selection, SheetInfo } from '@/app/quadratic-core-types';
+import { JsOffset, Rect, Selection, SheetInfo, SheetRect } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -269,11 +270,11 @@ class Sheets {
   }
 
   userAddSheet() {
-    quadraticCore.addSheet(sheets.getCursorPosition());
+    quadraticCore.addSheet(this.getCursorPosition());
   }
 
   duplicate() {
-    quadraticCore.duplicateSheet(this.current, sheets.getCursorPosition());
+    quadraticCore.duplicateSheet(this.current, this.getCursorPosition());
   }
 
   userDeleteSheet(id: string) {
@@ -331,7 +332,7 @@ class Sheets {
   // Gets a stringified sheet name to id map for Rust's A1 functions
   getRustSheetMap(): string {
     const sheetMap: Record<string, { id: string }> = {};
-    sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
+    this.sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
     return JSON.stringify(sheetMap);
   }
 
@@ -360,13 +361,49 @@ class Sheets {
         };
       }
     }
-    sheets.sheet.cursor.changePosition({
+    this.sheet.cursor.changePosition({
       keyboardMovePosition: pos,
       cursorPosition: pos,
       multiCursor,
       columnRow,
       ensureVisible,
     });
+  }
+
+  getVisibleRect(): Rect {
+    const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
+    const scale = pixiApp.viewport.scale.x;
+    let { width: leftHeadingWidth, height: topHeadingHeight } = pixiApp.headings.headingSize;
+    leftHeadingWidth /= scale;
+    topHeadingHeight /= scale;
+    const top_left_cell = this.sheet.getColumnRow(left + 1 + leftHeadingWidth, top + 1 + topHeadingHeight);
+    const bottom_right_cell = this.sheet.getColumnRow(right, bottom);
+    return {
+      min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
+      max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
+    };
+  }
+
+  getVisibleSheetRect(): SheetRect | undefined {
+    const sheetBounds = this.sheet.boundsWithoutFormatting;
+    if (sheetBounds.type === 'empty') {
+      return undefined;
+    }
+    const sheetBoundsRect: Rect = {
+      min: sheetBounds.min,
+      max: sheetBounds.max,
+    };
+
+    const visibleRect = this.getVisibleRect();
+    if (!intersects.rectRect(sheetBoundsRect, visibleRect)) {
+      return undefined;
+    }
+
+    const visibleSheetRect: SheetRect = {
+      sheet_id: { id: this.sheet.id },
+      ...visibleRect,
+    };
+    return visibleSheetRect;
   }
 }
 

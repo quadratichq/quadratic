@@ -13,7 +13,9 @@ use super::column::Column;
 use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
-use super::js_types::{CellFormatSummary, CellType, JsCellValue};
+use super::js_types::{
+    CellFormatSummary, CellType, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsCodeCell,
+};
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
 use crate::selection::Selection;
@@ -233,6 +235,94 @@ impl Sheet {
             value: value.to_string(),
             kind: value.type_name().to_string(),
         })
+    }
+
+    /// Returns the JsCellValuePos at a position
+    pub fn js_cell_value_pos(&self, pos: Pos) -> Option<JsCellValuePos> {
+        self.display_value(pos).map(|cell_value| match cell_value {
+            CellValue::Image(_) => {
+                CellValue::Image("Javascript chart".into()).to_cell_value_pos(pos)
+            }
+            CellValue::Html(_) => CellValue::Html("Python chart".into()).to_cell_value_pos(pos),
+            _ => cell_value.to_cell_value_pos(pos),
+        })
+    }
+
+    /// Returns the JsCellValuePos in a rect
+    pub fn js_cell_value_pos_rect(
+        &self,
+        rect: Rect,
+        max_rows: Option<u32>,
+    ) -> Vec<Vec<JsCellValuePos>> {
+        let mut rect_values = Vec::new();
+        for y in rect
+            .y_range()
+            .take(max_rows.unwrap_or(rect.height()) as usize)
+        {
+            let mut row_values = Vec::new();
+            for x in rect.x_range() {
+                if let Some(cell_value_pos) = self.js_cell_value_pos((x, y).into()) {
+                    row_values.push(cell_value_pos);
+                }
+            }
+            if !row_values.is_empty() {
+                rect_values.push(row_values);
+            }
+        }
+        rect_values
+    }
+
+    /// Returns tabular data rects of JsCellValuePos in a sheet rect
+    pub fn js_ai_context_rects_in_sheet_rect(
+        &self,
+        rect: Rect,
+        max_rects: Option<usize>,
+    ) -> Vec<JsCellValuePosAIContext> {
+        let mut ai_context_rects = Vec::new();
+        let tabular_data_rects = self.find_tabular_data_rects(rect, max_rects);
+        for rect in tabular_data_rects {
+            let js_cell_value_pos_ai_context = JsCellValuePosAIContext {
+                sheet_name: self.name.clone(),
+                rect_origin: rect.min.into(),
+                rect_width: rect.width(),
+                rect_height: rect.height(),
+                starting_rect_values: self.js_cell_value_pos_rect(rect, Some(3)),
+            };
+            ai_context_rects.push(js_cell_value_pos_ai_context);
+        }
+        ai_context_rects
+    }
+
+    /// Returns JsCodeCell for all code cells in a rect that have errors
+    pub fn js_errored_code_cell_rect(&self, rect: Rect) -> Vec<JsCodeCell> {
+        let mut code_cells = Vec::new();
+        for x in rect.x_range() {
+            if let Some(column) = self.get_column(x) {
+                for y in rect.y_range() {
+                    // check if there is a code cell
+                    if let Some(CellValue::Code(_)) = column.values.get(&y) {
+                        // if there is a code cell, then check if it has an error
+                        if self
+                            .code_run((x, y).into())
+                            .map(|code_run| {
+                                code_run
+                                    .std_err
+                                    .as_ref()
+                                    .map(|err| !err.is_empty())
+                                    .unwrap_or(false)
+                            })
+                            .unwrap_or(false)
+                        {
+                            // if there is an error, then add the code cell to the vec
+                            if let Some(code_cell) = self.edit_code_value((x, y).into()) {
+                                code_cells.push(code_cell);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        code_cells
     }
 
     /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
@@ -500,17 +590,18 @@ mod test {
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
-    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Utc};
     use serial_test::parallel;
 
     use super::*;
     use crate::controller::GridController;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::formats::Formats;
-    use crate::grid::{Bold, CodeCellLanguage, Italic, NumericFormat};
+    use crate::grid::js_types::{JsPos, JsReturnInfo};
+    use crate::grid::{Bold, CodeCellLanguage, CodeRunResult, Italic, NumericFormat};
     use crate::selection::Selection;
     use crate::test_util::print_table;
-    use crate::{CodeCellValue, SheetPos};
+    use crate::{CodeCellValue, RunError, RunErrorMsg, SheetPos, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -1109,6 +1200,339 @@ mod test {
                 value: "test".to_string(),
                 kind: "text".to_string()
             })
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn js_cell_value_pos() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, "test");
+        let js_cell_value_pos = sheet.js_cell_value_pos(Pos { x: 1, y: 1 });
+        assert_eq!(
+            js_cell_value_pos,
+            Some(JsCellValuePos {
+                value: "test".to_string(),
+                kind: "text".to_string(),
+                pos: JsPos { x: 1, y: 1 },
+            })
+        );
+
+        sheet.set_cell_value(
+            Pos { x: 2, y: 2 },
+            CellValue::Image("image string".to_string()),
+        );
+        let js_cell_value_pos = sheet.js_cell_value_pos(Pos { x: 2, y: 2 });
+        assert_eq!(
+            js_cell_value_pos,
+            Some(JsCellValuePos {
+                value: "Javascript chart".to_string(),
+                kind: "image".to_string(),
+                pos: JsPos { x: 2, y: 2 }
+            })
+        );
+
+        sheet.set_cell_value(
+            Pos { x: 3, y: 3 },
+            CellValue::Html("html string".to_string()),
+        );
+        let js_cell_value_pos = sheet.js_cell_value_pos(Pos { x: 3, y: 3 });
+        assert_eq!(
+            js_cell_value_pos,
+            Some(JsCellValuePos {
+                value: "Python chart".to_string(),
+                kind: "html".to_string(),
+                pos: JsPos { x: 3, y: 3 }
+            })
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn js_cell_value_pos_rect() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_values(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10, y: 1000 },
+            },
+            &Array::from(
+                (1..=1000)
+                    .map(|row| {
+                        (1..=10)
+                            .map(|_| {
+                                if row == 1 {
+                                    "heading".to_string()
+                                } else {
+                                    "value".to_string()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            ),
+        );
+
+        let max_rows = 3;
+
+        let js_cell_value_pos_rect = sheet.js_cell_value_pos_rect(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10, y: 1000 },
+            },
+            Some(max_rows),
+        );
+
+        assert_eq!(js_cell_value_pos_rect.len(), max_rows as usize);
+
+        let expected_js_cell_value_pos_rect: Vec<Vec<JsCellValuePos>> = (1..=max_rows)
+            .map(|row| {
+                (1..=10)
+                    .map(|col| {
+                        if row == 1 {
+                            JsCellValuePos {
+                                value: "heading".to_string(),
+                                kind: "text".to_string(),
+                                pos: JsPos {
+                                    x: col,
+                                    y: row as i64,
+                                },
+                            }
+                        } else {
+                            JsCellValuePos {
+                                value: "value".to_string(),
+                                kind: "text".to_string(),
+                                pos: JsPos {
+                                    x: col,
+                                    y: row as i64,
+                                },
+                            }
+                        }
+                    })
+                    .collect::<Vec<JsCellValuePos>>()
+            })
+            .collect::<Vec<Vec<JsCellValuePos>>>();
+
+        assert_eq!(js_cell_value_pos_rect, expected_js_cell_value_pos_rect);
+    }
+
+    #[test]
+    #[parallel]
+    fn js_ai_context_rects_in_sheet_rect() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_values(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10, y: 1000 },
+            },
+            &Array::from(
+                (1..=1000)
+                    .map(|row| {
+                        (1..=10)
+                            .map(|_| {
+                                if row == 1 {
+                                    "heading1".to_string()
+                                } else {
+                                    "value1".to_string()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            ),
+        );
+
+        sheet.set_cell_values(
+            Rect {
+                min: Pos { x: 31, y: 101 },
+                max: Pos { x: 40, y: 1100 },
+            },
+            &Array::from(
+                (1..=1000)
+                    .map(|row| {
+                        (1..=10)
+                            .map(|_| {
+                                if row == 1 {
+                                    "heading2".to_string()
+                                } else {
+                                    "value3".to_string()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            ),
+        );
+
+        let js_ai_context_rects_in_sheet_rect = sheet.js_ai_context_rects_in_sheet_rect(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10000, y: 10000 },
+            },
+            None,
+        );
+
+        let max_rows = 3;
+
+        let expected_js_ai_context_rects_in_sheet_rect = vec![
+            JsCellValuePosAIContext {
+                sheet_name: sheet.name.clone(),
+                rect_origin: JsPos { x: 1, y: 1 },
+                rect_width: 10,
+                rect_height: 1000,
+                starting_rect_values: sheet.js_cell_value_pos_rect(
+                    Rect {
+                        min: Pos { x: 1, y: 1 },
+                        max: Pos { x: 10, y: 1000 },
+                    },
+                    Some(max_rows),
+                ),
+            },
+            JsCellValuePosAIContext {
+                sheet_name: sheet.name.clone(),
+                rect_origin: JsPos { x: 31, y: 101 },
+                rect_width: 10,
+                rect_height: 1000,
+                starting_rect_values: sheet.js_cell_value_pos_rect(
+                    Rect {
+                        min: Pos { x: 31, y: 101 },
+                        max: Pos { x: 40, y: 1100 },
+                    },
+                    Some(max_rows),
+                ),
+            },
+        ];
+
+        assert_eq!(
+            js_ai_context_rects_in_sheet_rect,
+            expected_js_ai_context_rects_in_sheet_rect
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn js_errored_code_cell_rect() {
+        let mut sheet = Sheet::test();
+
+        let code_run_1 = CodeRun {
+            std_out: None,
+            std_err: Some("error".to_string()),
+            formatted_code_string: None,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Err(RunError {
+                span: None,
+                msg: RunErrorMsg::CodeRunError("error".into()),
+            }),
+            return_type: None,
+            line_number: None,
+            output_type: None,
+            spill_error: false,
+        };
+        sheet.set_cell_value(
+            Pos { x: 1, y: 1 },
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "abcd".to_string(),
+            }),
+        );
+        sheet.set_code_run(Pos { x: 1, y: 1 }, Some(code_run_1));
+
+        let code_run_2 = CodeRun {
+            std_out: None,
+            std_err: Some("error".to_string()),
+            formatted_code_string: None,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Err(RunError {
+                span: None,
+                msg: RunErrorMsg::CodeRunError("error".into()),
+            }),
+            return_type: None,
+            line_number: None,
+            output_type: None,
+            spill_error: false,
+        };
+        sheet.set_cell_value(
+            Pos { x: 9, y: 31 },
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "abcd".to_string(),
+            }),
+        );
+        sheet.set_code_run(Pos { x: 9, y: 31 }, Some(code_run_2));
+
+        let code_run_3 = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Array(Array::from(vec![
+                vec!["1".to_string(), "2".to_string()],
+                vec!["3".to_string(), "4".to_string()],
+            ]))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            spill_error: true,
+        };
+        sheet.set_cell_value(
+            Pos { x: 19, y: 15 },
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "[[1, 2], [3, 4]]".to_string(),
+            }),
+        );
+        sheet.set_code_run(Pos { x: 19, y: 15 }, Some(code_run_3));
+
+        let js_errored_code_cell_rect = sheet.js_errored_code_cell_rect(Rect {
+            min: Pos { x: 1, y: 1 },
+            max: Pos { x: 1000, y: 1000 },
+        });
+
+        assert_eq!(js_errored_code_cell_rect.len(), 2);
+
+        let expected_js_errored_code_cell_rect = vec![
+            JsCodeCell {
+                x: 1,
+                y: 1,
+                code_string: "abcd".to_string(),
+                language: CodeCellLanguage::Python,
+                std_err: Some("error".to_string()),
+                std_out: None,
+                evaluation_result: Some(
+                    "{\"span\":null,\"msg\":{\"CodeRunError\":\"error\"}}".to_string(),
+                ),
+                spill_error: None,
+                return_info: Some(JsReturnInfo {
+                    line_number: None,
+                    output_type: None,
+                }),
+                cells_accessed: Some(vec![]),
+            },
+            JsCodeCell {
+                x: 9,
+                y: 31,
+                code_string: "abcd".to_string(),
+                language: CodeCellLanguage::Python,
+                std_err: Some("error".to_string()),
+                std_out: None,
+                evaluation_result: Some(
+                    "{\"span\":null,\"msg\":{\"CodeRunError\":\"error\"}}".to_string(),
+                ),
+                spill_error: None,
+                return_info: Some(JsReturnInfo {
+                    line_number: None,
+                    output_type: None,
+                }),
+                cells_accessed: Some(vec![]),
+            },
+        ];
+
+        assert_eq!(
+            js_errored_code_cell_rect,
+            expected_js_errored_code_cell_rect
         );
     }
 }

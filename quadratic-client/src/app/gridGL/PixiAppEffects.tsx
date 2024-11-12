@@ -1,3 +1,4 @@
+import { aiAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
@@ -57,6 +58,11 @@ export const PixiAppEffects = () => {
   useEffect(() => {
     pixiAppSettings.updateGridPanMode(gridPanMode, setGridPanMode);
   }, [gridPanMode, setGridPanMode]);
+
+  const [aiAnalystState, setAIAnalystState] = useRecoilState(aiAnalystAtom);
+  useEffect(() => {
+    pixiAppSettings.updateAIAnalystState(aiAnalystState, setAIAnalystState);
+  }, [aiAnalystState, setAIAnalystState]);
 
   useEffect(() => {
     const handleMouseUp = () => {
