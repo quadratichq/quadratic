@@ -1,6 +1,5 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
-import { CloseIcon } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
 import { DragEvent, useCallback } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
@@ -42,10 +41,6 @@ export function FileDragDrop({ className }: FileDragDropProps) {
     [fileDragDropModal, handleFileImport, setFileDragDropModal, setNewFileDialogState]
   );
 
-  const handleClose = useCallback(() => {
-    setFileDragDropModal({ show: false, teamUuid: undefined, isPrivate: undefined });
-  }, [setFileDragDropModal]);
-
   if (!fileDragDropModal.show) return null;
 
   return (
@@ -55,7 +50,6 @@ export function FileDragDrop({ className }: FileDragDropProps) {
         'fixed left-0 top-0 z-20 flex h-full w-full flex-col items-center justify-center bg-white opacity-90',
         className
       )}
-      onClick={handleClose}
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
@@ -73,7 +67,6 @@ export function FileDragDrop({ className }: FileDragDropProps) {
           </span>
         </div>
       </div>
-      <CloseIcon className="absolute right-6 top-6 z-20 text-muted-foreground" />
     </div>
   );
 }
