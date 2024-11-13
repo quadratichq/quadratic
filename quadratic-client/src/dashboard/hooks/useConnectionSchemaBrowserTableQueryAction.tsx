@@ -1,8 +1,6 @@
-import { NewFileIcon } from '@/dashboard/components/CustomRadixIcons';
+import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { ClipboardCopyIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import * as monaco from 'monaco-editor';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -26,19 +24,17 @@ export const useConnectionSchemaBrowserTableQueryActionNewFile = ({
     TableQueryAction: ({ query }: { query: string }) => {
       const to = newNewFileFromStateConnection({ query, isPrivate, teamUuid, connectionType, connectionUuid });
       return (
-        <TooltipPopover label="New file querying this table">
-          <Button size="icon-sm" variant="ghost" asChild>
-            <Link
-              to={to}
-              className="hover:bg-background"
-              onClick={() => {
-                mixpanel.track('[Connections].schemaViewer.newFileFromTable');
-              }}
-            >
-              <NewFileIcon />
-            </Link>
+        <Link
+          to={to}
+          reloadDocument
+          onClick={() => {
+            mixpanel.track('[Connections].schemaViewer.newFileFromTable');
+          }}
+        >
+          <Button size="sm" variant="secondary" disabled={to.length === 0}>
+            New file querying selected table
           </Button>
-        </TooltipPopover>
+        </Link>
       );
     },
   };
@@ -50,12 +46,14 @@ export const useConnectionSchemaBrowserTableQueryActionInsertQuery = ({
   editorInst: monaco.editor.IStandaloneCodeEditor | null;
 }) => {
   return {
-    TableQueryAction: ({ query }: { query: string }) => (
-      <TooltipPopover label="Insert query">
+    TableQueryAction: ({ query }: { query: string }) => {
+      const { saveAndRunCell } = useSaveAndRunCell();
+      return (
         <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
+          className="flex-shrink-0"
+          variant="secondary"
+          size="sm"
+          disabled={query.length === 0}
           onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
             mixpanel.track('[Connections].schemaViewer.insertQuery');
 
@@ -72,12 +70,13 @@ export const useConnectionSchemaBrowserTableQueryActionInsertQuery = ({
               ]);
 
               editorInst.focus();
+              saveAndRunCell();
             }
           }}
         >
-          <ClipboardCopyIcon />
+          Query selected table
         </Button>
-      </TooltipPopover>
-    ),
+      );
+    },
   };
 };

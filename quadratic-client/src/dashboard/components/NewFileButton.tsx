@@ -6,6 +6,7 @@ import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ApiIcon, ArrowDropDownIcon, DatabaseIcon, DraftIcon, ExamplesIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
+import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog } from '@/shared/shadcn/ui/dialog';
 import {
@@ -19,6 +20,7 @@ import {
 import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+const CONNECTIONS_DISPLAY_LIMIT = 3;
 const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
 
 export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
@@ -96,27 +98,41 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">Data from connections</DropdownMenuLabel>
-            {connections.map(({ uuid, name, type }) => {
+            {connections.slice(0, CONNECTIONS_DISPLAY_LIMIT).map(({ uuid, name, type }) => {
               const { label } = codeCellsById[type];
+              const to = newNewFileFromStateConnection({
+                isPrivate,
+                teamUuid,
+                query: '',
+                connectionType: type,
+                connectionUuid: uuid,
+              });
               return (
-                <DropdownMenuItem key={uuid}>
-                  <LanguageIcon language={type} className="mr-3" />
-                  <span className="flex flex-col">
-                    {name}
-                    <span className="text-xs text-muted-foreground">{label}</span>
-                  </span>
+                <DropdownMenuItem key={uuid} asChild>
+                  <Link to={to}>
+                    <LanguageIcon language={type} className="mr-3" />
+                    <span className="flex flex-col">
+                      {name}
+                      <span className="text-xs text-muted-foreground">{label}</span>
+                    </span>
+                  </Link>
                 </DropdownMenuItem>
               );
             })}
-
-            <DropdownMenuItem onClick={() => navigate(ROUTES.TEAM_CONNECTIONS(teamUuid))}>
-              <DatabaseIcon className="mr-3 text-muted-foreground" /> See all connections...
-            </DropdownMenuItem>
+            {connections.length > CONNECTIONS_DISPLAY_LIMIT && (
+              <DropdownMenuItem onClick={() => navigate(ROUTES.TEAM_CONNECTIONS(teamUuid))}>
+                <DatabaseIcon className="mr-3 text-muted-foreground" />
+                <span className="flex flex-col">
+                  All connections
+                  <span className="text-xs text-muted-foreground">
+                    {connections.length - CONNECTIONS_DISPLAY_LIMIT} more
+                  </span>
+                </span>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </Dialog>
     </div>
   );
 }
-
-// newNewFileFromStateConnection
