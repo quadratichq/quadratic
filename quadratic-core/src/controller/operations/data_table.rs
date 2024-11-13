@@ -3,7 +3,7 @@ use crate::{
     cellvalue::Import,
     controller::GridController,
     grid::{
-        data_table::{column::DataTableColumnHeader, sort::DataTableSort},
+        data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         DataTableKind,
     },
     CellValue, SheetPos, SheetRect,

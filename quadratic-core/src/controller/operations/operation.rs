@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{
     cell_values::CellValues,
     grid::{
-        data_table::{column::DataTableColumnHeader, sort::DataTableSort},
+        data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::Formats,
         formatting::CellFmtArray,

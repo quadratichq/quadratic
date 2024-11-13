@@ -83,7 +83,7 @@ impl DataTable {
             return Ok(&CellValue::Blank);
         }
 
-        let columns = self.columns.iter().flatten().collect::<Vec<_>>();
+        let columns = self.column_headers.iter().flatten().collect::<Vec<_>>();
 
         // increase the x position if the column before it is not displayed
         for i in 0..columns.len() {
@@ -114,7 +114,7 @@ impl DataTable {
         }
 
         if pos.y == 0 && self.show_header {
-            if let Some(columns) = &self.columns {
+            if let Some(columns) = &self.column_headers {
                 let display_columns = columns.iter().filter(|c| c.display).collect::<Vec<_>>();
 
                 if let Some(column) = display_columns.get(pos.x as usize) {
@@ -135,7 +135,7 @@ impl DataTable {
 
     /// Get the indices of the columns to show.
     pub fn columns_to_show(&self) -> Vec<usize> {
-        self.columns
+        self.column_headers
             .iter()
             .flatten()
             .enumerate()
@@ -223,25 +223,25 @@ pub mod test {
         let (_, mut data_table) = new_data_table();
         data_table.apply_first_row_as_header();
         let width = data_table.output_size().w.get();
-        let mut columns = data_table.columns.clone().unwrap();
+        let mut columns = data_table.column_headers.clone().unwrap();
 
         pretty_print_data_table(&data_table, None, None);
 
         // validate display_value()
         columns[0].display = false;
-        data_table.columns = Some(columns.clone());
+        data_table.column_headers = Some(columns.clone());
         let mut values = test_csv_values();
         values[0].remove(0);
         assert_data_table_row(&data_table, 0, values[0].clone());
 
         // reset values
         columns[0].display = true;
-        data_table.columns = Some(columns.clone());
+        data_table.column_headers = Some(columns.clone());
 
         let remove_column = |remove_at: usize, row: u32, data_table: &mut DataTable| {
             let mut column = columns.clone();
             column[remove_at].display = false;
-            data_table.columns = Some(column);
+            data_table.column_headers = Some(column);
 
             let title = Some(format!("Remove column {}", remove_at));
             pretty_print_data_table(&data_table, title.as_deref(), None);

@@ -9,7 +9,7 @@ use crate::{
     grid::{
         block::SameValue,
         data_table::{
-            column::DataTableColumnHeader,
+            column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
         formats::format::Format,
@@ -213,7 +213,7 @@ pub(crate) fn import_data_table_builder(
             last_modified: data_table.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
             spill_error: data_table.spill_error,
             value,
-            columns: data_table.columns.map(|columns| {
+            column_headers: data_table.columns.map(|columns| {
                 columns
                     .into_iter()
                     .enumerate()
@@ -429,7 +429,7 @@ pub(crate) fn export_data_tables(
                 }
             };
 
-            let columns = data_table.columns.map(|columns| {
+            let columns = data_table.column_headers.map(|columns| {
                 columns
                     .into_iter()
                     .map(|column| current::DataTableColumnSchema {

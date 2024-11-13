@@ -5,6 +5,7 @@
 //! performed yet).
 
 pub mod column;
+pub mod column_header;
 pub mod display_value;
 pub mod row;
 pub mod sort;
@@ -19,7 +20,7 @@ use crate::{
 };
 use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
-use column::DataTableColumnHeader;
+use column_header::DataTableColumnHeader;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
@@ -84,7 +85,7 @@ pub struct DataTable {
     pub name: String,
     pub header_is_first_row: bool,
     pub show_header: bool,
-    pub columns: Option<Vec<DataTableColumnHeader>>,
+    pub column_headers: Option<Vec<DataTableColumnHeader>>,
     pub sort: Option<Vec<DataTableSort>>,
     pub display_buffer: Option<Vec<u64>>,
     pub value: Value,
@@ -138,7 +139,7 @@ impl DataTable {
             name: name.into(),
             header_is_first_row,
             show_header,
-            columns: None,
+            column_headers: None,
             sort: None,
             display_buffer: None,
             value,

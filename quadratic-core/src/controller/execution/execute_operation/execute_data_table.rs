@@ -366,8 +366,8 @@ impl GridController {
             });
 
             let old_columns = columns.as_ref().and_then(|columns| {
-                let old_columns = data_table.columns.to_owned();
-                data_table.columns = Some(columns.to_owned());
+                let old_columns = data_table.column_headers.to_owned();
+                data_table.column_headers = Some(columns.to_owned());
                 data_table.normalize_column_header_names();
 
                 old_columns

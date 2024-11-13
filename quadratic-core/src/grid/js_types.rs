@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::data_table::{column::DataTableColumnHeader, sort::DataTableSort};
+use super::data_table::{column_header::DataTableColumnHeader, sort::DataTableSort};
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;

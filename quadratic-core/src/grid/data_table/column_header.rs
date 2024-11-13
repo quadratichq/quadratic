@@ -29,7 +29,7 @@ impl DataTable {
     pub fn apply_first_row_as_header(&mut self) {
         self.header_is_first_row = true;
 
-        self.columns = match self.value {
+        self.column_headers = match self.value {
             // Value::Array(ref mut array) => array.shift().ok().map(|array| {
             Value::Array(ref mut array) => array.get_row(0).ok().map(|array| {
                 array
@@ -69,7 +69,7 @@ impl DataTable {
     /// Apply default column headings to the DataTable.
     /// For example, the column headings will be "Column 1", "Column 2", etc.
     pub fn apply_default_header(&mut self) {
-        self.columns = Some(self.default_header(None));
+        self.column_headers = Some(self.default_header(None));
     }
 
     pub fn adjust_for_header(&self, index: usize) -> usize {
@@ -83,7 +83,7 @@ impl DataTable {
     /// Prepares the columns to be sent to the client. If no columns are set, it
     /// will create default columns.
     pub fn send_columns(&self) -> Vec<JsDataTableColumnHeader> {
-        let columns = match self.columns.as_ref() {
+        let columns = match self.column_headers.as_ref() {
             Some(columns) => columns,
             None => {
                 let width = self.value.size().w.get();
@@ -101,7 +101,7 @@ impl DataTable {
     pub fn normalize_column_header_names(&mut self) {
         let mut all_names = vec![];
 
-        if let Some(columns) = self.columns.as_mut() {
+        if let Some(columns) = self.column_headers.as_mut() {
             columns.iter_mut().for_each(|column| {
                 let name = unique_name(&column.name.to_string(), &all_names, false);
                 column.name = CellValue::Text(name.to_owned());
@@ -138,7 +138,7 @@ pub mod test {
             DataTableColumnHeader::new("Column 3".into(), true, 2),
             DataTableColumnHeader::new("Column 4".into(), true, 3),
         ];
-        assert_eq!(data_table.columns, Some(expected_columns));
+        assert_eq!(data_table.column_headers, Some(expected_columns));
 
         // test column headings taken from first row
         let value = Value::Array(values.clone());
@@ -153,7 +153,7 @@ pub mod test {
             DataTableColumnHeader::new("country".into(), true, 2),
             DataTableColumnHeader::new("population".into(), true, 3),
         ];
-        assert_eq!(data_table.columns, Some(expected_columns));
+        assert_eq!(data_table.column_headers, Some(expected_columns));
 
         let expected_values = values.clone();
         assert_eq!(
@@ -177,9 +177,9 @@ pub mod test {
 
         let assert_cols =
             |data_table: &mut DataTable, columns: Vec<&str>, expected_columns: Vec<&str>| {
-                data_table.columns = Some(to_cols(columns));
+                data_table.column_headers = Some(to_cols(columns));
                 data_table.normalize_column_header_names();
-                let data_table_cols = data_table.columns.clone().unwrap();
+                let data_table_cols = data_table.column_headers.clone().unwrap();
                 expected_columns.iter().enumerate().for_each(|(i, c)| {
                     assert_eq!(data_table_cols[i].name.to_string(), c.to_string());
                 });
@@ -203,7 +203,7 @@ pub mod test {
         let t = DataTable {
             kind: DataTableKind::Import(Import::new("test.csv".to_string())),
             name: "Table 1".into(),
-            columns: None,
+            column_headers: None,
             sort: None,
             display_buffer: None,
             value: Value::Array(array),
