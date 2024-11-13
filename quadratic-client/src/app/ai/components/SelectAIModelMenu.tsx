@@ -7,6 +7,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
 import { useMemo } from 'react';
 
@@ -49,7 +50,10 @@ export function SelectAIModelMenu({ loading, textAreaRef }: SelectAIModelMenuPro
             <DropdownMenuCheckboxItem
               key={enabledModel}
               checked={selectedMode === enabledModel}
-              onCheckedChange={() => setSelectedModel(enabledModel)}
+              onCheckedChange={() => {
+                mixpanel.track('[AI].model.change', { model: enabledModel });
+                setSelectedModel(enabledModel);
+              }}
             >
               <div className="flex w-full items-center justify-between text-xs">
                 <span className="pr-4">{displayName}</span>
