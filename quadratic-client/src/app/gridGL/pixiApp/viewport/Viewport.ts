@@ -13,7 +13,7 @@ const MINIMUM_VIEWPORT_SCALE = 0.01;
 const MAXIMUM_VIEWPORT_SCALE = 10;
 const WHEEL_ZOOM_PERCENT = 1.5;
 
-const WAIT_TO_SNAP_TIME = 250;
+const WAIT_TO_SNAP_TIME = 200;
 const SNAPPING_TIME = 150;
 
 export class Viewport extends PixiViewport {
@@ -130,7 +130,19 @@ export class Viewport extends PixiViewport {
   private startSnap = () => {
     this.snapTimeout = window.setTimeout(() => {
       const headings = pixiApp.headings.headingSize;
-      this.snap(-headings.width / this.scale.x, -headings.height / this.scale.y, {
+      let x: number;
+      let y: number;
+      if (this.x > headings.width) {
+        x = -headings.width / this.scale.x;
+      } else {
+        x = -this.x;
+      }
+      if (this.y > headings.height) {
+        y = -headings.height / this.scale.y;
+      } else {
+        y = -this.y;
+      }
+      this.snap(x, y, {
         topLeft: true,
         time: SNAPPING_TIME,
         ease: 'easeInSine',
