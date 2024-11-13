@@ -115,6 +115,7 @@ export function AIAssistantMessages({ textareaRef }: AIAssistantMessagesProps) {
                 initialPrompt={message.content}
                 messageIndex={index}
                 textareaRef={textareaRef}
+                collapseAfterSubmit={true}
               />
             ) : Array.isArray(message.content) ? (
               message.content.map((messageContent) => (

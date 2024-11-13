@@ -11,7 +11,12 @@ export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
       <AIAssistantMessages textareaRef={textareaRef} />
 
       <div className="flex h-full flex-col justify-end px-2 py-0.5">
-        <AIAssistantUserMessageForm ref={textareaRef} autoFocus={autoFocus} textareaRef={textareaRef} />
+        <AIAssistantUserMessageForm
+          ref={textareaRef}
+          autoFocus={autoFocus}
+          textareaRef={textareaRef}
+          collapseAfterSubmit={true}
+        />
         <AIUserMessageFormDisclaimer />
       </div>
     </div>

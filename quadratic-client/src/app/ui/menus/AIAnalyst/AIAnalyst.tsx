@@ -67,7 +67,12 @@ export const AIAnalyst = () => {
               <AIAnalystMessages textareaRef={textareaRef} />
 
               <div className="px-2 py-0.5">
-                <AIAnalystUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+                <AIAnalystUserMessageForm
+                  ref={textareaRef}
+                  autoFocus={true}
+                  textareaRef={textareaRef}
+                  collapseAfterSubmit={true}
+                />
                 <AIUserMessageFormDisclaimer />
               </div>
             </>

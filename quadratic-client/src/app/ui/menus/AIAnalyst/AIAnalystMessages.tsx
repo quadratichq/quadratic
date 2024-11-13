@@ -113,10 +113,11 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
             {message.role === 'user' ? (
               message.contextType === 'userPrompt' ? (
                 <AIAnalystUserMessageForm
-                  initialPrompt={message.content}
-                  initialContext={message.context}
-                  messageIndex={index}
                   textareaRef={textareaRef}
+                  initialPrompt={message.content}
+                  messageIndex={index}
+                  collapseAfterSubmit={true}
+                  initialContext={message.context}
                 />
               ) : Array.isArray(message.content) ? (
                 message.content.map(({ content }) => <MarkdownContent key={content}>{content}</MarkdownContent>)

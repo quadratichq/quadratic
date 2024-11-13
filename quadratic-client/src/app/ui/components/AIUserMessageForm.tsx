@@ -17,6 +17,7 @@ export type AIUserMessageFormWrapperProps = {
   autoFocus?: boolean;
   initialPrompt?: string;
   messageIndex?: number;
+  collapseAfterSubmit: boolean;
 };
 
 type Props = AIUserMessageFormWrapperProps & {
@@ -36,6 +37,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
   const {
     initialPrompt,
     messageIndex,
+    collapseAfterSubmit,
     ctx,
     autoFocus,
     textareaRef: bottomTextareaRef,
@@ -67,10 +69,10 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
   }, [autoFocus, textareaRef]);
 
   useEffect(() => {
-    if (loading && messageIndex !== undefined) {
+    if (loading && initialPrompt !== undefined && collapseAfterSubmit) {
       setEditing(false);
     }
-  }, [loading, messageIndex]);
+  }, [loading, initialPrompt, collapseAfterSubmit]);
 
   return (
     <form
@@ -121,10 +123,10 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 
               submitPrompt(prompt);
 
-              if (messageIndex === undefined) {
+              if (initialPrompt === undefined) {
                 setPrompt('');
                 textareaRef.current?.focus();
-              } else {
+              } else if (collapseAfterSubmit) {
                 setEditing(false);
                 bottomTextareaRef.current?.focus();
               }
@@ -200,7 +202,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 export const AIUserMessageFormDisclaimer = () => {
   return (
     <p className="py-0.5 text-center text-xs text-muted-foreground">
-      Some sheet data is sent to the AI model.
+      Some sheet data is sent to the AI model.{' '}
       <a href={AI_SECURITY} target="_blank" rel="noreferrer" className="underline hover:text-foreground">
         Learn more.
       </a>

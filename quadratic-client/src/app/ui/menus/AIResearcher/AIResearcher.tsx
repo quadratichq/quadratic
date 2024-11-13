@@ -65,7 +65,12 @@ export const AIResearcher = () => {
         <AIResearcherInsertCellRef />
 
         <div className="px-2 py-0.5">
-          <AIResearcherUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+          <AIResearcherUserMessageForm
+            ref={textareaRef}
+            autoFocus={true}
+            textareaRef={textareaRef}
+            collapseAfterSubmit={false}
+          />
           <AIUserMessageFormDisclaimer />
         </div>
 
