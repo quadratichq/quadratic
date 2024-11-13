@@ -67,7 +67,8 @@ export type AIToolSpecRecord = {
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIResearcherValue]: {
     internalTool: true,
-    description: 'Sets the result of the AI Researcher as a value on the spreadsheet',
+    description:
+      "Sets the result of the AI Researcher as a value on the spreadsheet, based on user's query for some referenced cell value(s) from the spreadsheet.",
     parameters: {
       type: 'object',
       properties: {
@@ -87,6 +88,7 @@ export const aiToolsSpec: AIToolSpecRecord = {
     },
     prompt: `
 You should use the set_ai_researcher_value function to set the result of the AI Researcher as a value on the spreadsheet.\n
+This value should be in strong correlation to the referenced cell value(s) from the spreadsheet and should directly answer the users query related to the referenced cell value(s).\n
 This function requires the value that will be set on the spreadsheet. It can be a text, number, currency, date, etc.\n
 `,
   },
