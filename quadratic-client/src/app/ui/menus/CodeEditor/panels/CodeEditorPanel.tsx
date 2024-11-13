@@ -1,6 +1,5 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
@@ -9,8 +8,9 @@ import { useConnectionSchemaBrowserTableQueryActionInsertQuery } from '@/dashboa
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { IconButton } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { MouseEvent, memo, useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -54,12 +54,18 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
   return (
     <>
       {/* Panel position (left/bottom) control */}
-      <div className={cn('absolute z-10', panelPosition === 'bottom' ? 'right-1.5 top-1' : 'right-0.5 top-0.5')}>
-        <TooltipHint title={panelPosition === 'bottom' ? 'Move panel left' : 'Move panel bottom'}>
-          <IconButton onClick={changePanelPosition} size="small">
+      <div
+        className={cn(
+          'absolute z-10',
+          panelPosition === 'bottom' ? 'right-1.5 top-1' : 'right-0.5 top-0.5',
+          'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <TooltipPopover label={panelPosition === 'bottom' ? 'Move panel left' : 'Move panel bottom'} side="bottom">
+          <Button onClick={changePanelPosition} size="icon-sm" variant="ghost">
             {panelPosition === 'left' ? <PanelPositionBottomIcon /> : <PanelPositionLeftIcon />}
-          </IconButton>
-        </TooltipHint>
+          </Button>
+        </TooltipPopover>
       </div>
 
       {panelPosition === 'left' && (

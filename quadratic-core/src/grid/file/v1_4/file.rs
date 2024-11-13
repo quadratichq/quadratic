@@ -33,8 +33,11 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
             if cell_ref.column == column.id {
                 let pos = cell_ref_to_pos(sheet, cell_ref);
                 let language = Some(
-                    serde_json::from_str::<CodeCellLanguage>(&code_cell_value.language)
-                        .unwrap_or(CodeCellLanguage::Formula),
+                    serde_json::from_str::<CodeCellLanguage>(&format!(
+                        "{:?}",
+                        code_cell_value.language
+                    ))
+                    .unwrap_or(CodeCellLanguage::Formula),
                 );
                 // let language = match code_cell_value.language.to_lowercase().as_str() {
                 //     "python" => Some(v1_5::CodeCellLanguage::Python),

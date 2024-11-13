@@ -80,3 +80,9 @@ export const debugShowUILogs = debug && false;
 export const debugWebWorkers = debug && false;
 
 export const debugWebWorkersMessages = debug && false;
+
+// -----------
+// AI
+// -----------
+
+export const debugShowAIInternalContext = debug && false;

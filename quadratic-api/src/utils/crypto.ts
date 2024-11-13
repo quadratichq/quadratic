@@ -7,6 +7,13 @@ const algorithm = 'aes-256-cbc';
 // Get the encryption key from the env and convert it to a buffer.
 const encryption_key = Buffer.from(ENCRYPTION_KEY, 'hex');
 
+export const hash = (text: string): string => {
+  const hash = crypto.createHash('sha256');
+  hash.update(text);
+
+  return hash.digest('hex');
+};
+
 // Encrypts the given text using the given key.
 // Store the IV with the encrypted text (prepended).
 export const encrypt = (key: Buffer, text: string): string => {

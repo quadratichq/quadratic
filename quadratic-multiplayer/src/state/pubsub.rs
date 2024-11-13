@@ -166,11 +166,11 @@ mod tests {
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
         let transaction_1 =
-            Transaction::serialize_and_compress(&vec![operations_1.clone()]).unwrap();
+            Transaction::serialize_and_compress(vec![operations_1.clone()]).unwrap();
         let transaction_id_2 = Uuid::new_v4();
         let operations_2 = operation(&mut grid, 1, 0, "2");
         let transaction_2 =
-            Transaction::serialize_and_compress(&vec![operations_2.clone()]).unwrap();
+            Transaction::serialize_and_compress(vec![operations_2.clone()]).unwrap();
 
         state
             .push_pubsub(transaction_id_1, file_id, transaction_1.clone(), 1)

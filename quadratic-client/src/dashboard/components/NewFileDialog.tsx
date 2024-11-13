@@ -17,6 +17,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigation } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
+const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
+
 type Props = {
   connections: ConnectionList;
   onClose: () => void;
@@ -141,19 +143,21 @@ export function NewFileDialog({ connections, teamUuid, onClose, isPrivate: initi
                 Fetch data from an API
               </Link>
             </li>
-            <li className={`col-span-2`}>
-              <Link
-                to={ROUTES.EXAMPLES}
-                className={cn(`text-muted-foreground`, gridItemClassName, gridItemInteractiveClassName)}
-                reloadDocument={reloadDocument}
-                onClick={onClose}
-              >
-                <ItemIcon>
-                  <ExamplesIcon />
-                </ItemIcon>
-                Learn from an example file
-              </Link>
-            </li>
+            {SHOW_EXAMPLES && (
+              <li className={`col-span-2`}>
+                <Link
+                  to={ROUTES.EXAMPLES}
+                  className={cn(`text-muted-foreground`, gridItemClassName, gridItemInteractiveClassName)}
+                  reloadDocument={reloadDocument}
+                  onClick={onClose}
+                >
+                  <ItemIcon>
+                    <ExamplesIcon />
+                  </ItemIcon>
+                  Learn from an example file
+                </Link>
+              </li>
+            )}
             <li className={`col-span-4 rounded border border-border`}>
               <div className={`text-muted-foreground ${gridItemClassName} border-none`}>
                 <ItemIcon disabled>
