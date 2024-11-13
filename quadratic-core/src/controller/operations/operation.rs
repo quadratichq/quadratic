@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::{
     cell_values::CellValues,
     grid::{
-        data_table::{column::DataTableColumn, sort::DataTableSort},
+        data_table::{column::DataTableColumnHeader, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::Formats,
         formatting::CellFmtArray,
@@ -65,7 +65,7 @@ pub enum Operation {
         sheet_pos: SheetPos,
         name: Option<String>,
         alternating_colors: Option<bool>,
-        columns: Option<Vec<DataTableColumn>>,
+        columns: Option<Vec<DataTableColumnHeader>>,
         show_header: Option<bool>,
     },
     SortDataTable {

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::data_table::{column::DataTableColumn, sort::DataTableSort};
+use super::data_table::{column::DataTableColumnHeader, sort::DataTableSort};
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
@@ -201,7 +201,7 @@ pub struct JsRenderCodeCell {
     pub state: JsRenderCodeCellState,
     pub spill_error: Option<Vec<Pos>>,
     pub name: String,
-    pub columns: Vec<JsDataTableColumn>,
+    pub columns: Vec<JsDataTableColumnHeader>,
     pub first_row_header: bool,
     pub show_header: bool,
     pub sort: Option<Vec<DataTableSort>>,
@@ -248,15 +248,15 @@ pub struct JsValidationSheet {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
-pub struct JsDataTableColumn {
+pub struct JsDataTableColumnHeader {
     pub name: String,
     pub display: bool,
     pub value_index: u32,
 }
 
-impl From<DataTableColumn> for JsDataTableColumn {
-    fn from(column: DataTableColumn) -> Self {
-        JsDataTableColumn {
+impl From<DataTableColumnHeader> for JsDataTableColumnHeader {
+    fn from(column: DataTableColumnHeader) -> Self {
+        JsDataTableColumnHeader {
             name: column.name.to_string(),
             display: column.display,
             value_index: column.value_index,
@@ -264,9 +264,9 @@ impl From<DataTableColumn> for JsDataTableColumn {
     }
 }
 
-impl From<JsDataTableColumn> for DataTableColumn {
-    fn from(column: JsDataTableColumn) -> Self {
-        DataTableColumn {
+impl From<JsDataTableColumnHeader> for DataTableColumnHeader {
+    fn from(column: JsDataTableColumnHeader) -> Self {
+        DataTableColumnHeader {
             name: column.name.into(),
             display: column.display,
             value_index: column.value_index,

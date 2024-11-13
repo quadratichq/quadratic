@@ -656,7 +656,7 @@ mod tests {
         grid::{
             formats::{format::Format, format_update::FormatUpdate, Formats},
             js_types::{
-                JsDataTableColumn, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial,
+                JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial,
                 JsRenderCodeCell, JsSheetFill, JsValidationWarning,
             },
             sheet::validations::{
@@ -1128,7 +1128,7 @@ mod tests {
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
                 name: "Table 1".to_string(),
-                columns: vec![JsDataTableColumn {
+                columns: vec![JsDataTableColumnHeader {
                     name: "Column 1".into(),
                     display: true,
                     value_index: 0,

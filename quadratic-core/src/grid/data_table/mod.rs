@@ -6,6 +6,7 @@
 
 pub mod column;
 pub mod display_value;
+pub mod row;
 pub mod sort;
 pub mod table_formats;
 use std::num::NonZeroU32;
@@ -18,7 +19,7 @@ use crate::{
 };
 use anyhow::{anyhow, Ok, Result};
 use chrono::{DateTime, Utc};
-use column::DataTableColumn;
+use column::DataTableColumnHeader;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
@@ -83,7 +84,7 @@ pub struct DataTable {
     pub name: String,
     pub header_is_first_row: bool,
     pub show_header: bool,
-    pub columns: Option<Vec<DataTableColumn>>,
+    pub columns: Option<Vec<DataTableColumnHeader>>,
     pub sort: Option<Vec<DataTableSort>>,
     pub display_buffer: Option<Vec<u64>>,
     pub value: Value,

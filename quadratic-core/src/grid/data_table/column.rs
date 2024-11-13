@@ -3,20 +3,20 @@
 use serde::{Deserialize, Serialize};
 
 use super::DataTable;
-use crate::grid::js_types::JsDataTableColumn;
+use crate::grid::js_types::JsDataTableColumnHeader;
 use crate::util::unique_name;
 use crate::{CellValue, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct DataTableColumn {
+pub struct DataTableColumnHeader {
     pub name: CellValue,
     pub display: bool,
     pub value_index: u32,
 }
 
-impl DataTableColumn {
+impl DataTableColumnHeader {
     pub fn new(name: String, display: bool, value_index: u32) -> Self {
-        DataTableColumn {
+        DataTableColumnHeader {
             name: CellValue::Text(name),
             display,
             value_index,
@@ -35,13 +35,13 @@ impl DataTable {
                 array
                     .iter()
                     .enumerate()
-                    .map(|(i, value)| DataTableColumn::new(value.to_string(), true, i as u32))
-                    .collect::<Vec<DataTableColumn>>()
+                    .map(|(i, value)| DataTableColumnHeader::new(value.to_string(), true, i as u32))
+                    .collect::<Vec<DataTableColumnHeader>>()
             }),
             _ => None,
         };
 
-        self.normalize_column_names();
+        self.normalize_column_header_names();
     }
 
     pub fn toggle_first_row_as_header(&mut self, first_row_as_header: bool) {
@@ -55,13 +55,13 @@ impl DataTable {
 
     /// Create default column headings for the DataTable.
     /// For example, the column headings will be "Column 1", "Column 2", etc.
-    pub fn default_header(&self, width: Option<u32>) -> Vec<DataTableColumn> {
+    pub fn default_header(&self, width: Option<u32>) -> Vec<DataTableColumnHeader> {
         let width = width.unwrap_or(self.value.size().w.get());
 
         match self.value {
             Value::Array(_) => (1..=width)
-                .map(|i| DataTableColumn::new(format!("Column {i}"), true, i - 1))
-                .collect::<Vec<DataTableColumn>>(),
+                .map(|i| DataTableColumnHeader::new(format!("Column {i}"), true, i - 1))
+                .collect::<Vec<DataTableColumnHeader>>(),
             _ => vec![],
         }
     }
@@ -82,7 +82,7 @@ impl DataTable {
 
     /// Prepares the columns to be sent to the client. If no columns are set, it
     /// will create default columns.
-    pub fn send_columns(&self) -> Vec<JsDataTableColumn> {
+    pub fn send_columns(&self) -> Vec<JsDataTableColumnHeader> {
         let columns = match self.columns.as_ref() {
             Some(columns) => columns,
             None => {
@@ -93,23 +93,21 @@ impl DataTable {
 
         columns
             .iter()
-            .map(|column| JsDataTableColumn::from(column.to_owned()))
+            .map(|column| JsDataTableColumnHeader::from(column.to_owned()))
             .collect()
     }
 
     /// Set the display of a column header at the given index.
-    pub fn normalize_column_names(&mut self) {
+    pub fn normalize_column_header_names(&mut self) {
         let mut all_names = vec![];
 
-        self.columns
-            .as_mut()
-            .unwrap()
-            .iter_mut()
-            .for_each(|column| {
+        if let Some(columns) = self.columns.as_mut() {
+            columns.iter_mut().for_each(|column| {
                 let name = unique_name(&column.name.to_string(), &all_names, false);
                 column.name = CellValue::Text(name.to_owned());
                 all_names.push(name);
             });
+        }
     }
 }
 
@@ -135,10 +133,10 @@ pub mod test {
 
         data_table.apply_default_header();
         let expected_columns = vec![
-            DataTableColumn::new("Column 1".into(), true, 0),
-            DataTableColumn::new("Column 2".into(), true, 1),
-            DataTableColumn::new("Column 3".into(), true, 2),
-            DataTableColumn::new("Column 4".into(), true, 3),
+            DataTableColumnHeader::new("Column 1".into(), true, 0),
+            DataTableColumnHeader::new("Column 2".into(), true, 1),
+            DataTableColumnHeader::new("Column 3".into(), true, 2),
+            DataTableColumnHeader::new("Column 4".into(), true, 3),
         ];
         assert_eq!(data_table.columns, Some(expected_columns));
 
@@ -150,10 +148,10 @@ pub mod test {
 
         data_table.apply_first_row_as_header();
         let expected_columns = vec![
-            DataTableColumn::new("city".into(), true, 0),
-            DataTableColumn::new("region".into(), true, 1),
-            DataTableColumn::new("country".into(), true, 2),
-            DataTableColumn::new("population".into(), true, 3),
+            DataTableColumnHeader::new("city".into(), true, 0),
+            DataTableColumnHeader::new("region".into(), true, 1),
+            DataTableColumnHeader::new("country".into(), true, 2),
+            DataTableColumnHeader::new("population".into(), true, 3),
         ];
         assert_eq!(data_table.columns, Some(expected_columns));
 
@@ -173,14 +171,14 @@ pub mod test {
             columns
                 .iter()
                 .enumerate()
-                .map(|(i, c)| DataTableColumn::new(c.to_string(), true, i as u32))
-                .collect::<Vec<DataTableColumn>>()
+                .map(|(i, c)| DataTableColumnHeader::new(c.to_string(), true, i as u32))
+                .collect::<Vec<DataTableColumnHeader>>()
         };
 
         let assert_cols =
             |data_table: &mut DataTable, columns: Vec<&str>, expected_columns: Vec<&str>| {
                 data_table.columns = Some(to_cols(columns));
-                data_table.normalize_column_names();
+                data_table.normalize_column_header_names();
                 let data_table_cols = data_table.columns.clone().unwrap();
                 expected_columns.iter().enumerate().for_each(|(i, c)| {
                     assert_eq!(data_table_cols[i].name.to_string(), c.to_string());

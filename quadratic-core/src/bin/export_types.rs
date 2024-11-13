@@ -6,8 +6,8 @@ use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::data_table::sort::{DataTableSort, SortDirection};
 use grid::formats::format::Format;
 use grid::js_types::{
-    CellFormatSummary, JsCellValue, JsClipboard, JsDataTableColumn, JsOffset, JsPos, JsRenderFill,
-    JsRowHeight, JsSheetFill, JsValidationWarning,
+    CellFormatSummary, JsCellValue, JsClipboard, JsDataTableColumnHeader, JsOffset, JsPos,
+    JsRenderFill, JsRowHeight, JsSheetFill, JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::jump_cursor::JumpDirection;
@@ -96,7 +96,7 @@ fn main() {
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
-        JsDataTableColumn,
+        JsDataTableColumnHeader,
         JsGetCellResponse,
         JsHtmlOutput,
         JsNumber,

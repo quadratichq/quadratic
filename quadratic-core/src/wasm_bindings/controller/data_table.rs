@@ -108,7 +108,7 @@ impl GridController {
 
         let columns = columns_js
             .map(|c| {
-                serde_json::from_str::<Vec<JsDataTableColumn>>(&c)
+                serde_json::from_str::<Vec<JsDataTableColumnHeader>>(&c)
                     .map_err(|e| e.to_string())
                     .map(|c| c.into_iter().map(|c| c.into()).collect())
             })

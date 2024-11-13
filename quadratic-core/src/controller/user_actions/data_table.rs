@@ -1,6 +1,6 @@
 use crate::{
     controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::{data_table::column::DataTableColumn, sort::DataTableSort},
+    grid::{data_table::column::DataTableColumnHeader, sort::DataTableSort},
     Pos, SheetPos, SheetRect,
 };
 
@@ -53,7 +53,7 @@ impl GridController {
         sheet_pos: SheetPos,
         name: Option<String>,
         alternating_colors: Option<bool>,
-        columns: Option<Vec<DataTableColumn>>,
+        columns: Option<Vec<DataTableColumnHeader>>,
         show_header: Option<bool>,
         cursor: Option<String>,
     ) {

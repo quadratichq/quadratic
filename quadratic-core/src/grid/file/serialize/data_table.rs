@@ -9,7 +9,7 @@ use crate::{
     grid::{
         block::SameValue,
         data_table::{
-            column::DataTableColumn,
+            column::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
         formats::format::Format,
@@ -223,7 +223,7 @@ pub(crate) fn import_data_table_builder(
                             _ => format!("Column {}", index + 1),
                         };
 
-                        DataTableColumn::new(column_name, column.display, column.value_index)
+                        DataTableColumnHeader::new(column_name, column.display, column.value_index)
                     })
                     .collect()
             }),
