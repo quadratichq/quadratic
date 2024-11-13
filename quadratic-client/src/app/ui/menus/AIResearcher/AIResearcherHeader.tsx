@@ -3,10 +3,10 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
-import { Close } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
+import { CloseIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -37,11 +37,11 @@ export const AIResearcherHeader = () => {
   return (
     <div className="flex items-center px-3 py-1">
       <div className={'relative'}>
-        <TooltipHint title={`${codeCell?.label}`} placement="bottom">
+        <TooltipPopover label={`${codeCell?.label}`} side="bottom">
           <div className="flex items-center">
             <LanguageIcon language={codeCell?.id} fontSize="small" />
           </div>
-        </TooltipHint>
+        </TooltipPopover>
       </div>
 
       <div className="mx-2 flex flex-col truncate">
@@ -54,11 +54,17 @@ export const AIResearcherHeader = () => {
       </div>
 
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
-        <TooltipHint title="Close" shortcut="ESC" placement="bottom">
-          <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={() => closeEditor(false)}>
-            <Close />
-          </IconButton>
-        </TooltipHint>
+        <TooltipPopover label={`Close`} shortcut={`Esc`} side="bottom">
+          <Button
+            variant="ghost"
+            id="QuadraticCodeEditorCloseButtonID"
+            onClick={() => closeEditor(false)}
+            size="icon-sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <CloseIcon />
+          </Button>
+        </TooltipPopover>
       </div>
     </div>
   );

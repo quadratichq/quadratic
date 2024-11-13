@@ -8,11 +8,19 @@ import { useRecoilCallback } from 'recoil';
 export const useUpdateCodeEditor = () => {
   const updateCodeEditor = useRecoilCallback(
     ({ set }) =>
-      (sheetId: string, x: number, y: number, codeCell?: JsCodeCell, initialCode?: string) => {
+      (
+        sheetId: string,
+        x: number,
+        y: number,
+        codeCell?: JsCodeCell,
+        initialCode?: string,
+        usePrevEditorContent?: boolean
+      ) => {
         if (!sheetId) return;
 
         if (codeCell) {
           const newEvaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
+          const editorContent = initialCode ? initialCode : codeCell.code_string;
           set(codeEditorAtom, (prev) => ({
             ...prev,
             showCodeEditor: true,
@@ -23,7 +31,13 @@ export const useUpdateCodeEditor = () => {
               language: codeCell.language,
             },
             codeString: codeCell.code_string,
-            editorContent: initialCode ? initialCode : codeCell.code_string,
+            editorContent: initialCode
+              ? initialCode
+              : usePrevEditorContent && prev.editorContent
+              ? prev.editorContent
+              : codeCell.code_string,
+            diffEditorContent:
+              editorContent === prev.diffEditorContent?.editorContent ? undefined : prev.diffEditorContent,
             evaluationResult: { ...newEvaluationResult, ...codeCell.return_info },
             cellsAccessed: codeCell.cells_accessed,
             consoleOutput: { stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined },
@@ -50,7 +64,8 @@ export const useUpdateCodeEditor = () => {
               language: prev.codeCell.language,
             },
             codeString: '',
-            editorContent: initialCode ?? '',
+            editorContent: initialCode ? initialCode : prev.diffEditorContent?.editorContent ?? '',
+            diffEditorContent: initialCode ? prev.diffEditorContent : undefined,
             evaluationResult: undefined,
             cellsAccessed: undefined,
             consoleOutput: undefined,

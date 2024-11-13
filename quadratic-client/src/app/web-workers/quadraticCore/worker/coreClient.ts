@@ -139,10 +139,13 @@ class CoreClient {
     switch (e.data.type) {
       case 'clientCoreLoad':
         await offline.init(e.data.fileId);
+
+        const addToken = this.env.VITE_STORAGE_TYPE === 'file-system';
+
         this.send({
           type: 'coreClientLoad',
           id: e.data.id,
-          ...(await core.loadFile(e.data, e.ports[0])),
+          ...(await core.loadFile(e.data, e.ports[0], addToken)),
         });
         return;
 
@@ -172,6 +175,10 @@ class CoreClient {
 
       case 'clientCoreSetCellValue':
         await core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
+        return;
+
+      case 'clientCoreSetCellValues':
+        await core.setCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.values, e.data.cursor);
         return;
 
       case 'clientCoreGetEditCell':
@@ -599,6 +606,22 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetAIContextRectsInSheetRects':
+        this.send({
+          type: 'coreClientGetAIContextRectsInSheetRects',
+          id: e.data.id,
+          value: core.getAIContextRectsInSheetRects(e.data.sheetRects, e.data.maxRects),
+        });
+        return;
+
+      case 'clientCoreGetErroredCodeCellsInSheetRects':
+        this.send({
+          type: 'coreClientGetErroredCodeCellsInSheetRects',
+          id: e.data.id,
+          value: core.getErroredCodeCellsInSheetRects(e.data.sheetRects),
+        });
+        return;
+
       case 'clientCoreDeleteColumns':
         core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
         return;
@@ -786,8 +809,8 @@ class CoreClient {
     this.send({ type: 'coreClientMultiplayerSynced' });
   };
 
-  sendRequestAIResearcherResult = (transactionId: string, prompt: string, refCellValues: string) => {
-    this.send({ type: 'coreClientRequestAIResearcherResult', transactionId, prompt, refCellValues });
+  sendRequestAIResearcherResult = (transactionId: string, query: string, refCellValues: string) => {
+    this.send({ type: 'coreClientRequestAIResearcherResult', transactionId, query, refCellValues });
   };
 }
 

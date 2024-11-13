@@ -4,6 +4,7 @@ export const TopBarLoading = () => {
   // TopBarLoading allows window to be moved while loading in electron
   return (
     <div
+      className="dark-mode-hack"
       style={{
         position: 'absolute',
         top: '0',

@@ -17,6 +17,7 @@ import {
   CodeCellLanguage,
   Format,
   JsCellValue,
+  JsCellValuePosAIContext,
   JsCodeCell,
   JsPos,
   JsRenderCell,
@@ -29,7 +30,7 @@ import {
   SummarizeSelectionResult,
   Validation,
 } from '@/app/quadratic-core-types';
-import { authClient } from '@/auth';
+import { authClient } from '@/auth/auth';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
   ClientCoreCellHasContent,
@@ -184,7 +185,7 @@ class QuadraticCore {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientRequestAIResearcherResult') {
-      events.emit('requestAIResearcherResult', e.data.transactionId, e.data.prompt, e.data.refCellValues);
+      events.emit('requestAIResearcherResult', e.data.transactionId, e.data.query, e.data.refCellValues);
       return;
     }
 
@@ -373,6 +374,29 @@ class QuadraticCore {
     });
   }
 
+  getAIContextRectsInSheetRects(
+    sheetRects: SheetRect[],
+    maxRects?: number
+  ): Promise<JsCellValuePosAIContext[][] | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { value: JsCellValuePosAIContext[][] | undefined }) => {
+        resolve(message.value);
+      };
+      this.send({ type: 'clientCoreGetAIContextRectsInSheetRects', sheetRects, maxRects, id });
+    });
+  }
+
+  getErroredCodeCellsInSheetRects(sheetRects: SheetRect[]): Promise<JsCodeCell[][] | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { value: JsCodeCell[][] | undefined }) => {
+        resolve(message.value);
+      };
+      this.send({ type: 'clientCoreGetErroredCodeCellsInSheetRects', sheetRects, id });
+    });
+  }
+
   hasRenderCells(sheetId: string, column: number, row: number, width: number, height: number): Promise<boolean> {
     return new Promise((resolve) => {
       const id = this.id++;
@@ -399,6 +423,17 @@ class QuadraticCore {
       x,
       y,
       value,
+      cursor,
+    });
+  }
+
+  setCellValues(sheetId: string, x: number, y: number, values: string[][], cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellValues',
+      sheetId,
+      x,
+      y,
+      values,
       cursor,
     });
   }
@@ -925,7 +960,19 @@ class QuadraticCore {
     });
   }
 
-  moveCodeCellVertically(sheetId: string, x: number, y: number, sheetEnd: boolean, reverse: boolean): Promise<JsPos> {
+  moveCodeCellVertically({
+    sheetId,
+    x,
+    y,
+    sheetEnd,
+    reverse,
+  }: {
+    sheetId: string;
+    x: number;
+    y: number;
+    sheetEnd: boolean;
+    reverse: boolean;
+  }): Promise<JsPos> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellVertically) => {
@@ -944,7 +991,19 @@ class QuadraticCore {
     });
   }
 
-  moveCodeCellHorizontally(sheetId: string, x: number, y: number, sheetEnd: boolean, reverse: boolean): Promise<JsPos> {
+  moveCodeCellHorizontally({
+    sheetId,
+    x,
+    y,
+    sheetEnd,
+    reverse,
+  }: {
+    sheetId: string;
+    x: number;
+    y: number;
+    sheetEnd: boolean;
+    reverse: boolean;
+  }): Promise<JsPos> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellHorizontally) => {

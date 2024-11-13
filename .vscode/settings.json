@@ -2,6 +2,7 @@
   "editor.formatOnSave": true,
   "cSpell.words": [
     "actix",
+    "airesearcher",
     "bigdecimal",
     "bincode",
     "bindgen",
@@ -38,6 +39,7 @@
     "pyimport",
     "rects",
     "reqwest",
+    "scrollend",
     "shadcn",
     "Signin",
     "smallpop",

@@ -10,6 +10,7 @@ import {
   Format,
   JsBordersSheet,
   JsCellValue,
+  JsCellValuePosAIContext,
   JsCodeCell,
   JsHtmlOutput,
   JsOffset,
@@ -311,6 +312,15 @@ export interface ClientCoreSetCellValue {
   x: number;
   y: number;
   value: string;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellValues {
+  type: 'clientCoreSetCellValues';
+  sheetId: string;
+  x: number;
+  y: number;
+  values: string[][];
   cursor?: string;
 }
 
@@ -1041,6 +1051,31 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
+export interface ClientCoreGetAIContextRectsInSheetRects {
+  type: 'clientCoreGetAIContextRectsInSheetRects';
+  id: number;
+  sheetRects: SheetRect[];
+  maxRects: number | undefined;
+}
+
+export interface CoreClientGetAIContextRectsInSheetRects {
+  type: 'coreClientGetAIContextRectsInSheetRects';
+  id: number;
+  value: JsCellValuePosAIContext[][] | undefined;
+}
+
+export interface ClientCoreGetErroredCodeCellsInSheetRects {
+  type: 'clientCoreGetErroredCodeCellsInSheetRects';
+  id: number;
+  sheetRects: SheetRect[];
+}
+
+export interface CoreClientGetErroredCodeCellsInSheetRects {
+  type: 'coreClientGetErroredCodeCellsInSheetRects';
+  id: number;
+  value: JsCodeCell[][] | undefined;
+}
+
 export interface ClientCoreNeighborText {
   type: 'clientCoreNeighborText';
   id: number;
@@ -1088,7 +1123,7 @@ export interface ClientCoreInsertRow {
 export interface CoreClientRequestAIResearcherResult {
   type: 'coreClientRequestAIResearcherResult';
   transactionId: string;
-  prompt: string;
+  query: string;
   refCellValues: string;
 }
 
@@ -1105,6 +1140,7 @@ export type ClientCoreMessage =
   | ClientCoreCellHasContent
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
+  | ClientCoreSetCellValues
   | ClientCoreGetCellFormatSummary
   | ClientCoreInitMultiplayer
   | ClientCoreSummarizeSelection
@@ -1179,6 +1215,9 @@ export type ClientCoreMessage =
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
+  | ClientCoreGetCellValue
+  | ClientCoreGetAIContextRectsInSheetRects
+  | ClientCoreGetErroredCodeCellsInSheetRects
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
@@ -1247,6 +1286,8 @@ export type CoreClientMessage =
   | CoreClientNeighborText
   | CoreClientBordersSheet
   | CoreClientGetCellValue
+  | CoreClientGetAIContextRectsInSheetRects
+  | CoreClientGetErroredCodeCellsInSheetRects
   | CoreClientFindNextColumnForRect
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically

@@ -1,27 +1,30 @@
-import { codeEditorEscapePressedAtom } from '@/app/atoms/codeEditorAtom';
+import { aiResearcherPromptAtom, aiResearcherRefCellAtom } from '@/app/atoms/aiResearcherAtom';
+import { codeEditorCodeCellAtom, codeEditorEscapePressedAtom } from '@/app/atoms/codeEditorAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
-import { useAIResearcherPanelWidth } from '@/app/ui/menus/AIAssistant/hooks/useAIAssistantPanelWidth';
 import { AIResearcherHeader } from '@/app/ui/menus/AIResearcher/AIResearcherHeader';
 import { AIResearcherInsertCellRef } from '@/app/ui/menus/AIResearcher/AIResearcherInsertCellRef';
-import { AIResearcherMessageForm } from '@/app/ui/menus/AIResearcher/AIResearcherMessageForm';
 import { AIResearcherOutput } from '@/app/ui/menus/AIResearcher/AIResearcherOutput';
-import { useCallback, useRef } from 'react';
-import { useSetRecoilState } from 'recoil';
+import { useAIResearcherPanelWidth } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherPanelWidth';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useCallback, useRef, useState } from 'react';
+import { useRecoilCallback } from 'recoil';
 
 export const AIResearcher = () => {
-  const setEscapePressed = useSetRecoilState(codeEditorEscapePressedAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const { panelWidth, setPanelWidth } = useAIResearcherPanelWidth();
 
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        setEscapePressed(true);
-      }
-    },
-    [setEscapePressed]
+  const handleKeyDown = useRecoilCallback(
+    ({ set }) =>
+      (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          set(codeEditorEscapePressedAtom, true);
+        }
+      },
+    []
   );
 
   const handleResize = useCallback(
@@ -38,6 +41,29 @@ export const AIResearcher = () => {
     [setPanelWidth]
   );
 
+  const submitPrompt = useRecoilCallback(
+    ({ snapshot, set }) =>
+      async (prompt: string) => {
+        set(aiResearcherPromptAtom, prompt);
+        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+        const refCell = await snapshot.getPromise(aiResearcherRefCellAtom);
+        const codeString = `AI("${prompt}", ${refCell})`;
+        quadraticCore.setCodeCellValue({
+          sheetId: codeCell.sheetId,
+          x: codeCell.pos.x,
+          y: codeCell.pos.y,
+          language: 'AIResearcher',
+          codeString,
+          cursor: sheets.getCursorPosition(),
+        });
+      },
+    []
+  );
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortController = new AbortController();
+  const [loading, setLoading] = useState(false);
+
   return (
     <div
       ref={aiPanelRef}
@@ -52,7 +78,14 @@ export const AIResearcher = () => {
 
         <AIResearcherInsertCellRef />
 
-        <AIResearcherMessageForm autoFocus={true} />
+        <AIUserMessageForm
+          textareaRef={textareaRef}
+          autoFocus={true}
+          abortController={abortController}
+          loading={loading}
+          setLoading={setLoading}
+          submitPrompt={submitPrompt}
+        />
 
         <AIResearcherOutput />
       </div>

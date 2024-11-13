@@ -43,13 +43,17 @@ export const HtmlValidationList = (props: Props) => {
 
   const [filter, setFilter] = useState<string | undefined>();
   useEffect(() => {
-    inlineEditorEvents.on('valueChanged', (value) => {
+    const updateFilter = (value: string) => {
       if (value.trim()) {
         setFilter(value);
       } else {
         setFilter(undefined);
       }
-    });
+    };
+    inlineEditorEvents.on('valueChanged', updateFilter);
+    return () => {
+      inlineEditorEvents.off('valueChanged', updateFilter);
+    };
   }, []);
 
   useEffect(() => {

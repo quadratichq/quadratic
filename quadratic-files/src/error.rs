@@ -5,14 +5,18 @@
 //! Convert third party crate errors to application errors.
 //! Convert errors to responses.
 
-use quadratic_rust_shared::{Aws, SharedError};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use quadratic_rust_shared::{clean_errors, storage::error::Storage as StorageError, SharedError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub(crate) type Result<T> = std::result::Result<T, FilesError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub(crate) enum FilesError {
+pub enum FilesError {
     #[error("Authentication error: {0}")]
     Authentication(String),
 
@@ -34,11 +38,17 @@ pub(crate) enum FilesError {
     #[error("Internal server error: {0}")]
     InternalServer(String),
 
-    #[error("Unable to load file {0} from bucket {1}: {2}")]
-    LoadFile(String, String, String),
+    #[error("Unable to load file {0}: {1}")]
+    LoadFile(String, String),
+
+    #[error("Not Found: {0}")]
+    NotFound(String),
 
     #[error("PubSub error: {0}")]
     PubSub(String),
+
+    #[error("QuadraticApi error: {0}")]
+    QuadraticApi(String),
 
     #[error("Error requesting data: {0}")]
     Request(String),
@@ -48,6 +58,9 @@ pub(crate) enum FilesError {
 
     #[error("Error serializing or deserializing: {0}")]
     Serialization(String),
+
+    #[error("File storage error: {0}")]
+    Storage(String),
 
     #[error("Transaction queue error: {0}")]
     TransactionQueue(String),
@@ -59,14 +72,37 @@ pub(crate) enum FilesError {
     Unknown(String),
 }
 
+// Convert FilesErrors into readable responses with appropriate status codes.
+// These are the errors that are returned to the client.
+impl IntoResponse for FilesError {
+    fn into_response(self) -> Response {
+        let (status, error) = match &self {
+            FilesError::Authentication(error) => (StatusCode::UNAUTHORIZED, clean_errors(error)),
+            FilesError::InternalServer(error) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, clean_errors(error))
+            }
+            FilesError::NotFound(error) => (StatusCode::NOT_FOUND, clean_errors(error)),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
+        };
+
+        tracing::warn!("{:?}", self);
+
+        (status, error).into_response()
+    }
+}
+
 impl From<SharedError> for FilesError {
     fn from(error: SharedError) -> Self {
         match error {
-            SharedError::Aws(aws) => match aws {
-                Aws::S3(error) => FilesError::S3(error),
-            },
+            SharedError::Auth(error) => FilesError::Authentication(error.to_string()),
+            SharedError::Aws(error) => FilesError::S3(error.to_string()),
             SharedError::PubSub(error) => FilesError::PubSub(error),
-            _ => FilesError::Unknown(format!("Unknown Quadratic API error: {error}")),
+            SharedError::QuadraticApi(error) => FilesError::QuadraticApi(error),
+            SharedError::Storage(error) => match error {
+                StorageError::Read(key, _) => FilesError::NotFound(format!("File {key} not found")),
+                _ => FilesError::Storage(error.to_string()),
+            },
+            _ => FilesError::Unknown(format!("Unknown SharedError: {error}")),
         }
     }
 }

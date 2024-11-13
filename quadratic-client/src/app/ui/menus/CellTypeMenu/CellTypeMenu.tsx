@@ -230,7 +230,7 @@ function CommandItemWrapper({
         <span className="flex items-center">
           {name}{' '}
           {experimental && (
-            <Badge variant="outline" className="ml-2">
+            <Badge variant="secondary" className="ml-2">
               Experimental
             </Badge>
           )}

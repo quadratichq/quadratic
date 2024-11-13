@@ -22,16 +22,16 @@ impl GridController {
         match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
                 if let Value::Tuple(vec) = parsed.eval(&mut ctx).inner {
-                    if let Some((prompt, values_array)) = vec.into_iter().next_tuple() {
-                        if let Ok(prompt) = prompt.into_cell_value() {
-                            let prompt = prompt.to_display();
+                    if let Some((query, values_array)) = vec.into_iter().next_tuple() {
+                        if let Ok(query) = query.into_cell_value() {
+                            let query = query.to_display();
                             let ref_cell_values = values_array
                                 .into_cell_values_vec()
                                 .into_iter()
                                 .map(|v| v.to_display())
                                 .join(", ");
                             transaction.cells_accessed = ctx.cells_accessed;
-                            self.request_ai_researcher_result(transaction, prompt, ref_cell_values);
+                            self.request_ai_researcher_result(transaction, query, ref_cell_values);
                         } else {
                             let _ = self.code_cell_sheet_error(
                                 transaction,
@@ -76,7 +76,7 @@ impl GridController {
     pub fn request_ai_researcher_result(
         &mut self,
         transaction: &mut PendingTransaction,
-        prompt: String,
+        query: String,
         ref_cell_values: String,
     ) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || !transaction.is_user() {
@@ -85,7 +85,7 @@ impl GridController {
 
         crate::wasm_bindings::js::jsRequestAIResearcherResult(
             transaction.id.to_string(),
-            prompt,
+            query,
             ref_cell_values,
         );
 

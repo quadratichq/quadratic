@@ -7,8 +7,8 @@ export const AIResearcherRequestHandler = () => {
   const { submitPrompt } = useSubmitAIResearcherPrompt();
 
   useEffect(() => {
-    const handleRequestAIResearcherResult = (transactionId: string, prompt: string, refCellValues: string) => {
-      submitPrompt({ prompt, refCellValues }).then(({ result, error }) => {
+    const handleRequestAIResearcherResult = (transactionId: string, query: string, refCellValues: string) => {
+      submitPrompt({ query, refCellValues }).then(({ result, error }) => {
         quadraticCore.responseAIResearcherResult(transactionId, result, error);
       });
     };

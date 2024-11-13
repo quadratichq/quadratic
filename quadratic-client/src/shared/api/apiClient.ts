@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { fetchFromApi } from './fetchFromApi';
+import { ApiError, fetchFromApi } from './fetchFromApi';
 
 // TODO(ddimaria): make this dynamic
 const CURRENT_FILE_VERSION = '1.6';
@@ -15,7 +15,17 @@ export const apiClient = {
       return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
     },
     async get(uuid: string) {
-      return fetchFromApi(`/v0/teams/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
+      const response = await fetchFromApi(
+        `/v0/teams/${uuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/teams/:uuid.GET.response']
+      );
+
+      if (response.license.status === 'revoked') {
+        throw new ApiError('License Revoked', 402, undefined);
+      }
+
+      return response;
     },
     async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.PATCH.request']) {
       return fetchFromApi(
@@ -92,7 +102,17 @@ export const apiClient = {
       return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
     },
     async get(uuid: string) {
-      return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
+      let response = await fetchFromApi(
+        `/v0/files/${uuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/files/:uuid.GET.response']
+      );
+
+      if (response.license.status === 'revoked') {
+        throw new ApiError('License Revoked', 402, undefined);
+      }
+
+      return response;
     },
     async create({
       file,
@@ -126,10 +146,12 @@ export const apiClient = {
         ApiSchemas['/v0/files.POST.response']
       );
     },
+
     async delete(uuid: string) {
       mixpanel.track('[Files].deleteFile', { id: uuid });
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
     },
+
     async download(uuid: string) {
       mixpanel.track('[Files].downloadFile', { id: uuid });
       const { file } = await this.get(uuid);
@@ -137,6 +159,7 @@ export const apiClient = {
       const checkpointData = await fetch(checkpointUrl).then((res) => res.arrayBuffer());
       downloadQuadraticFile(file.name, new Uint8Array(checkpointData));
     },
+
     async duplicate(uuid: string, isPrivate?: boolean) {
       mixpanel.track('[Files].duplicateFile', { id: uuid });
       // Get the file we want to duplicate
@@ -181,6 +204,7 @@ export const apiClient = {
 
       return { uuid: newFileUuid };
     },
+
     async update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
       return fetchFromApi(
         `/v0/files/${uuid}`,
@@ -191,6 +215,7 @@ export const apiClient = {
         ApiSchemas['/v0/files/:uuid.PATCH.response']
       );
     },
+
     thumbnail: {
       async update(uuid: string, thumbnail: Blob) {
         const formData = new FormData();
@@ -206,6 +231,7 @@ export const apiClient = {
         );
       },
     },
+
     sharing: {
       async get(uuid: string) {
         return fetchFromApi(
@@ -228,6 +254,7 @@ export const apiClient = {
         );
       },
     },
+
     invites: {
       async create(uuid: string, body: ApiTypes['/v0/files/:uuid/invites.POST.request']) {
         mixpanel.track('[FileSharing].invite.create');
@@ -251,6 +278,7 @@ export const apiClient = {
         );
       },
     },
+
     users: {
       async update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
         mixpanel.track('[FileSharing].users.updateRole');
@@ -286,6 +314,7 @@ export const apiClient = {
       return fetchFromApi(`/v0/users/acknowledge`, { method: 'GET' }, ApiSchemas['/v0/users/acknowledge.GET.response']);
     },
   },
+
   education: {
     async get() {
       return fetchFromApi(`/v0/education`, { method: 'GET' }, ApiSchemas['/v0/education.GET.response']);

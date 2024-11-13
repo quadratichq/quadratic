@@ -128,6 +128,8 @@ interface EventTypes {
 
   suggestionDropdownKeyboard: (key: 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab') => void;
 
+  hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
+
   requestAIResearcherResult: (transactionId: string, prompt: string, refCellValues: string) => void;
 }
 

@@ -2,7 +2,11 @@ import { Action } from '@/app/actions/actions';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { MenubarContent, MenubarMenu, MenubarSeparator, MenubarTrigger } from '@/shared/shadcn/ui/menubar';
 
-export const EditMenubarMenu = () => {
+type EditMenubarMenuProps = {
+  disableFocusGridRef: React.MutableRefObject<boolean>;
+};
+
+export const EditMenubarMenu = ({ disableFocusGridRef }: EditMenubarMenuProps) => {
   return (
     <MenubarMenu>
       <MenubarTrigger>Edit</MenubarTrigger>
@@ -20,7 +24,11 @@ export const EditMenubarMenu = () => {
 
         <MenubarSeparator />
 
-        <MenubarItemAction action={Action.ShowGoToMenu} actionArgs={undefined} />
+        <MenubarItemAction
+          action={Action.ShowGoToMenu}
+          actionArgs={undefined}
+          disableFocusGridRef={disableFocusGridRef}
+        />
         <MenubarItemAction action={Action.FindInCurrentSheet} actionArgs={undefined} />
         <MenubarItemAction action={Action.FindInAllSheets} actionArgs={undefined} />
       </MenubarContent>
