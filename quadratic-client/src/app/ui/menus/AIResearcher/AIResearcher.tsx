@@ -70,6 +70,7 @@ export const AIResearcher = () => {
             autoFocus={true}
             textareaRef={textareaRef}
             collapseAfterSubmit={false}
+            disableBackspaceIcon={true}
           />
           <AIUserMessageFormDisclaimer />
         </div>

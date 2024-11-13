@@ -1,17 +1,23 @@
-import { aiResearcherQueryAtom, aiResearcherRefCellAtom } from '@/app/atoms/aiResearcherAtom';
+import {
+  aiResearcherAbortControllerAtom,
+  aiResearcherLoadingAtom,
+  aiResearcherQueryAtom,
+  aiResearcherRefCellAtom,
+} from '@/app/atoms/aiResearcherAtom';
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { AIUserMessageForm, AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
-import { forwardRef, useState } from 'react';
-import { useRecoilCallback, useRecoilValue } from 'recoil';
+import { forwardRef } from 'react';
+import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 export const AIResearcherUserMessageForm = forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>(
   (props: AIUserMessageFormWrapperProps, ref) => {
+    const [loading, setLoading] = useRecoilState(aiResearcherLoadingAtom);
+    const abortController = useRecoilValue(aiResearcherAbortControllerAtom);
     const initialPrompt = useRecoilValue(aiResearcherQueryAtom);
-    const abortController = new AbortController();
-    const [loading, setLoading] = useState(false);
+
     const submitPrompt = useRecoilCallback(
       ({ snapshot, set }) =>
         async (prompt: string) => {

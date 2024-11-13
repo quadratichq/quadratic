@@ -49,7 +49,13 @@ export const useUpdateCodeEditor = () => {
             const parsedCodeString = parseCodeString(codeCell.code_string);
             if (parsedCodeString) {
               const { query, refCell } = parsedCodeString;
-              set(aiResearcherAtom, { query, refCell, output: newEvaluationResult.value ?? '' });
+              set(aiResearcherAtom, {
+                loading: false,
+                abortController: undefined,
+                query,
+                refCell,
+                output: newEvaluationResult.value ?? '',
+              });
             } else {
               set(aiResearcherAtom, defaultAIResearcherState);
             }

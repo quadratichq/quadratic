@@ -4,9 +4,10 @@ import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextM
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { getMessagesForModel } from '@/app/ai/tools/message.helper';
+import { aiResearcherAbortControllerAtom, aiResearcherLoadingAtom } from '@/app/atoms/aiResearcherAtom';
 import { useAIResearcherMessagePrompt } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherMessagePrompt';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { useCallback } from 'react';
+import { useRecoilCallback } from 'recoil';
 
 export function useSubmitAIResearcherPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -14,47 +15,62 @@ export function useSubmitAIResearcherPrompt() {
   const { getAIResearcherMessagePrompt } = useAIResearcherMessagePrompt();
   const [model] = useAIModel();
 
-  const submitPrompt = useCallback(
-    async ({
-      query,
-      refCellValues,
-    }: {
-      query: string;
-      refCellValues: string;
-    }): Promise<{ result?: string; error?: string }> => {
-      const quadraticContext = getQuadraticContext('AIResearcher');
-      const aiResearcherMessagePrompt = getAIResearcherMessagePrompt({ query, refCellValues });
+  const submitPrompt = useRecoilCallback(
+    ({ snapshot, set }) =>
+      async ({
+        query,
+        refCellValues,
+      }: {
+        query: string;
+        refCellValues: string;
+      }): Promise<{ result?: string; error?: string }> => {
+        set(aiResearcherLoadingAtom, true);
 
-      const chatMessages: ChatMessage[] = [...quadraticContext, aiResearcherMessagePrompt];
-      const { system, messages } = getMessagesForModel(model, chatMessages);
-
-      const abortController = new AbortController();
-      const response = await handleAIRequestToAPI({
-        model,
-        system,
-        messages,
-        signal: abortController.signal,
-        useStream: false,
-        useTools: true,
-        toolChoice: AITool.SetAIResearcherValue,
-      });
-
-      const setAIResearcherValueToolCall = response.toolCalls.find(
-        (toolCall) => toolCall.name === AITool.SetAIResearcherValue
-      );
-
-      if (setAIResearcherValueToolCall) {
-        try {
-          const argsObject = JSON.parse(setAIResearcherValueToolCall.arguments);
-          const output = aiToolsSpec[AITool.SetAIResearcherValue].responseSchema.parse(argsObject);
-          return { result: output.cell_value };
-        } catch (e) {
-          console.error('[useAISetCodeCellValue] Error parsing set_ai_researcher_value response: ', e);
+        let abortController = await snapshot.getPromise(aiResearcherAbortControllerAtom);
+        if (!abortController) {
+          abortController = new AbortController();
+          set(aiResearcherAbortControllerAtom, abortController);
         }
-      }
 
-      return { error: 'No function call found' };
-    },
+        const quadraticContext = getQuadraticContext('AIResearcher');
+        const aiResearcherMessagePrompt = getAIResearcherMessagePrompt({ query, refCellValues });
+
+        const chatMessages: ChatMessage[] = [...quadraticContext, aiResearcherMessagePrompt];
+        const { system, messages } = getMessagesForModel(model, chatMessages);
+
+        const response = await handleAIRequestToAPI({
+          model,
+          system,
+          messages,
+          signal: abortController.signal,
+          useStream: false,
+          useTools: true,
+          toolChoice: AITool.SetAIResearcherValue,
+        });
+
+        const setAIResearcherValueToolCall = response.toolCalls.find(
+          (toolCall) => toolCall.name === AITool.SetAIResearcherValue
+        );
+
+        let result: { result?: string; error?: string } = { result: undefined, error: undefined };
+        if (setAIResearcherValueToolCall) {
+          try {
+            const argsObject = JSON.parse(setAIResearcherValueToolCall.arguments);
+            const output = aiToolsSpec[AITool.SetAIResearcherValue].responseSchema.parse(argsObject);
+            result = { result: output.cell_value };
+          } catch (e) {
+            console.error('[useAISetCodeCellValue] Error parsing set_ai_researcher_value response: ', e);
+            result = { error: 'Error parsing set_ai_researcher_value response' };
+          }
+        } else {
+          result = { error: 'No function call found' };
+        }
+
+        set(aiResearcherAbortControllerAtom, undefined);
+        set(aiResearcherLoadingAtom, false);
+
+        return result;
+      },
     [handleAIRequestToAPI, getQuadraticContext, getAIResearcherMessagePrompt, model]
   );
 

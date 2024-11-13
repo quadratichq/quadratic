@@ -175,8 +175,8 @@ export const codeEditorShowDiffEditorAtom = selector<boolean>({
 export const codeEditorUnsavedChangesAtom = selector<boolean>({
   key: 'codeEditorUnsavedChangesAtom',
   get: ({ get }) => {
-    const { editorContent, codeString } = get(codeEditorAtom);
-    const unsavedChanges = editorContent !== codeString;
+    const { editorContent, codeString, codeCell } = get(codeEditorAtom);
+    const unsavedChanges = editorContent !== codeString && codeCell.language !== 'AIResearcher';
 
     if (unsavedChanges) {
       pixiAppSettings.unsavedEditorChanges = editorContent;

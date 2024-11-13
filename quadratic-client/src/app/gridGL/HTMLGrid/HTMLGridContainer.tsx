@@ -15,7 +15,6 @@ import { useHeadingSize } from '@/app/gridGL/HTMLGrid/useHeadingSize';
 import { HtmlValidations } from '@/app/gridGL/HTMLGrid/validations/HtmlValidations';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Following } from '@/app/ui/components/Following';
-import { AIResearcherRequestHandler } from '@/app/ui/menus/AIResearcher/AIResearcherRequestHandler';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 
 interface Props {
@@ -117,7 +116,6 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
               <HtmlValidations />
               <Annotations />
               <SuggestionDropDown />
-              <AIResearcherRequestHandler />
             </div>
           </div>
         </div>

@@ -57,8 +57,8 @@ export const AIResearcherHeader = () => {
         <TooltipPopover label={`Close`} shortcut={`Esc`} side="bottom">
           <Button
             variant="ghost"
-            id="QuadraticCodeEditorCloseButtonID"
-            onClick={() => closeEditor(false)}
+            id="QuadraticAIResearcherCloseButtonID"
+            onClick={() => closeEditor(true)}
             size="icon-sm"
             className="text-muted-foreground hover:text-foreground"
           >

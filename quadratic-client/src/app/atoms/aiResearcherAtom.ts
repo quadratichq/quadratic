@@ -1,12 +1,16 @@
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface AIResearcherState {
+  abortController?: AbortController;
+  loading: boolean;
   query: string;
   refCell: string;
   output: string;
 }
 
 export const defaultAIResearcherState: AIResearcherState = {
+  abortController: undefined,
+  loading: false,
   query: '',
   refCell: '',
   output: '',
@@ -27,6 +31,8 @@ const createSelector = <T extends keyof AIResearcherState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
+export const aiResearcherAbortControllerAtom = createSelector('abortController');
+export const aiResearcherLoadingAtom = createSelector('loading');
 export const aiResearcherQueryAtom = createSelector('query');
 export const aiResearcherRefCellAtom = createSelector('refCell');
 export const aiResearcherOutputAtom = createSelector('output');

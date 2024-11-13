@@ -1,5 +1,6 @@
 import { codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { AIResearcher } from '@/app/ui/menus/AIResearcher/AIResearcher';
+import { AIResearcherRequestHandler } from '@/app/ui/menus/AIResearcher/AIResearcherRequestHandler';
 import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
 import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
@@ -35,6 +36,8 @@ export const CodeEditor = () => {
       <CodeEditorEffects />
 
       <CodeEditorEscapeEffect editorInst={editorInst} />
+
+      <AIResearcherRequestHandler />
 
       {showCodeEditor &&
         (codeCell.language === 'AIResearcher' ? (
