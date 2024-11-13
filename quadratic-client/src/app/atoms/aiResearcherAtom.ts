@@ -1,13 +1,13 @@
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface AIResearcherState {
-  prompt: string;
+  query: string;
   refCell: string;
   output: string;
 }
 
 export const defaultAIResearcherState: AIResearcherState = {
-  prompt: '',
+  query: '',
   refCell: '',
   output: '',
 };
@@ -27,6 +27,6 @@ const createSelector = <T extends keyof AIResearcherState>(key: T) =>
         [key]: newValue instanceof DefaultValue ? prev[key] : newValue,
       })),
   });
-export const aiResearcherPromptAtom = createSelector('prompt');
+export const aiResearcherQueryAtom = createSelector('query');
 export const aiResearcherRefCellAtom = createSelector('refCell');
 export const aiResearcherOutputAtom = createSelector('output');

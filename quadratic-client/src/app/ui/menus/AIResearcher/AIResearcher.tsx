@@ -1,18 +1,19 @@
-import { aiResearcherPromptAtom, aiResearcherRefCellAtom } from '@/app/atoms/aiResearcherAtom';
-import { codeEditorCodeCellAtom, codeEditorEscapePressedAtom } from '@/app/atoms/codeEditorAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
+import { codeEditorEscapePressedAtom, codeEditorLoadingAtom } from '@/app/atoms/codeEditorAtom';
+import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageForm';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIResearcherHeader } from '@/app/ui/menus/AIResearcher/AIResearcherHeader';
 import { AIResearcherInsertCellRef } from '@/app/ui/menus/AIResearcher/AIResearcherInsertCellRef';
 import { AIResearcherOutput } from '@/app/ui/menus/AIResearcher/AIResearcherOutput';
+import { AIResearcherUserMessageForm } from '@/app/ui/menus/AIResearcher/AIResearcherUserMessageForm';
 import { useAIResearcherPanelWidth } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherPanelWidth';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useCallback, useRef, useState } from 'react';
-import { useRecoilCallback } from 'recoil';
+import { CircularProgress } from '@mui/material';
+import { useCallback, useRef } from 'react';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 
 export const AIResearcher = () => {
+  const codeEditorLoading = useRecoilValue(codeEditorLoadingAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIResearcherPanelWidth();
 
   const handleKeyDown = useRecoilCallback(
@@ -41,28 +42,13 @@ export const AIResearcher = () => {
     [setPanelWidth]
   );
 
-  const submitPrompt = useRecoilCallback(
-    ({ snapshot, set }) =>
-      async (prompt: string) => {
-        set(aiResearcherPromptAtom, prompt);
-        const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
-        const refCell = await snapshot.getPromise(aiResearcherRefCellAtom);
-        const codeString = `AI("${prompt}", ${refCell})`;
-        quadraticCore.setCodeCellValue({
-          sheetId: codeCell.sheetId,
-          x: codeCell.pos.x,
-          y: codeCell.pos.y,
-          language: 'AIResearcher',
-          codeString,
-          cursor: sheets.getCursorPosition(),
-        });
-      },
-    []
-  );
-
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const abortController = new AbortController();
-  const [loading, setLoading] = useState(false);
+  if (codeEditorLoading) {
+    return (
+      <div className="flex justify-center">
+        <CircularProgress style={{ width: '18px', height: '18px' }} />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -78,14 +64,10 @@ export const AIResearcher = () => {
 
         <AIResearcherInsertCellRef />
 
-        <AIUserMessageForm
-          textareaRef={textareaRef}
-          autoFocus={true}
-          abortController={abortController}
-          loading={loading}
-          setLoading={setLoading}
-          submitPrompt={submitPrompt}
-        />
+        <div className="px-2 py-0.5">
+          <AIResearcherUserMessageForm ref={textareaRef} autoFocus={true} textareaRef={textareaRef} />
+          <AIUserMessageFormDisclaimer />
+        </div>
 
         <AIResearcherOutput />
       </div>

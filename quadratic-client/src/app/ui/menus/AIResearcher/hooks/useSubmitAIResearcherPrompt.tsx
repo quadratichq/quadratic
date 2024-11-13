@@ -4,14 +4,14 @@ import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextM
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { getMessagesForModel } from '@/app/ai/tools/message.helper';
-import { useAIResearcherContextMessages } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherContextMessages';
+import { useAIResearcherMessagePrompt } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherMessagePrompt';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useSubmitAIResearcherPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getQuadraticContext } = useQuadraticContextMessages();
-  const { getAIResearcherMessagePrompt } = useAIResearcherContextMessages();
+  const { getAIResearcherMessagePrompt } = useAIResearcherMessagePrompt();
   const [model] = useAIModel();
 
   const submitPrompt = useCallback(

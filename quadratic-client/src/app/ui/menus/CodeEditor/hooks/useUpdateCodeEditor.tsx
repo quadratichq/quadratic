@@ -48,8 +48,8 @@ export const useUpdateCodeEditor = () => {
           if (codeCell.language === 'AIResearcher') {
             const parsedCodeString = parseCodeString(codeCell.code_string);
             if (parsedCodeString) {
-              const { prompt, refCell } = parsedCodeString;
-              set(aiResearcherAtom, (prev) => ({ ...prev, prompt, refCell, output: newEvaluationResult.value ?? '' }));
+              const { query, refCell } = parsedCodeString;
+              set(aiResearcherAtom, { query, refCell, output: newEvaluationResult.value ?? '' });
             } else {
               set(aiResearcherAtom, defaultAIResearcherState);
             }

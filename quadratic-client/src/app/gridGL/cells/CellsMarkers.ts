@@ -1,9 +1,9 @@
+import { ErrorMarker } from '@/app/gridGL/cells/CellsSheet';
+import { generatedTextures } from '@/app/gridGL/generateTextures';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
 import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
-import { colors } from '../../theme/colors';
-import { generatedTextures } from '../generateTextures';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { ErrorMarker } from './CellsSheet';
 
 const INDICATOR_SIZE = 4;
 export const TRIANGLE_SCALE = 0.1;

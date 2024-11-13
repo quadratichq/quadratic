@@ -19,7 +19,7 @@ export type AIUserMessageFormWrapperProps = {
   messageIndex?: number;
 };
 
-type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
+type Props = AIUserMessageFormWrapperProps & {
   abortController: AbortController | undefined;
   loading: boolean;
   setLoading: SetterOrUpdater<boolean>;
@@ -35,6 +35,7 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
 export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: Props, ref) => {
   const {
     initialPrompt,
+    messageIndex,
     ctx,
     autoFocus,
     textareaRef: bottomTextareaRef,
@@ -45,7 +46,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
     formOnKeyDown,
   } = props;
 
-  const [editing, setEditing] = useState(!initialPrompt);
+  const [editing, setEditing] = useState(messageIndex === undefined);
   const [prompt, setPrompt] = useState(initialPrompt ?? '');
 
   const abortPrompt = useCallback(() => {
@@ -66,10 +67,10 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
   }, [autoFocus, textareaRef]);
 
   useEffect(() => {
-    if (loading && initialPrompt !== undefined) {
+    if (loading && messageIndex !== undefined) {
       setEditing(false);
     }
-  }, [loading, initialPrompt]);
+  }, [loading, messageIndex]);
 
   return (
     <form
@@ -120,7 +121,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 
               submitPrompt(prompt);
 
-              if (initialPrompt === undefined) {
+              if (messageIndex === undefined) {
                 setPrompt('');
                 textareaRef.current?.focus();
               } else {
@@ -199,7 +200,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 export const AIUserMessageFormDisclaimer = () => {
   return (
     <p className="py-0.5 text-center text-xs text-muted-foreground">
-      Some sheet data is sent to the AI model.{' '}
+      Some sheet data is sent to the AI model.
       <a href={AI_SECURITY} target="_blank" rel="noreferrer" className="underline hover:text-foreground">
         Learn more.
       </a>

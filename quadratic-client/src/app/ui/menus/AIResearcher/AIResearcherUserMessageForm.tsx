@@ -1,0 +1,48 @@
+import { aiResearcherQueryAtom, aiResearcherRefCellAtom } from '@/app/atoms/aiResearcherAtom';
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { AIUserMessageForm, AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import mixpanel from 'mixpanel-browser';
+import { forwardRef, useState } from 'react';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
+
+export const AIResearcherUserMessageForm = forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>(
+  (props: AIUserMessageFormWrapperProps, ref) => {
+    const initialPrompt = useRecoilValue(aiResearcherQueryAtom);
+    const abortController = new AbortController();
+    const [loading, setLoading] = useState(false);
+    const submitPrompt = useRecoilCallback(
+      ({ snapshot, set }) =>
+        async (prompt: string) => {
+          set(aiResearcherQueryAtom, prompt);
+          const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+          const refCell = await snapshot.getPromise(aiResearcherRefCellAtom);
+          const codeString = `AI("${prompt}", ${refCell})`;
+          quadraticCore.setCodeCellValue({
+            sheetId: codeCell.sheetId,
+            x: codeCell.pos.x,
+            y: codeCell.pos.y,
+            language: 'AIResearcher',
+            codeString,
+            cursor: sheets.getCursorPosition(),
+          });
+        },
+      []
+    );
+
+    return (
+      <AIUserMessageForm
+        {...props}
+        initialPrompt={initialPrompt}
+        abortController={abortController}
+        loading={loading}
+        setLoading={setLoading}
+        submitPrompt={(prompt) => {
+          mixpanel.track('[AIResearcher].submitPrompt');
+          submitPrompt(prompt);
+        }}
+      />
+    );
+  }
+);

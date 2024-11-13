@@ -1,8 +1,8 @@
-export const parseCodeString = (codeString: string): { prompt: string; refCell: string } | null => {
+export const parseCodeString = (codeString: string): { query: string; refCell: string } | null => {
   const match = codeString.match(/AI\("(.+?)", ?(.+?)\)/);
   if (match) {
-    const [, prompt, refCell] = match;
-    return { prompt, refCell };
+    const [, query, refCell] = match;
+    return { query, refCell };
   }
   return null;
 };
