@@ -159,7 +159,6 @@ export class PixiApp {
 
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
     this.gridLines = this.viewportContents.addChild(this.gridLines);
-    this.viewportContents.addChild(this.overHeadingsColumnsHeaders);
 
     // this is a hack to ensure that table column names appears over the column
     // headings, but under the row headings
@@ -168,7 +167,6 @@ export class PixiApp {
 
     this.axesLines = this.viewportContents.addChild(new AxesLines());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
-    this.cellImages = this.viewportContents.addChild(this.cellImages);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
@@ -177,6 +175,8 @@ export class PixiApp {
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.validations = this.viewportContents.addChild(this.validations);
     this.headings = this.viewportContents.addChild(gridHeadings);
+    this.viewportContents.addChild(this.overHeadingsColumnsHeaders);
+    this.cellImages = this.viewportContents.addChild(this.cellImages);
     this.viewportContents.addChild(this.overHeadingsTableNames);
 
     this.reset();
