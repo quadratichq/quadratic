@@ -79,4 +79,5 @@ export const AI = {
     CHAT: `${apiClient.getApiUrl()}/ai/openai/chat`,
     STREAM: `${apiClient.getApiUrl()}/ai/openai/chat/stream`,
   },
+  EXA: `${apiClient.getApiUrl()}/ai/exa`,
 };

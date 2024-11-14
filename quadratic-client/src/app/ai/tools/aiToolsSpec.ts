@@ -23,6 +23,8 @@ type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
 export const AIToolsArgsSchema = {
   [AITool.SetAIResearcherValue]: z.object({
     cell_value: z.string(),
+    source_urls: z.array(z.string()),
+    confidence_score: z.number(),
   }),
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
@@ -77,8 +79,19 @@ export const aiToolsSpec: AIToolSpecRecord = {
           description:
             'The value result of the query to the AI Researcher, this will be directly inserted into the cell in the spreadsheet',
         },
+        source_urls: {
+          type: 'array',
+          items: {
+            type: 'string',
+            description: 'The urls of the search results that were used to answer the query',
+          },
+        },
+        confidence_score: {
+          type: 'number',
+          description: 'The average confidence score of the search results that were used to answer the query',
+        },
       },
-      required: ['cell_value'],
+      required: ['cell_value', 'source_urls', 'confidence_score'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetAIResearcherValue],
@@ -90,6 +103,7 @@ export const aiToolsSpec: AIToolSpecRecord = {
 You should use the set_ai_researcher_value function to set the result of the AI Researcher as a value on the spreadsheet.\n
 This value should be in strong correlation to the referenced cell value(s) from the spreadsheet and should directly answer the users query related to the referenced cell value(s).\n
 This function requires the value that will be set on the spreadsheet. It can be a text, number, currency, date, etc.\n
+You should also include the source_urls and confidence_score in the response, these are the urls of the search results that were used to answer the query and the confidence score of the search results.\n
 `,
   },
   [AITool.SetChatName]: {

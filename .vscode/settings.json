@@ -3,6 +3,7 @@
   "cSpell.words": [
     "actix",
     "airesearcher",
+    "Autoprompt",
     "bigdecimal",
     "bincode",
     "bindgen",
@@ -25,6 +26,7 @@
     "indicies",
     "itertools",
     "jwks",
+    "livecrawl",
     "MDSL",
     "micropip",
     "msdf",
@@ -92,6 +94,9 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

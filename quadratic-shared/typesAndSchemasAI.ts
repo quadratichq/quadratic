@@ -349,3 +349,25 @@ export type AIToolChoice = z.infer<typeof AIToolChoiceSchema>;
 
 const AIPromptMessageSchema = BedrockPromptMessageSchema.or(AnthropicPromptMessageSchema).or(OpenAIPromptMessageSchema);
 export type AIPromptMessage = z.infer<typeof AIPromptMessageSchema>;
+
+export const ExaSearchRequestBodySchema = z.object({
+  query: z.string(),
+  type: z.enum(['auto', 'neural', 'keyword']),
+  numResults: z.number(),
+  livecrawl: z.enum(['never', 'fallback', 'always']),
+  useAutoprompt: z.boolean(),
+  text: z.boolean(),
+  highlights: z.boolean(),
+  summary: z.boolean(),
+});
+export type ExaSearchRequestBody = z.infer<typeof ExaSearchRequestBodySchema>;
+
+export const ExaSearchResultSchema = z.object({
+  title: z.string(),
+  url: z.string(),
+  publishedDate: z.string().optional(),
+  author: z.string().optional(),
+  score: z.number().optional(),
+  text: z.string().optional(),
+});
+export type ExaSearchResult = z.infer<typeof ExaSearchResultSchema>;

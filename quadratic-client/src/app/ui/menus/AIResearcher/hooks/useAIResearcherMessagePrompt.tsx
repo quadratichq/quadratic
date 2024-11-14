@@ -1,9 +1,17 @@
-import { UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import { ExaSearchResult, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useAIResearcherMessagePrompt() {
   const getAIResearcherMessagePrompt = useCallback(
-    ({ query, refCellValues }: { query: string; refCellValues: string }): UserMessagePrompt => {
+    ({
+      query,
+      refCellValues,
+      exaResult,
+    }: {
+      query: string;
+      refCellValues: string;
+      exaResult?: ExaSearchResult[];
+    }): UserMessagePrompt => {
       return {
         role: 'user',
         content: `You are an AI Researcher. You are tasked with finding accurate answer to the following user query:
@@ -20,6 +28,29 @@ export function useAIResearcherMessagePrompt() {
   \`\`\`plaintext
   ${refCellValues}
   \`\`\`\n
+
+  ${
+    exaResult
+      ? `
+  I have done a search and I am providing you with the results as an array of objects, having the following properties:
+  - title: The title of the search result.
+  - url: The url of the search result.
+  - publishedDate: The published date of the search result, if available.
+  - author: The author of the search result, if available.
+  - score: Similarity score between query/url and result. Higher score means more relevant to the query, if available.
+  - text: The text of the search result, if available.
+  - highlights: The highlights of the search result, if available.
+  - summary: The summary of the search result, if available.
+  
+  You should use the following search results to answer the query:\n
+  \`\`\`json
+  ${JSON.stringify(exaResult, null, 2)}
+  \`\`\`
+  `
+      : ''
+  }
+
+ 
   `,
         contextType: 'userPrompt',
       };
