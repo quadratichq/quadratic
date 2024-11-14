@@ -97,6 +97,21 @@ impl DataTable {
             .collect()
     }
 
+    pub fn unique_column_header_name(&self, name: Option<&str>) -> String {
+        let name = name.unwrap_or("Column");
+
+        if let Some(columns) = self.column_headers.as_ref() {
+            let all_names = columns
+                .iter()
+                .map(|c| c.name.to_string())
+                .collect::<Vec<_>>();
+
+            unique_name(name, &all_names, false)
+        } else {
+            name.to_string()
+        }
+    }
+
     /// Set the display of a column header at the given index.
     pub fn normalize_column_header_names(&mut self) {
         let mut all_names = vec![];
@@ -108,6 +123,15 @@ impl DataTable {
                 all_names.push(name);
             });
         }
+    }
+
+    /// Get a column header by name.
+    pub fn get_header_by_name(&self, name: &str) -> Option<&DataTableColumnHeader> {
+        self.column_headers
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find(|h| h.name.to_string() == name)
     }
 }
 

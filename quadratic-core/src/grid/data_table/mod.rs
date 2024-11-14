@@ -18,7 +18,7 @@ use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{anyhow, bail, Ok, Result};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
 use itertools::Itertools;
@@ -330,6 +330,13 @@ impl DataTable {
         }
     }
 
+    pub fn value_as_array<'a>(&'a self) -> Result<&'a Array> {
+        match &self.value {
+            Value::Array(array) => Ok(array),
+            _ => bail!("Expected an array"),
+        }
+    }
+
     pub fn pretty_print_data_table(
         data_table: &DataTable,
         title: Option<&str>,
@@ -347,11 +354,21 @@ impl DataTable {
         for (index, row) in array.rows().take(max).enumerate() {
             let row = row.iter().map(|s| s.to_string()).collect::<Vec<_>>();
             let display_index = vec![display_buffer[index].to_string()];
-            let row = [display_index, row].concat();
 
-            if index == 0 && data_table.header_is_first_row {
+            if index == 0 && data_table.column_headers.is_some() {
+                let headers = data_table
+                    .column_headers
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .map(|h| h.name.to_string())
+                    .collect::<Vec<_>>();
+                builder.set_header([display_index, headers].concat());
+            } else if index == 0 && data_table.header_is_first_row {
+                let row = [display_index, row].concat();
                 builder.set_header(row);
             } else {
+                let row = [display_index, row].concat();
                 builder.push_record(row);
             }
         }
