@@ -122,7 +122,7 @@ export class TableColumnHeaders extends Container {
 
   // update appearance when there is an updated code cell
   update() {
-    if (this.table.codeCell.show_header) {
+    if (this.table.codeCell.show_header && !this.table.codeCell.spill_error) {
       this.visible = true;
       this.headerHeight = this.table.sheet.offsets.getRowHeight(this.table.codeCell.y);
       this.drawBackground();
