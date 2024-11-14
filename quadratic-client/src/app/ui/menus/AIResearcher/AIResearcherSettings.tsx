@@ -172,13 +172,10 @@ export const AIResearcherSettings = () => {
         <Input
           type="text"
           name="includeText"
-          value={exaSettings.includeText.join(', ')}
+          value={exaSettings.includeText.join(',')}
           onChange={(e) => {
             const value = e.target.value;
-            const textArray = value
-              .split(',')
-              .map((text) => text.trim())
-              .filter((text) => text !== '');
+            const textArray = value.split(',');
             setExaSettings({ ...exaSettings, includeText: textArray });
           }}
         />
@@ -192,13 +189,10 @@ export const AIResearcherSettings = () => {
         <Input
           type="text"
           name="excludeText"
-          value={exaSettings.excludeText.join(', ')}
+          value={exaSettings.excludeText.join(',')}
           onChange={(e) => {
             const value = e.target.value;
-            const textArray = value
-              .split(',')
-              .map((text) => text.trim())
-              .filter((text) => text !== '');
+            const textArray = value.split(',');
             setExaSettings({ ...exaSettings, excludeText: textArray });
           }}
         />
@@ -212,13 +206,10 @@ export const AIResearcherSettings = () => {
         <Input
           type="text"
           name="includeDomains"
-          value={exaSettings.includeDomains.join(', ')}
+          value={exaSettings.includeDomains.join(',')}
           onChange={(e) => {
             const value = e.target.value;
-            const textArray = value
-              .split(',')
-              .map((text) => text.trim())
-              .filter((text) => text !== '');
+            const textArray = value.split(',');
             setExaSettings({ ...exaSettings, includeDomains: textArray });
           }}
         />
@@ -232,13 +223,10 @@ export const AIResearcherSettings = () => {
         <Input
           type="text"
           name="excludeDomains"
-          value={exaSettings.excludeDomains.join(', ')}
+          value={exaSettings.excludeDomains.join(',')}
           onChange={(e) => {
             const value = e.target.value;
-            const textArray = value
-              .split(',')
-              .map((text) => text.trim())
-              .filter((text) => text !== '');
+            const textArray = value.split(',');
             setExaSettings({ ...exaSettings, excludeDomains: textArray });
           }}
         />

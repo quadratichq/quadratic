@@ -35,11 +35,39 @@ export function useSubmitAIResearcherPrompt() {
           set(aiResearcherAbortControllerAtom, abortController);
         }
 
-        const exaSettings = await snapshot.getPromise(exaSettingsAtom);
+        const {
+          type,
+          numResults,
+          livecrawl,
+          useAutoprompt,
+          text,
+          highlights,
+          summary,
+          categories,
+          includeText,
+          excludeText,
+          includeDomains,
+          excludeDomains,
+          startPublishedDate,
+          endPublishedDate,
+        } = await snapshot.getPromise(exaSettingsAtom);
         const exaResponse = await handleExaRequestToAPI({
           signal: abortController.signal,
           query: `Search this query: '${query}', for these cell value(s): '${refCellValues}'`,
-          ...exaSettings,
+          type,
+          numResults,
+          livecrawl,
+          useAutoprompt,
+          text,
+          highlights,
+          summary,
+          categories,
+          includeText: includeText.map((text) => text.trim()).filter((text) => text !== ''),
+          excludeText: excludeText.map((text) => text.trim()).filter((text) => text !== ''),
+          includeDomains: includeDomains.map((domain) => domain.trim()).filter((domain) => domain !== ''),
+          excludeDomains: excludeDomains.map((domain) => domain.trim()).filter((domain) => domain !== ''),
+          startPublishedDate,
+          endPublishedDate,
         });
         const exaResult = exaResponse.error ? undefined : exaResponse.content;
 
