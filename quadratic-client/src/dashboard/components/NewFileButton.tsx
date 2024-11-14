@@ -4,7 +4,7 @@ import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { SNIPPET_PY_API } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { ApiIcon, ArrowDropDownIcon, DatabaseIcon, DraftIcon, ExamplesIcon } from '@/shared/components/Icons';
+import { AddIcon, ApiIcon, ArrowDropDownIcon, DatabaseIcon, DraftIcon, ExamplesIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -109,7 +109,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
               });
               return (
                 <DropdownMenuItem key={uuid} asChild>
-                  <Link to={to}>
+                  <Link to={to} reloadDocument>
                     <LanguageIcon language={type} className="mr-3" />
                     <span className="flex flex-col">
                       {name}
@@ -123,10 +123,19 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
               <DropdownMenuItem onClick={() => navigate(ROUTES.TEAM_CONNECTIONS(teamUuid))}>
                 <DatabaseIcon className="mr-3 text-muted-foreground" />
                 <span className="flex flex-col">
-                  All connections
+                  View all connections
                   <span className="text-xs text-muted-foreground">
                     {connections.length - CONNECTIONS_DISPLAY_LIMIT} more
                   </span>
+                </span>
+              </DropdownMenuItem>
+            )}
+            {connections.length === 0 && (
+              <DropdownMenuItem onClick={() => navigate(ROUTES.TEAM_CONNECTIONS(teamUuid))}>
+                <AddIcon className="mr-3 text-muted-foreground" />
+                <span className="flex flex-col">
+                  Add a connection
+                  <span className="text-xs text-muted-foreground">Postgres, SQL, Snowflake, & more</span>
                 </span>
               </DropdownMenuItem>
             )}
