@@ -22,7 +22,6 @@ class Thumbnail {
   }
 
   setThumbnailDirty = () => {
-    console.log('setThumbnailDirty');
     this.thumbnailDirty = true;
   };
 

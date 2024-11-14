@@ -91,7 +91,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.ToggleFirstRowAsHeaderTable]: {
-    label: 'First row as column headers',
+    label: 'Use 1st row as column headers',
     checkbox: isFirstRowHeader,
     run: () => {
       const table = getTable();
@@ -173,7 +173,7 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.ToggleTableAlternatingColors]: {
-    label: 'Toggle alternating colors',
+    label: 'Show alternating colors',
     checkbox: isAlternatingColorsShowing,
     run: () => {
       const table = getTable();

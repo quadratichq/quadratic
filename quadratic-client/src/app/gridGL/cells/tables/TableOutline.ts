@@ -33,8 +33,6 @@ export class TableOutline extends Graphics {
 
     // draw the table selected outline
     const width = this.active ? 2 : 1;
-
-    const image = this.table.codeCell.state === 'Image';
     const chart = this.table.codeCell.state === 'HTML';
     if (!chart) {
       this.lineStyle({ color: getCSSVariableTint('primary'), width, alignment: 0 });
@@ -52,6 +50,7 @@ export class TableOutline extends Graphics {
 
       // draw outline around where the code cell would spill
       this.lineStyle({ color: getCSSVariableTint('primary'), width: 1, alignment: 0 });
+      const image = this.table.codeCell.state === 'Image';
       this.drawRect(
         0,
         0,

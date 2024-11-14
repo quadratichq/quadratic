@@ -32,6 +32,10 @@ impl GridController {
                     index,
                 });
                 code_pos = Some(*pos);
+
+                // need to update the cells that are affected by the spill error
+                let sheet_rect = run.output_sheet_rect(sheet_pos, true);
+                transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
             }
             if let Some(code_pos) = code_pos {
                 if let Some(data_table) = sheet.data_tables.get(&code_pos) {

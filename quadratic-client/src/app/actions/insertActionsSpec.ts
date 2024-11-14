@@ -6,11 +6,11 @@ import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { SNIPPET_JS_API, SNIPPET_JS_CHART } from '@/app/ui/menus/CodeEditor/snippetsJS';
 import { SNIPPET_PY_API, SNIPPET_PY_CHART } from '@/app/ui/menus/CodeEditor/snippetsPY';
 import {
-  ArrowDropDownCircleIcon,
+  ArrowDropDownIcon,
   CheckBoxIcon,
   DataValidationsIcon,
-  SheetIcon,
   FormatDateTimeIcon,
+  SheetIcon,
 } from '@/shared/components/Icons';
 import { quadraticCore } from '../web-workers/quadraticCore/quadraticCore';
 
@@ -204,7 +204,7 @@ export const insertActionsSpec: InsertActionSpec = {
   [Action.InsertDropdown]: {
     label: 'Dropdown',
     labelVerbose: 'Insert dropdown',
-    Icon: ArrowDropDownCircleIcon,
+    Icon: ArrowDropDownIcon,
     run: () => {
       if (!pixiAppSettings.setEditorInteractionState) return;
       pixiAppSettings.setEditorInteractionState((prev) => ({
