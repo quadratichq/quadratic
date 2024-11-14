@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 //! Holds a column header within a table.
 
 import { Table } from '@/app/gridGL/cells/tables/Table';
