@@ -11,6 +11,12 @@ export const defaultExaSettingsState: ExaSettingsState = {
   text: true,
   highlights: true,
   summary: true,
+  includeText: [],
+  excludeText: [],
+  includeDomains: [],
+  excludeDomains: [],
+  startPublishedDate: '',
+  endPublishedDate: '',
 };
 
 export const exaSettingsAtom = atom<ExaSettingsState>({

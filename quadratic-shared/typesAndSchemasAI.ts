@@ -353,12 +353,18 @@ export type AIPromptMessage = z.infer<typeof AIPromptMessageSchema>;
 export const ExaSearchRequestBodySchema = z.object({
   query: z.string(),
   type: z.enum(['auto', 'neural', 'keyword']),
-  numResults: z.number(),
+  numResults: z.number().min(1).max(25).optional(),
   livecrawl: z.enum(['never', 'fallback', 'always']),
   useAutoprompt: z.boolean(),
   text: z.boolean(),
   highlights: z.boolean(),
   summary: z.boolean(),
+  includeText: z.array(z.string()),
+  excludeText: z.array(z.string()),
+  includeDomains: z.array(z.string()),
+  excludeDomains: z.array(z.string()),
+  startPublishedDate: z.string(),
+  endPublishedDate: z.string(),
 });
 export type ExaSearchRequestBody = z.infer<typeof ExaSearchRequestBodySchema>;
 

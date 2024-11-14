@@ -44,11 +44,13 @@ export const AIResearcherSettings = () => {
           name="numResults"
           min={1}
           max={25}
-          value={exaSettings.numResults}
+          value={exaSettings.numResults ?? ''}
           onChange={(e) => {
             const value = parseInt(e.target.value);
-            if (!isNaN(value) && value >= 1 && value <= 25) {
-              setExaSettings({ ...exaSettings, numResults: value });
+            if (!isNaN(value)) {
+              setExaSettings({ ...exaSettings, numResults: Math.min(Math.max(value, 1), 25) });
+            } else {
+              setExaSettings({ ...exaSettings, numResults: undefined });
             }
           }}
         />
