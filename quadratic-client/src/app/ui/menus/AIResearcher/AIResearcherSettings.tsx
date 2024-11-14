@@ -8,8 +8,19 @@ import { useRecoilState } from 'recoil';
 export const AIResearcherSettings = () => {
   const [exaSettings, setExaSettings] = useRecoilState(exaSettingsAtom);
   return (
-    <div className="mx-3 mb-3 mt-1 flex flex-col gap-2 rounded-lg">
+    <div className="mx-3 mb-3 mt-1 flex flex-col gap-2 overflow-y-auto rounded-lg">
       <span className="font-bold">Exa Settings (for testing):</span>
+
+      <div className={`flex items-center space-x-2`}>
+        <Checkbox
+          id="useAutoprompt"
+          checked={exaSettings.useAutoprompt}
+          onCheckedChange={(checked) => setExaSettings({ ...exaSettings, useAutoprompt: !!checked })}
+        />
+        <label htmlFor="useAutoprompt" className="cursor-pointer text-sm font-medium">
+          Use Autoprompt
+        </label>
+      </div>
 
       <div className="flex items-center space-x-2">
         <label htmlFor="type" className="cursor-pointer whitespace-nowrap text-sm font-medium">
@@ -25,7 +36,7 @@ export const AIResearcherSettings = () => {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {['auto', 'neural', 'keyword'].map((type, i) => (
+            {['auto', 'neural', 'keyword'].map((type) => (
               <SelectItem key={type} value={type}>
                 {type}
               </SelectItem>
@@ -83,17 +94,6 @@ export const AIResearcherSettings = () => {
 
       <div className={`flex items-center space-x-2`}>
         <Checkbox
-          id="useAutoprompt"
-          checked={exaSettings.useAutoprompt}
-          onCheckedChange={(checked) => setExaSettings({ ...exaSettings, useAutoprompt: !!checked })}
-        />
-        <label htmlFor="useAutoprompt" className="cursor-pointer text-sm font-medium">
-          Use Autoprompt
-        </label>
-      </div>
-
-      <div className={`flex items-center space-x-2`}>
-        <Checkbox
           id="text"
           checked={exaSettings.text}
           onCheckedChange={(checked) => setExaSettings({ ...exaSettings, text: !!checked })}
@@ -123,6 +123,157 @@ export const AIResearcherSettings = () => {
         <label htmlFor="summary" className="cursor-pointer text-sm font-medium">
           Include summary in results
         </label>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <label htmlFor="categories" className="cursor-pointer whitespace-nowrap text-sm font-medium">
+          Categories
+        </label>
+
+        <Select
+          value={exaSettings.categories ?? 'any'}
+          name="categories"
+          onValueChange={(value: string) =>
+            setExaSettings({
+              ...exaSettings,
+              categories: value === 'any' ? undefined : (value as ExaSearchRequestBody['categories']),
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[
+              'any',
+              'company',
+              'research paper',
+              'news',
+              'github',
+              'tweet',
+              'movie',
+              'song',
+              'personal site',
+              'pdf',
+            ].map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <label htmlFor="includeText" className="cursor-pointer whitespace-nowrap text-sm font-medium">
+          Include Text
+        </label>
+
+        <Input
+          type="text"
+          name="includeText"
+          value={exaSettings.includeText.join(', ')}
+          onChange={(e) => {
+            const value = e.target.value;
+            const textArray = value
+              .split(',')
+              .map((text) => text.trim())
+              .filter((text) => text !== '');
+            setExaSettings({ ...exaSettings, includeText: textArray });
+          }}
+        />
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <label htmlFor="excludeText" className="cursor-pointer whitespace-nowrap text-sm font-medium">
+          Exclude Text
+        </label>
+
+        <Input
+          type="text"
+          name="excludeText"
+          value={exaSettings.excludeText.join(', ')}
+          onChange={(e) => {
+            const value = e.target.value;
+            const textArray = value
+              .split(',')
+              .map((text) => text.trim())
+              .filter((text) => text !== '');
+            setExaSettings({ ...exaSettings, excludeText: textArray });
+          }}
+        />
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <label htmlFor="includeDomains" className="cursor-pointer whitespace-nowrap text-sm font-medium">
+          Include Domains
+        </label>
+
+        <Input
+          type="text"
+          name="includeDomains"
+          value={exaSettings.includeDomains.join(', ')}
+          onChange={(e) => {
+            const value = e.target.value;
+            const textArray = value
+              .split(',')
+              .map((text) => text.trim())
+              .filter((text) => text !== '');
+            setExaSettings({ ...exaSettings, includeDomains: textArray });
+          }}
+        />
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <label htmlFor="excludeDomains" className="cursor-pointer whitespace-nowrap text-sm font-medium">
+          Exclude Domains
+        </label>
+
+        <Input
+          type="text"
+          name="excludeDomains"
+          value={exaSettings.excludeDomains.join(', ')}
+          onChange={(e) => {
+            const value = e.target.value;
+            const textArray = value
+              .split(',')
+              .map((text) => text.trim())
+              .filter((text) => text !== '');
+            setExaSettings({ ...exaSettings, excludeDomains: textArray });
+          }}
+        />
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <label htmlFor="startPublishedDate" className="cursor-pointer whitespace-nowrap text-sm font-medium">
+          Start Published Date
+        </label>
+
+        <Input
+          type="datetime-local"
+          name="startPublishedDate"
+          value={exaSettings.startPublishedDate}
+          onChange={(e) => {
+            const value = e.target.value;
+            setExaSettings({ ...exaSettings, startPublishedDate: value });
+          }}
+        />
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <label htmlFor="endPublishedDate" className="cursor-pointer whitespace-nowrap text-sm font-medium">
+          End Published Date
+        </label>
+
+        <Input
+          type="datetime-local"
+          name="endPublishedDate"
+          value={exaSettings.endPublishedDate}
+          onChange={(e) => {
+            const value = e.target.value;
+            setExaSettings({ ...exaSettings, endPublishedDate: value });
+          }}
+        />
       </div>
     </div>
   );

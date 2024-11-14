@@ -359,6 +359,9 @@ export const ExaSearchRequestBodySchema = z.object({
   text: z.boolean(),
   highlights: z.boolean(),
   summary: z.boolean(),
+  categories: z
+    .enum(['company', 'research paper', 'news', 'github', 'tweet', 'movie', 'song', 'personal site', 'pdf'])
+    .optional(),
   includeText: z.array(z.string()),
   excludeText: z.array(z.string()),
   includeDomains: z.array(z.string()),
