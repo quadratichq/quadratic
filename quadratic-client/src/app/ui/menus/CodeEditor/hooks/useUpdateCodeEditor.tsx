@@ -59,6 +59,8 @@ export const useUpdateCodeEditor = () => {
             } else {
               set(aiResearcherAtom, defaultAIResearcherState);
             }
+          } else {
+            set(aiResearcherAtom, defaultAIResearcherState);
           }
         } else {
           set(codeEditorAtom, (prev) => ({
