@@ -1,13 +1,9 @@
-use std::collections::{btree_map, BTreeMap, BTreeSet};
+use std::collections::{btree_map, BTreeMap};
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
-use crate::{
-    grid::SheetId, selection::OldSelection, A1Error, A1Selection, CellRefRange, Pos, Rect,
-    SheetCellRefRange, SheetIdNameMap, SheetNameIdMap, SheetPos, SheetRect,
-};
+use crate::{Pos, Rect};
 
 /// Structure representing a selection using axis-aligned linear subspaces of a
 /// sheet (i.e., the whole sheet, each column, each row, and each cell).
@@ -29,12 +25,7 @@ pub struct A1Subspaces {
     pub rects: Vec<Rect>,
 }
 impl A1Subspaces {
-    pub fn to_selection(&self, sheet_id: SheetId) -> A1Selection {
-        let mut ret = A1Selection::default(sheet_id);
-        todo!("todo todo todo")
-    }
-
-    pub fn get(&self, pos: Pos) -> bool {
+    pub fn contains_pos(&self, pos: Pos) -> bool {
         let (px, py) = (pos.x as u64, pos.y as u64);
         self.all.is_some_and(|q| q.x <= pos.x && q.y <= pos.y)
             || self.cols.get(&px).is_some_and(|y| y <= &py)
@@ -45,7 +36,7 @@ impl A1Subspaces {
     /// Same as [`Self::get()`], but asserts that there are not overlapping
     /// regions at `pos`.
     #[cfg(test)]
-    fn get_disjoint(&self, pos: Pos) -> bool {
+    fn contains_pos_disjoint(&self, pos: Pos) -> bool {
         let (px, py) = (pos.x as u64, pos.y as u64);
         let count = self.all.is_some_and(|q| q.x <= pos.x && q.y <= pos.y) as usize
             + self.cols.get(&px).is_some_and(|y| y <= &py) as usize
@@ -113,6 +104,19 @@ impl A1Subspaces {
                 }
             }
         }
+    }
+
+    /// Returns whether `rect` intersects `self`.
+    pub fn intersects_rect(&self, rect: Rect) -> bool {
+        self.all
+            .is_some_and(|all| all.x <= rect.max.x && all.y <= rect.max.y)
+            || self.cols.iter().any(|(&col, &y_start)| {
+                rect.x_range().contains(&(col as i64)) && y_start <= rect.max.y as u64
+            })
+            || self.rows.iter().any(|(&row, &x_start)| {
+                rect.y_range().contains(&(row as i64)) && x_start <= rect.max.x as u64
+            })
+            || self.rects.iter().any(|r| r.intersects(rect))
     }
 
     /// Ensures that regions are disjoint.
@@ -214,71 +218,22 @@ impl A1Subspaces {
         }
     }
 
-    // /// Removes redundant regions.
-    // pub fn optimize(&mut self) {
-    //     // Expand each row and column.
-    //     for (&col, first_row) in &mut self.cols {
-    //         while *first_row > 1
-    //             && self.cells.remove(&Pos {
-    //                 x: col as i64,
-    //                 y: *first_row as i64 - 1,
-    //             })
-    //         {
-    //             *first_row -= 1;
-    //         }
-    //     }
-    //     for (&row, first_col) in &mut self.rows {
-    //         while *first_col > 1
-    //             && self.cells.remove(&Pos {
-    //                 x: *first_col as i64 - 1,
-    //                 y: row as i64,
-    //             })
-    //         {
-    //             *first_col -= 1;
-    //         }
-    //     }
-
-    //     if let Some(all) = &mut self.all {
-    //         // Greedily expand `all`. This isn't optimal, but it helps in simple
-    //         // cases.
-    //         while all.x > 1
-    //             && self
-    //                 .cols
-    //                 .get(&(all.x as u64 - 1))
-    //                 .is_some_and(|&y| y <= all.y as u64)
-    //         {
-    //             all.x -= 1;
-    //         }
-    //         while all.y > 1
-    //             && self
-    //                 .rows
-    //                 .get(&(all.y as u64 - 1))
-    //                 .is_some_and(|&x| x <= all.x as u64)
-    //         {
-    //             all.y -= 1;
-    //         }
-
-    //         // Delete unnecessary rows and columns.
-    //         self.cols
-    //             .retain(|&col, &mut y| col < all.x as u64 || y < all.y as u64);
-    //         self.rows
-    //             .retain(|&row, &mut x| x < all.x as u64 || row < all.y as u64);
-    //     }
-
-    //     // Delete unnecessary cells
-    //     self.cells.retain(|pos| {
-    //         let (pos_x, pos_y) = (pos.x as u64, pos.y as u64);
-    //         let contained_by_all = self.all.is_some_and(|all| all.x <= pos.x && all.y <= pos.y);
-    //         let contained_by_col = self.cols.get(&pos_x).is_some_and(|&y| y <= pos_y);
-    //         let contained_by_row = self.rows.get(&pos_y).is_some_and(|&x| x <= pos_x);
-    //         !(contained_by_all || contained_by_col || contained_by_row)
-    //     });
-    // }
+    /// Returns the length of a corresponding [`RunLengthEncoding`] for a
+    /// formatting operation. This is equivalent to the number of cells in the
+    /// finite rectangles of the selection, plus the number of rows and columns,
+    /// plus 1 if there is an `all`.
+    pub fn rle_len(&self) -> usize {
+        (self.all.is_some() as usize)
+            + self.cols.len()
+            + self.rows.len()
+            + self.rects.iter().map(|r| r.len() as usize).sum::<usize>()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::A1Selection;
     use proptest::prelude::*;
 
     proptest! {
@@ -290,10 +245,19 @@ mod tests {
             for pos in crate::a1::proptest_positions_iter() {
                 assert_eq!(
                     selection.might_contain_pos(pos),
-                    subspaces.get_disjoint(pos),
+                    subspaces.contains_pos_disjoint(pos),
                     "disagree at {pos}",
                 );
             }
+        }
+
+        #[test]
+        fn test_a1_intersects_rect(selection: A1Selection, r: Rect) {
+            let subspaces = selection.subspaces();
+            assert_eq!(
+                r.iter().any(|pos| selection.might_contain_pos(pos)),
+                subspaces.intersects_rect(r),
+            );
         }
     }
 }

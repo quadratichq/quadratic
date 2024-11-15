@@ -73,9 +73,14 @@ impl GridController {
     /// `subspaces`. If this method returns `true`, then updates in `subspaces`
     /// must force the thumbnail to update.
     pub fn thumbnail_dirty_subspaces(&self, sheet_id: SheetId, subspaces: &A1Subspaces) -> bool {
-        // We could avoid conversion here and work with `subspaces` directly,
-        // but it probably doesn't matter much for perf.
-        self.thumbnail_dirty_a1(&subspaces.to_selection(sheet_id))
+        if sheet_id != self.grid().first_sheet_id() {
+            return false;
+        }
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return false;
+        };
+
+        subspaces.intersects_rect(sheet.offsets.thumbnail())
     }
 }
 

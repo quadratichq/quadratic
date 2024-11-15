@@ -10,6 +10,8 @@ use uuid::Uuid;
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
+// TODO: someday change this to `SheetId(Uuid)` to make TS access easier.
+// warning: this would break a LOT of code.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct SheetId {

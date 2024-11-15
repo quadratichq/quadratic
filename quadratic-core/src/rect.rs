@@ -8,7 +8,6 @@ use crate::{grid::SheetId, ArraySize, Pos, SheetRect};
 // TODO: these methods should take `Rect`, not `&Rect` (because `Rect` is `Copy`)
 
 /// Rectangular region of cells.
-#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(
     Serialize,
     Deserialize,
@@ -318,6 +317,22 @@ impl From<SheetRect> for Rect {
             max: sheet_rect.max,
         }
     }
+}
+
+#[cfg(test)]
+use proptest::prelude::*;
+#[cfg(test)]
+impl Arbitrary for Rect {
+    type Parameters = ();
+
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        (Pos::arbitrary(), Pos::arbitrary()).prop_map(|(a, b)| Rect::new_span(a, b))
+    }
+
+    type Strategy = proptest::strategy::Map<
+        (<Pos as Arbitrary>::Strategy, <Pos as Arbitrary>::Strategy),
+        fn((Pos, Pos)) -> Self,
+    >;
 }
 
 #[cfg(test)]

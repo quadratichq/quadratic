@@ -11,12 +11,14 @@ use crate::{CellRefRange, Rect, SheetPos, SheetRect};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsCellsAccessed {
-    pub cells: HashMap<String, Vec<CellRefRange>>,
+    /// Map from sheet ID to list of cell ranges accessed
+    pub cells: HashMap<String, Vec<CellRefRange>>, // TODO: change `CellRefRange` to `A1Selection`
 }
 
+// TODO: replace with `A1Selection`
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct CellsAccessed {
-    pub cells: HashMap<SheetId, HashSet<CellRefRange>>,
+    pub cells: HashMap<SheetId, HashSet<CellRefRange>>, // TODO: change `CellRefRange` to `A1Selection`
 }
 
 impl From<CellsAccessed> for JsCellsAccessed {

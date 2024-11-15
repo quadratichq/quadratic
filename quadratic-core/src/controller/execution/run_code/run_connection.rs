@@ -37,7 +37,7 @@ impl GridController {
 
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
 
-            return todo!("a1 stuff");
+            return todo!("a1 stuff -- only allow single cell!");
 
             // let (range_type, sheet_name) = A1::to_a1_range_type(content)?;
 

@@ -124,7 +124,7 @@ impl GridController {
             ))?
             .sheet_id;
 
-        todo!("A1 string to cells")
+        todo!("A1 string to cells (resolve infinite things to finite rect)")
 
         // let a1 = A1::to_cells(&original_a1)?;
 
