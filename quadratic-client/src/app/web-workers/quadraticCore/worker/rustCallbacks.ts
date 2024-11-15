@@ -88,7 +88,12 @@ declare var self: WorkerGlobalScope &
     sendMultiplayerSynced: () => void;
     sendHashesDirty: (sheetId: string, hashes: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
-    sendRequestAIResearcherResult: (transactionId: string, query: string, refCellValues: string) => void;
+    sendRequestAIResearcherResult: (
+      transactionId: string,
+      sheetPos: string,
+      query: string,
+      refCellValues: string
+    ) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -290,6 +295,11 @@ export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
   self.sendViewportBuffer(buffer);
 };
 
-export const jsRequestAIResearcherResult = (transactionId: string, query: string, refCellValues: string) => {
-  self.sendRequestAIResearcherResult(transactionId, query, refCellValues);
+export const jsRequestAIResearcherResult = (
+  transactionId: string,
+  sheetPos: string,
+  query: string,
+  refCellValues: string
+) => {
+  self.sendRequestAIResearcherResult(transactionId, sheetPos, query, refCellValues);
 };

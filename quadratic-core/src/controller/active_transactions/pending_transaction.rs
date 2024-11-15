@@ -92,6 +92,9 @@ pub struct PendingTransaction {
 
     // offsets modified (sheet_id -> SheetOffsets)
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
+
+    // ai researcher requests
+    pub ai_researcher: HashSet<SheetPos>,
 }
 
 impl Default for PendingTransaction {
@@ -121,6 +124,7 @@ impl Default for PendingTransaction {
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
+            ai_researcher: HashSet::new(),
         }
     }
 }

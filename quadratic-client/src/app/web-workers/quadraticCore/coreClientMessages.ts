@@ -1123,13 +1123,15 @@ export interface ClientCoreInsertRow {
 export interface CoreClientRequestAIResearcherResult {
   type: 'coreClientRequestAIResearcherResult';
   transactionId: string;
+  sheetPos: string;
   query: string;
   refCellValues: string;
 }
 
-export interface ClientCoreResponseAIResearcherResult {
-  type: 'clientCoreResponseAIResearcherResult';
+export interface ClientCoreReceiveAIResearcherResult {
+  type: 'clientCoreReceiveAIResearcherResult';
   transactionId: string;
+  sheetPos: string;
   result?: string;
   error?: string;
 }
@@ -1222,7 +1224,7 @@ export type ClientCoreMessage =
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
-  | ClientCoreResponseAIResearcherResult;
+  | ClientCoreReceiveAIResearcherResult;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

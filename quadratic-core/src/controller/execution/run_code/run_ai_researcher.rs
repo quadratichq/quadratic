@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    error_core::{CoreError, Result},
+    error_core::Result,
     formulas::{parse_formula, Ctx},
     grid::{CodeCellLanguage, CodeRun, CodeRunResult},
     CellValue, RunError, RunErrorMsg, SheetPos, Value,
@@ -15,8 +15,26 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code: String,
     ) {
+        let sheet_id = sheet_pos.sheet_id;
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            // sheet may have been deleted in a multiplayer operation
+            return;
+        };
+
+        // We need to get the corresponding CellValue::Code
+        let (language, code) = match sheet.cell_value(sheet_pos.into()) {
+            Some(CellValue::Code(value)) => (value.language, value.code),
+
+            // handles the case where run_ai_researcher is running on a non-code cell (maybe changed b/c of a MP operation?)
+            _ => return,
+        };
+
+        if language != CodeCellLanguage::AIResearcher {
+            // handles the case where run_ai_researcher is running on a non ai researcher code cell (maybe changed b/c of a MP operation?)
+            return;
+        }
+
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         transaction.current_sheet_pos = Some(sheet_pos);
         match parse_formula(&code, sheet_pos.into()) {
@@ -31,7 +49,12 @@ impl GridController {
                                 .map(|v| v.to_display())
                                 .join(", ");
                             transaction.cells_accessed = ctx.cells_accessed;
-                            self.request_ai_researcher_result(transaction, query, ref_cell_values);
+                            self.request_ai_researcher_result(
+                                transaction,
+                                sheet_pos,
+                                query,
+                                ref_cell_values,
+                            );
                         } else {
                             let _ = self.code_cell_sheet_error(
                                 transaction,
@@ -76,6 +99,7 @@ impl GridController {
     pub fn request_ai_researcher_result(
         &mut self,
         transaction: &mut PendingTransaction,
+        sheet_pos: SheetPos,
         query: String,
         ref_cell_values: String,
     ) {
@@ -83,11 +107,14 @@ impl GridController {
             return;
         }
 
-        crate::wasm_bindings::js::jsRequestAIResearcherResult(
-            transaction.id.to_string(),
-            query,
-            ref_cell_values,
-        );
+        if let Ok(sheet_pos_str) = serde_json::to_string(&sheet_pos) {
+            crate::wasm_bindings::js::jsRequestAIResearcherResult(
+                transaction.id.to_string(),
+                sheet_pos_str,
+                query,
+                ref_cell_values,
+            );
+        }
 
         if !cfg!(test) {
             transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
@@ -95,22 +122,14 @@ impl GridController {
         }
     }
 
-    pub fn response_ai_researcher_result(
+    pub fn receive_ai_researcher_result(
         &mut self,
         transaction_id: Uuid,
+        sheet_pos: SheetPos,
         result: Option<String>,
         error: Option<String>,
     ) -> Result<()> {
         if let Ok(mut transaction) = self.transactions.remove_awaiting_async(transaction_id) {
-            let sheet_pos =
-                match transaction.current_sheet_pos {
-                    Some(current_sheet_pos) => current_sheet_pos,
-                    None => return Err(CoreError::TransactionNotFound(
-                        "Expected current_sheet_pos to be defined in response_ai_researcher_result"
-                            .into(),
-                    )),
-                };
-
             let result = match result {
                 Some(result) => {
                     CodeRunResult::Ok(Value::Single(CellValue::parse_from_str(&result)))

@@ -7,9 +7,14 @@ export const AIResearcherRequestHandler = () => {
   const { submitPrompt } = useSubmitAIResearcherPrompt();
 
   useEffect(() => {
-    const handleRequestAIResearcherResult = (transactionId: string, query: string, refCellValues: string) => {
+    const handleRequestAIResearcherResult = (
+      transactionId: string,
+      sheetPos: string,
+      query: string,
+      refCellValues: string
+    ) => {
       submitPrompt({ query, refCellValues }).then(({ result, error }) => {
-        quadraticCore.responseAIResearcherResult(transactionId, result, error);
+        quadraticCore.receiveAIResearcherResult(transactionId, sheetPos, result, error);
       });
     };
 

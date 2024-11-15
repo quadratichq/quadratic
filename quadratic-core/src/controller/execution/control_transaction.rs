@@ -12,7 +12,7 @@ use crate::grid::js_types::JsHtmlOutput;
 use crate::grid::{CodeRun, CodeRunResult};
 use crate::parquet::parquet_to_vec;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
-use crate::{Pos, RunError, RunErrorMsg, Value};
+use crate::{Pos, RunError, RunErrorMsg, SheetPos, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
@@ -38,6 +38,12 @@ impl GridController {
 
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
+                break;
+            } else if transaction.operations.is_empty() && !transaction.ai_researcher.is_empty() {
+                let sheet_positions: Vec<SheetPos> = transaction.ai_researcher.drain().collect();
+                for sheet_pos in sheet_positions {
+                    self.run_ai_researcher(transaction, sheet_pos);
+                }
                 break;
             } else if let Some((sheet_id, rows)) = transaction
                 .resize_rows

@@ -86,7 +86,12 @@ declare var self: WorkerGlobalScope &
       validationWarnings: JsValidationWarning[]
     ) => void;
     sendMultiplayerSynced: () => void;
-    sendRequestAIResearcherResult: (transactionId: string, prompt: string, refCellValues: string) => void;
+    sendRequestAIResearcherResult: (
+      transactionId: string,
+      sheetPos: string,
+      query: string,
+      refCellValues: string
+    ) => void;
   };
 
 class CoreClient {
@@ -638,8 +643,8 @@ class CoreClient {
         core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
         return;
 
-      case 'clientCoreResponseAIResearcherResult':
-        core.responseAIResearcherResult(e.data.transactionId, e.data.result, e.data.error);
+      case 'clientCoreReceiveAIResearcherResult':
+        core.receiveAIResearcherResult(e.data.transactionId, e.data.sheetPos, e.data.result, e.data.error);
         return;
 
       default:
@@ -809,8 +814,8 @@ class CoreClient {
     this.send({ type: 'coreClientMultiplayerSynced' });
   };
 
-  sendRequestAIResearcherResult = (transactionId: string, query: string, refCellValues: string) => {
-    this.send({ type: 'coreClientRequestAIResearcherResult', transactionId, query, refCellValues });
+  sendRequestAIResearcherResult = (transactionId: string, sheetPos: string, query: string, refCellValues: string) => {
+    this.send({ type: 'coreClientRequestAIResearcherResult', transactionId, sheetPos, query, refCellValues });
   };
 }
 

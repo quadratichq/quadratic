@@ -185,7 +185,13 @@ class QuadraticCore {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientRequestAIResearcherResult') {
-      events.emit('requestAIResearcherResult', e.data.transactionId, e.data.query, e.data.refCellValues);
+      events.emit(
+        'requestAIResearcherResult',
+        e.data.transactionId,
+        e.data.sheetPos,
+        e.data.query,
+        e.data.refCellValues
+      );
       return;
     }
 
@@ -1337,10 +1343,11 @@ class QuadraticCore {
     });
   }
 
-  responseAIResearcherResult(transactionId: string, result?: string, error?: string) {
+  receiveAIResearcherResult(transactionId: string, sheetPos: string, result?: string, error?: string) {
     this.send({
-      type: 'clientCoreResponseAIResearcherResult',
+      type: 'clientCoreReceiveAIResearcherResult',
       transactionId,
+      sheetPos,
       result,
       error,
     });

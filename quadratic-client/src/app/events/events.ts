@@ -130,7 +130,7 @@ interface EventTypes {
 
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
-  requestAIResearcherResult: (transactionId: string, prompt: string, refCellValues: string) => void;
+  requestAIResearcherResult: (transactionId: string, sheetPos: string, query: string, refCellValues: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

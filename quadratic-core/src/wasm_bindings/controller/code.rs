@@ -122,10 +122,11 @@ impl GridController {
         Ok(())
     }
 
-    #[wasm_bindgen(js_name = "responseAIResearcherResult")]
-    pub fn js_response_ai_researcher_result(
+    #[wasm_bindgen(js_name = "receiveAIResearcherResult")]
+    pub fn js_receive_ai_researcher_result(
         &mut self,
         transaction_id: String,
+        sheet_pos: String,
         result: Option<String>,
         error: Option<String>,
     ) -> Result<(), JsValue> {
@@ -134,7 +135,9 @@ impl GridController {
             Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
         };
 
-        self.response_ai_researcher_result(transaction_id, result, error)
+        let sheet_pos: SheetPos =
+            serde_json::from_str(&sheet_pos).map_err(|_| JsValue::UNDEFINED)?;
+        self.receive_ai_researcher_result(transaction_id, sheet_pos, result, error)
             .map_err(|e| e.to_string())?;
 
         Ok(())

@@ -138,6 +138,7 @@ extern "C" {
 
     pub fn jsRequestAIResearcherResult(
         transaction_id: String,
+        sheet_pos: String,
         query: String,
         ref_cell_values: String,
     );
@@ -676,9 +677,17 @@ pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsRequestAIResearcherResult(transaction_id: String, query: String, ref_cell_values: String) {
+pub fn jsRequestAIResearcherResult(
+    transaction_id: String,
+    sheet_pos: String,
+    query: String,
+    ref_cell_values: String,
+) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRequestAIResearcherResult",
-        format!("{},{},{}", transaction_id, query, ref_cell_values),
+        format!(
+            "{},{},{},{}",
+            transaction_id, sheet_pos, query, ref_cell_values
+        ),
     ));
 }
