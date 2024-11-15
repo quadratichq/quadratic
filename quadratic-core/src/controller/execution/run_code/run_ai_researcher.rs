@@ -22,10 +22,39 @@ impl GridController {
     fn parse_ai_researcher_code(
         &mut self,
         sheet_pos: SheetPos,
-        code: &str,
     ) -> Result<ParsedAIResearcherCode, RunError> {
+        let sheet_id = sheet_pos.sheet_id;
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            // sheet may have been deleted in a multiplayer operation
+            return Err(RunError {
+                span: None,
+                msg: RunErrorMsg::InternalError("Sheet not found".into()),
+            });
+        };
+
+        // We need to get the corresponding CellValue::Code
+        let (language, code) = match sheet.cell_value(sheet_pos.to_owned().into()) {
+            Some(CellValue::Code(value)) => (value.language, value.code),
+
+            // handles the case where run_ai_researcher is running on a non-code cell (maybe changed b/c of a MP operation?)
+            _ => {
+                return Err(RunError {
+                    span: None,
+                    msg: RunErrorMsg::Unexpected("Expected a code cell".into()),
+                })
+            }
+        };
+
+        if language != CodeCellLanguage::AIResearcher {
+            // handles the case where run_ai_researcher is running on a non ai researcher code cell (maybe changed b/c of a MP operation?)
+            return Err(RunError {
+                span: None,
+                msg: RunErrorMsg::Unexpected("Expected an AI researcher code cell".into()),
+            });
+        }
+
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
-        match parse_formula(code, sheet_pos.into()) {
+        match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
                 if let Value::Tuple(vec) = parsed.eval(&mut ctx).inner {
                     if let Some((query, values_array)) = vec.into_iter().next_tuple() {
@@ -95,26 +124,7 @@ impl GridController {
         // pending ai researcher requests that are dependent on other ai researcher request currently pending or running
         let mut dependent_ai_researcher: HashSet<SheetPos> = HashSet::new();
         for sheet_pos in pending_ai_researcher.iter() {
-            let sheet_id = sheet_pos.sheet_id;
-            let Some(sheet) = self.try_sheet(sheet_id) else {
-                // sheet may have been deleted in a multiplayer operation
-                continue;
-            };
-
-            // We need to get the corresponding CellValue::Code
-            let (language, code) = match sheet.cell_value(sheet_pos.to_owned().into()) {
-                Some(CellValue::Code(value)) => (value.language, value.code),
-
-                // handles the case where run_ai_researcher is running on a non-code cell (maybe changed b/c of a MP operation?)
-                _ => continue,
-            };
-
-            if language != CodeCellLanguage::AIResearcher {
-                // handles the case where run_ai_researcher is running on a non ai researcher code cell (maybe changed b/c of a MP operation?)
-                continue;
-            }
-
-            match self.parse_ai_researcher_code(sheet_pos.to_owned(), &code) {
+            match self.parse_ai_researcher_code(sheet_pos.to_owned()) {
                 Ok(ParsedAIResearcherCode {
                     query,
                     ref_cell_values,
@@ -198,6 +208,13 @@ impl GridController {
         if let Ok(mut transaction) = self.transactions.remove_awaiting_async(transaction_id) {
             transaction.running_ai_researcher.remove(&sheet_pos);
             transaction.current_sheet_pos = Some(sheet_pos);
+            if let Ok(ParsedAIResearcherCode { cells_accessed, .. }) =
+                self.parse_ai_researcher_code(sheet_pos.to_owned())
+            {
+                transaction.cells_accessed = cells_accessed;
+            } else {
+                transaction.cells_accessed = HashSet::new();
+            }
 
             let result = match result {
                 Some(result) => {
