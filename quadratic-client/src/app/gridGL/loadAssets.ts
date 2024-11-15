@@ -47,12 +47,13 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('icon-javascript', '/images/icon-javascript.png');
     addResourceOnce('icon-postgres', '/images/icon-postgres.png');
     addResourceOnce('icon-mysql', '/images/icon-mysql.png');
+    addResourceOnce('icon-snowflake', '/images/icon-snowflake.png');
+    addResourceOnce('icon-mssql', '/images/icon-mssql.png');
     addResourceOnce('checkbox-icon', '/images/checkbox.png');
     addResourceOnce('checkbox-checked-icon', '/images/checkbox-checked.png');
     addResourceOnce('dropdown-icon', '/images/dropdown.png');
     addResourceOnce('dropdown-white-icon', '/images/dropdown-white.png');
-    addResourceOnce('mssql-icon', '/images/mssql-icon.svg');
-    addResourceOnce('snowflake-icon', '/images/snowflake-icon.svg');
+
     addResourceOnce('arrow-up', '/images/arrow-up.svg');
     addResourceOnce('arrow-down', '/images/arrow-down.svg');
 

@@ -1,4 +1,3 @@
-import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import { CodeCellLanguage, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
@@ -34,8 +33,8 @@ export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean):
   } else if (typeof language === 'object') {
     switch (language.Connection?.kind) {
       case 'MSSQL':
-        symbol.texture = Texture.from('/images/mssql-icon.svg');
-        symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageMssql);
+        symbol.texture = Texture.from('icon-mssql');
+        symbol.tint = isError ? colors.cellColorError : 0xffffff;
         return symbol;
 
       case 'POSTGRES':
@@ -44,13 +43,13 @@ export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean):
         return symbol;
 
       case 'MYSQL':
-        symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageMysql);
+        symbol.tint = isError ? colors.cellColorError : 0xffffff;
         symbol.texture = Texture.from('icon-mysql');
         return symbol;
 
       case 'SNOWFLAKE':
-        symbol.tint = isError ? colors.cellColorError : convertColorStringToTint(colors.languageSnowflake);
-        symbol.texture = Texture.from('/images/snowflake-icon.svg');
+        symbol.tint = isError ? colors.cellColorError : 0xffffff;
+        symbol.texture = Texture.from('icon-snowflake');
         return symbol;
 
       default:
