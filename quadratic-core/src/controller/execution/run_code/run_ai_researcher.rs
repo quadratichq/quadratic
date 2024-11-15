@@ -8,7 +8,7 @@ use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     error_core,
     formulas::{parse_formula, Ctx},
-    grid::{CodeCellLanguage, CodeRun, CodeRunResult},
+    grid::{js_types::JsCodeRun, CodeCellLanguage, CodeRun, CodeRunResult},
     CellValue, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
 
@@ -147,6 +147,7 @@ impl GridController {
         }
         if transaction.pending_ai_researcher != dependent_ai_researcher {
             transaction.pending_ai_researcher = dependent_ai_researcher;
+            self.send_ai_researcher_state(&transaction);
             self.transactions.update_async_transaction(transaction);
             true
         } else {
@@ -181,9 +182,6 @@ impl GridController {
                 query,
                 ref_cell_values.join(", "),
             );
-        }
-
-        if !cfg!(test) {
             transaction.running_ai_researcher.insert(sheet_pos);
             transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
             self.transactions.add_async_transaction(transaction);
@@ -199,13 +197,15 @@ impl GridController {
     ) -> error_core::Result<()> {
         if let Ok(mut transaction) = self.transactions.remove_awaiting_async(transaction_id) {
             transaction.running_ai_researcher.remove(&sheet_pos);
+            transaction.current_sheet_pos = Some(sheet_pos);
+
             let result = match result {
                 Some(result) => {
                     CodeRunResult::Ok(Value::Single(CellValue::parse_from_str(&result)))
                 }
                 None => CodeRunResult::Err(RunError {
                     span: None,
-                    msg: RunErrorMsg::InternalError("Error from AI Researcher".into()),
+                    msg: RunErrorMsg::InternalError("API request failed".into()),
                 }),
             };
 
@@ -226,6 +226,13 @@ impl GridController {
             if transaction.running_ai_researcher.is_empty() {
                 transaction.waiting_for_async = None;
             }
+
+            if transaction.pending_ai_researcher.is_empty()
+                && transaction.running_ai_researcher.is_empty()
+            {
+                self.send_ai_researcher_state(&transaction);
+            }
+
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
         } else {
@@ -233,5 +240,40 @@ impl GridController {
         }
 
         Ok(())
+    }
+
+    fn send_ai_researcher_state(&mut self, transaction: &PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || !transaction.is_user() {
+            return;
+        }
+
+        let current_code_run = transaction
+            .running_ai_researcher
+            .iter()
+            .map(|sheet_pos| JsCodeRun {
+                transaction_id: transaction.id.to_string(),
+                sheet_pos: sheet_pos.to_owned().into(),
+                code: String::new(),
+            })
+            .collect::<Vec<JsCodeRun>>();
+
+        let awaiting_execution = transaction
+            .pending_ai_researcher
+            .iter()
+            .map(|sheet_pos| JsCodeRun {
+                transaction_id: transaction.id.to_string(),
+                sheet_pos: sheet_pos.to_owned().into(),
+                code: String::new(),
+            })
+            .collect::<Vec<JsCodeRun>>();
+
+        if let Ok(current_string) = serde_json::to_string(&current_code_run) {
+            if let Ok(awaiting_execution_string) = serde_json::to_string(&awaiting_execution) {
+                crate::wasm_bindings::js::jsAIResearcherState(
+                    current_string,
+                    awaiting_execution_string,
+                );
+            }
+        }
     }
 }

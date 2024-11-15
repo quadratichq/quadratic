@@ -142,6 +142,11 @@ extern "C" {
         query: String,
         ref_cell_values: String,
     );
+
+    pub fn jsAIResearcherState(
+        current: String,            /* Vec<CodeRun> */
+        awaiting_execution: String, /* Vec<CodeRun> */
+    );
 }
 
 #[cfg(test)]
@@ -689,5 +694,17 @@ pub fn jsRequestAIResearcherResult(
             "{},{},{},{}",
             transaction_id, sheet_pos, query, ref_cell_values
         ),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsAIResearcherState(
+    current: String,            /* Vec<CodeRun> */
+    awaiting_execution: String, /* Vec<CodeRun> */
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsAIResearcherState",
+        format!("{},{}", current, awaiting_execution),
     ));
 }

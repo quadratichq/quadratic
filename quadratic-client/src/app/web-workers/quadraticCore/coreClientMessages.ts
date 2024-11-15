@@ -12,6 +12,7 @@ import {
   JsCellValue,
   JsCellValuePosAIContext,
   JsCodeCell,
+  JsCodeRun,
   JsHtmlOutput,
   JsOffset,
   JsPos,
@@ -31,8 +32,8 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { CodeRun } from '../CodeRun';
-import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
+import { CodeRun } from '@/app/web-workers/CodeRun';
+import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 
 //#region Initialize
 
@@ -1136,6 +1137,12 @@ export interface ClientCoreReceiveAIResearcherResult {
   error?: string;
 }
 
+export interface CoreClientAIResearcherState {
+  type: 'coreClientAIResearcherState';
+  current: JsCodeRun[];
+  awaitingExecution: JsCodeRun[];
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1294,4 +1301,5 @@ export type CoreClientMessage =
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically
   | CoreClientMoveCodeCellHorizontally
-  | CoreClientRequestAIResearcherResult;
+  | CoreClientRequestAIResearcherResult
+  | CoreClientAIResearcherState;

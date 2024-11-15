@@ -193,6 +193,9 @@ class QuadraticCore {
         e.data.refCellValues
       );
       return;
+    } else if (e.data.type === 'coreClientAIResearcherState') {
+      events.emit('aiResearcherState', e.data.current, e.data.awaitingExecution);
+      return;
     }
 
     if (e.data.id !== undefined) {

@@ -10,6 +10,7 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import {
   JsBordersSheet,
   JsCodeCell,
+  JsCodeRun,
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
@@ -92,6 +93,7 @@ declare var self: WorkerGlobalScope &
       query: string,
       refCellValues: string
     ) => void;
+    sendAIResearcherState: (current: string, awaitingExecution: string) => void;
   };
 
 class CoreClient {
@@ -127,6 +129,7 @@ class CoreClient {
     self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendRequestAIResearcherResult = coreClient.sendRequestAIResearcherResult;
+    self.sendAIResearcherState = coreClient.sendAIResearcherState;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -816,6 +819,16 @@ class CoreClient {
 
   sendRequestAIResearcherResult = (transactionId: string, sheetPos: string, query: string, refCellValues: string) => {
     this.send({ type: 'coreClientRequestAIResearcherResult', transactionId, sheetPos, query, refCellValues });
+  };
+
+  sendAIResearcherState = (current: string, awaitingExecution: string) => {
+    const currentCodeRun = JSON.parse(current) as JsCodeRun[];
+    const awaitingExecutionCodeRun = JSON.parse(awaitingExecution) as JsCodeRun[];
+    this.send({
+      type: 'coreClientAIResearcherState',
+      current: currentCodeRun,
+      awaitingExecution: awaitingExecutionCodeRun,
+    });
   };
 }
 

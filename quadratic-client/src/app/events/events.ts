@@ -4,6 +4,7 @@ import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
   JsBordersSheet,
   JsCodeCell,
+  JsCodeRun,
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
@@ -65,9 +66,13 @@ interface EventTypes {
 
   pythonInit: (version: string) => void;
   pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+
   javascriptInit: (version: string) => void;
   javascriptState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+
   connectionState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+
+  aiResearcherState: (current: JsCodeRun[], awaitingExecution: JsCodeRun[]) => void;
 
   updateCodeCell: (options: {
     sheetId: string;

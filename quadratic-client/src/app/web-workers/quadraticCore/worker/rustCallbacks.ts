@@ -94,6 +94,7 @@ declare var self: WorkerGlobalScope &
       query: string,
       refCellValues: string
     ) => void;
+    sendAIResearcherState: (current: string, awaitingExecution: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -302,4 +303,8 @@ export const jsRequestAIResearcherResult = (
   refCellValues: string
 ) => {
   self.sendRequestAIResearcherResult(transactionId, sheetPos, query, refCellValues);
+};
+
+export const jsAIResearcherState = (current: string, awaitingExecution: string) => {
+  self.sendAIResearcherState(current, awaitingExecution);
 };

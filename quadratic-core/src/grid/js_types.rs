@@ -349,3 +349,29 @@ mod test {
         assert_eq!(js_number, JsNumber::default());
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsSheetPos {
+    pub x: i32,
+    pub y: i32,
+    pub sheet_id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsCodeRun {
+    pub transaction_id: String,
+    pub sheet_pos: JsSheetPos,
+    pub code: String,
+}
+
+impl From<SheetPos> for JsSheetPos {
+    fn from(sheet_pos: SheetPos) -> Self {
+        JsSheetPos {
+            x: sheet_pos.x as i32,
+            y: sheet_pos.y as i32,
+            sheet_id: sheet_pos.sheet_id.to_string(),
+        }
+    }
+}

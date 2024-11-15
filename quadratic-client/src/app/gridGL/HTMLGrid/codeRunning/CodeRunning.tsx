@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { JsCodeRun } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
@@ -24,18 +25,18 @@ export const CodeRunning = () => {
 
   // update player's code runs
   useEffect(() => {
-    const updateRunningState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    const updateRunningState = (_state: LanguageState, current?: CodeRun[], awaitingExecution?: CodeRun[]) => {
       const code: Code[] = [];
-      if (current) {
-        const rectangle = sheets.sheet.getCellOffsets(current.sheetPos.x, current.sheetPos.y);
+      current?.forEach((cell) => {
+        const rectangle = sheets.sheet.getCellOffsets(cell.sheetPos.x, cell.sheetPos.y);
         code.push({
-          sheetId: current.sheetPos.sheetId,
+          sheetId: cell.sheetPos.sheetId,
           left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
           top: `${rectangle.y + rectangle.height / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
           color: 'black',
           alpha: 1,
         });
-      }
+      });
       awaitingExecution?.forEach((cell) => {
         const rectangle = sheets.sheet.getCellOffsets(cell.sheetPos.x, cell.sheetPos.y);
         code.push({
@@ -48,14 +49,25 @@ export const CodeRunning = () => {
       });
       setPlayerCode(code);
     };
-    events.on('pythonState', updateRunningState);
-    events.on('javascriptState', updateRunningState);
-    events.on('connectionState', updateRunningState);
+
+    const updateSingleRunningState = (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+      updateRunningState(state, current ? [current] : undefined, awaitingExecution);
+    };
+
+    const updateAIResearcherRunningState = (current?: JsCodeRun[], awaitingExecution?: JsCodeRun[]) => {
+      updateRunningState('ready', current, awaitingExecution);
+    };
+
+    events.on('pythonState', updateSingleRunningState);
+    events.on('javascriptState', updateSingleRunningState);
+    events.on('connectionState', updateSingleRunningState);
+    events.on('aiResearcherState', updateAIResearcherRunningState);
 
     return () => {
-      events.off('pythonState', updateRunningState);
-      events.off('javascriptState', updateRunningState);
-      events.off('connectionState', updateRunningState);
+      events.off('pythonState', updateSingleRunningState);
+      events.off('javascriptState', updateSingleRunningState);
+      events.off('connectionState', updateSingleRunningState);
+      events.off('aiResearcherState', updateAIResearcherRunningState);
     };
   }, []);
 
@@ -139,7 +151,7 @@ export const CodeRunning = () => {
             color={code.color === 'black' ? 'primary' : undefined}
             size={`${CIRCULAR_PROGRESS_SIZE}px`}
             key={index}
-            sx={{ position: 'absolute', left: code.left, top: code, color: code.color }}
+            sx={{ position: 'absolute', left: code.left, top: code.top, color: code.color, opacity: code.alpha }}
           />
         ))}
     </div>
