@@ -17,6 +17,7 @@ import {
   ShowIcon,
   SortIcon,
   TableConvertIcon,
+  TableIcon,
   UpArrowIcon,
 } from '@/shared/components/Icons';
 import { Rectangle } from 'pixi.js';
@@ -74,7 +75,7 @@ const isAlternatingColorsShowing = (): boolean => {
 
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
-    label: 'Flatten to sheet',
+    label: 'Flatten to sheet data',
     Icon: FlattenTableIcon,
     run: () => {
       const table = getTable();
@@ -152,8 +153,8 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.CodeToDataTable]: {
-    label: 'Convert from code to data',
-    Icon: TableConvertIcon,
+    label: 'Flatten to table data',
+    Icon: TableIcon,
     run: () => {
       const table = getTable();
       if (table) {
