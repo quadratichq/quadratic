@@ -9,16 +9,16 @@ import { JsDataTableColumn, JsRenderCodeCell } from '@/app/quadratic-core-types'
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   DeleteIcon,
-  DownArrowIcon,
   EditIcon,
   FileRenameIcon,
   FlattenTableIcon,
   HideIcon,
   ShowIcon,
+  SortAscendingIcon,
+  SortDescendingIcon,
   SortIcon,
   TableConvertIcon,
   TableIcon,
-  UpArrowIcon,
 } from '@/shared/components/Icons';
 import { Rectangle } from 'pixi.js';
 import { sheets } from '../grid/controller/Sheets';
@@ -212,7 +212,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.SortTableColumnAscending]: {
     label: 'Sort column ascending',
-    Icon: UpArrowIcon,
+    Icon: SortAscendingIcon,
     run: () => {
       const table = getTable();
       if (table) {
@@ -231,7 +231,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.SortTableColumnDescending]: {
     label: 'Sort column descending',
-    Icon: DownArrowIcon,
+    Icon: SortDescendingIcon,
     run: () => {
       const table = getTable();
       if (table) {

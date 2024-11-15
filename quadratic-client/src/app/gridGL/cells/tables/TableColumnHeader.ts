@@ -94,7 +94,9 @@ export class TableColumnHeader extends Container {
     this.sortButton.position.set(width - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING, height / 2);
     this.sortButton.visible = false;
 
-    const texture = sort ? Texture.from(sort.direction === 'Descending' ? 'arrow-up' : 'arrow-down') : Texture.EMPTY;
+    const texture = sort
+      ? Texture.from(sort.direction === 'Descending' ? 'sort-descending' : 'sort-ascending')
+      : Texture.EMPTY;
     this.sortIcon = this.addChild(new Sprite(texture));
     this.sortIcon.anchor.set(0.5);
     this.sortIcon.position = this.sortButton.position;
@@ -113,7 +115,7 @@ export class TableColumnHeader extends Container {
     }
     this.sortIcon.position = this.sortButton.position;
     this.sortIcon.texture = sort
-      ? Texture.from(sort.direction === 'Descending' ? 'arrow-up' : 'arrow-down')
+      ? Texture.from(sort.direction === 'Descending' ? 'sort-descending' : 'sort-ascending')
       : Texture.EMPTY;
     this.sortIcon.width = SORT_ICON_SIZE;
     this.sortIcon.scale.y = this.sortIcon.scale.x;

@@ -54,8 +54,8 @@ export function loadAssets(): Promise<void> {
     addResourceOnce('dropdown-icon', '/images/dropdown.png');
     addResourceOnce('dropdown-white-icon', '/images/dropdown-white.png');
 
-    addResourceOnce('arrow-up', '/images/arrow-up.svg');
-    addResourceOnce('arrow-down', '/images/arrow-down.svg');
+    addResourceOnce('sort-ascending', '/images/sort-ascending.svg');
+    addResourceOnce('sort-descending', '/images/sort-descending.svg');
 
     // Wait until pixi fonts are loaded before resolving
     Loader.shared.load(() => {
