@@ -12,7 +12,7 @@ use crate::grid::js_types::JsHtmlOutput;
 use crate::grid::{CodeRun, CodeRunResult};
 use crate::parquet::parquet_to_vec;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
-use crate::{Pos, RunError, RunErrorMsg, SheetPos, Value};
+use crate::{Pos, RunError, RunErrorMsg, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
@@ -27,7 +27,10 @@ impl GridController {
         }
 
         loop {
-            if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
+            if transaction.operations.is_empty()
+                && transaction.pending_ai_researcher.is_empty()
+                && transaction.resize_rows.is_empty()
+            {
                 transaction.complete = true;
                 break;
             }
@@ -39,12 +42,13 @@ impl GridController {
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
-            } else if transaction.operations.is_empty() && !transaction.ai_researcher.is_empty() {
-                let sheet_positions: Vec<SheetPos> = transaction.ai_researcher.drain().collect();
-                for sheet_pos in sheet_positions {
-                    self.run_ai_researcher(transaction, sheet_pos);
+            } else if transaction.operations.is_empty()
+                && !transaction.pending_ai_researcher.is_empty()
+            {
+                let running_ai_researcher = self.run_ai_researcher_parallel(transaction);
+                if running_ai_researcher {
+                    break;
                 }
-                break;
             } else if let Some((sheet_id, rows)) = transaction
                 .resize_rows
                 .iter()

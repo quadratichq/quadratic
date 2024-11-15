@@ -131,7 +131,7 @@ impl GridController {
                 }
                 CodeCellLanguage::AIResearcher => {
                     // collect the sheet_pos for the AI researcher, run them in parallel at the end of the transaction
-                    transaction.ai_researcher.insert(sheet_pos);
+                    transaction.pending_ai_researcher.insert(sheet_pos);
                 }
             }
         }
