@@ -7,7 +7,7 @@ import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { JsDataTableColumn, SortDirection } from '@/app/quadratic-core-types';
+import { JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
@@ -52,7 +52,7 @@ export class TableColumnHeaders extends Container {
     }
   };
 
-  private onSortPressed(column: JsDataTableColumn) {
+  private onSortPressed(column: JsDataTableColumnHeader) {
     const sortOrder: SortDirection | undefined = this.table.codeCell.sort?.find(
       (s) => s.column_index === column.valueIndex
     )?.direction;

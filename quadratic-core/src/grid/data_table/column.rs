@@ -5,44 +5,40 @@ use crate::Value;
 
 impl DataTable {
     /// Insert a new column at the given index.
-    pub fn insert_column(mut self, column_index: usize) -> Result<Self> {
+    pub fn insert_column(&mut self, column_index: usize) -> Result<()> {
         let column_name = self.unique_column_header_name(None).to_string();
 
-        if let Value::Array(array) = self.value {
-            let new_array = array.insert_column(column_index, None)?;
-            self.value = Value::Array(new_array);
+        if let Value::Array(array) = &mut self.value {
+            array.insert_column(column_index, None)?;
         } else {
             bail!("Expected an array");
         }
 
         self.display_buffer = None;
 
-        if let Some(mut headers) = self.column_headers {
+        if let Some(headers) = &mut self.column_headers {
             let new_header = DataTableColumnHeader::new(column_name, true, column_index as u32);
             headers.push(new_header);
-            self.column_headers = Some(headers);
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Remove a column at the given index.
-    pub fn remove_column(mut self, column_index: usize) -> Result<Self> {
-        if let Value::Array(array) = self.value {
-            let new_array = array.remove_column(column_index)?;
-            self.value = Value::Array(new_array);
+    pub fn delete_column(&mut self, column_index: usize) -> Result<()> {
+        if let Value::Array(array) = &mut self.value {
+            array.delete_column(column_index)?;
         } else {
             bail!("Expected an array");
         }
 
         self.display_buffer = None;
 
-        if let Some(mut headers) = self.column_headers {
+        if let Some(headers) = &mut self.column_headers {
             headers.remove(column_index);
-            self.column_headers = Some(headers);
         }
 
-        Ok(self)
+        Ok(())
     }
 }
 
@@ -62,7 +58,7 @@ pub mod test {
 
         pretty_print_data_table(&data_table, Some("Original Data Table"), None);
 
-        data_table = data_table.insert_column(4).unwrap();
+        data_table.insert_column(4).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table with New Column"), None);
 
         // there should be a "Column" header
@@ -85,7 +81,8 @@ pub mod test {
 
         pretty_print_data_table(&source_data_table, Some("Original Data Table"), None);
 
-        let data_table = source_data_table.clone().remove_column(3).unwrap();
+        let mut data_table = source_data_table.clone();
+        data_table.delete_column(3).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table without Population"), None);
 
         // there should be no "population" header
@@ -96,7 +93,8 @@ pub mod test {
         let expected_size = ArraySize::new(3, 4).unwrap();
         assert_eq!(data_table.output_size(), expected_size);
 
-        let data_table = source_data_table.clone().remove_column(0).unwrap();
+        let mut data_table = source_data_table.clone();
+        data_table.delete_column(0).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table without City"), None);
 
         // there should be no "city" header
@@ -113,7 +111,8 @@ pub mod test {
             CellValue::Text("region".into())
         );
 
-        let data_table = source_data_table.clone().remove_column(1).unwrap();
+        let mut data_table = source_data_table.clone();
+        data_table.delete_column(1).unwrap();
         pretty_print_data_table(&data_table, Some("Data Table without Region"), None);
 
         // there should be no "region" header

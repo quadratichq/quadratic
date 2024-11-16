@@ -449,6 +449,146 @@ impl GridController {
         bail!("Expected Operation::SortDataTable in execute_sort_data_table");
     }
 
+    pub(super) fn execute_insert_data_table_column(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::InsertDataTableColumn { sheet_pos, index } = op.to_owned() {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            data_table.insert_column(index as usize)?;
+
+            let data_table_rect = data_table
+                .output_rect(sheet_pos.into(), true)
+                .to_sheet_rect(sheet_id);
+
+            self.send_to_wasm(transaction, &data_table_rect)?;
+            transaction.add_code_cell(sheet_id, data_table_pos);
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![Operation::DeleteDataTableColumn { sheet_pos, index }];
+
+            self.data_table_operations(
+                transaction,
+                &data_table_rect,
+                forward_operations,
+                reverse_operations,
+            );
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::InsertDataTableColumn in execute_insert_data_table_column");
+    }
+
+    pub(super) fn execute_delete_data_table_column(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DeleteDataTableColumn { sheet_pos, index } = op.to_owned() {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            data_table.delete_column(index as usize)?;
+
+            let data_table_rect = data_table
+                .output_rect(sheet_pos.into(), true)
+                .to_sheet_rect(sheet_id);
+
+            self.send_to_wasm(transaction, &data_table_rect)?;
+            transaction.add_code_cell(sheet_id, data_table_pos);
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![Operation::InsertDataTableColumn { sheet_pos, index }];
+
+            self.data_table_operations(
+                transaction,
+                &data_table_rect,
+                forward_operations,
+                reverse_operations,
+            );
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DeleteDataTableColumn in execute_delete_data_table_column");
+    }
+
+    pub(super) fn execute_insert_data_table_row(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::InsertDataTableRow { sheet_pos, index } = op.to_owned() {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            data_table.insert_row(index as usize)?;
+
+            let data_table_rect = data_table
+                .output_rect(sheet_pos.into(), true)
+                .to_sheet_rect(sheet_id);
+
+            self.send_to_wasm(transaction, &data_table_rect)?;
+            transaction.add_code_cell(sheet_id, data_table_pos);
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![Operation::DeleteDataTableRow { sheet_pos, index }];
+
+            self.data_table_operations(
+                transaction,
+                &data_table_rect,
+                forward_operations,
+                reverse_operations,
+            );
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::InsertDataTableRow in execute_insert_data_table_row");
+    }
+
+    pub(super) fn execute_delete_data_table_row(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DeleteDataTableRow { sheet_pos, index } = op.to_owned() {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let data_table_pos = sheet.first_data_table_within(sheet_pos.into())?;
+            let data_table = sheet.data_table_mut(data_table_pos)?;
+            data_table.delete_row(index as usize)?;
+
+            let data_table_rect = data_table
+                .output_rect(sheet_pos.into(), true)
+                .to_sheet_rect(sheet_id);
+
+            self.send_to_wasm(transaction, &data_table_rect)?;
+            transaction.add_code_cell(sheet_id, data_table_pos);
+
+            let forward_operations = vec![op];
+            let reverse_operations = vec![Operation::InsertDataTableRow { sheet_pos, index }];
+
+            self.data_table_operations(
+                transaction,
+                &data_table_rect,
+                forward_operations,
+                reverse_operations,
+            );
+
+            return Ok(());
+        };
+
+        bail!("Expected Operation::DeleteDataTableRow in execute_delete_data_table_row");
+    }
+
     pub(super) fn execute_data_table_first_row_as_header(
         &mut self,
         transaction: &mut PendingTransaction,

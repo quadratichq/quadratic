@@ -273,12 +273,16 @@ impl DataTable {
                 Value::Array(a) => {
                     let mut size = a.size();
 
-                    if self.show_header && !self.header_is_first_row {
-                        size.h = NonZeroU32::new(size.h.get() + 1).unwrap_or(ArraySize::_1X1.h);
-                    }
+                    let height = match (self.show_header, self.header_is_first_row) {
+                        (true, false) => size.h.get() + 1,
+                        (false, true) => size.h.get() - 1,
+                        _ => size.h.get(),
+                    };
+                    size.h = NonZeroU32::new(height).unwrap_or(ArraySize::_1X1.h);
 
                     let width = self.columns_to_show().len();
                     size.w = NonZeroU32::new(width as u32).unwrap_or(ArraySize::_1X1.w);
+
                     size
                 }
                 Value::Single(_) | Value::Tuple(_) => ArraySize::_1X1,

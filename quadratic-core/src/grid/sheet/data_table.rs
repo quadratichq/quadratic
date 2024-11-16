@@ -2,6 +2,7 @@ use super::Sheet;
 use crate::{grid::data_table::DataTable, Pos};
 
 use anyhow::{anyhow, bail, Result};
+use indexmap::map::{Entry, OccupiedEntry};
 
 impl Sheet {
     /// Sets or deletes a data table.
@@ -33,6 +34,16 @@ impl Sheet {
         self.data_tables
             .get_mut(&pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?}", pos))
+    }
+
+    /// Returns a DataTable entry at a Pos for in-place manipulation
+    pub fn data_table_entry(&mut self, pos: Pos) -> Result<OccupiedEntry<'_, Pos, DataTable>> {
+        let entry = self.data_tables.entry(pos);
+
+        match entry {
+            Entry::Occupied(entry) => Ok(entry),
+            Entry::Vacant(_) => bail!("Data table not found at {:?}", pos),
+        }
     }
 
     pub fn delete_data_table(&mut self, pos: Pos) -> Result<DataTable> {

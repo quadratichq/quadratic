@@ -5,7 +5,7 @@ import { createSelection } from '@/app/grid/sheet/selection';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { JsDataTableColumn, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { JsDataTableColumnHeader, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   DeleteIcon,
@@ -46,12 +46,12 @@ export const getTable = (): JsRenderCodeCell | undefined => {
   return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
 };
 
-export const getColumns = (): JsDataTableColumn[] | undefined => {
+export const getColumns = (): JsDataTableColumnHeader[] | undefined => {
   const table = getTable();
   return table?.columns;
 };
 
-export const getDisplayColumns = (): JsDataTableColumn[] | undefined => {
+export const getDisplayColumns = (): JsDataTableColumnHeader[] | undefined => {
   const table = getTable();
 
   return table?.columns.filter((c) => c.display).map((c) => ({ ...c }));

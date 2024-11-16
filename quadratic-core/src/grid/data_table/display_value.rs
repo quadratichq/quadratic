@@ -113,7 +113,7 @@ impl DataTable {
             return Ok(&CellValue::Blank);
         }
 
-        if pos.y == 0 && self.show_header {
+        if pos.y == 0 && self.show_header && !self.header_is_first_row {
             if let Some(columns) = &self.column_headers {
                 let display_columns = columns.iter().filter(|c| c.display).collect::<Vec<_>>();
 
@@ -123,9 +123,11 @@ impl DataTable {
             }
         }
 
-        if !self.header_is_first_row && self.show_header {
-            pos.y -= 1;
-        }
+        pos.y = match (self.header_is_first_row, self.show_header) {
+            (true, false) => pos.y + 1,
+            (false, true) => pos.y - 1,
+            _ => pos.y,
+        };
 
         match self.display_buffer {
             Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
@@ -149,7 +151,9 @@ impl DataTable {
         row.to_vec()
             .into_iter()
             .enumerate()
-            .filter(|(i, _)| columns_to_show.contains(&i))
+            .filter(|(i, _)| {
+                (*i == 0 && !self.header_is_first_row) || (*i != 0 && columns_to_show.contains(&i))
+            })
             .map(|(_, v)| v)
             .collect::<Vec<CellValue>>()
     }

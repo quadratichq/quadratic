@@ -275,13 +275,14 @@ impl Array {
     }
     /// Insert a new column at the given index.
     pub fn insert_column(
-        mut self,
+        &mut self,
         insert_at_index: usize,
         values: Option<Vec<CellValue>>,
-    ) -> Result<Self> {
+    ) -> Result<()> {
         let width = self.width();
         let new_width = width + 1;
         let new_size = ArraySize::new_or_err(new_width, self.height())?;
+        self.size = new_size;
         let mut array = Array::new_empty(new_size);
 
         let mut col_index: u32 = 0;
@@ -298,7 +299,7 @@ impl Array {
                 .map_or(CellValue::Blank, |r| r.pop().unwrap_or(CellValue::Blank))
         };
 
-        for (i, value) in self.values.into_iter().enumerate() {
+        for (i, value) in self.values.iter().enumerate() {
             let col = i % width as usize;
             let row = ((i / width as usize) as f32).floor() as usize;
             let last = col as u32 == width - 1;
@@ -308,7 +309,9 @@ impl Array {
                 col_index += 1;
             }
 
-            array.set(col_index, row as u32, value)?;
+            // TODO(ddimaria): this clone is expensive, we should be able to modify
+            // the array in-place
+            array.set(col_index, row as u32, value.to_owned())?;
 
             if insert_at_end && last {
                 array.set(width, row as u32, next_insert_value())?;
@@ -320,10 +323,10 @@ impl Array {
         self.size = new_size;
         self.values = array.values;
 
-        Ok(self)
+        Ok(())
     }
-    /// Remove a column at the given index.
-    pub fn remove_column(mut self, remove_at_index: usize) -> Result<Self> {
+    /// Delete a column at the given index.
+    pub fn delete_column(&mut self, remove_at_index: usize) -> Result<()> {
         let width = self.width();
         let new_width = width - 1;
         let new_size = ArraySize::new_or_err(new_width, self.height())?;
@@ -332,7 +335,7 @@ impl Array {
 
         // loop through the values and skip the remove_at_index column,
         // adding the rest to the new array
-        for (i, value) in self.values.into_iter().enumerate() {
+        for (i, value) in self.values.iter().enumerate() {
             let col = i % width as usize;
             let row = ((i / width as usize) as f32).floor() as usize;
             let last = col as u32 == width - 1;
@@ -345,21 +348,23 @@ impl Array {
                 continue;
             }
 
-            array.set(col_index, row as u32, value)?;
+            // TODO(ddimaria): this clone is expensive, we should be able to modify
+            // the array in-place
+            array.set(col_index, row as u32, value.to_owned())?;
             col_index = last.then(|| 0).unwrap_or(col_index + 1);
         }
 
         self.size = new_size;
         self.values = array.values;
 
-        Ok(self)
+        Ok(())
     }
     /// Insert a new row at the given index.
     pub fn insert_row(
-        mut self,
+        &mut self,
         insert_at_index: usize,
         values: Option<Vec<CellValue>>,
-    ) -> Result<Self> {
+    ) -> Result<()> {
         let width = self.width();
         let height = self.height();
         let new_height = height + 1;
@@ -390,10 +395,10 @@ impl Array {
         self.size = new_size;
         self.values = array.values;
 
-        Ok(self)
+        Ok(())
     }
-    /// Remove a row at the given index.
-    pub fn remove_row(mut self, remove_at_index: usize) -> Result<Self> {
+    /// Delete a row at the given index.
+    pub fn delete_row(&mut self, remove_at_index: usize) -> Result<()> {
         let width = (self.width() as usize).min(self.values.len());
         let start = remove_at_index * width;
         let end = start + width;
@@ -407,7 +412,7 @@ impl Array {
             None => bail!("Cannot remove a row from a single row array"),
         }
 
-        Ok(self)
+        Ok(())
     }
 
     /// Returns the only cell value in a 1x1 array, or an error if this is not a
@@ -643,23 +648,23 @@ mod test {
 
     #[test]
     fn test_insert_column() {
-        let array = array!["a", "b"; "c", "d"];
+        let mut array = array!["a", "b"; "c", "d"];
         let values = vec![CellValue::from("e"), CellValue::from("f")];
-        let array = array.insert_column(0, Some(values)).unwrap();
+        array.insert_column(0, Some(values)).unwrap();
         assert_eq!(array, array!["e", "a", "b"; "f", "c", "d"]);
 
-        let array = array!["a", "b"; "c", "d"];
+        let mut array = array!["a", "b"; "c", "d"];
         let values = vec![CellValue::from("e"), CellValue::from("f")];
-        let array = array.insert_column(1, Some(values)).unwrap();
+        array.insert_column(1, Some(values)).unwrap();
         assert_eq!(array, array!["a", "e", "b"; "c", "f", "d"]);
 
-        let array = array!["a", "b"; "c", "d"];
+        let mut array = array!["a", "b"; "c", "d"];
         let values = vec![CellValue::from("e"), CellValue::from("f")];
-        let array = array.insert_column(2, Some(values)).unwrap();
+        array.insert_column(2, Some(values)).unwrap();
         assert_eq!(array, array!["a", "b", "e"; "c", "d", "f"]);
 
-        let array = array!["a", "b"; "c", "d"];
-        let array = array.insert_column(2, None).unwrap();
+        let mut array = array!["a", "b"; "c", "d"];
+        array.insert_column(2, None).unwrap();
         assert_eq!(
             array,
             array!["a", "b", CellValue::Blank; "c", "d", CellValue::Blank]
@@ -667,39 +672,39 @@ mod test {
     }
 
     #[test]
-    fn test_remove_column() {
-        let array = array!["a", "b", "c"; "d", "e", "f"; ];
-        let array = array.remove_column(0).unwrap();
+    fn test_delete_column() {
+        let mut array = array!["a", "b", "c"; "d", "e", "f"; ];
+        array.delete_column(0).unwrap();
         assert_eq!(array, array!["b", "c"; "e", "f";]);
 
-        let array = array!["a", "b", "c"; "d", "e", "f"; ];
-        let array = array.remove_column(1).unwrap();
+        let mut array = array!["a", "b", "c"; "d", "e", "f"; ];
+        array.delete_column(1).unwrap();
         assert_eq!(array, array!["a", "c"; "d", "f";]);
 
-        let array = array!["a", "b", "c"; "d", "e", "f"; ];
-        let array = array.remove_column(2).unwrap();
+        let mut array = array!["a", "b", "c"; "d", "e", "f"; ];
+        array.delete_column(2).unwrap();
         assert_eq!(array, array!["a", "b"; "d", "e";]);
     }
 
     #[test]
     fn test_insert_row() {
-        let array = array!["a", "b"; "c", "d"];
+        let mut array = array!["a", "b"; "c", "d"];
         let values = vec![CellValue::from("e"), CellValue::from("f")];
-        let array = array.insert_row(0, Some(values)).unwrap();
+        array.insert_row(0, Some(values)).unwrap();
         assert_eq!(array, array!["e", "f"; "a", "b"; "c", "d"]);
 
-        let array = array!["a", "b"; "c", "d"];
+        let mut array = array!["a", "b"; "c", "d"];
         let values = vec![CellValue::from("e"), CellValue::from("f")];
-        let array = array.insert_row(1, Some(values)).unwrap();
+        array.insert_row(1, Some(values)).unwrap();
         assert_eq!(array, array!["a", "b"; "e", "f"; "c", "d"]);
 
-        let array = array!["a", "b"; "c", "d"];
+        let mut array = array!["a", "b"; "c", "d"];
         let values = vec![CellValue::from("e"), CellValue::from("f")];
-        let array = array.insert_row(2, Some(values)).unwrap();
+        array.insert_row(2, Some(values)).unwrap();
         assert_eq!(array, array!["a", "b"; "c", "d"; "e", "f"]);
 
-        let array = array!["a", "b"; "c", "d"];
-        let array = array.insert_row(2, None).unwrap();
+        let mut array = array!["a", "b"; "c", "d"];
+        array.insert_row(2, None).unwrap();
         assert_eq!(
             array,
             array!["a", "b"; "c", "d"; CellValue::Blank, CellValue::Blank]

@@ -76,6 +76,22 @@ pub enum Operation {
         sheet_pos: SheetPos,
         first_row_is_header: bool,
     },
+    InsertDataTableColumn {
+        sheet_pos: SheetPos,
+        index: u32,
+    },
+    DeleteDataTableColumn {
+        sheet_pos: SheetPos,
+        index: u32,
+    },
+    InsertDataTableRow {
+        sheet_pos: SheetPos,
+        index: u32,
+    },
+    DeleteDataTableRow {
+        sheet_pos: SheetPos,
+        index: u32,
+    },
     ComputeCode {
         sheet_pos: SheetPos,
     },
@@ -273,6 +289,34 @@ impl fmt::Display for Operation {
                     fmt,
                     "DataTableFirstRowAsHeader {{ sheet_pos: {}, first_row_is_header {} }}",
                     sheet_pos, first_row_is_header
+                )
+            }
+            Operation::InsertDataTableColumn { sheet_pos, index } => {
+                write!(
+                    fmt,
+                    "InsertDataTableColumn {{ sheet_pos: {}, index: {} }}",
+                    sheet_pos, index
+                )
+            }
+            Operation::DeleteDataTableColumn { sheet_pos, index } => {
+                write!(
+                    fmt,
+                    "DeleteDataTableColumn {{ sheet_pos: {}, index: {} }}",
+                    sheet_pos, index
+                )
+            }
+            Operation::InsertDataTableRow { sheet_pos, index } => {
+                write!(
+                    fmt,
+                    "InsertDataTableRow {{ sheet_pos: {}, index: {} }}",
+                    sheet_pos, index
+                )
+            }
+            Operation::DeleteDataTableRow { sheet_pos, index } => {
+                write!(
+                    fmt,
+                    "DeleteDataTableRow {{ sheet_pos: {}, index: {} }}",
+                    sheet_pos, index
                 )
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
