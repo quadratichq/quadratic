@@ -68,8 +68,8 @@ export class SheetCursor {
     pixiApp.cursor.dirty = true;
   }
 
-  loadFromSelection(selection: string, skipMultiplayer = false) {
-    this.selection = Selection.load(selection);
+  loadFromSelection(selection: Selection, skipMultiplayer = false) {
+    this.selection = selection;
     if (!skipMultiplayer) {
       multiplayer.sendSelection(this.save());
     }
@@ -189,6 +189,17 @@ export class SheetCursor {
 
   selectAll() {
     this.selection.selectAll();
+    this.updatePosition(true);
+  }
+
+  selectDeltaSize(deltaX: number, deltaY: number) {
+    this.selection.deltaSize(deltaX, deltaY);
+    this.updatePosition(true);
+  }
+
+  moveTo(x: number, y: number) {
+    this.selection.moveTo(x, y);
+    this.updatePosition(true);
   }
 
   selectColumns() {}

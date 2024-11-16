@@ -70,7 +70,10 @@ impl fmt::Display for CellRefRange {
         } else {
             write!(f, "{}", self.start)?;
             if let Some(end) = self.end {
-                write!(f, ":{end}")?;
+                // we don't need to print the end range if start == end
+                if end != self.start {
+                    write!(f, ":{end}")?;
+                }
             }
         }
         Ok(())
@@ -290,6 +293,12 @@ impl CellRefRangeEnd {
         let row = Some(CellRefCoord::new_rel(y));
         CellRefRangeEnd { col: None, row }
     }
+    pub fn delta_size(self, delta_x: i64, delta_y: i64) -> Self {
+        CellRefRangeEnd {
+            col: self.col.map(|c| c.delta_size(delta_x)),
+            row: self.row.map(|r| r.delta_size(delta_y)),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -321,6 +330,17 @@ impl CellRefCoord {
     pub fn new_abs(coord: u64) -> Self {
         let is_absolute = true;
         Self { coord, is_absolute }
+    }
+    pub fn delta_size(self, delta: i64) -> Self {
+        let coord = if delta + self.coord as i64 <= 0 {
+            1
+        } else {
+            self.coord as i64 + delta
+        } as u64;
+        Self {
+            coord,
+            is_absolute: self.is_absolute,
+        }
     }
 }
 
@@ -362,5 +382,17 @@ mod tests {
         fn proptest_cell_ref_range_parsing(cell_ref_range: CellRefRange) {
             assert_eq!(cell_ref_range, cell_ref_range.to_string().parse().unwrap());
         }
+    }
+
+    #[test]
+    fn test_delta_size() {
+        assert_eq!(
+            CellRefCoord::new_rel(1).delta_size(-1),
+            CellRefCoord::new_rel(1)
+        );
+        assert_eq!(
+            CellRefCoord::new_rel(1).delta_size(1),
+            CellRefCoord::new_rel(2)
+        );
     }
 }

@@ -127,20 +127,7 @@ export const selectionActionsSpec: SelectionActionSpec = {
   },
   [Action.MoveCursorLeftWithSelection]: {
     label: 'Move cursor left with selection',
-    run: () => {
-      const cursor = sheets.sheet.cursor;
-      const cursorPosition = cursor.position;
-      cursor.changePosition({
-        keyboardMovePosition: {
-          x: cursorPosition.x - 1,
-          y: cursorPosition.y,
-        },
-        cursorPosition: {
-          x: cursorPosition.x - 1,
-          y: cursorPosition.y,
-        },
-      });
-    },
+    run: () => sheets.sheet.cursor.selectDeltaSize(-1, 0),
   },
   [Action.MoveCursorRight]: {
     label: 'Move cursor right',
@@ -160,20 +147,7 @@ export const selectionActionsSpec: SelectionActionSpec = {
   },
   [Action.MoveCursorRightWithSelection]: {
     label: 'Move cursor right with selection',
-    run: () => {
-      const cursor = sheets.sheet.cursor;
-      const cursorPosition = cursor.position;
-      cursor.changePosition({
-        keyboardMovePosition: {
-          x: cursorPosition.x + 1,
-          y: cursorPosition.y,
-        },
-        cursorPosition: {
-          x: cursorPosition.x + 1,
-          y: cursorPosition.y,
-        },
-      });
-    },
+    run: () => sheets.sheet.cursor.selectDeltaSize(1, 0),
   },
   [Action.GotoA0]: {
     label: 'Goto A0',
@@ -185,12 +159,7 @@ export const selectionActionsSpec: SelectionActionSpec = {
   },
   [Action.GotoRowStart]: {
     label: 'Goto row start',
-    run: () => {
-      sheets.sheet.cursor.changePosition({
-        columnRow: null,
-        cursorPosition: { x: 1, y: sheets.sheet.cursor.position.y },
-      });
-    },
+    run: () => sheets.sheet.cursor.moveTo(1, sheets.sheet.cursor.position.y),
   },
   [Action.GotoRowEnd]: {
     label: 'Goto row end',

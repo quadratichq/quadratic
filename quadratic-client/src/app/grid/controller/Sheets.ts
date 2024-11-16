@@ -1,9 +1,9 @@
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { A1Selection, JsRowHeight, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRowHeight, SheetInfo } from '@/app/quadratic-core-types';
+import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 
 class Sheets {
   sheets: Sheet[];
@@ -108,7 +108,7 @@ class Sheets {
     pixiApp.multiplayerCursor.dirty = true;
   };
 
-  private setCursor = (selection?: A1Selection) => {
+  private setCursor = (selection?: Selection) => {
     if (selection !== undefined) {
       this.sheet.cursor.loadFromSelection(selection);
     }
@@ -302,13 +302,11 @@ class Sheets {
     return this.sheet.cursor.save();
   }
 
-  /// Gets a Selection for Rust
-  getRustSelection(): A1Selection {
-    return this.sheet.cursor.selection;
-  }
-
-  getRustSelectionStringified(): string {
-    return JSON.stringify(this.getRustSelection(), bigIntReplacer);
+  /// Gets a stringified SheetIdNameMap for Rust's A1 functions
+  getSheetIdNameMap(): string {
+    const sheetMap: Record<string, { id: string }> = {};
+    sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
+    return JSON.stringify(sheetMap);
   }
 
   // Gets a stringified sheet name to id map for Rust's A1 functions
@@ -319,14 +317,21 @@ class Sheets {
   }
 
   // Changes the cursor to the incoming selection
-  changeSelection(selection: A1Selection, ensureVisible = true) {
+  changeSelection(selection: Selection, ensureVisible = true) {
     // change the sheet id if needed
-    if (selection.sheet.id !== this.current) {
-      if (this.getById(selection.sheet.id)) {
-        this.current = selection.sheet.id;
+    const sheetId = selection.getSheetId();
+    if (sheetId !== this.current) {
+      if (this.getById(sheetId)) {
+        this.current = sheetId;
       }
     }
-    sheets.sheet.cursor.changePosition(selection, ensureVisible);
+
+    // todo: ensurevisible
+    sheets.sheet.cursor.loadFromSelection(selection);
+  }
+
+  getRustSelection(): string {
+    return this.sheet.cursor.save();
   }
 }
 

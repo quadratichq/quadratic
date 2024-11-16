@@ -30,9 +30,17 @@ pub struct Rect {
     pub max: Pos,
 }
 impl Rect {
-    /// Creates a rect from two x, y positions
+    /// Creates a rect from two x, y positions. Normalizes the rectangle.
     pub fn new(x0: i64, y0: i64, x1: i64, y1: i64) -> Rect {
-        Rect::new_span(Pos { x: x0, y: y0 }, Pos { x: x1, y: y1 })
+        let min = Pos {
+            x: x0.min(x1),
+            y: y0.min(y1),
+        };
+        let max = Pos {
+            x: x0.max(x1),
+            y: y0.max(y1),
+        };
+        Rect { min, max }
     }
 
     /// Constructs a rectangle spanning two positions
@@ -618,5 +626,20 @@ mod test {
                 panic!("uncomment the lines above for debugging")
             }
         }
+    }
+
+    #[test]
+    fn test_new_rect_normalized() {
+        let rect = Rect::new(1, 2, 0, 0);
+        assert_eq!(rect.min, Pos { x: 0, y: 0 });
+        assert_eq!(rect.max, Pos { x: 1, y: 2 });
+
+        let rect = Rect::new(1, 0, 0, 2);
+        assert_eq!(rect.min, Pos { x: 0, y: 0 });
+        assert_eq!(rect.max, Pos { x: 1, y: 2 });
+
+        let rect = Rect::new(0, 2, 1, 0);
+        assert_eq!(rect.min, Pos { x: 0, y: 0 });
+        assert_eq!(rect.max, Pos { x: 1, y: 2 });
     }
 }
