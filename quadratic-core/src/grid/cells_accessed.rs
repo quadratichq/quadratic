@@ -12,7 +12,7 @@ pub struct JsCellsAccessed {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CellsAccessed {
-    pub cells: HashMap<SheetId, HashSet<CellRefRange>>,
+    pub cells: HashMap<SheetId, HashSet<CellRefRange>>, // TODO: change `CellRefRange` to `A1Selection`
 }
 
 impl From<CellsAccessed> for JsCellsAccessed {

@@ -8,6 +8,7 @@ use super::format_update::FormatUpdate;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, RenderSize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, ts_rs::TS)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct Format {
     pub align: Option<CellAlign>,
     pub vertical_align: Option<CellVerticalAlign>,

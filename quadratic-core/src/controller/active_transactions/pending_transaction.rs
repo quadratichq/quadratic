@@ -24,10 +24,10 @@ use crate::{
 use super::transaction_name::TransactionName;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct PendingTransaction {
+pub(crate) struct PendingTransaction {
     pub id: Uuid,
 
-    // a name for the transaction for user display purposes
+    /// a name for the transaction for user display purposes
     pub transaction_name: TransactionName,
 
     /// Previous selection, represented as a serialized `` cursor sent as part of this transaction
@@ -35,65 +35,65 @@ pub struct PendingTransaction {
 
     pub source: TransactionSource,
 
-    // pending operations
+    /// pending operations
     pub operations: VecDeque<Operation>,
 
-    // undo operations
+    /// undo operations
     pub reverse_operations: Vec<Operation>,
 
-    // list of operations to share with other players
+    /// list of operations to share with other players
     pub forward_operations: Vec<Operation>,
 
-    // tracks whether there are any async calls (which changes how the transaction is finalized)
+    /// tracks whether there are any async calls (which changes how the transaction is finalized)
     pub has_async: i64,
 
-    // used by Code Cell execution to track dependencies
+    /// used by Code Cell execution to track dependencies
     pub cells_accessed: CellsAccessed,
 
-    // save code_cell info for async calls
+    /// save code_cell info for async calls
     pub current_sheet_pos: Option<SheetPos>,
 
-    // whether we are awaiting an async call
+    /// whether we are awaiting an async call
     pub waiting_for_async: Option<CodeCellLanguage>,
 
-    // whether transaction is complete
+    /// whether transaction is complete
     pub complete: bool,
 
-    // whether to generate a thumbnail after transaction completes
+    /// whether to generate a thumbnail after transaction completes
     pub generate_thumbnail: bool,
 
-    // cursor saved for an Undo or Redo
+    /// cursor saved for an Undo or Redo
     pub cursor_undo_redo: Option<String>,
 
-    // sheets w/updated validations
+    /// sheets w/updated validations
     pub validations: HashSet<SheetId>,
 
     pub resize_rows: HashMap<SheetId, HashSet<i64>>,
 
-    // which hashes are dirty
+    /// which hashes are dirty
     pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
 
     pub viewport_buffer: Option<ViewportBuffer>,
 
-    // sheets with updated borders
+    /// sheets with updated borders
     pub sheet_borders: HashSet<SheetId>,
 
-    // code cells to update
+    /// code cells to update
     pub code_cells: HashMap<SheetId, HashSet<Pos>>,
 
-    // html cells to update
+    /// html cells to update
     pub html_cells: HashMap<SheetId, HashSet<Pos>>,
 
-    // image cells to update
+    /// image cells to update
     pub image_cells: HashMap<SheetId, HashSet<Pos>>,
 
-    // sheets w/updated fill cells
+    /// sheets w/updated fill cells
     pub fill_cells: HashSet<SheetId>,
 
-    // sheets w/updated offsets
+    /// sheets w/updated offsets
     pub sheet_info: HashSet<SheetId>,
 
-    // offsets modified (sheet_id, column, row, new_size)
+    /// offsets modified (sheet_id, column, row, new_size)
     pub offsets_modified: Vec<(SheetId, Option<i64>, Option<i64>, f64)>,
 }
 

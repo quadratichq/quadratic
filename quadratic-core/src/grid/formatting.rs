@@ -1,5 +1,7 @@
 use std::fmt;
 
+#[cfg(test)]
+use proptest::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
@@ -165,6 +167,7 @@ impl CellFmtAttr for StrikeThrough {
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "camelCase")]
 pub enum CellAlign {
     Center,
@@ -182,8 +185,10 @@ impl CellAlign {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(
+    Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString, ts_rs::TS,
+)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "camelCase")]
 pub enum CellVerticalAlign {
     Top,
@@ -202,9 +207,20 @@ impl CellVerticalAlign {
 }
 
 #[derive(
-    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString,
+    Serialize,
+    Deserialize,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Display,
+    EnumString,
+    ts_rs::TS,
 )]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "camelCase")]
 pub enum CellWrap {
     #[default]
@@ -223,26 +239,52 @@ impl CellWrap {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, ts_rs::TS)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct NumericFormat {
     #[serde(rename = "type")]
     pub kind: NumericFormatKind,
     pub symbol: Option<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, ts_rs::TS)]
 /// Measures DOM element size in pixels.
 pub struct RenderSize {
     pub w: String,
     pub h: String,
 }
+#[cfg(test)]
+impl Arbitrary for RenderSize {
+    type Parameters = ();
+
+    fn arbitrary_with(args: Self::Parameters) -> Self::Strategy {
+        (u8::arbitrary(), u8::arbitrary()).prop_map(|(w, h)| RenderSize {
+            w: w.to_string(),
+            h: h.to_string(),
+        })
+    }
+
+    type Strategy = proptest::strategy::Map<
+        (<u8 as Arbitrary>::Strategy, <u8 as Arbitrary>::Strategy),
+        fn((u8, u8)) -> Self,
+    >;
+}
 
 #[derive(
-    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString, Copy,
+    Default,
+    Serialize,
+    Deserialize,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Display,
+    EnumString,
+    ts_rs::TS,
 )]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "UPPERCASE")]
 #[strum(ascii_case_insensitive)]
 pub enum NumericFormatKind {
@@ -253,6 +295,8 @@ pub enum NumericFormatKind {
     Exponential,
 }
 
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, ts_rs::TS)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct DateTimeFormatting;
 impl CellFmtAttr for DateTimeFormatting {
     type Value = String;

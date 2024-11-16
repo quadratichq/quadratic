@@ -5,7 +5,7 @@ use super::Sheet;
 impl Sheet {
     /// Resolves a cell reference to a `Rect`.
     pub fn resolve_cell_ref(&self, cell_ref: CellRefRange) -> Option<Rect> {
-        todo!("resolve reference")
+        todo!("resolve reference for formulas")
 
         // match a1.cells {
         //     A1RangeType::All => match self.bounds(true) {

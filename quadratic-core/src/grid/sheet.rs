@@ -66,6 +66,9 @@ pub struct Sheet {
     // Column/Row, and All formatting. The second tuple stores the timestamp for
     // the fill_color, which is used to determine the z-order for overlapping
     // column and row fills.
+    //
+    // TODO: newtype for timestamp, or change this to an infinite range along
+    // the column
     #[serde(
         skip_serializing_if = "BTreeMap::is_empty",
         with = "crate::util::btreemap_serde"
@@ -272,6 +275,29 @@ impl Sheet {
         let column = self.get_column(pos.x)?;
         A::column_data_ref(column).get(pos.y)
     }
+    /// Returns all formatting properties of a cell.
+    #[cfg(test)]
+    pub fn get_cell_formatting(&self, pos: Pos) -> Format {
+        let Some(column) = self.get_column(pos.x) else {
+            return Format::default();
+        };
+        Format {
+            align: column.align.get(pos.y),
+            vertical_align: column.vertical_align.get(pos.y),
+            wrap: column.wrap.get(pos.y),
+            numeric_format: column.numeric_format.get(pos.y),
+            numeric_decimals: column.numeric_decimals.get(pos.y),
+            numeric_commas: column.numeric_commas.get(pos.y),
+            bold: column.bold.get(pos.y),
+            italic: column.italic.get(pos.y),
+            text_color: column.text_color.get(pos.y),
+            fill_color: column.fill_color.get(pos.y),
+            render_size: column.render_size.get(pos.y),
+            date_time: column.date_time.get(pos.y),
+            underline: column.underline.get(pos.y),
+            strike_through: column.strike_through.get(pos.y),
+        }
+    }
 
     /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
@@ -415,6 +441,7 @@ impl Sheet {
         }
     }
 
+    // TODO: take `Pos` instead of x,y
     pub fn check_if_wrap_in_cell(&self, x: i64, y: i64) -> bool {
         let value: Option<CellValue> = self.cell_value(Pos { x, y });
         let format = self.format_cell(x, y, true);
