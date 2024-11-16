@@ -6,7 +6,7 @@ import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandl
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { EditIcon } from '@/shared/components/Icons';
 import { DropdownMenuItem, DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
 import { useMemo } from 'react';
 
@@ -47,12 +47,8 @@ export const TableMenu = (props: Props) => {
       {isCodeCell && (
         <>
           <DropdownMenuItem onClick={() => defaultActionSpec[Action.EditTableCode].run()}>
-            <ContextMenuItem
-              icon={<LanguageIcon language={cell.id} sx={{ color: 'inherit', fontSize: '20px' }} />}
-              text={`Edit ${cell.label}`}
-            />
+            <ContextMenuItem icon={<EditIcon />} text={`Edit code`} />
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
         </>
       )}
       <ContextMenuItemAction action={Action.RenameTable} overrideDefaultOption={defaultRename} />

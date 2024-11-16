@@ -9,15 +9,16 @@ import { JsDataTableColumnHeader, JsRenderCodeCell } from '@/app/quadratic-core-
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   DeleteIcon,
-  DownArrowIcon,
   EditIcon,
   FileRenameIcon,
   FlattenTableIcon,
   HideIcon,
   ShowIcon,
+  SortAscendingIcon,
+  SortDescendingIcon,
   SortIcon,
   TableConvertIcon,
-  UpArrowIcon,
+  TableIcon,
 } from '@/shared/components/Icons';
 import { Rectangle } from 'pixi.js';
 import { sheets } from '../grid/controller/Sheets';
@@ -74,7 +75,7 @@ const isAlternatingColorsShowing = (): boolean => {
 
 export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
-    label: 'Flatten to sheet',
+    label: 'Flatten to sheet data',
     Icon: FlattenTableIcon,
     run: () => {
       const table = getTable();
@@ -152,8 +153,8 @@ export const dataTableSpec: DataTableSpec = {
     },
   },
   [Action.CodeToDataTable]: {
-    label: 'Convert from code to data',
-    Icon: TableConvertIcon,
+    label: 'Flatten to table data',
+    Icon: TableIcon,
     run: () => {
       const table = getTable();
       if (table) {
@@ -211,7 +212,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.SortTableColumnAscending]: {
     label: 'Sort column ascending',
-    Icon: UpArrowIcon,
+    Icon: SortAscendingIcon,
     run: () => {
       const table = getTable();
       if (table) {
@@ -230,7 +231,7 @@ export const dataTableSpec: DataTableSpec = {
   },
   [Action.SortTableColumnDescending]: {
     label: 'Sort column descending',
-    Icon: DownArrowIcon,
+    Icon: SortDescendingIcon,
     run: () => {
       const table = getTable();
       if (table) {

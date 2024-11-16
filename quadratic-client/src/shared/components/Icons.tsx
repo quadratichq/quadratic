@@ -471,6 +471,19 @@ export const SortIcon: IconComponent = (props) => {
   return <Icon {...props}>sort</Icon>;
 };
 
+export const SortDescendingIcon: IconComponent = (props) => {
+  return <Icon {...props}>sort</Icon>;
+};
+
+export const SortAscendingIcon: IconComponent = (props) => {
+  const { className, ...rest } = props;
+  return (
+    <Icon {...rest} className={cn(className, 'rotate-180 scale-x-[-1]')}>
+      sort
+    </Icon>
+  );
+};
+
 export const DragIndicatorIcon: IconComponent = (props) => {
   return <Icon {...props}>drag_indicator</Icon>;
 };

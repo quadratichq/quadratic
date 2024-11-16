@@ -1,6 +1,12 @@
 import { SortDirection } from '@/app/quadratic-core-types';
 import { ValidationDropdown } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationUI';
-import { DeleteIcon, DownArrowIcon, UpArrowIcon } from '@/shared/components/Icons';
+import {
+  DeleteIcon,
+  DownArrowIcon,
+  SortAscendingIcon,
+  SortDescendingIcon,
+  UpArrowIcon,
+} from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { useCallback, useState } from 'react';
@@ -62,11 +68,7 @@ export const TableSortEntry = (props: Props) => {
           {
             label: (
               <div className="flex w-full items-center">
-                <div className="mr-2" style={{ fontSize: 9 }}>
-                  <div className="-my-3 text-primary">A</div>
-                  <div className="-my-3">&darr;</div>
-                  <div className="-my-3">Z</div>
-                </div>
+                <SortAscendingIcon className="mr-1" />
                 <div>Ascending</div>
               </div>
             ),
@@ -75,11 +77,7 @@ export const TableSortEntry = (props: Props) => {
           {
             label: (
               <div className="space-between flex w-full items-center">
-                <div className="mr-2" style={{ fontSize: 9 }}>
-                  <div className="-my-3">Z</div>
-                  <div className="-my-3">&darr;</div>
-                  <div className="-my-3 text-primary">A</div>
-                </div>
+                <SortDescendingIcon className="mr-1" />
                 <div className="mr-2">Descending</div>
               </div>
             ),
