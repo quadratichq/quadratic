@@ -1,6 +1,7 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
@@ -14,7 +15,6 @@ import { IconButton } from '@mui/material';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 
 export const CodeEditorRefButton = () => {
   const codeEditor = useRecoilValue(codeEditorCodeCellAtom);
@@ -27,8 +27,8 @@ export const CodeEditorRefButton = () => {
       if (
         sheets.sheet.cursor.multiCursor ||
         (codeCell.sheetId === sheets.sheet.id &&
-          codeCell.pos.x === sheets.sheet.cursor.cursorPosition.x &&
-          codeCell.pos.y === sheets.sheet.cursor.cursorPosition.y)
+          codeCell.pos.x === sheets.sheet.cursor.position.x &&
+          codeCell.pos.y === sheets.sheet.cursor.position.y)
       ) {
         setDisabled(true);
       } else {

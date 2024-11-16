@@ -152,11 +152,11 @@ export class GridHeadings extends Container {
 
     // otherwise selected cursor is cursorPosition
     else {
-      const offset = offsets.getColumnPlacement(cursor.cursorPosition.x);
+      const offset = offsets.getColumnPlacement(cursor.position.x);
       this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor, colors.headerSelectedBackgroundColorAlpha);
       this.headingsGraphics.drawRect(offset.position, viewport.top, offset.size, cellHeight);
       this.headingsGraphics.endFill();
-      this.selectedColumns = [cursor.cursorPosition.x];
+      this.selectedColumns = [cursor.position.x];
     }
   }
 
@@ -342,11 +342,11 @@ export class GridHeadings extends Container {
 
     // otherwise selected cursor is cursorPosition
     if (!cursor.multiCursor && !cursor.columnRow) {
-      const offset = offsets.getRowPlacement(cursor.cursorPosition.y);
+      const offset = offsets.getRowPlacement(cursor.position.y);
       this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor, colors.headerSelectedBackgroundColorAlpha);
       this.headingsGraphics.drawRect(bounds.left, offset.position, this.rowWidth, offset.size);
       this.headingsGraphics.endFill();
-      this.selectedRows = [cursor.cursorPosition.y];
+      this.selectedRows = [cursor.position.y];
     }
   }
 

@@ -11,7 +11,7 @@ use crate::{
     SheetIdNameMap, SheetNameIdMap, SheetPos, SheetRect,
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ts_rs::TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct A1Selection {
     /// Current sheet.
@@ -109,7 +109,6 @@ impl A1Selection {
     }
 
     /// Constructs a selection containing a single cell.
-    #[cfg(test)]
     pub fn from_xy(x: i64, y: i64, sheet: SheetId) -> Self {
         let sheet_id = sheet;
         Self::from_single_cell(SheetPos { x, y, sheet_id })
@@ -309,8 +308,6 @@ fn cursor_pos_from_last_range(last_range: CellRefRange) -> Pos {
 #[serial_test::parallel]
 mod tests {
     use std::collections::HashMap;
-
-    use proptest::prelude::*;
 
     use super::*;
     use crate::CellRefRangeEnd;

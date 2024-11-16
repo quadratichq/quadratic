@@ -1,12 +1,9 @@
 import { events } from '@/app/events/events';
 import { Sheet } from '@/app/grid/sheet/Sheet';
-import { ColumnRowCursor, SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsRowHeight, Selection, SheetInfo } from '@/app/quadratic-core-types';
+import { A1Selection, JsRowHeight, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
-import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import { Rectangle } from 'pixi.js';
 
 class Sheets {
   sheets: Sheet[];
@@ -111,34 +108,9 @@ class Sheets {
     pixiApp.multiplayerCursor.dirty = true;
   };
 
-  private setCursor = (cursorStringified?: string, selection?: Selection) => {
+  private setCursor = (selection?: A1Selection) => {
     if (selection !== undefined) {
       this.sheet.cursor.loadFromSelection(selection);
-    } else if (cursorStringified !== undefined) {
-      const cursor: SheetCursorSave = JSON.parse(cursorStringified);
-      if (cursor.sheetId !== this.current) {
-        this.current = cursor.sheetId;
-      }
-      // need to convert from old style multiCursor from Rust to new style
-      if ((cursor.multiCursor as any)?.originPosition) {
-        const multiCursor = cursor.multiCursor as any;
-        const convertedCursor = {
-          ...cursor,
-          multiCursor: [
-            new Rectangle(
-              multiCursor.originPosition.x,
-              multiCursor.originPosition.y,
-              multiCursor.terminalPosition.x - multiCursor.originPosition.x + 1,
-              multiCursor.terminalPosition.y - multiCursor.originPosition.y + 1
-            ),
-          ],
-        };
-        this.sheet.cursor.load(convertedCursor);
-      } else {
-        this.sheet.cursor.load(cursor);
-      }
-    } else {
-      throw new Error('Expected setCursor in Sheets.ts to have cursorStringified or selection defined');
     }
   };
 
@@ -327,12 +299,12 @@ class Sheets {
   }
 
   getMultiplayerSelection(): string {
-    return this.sheet.cursor.getMultiplayerSelection();
+    return this.sheet.cursor.save();
   }
 
   /// Gets a Selection for Rust
-  getRustSelection(): Selection {
-    return this.sheet.cursor.getRustSelection();
+  getRustSelection(): A1Selection {
+    return this.sheet.cursor.selection;
   }
 
   getRustSelectionStringified(): string {
@@ -347,37 +319,14 @@ class Sheets {
   }
 
   // Changes the cursor to the incoming selection
-  changeSelection(selection: Selection, ensureVisible = true) {
+  changeSelection(selection: A1Selection, ensureVisible = true) {
     // change the sheet id if needed
-    if (selection.sheet_id.id !== this.current) {
-      if (this.getById(selection.sheet_id.id)) {
-        this.current = selection.sheet_id.id;
+    if (selection.sheet.id !== this.current) {
+      if (this.getById(selection.sheet.id)) {
+        this.current = selection.sheet.id;
       }
     }
-
-    // assign the cursor position
-    const pos = { x: Number(selection.x), y: Number(selection.y) };
-
-    // assign the multi cursor
-    const multiCursor = selection.rects?.map((rect) => rectToRectangle(rect)) ?? null;
-    let columnRow: ColumnRowCursor | null = null;
-    if (selection.all) {
-      columnRow = { all: true };
-    } else {
-      if (selection.rows || selection.columns) {
-        columnRow = {
-          rows: selection.rows?.map((row) => Number(row)),
-          columns: selection.columns?.map((column) => Number(column)),
-        };
-      }
-    }
-    sheets.sheet.cursor.changePosition({
-      keyboardMovePosition: pos,
-      cursorPosition: pos,
-      multiCursor,
-      columnRow,
-      ensureVisible,
-    });
+    sheets.sheet.cursor.changePosition(selection, ensureVisible);
   }
 }
 

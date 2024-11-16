@@ -170,7 +170,7 @@ export class CellsArray extends Container {
     }
     const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
     if (codeCell.spill_error) {
-      const cursorPosition = sheets.sheet.cursor.cursorPosition;
+      const cursorPosition = sheets.sheet.cursor.position;
       if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {
         this.lines.push(
           ...drawBorder({

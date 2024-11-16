@@ -53,8 +53,8 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
       width = bounds ? bounds.max - bounds.min + 1 : 1;
     }
   } else {
-    column = cursor.cursorPosition.x;
-    row = cursor.cursorPosition.y;
+    column = cursor.position.x;
+    row = cursor.position.y;
     width = height = 0;
   }
   if (column === undefined || row === undefined || width === undefined || height === undefined) {

@@ -9,7 +9,6 @@ use super::{A1Error, SheetIdNameMap, SheetNameIdMap};
 use crate::{grid::SheetId, Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SheetCellRefRange {
     pub sheet: SheetId,
     pub cells: CellRefRange,
@@ -52,7 +51,6 @@ impl SheetCellRefRange {
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(test, proptest(filter = "|range| range.is_valid()"))]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellRefRange {
     pub start: CellRefRangeEnd,
     pub end: Option<CellRefRangeEnd>,
@@ -181,11 +179,20 @@ impl CellRefRange {
     pub fn might_contain_pos(self, pos: Pos) -> bool {
         self.might_intersect_rect(Rect::single_pos(pos))
     }
+
+    /// Returns whether `self` is a column range.
+    pub fn is_column_range(&self) -> bool {
+        self.start.row.is_none() && self.end.map_or(true, |end| end.row.is_none())
+    }
+
+    /// Returns whether `self` is a row range.
+    pub fn is_row_range(&self) -> bool {
+        self.start.col.is_none() && self.end.map_or(true, |end| end.col.is_none())
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellRefRangeEnd {
     pub col: Option<CellRefCoord>,
     pub row: Option<CellRefCoord>,

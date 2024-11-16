@@ -1,7 +1,6 @@
 use std::{fmt, str::FromStr};
 
 use serde::Serialize;
-use ts_rs::TS;
 
 use super::{parse_optional_sheet_name, A1Error, CellRefRange};
 
@@ -9,7 +8,7 @@ use super::{parse_optional_sheet_name, A1Error, CellRefRange};
 ///
 /// This only supports a single range by design (since it's difficult to form a
 /// rectangle from multiple ranges).
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct CellRefRequest {
     pub sheet_name: Option<String>,
     pub cells: CellRefRange,

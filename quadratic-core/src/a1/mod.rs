@@ -4,6 +4,7 @@ mod cell_ref_request;
 mod column_names;
 mod error;
 mod selection;
+mod selection_select;
 mod subspaces;
 
 pub use a1_sheet_name::*;

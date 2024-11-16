@@ -9,7 +9,7 @@ import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constan
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
-import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
+import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells.ts.deprecated';
 import { zoomToFit } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
@@ -208,11 +208,11 @@ export class PointerHeading {
       // current one.
       else if (event.shiftKey) {
         if (intersects.column !== undefined) {
-          let x1 = cursor.cursorPosition.x;
+          let x1 = cursor.position.x;
           let x2 = intersects.column;
           selectColumns(fillArray(x1, x2), x1);
         } else if (intersects.row !== undefined) {
-          let y1 = cursor.cursorPosition.y;
+          let y1 = cursor.position.y;
           let y2 = intersects.row;
           selectRows(fillArray(y1, y2), y1);
         }

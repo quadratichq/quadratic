@@ -1,15 +1,15 @@
-import { cn } from '@/shared/shadcn/utils';
-import { useInlineEditorStatus } from './inlineEditor/useInlineEditorStatus';
-import { useCallback, useEffect, useState } from 'react';
-import { inlineEditorEvents } from './inlineEditor/inlineEditorEvents';
-import { inlineEditorMonaco } from './inlineEditor/inlineEditorMonaco';
-import { inlineEditorHandler } from './inlineEditor/inlineEditorHandler';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { sheets } from '@/app/grid/controller/Sheets';
-import { Rectangle } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { cn } from '@/shared/shadcn/utils';
+import { Rectangle } from 'pixi.js';
+import { useCallback, useEffect, useState } from 'react';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { inlineEditorEvents } from './inlineEditor/inlineEditorEvents';
+import { inlineEditorHandler } from './inlineEditor/inlineEditorHandler';
+import { inlineEditorMonaco } from './inlineEditor/inlineEditorMonaco';
+import { useInlineEditorStatus } from './inlineEditor/useInlineEditorStatus';
 
 export const SuggestionDropDown = () => {
   const inlineEditorStatus = useInlineEditorStatus();
@@ -20,7 +20,7 @@ export const SuggestionDropDown = () => {
   useEffect(() => {
     const populateList = async () => {
       const sheet = sheets.sheet;
-      const pos = sheet.cursor.cursorPosition;
+      const pos = sheet.cursor.position;
 
       // if there are validations, don't autocomplete
       // todo: we can make this better by showing only validated values

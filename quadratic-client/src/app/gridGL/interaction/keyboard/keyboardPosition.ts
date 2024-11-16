@@ -38,7 +38,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
   const clamp = sheet.clamp;
 
   // holds either the existing multiCursor or creates a new one based on cursor position
-  const multiCursor = cursor.multiCursor ?? [new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1)];
+  const multiCursor = cursor.multiCursor ?? [new Rectangle(cursor.position.x, cursor.position.y, 1, 1)];
 
   // the last multiCursor entry, which is what we change with the keyboard
   const lastMultiCursor = multiCursor[multiCursor.length - 1];
@@ -49,7 +49,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     let x = keyboardX;
     const y = cursor.keyboardMovePosition.y;
     // always use the original cursor position to search
-    const yCheck = cursor.cursorPosition.y;
+    const yCheck = cursor.position.y;
     // handle case of cell with content
     let nextCol: number | undefined = undefined;
     if (await quadraticCore.cellHasContent(sheetId, x, yCheck)) {
@@ -92,8 +92,8 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     x = nextCol;
     if (x === keyboardX) x++;
     if (select) {
-      lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
-      lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
+      lastMultiCursor.x = Math.min(cursor.position.x, x);
+      lastMultiCursor.width = Math.abs(cursor.position.x - x) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -106,7 +106,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     let x = keyboardX;
     const y = cursor.keyboardMovePosition.y;
     // always use the original cursor position to search
-    const yCheck = cursor.cursorPosition.y;
+    const yCheck = cursor.position.y;
     // handle case of cell with content
     let nextCol: number | undefined = undefined;
     if (await quadraticCore.cellHasContent(sheetId, x, yCheck)) {
@@ -152,8 +152,8 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     if (x === keyboardX) x--;
     x = Math.max(x, clamp.left);
     if (select) {
-      lastMultiCursor.x = Math.min(cursor.cursorPosition.x, x);
-      lastMultiCursor.width = Math.abs(cursor.cursorPosition.x - x) + 1;
+      lastMultiCursor.x = Math.min(cursor.position.x, x);
+      lastMultiCursor.width = Math.abs(cursor.position.x - x) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -166,7 +166,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     let y = keyboardY;
     const x = cursor.keyboardMovePosition.x;
     // always use the original cursor position to search
-    const xCheck = cursor.cursorPosition.x;
+    const xCheck = cursor.position.x;
     // handle case of cell with content
     let nextRow: number | undefined = undefined;
     if (await quadraticCore.cellHasContent(sheetId, xCheck, y)) {
@@ -209,8 +209,8 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     if (y === keyboardY) y++;
     y = Math.max(y, clamp.top);
     if (select) {
-      lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
-      lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
+      lastMultiCursor.y = Math.min(cursor.position.y, y);
+      lastMultiCursor.height = Math.abs(cursor.position.y - y) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -223,7 +223,7 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     let y = keyboardY;
     const x = cursor.keyboardMovePosition.x;
     // always use the original cursor position to search
-    const xCheck = cursor.cursorPosition.x;
+    const xCheck = cursor.position.x;
     // handle case of cell with content
     let nextRow: number | undefined = undefined;
     if (await quadraticCore.cellHasContent(sheetId, xCheck, y)) {
@@ -269,8 +269,8 @@ async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
     if (y === keyboardY) y--;
     y = Math.max(y, clamp.top);
     if (select) {
-      lastMultiCursor.y = Math.min(cursor.cursorPosition.y, y);
-      lastMultiCursor.height = Math.abs(cursor.cursorPosition.y - y) + 1;
+      lastMultiCursor.y = Math.min(cursor.position.y, y);
+      lastMultiCursor.height = Math.abs(cursor.position.y - y) + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -287,11 +287,11 @@ function expandSelection(deltaX: number, deltaY: number) {
   const clamp = sheets.sheet.clamp;
   const cursor = sheets.sheet.cursor;
 
-  const downPosition = cursor.cursorPosition;
+  const downPosition = cursor.position;
   const movePosition = cursor.keyboardMovePosition;
 
   // holds either the existing multiCursor or creates a new one based on cursor position
-  const multiCursor = cursor.multiCursor ?? [new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1)];
+  const multiCursor = cursor.multiCursor ?? [new Rectangle(cursor.position.x, cursor.position.y, 1, 1)];
 
   // the last multiCursor entry, which is what we change with the keyboard
   const lastMultiCursor = multiCursor[multiCursor.length - 1];
@@ -330,8 +330,8 @@ function moveCursor(deltaX: number, deltaY: number) {
   const clamp = sheets.sheet.clamp;
   const cursor = sheets.sheet.cursor;
   const newPos = {
-    x: Math.max(clamp.left, cursor.cursorPosition.x + deltaX),
-    y: Math.max(clamp.left, cursor.cursorPosition.y + deltaY),
+    x: Math.max(clamp.left, cursor.position.x + deltaX),
+    y: Math.max(clamp.left, cursor.position.y + deltaY),
   };
   if (newPos.x > clamp.right) {
     newPos.x = clamp.right;
@@ -477,7 +477,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
   if (matchShortcut(Action.GotoRowStart, event)) {
     sheets.sheet.cursor.changePosition({
       columnRow: null,
-      cursorPosition: { x: 1, y: sheets.sheet.cursor.cursorPosition.y },
+      cursorPosition: { x: 1, y: sheets.sheet.cursor.position.y },
     });
     return true;
   }
@@ -487,7 +487,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
     const sheet = sheets.sheet;
     const bounds = sheet.getBounds(true);
     if (bounds) {
-      const y = sheet.cursor.cursorPosition.y;
+      const y = sheet.cursor.position.y;
       quadraticCore
         .findNextColumn({
           sheetId: sheet.id,

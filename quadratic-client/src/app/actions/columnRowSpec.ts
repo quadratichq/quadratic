@@ -1,9 +1,9 @@
 import { Action } from '@/app/actions/actions';
 import { isEmbed } from '@/app/helpers/isEmbed';
-import { ActionAvailabilityArgs, ActionSpec } from './actionsSpec';
-import { sheets } from '../grid/controller/Sheets';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AddIcon, DeleteIcon } from '@/shared/components/Icons';
+import { sheets } from '../grid/controller/Sheets';
+import { ActionAvailabilityArgs, ActionSpec } from './actionsSpec';
 
 const isColumnRowAvailable = ({ isAuthenticated }: ActionAvailabilityArgs) => {
   if (!sheets.sheet.cursor.hasOneColumnRowSelection(true)) return false;
@@ -15,7 +15,7 @@ const insertColumnLeft: ActionSpec<void> = {
   isAvailable: isColumnRowAvailable,
   Icon: AddIcon,
   run: () =>
-    quadraticCore.insertColumn(sheets.sheet.id, sheets.sheet.cursor.cursorPosition.x, true, sheets.getCursorPosition()),
+    quadraticCore.insertColumn(sheets.sheet.id, sheets.sheet.cursor.position.x, true, sheets.getCursorPosition()),
 };
 
 const insertColumnRight: ActionSpec<void> = {
@@ -23,12 +23,7 @@ const insertColumnRight: ActionSpec<void> = {
   isAvailable: isColumnRowAvailable,
   Icon: AddIcon,
   run: () =>
-    quadraticCore.insertColumn(
-      sheets.sheet.id,
-      sheets.sheet.cursor.cursorPosition.x + 1,
-      false,
-      sheets.getCursorPosition()
-    ),
+    quadraticCore.insertColumn(sheets.sheet.id, sheets.sheet.cursor.position.x + 1, false, sheets.getCursorPosition()),
 };
 
 const deleteColumns: ActionSpec<void> = {
@@ -45,8 +40,7 @@ const insertRowAbove: ActionSpec<void> = {
   label: 'Insert row above',
   isAvailable: isColumnRowAvailable,
   Icon: AddIcon,
-  run: () =>
-    quadraticCore.insertRow(sheets.sheet.id, sheets.sheet.cursor.cursorPosition.y, true, sheets.getCursorPosition()),
+  run: () => quadraticCore.insertRow(sheets.sheet.id, sheets.sheet.cursor.position.y, true, sheets.getCursorPosition()),
 };
 
 const insertRowBelow: ActionSpec<void> = {
@@ -54,12 +48,7 @@ const insertRowBelow: ActionSpec<void> = {
   isAvailable: isColumnRowAvailable,
   Icon: AddIcon,
   run: () =>
-    quadraticCore.insertRow(
-      sheets.sheet.id,
-      sheets.sheet.cursor.cursorPosition.y + 1,
-      false,
-      sheets.getCursorPosition()
-    ),
+    quadraticCore.insertRow(sheets.sheet.id, sheets.sheet.cursor.position.y + 1, false, sheets.getCursorPosition()),
 };
 
 const deleteRows: ActionSpec<void> = {

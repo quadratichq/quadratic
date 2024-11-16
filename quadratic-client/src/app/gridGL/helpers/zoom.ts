@@ -81,7 +81,7 @@ export function zoomToSelection(): void {
     }
     screenRectangle = sheet.getScreenRectangle(minX, minY, maxX - minX, maxY - minY);
   } else {
-    const cursor = sheet.cursor.cursorPosition;
+    const cursor = sheet.cursor.position;
     screenRectangle = sheet.getScreenRectangle(cursor.x, cursor.y, 1, 1);
   }
   // calc scale, and leave a little room on the top and sides

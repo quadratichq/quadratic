@@ -2,6 +2,7 @@
   "editor.formatOnSave": true,
   "cSpell.words": [
     "actix",
+    "ayush",
     "bigdecimal",
     "bincode",
     "bindgen",
@@ -35,6 +36,7 @@
     "peekable",
     "pixi",
     "pixiapp",
+    "Plotly",
     "pulumi",
     "pyimport",
     "rects",

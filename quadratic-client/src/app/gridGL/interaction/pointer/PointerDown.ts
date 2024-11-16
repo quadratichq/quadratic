@@ -102,7 +102,7 @@ export class PointerDown {
       if (!(await this.isInputValid())) return;
 
       const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
-      const cursorPosition = cursor.cursorPosition;
+      const cursorPosition = cursor.position;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
         const originX = cursorPosition.x < column ? cursorPosition.x : column;
@@ -139,7 +139,7 @@ export class PointerDown {
     if (!this.active && (event.metaKey || event.ctrlKey)) {
       if (!(await this.isInputValid())) return;
 
-      const cursorPosition = cursor.cursorPosition;
+      const cursorPosition = cursor.position;
       if (cursor.multiCursor || column !== cursorPosition.x || row !== cursorPosition.y) {
         event.stopPropagation();
         const multiCursor = cursor.multiCursor ?? [new Rectangle(cursorPosition.x, cursorPosition.y, 1, 1)];

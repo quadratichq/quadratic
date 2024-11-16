@@ -37,7 +37,7 @@ export const useHtmlValidations = (): HtmlValidationsData => {
         setValidationType('');
         return;
       }
-      const { x, y } = sheets.sheet.cursor.cursorPosition;
+      const { x, y } = sheets.sheet.cursor.position;
       setLocation({ x, y });
       const validation = await quadraticCore.getValidationFromPos(sheets.sheet.id, x, y);
 

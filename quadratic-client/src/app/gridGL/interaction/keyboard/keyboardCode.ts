@@ -16,8 +16,8 @@ export function keyboardCode(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.ExecuteCode, event)) {
     quadraticCore.rerunCodeCells(
       sheets.sheet.id,
-      sheets.sheet.cursor.cursorPosition.x,
-      sheets.sheet.cursor.cursorPosition.y,
+      sheets.sheet.cursor.position.x,
+      sheets.sheet.cursor.position.y,
       sheets.getCursorPosition()
     );
     return true;

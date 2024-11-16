@@ -1,9 +1,5 @@
-use serde::de::{MapAccess, Visitor};
-use serde::ser::SerializeMap;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::fmt;
-use std::str::FromStr;
 use ts_rs::TS;
 
 use super::SheetId;
@@ -11,10 +7,10 @@ use crate::{CellRefRange, Rect, SheetPos, SheetRect};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsCellsAccessed {
-    pub cells: HashMap<String, Vec<CellRefRange>>,
+    pub cells: HashMap<String, Vec<String>>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CellsAccessed {
     pub cells: HashMap<SheetId, HashSet<CellRefRange>>,
 }
@@ -23,58 +19,12 @@ impl From<CellsAccessed> for JsCellsAccessed {
     fn from(cells: CellsAccessed) -> Self {
         let mut js_cells = JsCellsAccessed::default();
         for (sheet_id, ranges) in cells.cells {
-            js_cells
-                .cells
-                .insert(sheet_id.to_string(), ranges.into_iter().collect());
+            js_cells.cells.insert(
+                sheet_id.to_string(),
+                ranges.into_iter().map(|r| r.to_string()).collect(),
+            );
         }
         js_cells
-    }
-}
-
-// todo: this is only needed b/c SheetId does not serialize directly to a String (it should)
-impl Serialize for CellsAccessed {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut map = serializer.serialize_map(Some(self.cells.len()))?;
-        for (k, v) in &self.cells {
-            map.serialize_entry(&k.to_string(), v)?;
-        }
-        map.end()
-    }
-}
-
-impl<'de> Deserialize<'de> for CellsAccessed {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct CellsAccessedVisitor;
-
-        impl<'de> Visitor<'de> for CellsAccessedVisitor {
-            type Value = CellsAccessed;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("a map of SheetId to HashSet<CellRefRange>")
-            }
-
-            fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
-            where
-                M: MapAccess<'de>,
-            {
-                let mut cells = HashMap::new();
-                while let Some((key, value)) =
-                    access.next_entry::<String, HashSet<CellRefRange>>()?
-                {
-                    let sheet_id = SheetId::from_str(&key).map_err(serde::de::Error::custom)?;
-                    cells.insert(sheet_id, value);
-                }
-                Ok(CellsAccessed { cells })
-            }
-        }
-
-        deserializer.deserialize_map(CellsAccessedVisitor)
     }
 }
 
@@ -149,13 +99,12 @@ impl CellsAccessed {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
 
     use super::*;
 
     #[test]
-    #[parallel]
     fn test_add() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
@@ -166,7 +115,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_sheet_rect() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
@@ -178,7 +126,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_intersects() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
@@ -191,7 +138,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_is_dependent_on() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
@@ -201,7 +147,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_clear() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
@@ -211,7 +156,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_sheet_pos() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
@@ -220,7 +164,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_len() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
@@ -231,7 +174,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_sheet_iter() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
@@ -241,16 +183,12 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_to_js() {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
         cells.add(sheet_id, CellRefRange::ALL);
         let js_cells: JsCellsAccessed = cells.into();
         assert_eq!(js_cells.cells.len(), 1);
-        assert_eq!(
-            js_cells.cells[&sheet_id.to_string()],
-            vec![CellRefRange::ALL]
-        );
+        assert_eq!(js_cells.cells[&sheet_id.to_string()], vec!["*".to_string()]);
     }
 }

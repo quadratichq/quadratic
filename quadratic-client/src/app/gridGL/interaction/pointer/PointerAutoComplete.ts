@@ -40,7 +40,7 @@ export class PointerAutoComplete {
       events.emit('cellMoving', true);
       this.selection = cursor.multiCursor
         ? cursor.multiCursor[0]
-        : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
+        : new Rectangle(cursor.position.x, cursor.position.y, 1, 1);
       this.screenSelection = sheet.getScreenRectangle(
         this.selection.left,
         this.selection.top,

@@ -31,8 +31,8 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
       const { column, row } = getColumnRowFromScreen(e);
       const cursor = sheets.sheet.cursor;
       const hasMoved =
-        cursor.cursorPosition.x !== column ||
-        cursor.cursorPosition.y !== row ||
+        cursor.position.x !== column ||
+        cursor.position.y !== row ||
         cursor.keyboardMovePosition.x !== column ||
         cursor.keyboardMovePosition.y !== row;
       if (hasMoved) {
