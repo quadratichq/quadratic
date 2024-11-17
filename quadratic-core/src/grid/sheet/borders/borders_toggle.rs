@@ -1,4 +1,4 @@
-use crate::{selection::Selection, Rect};
+use crate::{OldSelection, Rect};
 
 use super::{sides::Sides, BorderSelection, BorderStyle, BorderStyleCell, Borders};
 
@@ -215,7 +215,7 @@ impl Borders {
     /// given style.
     pub fn is_toggle_borders(
         &self,
-        selection: &Selection,
+        selection: &OldSelection,
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
     ) -> bool {
@@ -286,13 +286,13 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.borders.is_toggle_borders(
-            &Selection::all(sheet_id),
+            &OldSelection::all(sheet_id),
             BorderSelection::All,
             None
         ));
 
         gc.set_borders_selection(
-            Selection::all(sheet_id),
+            &OldSelection::all(sheet_id),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -300,13 +300,13 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.is_toggle_borders(
-            &Selection::all(sheet_id),
+            &OldSelection::all(sheet_id),
             BorderSelection::All,
             Some(BorderStyle::default())
         ));
 
         assert!(!sheet.borders.is_toggle_borders(
-            &Selection::all(sheet_id),
+            &OldSelection::all(sheet_id),
             BorderSelection::All,
             Some(BorderStyle {
                 color: Rgba::new(10, 11, 12, 13),
@@ -323,13 +323,13 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.borders.is_toggle_borders(
-            &Selection::columns(&[0, 1, 2], sheet_id),
+            &OldSelection::columns(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             None
         ));
 
         gc.set_borders_selection(
-            Selection::columns(&[0, 1, 2], sheet_id),
+            &OldSelection::columns(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -337,13 +337,13 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.is_toggle_borders(
-            &Selection::columns(&[0, 1, 2], sheet_id),
+            &OldSelection::columns(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             Some(BorderStyle::default())
         ));
 
         assert!(!sheet.borders.is_toggle_borders(
-            &Selection::columns(&[0, 1, 2], sheet_id),
+            &OldSelection::columns(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             Some(BorderStyle {
                 color: Rgba::new(10, 11, 12, 13),
@@ -360,13 +360,13 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.borders.is_toggle_borders(
-            &Selection::rows(&[0, 1, 2], sheet_id),
+            &OldSelection::rows(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             None
         ));
 
         gc.set_borders_selection(
-            Selection::rows(&[0, 1, 2], sheet_id),
+            &OldSelection::rows(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -374,13 +374,13 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.is_toggle_borders(
-            &Selection::rows(&[0, 1, 2], sheet_id),
+            &OldSelection::rows(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             Some(BorderStyle::default())
         ));
 
         assert!(!sheet.borders.is_toggle_borders(
-            &Selection::rows(&[0, 1, 2], sheet_id),
+            &OldSelection::rows(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             Some(BorderStyle {
                 color: Rgba::new(10, 11, 12, 13),
@@ -396,7 +396,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.sheet(sheet_id);
-        let selection = Selection::rects(
+        let selection = OldSelection::rects(
             &[Rect::new(1, 1, 2, 2), Rect::new(10, 10, 20, 20)],
             sheet_id,
         );
@@ -434,7 +434,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let rect = Rect::new(1, 1, 3, 3);
-        let selection = Selection::sheet_rect(rect.to_sheet_rect(sheet_id));
+        let selection = OldSelection::sheet_rect(rect.to_sheet_rect(sheet_id));
         let style = BorderStyle::default();
 
         // Test BorderSelection::All
@@ -452,7 +452,7 @@ mod test {
         assert!(!sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::All, &different_style));
-        gc.clear_format(Selection::all(sheet_id), None).unwrap();
+        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
 
         // Test BorderSelection::Inner
         gc.set_borders_selection(selection.clone(), BorderSelection::Inner, Some(style), None);
@@ -460,7 +460,7 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Inner, &style));
-        gc.clear_format(Selection::all(sheet_id), None).unwrap();
+        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
 
         // Test BorderSelection::Outer
         gc.set_borders_selection(selection.clone(), BorderSelection::Outer, Some(style), None);
@@ -468,7 +468,7 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Outer, &style));
-        gc.clear_format(Selection::all(sheet_id), None).unwrap();
+        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
 
         // Test BorderSelection::Horizontal
         gc.set_borders_selection(
@@ -481,7 +481,7 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Horizontal, &style));
-        gc.clear_format(Selection::all(sheet_id), None).unwrap();
+        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
 
         // Test BorderSelection::Vertical
         gc.set_borders_selection(
@@ -494,7 +494,7 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Vertical, &style));
-        gc.clear_format(Selection::all(sheet_id), None).unwrap();
+        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
 
         // Test BorderSelection::Left
         gc.set_borders_selection(selection.clone(), BorderSelection::Left, Some(style), None);
@@ -502,7 +502,7 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Left, &style));
-        gc.clear_format(Selection::all(sheet_id), None).unwrap();
+        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
 
         // Test BorderSelection::Top
         gc.set_borders_selection(selection.clone(), BorderSelection::Top, Some(style), None);
@@ -510,7 +510,7 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Top, &style));
-        gc.clear_format(Selection::all(sheet_id), None).unwrap();
+        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
 
         // Test BorderSelection::Right
         gc.set_borders_selection(selection.clone(), BorderSelection::Right, Some(style), None);
@@ -518,7 +518,7 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Right, &style));
-        gc.clear_format(Selection::all(sheet_id), None).unwrap();
+        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
 
         // Test BorderSelection::Bottom
         gc.set_borders_selection(
@@ -541,7 +541,7 @@ mod test {
 
         let style = BorderStyle::default();
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            &OldSelection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
             BorderSelection::All,
             Some(style),
             None,
@@ -556,7 +556,7 @@ mod test {
         ));
 
         assert!(sheet.borders.is_toggle_borders(
-            &Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            &OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
             BorderSelection::Bottom,
             Some(style)
         ));

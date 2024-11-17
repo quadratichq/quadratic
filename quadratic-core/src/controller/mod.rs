@@ -15,11 +15,6 @@ pub mod transaction;
 pub mod transaction_types;
 pub mod user_actions;
 
-use crate::grid::Grid;
-use active_transactions::ActiveTransactions;
-use transaction::Transaction;
-use wasm_bindgen::prelude::*;
-
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct GridController {

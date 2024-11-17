@@ -1,8 +1,10 @@
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::clipboard::PasteSpecial;
 use crate::controller::GridController;
+use crate::grid::js_types::JsPos;
+use crate::grid::{GridBounds, SheetId};
 use crate::selection::OldSelection;
-use crate::{SheetPos, SheetRect};
+use crate::{Rect, SheetPos, SheetRect};
 
 // To view you clipboard contents, go to https://evercoder.github.io/clipboard-inspector/
 // To decode the html, use https://codebeautify.org/html-decode-string
@@ -223,7 +225,7 @@ mod test {
         .unwrap();
         set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
         gc.set_underline_selection(
-            Selection::sheet_rect(SheetRect {
+            OldSelection::sheet_rect(SheetRect {
                 min: Pos { x: 5, y: 3 },
                 max: Pos { x: 5, y: 3 },
                 sheet_id,
@@ -234,7 +236,7 @@ mod test {
         .unwrap();
         set_cell_value(&mut gc, sheet_id, "strike through", 7, 4);
         gc.set_strike_through_selection(
-            Selection::sheet_rect(SheetRect {
+            OldSelection::sheet_rect(SheetRect {
                 min: Pos { x: 7, y: 4 },
                 max: Pos { x: 7, y: 4 },
                 sheet_id,

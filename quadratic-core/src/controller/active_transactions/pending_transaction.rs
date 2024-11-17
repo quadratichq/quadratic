@@ -14,11 +14,11 @@ use crate::{
     },
     grid::{
         sheet::validations::validation::Validation, CellsAccessed, CodeCellLanguage, CodeRun,
-        SheetId,
+        Sheet, SheetId,
     },
     selection::OldSelection,
     viewport::ViewportBuffer,
-    Pos, SheetPos,
+    Pos, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;

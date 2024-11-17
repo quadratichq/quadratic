@@ -322,7 +322,7 @@ mod tests {
             CodeCellLanguage,
         },
         selection::OldSelection,
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
+        wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
         Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT,
     };
 

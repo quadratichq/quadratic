@@ -1,13 +1,14 @@
 //! Functionality to set borders on a selection.
 
-use std::collections::{BTreeMap, HashMap};
-
 use crate::{
-    controller::operations::operation::Operation, selection::OldSelection, A1Selection,
-    A1Subspaces, RunLengthEncoding,
+    controller::operations::operation::Operation, selection::OldSelection, A1Subspaces,
+    RunLengthEncoding,
 };
 
-use super::{BorderStyle, BorderStyleCell, BorderStyleCellUpdate, BorderStyleCellUpdates, Borders};
+use super::{
+    BorderStyle, BorderStyleCell, BorderStyleCellUpdate, BorderStyleCellUpdates, Borders,
+    CellBorderLine,
+};
 
 impl Borders {
     /// **Deprecated** Nov 2024 in favor of [`Self::set_borders()`].
@@ -284,8 +285,8 @@ mod tests {
         assert!(borders.all.top.is_none());
         assert!(borders.all.bottom.is_none());
 
-        borders.set_borders(
-            &Selection::all(sheet_id),
+        borders.set_borders_a1(
+            &A1Subspaces::All(sheet_id),
             &RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1),
         );
         assert!(borders.all.left.is_some());
@@ -293,8 +294,8 @@ mod tests {
         assert!(borders.all.top.is_some());
         assert!(borders.all.bottom.is_some());
 
-        borders.set_borders(
-            &Selection::all(sheet_id),
+        borders.set_borders_a1(
+            &A1Subspaces::All(sheet_id),
             &RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
         );
         assert!(borders.all.left.is_none());

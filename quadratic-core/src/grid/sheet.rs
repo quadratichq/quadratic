@@ -1527,7 +1527,7 @@ mod test {
             std_err: Some("error".to_string()),
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Err(RunError {
                 span: None,
                 msg: RunErrorMsg::CodeRunError("error".into()),
@@ -1551,7 +1551,7 @@ mod test {
             std_err: None,
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![
                 vec!["1".to_string(), "2".to_string()],
                 vec!["3".to_string(), "4".to_string()],

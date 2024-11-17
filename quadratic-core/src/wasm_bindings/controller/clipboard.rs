@@ -4,6 +4,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use crate::{
     controller::{operations::clipboard::PasteSpecial, GridController},
     grid::js_types::JsClipboard,
+    grid::SheetId,
     selection::OldSelection,
     SheetPos, SheetRect,
 };

@@ -1,6 +1,6 @@
 use crate::{
     formulas::CellRef,
-    grid::SheetId,
+    grid::{js_types::JsPos, SheetId},
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
 };
 use anyhow::Result;

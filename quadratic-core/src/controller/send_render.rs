@@ -9,6 +9,7 @@ use crate::{
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::OldSelection,
+    viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     A1Subspaces, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
@@ -403,7 +404,7 @@ mod test {
             active_transactions::{
                 pending_transaction::PendingTransaction, transaction_name::TransactionName,
             },
-            execution::TransactionType,
+            execution::TransactionSource,
             transaction_types::JsCodeResult,
             GridController,
         },
@@ -416,8 +417,8 @@ mod test {
             RenderSize, SheetId,
         },
         selection::OldSelection,
-        wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
-        Rect,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
+        Pos, Rect,
     };
     use serial_test::serial;
     use std::collections::HashSet;
@@ -458,7 +459,7 @@ mod test {
 
         // Server transaction
         let mut transaction = PendingTransaction {
-            transaction_name: TransactionName::Server,
+            source: TransactionSource::Server,
             ..Default::default()
         };
         transaction.add_dirty_hashes_from_sheet_cell_positions(

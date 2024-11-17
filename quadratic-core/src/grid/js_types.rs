@@ -9,7 +9,7 @@ use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
-use crate::Pos;
+use crate::{Pos, SheetPos};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]

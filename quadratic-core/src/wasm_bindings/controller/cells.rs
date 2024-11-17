@@ -2,7 +2,9 @@ use std::str::FromStr;
 
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{controller::GridController, grid::SheetId, selection::OldSelection, Pos, Rect};
+use crate::{
+    controller::GridController, grid::SheetId, selection::OldSelection, Pos, Rect, SheetRect,
+};
 
 #[wasm_bindgen]
 impl GridController {
