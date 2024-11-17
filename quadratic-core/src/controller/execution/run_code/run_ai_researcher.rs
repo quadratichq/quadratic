@@ -59,47 +59,38 @@ impl GridController {
                 if let Value::Tuple(vec) = parsed.eval(&mut ctx).inner {
                     if let Some((query, values_array)) = vec.into_iter().next_tuple() {
                         if let Ok(query) = query.into_cell_value() {
-                            let query = query.to_display();
-                            let ref_cell_values = values_array
-                                .into_cell_values_vec()
-                                .into_iter()
-                                .map(|v| v.to_display())
-                                .collect::<Vec<String>>();
-                            let cells_accessed = ctx.cells_accessed;
                             Ok(ParsedAIResearcherCode {
-                                query,
-                                ref_cell_values,
-                                cells_accessed,
+                                query: query.to_display(),
+                                ref_cell_values: values_array
+                                    .into_cell_values_vec()
+                                    .into_iter()
+                                    .map(|v| v.to_display())
+                                    .collect::<Vec<String>>(),
+                                cells_accessed: ctx.cells_accessed,
                             })
                         } else {
                             Err(RunError {
                                 span: None,
-                                msg: RunErrorMsg::Unexpected(
-                                    "Expected a prompt value in the first element of the tuple"
-                                        .into(),
-                                ),
+                                msg: RunErrorMsg::InvalidArgument,
                             })
                         }
                     } else {
                         Err(RunError {
                             span: None,
-                            msg: RunErrorMsg::Unexpected(
-                                "Expected a tuple with two elements (prompt and values_array)"
-                                    .into(),
-                            ),
+                            msg: RunErrorMsg::InvalidArgument,
                         })
                     }
                 } else {
                     Err(RunError {
                         span: None,
-                        msg: RunErrorMsg::Unexpected("Expected a tuple from AI formula".into()),
+                        msg: RunErrorMsg::InvalidArgument,
                     })
                 }
             }
             Err(error) => {
                 dbgjs!(format!(
-                    "[run_ai_researcher] parse_ai_researcher_code: {:?}",
-                    error
+                    "[run_ai_researcher] error in parse_ai_researcher_code: code {:?}, error {:?}",
+                    code, error
                 ));
                 Err(error)
             }
@@ -114,14 +105,14 @@ impl GridController {
             return false;
         }
 
-        let pending_ai_researcher = transaction.pending_ai_researcher.clone();
-
         // all ai researcher requests that are currently pending or running
         let mut all_ai_researcher = HashSet::new();
-        all_ai_researcher.extend(pending_ai_researcher.clone());
+        all_ai_researcher.extend(transaction.pending_ai_researcher.clone());
         all_ai_researcher.extend(transaction.running_ai_researcher.clone());
 
-        // pending ai researcher requests that are dependent on other ai researcher request currently pending or running
+        // ai researcher requests that are dependent on other ai researcher request currently pending
+        let pending_ai_researcher = transaction.pending_ai_researcher.clone();
+
         let mut dependent_ai_researcher: HashSet<SheetPos> = HashSet::new();
         for sheet_pos in pending_ai_researcher.iter() {
             match self.parse_ai_researcher_code(sheet_pos.to_owned()) {
@@ -131,14 +122,68 @@ impl GridController {
                     cells_accessed,
                 }) => {
                     // check if the current ai researcher request is dependent on any other ai researcher request that is currently pending or running
-                    let is_dependent = cells_accessed.iter().any(|cell_accessed| {
-                        all_ai_researcher.iter().any(|ai_researcher| {
+                    let mut referenced_cell_has_error = false;
+                    let mut has_circular_reference = false;
+                    let mut is_dependent = false;
+                    let mut seen_code_cells = HashSet::new();
+                    seen_code_cells.insert(sheet_pos.to_owned());
+                    let mut cells_accessed_to_check = cells_accessed.iter().collect::<Vec<_>>();
+                    while let Some(cell_accessed) = cells_accessed_to_check.pop() {
+                        if referenced_cell_has_error || has_circular_reference || is_dependent {
+                            break;
+                        }
+
+                        // circular reference to itself
+                        has_circular_reference |= cell_accessed
+                            .intersects(SheetRect::single_sheet_pos(sheet_pos.to_owned()));
+
+                        // dependent on another ai researcher request
+                        is_dependent |= all_ai_researcher.iter().any(|ai_researcher| {
                             cell_accessed
                                 .intersects(SheetRect::single_sheet_pos(ai_researcher.to_owned()))
-                        })
-                    });
+                        });
 
-                    if is_dependent {
+                        let sheet_id = cell_accessed.sheet_id;
+                        if let Some(sheet) = self.try_sheet(sheet_id) {
+                            for (output_rect, code_run) in
+                                sheet.iter_code_output_in_rect(cell_accessed.to_owned().into())
+                            {
+                                let code_cell_pos = output_rect.min;
+                                if !seen_code_cells.insert(code_cell_pos.to_sheet_pos(sheet_id)) {
+                                    continue;
+                                }
+
+                                if code_run.spill_error || code_run.result.as_std_ref().is_err() {
+                                    referenced_cell_has_error = true;
+                                    break;
+                                }
+
+                                let new_cells_accessed = code_run
+                                    .cells_accessed
+                                    .difference(&cells_accessed)
+                                    .collect::<Vec<_>>();
+                                cells_accessed_to_check.extend(new_cells_accessed);
+                            }
+                        }
+                    }
+
+                    if referenced_cell_has_error {
+                        transaction.pending_ai_researcher.remove(&sheet_pos);
+                        let run_error = RunError {
+                            span: None,
+                            msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
+                        };
+                        transaction.current_sheet_pos = Some(sheet_pos.to_owned());
+                        let _ = self.code_cell_sheet_error(transaction, &run_error);
+                    } else if has_circular_reference {
+                        transaction.pending_ai_researcher.remove(&sheet_pos);
+                        let run_error = RunError {
+                            span: None,
+                            msg: RunErrorMsg::CircularReference,
+                        };
+                        transaction.current_sheet_pos = Some(sheet_pos.to_owned());
+                        let _ = self.code_cell_sheet_error(transaction, &run_error);
+                    } else if is_dependent {
                         dependent_ai_researcher.insert(sheet_pos.to_owned());
                     } else {
                         self.request_ai_researcher_result(
@@ -150,28 +195,29 @@ impl GridController {
                     }
                 }
                 Err(error) => {
+                    transaction.pending_ai_researcher.remove(&sheet_pos);
                     transaction.current_sheet_pos = Some(sheet_pos.to_owned());
                     let _ = self.code_cell_sheet_error(transaction, &error);
                 }
             }
         }
-        if transaction.pending_ai_researcher != dependent_ai_researcher {
-            transaction.pending_ai_researcher = dependent_ai_researcher;
-            self.send_ai_researcher_state(&transaction);
-            self.transactions.update_async_transaction(transaction);
-            true
-        } else {
+
+        // circular reference
+        // the ai researcher cells are dependent on other ai researcher requests
+        if pending_ai_researcher == dependent_ai_researcher {
             let run_error = RunError {
                 span: None,
                 msg: RunErrorMsg::CircularReference,
             };
             for sheet_pos in pending_ai_researcher.iter() {
+                transaction.pending_ai_researcher.remove(&sheet_pos);
                 transaction.current_sheet_pos = Some(sheet_pos.to_owned());
                 let _ = self.code_cell_sheet_error(transaction, &run_error);
             }
-            transaction.pending_ai_researcher.clear();
-            false
         }
+
+        self.send_ai_researcher_state(&transaction);
+        !transaction.running_ai_researcher.is_empty()
     }
 
     fn request_ai_researcher_result(
@@ -192,6 +238,7 @@ impl GridController {
                 query,
                 ref_cell_values.join(", "),
             );
+            transaction.pending_ai_researcher.remove(&sheet_pos);
             transaction.running_ai_researcher.insert(sheet_pos);
             transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
             self.transactions.add_async_transaction(transaction);
@@ -206,14 +253,17 @@ impl GridController {
         error: Option<String>,
     ) -> error_core::Result<()> {
         if let Ok(mut transaction) = self.transactions.remove_awaiting_async(transaction_id) {
-            transaction.running_ai_researcher.remove(&sheet_pos);
             transaction.current_sheet_pos = Some(sheet_pos);
+            transaction.cells_accessed.clear();
             if let Ok(ParsedAIResearcherCode { cells_accessed, .. }) =
                 self.parse_ai_researcher_code(sheet_pos.to_owned())
             {
                 transaction.cells_accessed = cells_accessed;
-            } else {
-                transaction.cells_accessed = HashSet::new();
+            }
+
+            transaction.running_ai_researcher.remove(&sheet_pos);
+            if transaction.running_ai_researcher.is_empty() {
+                transaction.waiting_for_async = None;
             }
 
             let result = match result {
@@ -240,15 +290,7 @@ impl GridController {
             };
 
             self.finalize_code_run(&mut transaction, sheet_pos, Some(new_code_run), None);
-            if transaction.running_ai_researcher.is_empty() {
-                transaction.waiting_for_async = None;
-            }
-
-            if transaction.pending_ai_researcher.is_empty()
-                && transaction.running_ai_researcher.is_empty()
-            {
-                self.send_ai_researcher_state(&transaction);
-            }
+            self.send_ai_researcher_state(&transaction);
 
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
