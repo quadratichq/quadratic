@@ -39,17 +39,25 @@ impl GridController {
 
             self.process_visible_dirty_hashes(transaction);
 
-            if transaction.has_async > 0 {
-                self.transactions.update_async_transaction(transaction);
-                break;
-            } else if transaction.operations.is_empty()
+            // try running pending ai researchers in parallel, only if there are no other operations
+            if transaction.operations.is_empty()
                 && !transaction.pending_ai_researcher.is_empty()
+                && transaction.has_async == transaction.running_ai_researcher.len() as i64
             {
                 self.run_ai_researcher_parallel(transaction);
+                // if there are still running ai researchers, break and wait for them to complete
                 if !transaction.running_ai_researcher.is_empty() {
+                    self.transactions.update_async_transaction(transaction);
                     break;
                 }
-            } else if let Some((sheet_id, rows)) = transaction
+            }
+            // if there are pending async calls, we need to wait for them to complete
+            else if transaction.has_async > 0 {
+                self.transactions.update_async_transaction(transaction);
+                break;
+            }
+            // try auto-resizing rows, when no other async calls are pending
+            else if let Some((sheet_id, rows)) = transaction
                 .resize_rows
                 .iter()
                 .next()
@@ -77,6 +85,7 @@ impl GridController {
                 );
                 // break only if async resize operation is being executed
                 if resizing {
+                    self.transactions.update_async_transaction(transaction);
                     break;
                 }
             }

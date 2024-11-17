@@ -122,6 +122,7 @@ impl GridController {
                     let mut referenced_cell_has_error = false;
                     let mut has_circular_reference = false;
                     let mut is_dependent = false;
+
                     let mut seen_code_cells = HashSet::new();
                     seen_code_cells.insert(sheet_pos.to_owned());
                     let mut cells_accessed_to_check = cells_accessed.iter().collect::<Vec<_>>();
@@ -201,7 +202,9 @@ impl GridController {
 
         // circular reference
         // the ai researcher cells are dependent on other ai researcher requests
-        if pending_ai_researcher == dependent_ai_researcher {
+        if pending_ai_researcher == dependent_ai_researcher
+            && transaction.running_ai_researcher.is_empty()
+        {
             let run_error = RunError {
                 span: None,
                 msg: RunErrorMsg::CircularReference,
