@@ -285,22 +285,24 @@ mod tests {
         assert!(borders.all.top.is_none());
         assert!(borders.all.bottom.is_none());
 
-        borders.set_borders_a1(
-            &A1Subspaces::All(sheet_id),
-            &RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1),
-        );
-        assert!(borders.all.left.is_some());
-        assert!(borders.all.right.is_some());
-        assert!(borders.all.top.is_some());
-        assert!(borders.all.bottom.is_some());
+        todo!();
 
-        borders.set_borders_a1(
-            &A1Subspaces::All(sheet_id),
-            &RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
-        );
-        assert!(borders.all.left.is_none());
-        assert!(borders.all.right.is_none());
-        assert!(borders.all.top.is_none());
-        assert!(borders.all.bottom.is_none());
+        // borders.set_borders_a1(
+        //     &A1Subspaces::All(sheet_id),
+        //     &RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1),
+        // );
+        // assert!(borders.all.left.is_some());
+        // assert!(borders.all.right.is_some());
+        // assert!(borders.all.top.is_some());
+        // assert!(borders.all.bottom.is_some());
+
+        // borders.set_borders_a1(
+        //     &A1Subspaces::All(sheet_id),
+        //     &RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
+        // );
+        // assert!(borders.all.left.is_none());
+        // assert!(borders.all.right.is_none());
+        // assert!(borders.all.top.is_none());
+        // assert!(borders.all.bottom.is_none());
     }
 }

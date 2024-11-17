@@ -527,7 +527,7 @@ mod test {
             BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
         selection::OldSelection,
-        CellValue, Pos, Rect, SheetPos, SheetRect,
+        Array, CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use serial_test::parallel;

@@ -1593,7 +1593,7 @@ mod test {
                     line_number: None,
                     output_type: None,
                 }),
-                cells_accessed: Some(vec![]),
+                cells_accessed: Some(Default::default()),
             },
             JsCodeCell {
                 x: 9,

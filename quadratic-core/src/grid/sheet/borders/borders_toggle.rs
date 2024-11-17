@@ -292,7 +292,7 @@ mod test {
         ));
 
         gc.set_borders_selection(
-            &OldSelection::all(sheet_id),
+            OldSelection::all(sheet_id),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -329,7 +329,7 @@ mod test {
         ));
 
         gc.set_borders_selection(
-            &OldSelection::columns(&[0, 1, 2], sheet_id),
+            OldSelection::columns(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -366,7 +366,7 @@ mod test {
         ));
 
         gc.set_borders_selection(
-            &OldSelection::rows(&[0, 1, 2], sheet_id),
+            OldSelection::rows(&[0, 1, 2], sheet_id),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -541,7 +541,7 @@ mod test {
 
         let style = BorderStyle::default();
         gc.set_borders_selection(
-            &OldSelection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
             BorderSelection::All,
             Some(style),
             None,

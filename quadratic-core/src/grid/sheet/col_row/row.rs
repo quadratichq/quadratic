@@ -7,7 +7,6 @@ use crate::{
         operations::operation::{CopyFormats, Operation},
     },
     grid::{formats::Formats, GridBounds, Sheet},
-    renderer_constants::CELL_SHEET_WIDTH,
     selection::OldSelection,
     Pos, Rect, SheetPos,
 };
@@ -141,7 +140,7 @@ impl Sheet {
         }
     }
 
-    pub fn delete_row_offset(&mut self, transaction: &mut PendingTransaction, row: i64) {
+    pub(crate) fn delete_row_offset(&mut self, transaction: &mut PendingTransaction, row: i64) {
         let (changed, new_size) = self.offsets.delete_row(row);
 
         if let Some(new_size) = new_size {
@@ -163,7 +162,7 @@ impl Sheet {
         }
     }
 
-    pub fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
+    pub(crate) fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
@@ -368,7 +367,7 @@ impl Sheet {
         }
     }
 
-    pub fn insert_row(
+    pub(crate) fn insert_row(
         &mut self,
         transaction: &mut PendingTransaction,
         row: i64,
@@ -486,7 +485,7 @@ mod test {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         sheet.delete_and_shift_values(1);
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
