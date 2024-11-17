@@ -213,7 +213,7 @@ mod tests {
         color::Rgba,
         controller::GridController,
         grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine},
-        selection::Selection,
+        selection::OldSelection,
         SheetRect,
     };
 
@@ -224,7 +224,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -244,7 +244,7 @@ mod tests {
         assert_eq!(bounds, None);
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(0, 0, 10, 10, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(0, 0, 10, 10, sheet_id)),
             BorderSelection::Outer,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -264,7 +264,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::Inner,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -284,7 +284,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::Top,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -304,7 +304,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::Right,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -324,7 +324,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::Left,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -344,7 +344,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::Bottom,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -365,7 +365,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::Horizontal,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -385,7 +385,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::Vertical,
             Some(BorderStyle {
                 color: Rgba::new(255, 0, 0, 255),
@@ -405,7 +405,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -431,7 +431,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
             BorderSelection::Left,
             Some(BorderStyle::default()),
             None,
@@ -456,7 +456,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 1, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 5, sheet_id)),
             BorderSelection::Right,
             Some(BorderStyle::default()),
             None,
@@ -481,7 +481,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,
@@ -506,7 +506,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
             BorderSelection::Bottom,
             Some(BorderStyle::default()),
             None,
@@ -532,7 +532,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
             BorderSelection::Left,
             Some(BorderStyle::default()),
             None,
@@ -562,7 +562,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
             BorderSelection::Right,
             Some(BorderStyle::default()),
             None,

@@ -4,6 +4,7 @@ pub use borders::{
     SheetBorders,
 };
 pub use bounds::GridBounds;
+pub use cells_accessed::*;
 pub use code_run::*;
 pub use column::{Column, ColumnData};
 pub use formatting::{
@@ -14,6 +15,7 @@ pub use formatting::{
 pub use ids::*;
 use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
+
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
@@ -24,6 +26,7 @@ use crate::{Array, Pos};
 mod block;
 mod borders;
 mod bounds;
+mod cells_accessed;
 mod code_run;
 mod column;
 pub mod file;
@@ -57,6 +60,7 @@ impl Grid {
         Grid { sheets: vec![] }
     }
 
+    /// Creates a grid for testing.
     pub fn test() -> Self {
         let mut ret = Grid::new_blank();
         let sheet = Sheet::test();

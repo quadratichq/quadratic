@@ -8,7 +8,7 @@ use validation::{Validation, ValidationDisplay, ValidationDisplaySheet};
 
 use crate::{
     controller::operations::operation::Operation, grid::js_types::JsRenderCellSpecial,
-    selection::Selection, Pos, Rect,
+    selection::OldSelection, Pos, Rect,
 };
 
 use super::Sheet;
@@ -55,7 +55,7 @@ impl Validations {
     }
 
     /// Gets a validation based on a Selection.
-    pub fn validation_selection(&self, selection: Selection) -> Option<&Validation> {
+    pub fn validation_selection(&self, selection: OldSelection) -> Option<&Validation> {
         self.validations.iter().find(|v| v.selection == selection)
     }
 
@@ -206,14 +206,14 @@ impl Validations {
 mod tests {
     use validation_rules::{validation_logical::ValidationLogical, ValidationRule};
 
-    use crate::{grid::SheetId, selection::Selection, Rect};
+    use crate::{grid::SheetId, selection::OldSelection, Rect};
 
     use super::*;
 
     fn create_validation_rect(x0: i64, y0: i64, x1: i64, y1: i64) -> Validation {
         Validation {
             id: Uuid::new_v4(),
-            selection: Selection::rect(Rect::new(x0, y0, x1, y1), SheetId::test()),
+            selection: OldSelection::rect(Rect::new(x0, y0, x1, y1), SheetId::test()),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -263,7 +263,7 @@ mod tests {
     fn validation_all() {
         let validation = Validation {
             id: Default::default(),
-            selection: Selection::all(SheetId::test()),
+            selection: OldSelection::all(SheetId::test()),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -304,7 +304,7 @@ mod tests {
     fn validation_columns() {
         let validation = Validation {
             id: Default::default(),
-            selection: Selection::columns(&[0, 1, 2], SheetId::test()),
+            selection: OldSelection::columns(&[0, 1, 2], SheetId::test()),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -345,7 +345,7 @@ mod tests {
     fn validation_rows() {
         let validation = Validation {
             id: Default::default(),
-            selection: Selection::rows(&[0, 1, 2], SheetId::test()),
+            selection: OldSelection::rows(&[0, 1, 2], SheetId::test()),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -410,7 +410,7 @@ mod tests {
             Some(&v)
         );
         assert_eq!(
-            validations.validation_selection(Selection::all(SheetId::test())),
+            validations.validation_selection(OldSelection::all(SheetId::test())),
             None
         );
     }

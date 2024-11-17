@@ -16,7 +16,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 function inCodeEditor(codeEditorState: CodeEditorState, cursor: SheetCursor): boolean {
   if (!codeEditorState.showCodeEditor) return false;
-  const cursorPosition = cursor.cursorPosition;
+  const cursorPosition = cursor.position;
   const selectedX = codeEditorState.codeCell.pos.x;
   const selectedY = codeEditorState.codeCell.pos.y;
 
@@ -40,7 +40,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
-  const cursorPosition = cursor.cursorPosition;
+  const cursorPosition = cursor.position;
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
 
   // Move cursor right, don't clear selection
@@ -126,12 +126,12 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   // Triggers Validation UI
   if (matchShortcut(Action.TriggerCell, event)) {
-    const p = sheets.sheet.cursor.cursorPosition;
+    const p = sheets.sheet.cursor.position;
     events.emit('triggerCell', p.x, p.y, true);
   }
 
   if (isAllowedFirstChar(event.key)) {
-    const cursorPosition = cursor.cursorPosition;
+    const cursorPosition = cursor.position;
     quadraticCore.getCodeCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y).then((code) => {
       // open code cell unless this is the actual code cell. In this case we can overwrite it
       if (code && (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)) {

@@ -469,7 +469,7 @@ class InlineEditorHandler {
 
     // Update Grid Interaction state, reset input value state
     if (deltaX || deltaY) {
-      const position = sheets.sheet.cursor.cursorPosition;
+      const position = sheets.sheet.cursor.position;
       sheets.sheet.cursor.changePosition({
         multiCursor: null,
         columnRow: null,

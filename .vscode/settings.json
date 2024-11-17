@@ -2,6 +2,7 @@
   "editor.formatOnSave": true,
   "cSpell.words": [
     "actix",
+    "ayush",
     "bigdecimal",
     "bincode",
     "bindgen",
@@ -35,6 +36,7 @@
     "peekable",
     "pixi",
     "pixiapp",
+    "Plotly",
     "pulumi",
     "pyimport",
     "rects",
@@ -57,7 +59,6 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
-  "rust-analyzer.runnables.extraEnv": { "CARGO_TARGET_DIR": "target/rust-analyzer" },
   "rust-analyzer.check.extraArgs": ["--target-dir=target/rust-analyzer"],
   "rust-analyzer.checkOnSave": true,
   "rust-analyzer.cargo.unsetTest": true,

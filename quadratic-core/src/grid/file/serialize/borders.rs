@@ -196,7 +196,7 @@ mod tests {
     use crate::{
         controller::GridController,
         grid::{BorderSelection, BorderStyle},
-        selection::Selection,
+        selection::OldSelection,
         SheetRect,
     };
 
@@ -209,7 +209,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 9, 9, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 9, 9, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,

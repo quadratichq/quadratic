@@ -36,6 +36,7 @@ pub use ext::*;
 pub use pos::*;
 pub use rect::*;
 pub use rle::RunLengthEncoding;
+pub use selection::OldSelection;
 pub use sheet_rect::*;
 pub use span::*;
 pub use values::*;

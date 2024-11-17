@@ -10,12 +10,12 @@ use crate::controller::GridController;
 use crate::grid::formats::format_update::FormatUpdate;
 use crate::grid::formats::Formats;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 
 impl GridController {
     pub(crate) fn clear_format(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let ops = self.clear_format_selection_operations(&selection);
@@ -25,7 +25,7 @@ impl GridController {
 
     pub(crate) fn set_align_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         align: CellAlign,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -43,7 +43,7 @@ impl GridController {
 
     pub(crate) fn set_vertical_align_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         vertical_align: CellVerticalAlign,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -61,7 +61,7 @@ impl GridController {
 
     pub(crate) fn set_bold_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         bold: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -79,7 +79,7 @@ impl GridController {
 
     pub(crate) fn set_italic_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         italic: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -97,7 +97,7 @@ impl GridController {
 
     pub(crate) fn set_cell_wrap_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         wrap: CellWrap,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -117,7 +117,7 @@ impl GridController {
     /// to 2.
     pub(crate) fn set_currency_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         symbol: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -139,7 +139,7 @@ impl GridController {
 
     pub(crate) fn set_numeric_format_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         kind: NumericFormatKind,
         symbol: Option<String>,
         cursor: Option<String>,
@@ -158,7 +158,7 @@ impl GridController {
 
     pub(crate) fn set_commas_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         commas: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -176,7 +176,7 @@ impl GridController {
 
     pub(crate) fn set_text_color_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         color: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -194,7 +194,7 @@ impl GridController {
 
     pub(crate) fn set_fill_color_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         color: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -212,7 +212,7 @@ impl GridController {
 
     pub(crate) fn remove_number_formatting_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let formats = Formats::repeat(
@@ -229,7 +229,7 @@ impl GridController {
 
     pub(crate) fn change_decimal_places_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         delta: u32,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -254,7 +254,7 @@ impl GridController {
 
     pub(crate) fn set_date_time_format(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         date_time: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -272,7 +272,7 @@ impl GridController {
 
     pub(crate) fn set_underline_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         underline: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -290,7 +290,7 @@ impl GridController {
 
     pub(crate) fn set_strike_through_selection(
         &mut self,
-        selection: Selection,
+        selection: OldSelection,
         strike_through: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -313,7 +313,7 @@ mod test {
 
     use crate::controller::GridController;
     use crate::grid::{CellWrap, StrikeThrough, Underline};
-    use crate::selection::Selection;
+    use crate::selection::OldSelection;
     use crate::{Pos, Rect};
 
     #[test]
@@ -322,7 +322,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_align_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -349,7 +349,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_vertical_align_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -376,7 +376,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_bold_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -400,7 +400,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_wrap_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -427,7 +427,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_currency_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -457,7 +457,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_numeric_format_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -488,7 +488,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_numeric_format_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -519,7 +519,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_commas_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -539,7 +539,7 @@ mod test {
         );
 
         gc.set_commas_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -565,7 +565,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_italic_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -589,7 +589,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_text_color_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -616,7 +616,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_fill_color_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -645,7 +645,7 @@ mod test {
 
         // normal case
         gc.change_decimal_places_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -672,7 +672,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_underline_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -699,7 +699,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_strike_through_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -726,7 +726,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_text_color_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -747,7 +747,7 @@ mod test {
         );
 
         gc.clear_format(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -770,7 +770,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_text_color_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -788,7 +788,7 @@ mod test {
         assert_eq!(sheet.format_column(0).text_color, Some("red".to_string()));
 
         gc.clear_format(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,
@@ -812,7 +812,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_fill_color_selection(
-            Selection {
+            OldSelection {
                 sheet_id,
                 rows: Some(vec![0, 2]),
                 columns: Some(vec![1]),
@@ -835,7 +835,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_date_time_format(
-            Selection {
+            OldSelection {
                 sheet_id,
                 x: 0,
                 y: 0,

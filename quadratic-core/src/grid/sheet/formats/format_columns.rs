@@ -6,7 +6,7 @@ use crate::{
         formats::{format::Format, format_update::FormatUpdate, Formats},
         CellWrap, Sheet,
     },
-    selection::Selection,
+    selection::OldSelection,
     Pos, Rect,
 };
 use std::collections::{HashMap, HashSet};
@@ -93,7 +93,7 @@ impl Sheet {
 
                     // track all cells within the columns that need to have
                     // their format updated to remove the conflicting format
-                    self.format_selection(&Selection {
+                    self.format_selection(&OldSelection {
                         sheet_id: self.id,
                         columns: Some(vec![*x]),
                         ..Default::default()
@@ -131,7 +131,7 @@ impl Sheet {
         // adds operations to revert changes to the columns
         let mut ops = vec![];
         ops.push(Operation::SetCellFormatsSelection {
-            selection: Selection {
+            selection: OldSelection {
                 sheet_id: self.id,
                 columns: Some(columns.to_vec()),
                 ..Default::default()
@@ -150,7 +150,7 @@ impl Sheet {
                 formats.push(old);
             }
             ops.push(Operation::SetCellFormatsSelection {
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: self.id,
                     rects: Some(rects),
                     ..Default::default()
@@ -272,7 +272,7 @@ mod tests {
             } => {
                 assert_eq!(
                     selection,
-                    &Selection {
+                    &OldSelection {
                         sheet_id: sheet.id,
                         columns: Some(columns.clone()),
                         ..Default::default()
@@ -330,7 +330,7 @@ mod tests {
             } => {
                 assert_eq!(
                     selection,
-                    &Selection {
+                    &OldSelection {
                         sheet_id: sheet.id,
                         rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]),
                         ..Default::default()
@@ -372,7 +372,7 @@ mod tests {
                 ..Default::default()
             },
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         assert_eq!(
             sheet.format_cell(0, 0, false).fill_color,
             Some("red".to_string())

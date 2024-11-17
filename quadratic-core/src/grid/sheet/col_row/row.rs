@@ -7,7 +7,8 @@ use crate::{
         operations::operation::{CopyFormats, Operation},
     },
     grid::{formats::Formats, GridBounds, Sheet},
-    selection::Selection,
+    renderer_constants::CELL_SHEET_WIDTH,
+    selection::OldSelection,
     Pos, Rect, SheetPos,
 };
 
@@ -42,7 +43,7 @@ impl Sheet {
     /// Creates reverse operations for cell formatting within the row.
     fn reverse_formats_ops_for_row(&self, row: i64) -> Vec<Operation> {
         let mut formats = Formats::new();
-        let mut selection = Selection::new(self.id);
+        let mut selection = OldSelection::new(self.id);
 
         if let Some(format) = self.try_format_row(row) {
             selection.rows = Some(vec![row]);
@@ -72,10 +73,11 @@ impl Sheet {
             .enumerate()
             .for_each(|(index, (pos, code_run))| {
                 if pos.y == row {
-                    reverse_operations.push(Operation::SetCodeRun {
+                    reverse_operations.push(Operation::SetCodeRunVersion {
                         sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
                         code_run: Some(code_run.clone()),
                         index,
+                        version: 1,
                     });
                 }
             });
@@ -461,7 +463,7 @@ mod test {
     use serial_test::parallel;
 
     use crate::{
-        controller::execution::TransactionType,
+        controller::execution::TransactionSource,
         grid::{
             formats::{format::Format, format_update::FormatUpdate},
             BorderStyle, CellBorderLine, CellWrap,
@@ -557,10 +559,10 @@ mod test {
             ),
         );
 
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
 
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             ..Default::default()
         };
         sheet.delete_row(&mut transaction, 1);
@@ -612,7 +614,7 @@ mod test {
         );
         sheet.test_set_code_run_array(4, 1, vec!["A", "B"], false);
 
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
 
         let mut transaction = PendingTransaction::default();
 

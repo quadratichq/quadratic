@@ -32,12 +32,13 @@ export const useHtmlValidations = (): HtmlValidationsData => {
   // Change in cursor position triggers update of validation
   useEffect(() => {
     const updateCursor = async () => {
-      if (sheets.sheet.cursor.multiCursor) {
+      if (sheets.sheet.cursor.isMultiCursor()) {
         setValidation(undefined);
         setValidationType('');
         return;
       }
-      const { x, y } = sheets.sheet.cursor.cursorPosition;
+      const { x, y } = sheets.sheet.cursor.position;
+      setLocation({ x, y });
       const validation = await quadraticCore.getValidationFromPos(sheets.sheet.id, x, y);
 
       if (!validation) {

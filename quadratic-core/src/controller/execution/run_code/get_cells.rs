@@ -1,7 +1,7 @@
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::{controller::GridController, error_core::CoreError, Rect, RunError, RunErrorMsg, A1};
+use crate::{controller::GridController, error_core::CoreError, Rect, RunError, RunErrorMsg};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -96,7 +96,7 @@ impl GridController {
 
         transaction
             .cells_accessed
-            .insert(rect.to_sheet_rect(sheet.id));
+            .add_sheet_rect(rect.to_sheet_rect(sheet.id));
 
         self.transactions.add_async_transaction(&mut transaction);
 
@@ -106,7 +106,7 @@ impl GridController {
     pub fn calculation_get_cells_a1(
         &mut self,
         transaction_id: String,
-        a1: String,
+        original_a1: String,
         line_number: Option<u32>,
     ) -> Result<CellA1Response, CoreError> {
         let transaction_id = Uuid::parse_str(&transaction_id)
@@ -124,75 +124,78 @@ impl GridController {
             ))?
             .sheet_id;
 
-        let a1 = A1::to_cells(&a1)?;
+        todo!("A1 string to cells (resolve infinite things to finite rect)")
 
-        // if sheet_name is None, use the sheet_id from the pos
-        let sheet = if let Some(sheet_name) = a1.sheet_name.as_ref() {
-            if let Some(sheet) = self.try_sheet_from_name(sheet_name.clone()) {
-                sheet
-            } else {
-                // unable to find sheet by name, generate error
-                let mut msg = format!("Sheet '{}' not found", sheet_name);
-                if let Some(line_number) = line_number {
-                    msg = format!("{} at line {}", msg, line_number);
-                }
-                let run_error = RunError {
-                    span: None,
-                    msg: RunErrorMsg::CodeRunError(msg.clone().into()),
-                };
-                let error = match self.code_cell_sheet_error(&mut transaction, &run_error) {
-                    Ok(_) => CoreError::CodeCellSheetError(msg.to_owned()),
-                    Err(err) => err,
-                };
+        // let a1 = A1::to_cells(&original_a1)?;
 
-                self.start_transaction(&mut transaction);
-                self.finalize_transaction(transaction);
+        // // if sheet_name is None, use the sheet_id from the pos
+        // let sheet = if let Some(sheet_name) = a1.sheet_name.as_ref() {
+        //     if let Some(sheet) = self.try_sheet_from_name(sheet_name.clone()) {
+        //         sheet
+        //     } else {
+        //         // unable to find sheet by name, generate error
+        //         let mut msg = format!("Sheet '{}' not found", sheet_name);
+        //         if let Some(line_number) = line_number {
+        //             msg = format!("{} at line {}", msg, line_number);
+        //         }
+        //         let run_error = RunError {
+        //             span: None,
+        //             msg: RunErrorMsg::CodeRunError(msg.clone().into()),
+        //         };
+        //         let error = match self.code_cell_sheet_error(&mut transaction, &run_error) {
+        //             Ok(_) => CoreError::CodeCellSheetError(msg.to_owned()),
+        //             Err(err) => err,
+        //         };
 
-                return Err(error);
-            }
-        } else if let Some(sheet) = self.try_sheet(current_sheet) {
-            sheet
-        } else {
-            self.start_transaction(&mut transaction);
-            self.finalize_transaction(transaction);
-            return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
-        };
+        //         self.start_transaction(&mut transaction);
+        //         self.finalize_transaction(transaction);
 
-        if !transaction.is_user_undo_redo() {
-            // this should only be called for a user transaction
-            return Err(CoreError::TransactionNotFound(
-                "getCells can only be called for user / undo-redo transaction".to_string(),
-            ));
-        }
+        //         return Err(error);
+        //     }
+        // } else if let Some(sheet) = self.try_sheet(current_sheet) {
+        //     sheet
+        // } else {
+        //     self.start_transaction(&mut transaction);
+        //     self.finalize_transaction(transaction);
+        //     return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
+        // };
 
-        let rect = sheet.a1_cells_rect(a1);
+        // if !transaction.is_user_undo_redo() {
+        //     // this should only be called for a user transaction
+        //     return Err(CoreError::TransactionNotFound(
+        //         "getCells can only be called for user / undo-redo transaction".to_string(),
+        //     ));
+        // }
 
-        let response = if let Some(rect) = rect {
-            let cells = sheet.get_cells_response(rect);
+        // let rect = sheet.a1_cells_rect(a1);
 
-            transaction
-                .cells_accessed
-                .insert(rect.to_sheet_rect(sheet.id));
-            CellA1Response {
-                cells,
-                x: rect.min.x as i64,
-                y: rect.min.y as i64,
-                w: rect.width() as i64,
-                h: rect.height() as i64,
-            }
-        } else {
-            CellA1Response {
-                cells: vec![],
-                x: 1,
-                y: 1,
-                w: 0,
-                h: 0,
-            }
-        };
+        // // we don't need the sheet_name from here because we already parsed it above
+        // let (a1_range_type, _) = A1::to_a1_range_type(&original_a1)?;
+        // transaction.cells_accessed.add(sheet.id, a1_range_type);
 
-        self.transactions.add_async_transaction(&mut transaction);
+        // let response = if let Some(rect) = rect {
+        //     let cells = sheet.get_cells_response(rect);
 
-        Ok(response)
+        //     CellA1Response {
+        //         cells,
+        //         x: rect.min.x as i64,
+        //         y: rect.min.y as i64,
+        //         w: rect.width() as i64,
+        //         h: rect.height() as i64,
+        //     }
+        // } else {
+        //     CellA1Response {
+        //         cells: vec![],
+        //         x: 1,
+        //         y: 1,
+        //         w: 0,
+        //         h: 0,
+        //     }
+        // };
+
+        // self.transactions.add_async_transaction(&mut transaction);
+
+        // Ok(response)
     }
 }
 

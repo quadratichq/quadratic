@@ -227,7 +227,7 @@ mod tests {
     use serial_test::serial;
 
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
-    use crate::selection::Selection;
+    use crate::selection::OldSelection;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
     use crate::CellValue;
 
@@ -244,7 +244,7 @@ mod tests {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: OldSelection::pos(0, 0, sheet_id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
@@ -284,7 +284,7 @@ mod tests {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: OldSelection::pos(0, 0, sheet_id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),

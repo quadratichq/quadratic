@@ -10,7 +10,6 @@ import { isMac } from '@/shared/utils/isMac';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
-import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
@@ -77,6 +76,7 @@ export class PointerHeading {
 
     // exit out of inline editor
     inlineEditorHandler.closeIfOpen();
+    const cursor = sheets.sheet.cursor;
 
     const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
     const headingResize = !hasPermission ? undefined : headings.intersectsHeadingGridLine(world);
@@ -111,7 +111,7 @@ export class PointerHeading {
           this.downTimeout = undefined;
           zoomToFit();
         } else {
-          selectAllCells();
+          cursor.selectAll();
           this.downTimeout = window.setTimeout(() => {
             if (this.downTimeout) {
               this.downTimeout = undefined;
@@ -119,8 +119,6 @@ export class PointerHeading {
           }, DOUBLE_CLICK_TIME);
         }
       }
-
-      const cursor = sheets.sheet.cursor;
 
       // Selects multiple columns or rows. If ctrl/meta is pressed w/o shift,
       // then it add or removes the clicked column or row. If shift is pressed,
@@ -130,75 +128,77 @@ export class PointerHeading {
         (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
       if (event.ctrlKey || event.metaKey || isRightClick) {
         if (intersects.column !== null) {
-          let column = intersects.column;
-          const columns = cursor.columnRow?.columns || [];
-          if (event.shiftKey) {
-            if (columns.length === 0) {
-              selectColumns([column], undefined, true);
-            } else {
-              const lastColumn = columns[columns.length - 1];
-              if (lastColumn < column) {
-                selectColumns([...columns, ...fillArray(lastColumn + 1, column)], undefined, true);
-              } else {
-                selectColumns([...columns, ...fillArray(column, lastColumn - 1)], undefined, true);
-              }
-            }
-          } else {
-            if (columns.includes(column)) {
-              if (isRightClick) {
-                events.emit('gridContextMenu', world, column, null);
-              } else {
-                selectColumns(
-                  columns.filter((c) => c !== column),
-                  undefined,
-                  true
-                );
-              }
-            } else {
-              if (isRightClick) {
-                selectColumns([column], undefined, true);
-                // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('gridContextMenu', world, column, null));
-              } else {
-                selectColumns([...columns, column], undefined, true);
-              }
-            }
-          }
+          throw new Error('todo');
+          // let column = intersects.column;
+          // const columns = cursor.columnRow?.columns || [];
+          // if (event.shiftKey) {
+          //   if (columns.length === 0) {
+          //     selectColumns([column], undefined, true);
+          //   } else {
+          //     const lastColumn = columns[columns.length - 1];
+          //     if (lastColumn < column) {
+          //       selectColumns([...columns, ...fillArray(lastColumn + 1, column)], undefined, true);
+          //     } else {
+          //       selectColumns([...columns, ...fillArray(column, lastColumn - 1)], undefined, true);
+          //     }
+          //   }
+          // } else {
+          //   if (columns.includes(column)) {
+          //     if (isRightClick) {
+          //       events.emit('gridContextMenu', world, column, null);
+          //     } else {
+          //       selectColumns(
+          //         columns.filter((c) => c !== column),
+          //         undefined,
+          //         true
+          //       );
+          //     }
+          //   } else {
+          //     if (isRightClick) {
+          //       selectColumns([column], undefined, true);
+          //       // need the timeout to allow the cursor events to complete
+          //       setTimeout(() => events.emit('gridContextMenu', world, column, null));
+          //     } else {
+          //       selectColumns([...columns, column], undefined, true);
+          //     }
+          //   }
+          // }
         } else if (intersects.row !== null) {
-          let row = intersects.row;
-          const rows = cursor.columnRow?.rows || [];
-          if (event.shiftKey) {
-            if (rows.length === 0) {
-              selectRows([row], undefined, true);
-            } else {
-              const lastRow = rows[rows.length - 1];
-              if (lastRow < row) {
-                selectRows([...rows, ...fillArray(lastRow + 1, row)], undefined, true);
-              } else {
-                selectRows([...rows, ...fillArray(row, lastRow - 1)], undefined, true);
-              }
-            }
-          } else {
-            if (rows.includes(row)) {
-              if (isRightClick) {
-                events.emit('gridContextMenu', world, null, row);
-              } else {
-                selectRows(
-                  rows.filter((c) => c !== row),
-                  undefined,
-                  true
-                );
-              }
-            } else {
-              if (isRightClick) {
-                selectRows([row], undefined, true);
-                // need the timeout to allow the cursor events to complete
-                setTimeout(() => events.emit('gridContextMenu', world, null, row));
-              } else {
-                selectRows([...rows, row], undefined, true);
-              }
-            }
-          }
+          throw new Error('todo');
+          // let row = intersects.row;
+          // const rows = cursor.columnRow?.rows || [];
+          // if (event.shiftKey) {
+          //   if (rows.length === 0) {
+          //     selectRows([row], undefined, true);
+          //   } else {
+          //     const lastRow = rows[rows.length - 1];
+          //     if (lastRow < row) {
+          //       selectRows([...rows, ...fillArray(lastRow + 1, row)], undefined, true);
+          //     } else {
+          //       selectRows([...rows, ...fillArray(row, lastRow - 1)], undefined, true);
+          //     }
+          //   }
+          // } else {
+          //   if (rows.includes(row)) {
+          //     if (isRightClick) {
+          //       events.emit('gridContextMenu', world, null, row);
+          //     } else {
+          //       selectRows(
+          //         rows.filter((c) => c !== row),
+          //         undefined,
+          //         true
+          //       );
+          //     }
+          //   } else {
+          //     if (isRightClick) {
+          //       selectRows([row], undefined, true);
+          //       // need the timeout to allow the cursor events to complete
+          //       setTimeout(() => events.emit('gridContextMenu', world, null, row));
+          //     } else {
+          //       selectRows([...rows, row], undefined, true);
+          //     }
+          //   }
+          // }
         }
       }
 
@@ -207,23 +207,23 @@ export class PointerHeading {
       // current one.
       else if (event.shiftKey) {
         if (intersects.column !== null) {
-          let x1 = cursor.cursorPosition.x;
+          let x1 = cursor.position.x;
           let x2 = intersects.column;
-          selectColumns(fillArray(x1, x2), x1);
+          cursor.selectColumns(fillArray(x1, x2), x1);
         } else if (intersects.row !== null) {
-          let y1 = cursor.cursorPosition.y;
+          let y1 = cursor.position.y;
           let y2 = intersects.row;
-          selectRows(fillArray(y1, y2), y1);
+          cursor.selectRows(fillArray(y1, y2), y1);
         }
       }
 
       // Otherwise, it selects the column/row.
       else {
         if (intersects.column !== null) {
-          selectColumns([intersects.column]);
+          cursor.selectColumns([intersects.column]);
           // check if we're trying to open the context menu
         } else if (intersects.row !== null) {
-          selectRows([intersects.row]);
+          cursor.selectRows([intersects.row]);
         }
       }
     }

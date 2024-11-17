@@ -19,10 +19,12 @@ impl SheetSchema {
     pub fn into_latest(self) -> Result<Sheet> {
         match self {
             SheetSchema::V1_7_1(sheet) => super::serialize::sheets::import_sheet(sheet),
-            SheetSchema::V1_7(sheet) => super::serialize::sheets::import_sheet(sheet),
-            SheetSchema::V1_6(sheet) => {
-                super::serialize::sheets::import_sheet(v1_6::file::upgrade_sheet(sheet)?)
+            SheetSchema::V1_7(sheet) => {
+                super::serialize::sheets::import_sheet(v1_7::upgrade_sheet(sheet))
             }
+            SheetSchema::V1_6(sheet) => super::serialize::sheets::import_sheet(
+                v1_7::upgrade_sheet(v1_6::file::upgrade_sheet(sheet)?),
+            ),
         }
     }
 }
@@ -43,7 +45,7 @@ mod test {
     fn test_export_sheet() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value((0, 0).into(), "Hello, world!".to_string());
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         let schema = export_sheet(sheet.clone());
         let imported = schema.into_latest().unwrap();
         assert_eq!(sheet, imported);

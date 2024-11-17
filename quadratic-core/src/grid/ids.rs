@@ -10,6 +10,8 @@ use uuid::Uuid;
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
+// TODO: someday change this to `SheetId(Uuid)` to make TS access easier.
+// warning: this would break a LOT of code.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct SheetId {
@@ -44,9 +46,12 @@ impl Display for SheetId {
 }
 
 impl SheetId {
+    /// Sheet ID for testing.
+    #[cfg(test)]
+    pub const TEST: Self = Self { id: Uuid::nil() };
+
+    /// **Deprecated** Nov 2024 in favor of [`SheetId::TEST`].
     pub fn test() -> Self {
-        Self {
-            id: Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
-        }
+        Self { id: Uuid::nil() }
     }
 }

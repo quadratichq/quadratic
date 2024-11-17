@@ -4,11 +4,12 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
+use super::cells_accessed::JsCellsAccessed;
 use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
-use crate::{Pos, SheetPos, SheetRect};
+use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -184,8 +185,7 @@ pub struct JsReturnInfo {
     pub output_type: Option<String>,
 }
 
-#[derive(Serialize, PartialEq, Debug)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, PartialEq, Debug, TS)]
 pub struct JsCodeCell {
     pub x: i64,
     pub y: i64,
@@ -196,7 +196,7 @@ pub struct JsCodeCell {
     pub evaluation_result: Option<String>,
     pub spill_error: Option<Vec<Pos>>,
     pub return_info: Option<JsReturnInfo>,
-    pub cells_accessed: Option<Vec<SheetRect>>,
+    pub cells_accessed: Option<JsCellsAccessed>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

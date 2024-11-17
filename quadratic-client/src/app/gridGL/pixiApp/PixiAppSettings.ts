@@ -197,8 +197,8 @@ class PixiAppSettings {
       pixiApp.cellsSheets.showLabel(this._input.x, this._input.y, this._input.sheetId, true);
     }
     if (input === true) {
-      const x = sheets.sheet.cursor.cursorPosition.x;
-      const y = sheets.sheet.cursor.cursorPosition.y;
+      const x = sheets.sheet.cursor.position.x;
+      const y = sheets.sheet.cursor.position.y;
       if (multiplayer.cellIsBeingEdited(x, y, sheets.sheet.id)) {
         this._input = { show: false };
       } else {

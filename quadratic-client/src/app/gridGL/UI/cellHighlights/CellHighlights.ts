@@ -7,6 +7,7 @@ import { Coordinate } from '@/app/gridGL/types/size';
 import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import { CellPosition, ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
+import { JsCellsAccessed } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 
@@ -213,6 +214,18 @@ export class CellHighlights extends Container {
           throw new Error('Unsupported cell-ref in fromFormula');
       }
     });
+    pixiApp.cellHighlights.dirty = true;
+  }
+
+  fromCellsAccessed(cellsAccessed: JsCellsAccessed, cell: Coordinate, sheet: string) {
+    this.highlightedCells = [];
+    for (const sheetId in cellsAccessed.cells) {
+      if (sheetId === sheet) {
+        cellsAccessed.cells[sheetId].forEach((cell: any) => {
+          throw new Error('todo');
+        });
+      }
+    }
     pixiApp.cellHighlights.dirty = true;
   }
 

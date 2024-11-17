@@ -41,7 +41,7 @@ pub enum CellValue {
     Number(BigDecimal),
     /// Logical value.
     Logical(bool),
-    /// Instant in time. TODO: remove
+    /// **Deprecated** Nov 2024 in favor of `DateTime`.
     #[cfg_attr(test, proptest(skip))]
     Instant(Instant),
     // Date + time.
@@ -119,12 +119,12 @@ impl CellValue {
             CellValue::Number(n) => n.to_string(),
             CellValue::Logical(true) => "TRUE".to_string(),
             CellValue::Logical(false) => "FALSE".to_string(),
-            CellValue::Instant(_) => todo!("repr of Instant"),
+            CellValue::Instant(_) => "[deprecated]".to_string(),
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
-            CellValue::Code(_) => todo!("repr of code"),
-            CellValue::Image(_) => todo!("repr of image"),
+            CellValue::Code(_) => "[code cell]".to_string(),
+            CellValue::Image(_) => "[image]".to_string(),
             CellValue::Date(d) => d.to_string(),
             CellValue::Time(d) => d.to_string(),
             CellValue::DateTime(d) => d.to_string(),

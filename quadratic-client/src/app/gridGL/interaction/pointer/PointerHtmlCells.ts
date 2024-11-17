@@ -84,7 +84,7 @@ export class PointerHtmlCells {
       // select code cell, move chart to top and start double click timer
       if (target === 'body') {
         const cursor = sheets.sheet.cursor;
-        const cursorPosition = cursor.cursorPosition;
+        const cursorPosition = cursor.position;
         // double click
         if (this.clicked === cell) {
           this.clicked = undefined;

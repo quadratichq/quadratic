@@ -1,4 +1,4 @@
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 
 use super::{BorderStyleCell, BorderStyleCellUpdates, Borders};
 
@@ -6,7 +6,7 @@ impl Borders {
     /// Prepares borders within the selection for copying to the clipboard.
     ///
     /// Returns `None` if there are no borders to copy.
-    pub fn to_clipboard(&self, selection: &Selection) -> Option<BorderStyleCellUpdates> {
+    pub fn to_clipboard(&self, selection: &OldSelection) -> Option<BorderStyleCellUpdates> {
         let mut updates = BorderStyleCellUpdates::default();
 
         if selection.all {
@@ -65,7 +65,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 10, 10, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 10, 10, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -74,7 +74,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let copy = sheet
             .borders
-            .to_clipboard(&Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)));
+            .to_clipboard(&OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)));
 
         dbg!(&copy);
     }
@@ -86,7 +86,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -95,7 +95,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let copy = sheet
             .borders
-            .to_clipboard(&Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)))
+            .to_clipboard(&OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)))
             .unwrap();
 
         assert_eq!(copy.size(), 1);

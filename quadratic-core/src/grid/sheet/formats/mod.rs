@@ -5,8 +5,9 @@ use crate::{
         operation::Operation,
     },
     grid::formats::{format::Format, format_update::FormatUpdate, Formats},
-    selection::Selection,
-    Pos,
+    grid::SheetId,
+    selection::OldSelection,
+    A1Subspaces, Pos,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -62,7 +63,7 @@ impl Sheet {
 
     pub fn set_formats_selection(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
         formats: &Formats,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         if selection.all {
@@ -93,10 +94,45 @@ impl Sheet {
         }
     }
 
+    pub fn set_formats_a1(
+        &mut self,
+        sheet_id: SheetId,
+        subspaces: &A1Subspaces,
+        formats: &Formats,
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
+        // if selection.all {
+        //     self.set_format_all(formats)
+        // } else {
+        //     let mut ops = vec![];
+        //     let mut dirty_hashes = HashSet::new();
+        //     let mut resize = HashSet::new();
+        //     if let Some(columns) = selection.columns.as_ref() {
+        //         let (operations, hashes, resize_rows) = self.set_formats_columns(columns, formats);
+        //         ops.extend(operations);
+        //         dirty_hashes.extend(hashes);
+        //         resize.extend(resize_rows);
+        //     }
+        //     if let Some(rows) = selection.rows.as_ref() {
+        //         let (operations, hashes, resize_rows) = self.set_formats_rows(rows, formats);
+        //         ops.extend(operations);
+        //         dirty_hashes.extend(hashes);
+        //         resize.extend(resize_rows);
+        //     }
+        //     if let Some(rects) = selection.rects.as_ref() {
+        //         let (operations, hashes, resize_rows) = self.set_formats_rects(rects, formats);
+        //         ops.extend(operations);
+        //         dirty_hashes.extend(hashes);
+        //         resize.extend(resize_rows);
+        //     }
+        //     (ops, dirty_hashes, resize)
+        // }
+        todo!("todo todo todo")
+    }
+
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.
     pub fn sheet_formats(
         &self,
-        selection: &Selection,
+        selection: &OldSelection,
         clipboard_origin: &ClipboardOrigin,
     ) -> ClipboardSheetFormats {
         if selection.all {
@@ -142,7 +178,7 @@ mod tests {
             formats::{format::Format, format_update::FormatUpdate, Formats},
             sheet,
         },
-        selection::Selection,
+        selection::OldSelection,
     };
     use serial_test::parallel;
 
@@ -170,7 +206,7 @@ mod tests {
                 2,
             ),
         );
-        let selection = Selection {
+        let selection = OldSelection {
             columns: Some(vec![2]),
             rows: Some(vec![2]),
             ..Default::default()
@@ -190,7 +226,7 @@ mod tests {
         ));
         // note that columns and rows are ignored when all is true
         let formats = sheet.sheet_formats(
-            &Selection {
+            &OldSelection {
                 all: true,
                 rows: Some(vec![2]),
                 columns: Some(vec![2]),

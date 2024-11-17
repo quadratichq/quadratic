@@ -33,7 +33,7 @@ export const insertCellRef = (
       });
       ref = `${sheet}${coords}`;
     } else {
-      const location = cursor.cursorPosition;
+      const location = cursor.position;
       const a1Notation = getA1Notation(location.x, location.y);
       if (sheet) {
         ref = `'${sheet}'!${a1Notation}`;
@@ -63,7 +63,7 @@ export const insertCellRef = (
         }
       }
     } else {
-      const location = cursor.cursorPosition;
+      const location = cursor.position;
       if (sheet) {
         ref = `cell(${location.x}, ${location.y}, '${sheet}')`;
       } else {
@@ -97,7 +97,7 @@ export const insertCellRef = (
         }
       }
     } else {
-      const location = cursor.cursorPosition;
+      const location = cursor.position;
       if (sheet) {
         ref = `cell(${location.x}, ${location.y}, '${sheet}')`;
       } else {
@@ -109,7 +109,7 @@ export const insertCellRef = (
       }
     }
   } else if (language === 'Connection') {
-    const location = cursor.cursorPosition;
+    const location = cursor.position;
     let sheetRef = sheet ? (sheet.includes(' ') || sheet.includes('!') ? `'${sheet}'!` : `${sheet}!`) : '';
     if (relative) {
       ref = `{{${sheetRef}${posToA1(location.x, location.y)}}}`;

@@ -1,7 +1,7 @@
 use crate::{
+    formulas::CellRef,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    A1,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -26,11 +26,11 @@ use wasm_bindgen::prelude::*;
 )]
 pub struct Pos {
     /// Column
-    #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
+    #[cfg_attr(test, proptest(strategy = "crate::a1::PROPTEST_COORDINATE_I64"))]
     pub x: i64,
 
     /// Row
-    #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
+    #[cfg_attr(test, proptest(strategy = "crate::a1::PROPTEST_COORDINATE_I64"))]
     pub y: i64,
     //
     // We use a small range for proptest because most tests want to see what
@@ -66,18 +66,17 @@ impl Pos {
         self.y = self.y.div_euclid(CELL_SHEET_HEIGHT as _);
     }
 
-    /// Returns an A1-style reference to the cell position.
+    /// Returns an A1-style relative reference to the cell position.
     pub fn a1_string(self) -> String {
-        let col = crate::util::column_name(self.x);
-        if self.y < 0 {
-            format!("{col}n{}", -self.y)
-        } else {
-            format!("{col}{}", self.y)
-        }
+        let col = crate::a1::column_name(self.x as u64);
+        let row = self.y;
+        format!("{col}{row}")
     }
 
+    // TODO: rename this method (`from_str`?)
     pub fn try_a1_string(a1: &str) -> Option<Self> {
-        A1::try_from_pos(a1)
+        let base = pos![A1];
+        Some(CellRef::parse_a1(a1, base)?.resolve_from(base))
     }
 }
 
@@ -97,13 +96,6 @@ impl From<SheetPos> for Pos {
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
-    }
-}
-
-#[cfg(test)]
-impl From<&str> for Pos {
-    fn from(s: &str) -> Self {
-        crate::A1::try_from_pos(s).unwrap()
     }
 }
 
@@ -299,13 +291,6 @@ mod test {
     fn pos_new() {
         let pos = Pos::new(1, 2);
         assert_eq!(pos, Pos { x: 1, y: 2 });
-    }
-
-    #[test]
-    #[parallel]
-    fn pos_from_str() {
-        assert_eq!(Pos::from("A1"), Pos { x: 1, y: 1 });
-        assert_eq!(Pos::from("d5"), Pos { x: 4, y: 5 });
     }
 
     #[test]

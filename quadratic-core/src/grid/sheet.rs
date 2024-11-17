@@ -18,8 +18,9 @@ use super::js_types::{
 };
 use super::resize::ResizeMap;
 use super::{CellWrap, CodeRun, NumericFormatKind};
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 use crate::sheet_offsets::SheetOffsets;
+use crate::{A1Selection, CellRefRange};
 use crate::{Array, CellValue, Pos, Rect};
 
 pub mod borders;
@@ -67,6 +68,9 @@ pub struct Sheet {
     // Column/Row, and All formatting. The second tuple stores the timestamp for
     // the fill_color, which is used to determine the z-order for overlapping
     // column and row fills.
+    //
+    // TODO: newtype for timestamp, or change this to an infinite range along
+    // the column
     #[serde(
         skip_serializing_if = "BTreeMap::is_empty",
         with = "crate::util::btreemap_serde"
@@ -87,7 +91,7 @@ pub struct Sheet {
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
 
-    // bounds for the gird with only formatting
+    // bounds for the grid with only formatting
     pub(super) format_bounds: GridBounds,
 
     pub(super) rows_resize: ResizeMap,
@@ -124,7 +128,7 @@ impl Sheet {
         }
     }
 
-    // creates a Sheet for testing
+    /// Creates a sheet for testing.
     pub fn test() -> Self {
         Sheet::new(SheetId::test(), String::from("Sheet 1"), String::from("a0"))
     }
@@ -361,6 +365,29 @@ impl Sheet {
         let column = self.get_column(pos.x)?;
         A::column_data_ref(column).get(pos.y)
     }
+    /// Returns all formatting properties of a cell.
+    #[cfg(test)]
+    pub fn get_cell_formatting(&self, pos: Pos) -> Format {
+        let Some(column) = self.get_column(pos.x) else {
+            return Format::default();
+        };
+        Format {
+            align: column.align.get(pos.y),
+            vertical_align: column.vertical_align.get(pos.y),
+            wrap: column.wrap.get(pos.y),
+            numeric_format: column.numeric_format.get(pos.y),
+            numeric_decimals: column.numeric_decimals.get(pos.y),
+            numeric_commas: column.numeric_commas.get(pos.y),
+            bold: column.bold.get(pos.y),
+            italic: column.italic.get(pos.y),
+            text_color: column.text_color.get(pos.y),
+            fill_color: column.fill_color.get(pos.y),
+            render_size: column.render_size.get(pos.y),
+            date_time: column.date_time.get(pos.y),
+            underline: column.underline.get(pos.y),
+            strike_through: column.strike_through.get(pos.y),
+        }
+    }
 
     /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
@@ -504,6 +531,7 @@ impl Sheet {
         }
     }
 
+    // TODO: take `Pos` instead of x,y
     pub fn check_if_wrap_in_cell(&self, x: i64, y: i64) -> bool {
         let value: Option<CellValue> = self.cell_value(Pos { x, y });
         let format = self.format_cell(x, y, true);
@@ -552,7 +580,7 @@ impl Sheet {
         rows
     }
 
-    pub fn get_rows_with_wrap_in_selection(&self, selection: &Selection) -> Vec<i64> {
+    pub fn get_rows_with_wrap_in_selection(&self, selection: &OldSelection) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         if selection.all {
             let bounds = self.bounds(true);
@@ -583,9 +611,84 @@ impl Sheet {
         }
         rows_set.into_iter().collect()
     }
+
+    /// Converts a cell reference range to a minimal rectangle covering the data
+    /// on the sheet.
+    pub fn cell_ref_range_to_rect(&self, cell_ref_range: CellRefRange) -> Rect {
+        let CellRefRange { start, end } = cell_ref_range;
+
+        let start_col = start.col.map_or(1, |c| c.coord) as i64;
+        let start_row = start.row.map_or(1, |r| r.coord) as i64;
+        let start = Pos {
+            x: start_col,
+            y: start_row,
+        };
+
+        let ignore_bounds = false;
+        let bounds = match self.bounds(ignore_bounds) {
+            GridBounds::Empty => Rect::single_pos(start),
+            GridBounds::NonEmpty(rect) => rect,
+        };
+        let end_col = end.and_then(|end| end.col).map(|r| r.coord as i64);
+        let end_row = end.and_then(|end| end.row).map(|r| r.coord as i64);
+
+        let end = Pos {
+            x: end_col.unwrap_or_else(|| {
+                let a = start_row;
+                let b = end_row.unwrap_or(bounds.max.y);
+                match self.rows_bounds(std::cmp::min(a, b), std::cmp::max(a, b), ignore_bounds) {
+                    Some((_lo, hi)) => hi,
+                    None => start_row,
+                }
+            }),
+            y: end_col.unwrap_or_else(|| {
+                let a = start_col;
+                let b = end_col.unwrap_or(bounds.max.y);
+                match self.columns_bounds(std::cmp::min(a, b), std::cmp::max(a, b), ignore_bounds) {
+                    Some((_lo, hi)) => hi,
+                    None => start_col,
+                }
+            }),
+        };
+
+        Rect::new_span(start, end)
+    }
+
+    /// Resolves a selection to a union of rcetangles. This is important for
+    /// ensuring that all clients agree on the exact rectangles a transaction
+    /// applies to.
+    pub fn selection_to_rects(&self, selection: &A1Selection) -> Vec<Rect> {
+        selection
+            .ranges
+            .iter()
+            .map(|&range| self.cell_ref_range_to_rect(range))
+            .collect()
+    }
+
+    /// Converts an unbounded cell reference range to a finite rectangle via
+    /// [`Self::cell_ref_range_to_rect()`]. Bounded ranges are returned
+    /// unmodified.
+    pub fn finitize_cell_ref_range(&self, cell_ref_range: CellRefRange) -> CellRefRange {
+        CellRefRange::new_relative_rect(self.cell_ref_range_to_rect(cell_ref_range))
+    }
+
+    /// Converts unbounded regions in a selection to finite rectangular regions.
+    /// Bounded regions are unmodified.
+    pub fn finitize_selection(&self, selection: &A1Selection) -> A1Selection {
+        A1Selection {
+            sheet: selection.sheet,
+            cursor: selection.cursor,
+            ranges: selection
+                .ranges
+                .iter()
+                .map(|&range| self.finitize_cell_ref_range(range))
+                .collect(),
+        }
+    }
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use std::str::FromStr;
 
@@ -599,7 +702,7 @@ mod test {
     use crate::grid::formats::Formats;
     use crate::grid::js_types::{JsPos, JsReturnInfo};
     use crate::grid::{Bold, CodeCellLanguage, CodeRunResult, Italic, NumericFormat};
-    use crate::selection::Selection;
+    use crate::selection::OldSelection;
     use crate::test_util::print_table;
     use crate::{CodeCellValue, RunError, RunErrorMsg, SheetPos, Value};
 
@@ -642,7 +745,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_current_decimal_places_value() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
@@ -706,7 +808,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn decimal_places() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -750,7 +851,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_current_decimal_places_text() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
@@ -766,7 +866,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_current_decimal_places_float() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
@@ -783,7 +882,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_cell_numeric_format_kind() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
         let column = sheet.get_or_create_column(0);
@@ -802,7 +900,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_set_cell_values() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 4, y: 1 });
         let vals = vec!["a", "1", "$1.11"];
@@ -825,7 +922,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn delete_cell_values() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -833,7 +929,7 @@ mod test {
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
 
         let rect = Rect::from_numbers(0, 0, 2, 2);
-        let selection = &Selection::rect(rect, sheet_id);
+        let selection = &OldSelection::rect(rect, sheet_id);
         gc.delete_cells(selection, None);
 
         let sheet = gc.sheet(sheet_id);
@@ -844,7 +940,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn delete_cell_values_code() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -856,7 +951,7 @@ mod test {
                 language: CodeCellLanguage::Formula,
             }),
         );
-        gc.delete_cells(&Selection::pos(0, 0, sheet_id), None);
+        gc.delete_cells(&OldSelection::pos(0, 0, sheet_id), None);
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
@@ -886,7 +981,6 @@ mod test {
     // }
 
     #[test]
-    #[parallel]
     fn test_get_cell_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let sheet = grid.sheet(sheet_id);
@@ -896,7 +990,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_get_set_formatting_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
@@ -910,7 +1003,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn cell_format_summary() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
@@ -964,7 +1056,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_columns() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
@@ -994,7 +1085,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn display_value_blanks() {
         let mut sheet = Sheet::test();
         let pos = Pos { x: 0, y: 0 };
@@ -1004,12 +1094,11 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_check_if_wrap_in_cell() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
         assert!(!sheet.check_if_wrap_in_cell(0, 0));
-        let selection = Selection::pos(0, 0, sheet.id);
+        let selection = OldSelection::pos(0, 0, sheet.id);
         sheet.set_formats_selection(
             &selection,
             &Formats::repeat(
@@ -1057,12 +1146,11 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_check_if_wrap_in_row() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
         assert!(!sheet.check_if_wrap_in_row(0));
-        let selection = Selection::pos(0, 0, sheet.id);
+        let selection = OldSelection::pos(0, 0, sheet.id);
         sheet.set_formats_selection(
             &selection,
             &Formats::repeat(
@@ -1099,7 +1187,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_get_rows_with_wrap_in_column() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
@@ -1110,7 +1197,7 @@ mod test {
         };
         assert_eq!(sheet.get_rows_with_wrap_in_column(0), Vec::<i64>::new());
         sheet.set_formats_selection(
-            &Selection {
+            &OldSelection {
                 sheet_id: sheet.id,
                 rects: Some(vec![rect]),
                 ..Default::default()
@@ -1127,7 +1214,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_get_rows_with_wrap_in_rect() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
@@ -1138,7 +1224,7 @@ mod test {
         };
         assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect), Vec::<i64>::new());
         sheet.set_formats_selection(
-            &Selection {
+            &OldSelection {
                 sheet_id: sheet.id,
                 rects: Some(vec![rect]),
                 ..Default::default()
@@ -1155,7 +1241,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_get_rows_with_wrap_in_selection() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
@@ -1164,7 +1249,7 @@ mod test {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 0, y: 4 },
         };
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: sheet.id,
             rects: Some(vec![rect]),
             ..Default::default()
@@ -1189,7 +1274,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn js_cell_value() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
@@ -1419,7 +1503,7 @@ mod test {
             std_err: Some("error".to_string()),
             formatted_code_string: None,
             last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             result: CodeRunResult::Err(RunError {
                 span: None,
                 msg: RunErrorMsg::CodeRunError("error".into()),
@@ -1526,7 +1610,7 @@ mod test {
                     line_number: None,
                     output_type: None,
                 }),
-                cells_accessed: Some(vec![]),
+                cells_accessed: Some(Default::default()),
             },
         ];
 
@@ -1534,5 +1618,12 @@ mod test {
             js_errored_code_cell_rect,
             expected_js_errored_code_cell_rect
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_cell_ref_range_to_rect() {
+        let mut sheet = Sheet::test();
+        panic!("todo! test this thing");
     }
 }

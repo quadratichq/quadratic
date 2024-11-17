@@ -7,7 +7,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formatting::CellFmtArray;
 use crate::grid::{CodeCellLanguage, NumericFormat, NumericFormatKind};
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 use crate::{CellValue, CodeCellValue, RunLengthEncoding, SheetPos, SheetRect};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
@@ -120,7 +120,7 @@ impl GridController {
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
-    pub fn delete_cells_operations(&self, selection: &Selection) -> Vec<Operation> {
+    pub fn delete_cells_operations(&self, selection: &OldSelection) -> Vec<Operation> {
         let mut ops = vec![];
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
             let rects = sheet.selection_rects_values(selection);
@@ -138,7 +138,7 @@ impl GridController {
     /// Generates and returns the set of operations to clear the formatting in a sheet_rect
     pub fn delete_values_and_formatting_operations(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
     ) -> Vec<Operation> {
         let mut ops = self.delete_cells_operations(selection);
         ops.extend(self.clear_format_selection_operations(selection));
@@ -157,7 +157,7 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, SheetId};
-    use crate::selection::Selection;
+    use crate::selection::OldSelection;
     use crate::{CellValue, CodeCellValue, Rect, SheetPos};
 
     #[test]
@@ -340,7 +340,7 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
-        let selection = Selection::rect(Rect::from_numbers(1, 2, 2, 1), sheet_id);
+        let selection = OldSelection::rect(Rect::from_numbers(1, 2, 2, 1), sheet_id);
         let operations = gc.delete_cells_operations(&selection);
         assert_eq!(operations.len(), 1);
         assert_eq!(
@@ -379,7 +379,7 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
-        let selection = Selection::columns(&[1, 2], sheet_id);
+        let selection = OldSelection::columns(&[1, 2], sheet_id);
         let operations = gc.delete_cells_operations(&selection);
         assert_eq!(operations.len(), 2);
         assert_eq!(

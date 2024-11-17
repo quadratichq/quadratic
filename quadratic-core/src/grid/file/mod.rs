@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use shift_negative_offsets::shift_negative_offsets;
 use std::fmt::Debug;
 use std::str;
-use v1_7_1::GridSchema as current;
+pub use v1_7_1::GridSchema as current;
 
 pub mod serialize;
 pub mod sheet_schema;
@@ -20,6 +20,8 @@ mod v1_5;
 mod v1_6;
 mod v1_7;
 pub mod v1_7_1;
+
+pub use v1_7_1::{CellsAccessedSchema, CodeRunSchema};
 
 pub static CURRENT_VERSION: &str = "1.7.1";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
@@ -67,7 +69,7 @@ enum GridFile {
 }
 
 impl GridFile {
-    fn into_latest(self) -> Result<v1_7::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_7_1::GridSchema> {
         match self {
             GridFile::V1_7_1 { grid } => Ok(grid),
             GridFile::V1_7 { grid } => v1_7::upgrade(grid),
@@ -110,7 +112,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_6::file::upgrade(schema)?;
+            let schema = v1_7::upgrade(v1_6::file::upgrade(schema)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.7" => {
@@ -121,7 +123,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
                 data,
             )?;
             drop(file_contents);
-            Ok(serialize::import(schema)?)
+            Ok(serialize::import(v1_7::upgrade(schema)?)?)
         }
         "1.7.1" => {
             let schema = decompress_and_deserialize::<current>(
@@ -180,7 +182,7 @@ mod tests {
     use crate::{
         controller::GridController,
         grid::{BorderSelection, BorderStyle, CodeCellLanguage},
-        selection::Selection,
+        selection::OldSelection,
         ArraySize, CellValue, CodeCellValue, Pos, SheetPos,
     };
     use serial_test::parallel;
@@ -316,7 +318,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_pos(SheetPos::new(sheet_id, 0, 0)),
+            OldSelection::sheet_pos(SheetPos::new(sheet_id, 0, 0)),
             BorderSelection::Bottom,
             Some(BorderStyle::default()),
             None,

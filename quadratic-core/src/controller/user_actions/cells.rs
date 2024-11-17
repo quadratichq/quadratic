@@ -1,7 +1,7 @@
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
 
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 use crate::SheetPos;
 
 impl GridController {
@@ -40,19 +40,19 @@ impl GridController {
     }
 
     /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.
-    pub fn delete_cells(&mut self, selection: &Selection, cursor: Option<String>) {
+    pub fn delete_cells(&mut self, selection: &OldSelection, cursor: Option<String>) {
         let ops = self.delete_cells_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
     /// Starts a transaction to clear formatting in a given rect.
-    pub fn clear_formatting(&mut self, selection: &Selection, cursor: Option<String>) {
+    pub fn clear_formatting(&mut self, selection: &OldSelection, cursor: Option<String>) {
         let ops = self.clear_format_selection_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
     /// Starts a transaction to delete values and formatting in a given rect, and updates dependent cells.
-    pub fn delete_values_and_formatting(&mut self, selection: &Selection, cursor: Option<String>) {
+    pub fn delete_values_and_formatting(&mut self, selection: &OldSelection, cursor: Option<String>) {
         let ops = self.delete_values_and_formatting_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
@@ -63,7 +63,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{NumericCommas, NumericDecimals, NumericFormat, SheetId},
-        selection::Selection,
+        selection::OldSelection,
         CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
@@ -240,7 +240,7 @@ mod test {
             String::from("1.12345678"),
             None,
         );
-        let selection = Selection::pos(0, 0, sheet_id);
+        let selection = OldSelection::pos(0, 0, sheet_id);
         let _ = gc.set_currency_selection(selection.clone(), "$".to_string(), None);
         gc.clear_formatting(&selection, None);
         let cells = gc
@@ -250,7 +250,7 @@ mod test {
         assert_eq!(cells[0].value, "1.12345678");
 
         // ensure not found sheet_id fails silently
-        gc.clear_formatting(&Selection::pos(0, 0, SheetId::new()), None);
+        gc.clear_formatting(&OldSelection::pos(0, 0, SheetId::new()), None);
     }
 
     #[test]
@@ -267,7 +267,7 @@ mod test {
             String::from("1.12345678"),
             None,
         );
-        let selection = Selection::pos(0, 0, sheet_id);
+        let selection = OldSelection::pos(0, 0, sheet_id);
         let _ = gc.set_currency_selection(selection.clone(), "$".to_string(), None);
         gc.delete_values_and_formatting(&selection, None);
         let cells = gc
@@ -276,6 +276,6 @@ mod test {
         assert_eq!(cells.len(), 0);
 
         // ensure not found sheet_id fails silently
-        gc.delete_values_and_formatting(&Selection::pos(0, 0, SheetId::new()), None);
+        gc.delete_values_and_formatting(&OldSelection::pos(0, 0, SheetId::new()), None);
     }
 }

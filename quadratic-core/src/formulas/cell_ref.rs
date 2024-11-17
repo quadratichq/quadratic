@@ -17,8 +17,9 @@ use crate::formulas::{escape_string, parse_sheet_name};
 use crate::Pos;
 
 /// A reference to a cell or a range of cells.
+///
+/// TODO: replace with `CellRangeRef`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
-#[serde(tag = "type")]
 pub enum RangeRef {
     // this is not yet used...
     RowRange {
@@ -75,6 +76,9 @@ impl RangeRef {
 }
 
 /// A reference to a single cell.
+///
+/// TODO: change this struct's relative/absolute distinction to match
+/// `CellRefRangeEnd`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 pub struct CellRef {
     pub sheet: Option<String>,
@@ -172,7 +176,7 @@ impl CellRef {
         let row_is_negative = !captures[4].is_empty();
         let row_number = &captures[5];
 
-        let col = crate::util::column_from_name(column_name)?;
+        let col = crate::a1::column_from_name(column_name)? as i64;
         let mut row = row_number.parse::<i64>().ok()?;
         if row_is_negative {
             row = -row;
@@ -252,13 +256,13 @@ impl CellRefCoord {
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a column coordinate.
     fn col_string(self, base: i64) -> String {
-        let col = crate::util::column_name(self.resolve_from(base));
+        let col = crate::a1::column_name(self.resolve_from(base) as u64);
         format!("{}{col}", self.prefix())
     }
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a row coordinate.
     fn row_string(self, base: i64) -> String {
-        let row = crate::util::row_name(self.resolve_from(base));
+        let row = self.resolve_from(base);
         format!("{}{row}", self.prefix())
     }
 

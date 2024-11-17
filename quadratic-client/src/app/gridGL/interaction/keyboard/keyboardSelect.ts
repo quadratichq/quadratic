@@ -17,13 +17,13 @@ export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean
       selectAllCells();
     } else {
       let columns = new Set<number>(cursor.columnRow?.columns);
-      columns.add(cursor.cursorPosition.x);
+      columns.add(cursor.position.x);
       cursor.multiCursor?.forEach((rect) => {
         for (let x = rect.x; x < rect.x + rect.width; x++) {
           columns.add(x);
         }
       });
-      selectColumns(Array.from(columns), cursor.cursorPosition.x);
+      selectColumns(Array.from(columns), cursor.position.x);
     }
     return true;
   }
@@ -35,13 +35,13 @@ export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean
       selectAllCells();
     } else {
       let row = new Set<number>(cursor.columnRow?.rows);
-      row.add(cursor.cursorPosition.y);
+      row.add(cursor.position.y);
       cursor.multiCursor?.forEach((rect) => {
         for (let y = rect.y; y < rect.y + rect.height; y++) {
           row.add(y);
         }
       });
-      selectRows(Array.from(row), cursor.cursorPosition.y);
+      selectRows(Array.from(row), cursor.position.y);
     }
     return true;
   }

@@ -4,8 +4,7 @@ use regex::Regex;
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, ConnectionKind, SheetId},
-    selection::Selection,
-    Pos, RunError, RunErrorMsg, SheetPos, SheetRect,
+    A1Error, Pos, RunError, RunErrorMsg, SheetPos,
 };
 
 use lazy_static::lazy_static;
@@ -25,11 +24,9 @@ impl GridController {
         _sheet_pos: SheetPos,
         code: &str,
         default_sheet_id: SheetId,
-    ) -> Result<String, String> {
+    ) -> Result<String, A1Error> {
         let mut result = String::new();
         let mut last_match_end = 0;
-
-        let map = self.grid.sheet_name_id_map();
 
         for cap in HANDLEBARS_REGEX.captures_iter(code) {
             let Some(whole_match) = cap.get(0) else {
@@ -38,39 +35,48 @@ impl GridController {
 
             result.push_str(&code[last_match_end..whole_match.start()]);
 
-            let replacement: Result<String, String> = (|| {
-                let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
+            let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
 
-                let selection = Selection::from_a1(content, default_sheet_id, map.clone())?;
+            return todo!("a1 stuff -- only allow single cell!");
 
-                // Gets the display value of the cell at the cursor position of
-                // the Selection (for now we only support 1 cell)
-                let value = self
-                    .try_sheet(selection.sheet_id)
-                    .map(|sheet| {
-                        sheet
-                            .display_value(Pos::new(selection.x, selection.y))
-                            .map(|value| value.to_display())
-                            .unwrap_or_default()
-                    })
-                    .unwrap_or_default();
+            // let (range_type, sheet_name) = A1::to_a1_range_type(content)?;
 
-                transaction.cells_accessed.insert(SheetRect::new(
-                    selection.x,
-                    selection.y,
-                    selection.x,
-                    selection.y,
-                    selection.sheet_id,
-                ));
-                Ok(value)
-            })();
+            // let sheet = if let Some(sheet_name) = sheet_name {
+            //     self.grid
+            //         .try_sheet_from_name(sheet_name.clone())
+            //         .ok_or_else(|| A1Error::InvalidSheetName(sheet_name))
+            // } else {
+            //     self.grid
+            //         .try_sheet(default_sheet_id)
+            //         .ok_or_else(|| A1Error::InvalidSheetId(default_sheet_id.to_string()))
+            // }?;
 
-            match replacement {
-                Ok(value) => result.push_str(&value),
-                Err(err) => return Err(err),
-            }
+            // // Gets the display value of the cell at the cursor position of
+            // // the Selection (for now we only support 1 cell)
+            // let (x, y, value) =
+            //  match range_type {
+            //     A1RangeType::Pos(rel_pos) => (
+            //         rel_pos.x.index as i64,
+            //         rel_pos.y.index as i64,
+            //         sheet
+            //             .display_value(Pos::new(rel_pos.x.index as i64, rel_pos.y.index as i64))
+            //             .map(|value| value.to_display())
+            //             .unwrap_or_default(),
+            //     ),
+            //     _ => {
+            //         return Err(A1Error::WrongCellCount(
+            //             "Connections only supports one cell".to_string(),
+            //         ))
+            //     }
+            // }
+            // ;
 
-            last_match_end = whole_match.end();
+            // transaction
+            //     .cells_accessed
+            //     .add_sheet_pos(SheetPos::new(sheet.id, x, y));
+            // result.push_str(&value);
+
+            // last_match_end = whole_match.end();
         }
 
         // Add the remaining part of the string
@@ -104,7 +110,7 @@ impl GridController {
                 Err(msg) => {
                     let error = RunError {
                         span: None,
-                        msg: RunErrorMsg::CodeRunError(msg.to_owned().into()),
+                        msg: RunErrorMsg::CodeRunError(std::borrow::Cow::Owned(msg.to_string())),
                     };
                     transaction.current_sheet_pos = Some(sheet_pos);
                     let _ = self.code_cell_sheet_error(transaction, &error);
@@ -131,7 +137,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn replace_handlebars() {
+    fn test_replace_handlebars() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -151,10 +157,10 @@ mod tests {
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
         assert_eq!(result, "test".to_string());
-        assert_eq!(transaction.cells_accessed.len(), 1);
+        assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)));
+            .contains(SheetPos::new(sheet_id, 1, 2)));
 
         gc.add_sheet(None);
         let sheet_2_id = gc.sheet_ids()[1];
@@ -166,15 +172,15 @@ mod tests {
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
         assert_eq!(result, "test2".to_string());
-        assert_eq!(transaction.cells_accessed.len(), 2);
+        assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(&SheetRect::new(1, 2, 1, 2, sheet_2_id)),);
+            .contains(SheetPos::new(sheet_id, 1, 2)));
     }
 
     #[test]
     #[parallel]
-    fn replace_handlebars_relative() {
+    fn test_replace_handlebars_relative() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -194,25 +200,25 @@ mod tests {
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
         assert_eq!(result, "test".to_string());
-        assert_eq!(transaction.cells_accessed.len(), 1);
+        assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)));
+            .contains(SheetPos::new(sheet_id, 1, 2)));
 
         let code = r#"{{'Sheet 1'!A2}}"#;
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, code, sheet_id)
             .unwrap();
         assert_eq!(result, "test".to_string());
-        assert_eq!(transaction.cells_accessed.len(), 1);
+        assert_eq!(transaction.cells_accessed.len(sheet_id), Some(1));
         assert!(transaction
             .cells_accessed
-            .contains(&SheetRect::new(1, 2, 1, 2, sheet_id)));
+            .contains(SheetPos::new(sheet_id, 1, 2)));
     }
 
     #[test]
     #[parallel]
-    fn replace_handlebars_actual_case() {
+    fn test_replace_handlebars_actual_case() {
         let code = "SELECT age FROM 'public'.'test_table' WHERE name='{{A1}}' LIMIT 100";
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -238,7 +244,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn run_connection_sheet_name_error() {
+    fn test_run_connection_sheet_name_error() {
         fn test_error(gc: &mut GridController, code: &str, sheet_id: SheetId) {
             gc.set_code_cell(
                 SheetPos {
@@ -259,7 +265,7 @@ mod tests {
             assert_eq!(
                 code_cell.unwrap().get_error(),
                 Some(RunError {
-                    msg: RunErrorMsg::CodeRunError("{\"InvalidSheetName\":\"Sheet 2\"}".into()),
+                    msg: RunErrorMsg::CodeRunError("Invalid Sheet Name: Sheet 2".into()),
                     span: None
                 })
             );

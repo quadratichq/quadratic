@@ -1,4 +1,4 @@
-use self::selection::Selection;
+use self::selection::OldSelection;
 use super::*;
 
 #[wasm_bindgen]
@@ -28,7 +28,7 @@ impl GridController {
         align: JsValue,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         let align = serde_wasm_bindgen::from_value(align).map_err(|_| "Invalid align")?;
         self.set_align_selection(selection, align, cursor)
     }
@@ -41,7 +41,7 @@ impl GridController {
         vertical_align: JsValue,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         let vertical_align =
             serde_wasm_bindgen::from_value(vertical_align).map_err(|_| "Invalid vertical align")?;
         self.set_vertical_align_selection(selection, vertical_align, cursor)
@@ -55,7 +55,7 @@ impl GridController {
         wrap: JsValue,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         let wrap = serde_wasm_bindgen::from_value(wrap).map_err(|_| "Invalid wrap")?;
         self.set_cell_wrap_selection(selection, wrap, cursor)
     }
@@ -67,7 +67,7 @@ impl GridController {
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.remove_number_formatting_selection(selection, cursor)?;
         Ok(())
     }
@@ -80,7 +80,7 @@ impl GridController {
         symbol: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_currency_selection(selection, symbol, cursor)?;
         Ok(())
     }
@@ -92,7 +92,7 @@ impl GridController {
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_numeric_format_selection(selection, NumericFormatKind::Percentage, None, cursor)?;
         Ok(())
     }
@@ -104,7 +104,7 @@ impl GridController {
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_numeric_format_selection(selection, NumericFormatKind::Exponential, None, cursor)?;
         Ok(())
     }
@@ -117,7 +117,7 @@ impl GridController {
         commas: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_commas_selection(selection, commas, cursor)?;
         Ok(())
     }
@@ -130,7 +130,7 @@ impl GridController {
         bold: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_bold_selection(selection, bold, cursor)?;
         Ok(())
     }
@@ -142,7 +142,7 @@ impl GridController {
         italic: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_italic_selection(selection, italic, cursor)?;
         Ok(())
     }
@@ -155,7 +155,7 @@ impl GridController {
         text_color: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_text_color_selection(selection, text_color, cursor)?;
         Ok(())
     }
@@ -168,7 +168,7 @@ impl GridController {
         fill_color: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_fill_color_selection(selection, fill_color, cursor)?;
         Ok(())
     }
@@ -207,7 +207,7 @@ impl GridController {
         date_time: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_date_time_format(selection, date_time, cursor)
     }
 
@@ -219,7 +219,7 @@ impl GridController {
         delta: u32,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.change_decimal_places_selection(selection, delta, cursor)?;
         Ok(())
     }
@@ -232,7 +232,7 @@ impl GridController {
         underline: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_underline_selection(selection, underline, cursor)?;
         Ok(())
     }
@@ -245,7 +245,7 @@ impl GridController {
         strike_through: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.set_strike_through_selection(selection, strike_through, cursor)?;
         Ok(())
     }
@@ -257,7 +257,7 @@ impl GridController {
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.clear_format(selection, cursor)
     }
 

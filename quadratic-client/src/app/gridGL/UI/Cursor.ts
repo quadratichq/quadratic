@@ -73,7 +73,7 @@ export class Cursor extends Container {
     const cursor = sheet.cursor;
     const { viewport } = pixiApp;
     const { codeEditorState } = pixiAppSettings;
-    const cell = cursor.cursorPosition;
+    const cell = cursor.position;
     const showInput = pixiAppSettings.input.show;
 
     let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
@@ -84,8 +84,8 @@ export class Cursor extends Container {
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
-        cursor.cursorPosition.x !== codeCell.pos.x ||
-        cursor.cursorPosition.y !== codeCell.pos.y)
+        cursor.position.x !== codeCell.pos.x ||
+        cursor.position.y !== codeCell.pos.y)
         ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
         : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
@@ -147,7 +147,7 @@ export class Cursor extends Container {
     const sheet = sheets.sheet;
     const { cursor } = sheet;
 
-    this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
+    this.startCell = sheet.getCellOffsets(cursor.position.x, cursor.position.y);
     if (cursor.multiCursor) {
       drawMultiCursor(this.graphics, pixiApp.accentColor, FILL_ALPHA, cursor.multiCursor);
 
@@ -163,7 +163,7 @@ export class Cursor extends Container {
         this.endCell.y + this.endCell.height - startCell.y
       );
     } else {
-      this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
+      this.endCell = sheet.getCellOffsets(cursor.position.x, cursor.position.y);
       this.cursorRectangle = new Rectangle(
         this.startCell.x,
         this.startCell.y,
@@ -180,7 +180,7 @@ export class Cursor extends Container {
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       const { codeEditorState } = pixiAppSettings;
       const codeCell = codeEditorState.codeCell;
-      const cell = cursor.cursorPosition;
+      const cell = cursor.position;
 
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
@@ -261,7 +261,7 @@ export class Cursor extends Container {
             columnRow,
             color: pixiApp.accentColor,
             alpha: FILL_ALPHA,
-            cursorPosition: sheets.sheet.cursor.cursorPosition,
+            cursorPosition: sheets.sheet.cursor.position,
           });
         }
         if (!columnRow && (!multiCursor || multiCursor.length === 1)) {

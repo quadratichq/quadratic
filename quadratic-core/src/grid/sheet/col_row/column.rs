@@ -5,7 +5,8 @@ use crate::{
         operations::operation::{CopyFormats, Operation},
     },
     grid::{formats::Formats, Sheet},
-    selection::Selection,
+    renderer_constants::CELL_SHEET_HEIGHT,
+    selection::OldSelection,
     Pos, Rect, SheetPos,
 };
 
@@ -43,7 +44,7 @@ impl Sheet {
     /// Creates reverse operations for cell formatting within the column.
     fn reverse_formats_ops_for_column(&self, column: i64) -> Vec<Operation> {
         let mut formats = Formats::new();
-        let mut selection = Selection::new(self.id);
+        let mut selection = OldSelection::new(self.id);
 
         if let Some(format) = self.try_format_column(column) {
             selection.columns = Some(vec![column]);
@@ -73,10 +74,11 @@ impl Sheet {
             .enumerate()
             .for_each(|(index, (pos, code_run))| {
                 if pos.x == column {
-                    reverse_operations.push(Operation::SetCodeRun {
+                    reverse_operations.push(Operation::SetCodeRunVersion {
                         sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
                         code_run: Some(code_run.clone()),
                         index,
+                        version: 1,
                     });
                 }
             });
@@ -383,7 +385,7 @@ mod tests {
     use serial_test::parallel;
 
     use crate::{
-        controller::execution::TransactionType,
+        controller::execution::TransactionSource,
         grid::{
             formats::{format::Format, format_update::FormatUpdate},
             BorderStyle, CellBorderLine, CellWrap,
@@ -456,7 +458,7 @@ mod tests {
         );
 
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             ..Default::default()
         };
         sheet.delete_column(&mut transaction, 0);

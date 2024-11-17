@@ -46,7 +46,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::{collections::HashSet, str::FromStr};
+    use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
@@ -257,7 +257,7 @@ mod test {
                 return_type: Some("number".into()),
                 line_number: None,
                 output_type: None,
-                cells_accessed: HashSet::new(),
+                cells_accessed: Default::default(),
                 spill_error: false,
             },
         );
@@ -321,7 +321,7 @@ mod test {
                 return_type: Some("array".into()),
                 line_number: None,
                 output_type: None,
-                cells_accessed: HashSet::new(),
+                cells_accessed: Default::default(),
                 spill_error: false,
                 last_modified: result.last_modified,
             }

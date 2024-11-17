@@ -1,8 +1,8 @@
 use super::current;
-use crate::selection::Selection;
+use crate::selection::OldSelection;
 
-pub fn import_selection(selection: current::SelectionSchema) -> Selection {
-    Selection {
+pub fn import_selection(selection: current::SelectionSchema) -> OldSelection {
+    OldSelection {
         sheet_id: selection.sheet_id.to_owned(),
         x: selection.x,
         y: selection.y,
@@ -15,7 +15,7 @@ pub fn import_selection(selection: current::SelectionSchema) -> Selection {
     }
 }
 
-pub fn export_selection(selection: Selection) -> current::SelectionSchema {
+pub fn export_selection(selection: OldSelection) -> current::SelectionSchema {
     current::SelectionSchema {
         sheet_id: selection.sheet_id,
         x: selection.x,
@@ -39,7 +39,7 @@ mod tests {
     #[test]
     #[parallel]
     fn import_export_selection() {
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: SheetId::test(),
             x: 1,
             y: 2,

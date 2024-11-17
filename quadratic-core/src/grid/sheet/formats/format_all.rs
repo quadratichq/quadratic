@@ -6,7 +6,7 @@ use crate::{
         formats::{format::Format, format_update::FormatUpdate, Formats},
         CellWrap, GridBounds, Sheet,
     },
-    selection::Selection,
+    selection::OldSelection,
     Pos, Rect,
 };
 
@@ -49,7 +49,7 @@ impl Sheet {
 
     /// Finds any cells that overlap with the update a return a list of positions.
     pub(crate) fn find_overlapping_format_cells(&self, update: &FormatUpdate) -> Vec<Pos> {
-        self.format_selection(&Selection {
+        self.format_selection(&OldSelection {
             sheet_id: self.id,
             all: true,
             ..Default::default()
@@ -141,7 +141,7 @@ impl Sheet {
             }
 
             let mut ops = vec![];
-            let selection_all = Selection {
+            let selection_all = OldSelection {
                 sheet_id: self.id,
                 all: true,
                 ..Default::default()
@@ -160,7 +160,7 @@ impl Sheet {
                 self.set_formats_columns(&columns, &formats);
                 ops.push(Operation::SetCellFormatsSelection {
                     formats: Formats::repeat(format_clear.clone(), columns.len()),
-                    selection: Selection {
+                    selection: OldSelection {
                         sheet_id: self.id,
                         columns: Some(columns),
                         ..Default::default()
@@ -175,7 +175,7 @@ impl Sheet {
                 self.set_formats_rows(&rows, &formats);
                 ops.push(Operation::SetCellFormatsSelection {
                     formats: Formats::repeat(format_clear.clone(), rows.len()),
-                    selection: Selection {
+                    selection: OldSelection {
                         sheet_id: self.id,
                         rows: Some(rows),
                         ..Default::default()
@@ -199,7 +199,7 @@ impl Sheet {
                     })
                     .collect();
                 ops.push(Operation::SetCellFormatsSelection {
-                    selection: Selection {
+                    selection: OldSelection {
                         sheet_id: self.id,
                         rects: Some(rects),
                         ..Default::default()
@@ -341,7 +341,7 @@ mod tests {
             },
             false,
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
 
         let update = FormatUpdate {
             bold: Some(Some(true)),
@@ -362,7 +362,7 @@ mod tests {
             },
             1,
         );
-        let sel = Selection {
+        let sel = OldSelection {
             sheet_id: sheet.id,
             all: true,
             ..Default::default()
@@ -431,7 +431,7 @@ mod tests {
             },
             1,
         );
-        let sel = Selection {
+        let sel = OldSelection {
             sheet_id: sheet.id,
             all: true,
             ..Default::default()
@@ -451,7 +451,7 @@ mod tests {
         assert_eq!(
             reverse[0],
             Operation::SetCellFormatsSelection {
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: sheet.id,
                     all: true,
                     ..Default::default()
@@ -468,7 +468,7 @@ mod tests {
         assert_eq!(
             reverse[1],
             Operation::SetCellFormatsSelection {
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: sheet.id,
                     columns: Some(vec![0]),
                     ..Default::default()
@@ -485,7 +485,7 @@ mod tests {
         assert_eq!(
             reverse[2],
             Operation::SetCellFormatsSelection {
-                selection: Selection {
+                selection: OldSelection {
                     sheet_id: sheet.id,
                     rows: Some(vec![0]),
                     ..Default::default()
@@ -513,7 +513,7 @@ mod tests {
             },
             false,
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         assert_eq!(
             sheet.format_cell(0, 0, false),
             Format {

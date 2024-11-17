@@ -81,7 +81,7 @@ export const HtmlValidationList = (props: Props) => {
 
     const changeStatus = (opened: boolean) => {
       if (opened) {
-        updateShowDropdown(sheets.sheet.cursor.cursorPosition.x, sheets.sheet.cursor.cursorPosition.y, true);
+        updateShowDropdown(sheets.sheet.cursor.position.x, sheets.sheet.cursor.position.y, true);
       }
     };
     inlineEditorEvents.on('status', changeStatus);
@@ -96,8 +96,8 @@ export const HtmlValidationList = (props: Props) => {
     (value: string) => {
       quadraticCore.setCellValue(
         sheets.sheet.id,
-        sheets.sheet.cursor.cursorPosition.x,
-        sheets.sheet.cursor.cursorPosition.y,
+        sheets.sheet.cursor.position.x,
+        sheets.sheet.cursor.position.y,
         value,
         sheets.getCursorPosition()
       );
@@ -128,8 +128,8 @@ export const HtmlValidationList = (props: Props) => {
         changeValue(list[index]);
         sheets.sheet.cursor.changePosition({
           cursorPosition: {
-            x: sheets.sheet.cursor.cursorPosition.x + (key === 'ArrowLeft' ? -1 : 1),
-            y: sheets.sheet.cursor.cursorPosition.y,
+            x: sheets.sheet.cursor.position.x + (key === 'ArrowLeft' ? -1 : 1),
+            y: sheets.sheet.cursor.position.y,
           },
         });
       } else if (key === 'Escape') {

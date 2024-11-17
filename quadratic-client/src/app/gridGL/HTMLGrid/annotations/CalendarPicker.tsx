@@ -43,7 +43,7 @@ export const CalendarPicker = () => {
   const [dateFormat, setDateFormat] = useState<string | undefined>('');
   useEffect(() => {
     const fetchValue = async () => {
-      const position = sheets.sheet.cursor.cursorPosition;
+      const position = sheets.sheet.cursor.position;
       const value = await quadraticCore.getDisplayCell(sheets.sheet.id, position.x, position.y);
       if (value) {
         const d = new Date(value as string);

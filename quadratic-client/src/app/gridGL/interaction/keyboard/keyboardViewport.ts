@@ -227,7 +227,7 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
         rectangle.bottom
       );
     } else {
-      const position = cursor.cursorPosition;
+      const position = cursor.position;
       quadraticCore.autocomplete(
         sheets.current,
         position.x - 1,
@@ -281,7 +281,7 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
         rectangle.top
       );
     } else {
-      const position = cursor.cursorPosition;
+      const position = cursor.position;
       quadraticCore.autocomplete(
         sheets.current,
         position.x,

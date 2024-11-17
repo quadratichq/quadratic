@@ -3,13 +3,13 @@ use csv::Writer;
 use itertools::PeekingNext;
 
 use super::GridController;
-use crate::{selection::Selection, Pos};
+use crate::{selection::OldSelection, Pos};
 
 impl GridController {
     /// exports a CSV string from a selection on the grid.
     ///
     /// Returns a [`String`].
-    pub fn export_csv_selection(&self, selection: Selection) -> Result<String> {
+    pub fn export_csv_selection(&self, selection: OldSelection) -> Result<String> {
         let sheet = self
             .try_sheet(selection.sheet_id)
             .context("Sheet not found")?;
@@ -54,7 +54,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selected = Selection {
+        let selected = OldSelection {
             sheet_id,
             rects: Some(vec![Rect::from_numbers(0, 0, 4, 4)]),
             ..Default::default()

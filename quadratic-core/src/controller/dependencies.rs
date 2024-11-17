@@ -13,11 +13,9 @@ impl GridController {
 
         self.grid.sheets().iter().for_each(|sheet| {
             sheet.code_runs.iter().for_each(|(pos, code_run)| {
-                code_run.cells_accessed.iter().for_each(|cell_accessed| {
-                    if sheet_rect.intersects(*cell_accessed) {
-                        dependent_cells.insert(pos.to_sheet_pos(sheet.id));
-                    }
-                });
+                if code_run.cells_accessed.intersects(sheet_rect) {
+                    dependent_cells.insert(pos.to_sheet_pos(sheet.id));
+                }
             });
         });
 
@@ -31,13 +29,11 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use chrono::Utc;
 
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRun, CodeRunResult},
+        grid::{CellsAccessed, CodeCellLanguage, CodeRun, CodeRunResult},
         CellValue, Pos, SheetPos, SheetRect, Value,
     };
     use serial_test::parallel;
@@ -50,7 +46,7 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
-        let mut cells_accessed = HashSet::new();
+        let mut cells_accessed = CellsAccessed::default();
         let sheet_pos_00 = SheetPos {
             x: 0,
             y: 0,
@@ -66,7 +62,7 @@ mod test {
             max: sheet_pos_01.into(),
             sheet_id,
         };
-        cells_accessed.insert(sheet_rect);
+        cells_accessed.add_sheet_rect(sheet_rect);
         sheet.set_code_run(
             Pos { x: 0, y: 2 },
             Some(CodeRun {

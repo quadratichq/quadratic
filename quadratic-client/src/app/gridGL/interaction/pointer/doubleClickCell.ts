@@ -41,7 +41,7 @@ export async function doubleClickCell(options: {
       });
     } else {
       if (hasPermission && formula) {
-        const cursor = sheets.sheet.cursor.cursorPosition;
+        const cursor = sheets.sheet.cursor.position;
 
         // ensure we're in the right cell (which may change if we double clicked on a CodeRun)
         if (cursor.x !== column || cursor.y !== row) {

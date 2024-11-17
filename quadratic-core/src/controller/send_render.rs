@@ -8,10 +8,9 @@ use crate::{
         RenderSize, SheetId,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    selection::Selection,
-    viewport::ViewportBuffer,
+    selection::OldSelection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    CellValue, Pos, Rect, SheetPos, SheetRect,
+    A1Subspaces, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
@@ -181,7 +180,7 @@ impl GridController {
     ///
     /// TODO: this is only implemented when only_rects == true; add
     /// only_rects == false when needed.
-    pub fn send_render_cells_selection(&self, selection: &Selection, only_rects: bool) {
+    pub fn send_render_cells_selection(&self, selection: &OldSelection, only_rects: bool) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -242,7 +241,7 @@ impl GridController {
         };
     }
 
-    pub fn send_updated_bounds_selection(&mut self, selection: &Selection, format: bool) {
+    pub fn send_updated_bounds_selection(&mut self, selection: &OldSelection, format: bool) {
         let recalculated = if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
             sheet.recalculate_add_bounds_selection(selection, format)
         } else {
@@ -256,6 +255,15 @@ impl GridController {
                 }
             }
         };
+    }
+
+    pub fn send_updated_bounds_a1_subspaces(
+        &mut self,
+        sheet_id: SheetId,
+        subspaces: &A1Subspaces,
+        format: bool,
+    ) {
+        todo!("todo todo todo")
     }
 
     /// Recalculates sheet bounds, and if changed then sends to TS.
@@ -392,8 +400,12 @@ impl GridController {
 mod test {
     use crate::{
         controller::{
-            active_transactions::pending_transaction::PendingTransaction,
-            execution::TransactionType, transaction_types::JsCodeResult, GridController,
+            active_transactions::{
+                pending_transaction::PendingTransaction, transaction_name::TransactionName,
+            },
+            execution::TransactionType,
+            transaction_types::JsCodeResult,
+            GridController,
         },
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell},
@@ -403,9 +415,9 @@ mod test {
             },
             RenderSize, SheetId,
         },
-        selection::Selection,
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        Pos, Rect,
+        selection::OldSelection,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
+        Rect,
     };
     use serial_test::serial;
     use std::collections::HashSet;
@@ -446,7 +458,7 @@ mod test {
 
         // Server transaction
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::Server,
+            transaction_name: TransactionName::Server,
             ..Default::default()
         };
         transaction.add_dirty_hashes_from_sheet_cell_positions(
@@ -688,7 +700,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         let rect = Rect::new(1, 1, 2, 2);
-        let selection = Selection::rect(rect, sheet_id);
+        let selection = OldSelection::rect(rect, sheet_id);
         gc.update_validation(
             Validation {
                 id: Uuid::new_v4(),

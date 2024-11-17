@@ -1,26 +1,32 @@
-use crate::{selection::Selection, SheetPos, SheetRect};
+use crate::{
+    grid::SheetId, selection::OldSelection, A1Selection, A1Subspaces, Rect, SheetPos, SheetRect,
+};
 
 use super::GridController;
 
 impl GridController {
-    /// whether the thumbnail needs to be updated for this Pos
+    /// Returns whether the thumbnail contains any intersection with
+    /// `sheet_rect`. If this method returns `true`, then updates in
+    /// `sheet_rect` must force the thumbnail to update.
     pub fn thumbnail_dirty_sheet_pos(&self, sheet_pos: SheetPos) -> bool {
-        self.thumbnail_dirty_sheet_rect(&sheet_pos.into())
+        self.thumbnail_dirty_sheet_rect(sheet_pos.into())
     }
 
-    /// whether the thumbnail needs to be updated for this rectangle
-    pub fn thumbnail_dirty_sheet_rect(&self, sheet_rect: &SheetRect) -> bool {
+    /// Returns whether the thumbnail contains any intersection with
+    /// `sheet_rect`. If this method returns `true`, then updates in
+    /// `sheet_rect` must force the thumbnail to update.
+    pub fn thumbnail_dirty_sheet_rect(&self, sheet_rect: SheetRect) -> bool {
         if sheet_rect.sheet_id != self.grid().first_sheet_id() {
             return false;
         }
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return false;
         };
-        sheet_rect.intersects(sheet.offsets.thumbnail().to_sheet_rect(sheet_rect.sheet_id))
+        Rect::from(sheet_rect).intersects(sheet.offsets.thumbnail())
     }
 
-    /// Whether the thumbnail needs to be updated for this Selection
-    pub fn thumbnail_dirty_selection(&self, selection: &Selection) -> bool {
+    /// **Deprecated** Nov 2024 in favor of [`Self::does_thumbnail_overlap()`].
+    pub fn thumbnail_dirty_selection(&self, selection: &OldSelection) -> bool {
         if selection.sheet_id != self.grid().first_sheet_id() {
             return false;
         }
@@ -44,12 +50,44 @@ impl GridController {
             false
         }
     }
+
+    /// Returns whether the thumbnail contains any intersection with
+    /// `selection`. If this method returns `true`, then updates in `selection`
+    /// must force the thumbnail to update.
+    pub fn thumbnail_dirty_a1(&self, selection: &A1Selection) -> bool {
+        if selection.sheet != self.grid().first_sheet_id() {
+            return false;
+        }
+        let Some(sheet) = self.try_sheet(selection.sheet) else {
+            return false;
+        };
+
+        selection.ranges.iter().any(|&range| {
+            sheet
+                .cell_ref_range_to_rect(range)
+                .intersects(sheet.offsets.thumbnail())
+        })
+    }
+
+    /// Returns whether the thumbnail contains any intersection with
+    /// `subspaces`. If this method returns `true`, then updates in `subspaces`
+    /// must force the thumbnail to update.
+    pub fn thumbnail_dirty_subspaces(&self, sheet_id: SheetId, subspaces: &A1Subspaces) -> bool {
+        if sheet_id != self.grid().first_sheet_id() {
+            return false;
+        }
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return false;
+        };
+
+        subspaces.intersects_rect(sheet.offsets.thumbnail())
+    }
 }
 
 #[cfg(test)]
 mod test {
     use crate::{
-        controller::GridController, grid::SheetId, selection::Selection, Pos, Rect, SheetPos,
+        controller::GridController, grid::SheetId, selection::OldSelection, Pos, Rect, SheetPos,
         SheetRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
     };
     use serial_test::parallel;
@@ -86,12 +124,12 @@ mod test {
     fn test_thumbnail_dirty_rect() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        assert!(gc.thumbnail_dirty_sheet_rect(&SheetRect {
+        assert!(gc.thumbnail_dirty_sheet_rect(SheetRect {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 1, y: 1 },
             sheet_id,
         }));
-        assert!(!gc.thumbnail_dirty_sheet_rect(&SheetRect {
+        assert!(!gc.thumbnail_dirty_sheet_rect(SheetRect {
             min: Pos {
                 x: (THUMBNAIL_WIDTH as i64) + 1i64,
                 y: 0
@@ -102,7 +140,7 @@ mod test {
             },
             sheet_id,
         }));
-        assert!(!gc.thumbnail_dirty_sheet_rect(&SheetRect {
+        assert!(!gc.thumbnail_dirty_sheet_rect(SheetRect {
             min: Pos {
                 x: 0,
                 y: (THUMBNAIL_HEIGHT as i64) + 1i64,
@@ -114,7 +152,7 @@ mod test {
             sheet_id,
         }));
         assert!(!gc.thumbnail_dirty_sheet_rect(
-            &SheetPos {
+            SheetPos {
                 x: THUMBNAIL_WIDTH as i64,
                 y: THUMBNAIL_HEIGHT as i64,
                 sheet_id
@@ -128,7 +166,7 @@ mod test {
     fn thumbnail_dirty_selection_all() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        assert!(!gc.thumbnail_dirty_selection(&Selection {
+        assert!(!gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id: SheetId::test(),
             x: 0,
             y: 0,
@@ -137,7 +175,7 @@ mod test {
             columns: None,
             all: true,
         }));
-        assert!(gc.thumbnail_dirty_selection(&Selection {
+        assert!(gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -153,7 +191,7 @@ mod test {
     fn thumbnail_dirty_selection_columns() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        assert!(!gc.thumbnail_dirty_selection(&Selection {
+        assert!(!gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id: SheetId::test(),
             x: 0,
             y: 0,
@@ -162,7 +200,7 @@ mod test {
             columns: Some(vec![0]),
             all: false,
         }));
-        assert!(gc.thumbnail_dirty_selection(&Selection {
+        assert!(gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -173,7 +211,7 @@ mod test {
         }));
         let sheet = gc.sheet(sheet_id);
         let max_column = sheet.offsets.thumbnail().max.x;
-        assert!(gc.thumbnail_dirty_selection(&Selection {
+        assert!(gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -182,7 +220,7 @@ mod test {
             columns: Some(vec![max_column]),
             all: false,
         }));
-        assert!(!gc.thumbnail_dirty_selection(&Selection {
+        assert!(!gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -198,7 +236,7 @@ mod test {
     fn thumbnail_dirty_selection_rows() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        assert!(!gc.thumbnail_dirty_selection(&Selection {
+        assert!(!gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id: SheetId::test(),
             x: 0,
             y: 0,
@@ -207,7 +245,7 @@ mod test {
             columns: None,
             all: false,
         }));
-        assert!(gc.thumbnail_dirty_selection(&Selection {
+        assert!(gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -218,7 +256,7 @@ mod test {
         }));
         let sheet = gc.sheet(sheet_id);
         let max_row = sheet.offsets.thumbnail().max.y;
-        assert!(gc.thumbnail_dirty_selection(&Selection {
+        assert!(gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -227,7 +265,7 @@ mod test {
             columns: None,
             all: false,
         }));
-        assert!(!gc.thumbnail_dirty_selection(&Selection {
+        assert!(!gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -243,7 +281,7 @@ mod test {
     fn thumbnail_dirty_selection_rects() {
         let gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        assert!(!gc.thumbnail_dirty_selection(&Selection {
+        assert!(!gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id: SheetId::test(),
             x: 0,
             y: 0,
@@ -255,7 +293,7 @@ mod test {
             columns: None,
             all: false,
         }));
-        assert!(gc.thumbnail_dirty_selection(&Selection {
+        assert!(gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -268,7 +306,7 @@ mod test {
             all: false,
         }));
         let sheet = gc.sheet(sheet_id);
-        assert!(gc.thumbnail_dirty_selection(&Selection {
+        assert!(gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -283,7 +321,7 @@ mod test {
             columns: None,
             all: false,
         }));
-        assert!(!gc.thumbnail_dirty_selection(&Selection {
+        assert!(!gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,
@@ -301,7 +339,7 @@ mod test {
             columns: None,
             all: false,
         }));
-        assert!(!gc.thumbnail_dirty_selection(&Selection {
+        assert!(!gc.thumbnail_dirty_selection(&OldSelection {
             sheet_id,
             x: 0,
             y: 0,

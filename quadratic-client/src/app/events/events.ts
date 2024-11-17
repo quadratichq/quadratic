@@ -3,6 +3,7 @@ import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
+  A1Selection,
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
@@ -12,7 +13,6 @@ import {
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
-  Selection,
   SheetBounds,
   SheetInfo,
   Validation,
@@ -48,7 +48,7 @@ interface EventTypes {
   changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
-  setCursor: (cursor?: string, selection?: Selection) => void;
+  setCursor: (selection?: A1Selection) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
   changeInput: (input: boolean, initialValue?: string) => void;

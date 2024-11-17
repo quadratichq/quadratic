@@ -31,6 +31,7 @@ use grid::sheet::validations::validation_rules::validation_text::{
     TextCase, TextMatch, ValidationText,
 };
 use grid::sheet::validations::validation_rules::ValidationRule;
+use grid::JsCellsAccessed;
 use grid::{
     CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
@@ -42,7 +43,7 @@ use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::{
     BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
 };
-use quadratic_core::selection::Selection;
+use quadratic_core::selection::OldSelection;
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement};
 use quadratic_core::wasm_bindings::controller::bounds::MinMax;
@@ -67,8 +68,7 @@ fn main() {
 
     s += &generate_type_declarations!(
         A1Error,
-        A1Cells,
-        A1CellsType,
+        JsCellsAccessed,
         ArraySize,
         Axis,
         BorderSelection,
@@ -127,7 +127,7 @@ fn main() {
         RunErrorMsg,
         ScreenRect,
         SearchOptions,
-        Selection,
+        OldSelection,
         SheetBounds,
         SheetId,
         SheetInfo,

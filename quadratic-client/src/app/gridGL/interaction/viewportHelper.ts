@@ -102,8 +102,8 @@ export function ensureRectVisible(min: Coordinate, max: Coordinate) {
 // Makes a cell visible in the viewport
 export function cellVisible(
   coordinate: Coordinate = {
-    x: sheets.sheet.cursor.cursorPosition.x,
-    y: sheets.sheet.cursor.cursorPosition.y,
+    x: sheets.sheet.cursor.position.x,
+    y: sheets.sheet.cursor.position.y,
   }
 ): boolean {
   // returns true if the cursor is visible in the viewport
@@ -175,7 +175,7 @@ export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinat
 }
 
 export function getShareUrlParams(): string {
-  let url = `x=${sheets.sheet.cursor.cursorPosition.x}&y=${sheets.sheet.cursor.cursorPosition.y}`;
+  let url = `x=${sheets.sheet.cursor.position.x}&y=${sheets.sheet.cursor.position.y}`;
   if (sheets.sheet !== sheets.getFirst()) {
     url += `&sheet=${sheets.sheet.name}`;
   }
@@ -201,8 +201,8 @@ export function pageUpDown(up: boolean) {
     cursor.changePosition({
       columnRow: null,
       multiCursor: null,
-      cursorPosition: { x: cursor.cursorPosition.x, y: newRow },
-      keyboardMovePosition: { x: cursor.cursorPosition.x, y: newRow },
+      cursorPosition: { x: cursor.position.x, y: newRow },
+      keyboardMovePosition: { x: cursor.position.x, y: newRow },
       ensureVisible: false,
     });
     const newCursorY = sheets.sheet.getRowY(newRow);

@@ -1,8 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Selection } from '@/app/quadratic-core-types';
-import { a1StringToSelection, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
+import { Selection, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
@@ -46,18 +44,18 @@ export const SheetRange = (props: Props) => {
   const ref = useRef<HTMLInputElement>(null);
 
   const a1SheetId = useMemo((): string => {
-    return changeCursor === true ? sheets.sheet.id : changeCursor ?? '';
-  }, [changeCursor]);
+    if (onlyCurrentSheet) {
+      return JSON.stringify({ id: onlyCurrentSheet });
+    }
+    const id = changeCursor === true ? sheets.sheet.id : changeCursor ?? sheets.sheet.id;
+    return JSON.stringify({ id });
+  }, [changeCursor, onlyCurrentSheet]);
 
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     if (ref.current) {
-      ref.current.value = selectionToA1String(
-        sheets.getRustSelectionStringified(),
-        a1SheetId,
-        sheets.getRustSheetMap()
-      );
-      const selection = sheets.sheet.cursor.getRustSelection();
+      const selection = sheets.sheet.cursor.selection;
+      ref.current.value = selection.toString(a1SheetId, sheets.getSheetIdNameMap());
       onChangeRange(selection);
       setRangeError(undefined);
     }
@@ -66,12 +64,7 @@ export const SheetRange = (props: Props) => {
   const updateValue = useCallback(
     (value: string) => {
       try {
-        const selectionString = a1StringToSelection(
-          value,
-          onlyCurrentSheet ?? (changeCursor === true ? sheets.sheet.id : changeCursor ?? sheets.sheet.id),
-          onlyCurrentSheet ? '{}' : sheets.getRustSheetMap()
-        );
-        const selection = JSON.parse(selectionString);
+        const selection = stringToSelection(value, a1SheetId, onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap());
         onChangeRange(selection);
         setRangeError(undefined);
       } catch (e: any) {
@@ -85,7 +78,7 @@ export const SheetRange = (props: Props) => {
         }
       }
     },
-    [changeCursor, onChangeRange, onlyCurrentSheet, onlyCurrentSheetError]
+    [a1SheetId, onChangeRange, onlyCurrentSheet, onlyCurrentSheetError]
   );
 
   const onBlur = useCallback(
@@ -98,23 +91,20 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial
-        ? selectionToA1String(JSON.stringify(initial, bigIntReplacer), a1SheetId, sheets.getRustSheetMap())
-        : '';
+      ref.current.value = initial ? initial.toString(a1SheetId, sheets.getRustSheetMap()) : '';
     }
   }, [changeCursor, a1SheetId, initial]);
 
   const onFocus = () => {
     if (!ref.current || !changeCursor) return;
     try {
-      const selectionString = a1StringToSelection(
+      const selection = stringToSelection(
         ref.current.value,
-        changeCursor === true ? sheets.sheet.id : changeCursor,
-        '{}'
+        a1SheetId,
+        onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap()
       );
-      const selection = JSON.parse(selectionString);
       if (selection) {
-        sheets.sheet.cursor.loadFromSelection(selection, true);
+        sheets.changeSelection(selection, true);
       }
     } catch (_) {
       // there was an error parsing the range, so nothing more to do

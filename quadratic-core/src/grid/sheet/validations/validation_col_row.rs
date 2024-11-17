@@ -132,7 +132,7 @@ mod tests {
         grid::sheet::validations::validation_rules::{
             validation_logical::ValidationLogical, ValidationRule,
         },
-        selection::Selection,
+        selection::OldSelection,
         Rect,
     };
 
@@ -146,7 +146,7 @@ mod tests {
         // rect and columns to be updated
         let validation_rect_columns = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(1, 1, 3, 3)]),
                 columns: Some(vec![1, 2, 3]),
                 ..Default::default()
@@ -160,7 +160,7 @@ mod tests {
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(2, 2, 1, 1)]),
                 columns: Some(vec![2]),
                 ..Default::default()
@@ -174,7 +174,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
                 columns: Some(vec![-10]),
                 rows: Some(vec![1, 2, 3, 4]),
@@ -198,7 +198,7 @@ mod tests {
         assert_eq!(
             validations.validations[0],
             Validation {
-                selection: Selection {
+                selection: OldSelection {
                     rects: Some(vec![Rect::new(1, 1, 2, 3)]),
                     columns: Some(vec![1, 2]),
                     ..validation_rect_columns.selection
@@ -217,7 +217,7 @@ mod tests {
         // rect and columns to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(1, 1, 3, 3)]),
                 rows: Some(vec![1, 2, 3]),
                 ..Default::default()
@@ -231,7 +231,7 @@ mod tests {
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(2, 2, 1, 1)]),
                 rows: Some(vec![2]),
                 ..Default::default()
@@ -245,7 +245,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
                 columns: Some(vec![1, 2, 3, 4]),
                 rows: Some(vec![-10]),
@@ -268,7 +268,7 @@ mod tests {
         assert_eq!(
             validations.validations[0],
             Validation {
-                selection: Selection {
+                selection: OldSelection {
                     rects: Some(vec![Rect::new(1, 1, 3, 2)]),
                     rows: Some(vec![1, 2]),
                     ..validation_rect_rows.selection
@@ -287,7 +287,7 @@ mod tests {
         // rect and rows to be updated
         let validation_rect_cols = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(1, 1, 3, 3)]),
                 columns: Some(vec![1, 2, 3]),
                 ..Default::default()
@@ -301,7 +301,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
                 columns: Some(vec![-10]),
                 ..Default::default()
@@ -323,7 +323,7 @@ mod tests {
         assert_eq!(
             validations.validations[0],
             Validation {
-                selection: Selection {
+                selection: OldSelection {
                     rects: Some(vec![Rect::new(1, 1, 4, 3)]),
                     columns: Some(vec![1, 3, 4]),
                     ..validation_rect_cols.selection
@@ -342,7 +342,7 @@ mod tests {
         // rect and columns to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(1, 1, 3, 3)]),
                 rows: Some(vec![1, 2, 3]),
                 ..Default::default()
@@ -356,7 +356,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
+            selection: OldSelection {
                 rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
                 rows: Some(vec![-10]),
                 ..Default::default()
@@ -378,7 +378,7 @@ mod tests {
         assert_eq!(
             validations.validations[0],
             Validation {
-                selection: Selection {
+                selection: OldSelection {
                     rects: Some(vec![Rect::new(1, 1, 3, 4)]),
                     rows: Some(vec![1, 3, 4]),
                     ..validation_rect_rows.selection

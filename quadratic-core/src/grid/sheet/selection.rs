@@ -8,7 +8,7 @@ use indexmap::IndexMap;
 
 use crate::{
     grid::{formats::format::Format, CodeRunResult, GridBounds},
-    selection::Selection,
+    selection::OldSelection,
     CellValue, Pos, Rect, Value,
 };
 
@@ -36,7 +36,7 @@ impl Sheet {
     /// (for now).
     pub fn selection(
         &self,
-        selection: &Selection,
+        selection: &OldSelection,
         max_count: Option<i64>,
         skip_code_runs: bool,
         include_blanks: bool,
@@ -266,7 +266,7 @@ impl Sheet {
     /// * For rects, it returns the largest bounds around the rects.
     /// * For columns or rows, it returns the data+formatting bounds around the
     ///   columns and/or rows.
-    pub(crate) fn selection_bounds(&self, selection: &Selection) -> Option<Rect> {
+    pub(crate) fn selection_bounds(&self, selection: &OldSelection) -> Option<Rect> {
         if selection.all {
             return match self.bounds(false) {
                 GridBounds::Empty => None,
@@ -316,7 +316,7 @@ impl Sheet {
     /// rectangular selection. It sorts the results by y and then x.
     pub(crate) fn selection_sorted_vec(
         &self,
-        selection: &Selection,
+        selection: &OldSelection,
         skip_code_runs: bool,
     ) -> Vec<(Pos, &CellValue)> {
         if let Some(map) = self.selection(selection, None, skip_code_runs, false) {
@@ -339,7 +339,7 @@ impl Sheet {
     /// Gets a list of cells with formatting for a selection. Only cells with a
     /// format are returned.
     /// TODO: return &Format when we change how formats are stored internally.
-    pub fn format_selection(&self, selection: &Selection) -> Vec<(Pos, Format)> {
+    pub fn format_selection(&self, selection: &OldSelection) -> Vec<(Pos, Format)> {
         let mut cells = HashMap::new();
         if selection.all {
             if let GridBounds::NonEmpty(bounds) = self.format_bounds {
@@ -399,6 +399,8 @@ impl Sheet {
         cells.into_iter().collect()
     }
 
+    /// **Deprecated** Nov 2024 in favor of [`Self::selection_to_rects()`].
+    ///
     /// Returns a vec of Rects for a selection. This is useful for creating
     /// Operation::SetCellValues so we don't overlap areas that are not
     /// selected.
@@ -406,7 +408,7 @@ impl Sheet {
     /// todo: this returns CodeRuns bounds as well. We probably should make the
     /// CodeRuns optional as they're not needed for things like
     /// delete_cell_operations operations. But it doesn't do any harm.
-    pub fn selection_rects_values(&self, selection: &Selection) -> Vec<Rect> {
+    pub fn selection_rects_values(&self, selection: &OldSelection) -> Vec<Rect> {
         let mut rects = vec![];
         if selection.all {
             if let GridBounds::NonEmpty(bounds) = self.bounds(false) {
@@ -466,7 +468,7 @@ mod tests {
         );
         sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "3"], true);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: sheet.id,
             x: 0,
             y: 0,
@@ -509,7 +511,7 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from_str("10.0").unwrap()))
         );
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: sheet.id,
             x: 0,
             y: 0,
@@ -544,7 +546,7 @@ mod tests {
         );
         sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "3"], false);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: sheet.id,
             x: 0,
             y: 0,
@@ -582,7 +584,7 @@ mod tests {
         ];
         let results = sheet
             .selection(
-                &Selection {
+                &OldSelection {
                     sheet_id: sheet.id,
                     x: 0,
                     y: 0,
@@ -605,7 +607,7 @@ mod tests {
 
         assert!(sheet
             .selection(
-                &Selection {
+                &OldSelection {
                     sheet_id: sheet.id,
                     x: 0,
                     y: 0,
@@ -635,7 +637,7 @@ mod tests {
         ];
         let results = sheet
             .selection(
-                &Selection {
+                &OldSelection {
                     sheet_id: sheet.id,
                     x: 0,
                     y: 0,
@@ -654,7 +656,7 @@ mod tests {
 
         assert!(sheet
             .selection(
-                &Selection {
+                &OldSelection {
                     sheet_id: sheet.id,
                     x: 0,
                     y: 0,
@@ -671,7 +673,7 @@ mod tests {
 
         let results = sheet
             .selection(
-                &Selection {
+                &OldSelection {
                     sheet_id: sheet.id,
                     x: 0,
                     y: 0,
@@ -708,7 +710,7 @@ mod tests {
         );
         sheet.test_set_code_run_array(0, 4, vec!["1", "2", "3"], false);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: sheet.id,
             x: 0,
             y: 0,
@@ -735,7 +737,7 @@ mod tests {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             ..Default::default()
         };
@@ -744,7 +746,7 @@ mod tests {
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
         sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
             ..Default::default()
@@ -754,7 +756,7 @@ mod tests {
             Some(Rect::from_numbers(-4, -4, 10, 10))
         );
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             columns: Some(vec![-1, 0]),
             ..Default::default()
@@ -764,14 +766,14 @@ mod tests {
             Some(Rect::from_numbers(-1, -1, 2, 3))
         );
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             columns: Some(vec![5, 6]),
             ..Default::default()
         };
         assert_eq!(sheet.selection_bounds(&selection), None);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rows: Some(vec![-1, 0]),
             ..Default::default()
@@ -784,7 +786,7 @@ mod tests {
             })
         );
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rows: Some(vec![-10, -11]),
             ..Default::default()
@@ -798,7 +800,7 @@ mod tests {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             ..Default::default()
         };
@@ -821,7 +823,7 @@ mod tests {
             },
         );
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rects: Some(vec![Rect::from_numbers(0, 0, 2, 2)]),
             ..Default::default()
@@ -836,7 +838,7 @@ mod tests {
             .iter()
             .any(|(pos, value)| { *pos == Pos { x: 1, y: 1 } && value.bold == Some(false) }));
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             columns: Some(vec![0, 1]),
             ..Default::default()
@@ -850,7 +852,7 @@ mod tests {
             .iter()
             .any(|(pos, value)| { *pos == Pos { x: 1, y: 1 } && value.bold == Some(false) }));
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rows: Some(vec![0, 1]),
             ..Default::default()
@@ -871,7 +873,7 @@ mod tests {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             ..Default::default()
         };
@@ -880,7 +882,7 @@ mod tests {
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
         sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
             ..Default::default()
@@ -890,7 +892,7 @@ mod tests {
             vec![Rect::from_numbers(-4, -4, 10, 10)]
         );
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             columns: Some(vec![-1, 0]),
             ..Default::default()
@@ -902,14 +904,14 @@ mod tests {
             vec![Rect::new(-1, -1, -1, 1), Rect::new(0, 0, 0, 1)]
         );
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             columns: Some(vec![5, 6]),
             ..Default::default()
         };
         assert_eq!(sheet.selection_rects_values(&selection), vec![]);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rows: Some(vec![-1, 0]),
             ..Default::default()
@@ -919,7 +921,7 @@ mod tests {
             vec![Rect::new(-1, -1, -1, -1), Rect::new(-1, 0, 1, 0)]
         );
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id,
             rows: Some(vec![-10, -11]),
             ..Default::default()
@@ -933,7 +935,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "", "3", ""]);
 
-        let selection = Selection {
+        let selection = OldSelection {
             sheet_id: sheet.id,
             x: 0,
             y: 0,

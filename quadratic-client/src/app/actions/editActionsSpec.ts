@@ -163,7 +163,7 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const cursor = sheets.sheet.cursor;
-        const cursorPosition = cursor.cursorPosition;
+        const cursorPosition = cursor.position;
         const column = cursorPosition.x;
         const row = cursorPosition.y;
         quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
@@ -205,7 +205,7 @@ export const editActionsSpec: EditActionSpec = {
   [Action.TriggerCell]: {
     label: 'Trigger cell',
     run: () => {
-      const p = sheets.sheet.cursor.cursorPosition;
+      const p = sheets.sheet.cursor.position;
       events.emit('triggerCell', p.x, p.y, true);
     },
   },
