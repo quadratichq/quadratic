@@ -203,7 +203,18 @@ export class SheetCursor {
     this.updatePosition(true);
   }
 
-  selectColumns(column: number[], startColumn?: number) {}
+  // Returns all columns that have a selection (used by cmd+space)
+  setColumnsSelected() {
+    this.selection.setColumnsSelected();
+    this.updatePosition(true);
+  }
+
+  setRowsSelected() {
+    this.selection.setRowsSelected();
+    this.updatePosition(true);
+  }
+
+  selectColumns(columns: number[]) {}
 
   selectRows(row: number[], startRow?: number) {}
 

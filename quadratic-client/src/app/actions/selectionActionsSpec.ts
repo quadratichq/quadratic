@@ -41,40 +41,13 @@ export const selectionActionsSpec: SelectionActionSpec = {
   [Action.SelectColumn]: {
     label: 'Select column',
     run: () => {
-      sheets.sheet.cursor.selectColumns();
-
-      // if (cursor.columnRow?.all || cursor.columnRow?.rows?.length) {
-      //   selectAllCells();
-      // } else {
-      //   let columns = new Set<number>(cursor.columnRow?.columns);
-      //   columns.add(cursor.position.x);
-      //   cursor.multiCursor?.forEach((rect) => {
-      //     for (let x = rect.x; x < rect.x + rect.width; x++) {
-      //       columns.add(x);
-      //     }
-      //   });
-      //   selectColumns(Array.from(columns), cursor.position.x);
-      // }
+      sheets.sheet.cursor.setColumnsSelected();
     },
   },
   [Action.SelectRow]: {
     label: 'Select row',
     run: () => {
-      // const cursor = sheets.sheet.cursor;
-      throw new Error('TODO select row');
-
-      // if (cursor.columnRow?.all || cursor.columnRow?.columns?.length) {
-      //   selectAllCells();
-      // } else {
-      //   let row = new Set<number>(cursor.columnRow?.rows);
-      //   row.add(cursor.position.y);
-      //   cursor.multiCursor?.forEach((rect) => {
-      //     for (let y = rect.y; y < rect.y + rect.height; y++) {
-      //       row.add(y);
-      //     }
-      //   });
-      //   selectRows(Array.from(row), cursor.position.y);
-      // }
+      sheets.sheet.cursor.setRowsSelected();
     },
   },
   [Action.MoveCursorUp]: {

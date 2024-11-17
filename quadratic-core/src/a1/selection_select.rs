@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::{Pos, Rect};
 
 use super::{A1Selection, CellRefCoord, CellRefRange, CellRefRangeEnd};
@@ -70,6 +72,62 @@ impl A1Selection {
             }
         }
         false
+    }
+
+    /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
+    /// checks the last range (the same as Excel and Sheets)
+    pub fn set_columns_selected(&mut self) {
+        let start: u64;
+        let mut end: Option<u64> = None;
+        if let Some(last) = self.ranges.last_mut() {
+            if let Some(end_col) = last.end.as_ref().and_then(|end| end.col) {
+                if let Some(start_col) = last.start.col {
+                    start = start_col.coord;
+                    end = Some(end_col.coord);
+                } else {
+                    start = end_col.coord;
+                }
+            } else if let Some(col) = last.start.col {
+                start = col.coord;
+            } else {
+                start = self.cursor.x as u64;
+            }
+        } else {
+            start = self.cursor.x as u64;
+        }
+        self.ranges.clear();
+        self.ranges.push(CellRefRange {
+            start: CellRefRangeEnd::new_relative_column(start),
+            end: end.map(|end| CellRefRangeEnd::new_relative_column(end)),
+        });
+    }
+
+    /// Changes the selection to select all rows that have a selection (used by shift+space). It only
+    /// checks the last range (the same as Excel and Sheets)
+    pub fn set_rows_selected(&mut self) {
+        let start: u64;
+        let mut end: Option<u64> = None;
+        if let Some(last) = self.ranges.last() {
+            if let Some(end_row) = last.end.as_ref().and_then(|end| end.row) {
+                if let Some(start_row) = last.start.row {
+                    start = start_row.coord;
+                    end = Some(end_row.coord);
+                } else {
+                    start = end_row.coord;
+                }
+            } else if let Some(row) = last.start.row {
+                start = row.coord;
+            } else {
+                start = self.cursor.y as u64;
+            }
+        } else {
+            start = self.cursor.y as u64;
+        }
+        self.ranges.clear();
+        self.ranges.push(CellRefRange {
+            start: CellRefRangeEnd::new_relative_row(start),
+            end: end.map(|end| CellRefRangeEnd::new_relative_row(end)),
+        });
     }
 }
 
@@ -207,5 +265,61 @@ mod tests {
             selection.to_string(Some(SheetId::test()), &HashMap::new()),
             "B2"
         );
+    }
+
+    #[test]
+    fn test_columns_selected() {
+        let mut selection =
+            A1Selection::from_str("A1,B1,C1", SheetId::test(), &HashMap::new()).unwrap();
+        selection.set_columns_selected();
+        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_column(3)]);
+
+        let mut selection =
+            A1Selection::from_str("A1:C1", SheetId::test(), &HashMap::new()).unwrap();
+        selection.set_columns_selected();
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::new_relative_column_range(1, 3)]
+        );
+
+        let mut selection = A1Selection::from_str("A:C", SheetId::test(), &HashMap::new()).unwrap();
+        selection.set_columns_selected();
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::new_relative_column_range(1, 3)]
+        );
+
+        // this covers the case of a row selection where it uses the cursor's x as the column selection
+        let mut selection = A1Selection::from_str("2:3", SheetId::test(), &HashMap::new()).unwrap();
+        selection.set_columns_selected();
+        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_column(1)]);
+    }
+
+    #[test]
+    fn test_rows_selected() {
+        let mut selection =
+            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        selection.set_rows_selected();
+        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(3)]);
+
+        let mut selection =
+            A1Selection::from_str("A1:C3", SheetId::test(), &HashMap::new()).unwrap();
+        selection.set_rows_selected();
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::new_relative_row_range(1, 3)]
+        );
+
+        let mut selection = A1Selection::from_str("1:3", SheetId::test(), &HashMap::new()).unwrap();
+        selection.set_rows_selected();
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::new_relative_row_range(1, 3)]
+        );
+
+        // this covers the case of a column selection where it uses the cursor's y as the row selection
+        let mut selection = A1Selection::from_str("C:D", SheetId::test(), &HashMap::new()).unwrap();
+        selection.set_rows_selected();
+        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(1)]);
     }
 }
