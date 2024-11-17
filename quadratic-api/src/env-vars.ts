@@ -37,7 +37,7 @@ export const LICENSE_KEY = process.env.LICENSE_KEY as string;
 export const M2M_AUTH_TOKEN = process.env.M2M_AUTH_TOKEN;
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-export const EXA_API_KEY = process.env.EXA_API_KEY || '';
+export const EXA_API_KEY = process.env.EXA_API_KEY;
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
