@@ -45,8 +45,8 @@ impl GridController {
             } else if transaction.operations.is_empty()
                 && !transaction.pending_ai_researcher.is_empty()
             {
-                let running_ai_researcher = self.run_ai_researcher_parallel(transaction);
-                if running_ai_researcher {
+                self.run_ai_researcher_parallel(transaction);
+                if !transaction.running_ai_researcher.is_empty() {
                     break;
                 }
             } else if let Some((sheet_id, rows)) = transaction

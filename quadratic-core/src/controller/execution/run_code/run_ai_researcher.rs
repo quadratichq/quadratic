@@ -97,12 +97,9 @@ impl GridController {
         }
     }
 
-    pub(crate) fn run_ai_researcher_parallel(
-        &mut self,
-        transaction: &mut PendingTransaction,
-    ) -> bool {
+    pub(crate) fn run_ai_researcher_parallel(&mut self, transaction: &mut PendingTransaction) {
         if transaction.pending_ai_researcher.is_empty() {
-            return false;
+            return;
         }
 
         // all ai researcher requests that are currently pending or running
@@ -217,7 +214,6 @@ impl GridController {
         }
 
         self.send_ai_researcher_state(transaction);
-        !transaction.running_ai_researcher.is_empty()
     }
 
     fn request_ai_researcher_result(
