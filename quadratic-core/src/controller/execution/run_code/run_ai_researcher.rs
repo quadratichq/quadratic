@@ -168,7 +168,7 @@ impl GridController {
                     }
 
                     if referenced_cell_has_error {
-                        transaction.pending_ai_researcher.remove(&sheet_pos);
+                        transaction.pending_ai_researcher.remove(sheet_pos);
                         let run_error = RunError {
                             span: None,
                             msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
@@ -176,7 +176,7 @@ impl GridController {
                         transaction.current_sheet_pos = Some(sheet_pos.to_owned());
                         let _ = self.code_cell_sheet_error(transaction, &run_error);
                     } else if has_circular_reference {
-                        transaction.pending_ai_researcher.remove(&sheet_pos);
+                        transaction.pending_ai_researcher.remove(sheet_pos);
                         let run_error = RunError {
                             span: None,
                             msg: RunErrorMsg::CircularReference,
@@ -195,7 +195,7 @@ impl GridController {
                     }
                 }
                 Err(error) => {
-                    transaction.pending_ai_researcher.remove(&sheet_pos);
+                    transaction.pending_ai_researcher.remove(sheet_pos);
                     transaction.current_sheet_pos = Some(sheet_pos.to_owned());
                     let _ = self.code_cell_sheet_error(transaction, &error);
                 }
@@ -210,13 +210,13 @@ impl GridController {
                 msg: RunErrorMsg::CircularReference,
             };
             for sheet_pos in pending_ai_researcher.iter() {
-                transaction.pending_ai_researcher.remove(&sheet_pos);
+                transaction.pending_ai_researcher.remove(sheet_pos);
                 transaction.current_sheet_pos = Some(sheet_pos.to_owned());
                 let _ = self.code_cell_sheet_error(transaction, &run_error);
             }
         }
 
-        self.send_ai_researcher_state(&transaction);
+        self.send_ai_researcher_state(transaction);
         !transaction.running_ai_researcher.is_empty()
     }
 
