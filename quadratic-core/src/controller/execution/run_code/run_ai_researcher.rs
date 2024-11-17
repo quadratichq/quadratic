@@ -28,7 +28,7 @@ impl GridController {
             // sheet may have been deleted in a multiplayer operation
             return Err(RunError {
                 span: None,
-                msg: RunErrorMsg::InternalError("Sheet not found".into()),
+                msg: RunErrorMsg::Unexpected("Sheet not found".into()),
             });
         };
 
