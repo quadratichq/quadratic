@@ -2,7 +2,7 @@ export function getJavascriptFetchOverride(proxyUrl: string, jwt: string) {
   return `
 self['fetch'] = new Proxy(fetch, {
   apply: function (target, thisArg, args) {
-    const [resource, config] = args;
+    const [url, config] = args;
 
     const newConfig = config || {};
     const headers = newConfig.headers || {};
@@ -14,7 +14,6 @@ self['fetch'] = new Proxy(fetch, {
     }
 
     // Set the original request URL on X-Proxy-Url header
-    const url = new URL(resource, location.origin);
     newHeaders['X-Proxy-Url'] = url.toString();
 
     // Set the authorization header for the proxy server
