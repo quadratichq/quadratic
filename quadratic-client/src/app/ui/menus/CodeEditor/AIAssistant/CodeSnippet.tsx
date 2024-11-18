@@ -16,7 +16,7 @@ import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
-const MAX_LINES = 8;
+const MAX_LINES = 6;
 
 interface CodeSnippetProps {
   code: string;
@@ -69,12 +69,10 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
             </span>
           </Button>
 
-          {!isLoading && (
-            <div className="absolute right-1.5 top-1.5 flex items-center">
-              <CodeSnippetCopyButton text={code} language={language} />
-              <CodeSnippetRunButton text={code} language={language} />
-            </div>
-          )}
+          <div className="absolute right-1.5 top-1.5 flex items-center">
+            <CodeSnippetCopyButton text={code} language={language} isLoading={isLoading} />
+            <CodeSnippetRunButton text={code} language={language} isLoading={isLoading} />
+          </div>
         </div>
 
         <div
@@ -131,7 +129,15 @@ export function CodeSnippet({ code, language = 'plaintext' }: CodeSnippetProps) 
   );
 }
 
-function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+function CodeSnippetRunButton({
+  language,
+  text,
+  isLoading,
+}: {
+  language: CodeSnippetProps['language'];
+  text: string;
+  isLoading: boolean;
+}) {
   const handleSaveAndRun = useRecoilCallback(
     ({ snapshot, set }) =>
       async () => {
@@ -169,13 +175,22 @@ function CodeSnippetRunButton({ language, text }: { language: CodeSnippetProps['
       size="sm"
       className="px-2 text-muted-foreground hover:text-foreground"
       onClick={handleSaveAndRun}
+      disabled={isLoading}
     >
       <SaveAndRunIcon /> Apply
     </Button>
   );
 }
 
-function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps['language']; text: string }) {
+function CodeSnippetCopyButton({
+  language,
+  text,
+  isLoading,
+}: {
+  language: CodeSnippetProps['language'];
+  text: string;
+  isLoading: boolean;
+}) {
   const [tooltipMsg, setTooltipMsg] = useState<string>('Copy');
 
   const handleCopy = useCallback(
@@ -192,7 +207,13 @@ function CodeSnippetCopyButton({ language, text }: { language: CodeSnippetProps[
   );
 
   return (
-    <Button variant="ghost" size="sm" className="px-2 text-muted-foreground hover:text-foreground" onClick={handleCopy}>
+    <Button
+      variant="ghost"
+      size="sm"
+      className="px-2 text-muted-foreground hover:text-foreground"
+      onClick={handleCopy}
+      disabled={isLoading}
+    >
       <CopyIcon className="mr-1" /> {tooltipMsg}
     </Button>
   );
