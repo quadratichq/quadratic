@@ -177,7 +177,7 @@ function CodeSnippetRunButton({
       onClick={handleSaveAndRun}
       disabled={isLoading}
     >
-      <SaveAndRunIcon /> Apply
+      <SaveAndRunIcon /> Apply & run
     </Button>
   );
 }

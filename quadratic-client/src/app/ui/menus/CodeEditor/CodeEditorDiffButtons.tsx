@@ -70,11 +70,11 @@ export const CodeEditorDiffButtons = () => {
 
   return (
     <div className="code-editor-diff-button grid grid-cols-2 items-center gap-2 px-2 pb-2 text-foreground">
-      <Button onClick={handleDiffReject} variant="destructive">
+      <Button onClick={handleDiffReject} variant="destructive" size="sm">
         <ThumbDownIcon className="mr-1" /> Reject
       </Button>
 
-      <Button onClick={handleDiffAccept} variant="success">
+      <Button onClick={handleDiffAccept} variant="success" size="sm">
         <ThumbUpIcon className="mr-1" /> Accept
       </Button>
     </div>
