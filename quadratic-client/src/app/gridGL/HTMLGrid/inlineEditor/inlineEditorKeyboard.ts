@@ -312,7 +312,7 @@ class InlineEditorKeyboard {
       e.preventDefault();
       e.stopPropagation();
       pixiAppSettings.changeInput(false);
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setEditorInteractionState?.({
         ...pixiAppSettings.editorInteractionState,
         showCellTypeMenu: true,
@@ -363,14 +363,7 @@ class InlineEditorKeyboard {
     if (!editingSheet) {
       throw new Error('Expected editingSheet to be defined in resetKeyboardPosition');
     }
-    const position = { x: location.x, y: location.y };
-    editingSheet.cursor.changePosition({
-      cursorPosition: position,
-      multiCursor: null,
-      columnRow: null,
-      keyboardMovePosition: position,
-      ensureVisible: true,
-    });
+    editingSheet.cursor.moveTo(location.x, location.y);
     if (sheets.sheet.id !== location.sheetId) {
       sheets.current = location.sheetId;
 

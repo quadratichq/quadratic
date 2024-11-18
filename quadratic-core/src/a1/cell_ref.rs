@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use super::{A1Error, SheetIdNameMap, SheetNameIdMap};
+use super::{A1Error, SheetNameIdMap};
 use crate::{grid::SheetId, Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -34,14 +34,15 @@ impl SheetCellRefRange {
     pub fn to_string(
         self,
         default_sheet_id: Option<SheetId>,
-        sheet_map: &SheetIdNameMap,
+        sheet_map: &SheetNameIdMap,
     ) -> String {
         if default_sheet_id.is_some_and(|it| it != self.sheet) {
             let sheet_name = sheet_map
-                .get(&self.sheet)
-                .map(String::as_str)
-                .unwrap_or(super::UNKNOWN_SHEET_NAME);
-            format!("{}!{}", super::quote_sheet_name(sheet_name), self.cells)
+                .iter()
+                .find(|(_, id)| **id == self.sheet)
+                .map(|(name, _)| name.clone())
+                .unwrap_or(super::UNKNOWN_SHEET_NAME.to_string());
+            format!("{}!{}", super::quote_sheet_name(&sheet_name), self.cells)
         } else {
             format!("{}", self.cells)
         }

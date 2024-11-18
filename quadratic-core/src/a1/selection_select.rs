@@ -1,8 +1,6 @@
-use std::collections::BTreeSet;
-
 use crate::{Pos, Rect};
 
-use super::{A1Selection, CellRefCoord, CellRefRange, CellRefRangeEnd};
+use super::{A1Selection, CellRefRange, CellRefRangeEnd};
 
 impl A1Selection {
     /// Selects the entire sheet.
@@ -128,6 +126,13 @@ impl A1Selection {
             start: CellRefRangeEnd::new_relative_row(start),
             end: end.map(|end| CellRefRangeEnd::new_relative_row(end)),
         });
+    }
+
+    /// Returns whether the selection contains the given position.
+    pub fn contains(&self, x: u64, y: u64) -> bool {
+        self.ranges
+            .iter()
+            .any(|range| range.might_contain_pos(Pos::new(x as i64, y as i64)))
     }
 }
 

@@ -2,6 +2,7 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -207,11 +208,23 @@ export class SheetCursor {
     this.updatePosition(true);
   }
 
-  selectColumns(columns: number[]) {}
+  selectColumns(columns: number[]) {
+    throw new Error('TODO selectColumns');
+  }
 
-  selectRows(row: number[], startRow?: number) {}
+  selectRows(row: number[], startRow?: number) {
+    throw new Error('TODO selectRows');
+  }
 
   isMultiCursor(): boolean {
     return this.selection.isMultiCursor();
+  }
+
+  toA1String(sheetId = sheets.sheet.id): string {
+    return this.selection.toString(sheetId, sheets.getRustSheetMap());
+  }
+
+  contains(x: number, y: number): boolean {
+    return this.selection.contains(x, y);
   }
 }

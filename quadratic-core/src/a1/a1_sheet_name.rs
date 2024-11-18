@@ -5,13 +5,11 @@ use crate::grid::SheetId;
 
 /// Map from sheet name to ID.
 ///
+/// Note, we cannot use a reverse map because TS does
+/// not support structs as keys.
+///
 /// Sheet names should be case-folded using [`crate::util::case_fold()`].
 pub type SheetNameIdMap = HashMap<String, SheetId>;
-
-/// Map from sheet ID to name.
-///
-/// Sheet names should NOT be case-folded.
-pub type SheetIdNameMap = HashMap<SheetId, String>;
 
 /// Parses the sheet name from an A1 cell reference string. If the string does
 /// not contain `!`, then this function returns `Ok((None, _))`. If the string

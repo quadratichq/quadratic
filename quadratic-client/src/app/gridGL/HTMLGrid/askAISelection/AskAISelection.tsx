@@ -38,27 +38,19 @@ export function AskAISelection() {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const showAskAISelection = useCallback(() => {
-    const selection = sheets.getRustSelection();
-    if (
-      selection &&
-      selection.rects?.length === 1 &&
-      !(selection.rects[0].min.x === selection.rects[0].max.x && selection.rects[0].min.y === selection.rects[0].max.y)
-    ) {
-      const rect = selection.rects[0];
+    const selection = sheets.sheet.cursor.getLargestRectangle();
+    if (selection.width !== 1 || selection.height !== 1) {
       const sheetRect: Context['selection'] = {
-        sheet_id: selection.sheet_id,
-        min: { x: Number(rect.min.x), y: Number(rect.min.y) },
-        max: { x: Number(rect.max.x), y: Number(rect.max.y) },
+        sheet_id: { id: sheets.sheet.id },
+        min: { x: selection.x, y: selection.y },
+        max: { x: selection.x + selection.width, y: selection.y + selection.height },
       };
-      const hasContent = pixiApp.cellsSheets.getById(selection.sheet_id.id)?.cellsLabels.hasCellInRect(rect);
-      const column = Math.max(Number(rect.min.x), Number(rect.max.x));
-      const row = Math.min(Number(rect.min.y), Number(rect.max.y));
-      const rectangle = sheets.getById(selection.sheet_id.id)?.getCellOffsets(column, row);
-      if (hasContent && rectangle && !inlineEditorState.visible) {
+      const hasContent = pixiApp.cellsSheets.getById(sheets.sheet.id)?.cellsLabels.hasCellInRect(selection);
+      if (hasContent && !inlineEditorState.visible) {
         setSelection(sheetRect);
         setDisplayPos({
-          x: rectangle.x + rectangle.width,
-          y: rectangle.y,
+          x: selection.x + selection.width,
+          y: selection.y,
         });
       } else {
         setSelection(undefined);

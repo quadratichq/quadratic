@@ -26,10 +26,7 @@ function inCodeEditor(codeEditorState: CodeEditorState, cursor: SheetCursor): bo
   }
 
   // selectedCell is inside multi-cursor
-  if (cursor.multiCursor?.some((cursor) => cursor.contains(selectedX, selectedY))) {
-    return true;
-  }
-  return false;
+  return cursor.contains(selectedX, selectedY);
 }
 
 export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
@@ -45,31 +42,13 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   // Move cursor right, don't clear selection
   if (matchShortcut(Action.MoveCursorRightWithSelection, event)) {
-    cursor.changePosition({
-      keyboardMovePosition: {
-        x: cursorPosition.x + 1,
-        y: cursorPosition.y,
-      },
-      cursorPosition: {
-        x: cursorPosition.x + 1,
-        y: cursorPosition.y,
-      },
-    });
+    cursor.moveTo(cursorPosition.x + 1, cursorPosition.y);
     return true;
   }
 
   // Move cursor left, don't clear selection
   if (matchShortcut(Action.MoveCursorLeftWithSelection, event)) {
-    cursor.changePosition({
-      keyboardMovePosition: {
-        x: cursorPosition.x - 1,
-        y: cursorPosition.y,
-      },
-      cursorPosition: {
-        x: cursorPosition.x - 1,
-        y: cursorPosition.y,
-      },
-    });
+    cursor.moveTo(cursorPosition.x - 1, cursorPosition.y);
     return true;
   }
 

@@ -193,53 +193,55 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
   // Disabled in debug mode, to allow page reload
   if (!debug && matchShortcut(Action.FillRight, event)) {
     const cursor = sheets.sheet.cursor;
-    if (cursor.columnRow?.all || cursor.columnRow?.rows) return true;
-    if (cursor.columnRow?.columns && cursor.multiCursor) return true;
-    if (cursor.columnRow?.columns) {
-      if (cursor.columnRow.columns.length > 1) return true;
-      const column = cursor.columnRow.columns[0];
-      const bounds = sheets.sheet.getBounds(false);
-      if (!bounds) return true;
-      quadraticCore.autocomplete(
-        sheets.current,
-        column - 1,
-        bounds.top,
-        column - 1,
-        bounds.bottom,
-        column - 1,
-        bounds.top,
-        column,
-        bounds.bottom
-      );
-    } else if (cursor.multiCursor) {
-      if (cursor.multiCursor.length > 1) return true;
-      const rectangle = cursor.multiCursor[0];
-      if (rectangle.width > 1) return true;
-      quadraticCore.autocomplete(
-        sheets.current,
-        rectangle.x - 1,
-        rectangle.top,
-        rectangle.x - 1,
-        rectangle.bottom,
-        rectangle.x - 1,
-        rectangle.top,
-        rectangle.x,
-        rectangle.bottom
-      );
-    } else {
-      const position = cursor.position;
-      quadraticCore.autocomplete(
-        sheets.current,
-        position.x - 1,
-        position.y,
-        position.x - 1,
-        position.y,
-        position.x - 1,
-        position.y,
-        position.x,
-        position.y
-      );
-    }
+    // todo...
+
+    // if (cursor.columnRow?.all || cursor.columnRow?.rows) return true;
+    // if (cursor.columnRow?.columns && cursor.multiCursor) return true;
+    // if (cursor.columnRow?.columns) {
+    //   if (cursor.columnRow.columns.length > 1) return true;
+    //   const column = cursor.columnRow.columns[0];
+    //   const bounds = sheets.sheet.getBounds(false);
+    //   if (!bounds) return true;
+    //   quadraticCore.autocomplete(
+    //     sheets.current,
+    //     column - 1,
+    //     bounds.top,
+    //     column - 1,
+    //     bounds.bottom,
+    //     column - 1,
+    //     bounds.top,
+    //     column,
+    //     bounds.bottom
+    //   );
+    // } else if (cursor.multiCursor) {
+    //   if (cursor.multiCursor.length > 1) return true;
+    //   const rectangle = cursor.multiCursor[0];
+    //   if (rectangle.width > 1) return true;
+    //   quadraticCore.autocomplete(
+    //     sheets.current,
+    //     rectangle.x - 1,
+    //     rectangle.top,
+    //     rectangle.x - 1,
+    //     rectangle.bottom,
+    //     rectangle.x - 1,
+    //     rectangle.top,
+    //     rectangle.x,
+    //     rectangle.bottom
+    //   );
+    // } else {
+    const position = cursor.position;
+    quadraticCore.autocomplete(
+      sheets.current,
+      position.x - 1,
+      position.y,
+      position.x - 1,
+      position.y,
+      position.x - 1,
+      position.y,
+      position.x,
+      position.y
+    );
+    // }
 
     return true;
   }
@@ -247,53 +249,54 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
   // Fill down
   if (matchShortcut(Action.FillDown, event)) {
     const cursor = sheets.sheet.cursor;
-    if (cursor.columnRow?.all || cursor.columnRow?.columns) return true;
-    if (cursor.columnRow?.rows && cursor.multiCursor) return true;
-    if (cursor.columnRow?.rows) {
-      if (cursor.columnRow.rows.length > 1) return true;
-      const row = cursor.columnRow.rows[0];
-      const bounds = sheets.sheet.getBounds(false);
-      if (!bounds) return true;
-      quadraticCore.autocomplete(
-        sheets.current,
-        bounds.left,
-        row - 1,
-        bounds.right,
-        row - 1,
-        bounds.left,
-        row - 1,
-        bounds.right,
-        row
-      );
-    } else if (cursor.multiCursor) {
-      if (cursor.multiCursor.length > 1) return true;
-      const rectangle = cursor.multiCursor[0];
-      if (rectangle.height > 1) return true;
-      quadraticCore.autocomplete(
-        sheets.current,
-        rectangle.left,
-        rectangle.top - 1,
-        rectangle.right,
-        rectangle.top - 1,
-        rectangle.left,
-        rectangle.top - 1,
-        rectangle.right,
-        rectangle.top
-      );
-    } else {
-      const position = cursor.position;
-      quadraticCore.autocomplete(
-        sheets.current,
-        position.x,
-        position.y - 1,
-        position.x,
-        position.y - 1,
-        position.x,
-        position.y - 1,
-        position.x,
-        position.y
-      );
-    }
+    // todo...
+    // if (cursor.columnRow?.all || cursor.columnRow?.columns) return true;
+    // if (cursor.columnRow?.rows && cursor.multiCursor) return true;
+    // if (cursor.columnRow?.rows) {
+    //   if (cursor.columnRow.rows.length > 1) return true;
+    //   const row = cursor.columnRow.rows[0];
+    //   const bounds = sheets.sheet.getBounds(false);
+    //   if (!bounds) return true;
+    //   quadraticCore.autocomplete(
+    //     sheets.current,
+    //     bounds.left,
+    //     row - 1,
+    //     bounds.right,
+    //     row - 1,
+    //     bounds.left,
+    //     row - 1,
+    //     bounds.right,
+    //     row
+    //   );
+    // } else if (cursor.multiCursor) {
+    //   if (cursor.multiCursor.length > 1) return true;
+    //   const rectangle = cursor.multiCursor[0];
+    //   if (rectangle.height > 1) return true;
+    //   quadraticCore.autocomplete(
+    //     sheets.current,
+    //     rectangle.left,
+    //     rectangle.top - 1,
+    //     rectangle.right,
+    //     rectangle.top - 1,
+    //     rectangle.left,
+    //     rectangle.top - 1,
+    //     rectangle.right,
+    //     rectangle.top
+    //   );
+    // } else {
+    const position = cursor.position;
+    quadraticCore.autocomplete(
+      sheets.current,
+      position.x,
+      position.y - 1,
+      position.x,
+      position.y - 1,
+      position.x,
+      position.y - 1,
+      position.x,
+      position.y
+    );
+    // }
 
     return true;
   }

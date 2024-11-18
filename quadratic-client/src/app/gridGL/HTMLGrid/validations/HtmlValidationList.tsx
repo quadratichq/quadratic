@@ -126,12 +126,10 @@ export const HtmlValidationList = (props: Props) => {
         }
       } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
         changeValue(list[index]);
-        sheets.sheet.cursor.changePosition({
-          cursorPosition: {
-            x: sheets.sheet.cursor.position.x + (key === 'ArrowLeft' ? -1 : 1),
-            y: sheets.sheet.cursor.position.y,
-          },
-        });
+        sheets.sheet.cursor.moveTo(
+            sheets.sheet.cursor.position.x + (key === 'ArrowLeft' ? -1 : 1),
+            sheets.sheet.cursor.position.y,
+        );
       } else if (key === 'Escape') {
         setAnnotationState(undefined);
       }

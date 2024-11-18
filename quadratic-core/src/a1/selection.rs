@@ -1,4 +1,3 @@
-use std::collections::{btree_map, BTreeMap, BTreeSet};
 #[cfg(test)]
 use std::ops::RangeInclusive;
 
@@ -8,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use super::A1Subspaces;
 use crate::{
     grid::SheetId, selection::OldSelection, A1Error, CellRefRange, Pos, Rect, SheetCellRefRange,
-    SheetIdNameMap, SheetNameIdMap, SheetPos, SheetRect,
+    SheetNameIdMap, SheetPos, SheetRect,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -207,7 +206,7 @@ impl A1Selection {
     pub fn to_string(
         &self,
         default_sheet_id: Option<SheetId>,
-        sheet_map: &SheetIdNameMap,
+        sheet_map: &SheetNameIdMap,
     ) -> String {
         let sheet = self.sheet;
         self.ranges
@@ -578,12 +577,12 @@ mod tests {
         let sheet_id = SheetId::test();
         let sheet_second = SheetId::new();
         let map = HashMap::from([
-            (sheet_id, "First".to_string()),
-            (sheet_second, "Second".to_string()),
+            ("First".to_string(), sheet_id),
+            ("Second".to_string(), sheet_second),
         ]);
         let rev_map = map
             .iter()
-            .map(|(&id, name)| (crate::util::case_fold(name), id))
+            .map(|(name, &id)| (crate::util::case_fold(name), id))
             .collect();
         let selection =
             A1Selection::from_str("second!A1,second!B1,second!C1", sheet_id, &rev_map).unwrap();

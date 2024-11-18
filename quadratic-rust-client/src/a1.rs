@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use quadratic_core::{grid::SheetId, A1Selection, Rect, SheetIdNameMap, SheetNameIdMap};
+use quadratic_core::{grid::SheetId, A1Selection, SheetNameIdMap};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -65,7 +65,7 @@ impl Selection {
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string(&self, default_sheet_id: String, sheet_map: &str) -> Result<String, String> {
         let sheet_map =
-            serde_json::from_str::<SheetIdNameMap>(sheet_map).map_err(|e| e.to_string())?;
+            serde_json::from_str::<SheetNameIdMap>(sheet_map).map_err(|e| e.to_string())?;
         let default_sheet_id = SheetId::from_str(&default_sheet_id).map_err(|e| e.to_string())?;
         Ok(self.selection.to_string(Some(default_sheet_id), &sheet_map))
     }
@@ -100,6 +100,11 @@ impl Selection {
         let rect = self.selection.largest_rectangle();
         Ok(serde_json::to_string(&rect).map_err(|e| e.to_string())?)
     }
+
+    #[wasm_bindgen(js_name = "contains")]
+    pub fn contains(&self, x: u32, y: u32) -> bool {
+        self.selection.contains(x as u64, y as u64)
+    }
 }
 
 #[wasm_bindgen(js_name = "stringToSelection")]
@@ -112,4 +117,12 @@ pub fn to_selection(
     let sheet_map = serde_json::from_str::<SheetNameIdMap>(sheet_map).map_err(|e| e.to_string())?;
     let selection = A1Selection::from_str(&a1, default_sheet_id, &sheet_map)?;
     Ok(Selection { selection })
+}
+
+#[wasm_bindgen(js_name = "newSingleSelection")]
+pub fn new_single_selection(sheet_id: String, x: u32, y: u32) -> Result<Selection, String> {
+    let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+    Ok(Selection {
+        selection: A1Selection::from_xy(x as i64, y as i64, sheet_id),
+    })
 }
