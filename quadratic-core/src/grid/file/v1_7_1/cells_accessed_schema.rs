@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::file::v1_7_1, Pos};
+use crate::grid::file::v1_7_1;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CellRefRangeSchema {

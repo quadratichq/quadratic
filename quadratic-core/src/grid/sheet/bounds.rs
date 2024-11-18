@@ -43,10 +43,10 @@ impl Sheet {
 
         self.validations.validations.iter().for_each(|validation| {
             if validation.render_special().is_some() {
-                if let Some(rect) = validation.selection.largest_rect() {
-                    self.data_bounds.add(rect.min);
-                    self.data_bounds.add(rect.max);
-                }
+                // todo: this might not work properly.
+                let rect = validation.selection.largest_rect_finite();
+                self.data_bounds.add(rect.min);
+                self.data_bounds.add(rect.max);
             }
         });
 
@@ -517,7 +517,7 @@ mod test {
             BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
         selection::OldSelection,
-        Array, CellValue, Pos, Rect, SheetPos, SheetRect,
+        A1Selection, Array, CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use serial_test::parallel;
@@ -1037,7 +1037,7 @@ mod test {
                     show_checkbox: true,
                     ignore_blank: true,
                 }),
-                selection: OldSelection::pos(0, 0, sheet_id),
+                selection: A1Selection::test_sheet_id("A1", sheet_id),
                 message: Default::default(),
                 error: Default::default(),
             },

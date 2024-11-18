@@ -204,6 +204,31 @@ impl CellRefRange {
                 .is_none_or(|end| end.col.is_some() && end.row.is_some())
     }
 
+    /// Returns a rectangle that bounds a finite range.
+    pub fn to_rect(&self) -> Option<Rect> {
+        if let (Some(start_col), Some(start_row)) = (self.start.col, self.start.row) {
+            if let Some(end) = self.end {
+                if let (Some(end_col), Some(end_row)) = (end.col, end.row) {
+                    Some(Rect::new(
+                        start_col.coord as i64,
+                        start_row.coord as i64,
+                        end_col.coord as i64,
+                        end_row.coord as i64,
+                    ))
+                } else {
+                    None
+                }
+            } else {
+                Some(Rect::single_pos(Pos {
+                    x: start_col.coord as i64,
+                    y: start_row.coord as i64,
+                }))
+            }
+        } else {
+            None
+        }
+    }
+
     /// Returns a test range from the A1-string.
     #[cfg(test)]
     pub fn test(a1: &str) -> Self {
@@ -428,5 +453,22 @@ mod tests {
         assert!(CellRefRange::test("A1").is_finite());
         assert!(!CellRefRange::test("A").is_finite());
         assert!(!CellRefRange::test("1").is_finite());
+    }
+
+    #[test]
+    fn test_to_rect() {
+        assert_eq!(
+            CellRefRange::test("A1").to_rect(),
+            Some(Rect::new(1, 1, 1, 1))
+        );
+        assert_eq!(
+            CellRefRange::test("A1:B2").to_rect(),
+            Some(Rect::new(1, 1, 2, 2))
+        );
+        assert_eq!(CellRefRange::test("A:B").to_rect(), None);
+        assert_eq!(CellRefRange::test("1:2").to_rect(), None);
+        assert_eq!(CellRefRange::test("A1:C").to_rect(), None);
+        assert_eq!(CellRefRange::test("A:C3").to_rect(), None);
+        assert_eq!(CellRefRange::test("*").to_rect(), None);
     }
 }

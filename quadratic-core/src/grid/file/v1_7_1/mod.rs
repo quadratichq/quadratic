@@ -1,3 +1,4 @@
+mod a1_selection_schema;
 mod cells_accessed_schema;
 
 use crate::grid::file::v1_7::schema as v1_7;

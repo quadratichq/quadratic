@@ -51,7 +51,7 @@ impl Validations {
 
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_row(row) {
+            if validation.selection.removed_row(row as u64) {
                 transaction.validation_changed(sheet_id, validation, Some(&original_selection));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {

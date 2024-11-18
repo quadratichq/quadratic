@@ -7,9 +7,9 @@ use std::collections::HashMap;
 use indexmap::IndexMap;
 
 use crate::{
-    grid::{formats::format::Format, CodeRunResult, GridBounds},
+    grid::{formats::format::Format, GridBounds},
     selection::OldSelection,
-    CellValue, Pos, Rect, Value,
+    A1Selection, CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -36,228 +36,229 @@ impl Sheet {
     /// (for now).
     pub fn selection(
         &self,
-        selection: &OldSelection,
-        max_count: Option<i64>,
-        skip_code_runs: bool,
-        include_blanks: bool,
+        _selection: &A1Selection,
+        _max_count: Option<i64>,
+        _skip_code_runs: bool,
+        _include_blanks: bool,
     ) -> Option<IndexMap<Pos, &CellValue>> {
-        let mut count = 0;
+        todo!();
+        // let mut count = 0;
 
-        // we use a IndexMap to maintain the order of the cells
-        let mut cells = IndexMap::new();
+        // // we use a IndexMap to maintain the order of the cells
+        // let mut cells = IndexMap::new();
 
-        // This checks whether we should skip a CellValue::Code. We skip the
-        // code cell if `skip_code_runs`` is true. For example, when running
-        // summarize, we want the values of the code run, not the actual code
-        // cell. Conversely, when we're deleting a cell, we want the code cell,
-        // not the code run.
-        let check_code =
-            |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
+        // // This checks whether we should skip a CellValue::Code. We skip the
+        // // code cell if `skip_code_runs`` is true. For example, when running
+        // // summarize, we want the values of the code run, not the actual code
+        // // cell. Conversely, when we're deleting a cell, we want the code cell,
+        // // not the code run.
+        // let check_code =
+        //     |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
 
-        if selection.all {
-            for (x, column) in self.columns.iter() {
-                count += column.values.len() as i64;
-                if count >= max_count.unwrap_or(i64::MAX) {
-                    return None;
-                }
-                cells.extend(column.values.iter().filter_map(|(y, entry)| {
-                    if !matches!(entry, &CellValue::Blank) && check_code(entry) {
-                        Some((Pos { x: *x, y: *y }, entry))
-                    } else {
-                        None
-                    }
-                }));
-            }
-            if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
-                    match code_run.result {
-                        CodeRunResult::Ok(ref value) => match value {
-                            Value::Single(v) => {
-                                count += 1;
-                                if count >= max_count.unwrap_or(i64::MAX) {
-                                    return None;
-                                }
-                                cells.insert(*pos, v);
-                            }
-                            Value::Array(a) => {
-                                for x in 0..a.width() {
-                                    for y in 0..a.height() {
-                                        if let Ok(entry) = a.get(x, y) {
-                                            if include_blanks || !matches!(entry, &CellValue::Blank)
-                                            {
-                                                count += 1;
-                                                if count >= max_count.unwrap_or(i64::MAX) {
-                                                    return None;
-                                                }
-                                                cells.insert(
-                                                    Pos {
-                                                        x: x as i64 + pos.x,
-                                                        y: y as i64 + pos.y,
-                                                    },
-                                                    entry,
-                                                );
-                                            }
-                                        } else if include_blanks {
-                                            count += 1;
-                                            if count >= max_count.unwrap_or(i64::MAX) {
-                                                return None;
-                                            }
-                                            cells.insert(
-                                                Pos {
-                                                    x: x as i64 + pos.x,
-                                                    y: y as i64 + pos.y,
-                                                },
-                                                &CellValue::Blank,
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                            Value::Tuple(_) => {} // Tuples are not spilled onto the grid
-                        },
-                        CodeRunResult::Err(_) => {}
-                    }
-                }
-            }
+        // if selection.all {
+        //     for (x, column) in self.columns.iter() {
+        //         count += column.values.len() as i64;
+        //         if count >= max_count.unwrap_or(i64::MAX) {
+        //             return None;
+        //         }
+        //         cells.extend(column.values.iter().filter_map(|(y, entry)| {
+        //             if !matches!(entry, &CellValue::Blank) && check_code(entry) {
+        //                 Some((Pos { x: *x, y: *y }, entry))
+        //             } else {
+        //                 None
+        //             }
+        //         }));
+        //     }
+        //     if !skip_code_runs {
+        //         for (pos, code_run) in self.code_runs.iter() {
+        //             match code_run.result {
+        //                 CodeRunResult::Ok(ref value) => match value {
+        //                     Value::Single(v) => {
+        //                         count += 1;
+        //                         if count >= max_count.unwrap_or(i64::MAX) {
+        //                             return None;
+        //                         }
+        //                         cells.insert(*pos, v);
+        //                     }
+        //                     Value::Array(a) => {
+        //                         for x in 0..a.width() {
+        //                             for y in 0..a.height() {
+        //                                 if let Ok(entry) = a.get(x, y) {
+        //                                     if include_blanks || !matches!(entry, &CellValue::Blank)
+        //                                     {
+        //                                         count += 1;
+        //                                         if count >= max_count.unwrap_or(i64::MAX) {
+        //                                             return None;
+        //                                         }
+        //                                         cells.insert(
+        //                                             Pos {
+        //                                                 x: x as i64 + pos.x,
+        //                                                 y: y as i64 + pos.y,
+        //                                             },
+        //                                             entry,
+        //                                         );
+        //                                     }
+        //                                 } else if include_blanks {
+        //                                     count += 1;
+        //                                     if count >= max_count.unwrap_or(i64::MAX) {
+        //                                         return None;
+        //                                     }
+        //                                     cells.insert(
+        //                                         Pos {
+        //                                             x: x as i64 + pos.x,
+        //                                             y: y as i64 + pos.y,
+        //                                         },
+        //                                         &CellValue::Blank,
+        //                                     );
+        //                                 }
+        //                             }
+        //                         }
+        //                     }
+        //                     Value::Tuple(_) => {} // Tuples are not spilled onto the grid
+        //                 },
+        //                 CodeRunResult::Err(_) => {}
+        //             }
+        //         }
+        //     }
 
-            // if selection.all, then we don't need to check the other selections
-            return Some(cells.into_iter().collect());
-        }
+        //     // if selection.all, then we don't need to check the other selections
+        //     return Some(cells.into_iter().collect());
+        // }
 
-        if let Some(columns) = selection.columns.as_ref() {
-            for x in columns.iter() {
-                if let Some(column) = self.columns.get(x) {
-                    count += column.values.len() as i64;
-                    if count >= max_count.unwrap_or(i64::MAX) {
-                        return None;
-                    }
-                    cells.extend(column.values.iter().filter_map(|(y, entry)| {
-                        if !matches!(entry, &CellValue::Blank) && check_code(entry) {
-                            Some((Pos { x: *x, y: *y }, entry))
-                        } else {
-                            None
-                        }
-                    }));
-                }
-            }
-            if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
-                    let rect = code_run.output_rect(*pos, false);
-                    if columns
-                        .iter()
-                        .any(|column| *column >= rect.min.x && *column <= rect.max.x)
-                    {
-                        for x in rect.min.x..=rect.max.x {
-                            if columns.contains(&x) {
-                                for y in rect.min.y..=rect.max.y {
-                                    if let Some(entry) = code_run
-                                        .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-                                    {
-                                        if !matches!(entry, &CellValue::Blank) {
-                                            count += 1;
-                                            if count >= max_count.unwrap_or(i64::MAX) {
-                                                return None;
-                                            }
-                                            cells.insert(Pos { x, y }, entry);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // if let Some(columns) = selection.columns.as_ref() {
+        //     for x in columns.iter() {
+        //         if let Some(column) = self.columns.get(x) {
+        //             count += column.values.len() as i64;
+        //             if count >= max_count.unwrap_or(i64::MAX) {
+        //                 return None;
+        //             }
+        //             cells.extend(column.values.iter().filter_map(|(y, entry)| {
+        //                 if !matches!(entry, &CellValue::Blank) && check_code(entry) {
+        //                     Some((Pos { x: *x, y: *y }, entry))
+        //                 } else {
+        //                     None
+        //                 }
+        //             }));
+        //         }
+        //     }
+        //     if !skip_code_runs {
+        //         for (pos, code_run) in self.code_runs.iter() {
+        //             let rect = code_run.output_rect(*pos, false);
+        //             if columns
+        //                 .iter()
+        //                 .any(|column| *column >= rect.min.x && *column <= rect.max.x)
+        //             {
+        //                 for x in rect.min.x..=rect.max.x {
+        //                     if columns.contains(&x) {
+        //                         for y in rect.min.y..=rect.max.y {
+        //                             if let Some(entry) = code_run
+        //                                 .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
+        //                             {
+        //                                 if !matches!(entry, &CellValue::Blank) {
+        //                                     count += 1;
+        //                                     if count >= max_count.unwrap_or(i64::MAX) {
+        //                                         return None;
+        //                                     }
+        //                                     cells.insert(Pos { x, y }, entry);
+        //                                 }
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        if let Some(rows) = selection.rows.as_ref() {
-            for (x, column) in self.columns.iter() {
-                for (y, entry) in column.values.iter() {
-                    if rows.contains(y) && !matches!(entry, &CellValue::Blank) && check_code(entry)
-                    {
-                        count += 1;
-                        if count >= max_count.unwrap_or(i64::MAX) {
-                            return None;
-                        }
-                        cells.insert(Pos { x: *x, y: *y }, entry);
-                    }
-                }
-            }
-            if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
-                    let rect = code_run.output_rect(*pos, false);
-                    for y in rect.min.y..=rect.max.y {
-                        if rows.contains(&y) {
-                            for x in rect.min.x..=rect.max.x {
-                                if let Some(entry) = code_run
-                                    .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-                                {
-                                    if !matches!(entry, &CellValue::Blank) {
-                                        count += 1;
-                                        if count >= max_count.unwrap_or(i64::MAX) {
-                                            return None;
-                                        }
-                                        cells.insert(Pos { x, y }, entry);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // if let Some(rows) = selection.rows.as_ref() {
+        //     for (x, column) in self.columns.iter() {
+        //         for (y, entry) in column.values.iter() {
+        //             if rows.contains(y) && !matches!(entry, &CellValue::Blank) && check_code(entry)
+        //             {
+        //                 count += 1;
+        //                 if count >= max_count.unwrap_or(i64::MAX) {
+        //                     return None;
+        //                 }
+        //                 cells.insert(Pos { x: *x, y: *y }, entry);
+        //             }
+        //         }
+        //     }
+        //     if !skip_code_runs {
+        //         for (pos, code_run) in self.code_runs.iter() {
+        //             let rect = code_run.output_rect(*pos, false);
+        //             for y in rect.min.y..=rect.max.y {
+        //                 if rows.contains(&y) {
+        //                     for x in rect.min.x..=rect.max.x {
+        //                         if let Some(entry) = code_run
+        //                             .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
+        //                         {
+        //                             if !matches!(entry, &CellValue::Blank) {
+        //                                 count += 1;
+        //                                 if count >= max_count.unwrap_or(i64::MAX) {
+        //                                     return None;
+        //                                 }
+        //                                 cells.insert(Pos { x, y }, entry);
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        if let Some(rects) = selection.rects.as_ref() {
-            for rect in rects.iter() {
-                for x in rect.min.x..=rect.max.x {
-                    for y in rect.min.y..=rect.max.y {
-                        if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
-                            if (include_blanks || !matches!(entry, &CellValue::Blank))
-                                && check_code(entry)
-                            {
-                                count += 1;
-                                if count >= max_count.unwrap_or(i64::MAX) {
-                                    return None;
-                                }
-                                cells.insert(Pos { x, y }, entry);
-                            }
-                        } else if include_blanks {
-                            count += 1;
-                            if count >= max_count.unwrap_or(i64::MAX) {
-                                return None;
-                            }
-                            cells.insert(Pos { x, y }, &CellValue::Blank);
-                        }
-                    }
-                }
-            }
-            if !skip_code_runs {
-                for (pos, code_run) in self.code_runs.iter() {
-                    let rect = code_run.output_rect(*pos, false);
-                    for x in rect.min.x..=rect.max.x {
-                        for y in rect.min.y..=rect.max.y {
-                            if rects.iter().any(|rect| rect.contains(Pos { x, y })) {
-                                if let Some(entry) = code_run
-                                    .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-                                {
-                                    if !matches!(entry, &CellValue::Blank) {
-                                        count += 1;
-                                        if count >= max_count.unwrap_or(i64::MAX) {
-                                            return None;
-                                        }
-                                        cells.insert(Pos { x, y }, entry);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if cells.is_empty() {
-            None
-        } else {
-            Some(cells)
-        }
+        // if let Some(rects) = selection.rects.as_ref() {
+        //     for rect in rects.iter() {
+        //         for x in rect.min.x..=rect.max.x {
+        //             for y in rect.min.y..=rect.max.y {
+        //                 if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
+        //                     if (include_blanks || !matches!(entry, &CellValue::Blank))
+        //                         && check_code(entry)
+        //                     {
+        //                         count += 1;
+        //                         if count >= max_count.unwrap_or(i64::MAX) {
+        //                             return None;
+        //                         }
+        //                         cells.insert(Pos { x, y }, entry);
+        //                     }
+        //                 } else if include_blanks {
+        //                     count += 1;
+        //                     if count >= max_count.unwrap_or(i64::MAX) {
+        //                         return None;
+        //                     }
+        //                     cells.insert(Pos { x, y }, &CellValue::Blank);
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     if !skip_code_runs {
+        //         for (pos, code_run) in self.code_runs.iter() {
+        //             let rect = code_run.output_rect(*pos, false);
+        //             for x in rect.min.x..=rect.max.x {
+        //                 for y in rect.min.y..=rect.max.y {
+        //                     if rects.iter().any(|rect| rect.contains(Pos { x, y })) {
+        //                         if let Some(entry) = code_run
+        //                             .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
+        //                         {
+        //                             if !matches!(entry, &CellValue::Blank) {
+        //                                 count += 1;
+        //                                 if count >= max_count.unwrap_or(i64::MAX) {
+        //                                     return None;
+        //                                 }
+        //                                 cells.insert(Pos { x, y }, entry);
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        // if cells.is_empty() {
+        //     None
+        // } else {
+        //     Some(cells)
+        // }
     }
 
     /// Returns the content and formatting bounds for a Selection.
@@ -316,7 +317,7 @@ impl Sheet {
     /// rectangular selection. It sorts the results by y and then x.
     pub(crate) fn selection_sorted_vec(
         &self,
-        selection: &OldSelection,
+        selection: &A1Selection,
         skip_code_runs: bool,
     ) -> Vec<(Pos, &CellValue)> {
         if let Some(map) = self.selection(selection, None, skip_code_runs, false) {
@@ -439,517 +440,517 @@ impl Sheet {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{
-        grid::{formats::format_update::FormatUpdate, CodeCellLanguage},
-        CodeCellValue, Rect,
-    };
-    use bigdecimal::BigDecimal;
-    use serial_test::parallel;
-    use std::str::FromStr;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::{
+//         grid::{formats::format_update::FormatUpdate, CodeCellLanguage},
+//         CodeCellValue, Rect,
+//     };
+//     use bigdecimal::BigDecimal;
+//     use serial_test::parallel;
+//     use std::str::FromStr;
 
-    /// Used to test whether the results of a selection has a position and value.
-    fn assert_results_has_value(results: &IndexMap<Pos, &CellValue>, pos: Pos, value: CellValue) {
-        assert!(results.iter().any(|(p, v)| *p == pos && **v == value));
-    }
+//     /// Used to test whether the results of a selection has a position and value.
+//     fn assert_results_has_value(results: &IndexMap<Pos, &CellValue>, pos: Pos, value: CellValue) {
+//         assert!(results.iter().any(|(p, v)| *p == pos && **v == value));
+//     }
 
-    #[test]
-    #[parallel]
-    fn selection_all() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_values(
-            0,
-            0,
-            3,
-            3,
-            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        );
-        sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "3"], true);
+//     #[test]
+//     #[parallel]
+//     fn selection_all() {
+//         let mut sheet = Sheet::test();
+//         sheet.test_set_values(
+//             0,
+//             0,
+//             3,
+//             3,
+//             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+//         );
+//         sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "3"], true);
 
-        let selection = OldSelection {
-            sheet_id: sheet.id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
-            columns: None,
-            all: true,
-        };
+//         let selection = OldSelection {
+//             sheet_id: sheet.id,
+//             x: 0,
+//             y: 0,
+//             rects: None,
+//             rows: None,
+//             columns: None,
+//             all: true,
+//         };
 
-        let results = sheet.selection(&selection, None, false, false).unwrap();
-        assert_eq!(results.len(), 12);
+//         let results = sheet.selection(&selection, None, false, false).unwrap();
+//         assert_eq!(results.len(), 12);
 
-        let results = sheet.selection(&selection, Some(10), false, false);
-        assert!(results.is_none());
+//         let results = sheet.selection(&selection, Some(10), false, false);
+//         assert!(results.is_none());
 
-        let results = sheet.selection(&selection, None, true, false).unwrap();
-        assert_eq!(results.len(), 10);
-    }
+//         let results = sheet.selection(&selection, None, true, false).unwrap();
+//         assert_eq!(results.len(), 10);
+//     }
 
-    #[test]
-    #[parallel]
-    fn selection_columns() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_values(
-            0,
-            0,
-            3,
-            3,
-            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        );
-        sheet.test_set_code_run_single(
-            0,
-            5,
-            CellValue::Number(BigDecimal::from_str("11").unwrap()),
-        );
-        sheet.test_set_code_run_array(-1, 0, vec!["10", "11", "12"], true);
+//     #[test]
+//     #[parallel]
+//     fn selection_columns() {
+//         let mut sheet = Sheet::test();
+//         sheet.test_set_values(
+//             0,
+//             0,
+//             3,
+//             3,
+//             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+//         );
+//         sheet.test_set_code_run_single(
+//             0,
+//             5,
+//             CellValue::Number(BigDecimal::from_str("11").unwrap()),
+//         );
+//         sheet.test_set_code_run_array(-1, 0, vec!["10", "11", "12"], true);
 
-        assert_eq!(
-            sheet.display_value(Pos { x: -1, y: -0 }),
-            Some(CellValue::Number(BigDecimal::from_str("10.0").unwrap()))
-        );
+//         assert_eq!(
+//             sheet.display_value(Pos { x: -1, y: -0 }),
+//             Some(CellValue::Number(BigDecimal::from_str("10.0").unwrap()))
+//         );
 
-        let selection = OldSelection {
-            sheet_id: sheet.id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: None,
-            columns: Some(vec![0, 1, -1]),
-            all: false,
-        };
+//         let selection = OldSelection {
+//             sheet_id: sheet.id,
+//             x: 0,
+//             y: 0,
+//             rects: None,
+//             rows: None,
+//             columns: Some(vec![0, 1, -1]),
+//             all: false,
+//         };
 
-        let results = sheet.selection(&selection, None, false, false).unwrap();
-        assert_eq!(results.len(), 10);
-        assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        assert_results_has_value(&results, Pos { x: -1, y: 2 }, CellValue::Number(12.into()));
+//         let results = sheet.selection(&selection, None, false, false).unwrap();
+//         assert_eq!(results.len(), 10);
+//         assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+//         assert_results_has_value(&results, Pos { x: -1, y: 2 }, CellValue::Number(12.into()));
 
-        let results = sheet.selection(&selection, Some(5), false, false);
-        assert!(results.is_none());
+//         let results = sheet.selection(&selection, Some(5), false, false);
+//         assert!(results.is_none());
 
-        let results = sheet.selection(&selection, None, true, false).unwrap();
-        assert_eq!(results.len(), 8);
-    }
+//         let results = sheet.selection(&selection, None, true, false).unwrap();
+//         assert_eq!(results.len(), 8);
+//     }
 
-    #[test]
-    #[parallel]
-    fn selection_rows() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_values(
-            0,
-            0,
-            3,
-            3,
-            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        );
-        sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "3"], false);
+//     #[test]
+//     #[parallel]
+//     fn selection_rows() {
+//         let mut sheet = Sheet::test();
+//         sheet.test_set_values(
+//             0,
+//             0,
+//             3,
+//             3,
+//             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+//         );
+//         sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "3"], false);
 
-        let selection = OldSelection {
-            sheet_id: sheet.id,
-            x: 0,
-            y: 0,
-            rects: None,
-            rows: Some(vec![0, 1, -10]),
-            columns: None,
-            all: false,
-        };
+//         let selection = OldSelection {
+//             sheet_id: sheet.id,
+//             x: 0,
+//             y: 0,
+//             rects: None,
+//             rows: Some(vec![0, 1, -10]),
+//             columns: None,
+//             all: false,
+//         };
 
-        let results = sheet.selection(&selection, None, false, false).unwrap();
-        assert_eq!(results.len(), 9);
+//         let results = sheet.selection(&selection, None, false, false).unwrap();
+//         assert_eq!(results.len(), 9);
 
-        let results = sheet.selection(&selection, Some(5), false, false);
-        assert!(results.is_none());
+//         let results = sheet.selection(&selection, Some(5), false, false);
+//         assert!(results.is_none());
 
-        let results = sheet.selection(&selection, None, true, false).unwrap();
-        assert_eq!(results.len(), 7);
-    }
+//         let results = sheet.selection(&selection, None, true, false).unwrap();
+//         assert_eq!(results.len(), 7);
+//     }
 
-    #[test]
-    #[parallel]
-    fn selection_rects_values() {
-        let mut sheet = Sheet::test();
-        // create a 3x3 array at 0,0
-        sheet.test_set_values(
-            0,
-            0,
-            3,
-            3,
-            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        );
-        let rects = vec![
-            Rect::from_numbers(0, 0, 1, 1),
-            Rect::from_numbers(1, 1, 2, 2),
-        ];
-        let results = sheet
-            .selection(
-                &OldSelection {
-                    sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
-                    rects: Some(rects.clone()),
-                    rows: None,
-                    columns: None,
-                    all: false,
-                },
-                None,
-                false,
-                false,
-            )
-            .unwrap();
-        assert_eq!(results.len(), 5);
-        assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        assert_results_has_value(&results, Pos { x: 1, y: 1 }, CellValue::Number(5.into()));
-        assert_results_has_value(&results, Pos { x: 1, y: 2 }, CellValue::Number(8.into()));
-        assert_results_has_value(&results, Pos { x: 2, y: 1 }, CellValue::Number(6.into()));
-        assert_results_has_value(&results, Pos { x: 2, y: 2 }, CellValue::Number(9.into()));
+//     #[test]
+//     #[parallel]
+//     fn selection_rects_values() {
+//         let mut sheet = Sheet::test();
+//         // create a 3x3 array at 0,0
+//         sheet.test_set_values(
+//             0,
+//             0,
+//             3,
+//             3,
+//             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+//         );
+//         let rects = vec![
+//             Rect::from_numbers(0, 0, 1, 1),
+//             Rect::from_numbers(1, 1, 2, 2),
+//         ];
+//         let results = sheet
+//             .selection(
+//                 &OldSelection {
+//                     sheet_id: sheet.id,
+//                     x: 0,
+//                     y: 0,
+//                     rects: Some(rects.clone()),
+//                     rows: None,
+//                     columns: None,
+//                     all: false,
+//                 },
+//                 None,
+//                 false,
+//                 false,
+//             )
+//             .unwrap();
+//         assert_eq!(results.len(), 5);
+//         assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+//         assert_results_has_value(&results, Pos { x: 1, y: 1 }, CellValue::Number(5.into()));
+//         assert_results_has_value(&results, Pos { x: 1, y: 2 }, CellValue::Number(8.into()));
+//         assert_results_has_value(&results, Pos { x: 2, y: 1 }, CellValue::Number(6.into()));
+//         assert_results_has_value(&results, Pos { x: 2, y: 2 }, CellValue::Number(9.into()));
 
-        assert!(sheet
-            .selection(
-                &OldSelection {
-                    sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
-                    rects: Some(rects),
-                    rows: None,
-                    columns: None,
-                    all: false,
-                },
-                Some(3),
-                false,
-                false,
-            )
-            .is_none());
-    }
+//         assert!(sheet
+//             .selection(
+//                 &OldSelection {
+//                     sheet_id: sheet.id,
+//                     x: 0,
+//                     y: 0,
+//                     rects: Some(rects),
+//                     rows: None,
+//                     columns: None,
+//                     all: false,
+//                 },
+//                 Some(3),
+//                 false,
+//                 false,
+//             )
+//             .is_none());
+//     }
 
-    #[test]
-    #[parallel]
-    fn selection_rects_code() {
-        let mut sheet = Sheet::test();
+//     #[test]
+//     #[parallel]
+//     fn selection_rects_code() {
+//         let mut sheet = Sheet::test();
 
-        // create a 1x3 array at 4,0
-        sheet.test_set_code_run_array(4, 0, vec!["1", "2", "3"], true);
+//         // create a 1x3 array at 4,0
+//         sheet.test_set_code_run_array(4, 0, vec!["1", "2", "3"], true);
 
-        let rects = vec![
-            Rect::from_numbers(4, 0, 1, 1),
-            Rect::from_numbers(4, 2, 1, 2),
-        ];
-        let results = sheet
-            .selection(
-                &OldSelection {
-                    sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
-                    rects: Some(rects.clone()),
-                    rows: None,
-                    columns: None,
-                    all: false,
-                },
-                None,
-                false,
-                false,
-            )
-            .unwrap();
-        assert_results_has_value(&results, (4, 0).into(), CellValue::Number(1.into()));
-        assert_results_has_value(&results, (4, 2).into(), CellValue::Number(3.into()));
+//         let rects = vec![
+//             Rect::from_numbers(4, 0, 1, 1),
+//             Rect::from_numbers(4, 2, 1, 2),
+//         ];
+//         let results = sheet
+//             .selection(
+//                 &OldSelection {
+//                     sheet_id: sheet.id,
+//                     x: 0,
+//                     y: 0,
+//                     rects: Some(rects.clone()),
+//                     rows: None,
+//                     columns: None,
+//                     all: false,
+//                 },
+//                 None,
+//                 false,
+//                 false,
+//             )
+//             .unwrap();
+//         assert_results_has_value(&results, (4, 0).into(), CellValue::Number(1.into()));
+//         assert_results_has_value(&results, (4, 2).into(), CellValue::Number(3.into()));
 
-        assert!(sheet
-            .selection(
-                &OldSelection {
-                    sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
-                    rects: Some(rects.clone()),
-                    rows: None,
-                    columns: None,
-                    all: false,
-                },
-                Some(1),
-                false,
-                false
-            )
-            .is_none());
+//         assert!(sheet
+//             .selection(
+//                 &OldSelection {
+//                     sheet_id: sheet.id,
+//                     x: 0,
+//                     y: 0,
+//                     rects: Some(rects.clone()),
+//                     rows: None,
+//                     columns: None,
+//                     all: false,
+//                 },
+//                 Some(1),
+//                 false,
+//                 false
+//             )
+//             .is_none());
 
-        let results = sheet
-            .selection(
-                &OldSelection {
-                    sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
-                    rects: Some(rects),
-                    rows: None,
-                    columns: None,
-                    all: false,
-                },
-                None,
-                true,
-                false,
-            )
-            .unwrap();
-        assert_eq!(results.len(), 1);
-        assert_eq!(
-            results.get(&Pos { x: 4, y: 0 }).unwrap(),
-            &&CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "code".to_string()
-            })
-        );
-    }
+//         let results = sheet
+//             .selection(
+//                 &OldSelection {
+//                     sheet_id: sheet.id,
+//                     x: 0,
+//                     y: 0,
+//                     rects: Some(rects),
+//                     rows: None,
+//                     columns: None,
+//                     all: false,
+//                 },
+//                 None,
+//                 true,
+//                 false,
+//             )
+//             .unwrap();
+//         assert_eq!(results.len(), 1);
+//         assert_eq!(
+//             results.get(&Pos { x: 4, y: 0 }).unwrap(),
+//             &&CellValue::Code(CodeCellValue {
+//                 language: CodeCellLanguage::Formula,
+//                 code: "code".to_string()
+//             })
+//         );
+//     }
 
-    #[test]
-    #[parallel]
-    fn selection() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_values(
-            0,
-            0,
-            3,
-            3,
-            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
-        );
-        sheet.test_set_code_run_array(0, 4, vec!["1", "2", "3"], false);
+//     #[test]
+//     #[parallel]
+//     fn selection() {
+//         let mut sheet = Sheet::test();
+//         sheet.test_set_values(
+//             0,
+//             0,
+//             3,
+//             3,
+//             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+//         );
+//         sheet.test_set_code_run_array(0, 4, vec!["1", "2", "3"], false);
 
-        let selection = OldSelection {
-            sheet_id: sheet.id,
-            x: 0,
-            y: 0,
-            rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]),
-            rows: Some(vec![4]),
-            columns: Some(vec![2]),
-            all: false,
-        };
+//         let selection = OldSelection {
+//             sheet_id: sheet.id,
+//             x: 0,
+//             y: 0,
+//             rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]),
+//             rows: Some(vec![4]),
+//             columns: Some(vec![2]),
+//             all: false,
+//         };
 
-        let results = sheet.selection(&selection, None, false, false).unwrap();
-        assert_eq!(results.len(), 7);
-        assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        assert_results_has_value(&results, Pos { x: 2, y: 0 }, CellValue::Number(3.into()));
-        assert_results_has_value(&results, Pos { x: 2, y: 1 }, CellValue::Number(6.into()));
-        assert_results_has_value(&results, Pos { x: 2, y: 2 }, CellValue::Number(9.into()));
-        assert_results_has_value(&results, Pos { x: 0, y: 4 }, CellValue::Number(1.into()));
-        assert_results_has_value(&results, Pos { x: 1, y: 4 }, CellValue::Number(2.into()));
-        assert_results_has_value(&results, Pos { x: 2, y: 4 }, CellValue::Number(3.into()));
-    }
+//         let results = sheet.selection(&selection, None, false, false).unwrap();
+//         assert_eq!(results.len(), 7);
+//         assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+//         assert_results_has_value(&results, Pos { x: 2, y: 0 }, CellValue::Number(3.into()));
+//         assert_results_has_value(&results, Pos { x: 2, y: 1 }, CellValue::Number(6.into()));
+//         assert_results_has_value(&results, Pos { x: 2, y: 2 }, CellValue::Number(9.into()));
+//         assert_results_has_value(&results, Pos { x: 0, y: 4 }, CellValue::Number(1.into()));
+//         assert_results_has_value(&results, Pos { x: 1, y: 4 }, CellValue::Number(2.into()));
+//         assert_results_has_value(&results, Pos { x: 2, y: 4 }, CellValue::Number(3.into()));
+//     }
 
-    #[test]
-    #[parallel]
-    fn selection_bounds() {
-        let mut sheet = Sheet::test();
-        let sheet_id = sheet.id;
+//     #[test]
+//     #[parallel]
+//     fn selection_bounds() {
+//         let mut sheet = Sheet::test();
+//         let sheet_id = sheet.id;
 
-        let selection = OldSelection {
-            sheet_id,
-            ..Default::default()
-        };
-        assert_eq!(sheet.selection_bounds(&selection), None);
+//         let selection = OldSelection {
+//             sheet_id,
+//             ..Default::default()
+//         };
+//         assert_eq!(sheet.selection_bounds(&selection), None);
 
-        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
-        sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
+//         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
+//         sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
 
-        let selection = OldSelection {
-            sheet_id,
-            rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
-            ..Default::default()
-        };
-        assert_eq!(
-            sheet.selection_bounds(&selection),
-            Some(Rect::from_numbers(-4, -4, 10, 10))
-        );
+//         let selection = OldSelection {
+//             sheet_id,
+//             rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
+//             ..Default::default()
+//         };
+//         assert_eq!(
+//             sheet.selection_bounds(&selection),
+//             Some(Rect::from_numbers(-4, -4, 10, 10))
+//         );
 
-        let selection = OldSelection {
-            sheet_id,
-            columns: Some(vec![-1, 0]),
-            ..Default::default()
-        };
-        assert_eq!(
-            sheet.selection_bounds(&selection),
-            Some(Rect::from_numbers(-1, -1, 2, 3))
-        );
+//         let selection = OldSelection {
+//             sheet_id,
+//             columns: Some(vec![-1, 0]),
+//             ..Default::default()
+//         };
+//         assert_eq!(
+//             sheet.selection_bounds(&selection),
+//             Some(Rect::from_numbers(-1, -1, 2, 3))
+//         );
 
-        let selection = OldSelection {
-            sheet_id,
-            columns: Some(vec![5, 6]),
-            ..Default::default()
-        };
-        assert_eq!(sheet.selection_bounds(&selection), None);
+//         let selection = OldSelection {
+//             sheet_id,
+//             columns: Some(vec![5, 6]),
+//             ..Default::default()
+//         };
+//         assert_eq!(sheet.selection_bounds(&selection), None);
 
-        let selection = OldSelection {
-            sheet_id,
-            rows: Some(vec![-1, 0]),
-            ..Default::default()
-        };
-        assert_eq!(
-            sheet.selection_bounds(&selection),
-            Some(Rect {
-                min: Pos { x: -1, y: -1 },
-                max: Pos { x: 1, y: 0 },
-            })
-        );
+//         let selection = OldSelection {
+//             sheet_id,
+//             rows: Some(vec![-1, 0]),
+//             ..Default::default()
+//         };
+//         assert_eq!(
+//             sheet.selection_bounds(&selection),
+//             Some(Rect {
+//                 min: Pos { x: -1, y: -1 },
+//                 max: Pos { x: 1, y: 0 },
+//             })
+//         );
 
-        let selection = OldSelection {
-            sheet_id,
-            rows: Some(vec![-10, -11]),
-            ..Default::default()
-        };
-        assert_eq!(sheet.selection_bounds(&selection), None);
-    }
+//         let selection = OldSelection {
+//             sheet_id,
+//             rows: Some(vec![-10, -11]),
+//             ..Default::default()
+//         };
+//         assert_eq!(sheet.selection_bounds(&selection), None);
+//     }
 
-    #[test]
-    #[parallel]
-    fn format_selection() {
-        let mut sheet = Sheet::test();
-        let sheet_id = sheet.id;
+//     #[test]
+//     #[parallel]
+//     fn format_selection() {
+//         let mut sheet = Sheet::test();
+//         let sheet_id = sheet.id;
 
-        let selection = OldSelection {
-            sheet_id,
-            ..Default::default()
-        };
-        assert_eq!(sheet.format_selection(&selection), vec![]);
+//         let selection = OldSelection {
+//             sheet_id,
+//             ..Default::default()
+//         };
+//         assert_eq!(sheet.format_selection(&selection), vec![]);
 
-        sheet.test_set_format(
-            0,
-            0,
-            FormatUpdate {
-                bold: Some(Some(true)),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            1,
-            1,
-            FormatUpdate {
-                bold: Some(Some(false)),
-                ..Default::default()
-            },
-        );
+//         sheet.test_set_format(
+//             0,
+//             0,
+//             FormatUpdate {
+//                 bold: Some(Some(true)),
+//                 ..Default::default()
+//             },
+//         );
+//         sheet.test_set_format(
+//             1,
+//             1,
+//             FormatUpdate {
+//                 bold: Some(Some(false)),
+//                 ..Default::default()
+//             },
+//         );
 
-        let selection = OldSelection {
-            sheet_id,
-            rects: Some(vec![Rect::from_numbers(0, 0, 2, 2)]),
-            ..Default::default()
-        };
+//         let selection = OldSelection {
+//             sheet_id,
+//             rects: Some(vec![Rect::from_numbers(0, 0, 2, 2)]),
+//             ..Default::default()
+//         };
 
-        let result = sheet.format_selection(&selection);
-        assert_eq!(result.len(), 2);
-        assert!(result
-            .iter()
-            .any(|(pos, value)| { *pos == Pos { x: 0, y: 0 } && value.bold == Some(true) }));
-        assert!(result
-            .iter()
-            .any(|(pos, value)| { *pos == Pos { x: 1, y: 1 } && value.bold == Some(false) }));
+//         let result = sheet.format_selection(&selection);
+//         assert_eq!(result.len(), 2);
+//         assert!(result
+//             .iter()
+//             .any(|(pos, value)| { *pos == Pos { x: 0, y: 0 } && value.bold == Some(true) }));
+//         assert!(result
+//             .iter()
+//             .any(|(pos, value)| { *pos == Pos { x: 1, y: 1 } && value.bold == Some(false) }));
 
-        let selection = OldSelection {
-            sheet_id,
-            columns: Some(vec![0, 1]),
-            ..Default::default()
-        };
-        let results = sheet.format_selection(&selection);
-        assert_eq!(results.len(), 2);
-        assert!(results
-            .iter()
-            .any(|(pos, value)| { *pos == Pos { x: 0, y: 0 } && value.bold == Some(true) }));
-        assert!(results
-            .iter()
-            .any(|(pos, value)| { *pos == Pos { x: 1, y: 1 } && value.bold == Some(false) }));
+//         let selection = OldSelection {
+//             sheet_id,
+//             columns: Some(vec![0, 1]),
+//             ..Default::default()
+//         };
+//         let results = sheet.format_selection(&selection);
+//         assert_eq!(results.len(), 2);
+//         assert!(results
+//             .iter()
+//             .any(|(pos, value)| { *pos == Pos { x: 0, y: 0 } && value.bold == Some(true) }));
+//         assert!(results
+//             .iter()
+//             .any(|(pos, value)| { *pos == Pos { x: 1, y: 1 } && value.bold == Some(false) }));
 
-        let selection = OldSelection {
-            sheet_id,
-            rows: Some(vec![0, 1]),
-            ..Default::default()
-        };
-        let results = sheet.format_selection(&selection);
-        assert_eq!(results.len(), 2);
-        assert!(results
-            .iter()
-            .any(|(pos, format)| *pos == Pos { x: 0, y: 0 } && format.bold == Some(true)),);
-        assert!(results
-            .iter()
-            .any(|(pos, format)| *pos == Pos { x: 1, y: 1 } && format.bold == Some(false)));
-    }
+//         let selection = OldSelection {
+//             sheet_id,
+//             rows: Some(vec![0, 1]),
+//             ..Default::default()
+//         };
+//         let results = sheet.format_selection(&selection);
+//         assert_eq!(results.len(), 2);
+//         assert!(results
+//             .iter()
+//             .any(|(pos, format)| *pos == Pos { x: 0, y: 0 } && format.bold == Some(true)),);
+//         assert!(results
+//             .iter()
+//             .any(|(pos, format)| *pos == Pos { x: 1, y: 1 } && format.bold == Some(false)));
+//     }
 
-    #[test]
-    #[parallel]
-    fn test_selection_rects_values() {
-        let mut sheet = Sheet::test();
-        let sheet_id = sheet.id;
+//     #[test]
+//     #[parallel]
+//     fn test_selection_rects_values() {
+//         let mut sheet = Sheet::test();
+//         let sheet_id = sheet.id;
 
-        let selection = OldSelection {
-            sheet_id,
-            ..Default::default()
-        };
-        assert_eq!(sheet.selection_rects_values(&selection), vec![]);
+//         let selection = OldSelection {
+//             sheet_id,
+//             ..Default::default()
+//         };
+//         assert_eq!(sheet.selection_rects_values(&selection), vec![]);
 
-        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
-        sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
+//         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
+//         sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
 
-        let selection = OldSelection {
-            sheet_id,
-            rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
-            ..Default::default()
-        };
-        assert_eq!(
-            sheet.selection_rects_values(&selection),
-            vec![Rect::from_numbers(-4, -4, 10, 10)]
-        );
+//         let selection = OldSelection {
+//             sheet_id,
+//             rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
+//             ..Default::default()
+//         };
+//         assert_eq!(
+//             sheet.selection_rects_values(&selection),
+//             vec![Rect::from_numbers(-4, -4, 10, 10)]
+//         );
 
-        let selection = OldSelection {
-            sheet_id,
-            columns: Some(vec![-1, 0]),
-            ..Default::default()
-        };
-        // note, this includes the CodeRuns bounds as well because of a
-        // limitation in sheet.column_bounds
-        assert_eq!(
-            sheet.selection_rects_values(&selection),
-            vec![Rect::new(-1, -1, -1, 1), Rect::new(0, 0, 0, 1)]
-        );
+//         let selection = OldSelection {
+//             sheet_id,
+//             columns: Some(vec![-1, 0]),
+//             ..Default::default()
+//         };
+//         // note, this includes the CodeRuns bounds as well because of a
+//         // limitation in sheet.column_bounds
+//         assert_eq!(
+//             sheet.selection_rects_values(&selection),
+//             vec![Rect::new(-1, -1, -1, 1), Rect::new(0, 0, 0, 1)]
+//         );
 
-        let selection = OldSelection {
-            sheet_id,
-            columns: Some(vec![5, 6]),
-            ..Default::default()
-        };
-        assert_eq!(sheet.selection_rects_values(&selection), vec![]);
+//         let selection = OldSelection {
+//             sheet_id,
+//             columns: Some(vec![5, 6]),
+//             ..Default::default()
+//         };
+//         assert_eq!(sheet.selection_rects_values(&selection), vec![]);
 
-        let selection = OldSelection {
-            sheet_id,
-            rows: Some(vec![-1, 0]),
-            ..Default::default()
-        };
-        assert_eq!(
-            sheet.selection_rects_values(&selection),
-            vec![Rect::new(-1, -1, -1, -1), Rect::new(-1, 0, 1, 0)]
-        );
+//         let selection = OldSelection {
+//             sheet_id,
+//             rows: Some(vec![-1, 0]),
+//             ..Default::default()
+//         };
+//         assert_eq!(
+//             sheet.selection_rects_values(&selection),
+//             vec![Rect::new(-1, -1, -1, -1), Rect::new(-1, 0, 1, 0)]
+//         );
 
-        let selection = OldSelection {
-            sheet_id,
-            rows: Some(vec![-10, -11]),
-            ..Default::default()
-        };
-        assert_eq!(sheet.selection_rects_values(&selection), vec![]);
-    }
+//         let selection = OldSelection {
+//             sheet_id,
+//             rows: Some(vec![-10, -11]),
+//             ..Default::default()
+//         };
+//         assert_eq!(sheet.selection_rects_values(&selection), vec![]);
+//     }
 
-    #[test]
-    #[parallel]
-    fn selection_blanks() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_values(0, 0, 2, 2, vec!["1", "", "3", ""]);
+//     #[test]
+//     #[parallel]
+//     fn selection_blanks() {
+//         let mut sheet = Sheet::test();
+//         sheet.test_set_values(0, 0, 2, 2, vec!["1", "", "3", ""]);
 
-        let selection = OldSelection {
-            sheet_id: sheet.id,
-            x: 0,
-            y: 0,
-            rects: Some(vec![Rect::new(0, 0, 1, 1)]),
-            rows: None,
-            columns: None,
-            all: false,
-        };
+//         let selection = OldSelection {
+//             sheet_id: sheet.id,
+//             x: 0,
+//             y: 0,
+//             rects: Some(vec![Rect::new(0, 0, 1, 1)]),
+//             rows: None,
+//             columns: None,
+//             all: false,
+//         };
 
-        let results = sheet.selection(&selection, None, false, true).unwrap();
-        assert_eq!(results.len(), 4);
-        assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        assert_results_has_value(&results, Pos { x: 1, y: 0 }, CellValue::Blank);
-        assert_results_has_value(&results, Pos { x: 0, y: 1 }, CellValue::Number(3.into()));
-        assert_results_has_value(&results, Pos { x: 1, y: 1 }, CellValue::Blank);
-    }
-}
+//         let results = sheet.selection(&selection, None, false, true).unwrap();
+//         assert_eq!(results.len(), 4);
+//         assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+//         assert_results_has_value(&results, Pos { x: 1, y: 0 }, CellValue::Blank);
+//         assert_results_has_value(&results, Pos { x: 0, y: 1 }, CellValue::Number(3.into()));
+//         assert_results_has_value(&results, Pos { x: 1, y: 1 }, CellValue::Blank);
+//     }
+// }

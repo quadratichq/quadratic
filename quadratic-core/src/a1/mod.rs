@@ -1,9 +1,11 @@
 mod a1_sheet_name;
 mod cell_ref;
+mod cell_ref_mutate;
 mod cell_ref_request;
 mod column_names;
 mod error;
 mod selection;
+mod selection_mutate;
 mod selection_query;
 mod selection_select;
 mod subspaces;

@@ -261,23 +261,25 @@ impl Sheet {
             .rev() // we need to reverse to ensure that later rules overwrite earlier ones
             .for_each(|validation| {
                 if let Some(special) = validation.render_special() {
-                    if let Some(rects) = validation.selection.rects.as_ref() {
-                        rects.iter().for_each(|r| {
-                            r.iter().filter(|pos| rect.contains(*pos)).for_each(|pos| {
-                                if !render_cells
-                                    .iter()
-                                    .any(|cell| cell.x == pos.x && cell.y == pos.y)
-                                {
-                                    render_cells.push(JsRenderCell {
-                                        x: pos.x,
-                                        y: pos.y,
-                                        special: Some(special.clone()),
-                                        ..Default::default()
-                                    });
-                                }
-                            });
-                        });
-                    }
+                    validation.selection.ranges.iter().for_each(|r| {
+                        if let Some(rect) = r.to_rect() {
+                            rect.iter()
+                                .filter(|pos| rect.contains(*pos))
+                                .for_each(|pos| {
+                                    if !render_cells
+                                        .iter()
+                                        .any(|cell| cell.x == pos.x && cell.y == pos.y)
+                                    {
+                                        render_cells.push(JsRenderCell {
+                                            x: pos.x,
+                                            y: pos.y,
+                                            special: Some(special.clone()),
+                                            ..Default::default()
+                                        });
+                                    }
+                                });
+                        }
+                    });
                 }
             });
         render_cells

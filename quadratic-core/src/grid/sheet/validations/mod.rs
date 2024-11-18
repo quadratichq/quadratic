@@ -180,14 +180,14 @@ impl Validations {
 mod tests {
     use validation_rules::{validation_logical::ValidationLogical, ValidationRule};
 
-    use crate::{grid::SheetId, selection::OldSelection, CellRefRange, Rect};
+    use crate::{grid::SheetId, CellRefRange, SheetRect};
 
     use super::*;
 
     fn create_validation_rect(x0: i64, y0: i64, x1: i64, y1: i64) -> Validation {
         Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::from_rect(Rect::new(x0, y0, x1, y1)),
+            selection: A1Selection::from_rect(SheetRect::new(x0, y0, x1, y1, SheetId::test())),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -209,7 +209,7 @@ mod tests {
         assert_eq!(
             reverse[0],
             Operation::RemoveValidation {
-                sheet_id: validation.selection.sheet_id,
+                sheet_id: validation.selection.sheet,
                 validation_id: validation.id
             }
         );
@@ -381,7 +381,7 @@ mod tests {
             Some(&v)
         );
         assert_eq!(
-            validations.validation_selection(OldSelection::all(SheetId::test())),
+            validations.validation_selection(A1Selection::test("*")),
             None
         );
     }

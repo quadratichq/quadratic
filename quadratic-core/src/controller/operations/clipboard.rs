@@ -190,7 +190,7 @@ impl GridController {
                 .into_iter()
                 .map(|mut validation| {
                     validation.id = Uuid::new_v4();
-                    validation.selection.sheet_id = start_pos.sheet_id;
+                    validation.selection.sheet = start_pos.sheet_id;
                     validation
                         .selection
                         .translate_in_place(start_pos.x, start_pos.y);
@@ -442,7 +442,7 @@ mod test {
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::SheetId;
-    use crate::Rect;
+    use crate::{A1Selection, Rect};
 
     #[test]
     #[parallel]
@@ -667,7 +667,7 @@ mod test {
         let validations = ClipboardValidations {
             validations: vec![Validation {
                 id: Uuid::new_v4(),
-                selection: OldSelection::rect(crate::Rect::new(1, 1, 2, 2), SheetId::test()),
+                selection: A1Selection::test("A1:B2"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
                 error: Default::default(),
@@ -683,10 +683,7 @@ mod test {
         );
         assert_eq!(operations.len(), 1);
         if let Operation::SetValidation { validation } = &operations[0] {
-            assert_eq!(
-                validation.selection,
-                OldSelection::rect(crate::Rect::new(2, 2, 3, 3), SheetId::test())
-            );
+            assert_eq!(validation.selection, A1Selection::test("B2:C3"));
         } else {
             panic!("Expected SetValidation operation");
         }

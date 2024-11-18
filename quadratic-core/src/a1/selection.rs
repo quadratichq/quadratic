@@ -3,6 +3,7 @@ use std::ops::RangeInclusive;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use super::A1Subspaces;
 use crate::{
@@ -10,7 +11,7 @@ use crate::{
     SheetNameIdMap, SheetPos, SheetRect,
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct A1Selection {
     /// Current sheet.
@@ -283,6 +284,12 @@ impl A1Selection {
     #[cfg(test)]
     pub fn test(a1: &str) -> Self {
         Self::from_str(a1, SheetId::test(), &std::collections::HashMap::new()).unwrap()
+    }
+
+    /// Returns a test selection from the A1-string with the given sheet ID.
+    #[cfg(test)]
+    pub fn test_sheet_id(a1: &str, sheet_id: SheetId) -> Self {
+        Self::from_str(a1, sheet_id, &std::collections::HashMap::new()).unwrap()
     }
 }
 
