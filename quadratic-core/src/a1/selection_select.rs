@@ -163,18 +163,6 @@ impl A1Selection {
         });
     }
 
-    /// Returns whether the selection contains the given position.
-    pub fn contains(&self, x: u64, y: u64) -> bool {
-        self.ranges
-            .iter()
-            .any(|range| range.might_contain_pos(Pos::new(x as i64, y as i64)))
-    }
-
-    /// Returns whether any range in `self` might contain `pos`.
-    pub fn contains_pos(&self, pos: Pos) -> bool {
-        self.ranges.iter().any(|range| range.might_contain_pos(pos))
-    }
-
     /// Extends the last selection to the given position. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of that range is extended).
     pub fn extend_selection(&mut self, column: u64, row: u64, append: bool) {
@@ -428,13 +416,5 @@ mod tests {
             selection.ranges,
             vec![CellRefRange::from_str("A:B2").unwrap()]
         );
-    }
-
-    #[test]
-    fn test_contains_pos() {
-        let selection =
-            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
-        assert!(selection.contains_pos(pos![A1]));
-        assert!(!selection.contains_pos(pos![D1]));
     }
 }

@@ -4,6 +4,7 @@ mod cell_ref_request;
 mod column_names;
 mod error;
 mod selection;
+mod selection_query;
 mod selection_select;
 mod subspaces;
 

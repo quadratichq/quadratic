@@ -215,23 +215,6 @@ impl A1Selection {
             .join(",")
     }
 
-    /// Returns the last range added to the selection, which can be manipulated
-    /// using the arrow keys.
-    pub fn last_range(&self) -> CellRefRange {
-        self.ranges
-            .last()
-            .copied()
-            .unwrap_or_else(|| CellRefRange::new_relative_pos(pos![A1]))
-    }
-
-    /// Returns whether any range in `self` might contain `pos`.
-    ///
-    /// It's impossible to give an exact answer without knowing the bounds of
-    /// each column and row.
-    pub fn might_contain_pos(&self, pos: Pos) -> bool {
-        self.ranges.iter().any(|range| range.might_contain_pos(pos))
-    }
-
     /// Returns `true` on exactly the regions/cells that the range includes, and
     /// `false` or nothing elsewhere.
     pub fn subspaces(&self) -> A1Subspaces {
@@ -294,56 +277,6 @@ impl A1Selection {
         ret.make_disjoint();
 
         ret
-    }
-
-    /// Returns the largest rectangle that can be formed by the selection,
-    /// ignoring any ranges that extend infinitely.
-    pub fn largest_rect_finite(&self) -> Rect {
-        let mut rect = Rect::single_pos(self.cursor);
-        self.ranges.iter().for_each(|range| {
-            if let Some(end) = range.end {
-                let (Some(end_col), Some(end_row)) = (end.col, end.row) else {
-                    return;
-                };
-                let (Some(start_col), Some(start_row)) = (range.start.col, range.start.row) else {
-                    return;
-                };
-                rect = rect.union(&Rect::new(
-                    start_col.coord as i64,
-                    start_row.coord as i64,
-                    end_col.coord as i64,
-                    end_row.coord as i64,
-                ));
-            }
-        });
-        rect
-    }
-
-    /// Returns the largest rectangle that can be formed by the selection.
-    pub fn largest_rect(&self) -> Rect {
-        let mut rect = Rect::single_pos(self.cursor);
-        self.ranges.iter().for_each(|range| {
-            if let Some(col) = range.start.col {
-                rect.min.x = rect.min.x.min(col.coord as i64);
-                rect.max.x = rect.max.x.max(col.coord as i64);
-            }
-            if let Some(row) = range.start.row {
-                rect.min.y = rect.min.y.min(row.coord as i64);
-                rect.max.y = rect.max.y.max(row.coord as i64);
-            }
-            if let Some(end) = range.end {
-                if let Some(end_col) = end.col {
-                    rect.min.x = rect.min.x.min(end_col.coord as i64);
-                    rect.max.x = rect.max.x.max(end_col.coord as i64);
-                }
-                if let Some(end_row) = end.row {
-                    rect.min.y = rect.min.y.min(end_row.coord as i64);
-                    rect.max.y = rect.max.y.max(end_row.coord as i64);
-                }
-            }
-        });
-
-        rect
     }
 
     /// Returns a test selection from the A1-string with SheetId::test().
@@ -619,27 +552,5 @@ mod tests {
             selection.to_string(Some(sheet_id), &map),
             "Second!A1,Second!B1,Second!C1",
         );
-    }
-
-    #[test]
-    fn test_largest_rect() {
-        let selection = A1Selection::from_str(
-            "A1,B1:D2,E:G,2:3,5:7,F6:G8,4",
-            SheetId::test(),
-            &HashMap::new(),
-        )
-        .unwrap();
-        assert_eq!(selection.largest_rect(), Rect::new(1, 1, 7, 8));
-    }
-
-    #[test]
-    fn test_largest_rect_finite() {
-        let selection = A1Selection::from_str(
-            "A1,B1:D2,E:G,2:3,5:7,F6:G8,4",
-            SheetId::test(),
-            &HashMap::new(),
-        )
-        .unwrap();
-        assert_eq!(selection.largest_rect_finite(), Rect::new(1, 1, 7, 8));
     }
 }
