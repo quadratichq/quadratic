@@ -69,7 +69,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
       },
     },
     {
-      label: 'Return to sheet',
+      label: 'Output to sheet',
       Icon: SheetComeFromIcon,
       onClick: () => {
         if (codeCell.id === 'Javascript') fillWithSnippet(SNIPPET_JS_RETURN);
