@@ -34,7 +34,7 @@ export class Javascript {
     this.api = new JavascriptAPI(this);
   }
 
-  init = async () => {
+  private init = async () => {
     await esbuild.initialize({
       wasmURL: '/esbuild.wasm',
       // this would create another worker to run the actual code. I don't
@@ -97,7 +97,9 @@ export class Javascript {
     this.row = message.y;
 
     try {
-      const code = prepareJavascriptCode(transformedCode, message.x, message.y, this.withLineNumbers);
+      const proxyUrl = `${javascriptClient.env.VITE_QUADRATIC_CONNECTION_URL}/proxy`;
+      const jwt = await javascriptClient.getJwt();
+      const code = prepareJavascriptCode(transformedCode, message.x, message.y, this.withLineNumbers, proxyUrl, jwt);
       const runner = new Worker(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })), {
         type: 'module',
         name: 'javascriptWorker',

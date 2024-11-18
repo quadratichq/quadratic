@@ -13,7 +13,9 @@ use crate::error::{proxy_error, ConnectionError, Result};
 use crate::state::State;
 
 const REQUEST_TIMEOUT_SEC: u64 = 15;
-const PROXY_HEADER: &str = "proxy";
+const AUTHORIZATION_HEADER: &str = "authorization";
+const PROXY_URL_HEADER: &str = "x-proxy-url";
+const PROXY_HEADER_PREFIX: &str = "x-proxy-";
 
 pub(crate) async fn axum_to_reqwest(
     url: &str,
@@ -24,12 +26,22 @@ pub(crate) async fn axum_to_reqwest(
     let method = Method::from_bytes(method_bytes).map_err(proxy_error)?;
 
     let mut headers = reqwest::header::HeaderMap::with_capacity(req.headers().len());
-    let headers_to_ignore = ["host", PROXY_HEADER, "authorization"];
+    let headers_to_ignore = ["host", AUTHORIZATION_HEADER, PROXY_URL_HEADER];
 
     for (name, value) in req
         .headers()
         .into_iter()
         .filter(|(name, _)| !headers_to_ignore.contains(&name.as_str()))
+        .map(|(name, value)| {
+            if name.to_string().starts_with(PROXY_HEADER_PREFIX) {
+                (
+                    name.to_string().replace(PROXY_HEADER_PREFIX, ""),
+                    value.to_str().unwrap().to_string(),
+                )
+            } else {
+                (name.to_string(), value.to_str().unwrap().to_string())
+            }
+        })
     {
         let name = reqwest::header::HeaderName::from_bytes(name.as_ref()).map_err(proxy_error)?;
         let value =
@@ -74,7 +86,7 @@ pub(crate) async fn proxy(
 
     let headers = req.headers().clone();
     let url = headers
-        .get(PROXY_HEADER)
+        .get(PROXY_URL_HEADER)
         .ok_or_else(|| ConnectionError::Proxy("No proxy header found".to_string()))?
         .to_str()
         .map_err(proxy_error)?;
@@ -103,7 +115,7 @@ mod tests {
         let mut request = Request::new(Body::empty());
         request
             .headers_mut()
-            .insert(PROXY_HEADER, HeaderValue::from_static(URL));
+            .insert(PROXY_URL_HEADER, HeaderValue::from_static(URL));
         let data = proxy(state, request).await.unwrap();
         let response = data.into_response();
 
@@ -122,7 +134,7 @@ mod tests {
             .insert(ACCEPT, HeaderValue::from_static(accept));
         request
             .headers_mut()
-            .insert(PROXY_HEADER, HeaderValue::from_static(URL));
+            .insert(PROXY_URL_HEADER, HeaderValue::from_static(URL));
 
         let result = axum_to_reqwest(URL, request, state.client.clone())
             .await
@@ -133,7 +145,7 @@ mod tests {
         assert_eq!(result.method(), Method::POST);
         assert_eq!(result.url().to_string(), URL);
 
-        // PROXY_HEADER doesn't get copied over
+        // PROXY_URL_HEADER doesn't get copied over
         assert_eq!(result.headers().len(), 1);
         assert_eq!(
             result.headers().get(reqwest::header::ACCEPT).unwrap(),
