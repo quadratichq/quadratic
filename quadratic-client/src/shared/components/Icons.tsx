@@ -224,6 +224,14 @@ export const DiffIcon: IconComponent = (props) => {
   return <Icon {...props}>difference</Icon>;
 };
 
+export const DockToBottomIcon: IconComponent = (props) => {
+  return <Icon {...props}>dock_to_bottom</Icon>;
+};
+
+export const DockToRightIcon: IconComponent = (props) => {
+  return <Icon {...props}>dock_to_right</Icon>;
+};
+
 export const DownloadIcon: IconComponent = (props) => {
   return <Icon {...props}>download</Icon>;
 };
