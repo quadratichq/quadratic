@@ -371,19 +371,19 @@ export const ExaSearchRequestBodySchema = z.object({
 });
 export type ExaSearchRequestBody = z.infer<typeof ExaSearchRequestBodySchema>;
 
-const ExaSearchResultSchema = z.object({
+export const ExaSearchResultSchema = z.object({
   id: z.string(),
   title: z.string(),
   url: z.string(),
-  publishedDate: z.string().optional(),
-  author: z.string().optional(),
-  score: z.number().optional(),
-  text: z.string().optional(),
+  publishedDate: z.string().nullable().optional(),
+  author: z.string().nullable().optional(),
+  score: z.number().nullable().optional(),
+  text: z.string().nullable().optional(),
 });
 export type ExaSearchResult = z.infer<typeof ExaSearchResultSchema>;
 
 const ExaSearchResponseSchema = z.object({
   results: z.array(ExaSearchResultSchema),
-  autopromptString: z.string().optional(),
+  autopromptString: z.string().nullable().optional(),
 });
 export type ExaSearchResponse = z.infer<typeof ExaSearchResponseSchema>;

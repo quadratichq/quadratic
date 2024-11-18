@@ -1,3 +1,4 @@
+import { ParseAIResearcherResult } from '@/app/atoms/aiResearcherAtom';
 import { aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
@@ -114,6 +115,11 @@ export function HoverCell() {
             setOnlyCode(false);
             if (codeCell) {
               setText(<HoverCellRunError codeCell={codeCell} onClick={hideHoverCell} />);
+            }
+          } else if (language === 'AIResearcher') {
+            setOnlyCode(false);
+            if (codeCell) {
+              setText(<HoverCellAIResearcherResult codeCell={codeCell} onClick={hideHoverCell} />);
             }
           } else {
             setOnlyCode(true);
@@ -297,6 +303,33 @@ function HoverCellSpillError({ codeCell: codeCellCore, onClick }: { codeCell: Js
         ))}{' '}
         Or move this cell.
       </p>
+    </HoverCellDisplay>
+  );
+}
+
+function HoverCellAIResearcherResult({ codeCell: codeCellCore }: { codeCell: JsCodeCell; onClick: () => void }) {
+  const language = useMemo(() => getLanguage(codeCellCore.language), [codeCellCore.language]);
+  const aiResearcherResult = useMemo(() => ParseAIResearcherResult(codeCellCore.std_out), [codeCellCore.std_out]);
+  if (!aiResearcherResult) {
+    return null;
+  }
+  return (
+    <HoverCellDisplay title={language}>
+      <>
+        <div>
+          <span className="font-bold">{`Confidence Score: `}</span>
+          {aiResearcherResult.toolCallArgs.confidence_score}
+        </div>
+
+        <div>
+          <span className="font-bold">{`Source: `}</span>
+          {aiResearcherResult.toolCallArgs.source_urls.map((url) => (
+            <a key={url} href={url} target="_blank" rel="noreferrer" className="text-link underline">
+              {url}
+            </a>
+          ))}
+        </div>
+      </>
     </HoverCellDisplay>
   );
 }

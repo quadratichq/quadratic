@@ -1,4 +1,32 @@
+import { AITool } from '@/app/ai/tools/aiTools';
+import { AIToolsArgsSchema } from '@/app/ai/tools/aiToolsSpec';
+import { ExaSearchResultSchema } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
+import { z } from 'zod';
+
+export const AIResearcherResultSchema = z.object({
+  exaResult: z.array(ExaSearchResultSchema).optional(),
+  toolCallArgs: AIToolsArgsSchema[AITool.SetAIResearcherValue],
+});
+
+export type AIResearcherResult = z.infer<typeof AIResearcherResultSchema>;
+
+export const ParseAIResearcherResult = (
+  ai_researcher_result_stringified?: string | null
+): AIResearcherResult | undefined => {
+  if (!ai_researcher_result_stringified) {
+    return undefined;
+  }
+
+  let aiResearcherResult = undefined;
+  try {
+    const aiResearcherResultJson = JSON.parse(ai_researcher_result_stringified);
+    aiResearcherResult = AIResearcherResultSchema.parse(aiResearcherResultJson);
+  } catch (e) {
+    console.warn(e);
+  }
+  return aiResearcherResult;
+};
 
 export interface AIResearcherState {
   abortController?: AbortController;
@@ -6,6 +34,7 @@ export interface AIResearcherState {
   query: string;
   refCell: string;
   output: string;
+  aiResearcherResult?: AIResearcherResult;
 }
 
 export const defaultAIResearcherState: AIResearcherState = {
@@ -14,6 +43,7 @@ export const defaultAIResearcherState: AIResearcherState = {
   query: '',
   refCell: '',
   output: '',
+  aiResearcherResult: undefined,
 };
 
 export const aiResearcherAtom = atom<AIResearcherState>({
@@ -36,3 +66,4 @@ export const aiResearcherLoadingAtom = createSelector('loading');
 export const aiResearcherQueryAtom = createSelector('query');
 export const aiResearcherRefCellAtom = createSelector('refCell');
 export const aiResearcherOutputAtom = createSelector('output');
+export const aiResearcherResultAtom = createSelector('aiResearcherResult');

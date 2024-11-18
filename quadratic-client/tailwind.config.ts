@@ -60,6 +60,7 @@ const config: Config = {
           foreground: 'hsl(var(--card-foreground))',
         },
         resize: '#6cd4ff',
+        link: '#2463eb',
       },
       borderRadius: {
         lg: 'var(--radius)',

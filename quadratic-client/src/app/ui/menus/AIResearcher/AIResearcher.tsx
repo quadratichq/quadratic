@@ -4,6 +4,7 @@ import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIResearcherHeader } from '@/app/ui/menus/AIResearcher/AIResearcherHeader';
 import { AIResearcherInsertCellRef } from '@/app/ui/menus/AIResearcher/AIResearcherInsertCellRef';
 import { AIResearcherOutput } from '@/app/ui/menus/AIResearcher/AIResearcherOutput';
+import { AIResearcherResult } from '@/app/ui/menus/AIResearcher/AIResearcherResult';
 import { AIResearcherSettings } from '@/app/ui/menus/AIResearcher/AIResearcherSettings';
 import { AIResearcherUserMessageForm } from '@/app/ui/menus/AIResearcher/AIResearcherUserMessageForm';
 import { useAIResearcherPanelWidth } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherPanelWidth';
@@ -77,6 +78,8 @@ export const AIResearcher = () => {
         </div>
 
         <AIResearcherOutput />
+
+        <AIResearcherResult />
 
         <AIResearcherSettings />
       </div>

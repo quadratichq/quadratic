@@ -1,4 +1,4 @@
-import { aiResearcherAtom, defaultAIResearcherState } from '@/app/atoms/aiResearcherAtom';
+import { aiResearcherAtom, defaultAIResearcherState, ParseAIResearcherResult } from '@/app/atoms/aiResearcherAtom';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { JsCodeCell, Pos } from '@/app/quadratic-core-types';
@@ -49,12 +49,14 @@ export const useUpdateCodeEditor = () => {
             const parsedCodeString = parseCodeString(codeCell.code_string);
             if (parsedCodeString) {
               const { query, refCell } = parsedCodeString;
+              const aiResearcherResult = ParseAIResearcherResult(codeCell.std_out);
               set(aiResearcherAtom, {
                 loading: false,
                 abortController: undefined,
                 query,
                 refCell,
                 output: newEvaluationResult.value ?? '',
+                aiResearcherResult,
               });
             } else {
               set(aiResearcherAtom, defaultAIResearcherState);

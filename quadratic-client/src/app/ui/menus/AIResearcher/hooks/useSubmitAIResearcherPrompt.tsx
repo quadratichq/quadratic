@@ -3,21 +3,17 @@ import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useExaRequestToAPI } from '@/app/ai/hooks/useExaRequestToAPI';
 import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { AITool } from '@/app/ai/tools/aiTools';
-import { AIToolsArgsSchema, aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
+import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { getMessagesForModel } from '@/app/ai/tools/message.helper';
-import { aiResearcherAbortControllerAtom, aiResearcherLoadingAtom } from '@/app/atoms/aiResearcherAtom';
+import {
+  aiResearcherAbortControllerAtom,
+  aiResearcherLoadingAtom,
+  AIResearcherResult,
+} from '@/app/atoms/aiResearcherAtom';
 import { exaSettingsAtom } from '@/app/atoms/exaSettingsAtom';
 import { useAIResearcherMessagePrompt } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherMessagePrompt';
-import { ChatMessage, ExaSearchResult } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
-import { z } from 'zod';
-
-type SetAIResearcherValueToolCallArgs = z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIResearcherValue]>;
-
-type AIResearcherResult = {
-  exaResult?: ExaSearchResult[];
-  toolCallArgs: SetAIResearcherValueToolCallArgs;
-};
 
 export function useSubmitAIResearcherPrompt() {
   const { handleExaRequestToAPI } = useExaRequestToAPI();
