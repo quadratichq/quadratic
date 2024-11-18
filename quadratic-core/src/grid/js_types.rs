@@ -313,7 +313,7 @@ pub struct JsValidationWarning {
     pub style: Option<ValidationStyle>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, PartialOrd, Ord, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsSheetPos {
     pub x: i32,

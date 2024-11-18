@@ -240,6 +240,21 @@ impl GridController {
         }
 
         self.send_ai_researcher_state(transaction);
+
+        // for tests, process all running ai researcher requests with a dummy result
+        if cfg!(test) {
+            transaction
+                .running_ai_researcher
+                .iter()
+                .for_each(|sheet_pos| {
+                    let _ = self.receive_ai_researcher_result(
+                        transaction.id,
+                        sheet_pos.to_owned(),
+                        Some("result".to_string()),
+                        None,
+                    );
+                });
+        }
     }
 
     fn request_ai_researcher_result(
@@ -264,20 +279,6 @@ impl GridController {
             transaction.running_ai_researcher.insert(sheet_pos);
             transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
             self.transactions.add_async_transaction(transaction);
-        }
-
-        // default response from client, for tests
-        if cfg!(test) {
-            // send the current state of the ai researcher to the client1
-            self.send_ai_researcher_state(transaction);
-
-            // resolve pending ai researcher request with a dummy result
-            let _ = self.receive_ai_researcher_result(
-                transaction.id,
-                sheet_pos,
-                Some("result".to_string()),
-                None,
-            );
         }
     }
 
@@ -350,6 +351,9 @@ impl GridController {
                 sheet_pos: sheet_pos.to_owned().into(),
                 code: String::new(),
             })
+            .sorted_by(|js_code_run_a, js_code_run_b| {
+                js_code_run_a.sheet_pos.cmp(&js_code_run_b.sheet_pos)
+            })
             .collect::<Vec<JsCodeRun>>();
 
         let awaiting_execution = transaction
@@ -359,6 +363,9 @@ impl GridController {
                 transaction_id: transaction.id.to_string(),
                 sheet_pos: sheet_pos.to_owned().into(),
                 code: String::new(),
+            })
+            .sorted_by(|js_code_run_a, js_code_run_b| {
+                js_code_run_a.sheet_pos.cmp(&js_code_run_b.sheet_pos)
             })
             .collect::<Vec<JsCodeRun>>();
 
