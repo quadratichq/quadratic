@@ -1133,8 +1133,9 @@ export interface ClientCoreReceiveAIResearcherResult {
   type: 'clientCoreReceiveAIResearcherResult';
   transactionId: string;
   sheetPos: string;
-  result?: string;
+  cell_value?: string;
   error?: string;
+  researcher_response_stringified?: string;
 }
 
 export interface CoreClientAIResearcherState {

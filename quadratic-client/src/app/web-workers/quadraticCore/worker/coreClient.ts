@@ -647,7 +647,13 @@ class CoreClient {
         return;
 
       case 'clientCoreReceiveAIResearcherResult':
-        core.receiveAIResearcherResult(e.data.transactionId, e.data.sheetPos, e.data.result, e.data.error);
+        core.receiveAIResearcherResult(
+          e.data.transactionId,
+          e.data.sheetPos,
+          e.data.cell_value,
+          e.data.error,
+          e.data.researcher_response_stringified
+        );
         return;
 
       default:

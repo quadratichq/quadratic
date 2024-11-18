@@ -3,13 +3,21 @@ import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useExaRequestToAPI } from '@/app/ai/hooks/useExaRequestToAPI';
 import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
 import { AITool } from '@/app/ai/tools/aiTools';
-import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
+import { AIToolsArgsSchema, aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { getMessagesForModel } from '@/app/ai/tools/message.helper';
 import { aiResearcherAbortControllerAtom, aiResearcherLoadingAtom } from '@/app/atoms/aiResearcherAtom';
 import { exaSettingsAtom } from '@/app/atoms/exaSettingsAtom';
 import { useAIResearcherMessagePrompt } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherMessagePrompt';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { ChatMessage, ExaSearchResult } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
+import { z } from 'zod';
+
+type SetAIResearcherValueToolCallArgs = z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIResearcherValue]>;
+
+type AIResearcherResult = {
+  exaResult?: ExaSearchResult[];
+  toolCallArgs: SetAIResearcherValueToolCallArgs;
+};
 
 export function useSubmitAIResearcherPrompt() {
   const { handleExaRequestToAPI } = useExaRequestToAPI();
@@ -26,7 +34,10 @@ export function useSubmitAIResearcherPrompt() {
       }: {
         query: string;
         refCellValues: string;
-      }): Promise<{ result?: string; error?: string }> => {
+      }): Promise<{
+        result?: AIResearcherResult;
+        error?: string;
+      }> => {
         set(aiResearcherLoadingAtom, true);
 
         let abortController = await snapshot.getPromise(aiResearcherAbortControllerAtom);
@@ -69,16 +80,12 @@ export function useSubmitAIResearcherPrompt() {
           startPublishedDate,
           endPublishedDate,
         });
-        const exaResult = exaResponse.error ? undefined : exaResponse.content;
-
-        // TODO(ayush): remove this before merging
-        console.log('Exa result:\n', exaResult);
 
         const quadraticContext = getQuadraticContext('AIResearcher');
         const aiResearcherMessagePrompt = getAIResearcherMessagePrompt({
           query,
           refCellValues,
-          exaResult,
+          exaResult: exaResponse.content?.results,
         });
 
         const chatMessages: ChatMessage[] = [...quadraticContext, aiResearcherMessagePrompt];
@@ -98,16 +105,12 @@ export function useSubmitAIResearcherPrompt() {
           (toolCall) => toolCall.name === AITool.SetAIResearcherValue
         );
 
-        let result: { result?: string; error?: string } = { result: undefined, error: undefined };
+        let result: { result?: AIResearcherResult; error?: string } = { result: undefined, error: undefined };
         if (setAIResearcherValueToolCall) {
           try {
             const argsObject = JSON.parse(setAIResearcherValueToolCall.arguments);
             const output = aiToolsSpec[AITool.SetAIResearcherValue].responseSchema.parse(argsObject);
-
-            // TODO(ayush): remove this before merging
-            console.log(`${model} result:\n`, output);
-
-            result = { result: output.cell_value };
+            result = { result: { exaResult: exaResponse.content?.results, toolCallArgs: output } };
           } catch (e) {
             console.error('[useAISetCodeCellValue] Error parsing set_ai_researcher_value response: ', e);
             result = { error: 'Error parsing set_ai_researcher_value response' };

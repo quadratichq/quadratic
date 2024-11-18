@@ -371,7 +371,8 @@ export const ExaSearchRequestBodySchema = z.object({
 });
 export type ExaSearchRequestBody = z.infer<typeof ExaSearchRequestBodySchema>;
 
-export const ExaSearchResultSchema = z.object({
+const ExaSearchResultSchema = z.object({
+  id: z.string(),
   title: z.string(),
   url: z.string(),
   publishedDate: z.string().optional(),
@@ -380,3 +381,9 @@ export const ExaSearchResultSchema = z.object({
   text: z.string().optional(),
 });
 export type ExaSearchResult = z.infer<typeof ExaSearchResultSchema>;
+
+const ExaSearchResponseSchema = z.object({
+  results: z.array(ExaSearchResultSchema),
+  autopromptString: z.string().optional(),
+});
+export type ExaSearchResponse = z.infer<typeof ExaSearchResponseSchema>;

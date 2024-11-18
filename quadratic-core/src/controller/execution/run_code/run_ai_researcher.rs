@@ -252,6 +252,7 @@ impl GridController {
                         sheet_pos.to_owned(),
                         Some("result".to_string()),
                         None,
+                        None,
                     );
                 });
         }
@@ -286,8 +287,9 @@ impl GridController {
         &mut self,
         transaction_id: Uuid,
         sheet_pos: SheetPos,
-        result: Option<String>,
+        cell_value: Option<String>,
         error: Option<String>,
+        researcher_response_stringified: Option<String>,
     ) -> error_core::Result<()> {
         if let Ok(mut transaction) = self.transactions.remove_awaiting_async(transaction_id) {
             transaction.current_sheet_pos = Some(sheet_pos);
@@ -303,9 +305,9 @@ impl GridController {
                 transaction.waiting_for_async = None;
             }
 
-            let result = match result {
-                Some(result) => {
-                    CodeRunResult::Ok(Value::Single(CellValue::parse_from_str(&result)))
+            let result = match cell_value {
+                Some(cell_value) => {
+                    CodeRunResult::Ok(Value::Single(CellValue::parse_from_str(&cell_value)))
                 }
                 None => CodeRunResult::Err(RunError {
                     span: None,
@@ -314,7 +316,7 @@ impl GridController {
             };
 
             let new_code_run = CodeRun {
-                std_out: None,
+                std_out: researcher_response_stringified,
                 std_err: error,
                 formatted_code_string: None,
                 spill_error: false,

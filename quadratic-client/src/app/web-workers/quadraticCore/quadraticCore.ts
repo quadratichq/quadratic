@@ -1346,13 +1346,26 @@ class QuadraticCore {
     });
   }
 
-  receiveAIResearcherResult(transactionId: string, sheetPos: string, result?: string, error?: string) {
+  receiveAIResearcherResult({
+    transactionId,
+    sheetPos,
+    cell_value,
+    error,
+    researcher_response_stringified,
+  }: {
+    transactionId: string;
+    sheetPos: string;
+    cell_value?: string;
+    error?: string;
+    researcher_response_stringified?: string;
+  }) {
     this.send({
       type: 'clientCoreReceiveAIResearcherResult',
       transactionId,
       sheetPos,
-      result,
+      cell_value,
       error,
+      researcher_response_stringified,
     });
   }
 

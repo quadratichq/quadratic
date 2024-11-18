@@ -14,7 +14,15 @@ export const AIResearcherRequestHandler = () => {
       refCellValues: string
     ) => {
       submitPrompt({ query, refCellValues }).then(({ result, error }) => {
-        quadraticCore.receiveAIResearcherResult(transactionId, sheetPos, result, error);
+        const cell_value = result?.toolCallArgs?.cell_value;
+        const researcher_response_stringified = JSON.stringify(result);
+        quadraticCore.receiveAIResearcherResult({
+          transactionId,
+          sheetPos,
+          cell_value,
+          error,
+          researcher_response_stringified,
+        });
       });
     };
 

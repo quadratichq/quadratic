@@ -127,8 +127,9 @@ impl GridController {
         &mut self,
         transaction_id: String,
         sheet_pos: String,
-        result: Option<String>,
+        cell_value: Option<String>,
         error: Option<String>,
+        researcher_response_stringified: Option<String>,
     ) -> Result<(), JsValue> {
         let transaction_id = match Uuid::parse_str(&transaction_id) {
             Ok(transaction_id) => transaction_id,
@@ -137,8 +138,14 @@ impl GridController {
 
         let sheet_pos: SheetPos =
             serde_json::from_str(&sheet_pos).map_err(|_| JsValue::UNDEFINED)?;
-        self.receive_ai_researcher_result(transaction_id, sheet_pos, result, error)
-            .map_err(|e| e.to_string())?;
+        self.receive_ai_researcher_result(
+            transaction_id,
+            sheet_pos,
+            cell_value,
+            error,
+            researcher_response_stringified,
+        )
+        .map_err(|e| e.to_string())?;
 
         Ok(())
     }

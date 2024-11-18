@@ -80,6 +80,8 @@ export const useUpdateCodeEditor = () => {
             spillError: undefined,
             initialCode: undefined,
           }));
+
+          set(aiResearcherAtom, defaultAIResearcherState);
         }
       },
     []

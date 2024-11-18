@@ -1224,9 +1224,21 @@ class Core {
     });
   }
 
-  receiveAIResearcherResult(transactionId: string, sheetPos: string, result?: string, error?: string) {
+  receiveAIResearcherResult(
+    transactionId: string,
+    sheetPos: string,
+    cell_value?: string,
+    error?: string,
+    researcher_response_stringified?: string
+  ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.receiveAIResearcherResult(transactionId, sheetPos, result, error);
+    this.gridController.receiveAIResearcherResult(
+      transactionId,
+      sheetPos,
+      cell_value,
+      error,
+      researcher_response_stringified
+    );
   }
 }
 

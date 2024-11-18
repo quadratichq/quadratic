@@ -1,6 +1,6 @@
 import { authClient } from '@/auth/auth';
 import { AI } from '@/shared/constants/routes';
-import { ExaSearchRequestBody } from 'quadratic-shared/typesAndSchemasAI';
+import { ExaSearchRequestBody, ExaSearchResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 type HandleExaRequestToAPIProps = {
@@ -14,8 +14,8 @@ export const useExaRequestToAPI = () => {
       query,
       ...exaSettings
     }: HandleExaRequestToAPIProps): Promise<{
-      error?: boolean;
-      content: any;
+      error: string | undefined;
+      content: ExaSearchResponse | undefined;
     }> => {
       try {
         const token = await authClient.getTokenOrRedirect();
@@ -27,13 +27,13 @@ export const useExaRequestToAPI = () => {
           body: JSON.stringify({ query, ...exaSettings }),
         });
         const data = await response.json();
-        return { content: data };
+        return { error: undefined, content: data };
       } catch (err: any) {
         if (err.name === 'AbortError') {
-          return { content: 'Aborted by user' };
+          return { error: 'Aborted by user', content: undefined };
         } else {
           console.error('Error in Exa request to API:', err);
-          return { error: true, content: 'An error occurred requesting from Exa API' };
+          return { error: 'An error occurred requesting from Exa API', content: undefined };
         }
       }
     },
