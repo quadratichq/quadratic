@@ -779,7 +779,7 @@ mod test {
                 y: 4,
                 sheet_id,
             },
-            CodeCellLanguage::AIResearcher,
+            CodeCellLanguage::Formula,
             "AI('query', B1:B3)".to_string(),
             None,
         );

@@ -1,7 +1,7 @@
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
-    include_in_docs: false,
+    include_in_docs: true,
     include_in_completions: true,
     name: "AI Researcher",
     docs: None,
@@ -17,8 +17,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             "AI(\"What is the population?\", \"A1\")",
             "AI(\"What is the last year's GDP?\", \"A1\")"
         )]
-        fn AI(prompt: String, ref_cell: Array) {
-            Value::Tuple(vec![CellValue::Text(prompt).into(), ref_cell])
+        fn AI(query: String, ref_cell: Array) {
+            Value::Tuple(vec![CellValue::Text(query).into(), ref_cell])
         }
     )]
 }

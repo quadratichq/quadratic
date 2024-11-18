@@ -12,6 +12,7 @@ use crate::{
     CellValue, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
 
+#[derive(Debug, PartialEq)]
 struct ParsedAIResearcherCode {
     query: String,
     ref_cell_values: Vec<String>,
@@ -59,13 +60,31 @@ impl GridController {
                 if let Value::Tuple(vec) = parsed.eval(&mut ctx).inner {
                     if let Some((query, values_array)) = vec.into_iter().next_tuple() {
                         if let Ok(query) = query.into_cell_value() {
+                            let mut referenced_cell_has_error = false;
+
+                            let ref_cell_values = values_array
+                                .into_cell_values_vec()
+                                .into_iter()
+                                .map(|v| {
+                                    if matches!(v, CellValue::Error(_)) {
+                                        referenced_cell_has_error = true;
+                                    }
+                                    v.to_display()
+                                })
+                                .collect::<Vec<String>>();
+
+                            if referenced_cell_has_error {
+                                return Err(RunError {
+                                    span: None,
+                                    msg: RunErrorMsg::CodeRunError(
+                                        "Error in referenced cell(s)".into(),
+                                    ),
+                                });
+                            }
+
                             Ok(ParsedAIResearcherCode {
                                 query: query.to_display(),
-                                ref_cell_values: values_array
-                                    .into_cell_values_vec()
-                                    .into_iter()
-                                    .map(|v| v.to_display())
-                                    .collect::<Vec<String>>(),
+                                ref_cell_values,
                                 cells_accessed: ctx.cells_accessed,
                             })
                         } else {
@@ -118,7 +137,10 @@ impl GridController {
                     ref_cell_values,
                     cells_accessed,
                 }) => {
-                    // check if the current ai researcher request is dependent on any other ai researcher request that is currently pending or running
+                    dbgjs!(format!(
+                        "query: {:?}, ref_cell_values: {:?}, cells_accessed: {:?}",
+                        query, ref_cell_values, cells_accessed
+                    ));
                     let mut referenced_cell_has_error = false;
                     let mut has_circular_reference = false;
                     let mut is_dependent = false;
@@ -126,6 +148,11 @@ impl GridController {
                     let mut seen_code_cells = HashSet::new();
                     seen_code_cells.insert(sheet_pos.to_owned());
                     let mut cells_accessed_to_check = cells_accessed.iter().collect::<Vec<_>>();
+
+                    // check if this ai researcher code cell is dependent on
+                    // 1. any other code cell that has an error
+                    // 2. another ai researcher request
+                    // 3. has a circular reference
                     while let Some(cell_accessed) = cells_accessed_to_check.pop() {
                         if referenced_cell_has_error || has_circular_reference || is_dependent {
                             break;
@@ -134,6 +161,12 @@ impl GridController {
                         // circular reference to itself
                         has_circular_reference |= cell_accessed
                             .intersects(SheetRect::single_sheet_pos(sheet_pos.to_owned()));
+                        dbgjs!(format!(
+                            "has_circular_reference: {:?}",
+                            has_circular_reference
+                        ));
+                        dbgjs!(format!("cell_accessed: {:?}", cell_accessed));
+                        dbgjs!(format!("sheet_pos: {:?}", sheet_pos));
 
                         // dependent on another ai researcher request
                         is_dependent |= all_ai_researcher.iter().any(|ai_researcher| {
@@ -243,6 +276,7 @@ impl GridController {
             self.transactions.add_async_transaction(transaction);
         }
 
+        // default response from client, for tests
         if cfg!(test) {
             let _ = self.receive_ai_researcher_result(
                 transaction.id,
@@ -342,5 +376,279 @@ impl GridController {
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashSet;
+
+    use serial_test::parallel;
+
+    use super::ParsedAIResearcherCode;
+
+    use crate::{
+        controller::GridController,
+        grid::{CodeCellLanguage, CodeRunResult, SheetId},
+        CellValue, RunError, RunErrorMsg, SheetPos, SheetRect, Span,
+    };
+
+    #[test]
+    #[parallel]
+    fn parse_ai_researcher_code() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["1"], vec!["2"], vec!["3"]],
+            None,
+        );
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 4,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "AI('query', B1:B3)".to_string(),
+            None,
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((1, 4).into()),
+            Some(CellValue::Text("result".to_string()))
+        );
+
+        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
+            x: 1,
+            y: 4,
+            sheet_id,
+        });
+        assert_eq!(
+            parsed_ai_researcher_code,
+            Ok(ParsedAIResearcherCode {
+                query: "query".to_string(),
+                ref_cell_values: vec!["1".to_string(), "2".to_string(), "3".to_string()],
+                cells_accessed: HashSet::from([
+                    SheetRect::new(1, 1, 1, 1, sheet_id),
+                    SheetRect::new(1, 2, 1, 2, sheet_id),
+                    SheetRect::new(1, 3, 1, 3, sheet_id),
+                ]),
+            })
+        );
+
+        // incorrect argument
+        gc.set_code_cell(
+            SheetPos {
+                x: 5,
+                y: 5,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "AI()".to_string(),
+            None,
+        );
+        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
+            x: 5,
+            y: 5,
+            sheet_id,
+        });
+        assert_eq!(
+            parsed_ai_researcher_code,
+            Err(RunError {
+                span: None,
+                msg: RunErrorMsg::InvalidArgument,
+            })
+        );
+
+        // incorrect argument
+        gc.set_code_cell(
+            SheetPos {
+                x: 6,
+                y: 6,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "AI('query')".to_string(),
+            None,
+        );
+        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
+            x: 6,
+            y: 6,
+            sheet_id,
+        });
+        assert_eq!(
+            parsed_ai_researcher_code,
+            Err(RunError {
+                span: None,
+                msg: RunErrorMsg::InvalidArgument,
+            })
+        );
+
+        // incorrect argument
+        gc.set_code_cell(
+            SheetPos {
+                x: 7,
+                y: 7,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "AI(query, B1:B3)".to_string(),
+            None,
+        );
+        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
+            x: 7,
+            y: 7,
+            sheet_id,
+        });
+        assert_eq!(
+            parsed_ai_researcher_code,
+            Err(RunError {
+                span: Some(Span { start: 3, end: 4 }),
+                msg: RunErrorMsg::Expected {
+                    expected: "right paren or expression or nothing".into(),
+                    got: None,
+                },
+            })
+        );
+
+        // incorrect argument
+        gc.set_code_cell(
+            SheetPos {
+                x: 8,
+                y: 8,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "AI(query, ".to_string(),
+            None,
+        );
+        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
+            x: 8,
+            y: 8,
+            sheet_id,
+        });
+        assert_eq!(
+            parsed_ai_researcher_code,
+            Err(RunError {
+                span: Some(Span { start: 3, end: 4 }),
+                msg: RunErrorMsg::Expected {
+                    expected: "right paren or expression or nothing".into(),
+                    got: None,
+                },
+            })
+        );
+
+        // self circular reference
+        gc.set_code_cell(
+            SheetPos {
+                x: 9,
+                y: 9,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "AI('query', J9)".to_string(),
+            None,
+        );
+        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
+            x: 9,
+            y: 9,
+            sheet_id,
+        });
+        assert_eq!(
+            parsed_ai_researcher_code,
+            Err(RunError {
+                span: None,
+                msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into(),),
+            })
+        );
+
+        // different code cell language
+        gc.set_code_cell(
+            SheetPos {
+                x: 10,
+                y: 10,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "1+1".to_string(),
+            None,
+        );
+        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
+            x: 10,
+            y: 10,
+            sheet_id,
+        });
+        assert_eq!(
+            parsed_ai_researcher_code,
+            Err(RunError {
+                span: None,
+                msg: RunErrorMsg::Unexpected("Expected an AI researcher code cell".into()),
+            })
+        );
+
+        // not a code cell
+        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
+            x: 11,
+            y: 11,
+            sheet_id,
+        });
+        assert_eq!(
+            parsed_ai_researcher_code,
+            Err(RunError {
+                span: None,
+                msg: RunErrorMsg::Unexpected("Expected a code cell".into()),
+            })
+        );
+
+        // sheet not found
+        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
+            x: 12,
+            y: 12,
+            sheet_id: SheetId::new(),
+        });
+        assert_eq!(
+            parsed_ai_researcher_code,
+            Err(RunError {
+                span: None,
+                msg: RunErrorMsg::Unexpected("Sheet not found".into()),
+            })
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn run_ai_researcher_parallel_circular_reference_self() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // circular reference to itself
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "AI('query', B1)".to_string(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let code_run = sheet.code_run((1, 1).into());
+        assert_eq!(code_run.is_some(), true);
+        assert_eq!(
+            code_run.unwrap().result,
+            CodeRunResult::Err(RunError {
+                span: None,
+                msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into(),),
+            })
+        );
     }
 }

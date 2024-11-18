@@ -22,14 +22,14 @@ impl GridController {
             _ => code,
         };
 
-        let is_ai_researcher_code =
+        let convert_formula_to_ai_researcher =
             language == CodeCellLanguage::Formula && code.starts_with("AI(");
 
         vec![
             Operation::SetCellValues {
                 sheet_pos,
                 values: CellValues::from(CellValue::Code(CodeCellValue {
-                    language: if is_ai_researcher_code {
+                    language: if convert_formula_to_ai_researcher {
                         CodeCellLanguage::AIResearcher
                     } else {
                         language
