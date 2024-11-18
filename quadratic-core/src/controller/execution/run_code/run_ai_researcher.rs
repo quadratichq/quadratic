@@ -137,10 +137,6 @@ impl GridController {
                     ref_cell_values,
                     cells_accessed,
                 }) => {
-                    dbgjs!(format!(
-                        "query: {:?}, ref_cell_values: {:?}, cells_accessed: {:?}",
-                        query, ref_cell_values, cells_accessed
-                    ));
                     let mut referenced_cell_has_error = false;
                     let mut has_circular_reference = false;
                     let mut is_dependent = false;
@@ -161,12 +157,6 @@ impl GridController {
                         // circular reference to itself
                         has_circular_reference |= cell_accessed
                             .intersects(SheetRect::single_sheet_pos(sheet_pos.to_owned()));
-                        dbgjs!(format!(
-                            "has_circular_reference: {:?}",
-                            has_circular_reference
-                        ));
-                        dbgjs!(format!("cell_accessed: {:?}", cell_accessed));
-                        dbgjs!(format!("sheet_pos: {:?}", sheet_pos));
 
                         // dependent on another ai researcher request
                         is_dependent |= all_ai_researcher.iter().any(|ai_researcher| {
@@ -278,6 +268,10 @@ impl GridController {
 
         // default response from client, for tests
         if cfg!(test) {
+            // send the current state of the ai researcher to the client1
+            self.send_ai_researcher_state(transaction);
+
+            // resolve pending ai researcher request with a dummy result
             let _ = self.receive_ai_researcher_result(
                 transaction.id,
                 sheet_pos,
@@ -383,14 +377,15 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use serial_test::parallel;
+    use serial_test::{parallel, serial};
 
     use super::ParsedAIResearcherCode;
 
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRunResult, SheetId},
-        CellValue, RunError, RunErrorMsg, SheetPos, SheetRect, Span,
+        grid::{js_types::JsCodeRun, CodeCellLanguage, CodeRunResult, SheetId},
+        wasm_bindings::js::{clear_js_calls, expect_js_call},
+        CellValue, RunError, RunErrorMsg, SheetRect, Span,
     };
 
     #[test]
@@ -400,21 +395,13 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_values(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            pos![B1].to_sheet_pos(sheet_id),
             vec![vec!["1"], vec!["2"], vec!["3"]],
             None,
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 4,
-                sheet_id,
-            },
+            pos![B4].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "AI('query', B1:B3)".to_string(),
             None,
@@ -425,11 +412,8 @@ mod test {
             Some(CellValue::Text("result".to_string()))
         );
 
-        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
-            x: 1,
-            y: 4,
-            sheet_id,
-        });
+        let parsed_ai_researcher_code =
+            gc.parse_ai_researcher_code(pos![B4].to_sheet_pos(sheet_id));
         assert_eq!(
             parsed_ai_researcher_code,
             Ok(ParsedAIResearcherCode {
@@ -445,20 +429,13 @@ mod test {
 
         // incorrect argument
         gc.set_code_cell(
-            SheetPos {
-                x: 5,
-                y: 5,
-                sheet_id,
-            },
+            pos![F5].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "AI()".to_string(),
             None,
         );
-        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
-            x: 5,
-            y: 5,
-            sheet_id,
-        });
+        let parsed_ai_researcher_code =
+            gc.parse_ai_researcher_code(pos![F5].to_sheet_pos(sheet_id));
         assert_eq!(
             parsed_ai_researcher_code,
             Err(RunError {
@@ -469,20 +446,13 @@ mod test {
 
         // incorrect argument
         gc.set_code_cell(
-            SheetPos {
-                x: 6,
-                y: 6,
-                sheet_id,
-            },
+            pos![G6].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "AI('query')".to_string(),
             None,
         );
-        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
-            x: 6,
-            y: 6,
-            sheet_id,
-        });
+        let parsed_ai_researcher_code =
+            gc.parse_ai_researcher_code(pos![G6].to_sheet_pos(sheet_id));
         assert_eq!(
             parsed_ai_researcher_code,
             Err(RunError {
@@ -493,20 +463,13 @@ mod test {
 
         // incorrect argument
         gc.set_code_cell(
-            SheetPos {
-                x: 7,
-                y: 7,
-                sheet_id,
-            },
+            pos![H7].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "AI(query, B1:B3)".to_string(),
             None,
         );
-        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
-            x: 7,
-            y: 7,
-            sheet_id,
-        });
+        let parsed_ai_researcher_code =
+            gc.parse_ai_researcher_code(pos![H7].to_sheet_pos(sheet_id));
         assert_eq!(
             parsed_ai_researcher_code,
             Err(RunError {
@@ -520,20 +483,13 @@ mod test {
 
         // incorrect argument
         gc.set_code_cell(
-            SheetPos {
-                x: 8,
-                y: 8,
-                sheet_id,
-            },
+            pos![I8].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "AI(query, ".to_string(),
             None,
         );
-        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
-            x: 8,
-            y: 8,
-            sheet_id,
-        });
+        let parsed_ai_researcher_code =
+            gc.parse_ai_researcher_code(pos![I8].to_sheet_pos(sheet_id));
         assert_eq!(
             parsed_ai_researcher_code,
             Err(RunError {
@@ -547,44 +503,30 @@ mod test {
 
         // self circular reference
         gc.set_code_cell(
-            SheetPos {
-                x: 9,
-                y: 9,
-                sheet_id,
-            },
+            pos![J9].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "AI('query', J9)".to_string(),
             None,
         );
-        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
-            x: 9,
-            y: 9,
-            sheet_id,
-        });
+        let parsed_ai_researcher_code =
+            gc.parse_ai_researcher_code(pos![J9].to_sheet_pos(sheet_id));
         assert_eq!(
             parsed_ai_researcher_code,
             Err(RunError {
                 span: None,
-                msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into(),),
+                msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
             })
         );
 
         // different code cell language
         gc.set_code_cell(
-            SheetPos {
-                x: 10,
-                y: 10,
-                sheet_id,
-            },
+            pos![K10].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "1+1".to_string(),
             None,
         );
-        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
-            x: 10,
-            y: 10,
-            sheet_id,
-        });
+        let parsed_ai_researcher_code =
+            gc.parse_ai_researcher_code(pos![K10].to_sheet_pos(sheet_id));
         assert_eq!(
             parsed_ai_researcher_code,
             Err(RunError {
@@ -594,11 +536,8 @@ mod test {
         );
 
         // not a code cell
-        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
-            x: 11,
-            y: 11,
-            sheet_id,
-        });
+        let parsed_ai_researcher_code =
+            gc.parse_ai_researcher_code(pos![L11].to_sheet_pos(sheet_id));
         assert_eq!(
             parsed_ai_researcher_code,
             Err(RunError {
@@ -608,11 +547,8 @@ mod test {
         );
 
         // sheet not found
-        let parsed_ai_researcher_code = gc.parse_ai_researcher_code(SheetPos {
-            x: 12,
-            y: 12,
-            sheet_id: SheetId::new(),
-        });
+        let parsed_ai_researcher_code =
+            gc.parse_ai_researcher_code(pos![M12].to_sheet_pos(SheetId::new()));
         assert_eq!(
             parsed_ai_researcher_code,
             Err(RunError {
@@ -630,11 +566,7 @@ mod test {
 
         // circular reference to itself
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            pos![B1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "AI('query', B1)".to_string(),
             None,
@@ -647,8 +579,301 @@ mod test {
             code_run.unwrap().result,
             CodeRunResult::Err(RunError {
                 span: None,
-                msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into(),),
+                msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
             })
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn run_ai_researcher_parallel_circular_reference_on_dependent_ai_researcher() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![D1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "AI('query', C1)".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            pos![C1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "AI('query', B1)".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            pos![B1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "AI('query', D1)".to_string(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let code_run = sheet.code_run((1, 1).into());
+        assert_eq!(code_run.is_some(), true);
+        assert_eq!(
+            code_run.unwrap().result,
+            CodeRunResult::Err(RunError {
+                span: None,
+                msg: RunErrorMsg::CircularReference,
+            })
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn run_ai_researcher_parallel_circular_reference_on_dependent_code_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![D1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "AI('query', C1)".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            pos![C1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "B1".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            pos![B1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "AI('query', D1)".to_string(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let code_run = sheet.code_run((1, 1).into());
+        assert_eq!(code_run.is_some(), true);
+        assert_eq!(
+            code_run.unwrap().result,
+            CodeRunResult::Err(RunError {
+                span: None,
+                msg: RunErrorMsg::CircularReference,
+            })
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn run_ai_researcher_parallel_scheduling_dependent_ai_researcher_requests() {
+        clear_js_calls();
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(pos![B1].to_sheet_pos(sheet_id), "1".to_string(), None);
+
+        let sheet_pos = pos![B2].to_sheet_pos(sheet_id);
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "AI('query', B1)".to_string(),
+            None,
+        );
+        let prev_transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestAIResearcherResult",
+            format!(
+                "{},{},{},{}",
+                prev_transaction_id,
+                serde_json::to_string(&sheet_pos).unwrap(),
+                "query",
+                "1"
+            ),
+            false,
+        );
+        expect_js_call(
+            "jsAIResearcherState",
+            format!(
+                "{},{}",
+                serde_json::to_string(&vec![JsCodeRun {
+                    transaction_id: prev_transaction_id.to_string(),
+                    sheet_pos: sheet_pos.into(),
+                    code: String::new()
+                }])
+                .unwrap(),
+                serde_json::to_string(&Vec::<JsCodeRun>::new()).unwrap()
+            ),
+            true,
+        );
+
+        let sheet_pos = pos![B3].to_sheet_pos(sheet_id);
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "AI('query', B2)".to_string(),
+            None,
+        );
+        let prev_transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestAIResearcherResult",
+            format!(
+                "{},{},{},{}",
+                prev_transaction_id,
+                serde_json::to_string(&sheet_pos).unwrap(),
+                "query",
+                "result"
+            ),
+            false,
+        );
+        expect_js_call(
+            "jsAIResearcherState",
+            format!(
+                "{},{}",
+                serde_json::to_string(&vec![JsCodeRun {
+                    transaction_id: prev_transaction_id.to_string(),
+                    sheet_pos: sheet_pos.into(),
+                    code: String::new()
+                }])
+                .unwrap(),
+                serde_json::to_string(&Vec::<JsCodeRun>::new()).unwrap()
+            ),
+            true,
+        );
+
+        let sheet_pos = pos![B4].to_sheet_pos(sheet_id);
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "AI('query', B3)".to_string(),
+            None,
+        );
+        let prev_transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestAIResearcherResult",
+            format!(
+                "{},{},{},{}",
+                prev_transaction_id,
+                serde_json::to_string(&sheet_pos).unwrap(),
+                "query",
+                "result"
+            ),
+            false,
+        );
+        expect_js_call(
+            "jsAIResearcherState",
+            format!(
+                "{},{}",
+                serde_json::to_string(&vec![JsCodeRun {
+                    transaction_id: prev_transaction_id.to_string(),
+                    sheet_pos: sheet_pos.into(),
+                    code: String::new()
+                }])
+                .unwrap(),
+                serde_json::to_string(&Vec::<JsCodeRun>::new()).unwrap()
+            ),
+            true,
+        );
+
+        gc.rerun_all_code_cells(None);
+        let prev_transaction_id = gc.last_transaction().unwrap().id;
+
+        // running - B2
+        // awaiting execution - B3, B4
+        expect_js_call(
+            "jsRequestAIResearcherResult",
+            format!(
+                "{},{},{},{}",
+                prev_transaction_id,
+                serde_json::to_string(&pos![B2].to_sheet_pos(sheet_id)).unwrap(),
+                "query",
+                "1"
+            ),
+            false,
+        );
+        expect_js_call(
+            "jsAIResearcherState",
+            format!(
+                "{},{}",
+                serde_json::to_string(&vec![JsCodeRun {
+                    transaction_id: prev_transaction_id.to_string(),
+                    sheet_pos: pos![B2].to_sheet_pos(sheet_id).into(),
+                    code: String::new()
+                }])
+                .unwrap(),
+                serde_json::to_string(&vec![
+                    JsCodeRun {
+                        transaction_id: prev_transaction_id.to_string(),
+                        sheet_pos: pos![B3].to_sheet_pos(sheet_id).into(),
+                        code: String::new()
+                    },
+                    JsCodeRun {
+                        transaction_id: prev_transaction_id.to_string(),
+                        sheet_pos: pos![B4].to_sheet_pos(sheet_id).into(),
+                        code: String::new()
+                    }
+                ])
+                .unwrap()
+            ),
+            false,
+        );
+
+        // running - B3
+        // awaiting execution - B4
+        expect_js_call(
+            "jsRequestAIResearcherResult",
+            format!(
+                "{},{},{},{}",
+                prev_transaction_id,
+                serde_json::to_string(&pos![B3].to_sheet_pos(sheet_id)).unwrap(),
+                "query",
+                "result"
+            ),
+            false,
+        );
+        expect_js_call(
+            "jsAIResearcherState",
+            format!(
+                "{},{}",
+                serde_json::to_string(&vec![JsCodeRun {
+                    transaction_id: prev_transaction_id.to_string(),
+                    sheet_pos: pos![B3].to_sheet_pos(sheet_id).into(),
+                    code: String::new()
+                }])
+                .unwrap(),
+                serde_json::to_string(&vec![JsCodeRun {
+                    transaction_id: prev_transaction_id.to_string(),
+                    sheet_pos: pos![B4].to_sheet_pos(sheet_id).into(),
+                    code: String::new()
+                }])
+                .unwrap()
+            ),
+            false,
+        );
+
+        // running - B4
+        // awaiting execution - none
+        expect_js_call(
+            "jsRequestAIResearcherResult",
+            format!(
+                "{},{},{},{}",
+                prev_transaction_id,
+                serde_json::to_string(&pos![B4].to_sheet_pos(sheet_id)).unwrap(),
+                "query",
+                "result"
+            ),
+            false,
+        );
+        expect_js_call(
+            "jsAIResearcherState",
+            format!(
+                "{},{}",
+                serde_json::to_string(&vec![JsCodeRun {
+                    transaction_id: prev_transaction_id.to_string(),
+                    sheet_pos: pos![B4].to_sheet_pos(sheet_id).into(),
+                    code: String::new()
+                }])
+                .unwrap(),
+                serde_json::to_string(&Vec::<JsCodeRun>::new()).unwrap()
+            ),
+            false,
+        );
+
+        clear_js_calls();
     }
 }

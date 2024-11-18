@@ -764,21 +764,13 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_values(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            pos![B1].to_sheet_pos(sheet_id),
             vec![vec!["1"], vec!["2"], vec!["3"]],
             None,
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 4,
-                sheet_id,
-            },
+            pos![B4].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
             "AI('query', B1:B3)".to_string(),
             None,
