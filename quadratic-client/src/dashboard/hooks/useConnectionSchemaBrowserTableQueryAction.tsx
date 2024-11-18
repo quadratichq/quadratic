@@ -1,3 +1,4 @@
+import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -22,19 +23,27 @@ export const useConnectionSchemaBrowserTableQueryActionNewFile = ({
 }) => {
   return {
     TableQueryAction: ({ query }: { query: string }) => {
+      const isValidQuery = query.length > 0;
       const to = newNewFileFromStateConnection({ query, isPrivate, teamUuid, connectionType, connectionUuid });
       return (
-        <Link
-          to={to}
-          reloadDocument
-          onClick={() => {
-            mixpanel.track('[Connections].schemaViewer.newFileFromTable');
-          }}
+        <ConditionalWrapper
+          condition={isValidQuery}
+          Wrapper={({ children }) => (
+            <Link
+              to={to}
+              reloadDocument
+              onClick={() => {
+                mixpanel.track('[Connections].schemaViewer.newFileFromTable');
+              }}
+            >
+              {children}
+            </Link>
+          )}
         >
-          <Button size="sm" disabled={to.length === 0}>
+          <Button size="sm" disabled={!isValidQuery}>
             New file with selected table
           </Button>
-        </Link>
+        </ConditionalWrapper>
       );
     },
   };

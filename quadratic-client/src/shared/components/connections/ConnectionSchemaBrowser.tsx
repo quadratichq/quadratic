@@ -47,7 +47,11 @@ export const ConnectionSchemaBrowser = ({
         </div>
         <div className="flex flex-row-reverse items-center gap-1">
           <TableQueryAction
-            query={data ? getTableQuery({ table: data.tables[selectedTableIndex], connectionKind: data.type }) : ''}
+            query={
+              !isLoading && data
+                ? getTableQuery({ table: data.tables[selectedTableIndex], connectionKind: data.type })
+                : ''
+            }
           />
           <TooltipPopover label="Reload schema">
             <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
