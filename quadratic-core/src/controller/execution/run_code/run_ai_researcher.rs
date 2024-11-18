@@ -679,6 +679,39 @@ mod test {
     }
 
     #[test]
+    #[parallel]
+    fn run_ai_researcher_parallel_dependent_cells_with_error() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![A1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "1+".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            pos![B1].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "AI('query', A1)".to_string(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let code_run = sheet.code_run((1, 1).into());
+        assert_eq!(code_run.is_some(), true);
+        assert_eq!(
+            code_run.unwrap().result,
+            CodeRunResult::Err(RunError {
+                span: None,
+                msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
+            })
+        );
+
+        assert_no_pending_async_transaction(&gc);
+    }
+
+    #[test]
     #[serial]
     fn run_ai_researcher_parallel_scheduling_dependent_ai_researcher_requests() {
         clear_js_calls();
