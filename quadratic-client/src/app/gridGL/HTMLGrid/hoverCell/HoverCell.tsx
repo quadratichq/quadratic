@@ -324,7 +324,13 @@ function HoverCellAIResearcherResult({ codeCell: codeCellCore }: { codeCell: JsC
         <div>
           <span className="font-bold">{`Source: `}</span>
           {aiResearcherResult.toolCallArgs.source_urls.map((url) => (
-            <a key={url} href={url} target="_blank" rel="noreferrer" className="text-link underline">
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="truncate whitespace-pre-wrap break-all text-link underline"
+            >
               {url}
             </a>
           ))}
