@@ -108,7 +108,7 @@ impl Selection {
 
     #[wasm_bindgen(js_name = "getLargestRectangle")]
     pub fn get_largest_rectangle(&self) -> Result<String, String> {
-        let rect = self.selection.largest_rectangle();
+        let rect = self.selection.largest_rect();
         Ok(serde_json::to_string(&rect).map_err(|e| e.to_string())?)
     }
 

@@ -16,9 +16,8 @@ use crate::{
         sheet::validations::validation::Validation, CellsAccessed, CodeCellLanguage, CodeRun,
         Sheet, SheetId,
     },
-    selection::OldSelection,
     viewport::ViewportBuffer,
-    Pos, SheetPos, SheetRect,
+    A1Selection, Pos, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;
@@ -323,7 +322,7 @@ impl PendingTransaction {
         &mut self,
         sheet_id: SheetId,
         validation: &Validation,
-        changed_selection: Option<&OldSelection>,
+        changed_selection: Option<&A1Selection>,
     ) {
         self.validations.insert(sheet_id);
         if validation.render_special().is_some() {

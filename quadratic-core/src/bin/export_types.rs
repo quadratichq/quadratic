@@ -79,6 +79,8 @@ fn main() {
         CellBorderLine,
         CellFormatSummary,
         CellRef,
+        CellRefRange,
+        CellRefRangeEnd,
         CellRefCoord,
         CellVerticalAlign,
         CellWrap,

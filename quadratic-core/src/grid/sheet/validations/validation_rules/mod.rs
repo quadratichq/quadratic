@@ -52,6 +52,15 @@ impl ValidationRule {
         matches!(self, ValidationRule::Logical(_))
     }
 
+    /// Returns true if the validation rule has a UI element.
+    pub fn has_ui(&self) -> bool {
+        match self {
+            ValidationRule::List(list) => list.drop_down,
+            ValidationRule::Logical(logical) => logical.show_checkbox,
+            _ => false,
+        }
+    }
+
     pub fn allow_blank(&self) -> bool {
         match self {
             ValidationRule::List(list) => list.ignore_blank,

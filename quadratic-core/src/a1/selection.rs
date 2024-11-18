@@ -296,8 +296,31 @@ impl A1Selection {
         ret
     }
 
+    /// Returns the largest rectangle that can be formed by the selection,
+    /// ignoring any ranges that extend infinitely.
+    pub fn largest_rect_finite(&self) -> Rect {
+        let mut rect = Rect::single_pos(self.cursor);
+        self.ranges.iter().for_each(|range| {
+            if let Some(end) = range.end {
+                let (Some(end_col), Some(end_row)) = (end.col, end.row) else {
+                    return;
+                };
+                let (Some(start_col), Some(start_row)) = (range.start.col, range.start.row) else {
+                    return;
+                };
+                rect = rect.union(&Rect::new(
+                    start_col.coord as i64,
+                    start_row.coord as i64,
+                    end_col.coord as i64,
+                    end_row.coord as i64,
+                ));
+            }
+        });
+        rect
+    }
+
     /// Returns the largest rectangle that can be formed by the selection.
-    pub fn largest_rectangle(&self) -> Rect {
+    pub fn largest_rect(&self) -> Rect {
         let mut rect = Rect::single_pos(self.cursor);
         self.ranges.iter().for_each(|range| {
             if let Some(col) = range.start.col {
@@ -321,6 +344,12 @@ impl A1Selection {
         });
 
         rect
+    }
+
+    /// Returns a test selection from the A1-string with SheetId::test().
+    #[cfg(test)]
+    pub fn test(a1: &str) -> Self {
+        Self::from_str(a1, SheetId::test(), &std::collections::HashMap::new()).unwrap()
     }
 }
 
@@ -593,13 +622,24 @@ mod tests {
     }
 
     #[test]
-    fn test_largest_rectangle() {
+    fn test_largest_rect() {
         let selection = A1Selection::from_str(
             "A1,B1:D2,E:G,2:3,5:7,F6:G8,4",
             SheetId::test(),
             &HashMap::new(),
         )
         .unwrap();
-        assert_eq!(selection.largest_rectangle(), Rect::new(1, 1, 7, 8));
+        assert_eq!(selection.largest_rect(), Rect::new(1, 1, 7, 8));
+    }
+
+    #[test]
+    fn test_largest_rect_finite() {
+        let selection = A1Selection::from_str(
+            "A1,B1:D2,E:G,2:3,5:7,F6:G8,4",
+            SheetId::test(),
+            &HashMap::new(),
+        )
+        .unwrap();
+        assert_eq!(selection.largest_rect_finite(), Rect::new(1, 1, 7, 8));
     }
 }

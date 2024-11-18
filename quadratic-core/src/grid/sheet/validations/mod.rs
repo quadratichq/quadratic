@@ -7,8 +7,8 @@ use uuid::Uuid;
 use validation::{Validation, ValidationDisplay, ValidationDisplaySheet};
 
 use crate::{
-    controller::operations::operation::Operation, grid::js_types::JsRenderCellSpecial,
-    selection::OldSelection, Pos, Rect,
+    controller::operations::operation::Operation, grid::js_types::JsRenderCellSpecial, A1Selection,
+    Pos, Rect,
 };
 
 use super::Sheet;
@@ -42,7 +42,7 @@ impl Validations {
             }
         }
         let reverse = vec![Operation::RemoveValidation {
-            sheet_id: validation.selection.sheet_id,
+            sheet_id: validation.selection.sheet,
             validation_id: validation.id,
         }];
         self.validations.push(validation);
@@ -55,7 +55,7 @@ impl Validations {
     }
 
     /// Gets a validation based on a Selection.
-    pub fn validation_selection(&self, selection: OldSelection) -> Option<&Validation> {
+    pub fn validation_selection(&self, selection: A1Selection) -> Option<&Validation> {
         self.validations.iter().find(|v| v.selection == selection)
     }
 
@@ -113,53 +113,22 @@ impl Validations {
 
     /// Gets the ValidationDisplaySheet.
     pub fn display_sheet(&self) -> Option<ValidationDisplaySheet> {
-        let mut display_columns = HashMap::new();
-        let mut display_rows = HashMap::new();
-        let mut display_all = ValidationDisplay::default();
+        let mut displays = vec![];
         for v in &self.validations {
-            if !v.rule.is_list() && !v.rule.is_logical() {
+            if !v.rule.has_ui() {
                 continue;
             }
-            let display = ValidationDisplay {
-                checkbox: v.rule.is_logical(),
-                list: v.rule.is_list(),
-            };
-            if let Some(columns) = v.selection.columns.as_ref() {
-                columns.iter().for_each(|col| {
-                    display_columns.insert(*col, display.clone());
-                });
-            }
-            if let Some(rows) = v.selection.rows.as_ref() {
-                rows.iter().for_each(|row| {
-                    display_rows.insert(*row, display.clone());
-                });
-            }
-            if v.selection.all {
-                display_all = display.clone();
-            }
+            v.selection.ranges.iter().for_each(|range| {
+                if !range.is_finite() {
+                    displays.push(ValidationDisplay {
+                        range: range.clone(),
+                        checkbox: v.rule.is_logical(),
+                        list: v.rule.is_list(),
+                    });
+                }
+            });
         }
-        let v = ValidationDisplaySheet {
-            columns: if display_columns.is_empty() {
-                None
-            } else {
-                Some(display_columns.into_iter().collect())
-            },
-            rows: if display_rows.is_empty() {
-                None
-            } else {
-                Some(display_rows.into_iter().collect())
-            },
-            all: if display_all.is_default() {
-                None
-            } else {
-                Some(display_all)
-            },
-        };
-        if v.is_default() {
-            None
-        } else {
-            Some(v)
-        }
+        Some(ValidationDisplaySheet { displays })
     }
 
     /// Removes a validation. Returns the reverse operations.
@@ -190,7 +159,12 @@ impl Validations {
     pub fn in_rect(&self, rect: Rect) -> Vec<&Validation> {
         self.validations
             .iter()
-            .filter(|v| v.selection.in_rects(rect))
+            .filter(|v| {
+                v.selection
+                    .ranges
+                    .iter()
+                    .any(|r| r.is_finite() && r.might_intersect_rect(rect))
+            })
             .collect()
     }
 
@@ -206,14 +180,14 @@ impl Validations {
 mod tests {
     use validation_rules::{validation_logical::ValidationLogical, ValidationRule};
 
-    use crate::{grid::SheetId, selection::OldSelection, Rect};
+    use crate::{grid::SheetId, selection::OldSelection, CellRefRange, Rect};
 
     use super::*;
 
     fn create_validation_rect(x0: i64, y0: i64, x1: i64, y1: i64) -> Validation {
         Validation {
             id: Uuid::new_v4(),
-            selection: OldSelection::rect(Rect::new(x0, y0, x1, y1), SheetId::test()),
+            selection: A1Selection::from_rect(Rect::new(x0, y0, x1, y1)),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -263,7 +237,7 @@ mod tests {
     fn validation_all() {
         let validation = Validation {
             id: Default::default(),
-            selection: OldSelection::all(SheetId::test()),
+            selection: A1Selection::test("*"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -279,19 +253,18 @@ mod tests {
         assert_eq!(
             reverse[0],
             Operation::RemoveValidation {
-                sheet_id: validation.selection.sheet_id,
+                sheet_id: validation.selection.sheet,
                 validation_id: validation.id
             }
         );
         assert_eq!(
             validations.display_sheet(),
             Some(ValidationDisplaySheet {
-                columns: None,
-                rows: None,
-                all: Some(ValidationDisplay {
+                displays: vec![ValidationDisplay {
+                    range: CellRefRange::test("*"),
                     checkbox: true,
                     list: false
-                })
+                }]
             })
         );
         assert_eq!(
@@ -304,7 +277,7 @@ mod tests {
     fn validation_columns() {
         let validation = Validation {
             id: Default::default(),
-            selection: OldSelection::columns(&[0, 1, 2], SheetId::test()),
+            selection: A1Selection::test("A:C"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -320,20 +293,19 @@ mod tests {
         assert_eq!(
             reverse[0],
             Operation::RemoveValidation {
-                sheet_id: validation.selection.sheet_id,
+                sheet_id: validation.selection.sheet,
                 validation_id: validation.id
             }
         );
         let display_sheet = validations.display_sheet().unwrap();
-        assert_eq!(display_sheet.columns.as_ref().unwrap().len(), 3);
-        assert_eq!(display_sheet.rows, None);
-        assert_eq!(display_sheet.all, None);
+        assert_eq!(display_sheet.displays.len(), 3);
         assert_eq!(
-            display_sheet.columns.unwrap()[0].1,
-            ValidationDisplay {
+            display_sheet.displays,
+            vec![ValidationDisplay {
+                range: CellRefRange::test("A:C"),
                 checkbox: true,
                 list: false
-            }
+            }]
         );
         assert_eq!(
             validations.render_special_pos((0, 0).into()),
@@ -345,7 +317,7 @@ mod tests {
     fn validation_rows() {
         let validation = Validation {
             id: Default::default(),
-            selection: OldSelection::rows(&[0, 1, 2], SheetId::test()),
+            selection: A1Selection::test("1, 2, 3"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -361,20 +333,19 @@ mod tests {
         assert_eq!(
             reverse[0],
             Operation::RemoveValidation {
-                sheet_id: validation.selection.sheet_id,
+                sheet_id: validation.selection.sheet,
                 validation_id: validation.id
             }
         );
         let display_sheet = validations.display_sheet().unwrap();
-        assert_eq!(display_sheet.rows.as_ref().unwrap().len(), 3);
-        assert_eq!(display_sheet.columns, None);
-        assert_eq!(display_sheet.all, None);
+        assert_eq!(display_sheet.displays.len(), 3);
         assert_eq!(
-            display_sheet.rows.unwrap()[0].1,
-            ValidationDisplay {
+            display_sheet.displays,
+            vec![ValidationDisplay {
+                range: CellRefRange::test("1:3"),
                 checkbox: true,
                 list: false
-            }
+            }]
         );
         assert_eq!(
             validations.render_special_pos((0, 0).into()),

@@ -4,6 +4,7 @@ use std::{fmt, ops::RangeInclusive};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use super::{A1Error, SheetNameIdMap};
 use crate::{grid::SheetId, Pos, Rect};
@@ -49,7 +50,7 @@ impl SheetCellRefRange {
     }
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(test, proptest(filter = "|range| range.is_valid()"))]
 pub struct CellRefRange {
@@ -193,9 +194,24 @@ impl CellRefRange {
     pub fn is_row_range(&self) -> bool {
         self.start.col.is_none() && self.end.map_or(true, |end| end.col.is_none())
     }
+
+    /// Returns whether `self` is a finite range.
+    pub fn is_finite(&self) -> bool {
+        self.start.col.is_some()
+            && self.start.row.is_some()
+            && self
+                .end
+                .is_none_or(|end| end.col.is_some() && end.row.is_some())
+    }
+
+    /// Returns a test range from the A1-string.
+    #[cfg(test)]
+    pub fn test(a1: &str) -> Self {
+        Self::from_str(a1).unwrap()
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct CellRefRangeEnd {
     pub col: Option<CellRefCoord>,
@@ -405,5 +421,12 @@ mod tests {
         assert!(CellRefRangeEnd::new_relative_column(1).is_multi_range());
         assert!(CellRefRangeEnd::new_relative_row(1).is_multi_range());
         assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_multi_range());
+    }
+
+    #[test]
+    fn test_is_finite() {
+        assert!(CellRefRange::test("A1").is_finite());
+        assert!(!CellRefRange::test("A").is_finite());
+        assert!(!CellRefRange::test("1").is_finite());
     }
 }
