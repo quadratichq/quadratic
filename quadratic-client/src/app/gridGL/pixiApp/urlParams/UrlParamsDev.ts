@@ -2,7 +2,6 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SheetCursorSave } from '@/app/grid/sheet/SheetCursor';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -12,7 +11,7 @@ const URL_STATE_PARAM = 'state';
 const WAIT_FOR_SET_EDITOR_INTERACTION_STATE_TIMEOUT_MS = 100;
 
 interface SheetState {
-  cursor: SheetCursorSave;
+  cursor: string;
   viewport?: IViewportTransformState;
 }
 

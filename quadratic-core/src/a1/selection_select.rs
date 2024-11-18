@@ -30,6 +30,41 @@ impl A1Selection {
         }
     }
 
+    /// Selects a single row. If append is true, then the row is appended
+    /// to the ranges (or, if the last selection was a row, then the end of
+    /// that row is extended).
+    pub fn select_row(&mut self, row: u32, append: bool) {
+        if !append {
+            self.ranges.clear();
+            self.ranges.push(CellRefRange::new_relative_row(row as u64));
+        } else if let Some(last_range) = self.ranges.last_mut() {
+            if last_range.is_row_range() {
+                last_range.end = Some(CellRefRangeEnd::new_relative_row(row as u64));
+            } else {
+                self.ranges.push(CellRefRange::new_relative_row(row as u64));
+            }
+        } else {
+            self.ranges.push(CellRefRange::new_relative_row(row as u64));
+        }
+    }
+
+    /// Selects a rectangular range. If append is true, then the range is appended
+    /// to the ranges (or, if the last selection was a range, then the end of
+    /// that range is extended).
+    pub fn select_rect(&mut self, rect: Rect, append: bool) {
+        if !append {
+            self.ranges.clear();
+        }
+        if rect.width() == 1 && rect.height() == 1 {
+            self.ranges.push(CellRefRange::new_relative_xy(
+                rect.min.x as u64,
+                rect.min.y as u64,
+            ));
+        } else {
+            self.ranges.push(CellRefRange::new_relative_rect(rect));
+        }
+    }
+
     /// Changes the size of the last selection by the given delta.
     pub fn delta_size(&mut self, delta_x: i64, delta_y: i64) {
         if let Some(last_range) = self.ranges.last_mut() {
@@ -134,12 +169,28 @@ impl A1Selection {
             .iter()
             .any(|range| range.might_contain_pos(Pos::new(x as i64, y as i64)))
     }
+
+    /// Extends the last selection to the given position. If append is true, then the range is appended
+    /// to the ranges (or, if the last selection was a range, then the end of that range is extended).
+    pub fn extend_selection(&mut self, column: u64, row: u64, append: bool) {
+        // if the selection is empty, then we use the cursor as the starting point
+        if self.ranges.is_empty() {
+            self.ranges
+                .push(CellRefRange::new_relative_pos(self.cursor));
+        };
+        if let Some(last) = self.ranges.last_mut() {
+            last.end = Some(CellRefRangeEnd::new_relative_xy(column, row));
+        }
+        if !append {
+            self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
+        }
+    }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, str::FromStr};
 
     use crate::grid::SheetId;
 
@@ -326,5 +377,51 @@ mod tests {
         let mut selection = A1Selection::from_str("C:D", SheetId::test(), &HashMap::new()).unwrap();
         selection.set_rows_selected();
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(1)]);
+    }
+
+    #[test]
+    fn test_select_row() {
+        let mut selection =
+            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        selection.select_row(2, false);
+        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(2)]);
+    }
+
+    #[test]
+    fn test_select_rect() {
+        let mut selection =
+            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        selection.select_rect(Rect::new(1, 1, 2, 2), false);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::new_relative_rect(Rect::new(1, 1, 2, 2))]
+        );
+
+        selection = A1Selection::from_str("A1:C3", SheetId::test(), &HashMap::new()).unwrap();
+        selection.select_rect(Rect::new(3, 3, 5, 5), true);
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::from_str("A1:C3").unwrap(),
+                CellRefRange::from_str("D4:F6").unwrap(),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_extend_selection() {
+        let mut selection = A1Selection::from_str("A1", SheetId::test(), &HashMap::new()).unwrap();
+        selection.extend_selection(2, 2, false);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::from_str("A1:B2").unwrap()]
+        );
+
+        selection = A1Selection::from_str("A:B", SheetId::test(), &HashMap::new()).unwrap();
+        selection.extend_selection(2, 2, false);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::from_str("A:B2").unwrap()]
+        );
     }
 }

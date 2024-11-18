@@ -17,7 +17,6 @@ import {
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
-  Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
@@ -50,7 +49,7 @@ declare var self: WorkerGlobalScope &
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSetCursorSelection: (selection: Selection) => void;
+    sendSetCursorSelection: (selection: string) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
@@ -693,7 +692,7 @@ class CoreClient {
     this.send({ type: 'coreClientSetCursor', cursor });
   };
 
-  sendSetCursorSelection = (selection: Selection) => {
+  sendSetCursorSelection = (selection: string) => {
     this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 

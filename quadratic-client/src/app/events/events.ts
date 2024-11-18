@@ -16,7 +16,6 @@ import {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
-import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -48,7 +47,7 @@ interface EventTypes {
   changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
-  setCursor: (selection?: Selection) => void;
+  setCursor: (selection?: string) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
   changeInput: (input: boolean, initialValue?: string) => void;

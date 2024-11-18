@@ -4,7 +4,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isLinux } from '@/shared/utils/isLinux';
 import { isMac } from '@/shared/utils/isMac';
-import { Point, Rectangle } from 'pixi.js';
+import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
 import { inlineEditorMonaco } from '../../HTMLGrid/inlineEditor/inlineEditorMonaco';
@@ -65,12 +65,8 @@ export class PointerDown {
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
     if (isRightClick) {
-      if (!cursor.includesCell(column, row)) {
-        cursor.changePosition({
-          cursorPosition: { x: column, y: row },
-          multiCursor: null,
-          ensureVisible: false,
-        });
+      if (!cursor.contains(column, row)) {
+        cursor.moveTo(column, row, false);
         // hack to ensure that the context menu opens after the cursor changes
         // position (otherwise it may close immediately)
         setTimeout(() => events.emit('gridContextMenu', world, column, row));
@@ -110,34 +106,37 @@ export class PointerDown {
       if (!(await this.isInputValid())) return;
 
       const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
-      const cursorPosition = cursor.position;
-      if (column !== cursorPosition.x || row !== cursorPosition.y) {
-        // make origin top left, and terminal bottom right
-        const originX = cursorPosition.x < column ? cursorPosition.x : column;
-        const originY = cursorPosition.y < row ? cursorPosition.y : row;
-        const termX = cursorPosition.x > column ? cursorPosition.x : column;
-        const termY = cursorPosition.y > row ? cursorPosition.y : row;
-        const newRectangle = new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1);
+      cursor.extendSelection(column, row, event.metaKey || event.ctrlKey);
 
-        if (cursor.multiCursor?.length) {
-          const multiCursor = [...cursor.multiCursor];
-          multiCursor[multiCursor.length - 1] = newRectangle;
-          cursor.changePosition({
-            columnRow: event.metaKey || event.ctrlKey ? undefined : null,
-            keyboardMovePosition: { x: column, y: row },
-            multiCursor,
-            ensureVisible: false,
-          });
-        } else {
-          cursor.changePosition({
-            keyboardMovePosition: { x: column, y: row },
-            multiCursor: [newRectangle],
-            ensureVisible: false,
-          });
-        }
-      }
+      // const cursorPosition = cursor.position;
+      // if (column !== cursorPosition.x || row !== cursorPosition.y) {
+      //   // make origin top left, and terminal bottom right
+      //   const originX = cursorPosition.x < column ? cursorPosition.x : column;
+      //   const originY = cursorPosition.y < row ? cursorPosition.y : row;
+      //   const termX = cursorPosition.x > column ? cursorPosition.x : column;
+      //   const termY = cursorPosition.y > row ? cursorPosition.y : row;
+      //   const newRectangle = new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1);
+
+      //   // todo...use selection here
+      //   if (cursor.multiCursor?.length) {
+      //     const multiCursor = [...cursor.multiCursor];
+      //     multiCursor[multiCursor.length - 1] = newRectangle;
+      //     cursor.changePosition({
+      //       columnRow: event.metaKey || event.ctrlKey ? undefined : null,
+      //       keyboardMovePosition: { x: column, y: row },
+      //       multiCursor,
+      //       ensureVisible: false,
+      //     });
+      //   } else {
+      //     cursor.changePosition({
+      //       keyboardMovePosition: { x: column, y: row },
+      //       multiCursor: [newRectangle],
+      //       ensureVisible: false,
+      //     });
+      //   }
+      // }
       this.active = true;
-      this.position = new Point(cursorPosition.x, cursorPosition.y);
+      this.position = new Point(cursor.position.x, cursor.position.y);
       this.previousPosition = new Point(column, row);
       this.pointerMoved = false;
       return;
@@ -148,15 +147,9 @@ export class PointerDown {
       if (!(await this.isInputValid())) return;
 
       const cursorPosition = cursor.position;
-      if (cursor.multiCursor || column !== cursorPosition.x || row !== cursorPosition.y) {
+      if (cursor.isMultiCursor() || column !== cursorPosition.x || row !== cursorPosition.y) {
         event.stopPropagation();
-        const multiCursor = cursor.multiCursor ?? [new Rectangle(cursorPosition.x, cursorPosition.y, 1, 1)];
-        multiCursor.push(new Rectangle(column, row, 1, 1));
-        cursor.changePosition({
-          cursorPosition: { x: column, y: row },
-          multiCursor,
-          ensureVisible: false,
-        });
+        cursor.selectRect(column, row, column, row, true);
         this.active = true;
         this.position = new Point(column, row);
 
@@ -179,16 +172,7 @@ export class PointerDown {
 
     // If the input is rejected, we cannot move the cursor
     if (await inlineEditorHandler.handleCellPointerDown()) {
-      cursor.changePosition({
-        keyboardMovePosition: { x: column, y: row },
-        cursorPosition: { x: column, y: row },
-        multiCursor:
-          (event.metaKey || event.ctrlKey) && cursor.multiCursor
-            ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1)
-            : null,
-        columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
-        ensureVisible: false,
-      });
+      cursor.selectRect(column, row, column, row, event.metaKey || event.ctrlKey);
     } else {
       inlineEditorMonaco.focus();
     }
@@ -223,19 +207,13 @@ export class PointerDown {
     // calculate mouse move position
     const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
-    const columnRow = event.metaKey || event.ctrlKey ? undefined : null;
+    // const columnRow = event.metaKey || event.ctrlKey ? undefined : null;
 
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
-      if (cursor.multiCursor && cursor.multiCursor.length === 1) {
-        cursor.changePosition({
-          columnRow,
-          keyboardMovePosition: { x: this.position.x, y: this.position.y },
-          cursorPosition: { x: this.position.x, y: this.position.y },
-          multiCursor: null,
-          ensureVisible: false,
-        });
+      if (cursor.isMultiCursor()) {
+        cursor.moveTo(this.position.x, this.position.y, false);
       }
       this.previousPosition = new Point(this.position.x, this.position.y);
       if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
@@ -243,36 +221,33 @@ export class PointerDown {
       }
     } else {
       // cursor origin and terminal are not in the same cell
-
       // make origin top left, and terminal bottom right
-      const originX = this.position.x < column ? this.position.x : column;
-      const originY = this.position.y < row ? this.position.y : row;
-      const termX = this.position.x > column ? this.position.x : column;
-      const termY = this.position.y > row ? this.position.y : row;
-
+      // const originX = this.position.x < column ? this.position.x : column;
+      // const originY = this.position.y < row ? this.position.y : row;
+      // const termX = this.position.x > column ? this.position.x : column;
+      // const termY = this.position.y > row ? this.position.y : row;
       // determine if the cursor has moved from the previous event
-      const hasMoved = !(this.previousPosition.x === column && this.previousPosition.y === row);
-
-      // only set state if changed
-      // this reduces the number of hooks fired
-      if (hasMoved) {
-        // update multiCursor
-        const multiCursor = cursor.multiCursor ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1) : [];
-        multiCursor.push(new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1));
-        cursor.changePosition({
-          columnRow,
-          keyboardMovePosition: { x: column, y: row },
-          cursorPosition: { x: this.position.x, y: this.position.y },
-          multiCursor,
-          ensureVisible: false,
-        });
-        if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
-          pixiAppSettings.changeInput(false);
-        }
-
-        // update previousPosition
-        this.previousPosition = new Point(column, row);
-      }
+      // const hasMoved = !(this.previousPosition.x === column && this.previousPosition.y === row);
+      // todo...
+      // // only set state if changed
+      // // this reduces the number of hooks fired
+      // if (hasMoved) {
+      //   // update multiCursor
+      //   const multiCursor = cursor.multiCursor ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1) : [];
+      //   multiCursor.push(new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1));
+      //   cursor.changePosition({
+      //     columnRow,
+      //     keyboardMovePosition: { x: column, y: row },
+      //     cursorPosition: { x: this.position.x, y: this.position.y },
+      //     multiCursor,
+      //     ensureVisible: false,
+      //   });
+      //   if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
+      //     pixiAppSettings.changeInput(false);
+      //   }
+      //   // update previousPosition
+      //   this.previousPosition = new Point(column, row);
+      // }
     }
   }
 

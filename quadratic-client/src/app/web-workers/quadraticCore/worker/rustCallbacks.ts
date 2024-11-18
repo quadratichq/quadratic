@@ -11,12 +11,12 @@ import {
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
-  Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
+import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {

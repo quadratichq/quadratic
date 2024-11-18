@@ -1,4 +1,3 @@
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Matrix, Renderer } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from './PixiApp';
@@ -19,51 +18,58 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
     });
   }
 
-  let column, width, row, height;
-  const sheet = sheets.sheet;
-  const cursor = sheet.cursor;
-  if (cursor.multiCursor) {
-    const selection = cursor.getLargestMultiCursorRectangle();
-    column = selection.left;
-    row = selection.top;
-    width = selection.width;
-    height = selection.height;
-  } else if (cursor.columnRow) {
-    if (cursor.columnRow.all) {
-      const bounds = sheet.getBounds(false);
-      if (bounds) {
-        column = bounds.left;
-        row = bounds.top;
-        width = bounds.width + 1;
-        height = bounds.height + 1;
-      }
-    } else if (cursor.columnRow.columns?.length) {
-      const columns = cursor.columnRow.columns.sort((a, b) => a - b);
-      const bounds = await quadraticCore.getColumnsBounds(sheet.id, columns[0], columns[columns.length - 1]);
-      column = columns[0];
-      width = columns[columns.length - 1] - columns[0] + 1;
-      row = bounds?.min ?? 0;
-      height = bounds ? bounds.max - bounds.min + 1 : 1;
-    } else if (cursor.columnRow.rows?.length) {
-      const rows = cursor.columnRow.rows.sort((a, b) => a - b);
-      const bounds = await quadraticCore.getRowsBounds(sheet.id, rows[0], rows[rows.length - 1]);
-      row = rows[0];
-      height = rows[rows.length - 1] - rows[0] + 1;
-      column = bounds?.min ?? 0;
-      width = bounds ? bounds.max - bounds.min + 1 : 1;
-    }
-  } else {
-    column = cursor.position.x;
-    row = cursor.position.y;
-    width = height = 0;
-  }
-  if (column === undefined || row === undefined || width === undefined || height === undefined) {
-    column = 0;
-    row = 0;
-    width = 1;
-    height = 1;
-  }
-  const rectangle = sheet.getScreenRectangle(column, row, width - 1, height - 1);
+  // todo...add a function in quadraticCore that does this.
+  // let column, width, row, height;
+  // const sheet = sheets.sheet;
+  // const cursor = sheet.cursor;
+
+  // if (cursor.multiCursor) {
+  //   const selection = cursor.getLargestMultiCursorRectangle();
+  //   column = selection.left;
+  //   row = selection.top;
+  //   width = selection.width;
+  //   height = selection.height;
+  // } else if (cursor.columnRow) {
+  //   if (cursor.columnRow.all) {
+  //     const bounds = sheet.getBounds(false);
+  //     if (bounds) {
+  //       column = bounds.left;
+  //       row = bounds.top;
+  //       width = bounds.width + 1;
+  //       height = bounds.height + 1;
+  //     }
+  //   } else if (cursor.columnRow.columns?.length) {
+  //     const columns = cursor.columnRow.columns.sort((a, b) => a - b);
+  //     const bounds = await quadraticCore.getColumnsBounds(sheet.id, columns[0], columns[columns.length - 1]);
+  //     column = columns[0];
+  //     width = columns[columns.length - 1] - columns[0] + 1;
+  //     row = bounds?.min ?? 0;
+  //     height = bounds ? bounds.max - bounds.min + 1 : 1;
+  //   } else if (cursor.columnRow.rows?.length) {
+  //     const rows = cursor.columnRow.rows.sort((a, b) => a - b);
+  //     const bounds = await quadraticCore.getRowsBounds(sheet.id, rows[0], rows[rows.length - 1]);
+  //     row = rows[0];
+  //     height = rows[rows.length - 1] - rows[0] + 1;
+  //     column = bounds?.min ?? 0;
+  //     width = bounds ? bounds.max - bounds.min + 1 : 1;
+  //   }
+  // } else {
+  //   column = cursor.position.x;
+  //   row = cursor.position.y;
+  //   width = height = 0;
+  // }
+  // if (column === undefined || row === undefined || width === undefined || height === undefined) {
+  //   column = 0;
+  //   row = 0;
+  //   width = 1;
+  //   height = 1;
+  // }
+
+  const column = 1;
+  const row = 1;
+  const width = 1;
+  const height = 1;
+  const rectangle = sheets.sheet.getScreenRectangle(column, row, width - 1, height - 1);
 
   // captures bottom-right border size
   rectangle.width += borderSize * 2;

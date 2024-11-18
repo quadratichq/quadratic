@@ -7,6 +7,7 @@
 import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import {
   BorderSelection,
   BorderStyle,
@@ -24,7 +25,6 @@ import {
   MinMax,
   PasteSpecial,
   SearchOptions,
-  Selection,
   SheetPos,
   SheetRect,
   SummarizeSelectionResult,
@@ -66,7 +66,6 @@ import {
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
 } from './coreClientMessages';
-import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 
 class QuadraticCore {
   private worker?: Worker;
@@ -175,7 +174,7 @@ class QuadraticCore {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
       return;
     } else if (e.data.type === 'coreClientSetCursorSelection') {
-      events.emit('setCursor', undefined, e.data.selection);
+      events.emit('setCursor', e.data.selection);
       return;
     } else if (e.data.type === 'coreClientSheetValidations') {
       events.emit('sheetValidations', e.data.sheetId, e.data.validations);
@@ -590,7 +589,7 @@ class QuadraticCore {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
   }
 
-  summarizeSelection(decimalPlaces: number, selection: Selection): Promise<SummarizeSelectionResult | undefined> {
+  summarizeSelection(decimalPlaces: number, selection: string): Promise<SummarizeSelectionResult | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       const message: ClientCoreSummarizeSelection = {
@@ -606,7 +605,7 @@ class QuadraticCore {
     });
   }
 
-  setCellBold(selection: Selection, bold: boolean, cursor?: string) {
+  setCellBold(selection: string, bold: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellBold',
       selection,
@@ -615,7 +614,7 @@ class QuadraticCore {
     });
   }
 
-  setCellFillColor(selection: Selection, fillColor?: string, cursor?: string) {
+  setCellFillColor(selection: string, fillColor?: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellFillColor',
       selection,
@@ -624,7 +623,7 @@ class QuadraticCore {
     });
   }
 
-  setCellItalic(selection: Selection, italic: boolean, cursor?: string) {
+  setCellItalic(selection: string, italic: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellItalic',
       selection,
@@ -633,7 +632,7 @@ class QuadraticCore {
     });
   }
 
-  setCellTextColor(selection: Selection, color?: string, cursor?: string) {
+  setCellTextColor(selection: string, color?: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellTextColor',
       selection,
@@ -642,7 +641,7 @@ class QuadraticCore {
     });
   }
 
-  setCellUnderline(selection: Selection, underline: boolean, cursor?: string) {
+  setCellUnderline(selection: string, underline: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellUnderline',
       selection,
@@ -651,7 +650,7 @@ class QuadraticCore {
     });
   }
 
-  setCellStrikeThrough(selection: Selection, strikeThrough: boolean, cursor?: string) {
+  setCellStrikeThrough(selection: string, strikeThrough: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellStrikeThrough',
       selection,
@@ -660,7 +659,7 @@ class QuadraticCore {
     });
   }
 
-  setCellAlign(selection: Selection, align: CellAlign, cursor?: string) {
+  setCellAlign(selection: string, align: CellAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellAlign',
       selection,
@@ -669,7 +668,7 @@ class QuadraticCore {
     });
   }
 
-  setCellVerticalAlign(selection: Selection, verticalAlign: CellVerticalAlign, cursor?: string) {
+  setCellVerticalAlign(selection: string, verticalAlign: CellVerticalAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellVerticalAlign',
       selection,
@@ -678,7 +677,7 @@ class QuadraticCore {
     });
   }
 
-  setCellWrap(selection: Selection, wrap: CellWrap, cursor?: string) {
+  setCellWrap(selection: string, wrap: CellWrap, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellWrap',
       selection,
@@ -687,7 +686,7 @@ class QuadraticCore {
     });
   }
 
-  setCellCurrency(selection: Selection, symbol: string, cursor?: string) {
+  setCellCurrency(selection: string, symbol: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCurrency',
       selection,
@@ -696,7 +695,7 @@ class QuadraticCore {
     });
   }
 
-  setCellPercentage(selection: Selection, cursor?: string) {
+  setCellPercentage(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetPercentage',
       selection,
@@ -704,7 +703,7 @@ class QuadraticCore {
     });
   }
 
-  setCellExponential(selection: Selection, cursor?: string) {
+  setCellExponential(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetExponential',
       selection,
@@ -712,7 +711,7 @@ class QuadraticCore {
     });
   }
 
-  removeCellNumericFormat(selection: Selection, cursor?: string) {
+  removeCellNumericFormat(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreRemoveCellNumericFormat',
       selection,
@@ -720,7 +719,7 @@ class QuadraticCore {
     });
   }
 
-  changeDecimalPlaces(selection: Selection, delta: number, cursor?: string) {
+  changeDecimalPlaces(selection: string, delta: number, cursor?: string) {
     this.send({
       type: 'clientCoreChangeDecimals',
       selection,
@@ -729,7 +728,7 @@ class QuadraticCore {
     });
   }
 
-  clearFormatting(selection: Selection, cursor?: string) {
+  clearFormatting(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreClearFormatting',
       selection,
@@ -737,7 +736,7 @@ class QuadraticCore {
     });
   }
 
-  setCommas(selection: Selection, commas: boolean, cursor?: string) {
+  setCommas(selection: string, commas: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCommas',
       selection,
@@ -746,7 +745,7 @@ class QuadraticCore {
     });
   }
 
-  setDateTimeFormat(selection: Selection, format: string, cursor: string) {
+  setDateTimeFormat(selection: string, format: string, cursor: string) {
     this.send({
       type: 'clientCoreSetDateTimeFormat',
       selection,
@@ -755,7 +754,7 @@ class QuadraticCore {
     });
   }
 
-  deleteCellValues(selection: Selection, cursor?: string) {
+  deleteCellValues(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreDeleteCellValues',
       selection,
@@ -846,7 +845,7 @@ class QuadraticCore {
 
   //#region Clipboard
 
-  copyToClipboard(selection: Selection): Promise<{ plainText: string; html: string }> {
+  copyToClipboard(selection: string): Promise<{ plainText: string; html: string }> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
@@ -860,7 +859,7 @@ class QuadraticCore {
     });
   }
 
-  cutToClipboard(selection: Selection, cursor: string): Promise<{ plainText: string; html: string }> {
+  cutToClipboard(selection: string, cursor: string): Promise<{ plainText: string; html: string }> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
@@ -877,7 +876,7 @@ class QuadraticCore {
 
   pasteFromClipboard(options: {
     sheetId: string;
-    selection: Selection;
+    selection: string;
     plainText: string | undefined;
     html: string | undefined;
     special: PasteSpecial;
@@ -893,7 +892,7 @@ class QuadraticCore {
 
   //#region Borders
 
-  setBorders(selection: Selection, borderSelection: BorderSelection, style?: BorderStyle) {
+  setBorders(selection: string, borderSelection: BorderSelection, style?: BorderStyle) {
     this.send({
       type: 'clientCoreSetBorders',
       selection,
@@ -945,7 +944,7 @@ class QuadraticCore {
     });
   }
 
-  exportCsvSelection(selection: Selection): Promise<string> {
+  exportCsvSelection(selection: string): Promise<string> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: { csv: string }) => {

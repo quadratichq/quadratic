@@ -79,7 +79,7 @@ export class SheetCursor {
     pixiApp.cursor.dirty = true;
   }
 
-  private updatePosition(ensureVisible = true) {
+  updatePosition(ensureVisible = true) {
     pixiApp.updateCursorPosition(ensureVisible);
     if (!inlineEditorHandler.cursorIsMoving) {
       multiplayer.sendSelection(this.save());
@@ -133,15 +133,6 @@ export class SheetCursor {
     //     (oneCell && !this.multiCursor)
     //   )
     // );
-  }
-
-  includesCell(column: number, row: number): boolean {
-    throw new Error('TODO includesCell');
-    // if (this.multiCursor) {
-    //   return this.multiCursor.some((rect) => rect.contains(column, row));
-    // } else {
-    //   return this.cursorPosition.x === column && this.cursorPosition.y === row;
-    // }
   }
 
   // Returns the columns that are selected.
@@ -208,6 +199,16 @@ export class SheetCursor {
     this.updatePosition(true);
   }
 
+  selectColumn(column: number, extend: boolean) {
+    this.selection.selectColumn(column, extend);
+    this.updatePosition(true);
+  }
+
+  selectRow(row: number, extend: boolean) {
+    this.selection.selectRow(row, extend);
+    this.updatePosition(true);
+  }
+
   selectColumns(columns: number[]) {
     throw new Error('TODO selectColumns');
   }
@@ -226,5 +227,15 @@ export class SheetCursor {
 
   contains(x: number, y: number): boolean {
     return this.selection.contains(x, y);
+  }
+
+  selectRect(left: number, top: number, right: number, bottom: number, append = false, ensureVisible = true) {
+    this.selection.selectRect(left, top, right, bottom, append);
+    this.updatePosition(ensureVisible);
+  }
+
+  extendSelection(column: number, row: number, append: boolean) {
+    this.selection.extendSelection(column, row, append);
+    this.updatePosition(true);
   }
 }

@@ -17,18 +17,6 @@ import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
-// Returns an array with all numbers inclusive of start to end
-function fillArray(start: number, end: number): number[] {
-  const result = [];
-  if (start > end) {
-    [start, end] = [end, start];
-  }
-  for (let i = start; i <= end; i++) {
-    result.push(i);
-  }
-  return result;
-}
-
 export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
 }
@@ -128,6 +116,7 @@ export class PointerHeading {
         (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
       if (event.ctrlKey || event.metaKey || isRightClick) {
         if (intersects.column !== null) {
+          // todo...
           throw new Error('todo');
           // let column = intersects.column;
           // const columns = cursor.columnRow?.columns || [];
@@ -207,13 +196,9 @@ export class PointerHeading {
       // current one.
       else if (event.shiftKey) {
         if (intersects.column !== null) {
-          let x1 = cursor.position.x;
-          let x2 = intersects.column;
-          cursor.selectColumns(fillArray(x1, x2), x1);
+          cursor.selectColumn(intersects.column, true);
         } else if (intersects.row !== null) {
-          let y1 = cursor.position.y;
-          let y2 = intersects.row;
-          cursor.selectRows(fillArray(y1, y2), y1);
+          cursor.selectRow(intersects.row, true);
         }
       }
 

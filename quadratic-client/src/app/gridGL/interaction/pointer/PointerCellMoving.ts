@@ -155,7 +155,7 @@ export class PointerCellMoving {
     if (rectangles.length > 1) return false;
     const rectangle = rectangles[0];
 
-    const origin = sheet.cursor.getCursor();
+    const origin = sheet.cursor.position;
     const column = origin.x;
     const row = origin.y;
 
@@ -208,7 +208,7 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
-        const rectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
+        const rectangle = sheets.sheet.cursor.getLargestRectangle();
         quadraticCore.moveCells(
           rectToSheetRect(
             new Rectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1),

@@ -32,15 +32,13 @@ export class PointerAutoComplete {
 
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
-    if (cursor.multiCursor && cursor.multiCursor.length > 1) return false;
+    if (cursor.isMultiCursor()) return false;
 
     // handle dragging from the corner
     if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       this.active = true;
       events.emit('cellMoving', true);
-      this.selection = cursor.multiCursor
-        ? cursor.multiCursor[0]
-        : new Rectangle(cursor.position.x, cursor.position.y, 1, 1);
+      this.selection = cursor.getLargestRectangle();
       this.screenSelection = sheet.getScreenRectangle(
         this.selection.left,
         this.selection.top,
@@ -235,16 +233,13 @@ export class PointerAutoComplete {
         }
 
         // update the selection
-        const cursor = sheets.sheet.cursor;
-        if (newRectangle.width === 1 && newRectangle.height === 1) {
-          cursor.changePosition({ columnRow: null, multiCursor: null });
-        } else {
-          cursor.changePosition({
-            columnRow: null,
-            multiCursor: [newRectangle],
-            ensureVisible: false,
-          });
-        }
+        sheets.sheet.cursor.selectRect(
+          newRectangle.left,
+          newRectangle.top,
+          newRectangle.right,
+          newRectangle.bottom,
+          false
+        );
       }
       this.reset();
       return true;

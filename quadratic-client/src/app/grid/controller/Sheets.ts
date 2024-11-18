@@ -98,9 +98,9 @@ class Sheets {
     pixiApp.multiplayerCursor.dirty = true;
   };
 
-  private setCursor = (selection?: Selection) => {
+  private setCursor = (selection?: string) => {
     if (selection !== undefined) {
-      this.sheet.cursor.loadFromSelection(selection);
+      this.sheet.cursor.load(selection);
     }
   };
 
@@ -316,8 +316,9 @@ class Sheets {
       }
     }
 
-    // todo: ensurevisible
-    sheets.sheet.cursor.loadFromSelection(selection);
+    const cursor = sheets.sheet.cursor;
+    cursor.loadFromSelection(selection);
+    cursor.updatePosition(true);
   }
 
   getRustSelection(): string {

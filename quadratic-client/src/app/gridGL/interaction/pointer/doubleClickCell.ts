@@ -45,7 +45,7 @@ export async function doubleClickCell(options: {
 
         // ensure we're in the right cell (which may change if we double clicked on a CodeRun)
         if (cursor.x !== column || cursor.y !== row) {
-          sheets.sheet.cursor.changePosition({ cursorPosition: { x: column, y: row } });
+          sheets.sheet.cursor.moveTo(column, row);
         }
 
         pixiAppSettings.changeInput(true, cell);

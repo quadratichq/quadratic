@@ -22,7 +22,6 @@ import {
   JsValidationWarning,
   MinMax,
   SearchOptions,
-  Selection,
   SheetBounds,
   SheetInfo,
   SheetPos,
@@ -99,7 +98,7 @@ export interface CoreClientExport {
 export interface ClientCoreExportCsvSelection {
   type: 'clientCoreExportCsvSelection';
   id: number;
-  selection: Selection;
+  selection: string;
 }
 
 export interface CoreClientExportCsvSelection {
@@ -225,7 +224,7 @@ export interface ClientCoreSummarizeSelection {
   type: 'clientCoreSummarizeSelection';
   decimalPlaces: number;
   id: number;
-  selection: Selection;
+  selection: string;
 }
 
 export interface CoreClientSummarizeSelection {
@@ -326,108 +325,108 @@ export interface ClientCoreSetCellValues {
 
 export interface ClientCoreSetCellBold {
   type: 'clientCoreSetCellBold';
-  selection: Selection;
+  selection: string;
   bold: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellItalic {
   type: 'clientCoreSetCellItalic';
-  selection: Selection;
+  selection: string;
   italic: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellFillColor {
   type: 'clientCoreSetCellFillColor';
-  selection: Selection;
+  selection: string;
   fillColor?: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
-  selection: Selection;
+  selection: string;
   color?: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellUnderline {
   type: 'clientCoreSetCellUnderline';
-  selection: Selection;
+  selection: string;
   underline: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellStrikeThrough {
   type: 'clientCoreSetCellStrikeThrough';
-  selection: Selection;
+  selection: string;
   strikeThrough: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellAlign {
   type: 'clientCoreSetCellAlign';
-  selection: Selection;
+  selection: string;
   align: CellAlign;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellVerticalAlign {
   type: 'clientCoreSetCellVerticalAlign';
-  selection: Selection;
+  selection: string;
   verticalAlign: CellVerticalAlign;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellWrap {
   type: 'clientCoreSetCellWrap';
-  selection: Selection;
+  selection: string;
   wrap: CellWrap;
   cursor?: string;
 }
 
 export interface ClientCoreSetCurrency {
   type: 'clientCoreSetCurrency';
-  selection: Selection;
+  selection: string;
   symbol: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetPercentage {
   type: 'clientCoreSetPercentage';
-  selection: Selection;
+  selection: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetExponential {
   type: 'clientCoreSetExponential';
-  selection: Selection;
+  selection: string;
   cursor?: string;
 }
 
 export interface ClientCoreRemoveCellNumericFormat {
   type: 'clientCoreRemoveCellNumericFormat';
-  selection: Selection;
+  selection: string;
   cursor?: string;
 }
 
 export interface ClientCoreChangeDecimals {
   type: 'clientCoreChangeDecimals';
-  selection: Selection;
+  selection: string;
   delta: number;
   cursor?: string;
 }
 
 export interface ClientCoreClearFormatting {
   type: 'clientCoreClearFormatting';
-  selection: Selection;
+  selection: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetCommas {
   type: 'clientCoreSetCommas';
-  selection: Selection;
+  selection: string;
   commas: boolean;
   cursor?: string;
 }
@@ -468,7 +467,7 @@ export interface CoreClientImportFile {
 
 export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
-  selection: Selection;
+  selection: string;
   cursor?: string;
 }
 
@@ -504,7 +503,7 @@ export interface ClientCoreRerunCodeCells {
 
 export interface ClientCoreSetBorders {
   type: 'clientCoreSetBorders';
-  selection: Selection;
+  selection: string;
   borderSelection: BorderSelection;
   style?: BorderStyle;
   cursor: string;
@@ -684,7 +683,7 @@ export interface ClientCoreRedo {
 export interface ClientCoreCopyToClipboard {
   type: 'clientCoreCopyToClipboard';
   id: number;
-  selection: Selection;
+  selection: string;
 }
 
 export interface CoreClientCopyToClipboard {
@@ -697,7 +696,7 @@ export interface CoreClientCopyToClipboard {
 export interface ClientCoreCutToClipboard {
   type: 'clientCoreCutToClipboard';
   id: number;
-  selection: Selection;
+  selection: string;
   cursor: string;
 }
 
@@ -710,7 +709,7 @@ export interface CoreClientCutToClipboard {
 
 export interface ClientCorePasteFromClipboard {
   type: 'clientCorePasteFromClipboard';
-  selection: Selection;
+  selection: string;
   plainText?: string;
   html?: string;
   special: string;
@@ -936,7 +935,7 @@ export interface CoreClientMoveCodeCellHorizontally {
 
 export interface CoreClientSetCursorSelection {
   type: 'coreClientSetCursorSelection';
-  selection: Selection;
+  selection: string;
 }
 
 //#endregion
@@ -1017,7 +1016,7 @@ export interface CoreClientMultiplayerSynced {
 
 export interface ClientCoreSetDateTimeFormat {
   type: 'clientCoreSetDateTimeFormat';
-  selection: Selection;
+  selection: string;
   format: string;
   cursor: string;
 }

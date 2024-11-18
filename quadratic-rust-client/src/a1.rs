@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use quadratic_core::{grid::SheetId, A1Selection, SheetNameIdMap};
+use quadratic_core::{grid::SheetId, A1Selection, Rect, SheetNameIdMap};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -62,6 +62,17 @@ impl Selection {
         self.selection.select_column(column, append);
     }
 
+    #[wasm_bindgen(js_name = "selectRow")]
+    pub fn select_row(&mut self, row: u32, append: bool) {
+        self.selection.select_row(row, append);
+    }
+
+    #[wasm_bindgen(js_name = "selectRect")]
+    pub fn select_rect(&mut self, left: u32, top: u32, right: u32, bottom: u32, append: bool) {
+        let rect = Rect::new(left as i64, top as i64, right as i64, bottom as i64);
+        self.selection.select_rect(rect, append);
+    }
+
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string(&self, default_sheet_id: String, sheet_map: &str) -> Result<String, String> {
         let sheet_map =
@@ -104,6 +115,12 @@ impl Selection {
     #[wasm_bindgen(js_name = "contains")]
     pub fn contains(&self, x: u32, y: u32) -> bool {
         self.selection.contains(x as u64, y as u64)
+    }
+
+    #[wasm_bindgen(js_name = "extendSelection")]
+    pub fn extend_selection(&mut self, column: u32, row: u32, append: bool) {
+        self.selection
+            .extend_selection(column as u64, row as u64, append);
     }
 }
 
