@@ -388,6 +388,13 @@ mod test {
         CellValue, RunError, RunErrorMsg, SheetRect, Span,
     };
 
+    fn assert_no_pending_async_transaction(gc: &GridController) {
+        let async_transaction = gc
+            .transactions
+            .get_async_transaction(gc.last_transaction().unwrap().id);
+        assert!(async_transaction.is_err());
+    }
+
     #[test]
     #[parallel]
     fn parse_ai_researcher_code() {
@@ -426,6 +433,7 @@ mod test {
                 ]),
             })
         );
+        assert_no_pending_async_transaction(&gc);
 
         // incorrect argument
         gc.set_code_cell(
@@ -443,6 +451,7 @@ mod test {
                 msg: RunErrorMsg::InvalidArgument,
             })
         );
+        assert_no_pending_async_transaction(&gc);
 
         // incorrect argument
         gc.set_code_cell(
@@ -460,6 +469,7 @@ mod test {
                 msg: RunErrorMsg::InvalidArgument,
             })
         );
+        assert_no_pending_async_transaction(&gc);
 
         // incorrect argument
         gc.set_code_cell(
@@ -480,6 +490,7 @@ mod test {
                 },
             })
         );
+        assert_no_pending_async_transaction(&gc);
 
         // incorrect argument
         gc.set_code_cell(
@@ -500,6 +511,7 @@ mod test {
                 },
             })
         );
+        assert_no_pending_async_transaction(&gc);
 
         // self circular reference
         gc.set_code_cell(
@@ -517,6 +529,7 @@ mod test {
                 msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
             })
         );
+        assert_no_pending_async_transaction(&gc);
 
         // different code cell language
         gc.set_code_cell(
@@ -534,6 +547,7 @@ mod test {
                 msg: RunErrorMsg::Unexpected("Expected an AI researcher code cell".into()),
             })
         );
+        assert_no_pending_async_transaction(&gc);
 
         // not a code cell
         let parsed_ai_researcher_code =
@@ -582,6 +596,8 @@ mod test {
                 msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
             })
         );
+
+        assert_no_pending_async_transaction(&gc);
     }
 
     #[test]
@@ -619,6 +635,8 @@ mod test {
                 msg: RunErrorMsg::CircularReference,
             })
         );
+
+        assert_no_pending_async_transaction(&gc);
     }
 
     #[test]
@@ -656,6 +674,8 @@ mod test {
                 msg: RunErrorMsg::CircularReference,
             })
         );
+
+        assert_no_pending_async_transaction(&gc);
     }
 
     #[test]
@@ -701,6 +721,7 @@ mod test {
             ),
             true,
         );
+        assert_no_pending_async_transaction(&gc);
 
         let sheet_pos = pos![B3].to_sheet_pos(sheet_id);
         gc.set_code_cell(
@@ -735,6 +756,7 @@ mod test {
             ),
             true,
         );
+        assert_no_pending_async_transaction(&gc);
 
         let sheet_pos = pos![B4].to_sheet_pos(sheet_id);
         gc.set_code_cell(
@@ -769,6 +791,7 @@ mod test {
             ),
             true,
         );
+        assert_no_pending_async_transaction(&gc);
 
         gc.rerun_all_code_cells(None);
         let prev_transaction_id = gc.last_transaction().unwrap().id;
@@ -873,6 +896,7 @@ mod test {
             ),
             false,
         );
+        assert_no_pending_async_transaction(&gc);
 
         clear_js_calls();
     }
