@@ -18,7 +18,7 @@ pub struct A1Selection {
     ///
     /// Selections can only span a single sheet.
     #[cfg_attr(test, proptest(value = "SheetId::test()"))]
-    pub sheet: SheetId,
+    pub sheet_id: SheetId,
     /// Cursor position, which is moved using the arrow keys (while not holding
     /// shift).
     ///
@@ -77,7 +77,7 @@ impl From<OldSelection> for A1Selection {
         }
 
         Self {
-            sheet: sheet_id,
+            sheet_id,
             cursor: Pos { x, y },
             ranges,
         }
@@ -88,7 +88,7 @@ impl A1Selection {
     /// Constructs a basic selection containing a single region.
     pub fn from_range(range: CellRefRange, sheet: SheetId) -> Self {
         Self {
-            sheet,
+            sheet_id: sheet,
             cursor: cursor_pos_from_last_range(range),
             ranges: vec![range],
         }
@@ -146,7 +146,7 @@ impl A1Selection {
             y: last_range.start.row.map_or(1, |row| row.coord as i64),
         };
         Self {
-            sheet,
+            sheet_id: sheet,
             cursor,
             ranges,
         }
@@ -193,7 +193,7 @@ impl A1Selection {
             .ok_or_else(|| A1Error::InvalidRange(a1.to_string()))?;
 
         Ok(Self {
-            sheet: sheet.unwrap_or(default_sheet_id),
+            sheet_id: sheet.unwrap_or(default_sheet_id),
             cursor: cursor_pos_from_last_range(last_range),
             ranges,
         })
@@ -209,7 +209,7 @@ impl A1Selection {
         default_sheet_id: Option<SheetId>,
         sheet_map: &SheetNameIdMap,
     ) -> String {
-        let sheet = self.sheet;
+        let sheet = self.sheet_id;
         self.ranges
             .iter()
             .map(|&cells| SheetCellRefRange { sheet, cells }.to_string(default_sheet_id, sheet_map))
@@ -374,7 +374,7 @@ mod tests {
             A1Selection::from_str("A1,B1:D2,E:G,2:3,5:7,F6:G8,4", sheet_id, &HashMap::new())
                 .unwrap();
 
-        assert_eq!(selection.sheet, sheet_id);
+        assert_eq!(selection.sheet_id, sheet_id);
         assert_eq!(selection.cursor, pos![A4]);
         assert_eq!(
             selection.ranges,
@@ -479,7 +479,7 @@ mod tests {
     #[test]
     fn test_to_a1_pos() {
         let selection = A1Selection {
-            sheet: SheetId::test(),
+            sheet_id: SheetId::test(),
             cursor: pos![A1],
             ranges: vec![CellRefRange::new_relative_rect(Rect::new(1, 1, 1, 1))],
         };
@@ -492,7 +492,7 @@ mod tests {
     #[test]
     fn test_to_a1() {
         let selection = A1Selection {
-            sheet: SheetId::test(),
+            sheet_id: SheetId::test(),
             cursor: Pos { x: 10, y: 11 }, // this should be ignored
             ranges: vec![
                 CellRefRange::new_relative_column_range(1, 5),
@@ -514,7 +514,7 @@ mod tests {
     #[test]
     fn test_a1_with_one_sized_rect() {
         let selection = A1Selection {
-            sheet: SheetId::test(),
+            sheet_id: SheetId::test(),
             cursor: Pos { x: 1, y: 1 },
             ranges: vec![CellRefRange::new_relative_rect(Rect::new(1, 1, 1, 1))],
         };

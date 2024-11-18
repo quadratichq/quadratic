@@ -190,7 +190,7 @@ impl GridController {
                 .into_iter()
                 .map(|mut validation| {
                     validation.id = Uuid::new_v4();
-                    validation.selection.sheet = start_pos.sheet_id;
+                    validation.selection.sheet_id = start_pos.sheet_id;
                     validation
                         .selection
                         .translate_in_place(start_pos.x, start_pos.y);

@@ -41,7 +41,7 @@ pub struct JsValidation {
     pub error: ValidationError,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct Validation {
     pub id: Uuid,
     pub selection: A1Selection,

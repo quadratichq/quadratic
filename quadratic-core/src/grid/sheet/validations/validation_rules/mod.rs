@@ -77,7 +77,7 @@ impl ValidationRule {
 mod tests {
     use validation_list::ValidationListSource;
 
-    use crate::selection::OldSelection;
+    use crate::A1Selection;
 
     use super::*;
 
@@ -100,7 +100,7 @@ mod tests {
     fn validate_list_selection() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value((0, 0).into(), "test");
-        let selection = OldSelection::pos(0, 0, sheet.id);
+        let selection = A1Selection::test("A1");
 
         let list = ValidationList {
             source: ValidationListSource::Selection(selection),

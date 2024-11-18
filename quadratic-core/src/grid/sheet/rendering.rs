@@ -614,7 +614,7 @@ mod tests {
         },
         selection::OldSelection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
+        A1Selection, CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 
     #[test]
@@ -1207,7 +1207,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.validations.set(Validation {
             id: Uuid::new_v4(),
-            selection: OldSelection::rect(Rect::new(0, 0, 1, 1), sheet.id),
+            selection: A1Selection::test("A1:B2"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -1227,7 +1227,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.validations.set(Validation {
             id: Uuid::new_v4(),
-            selection: OldSelection::rect(Rect::new(0, 0, 1, 1), sheet_id),
+            selection: A1Selection::test("A1:B2"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -1252,7 +1252,7 @@ mod tests {
         let validation_id = Uuid::new_v4();
         sheet.validations.set(Validation {
             id: validation_id,
-            selection: OldSelection::rect(Rect::new(0, 0, 1, 1), sheet_id),
+            selection: A1Selection::test("A1:B2"),
             rule: ValidationRule::Logical(ValidationLogical {
                 ignore_blank: false,
                 ..Default::default()

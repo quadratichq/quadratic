@@ -63,9 +63,8 @@ impl ValidationList {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use crate::Rect;
-
     use super::*;
 
     #[test]
@@ -132,7 +131,7 @@ mod tests {
         sheet.set_cell_value((0, 0).into(), "test");
         sheet.set_cell_value((0, 1).into(), "test");
         sheet.set_cell_value((0, 2).into(), "test2");
-        let selection = OldSelection::rect(Rect::new(0, 0, 0, 2), sheet.id);
+        let selection = A1Selection::test("A1:A2");
 
         let list = ValidationList {
             source: ValidationListSource::Selection(selection),

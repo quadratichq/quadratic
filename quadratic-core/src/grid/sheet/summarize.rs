@@ -15,35 +15,36 @@ impl Sheet {
         selection: OldSelection,
         max_decimals: i64,
     ) -> Option<SummarizeSelectionResult> {
-        // sum and count
-        let mut count: i64 = 0;
-        let mut sum = BigDecimal::zero();
+        todo!()
+        // // sum and count
+        // let mut count: i64 = 0;
+        // let mut sum = BigDecimal::zero();
 
-        let values =
-            self.selection(&selection, Some(MAX_SUMMARIZE_SELECTION_SIZE), false, false)?;
-        values.iter().for_each(|(_pos, value)| match value {
-            CellValue::Number(n) => {
-                sum += n;
-                count += 1;
-            }
-            CellValue::Blank => {}
-            CellValue::Code(_) => {}
-            _ => {
-                count += 1;
-            }
-        });
+        // let values =
+        //     self.selection(&selection, Some(MAX_SUMMARIZE_SELECTION_SIZE), false, false)?;
+        // values.iter().for_each(|(_pos, value)| match value {
+        //     CellValue::Number(n) => {
+        //         sum += n;
+        //         count += 1;
+        //     }
+        //     CellValue::Blank => {}
+        //     CellValue::Code(_) => {}
+        //     _ => {
+        //         count += 1;
+        //     }
+        // });
 
-        if count <= 1 {
-            return None;
-        }
+        // if count <= 1 {
+        //     return None;
+        // }
 
-        let average: BigDecimal = &sum / count;
+        // let average: BigDecimal = &sum / count;
 
-        Some(SummarizeSelectionResult {
-            count,
-            sum: sum.to_f64().map(|num| round(num, max_decimals)),
-            average: average.to_f64().map(|num| round(num, max_decimals)),
-        })
+        // Some(SummarizeSelectionResult {
+        //     count,
+        //     sum: sum.to_f64().map(|num| round(num, max_decimals)),
+        //     average: average.to_f64().map(|num| round(num, max_decimals)),
+        // })
     }
 }
 

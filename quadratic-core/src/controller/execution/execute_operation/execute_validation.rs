@@ -100,7 +100,7 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetValidation { validation } = op {
-            let sheet_id = validation.selection.sheet;
+            let sheet_id = validation.selection.sheet_id;
             let mut client_warnings = HashMap::new();
             self.remove_validation_warnings(
                 transaction,
@@ -183,7 +183,7 @@ impl GridController {
 
                 if !transaction.is_server() {
                     if let Some(selection) = selection {
-                        self.send_updated_bounds(selection.sheet);
+                        self.send_updated_bounds(selection.sheet_id);
                         self.send_render_cells_selection(&selection, true);
                     }
                 }

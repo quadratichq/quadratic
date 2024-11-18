@@ -3,37 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::grid::file::v1_7_1;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CellRefRangeSchema {
-    pub start: CellRefRangeEndSchema,
-    pub end: Option<CellRefRangeEndSchema>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CellRefRangeEndSchema {
-    pub col: Option<CellRefCoordSchema>,
-    pub row: Option<CellRefCoordSchema>,
-}
-impl CellRefRangeEndSchema {
-    pub fn new_relative_pos(x: i64, y: i64) -> Self {
-        Self {
-            col: Some(CellRefCoordSchema {
-                coord: x as u64,
-                is_absolute: false,
-            }),
-            row: Some(CellRefCoordSchema {
-                coord: y as u64,
-                is_absolute: false,
-            }),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CellRefCoordSchema {
-    pub coord: u64,
-    pub is_absolute: bool,
-}
+use super::CellRefRangeSchema;
 
 pub type CellsAccessedSchema = Vec<(v1_7_1::IdSchema, Vec<CellRefRangeSchema>)>;
 

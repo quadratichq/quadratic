@@ -55,10 +55,10 @@ impl GridController {
     /// `selection`. If this method returns `true`, then updates in `selection`
     /// must force the thumbnail to update.
     pub fn thumbnail_dirty_a1(&self, selection: &A1Selection) -> bool {
-        if selection.sheet != self.grid().first_sheet_id() {
+        if selection.sheet_id != self.grid().first_sheet_id() {
             return false;
         }
-        let Some(sheet) = self.try_sheet(selection.sheet) else {
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return false;
         };
 

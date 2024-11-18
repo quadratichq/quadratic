@@ -676,7 +676,7 @@ impl Sheet {
     /// Bounded regions are unmodified.
     pub fn finitize_selection(&self, selection: &A1Selection) -> A1Selection {
         A1Selection {
-            sheet: selection.sheet,
+            sheet_id: selection.sheet_id,
             cursor: selection.cursor,
             ranges: selection
                 .ranges

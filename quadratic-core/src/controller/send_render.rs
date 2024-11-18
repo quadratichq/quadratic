@@ -201,7 +201,7 @@ impl GridController {
                 }
             }
         });
-        self.send_render_cells_from_hash(selection.sheet, &modified);
+        self.send_render_cells_from_hash(selection.sheet_id, &modified);
     }
 
     /// Sends the modified fills to the client

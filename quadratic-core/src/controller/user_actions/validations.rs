@@ -24,7 +24,7 @@ impl GridController {
 
     /// Gets a validation based on a Selection.
     pub fn validation_selection(&self, selection: A1Selection) -> Option<&Validation> {
-        self.try_sheet(selection.sheet)
+        self.try_sheet(selection.sheet_id)
             .and_then(|sheet| sheet.validations.validation_selection(selection))
     }
 

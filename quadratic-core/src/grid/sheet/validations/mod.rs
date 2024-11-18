@@ -42,7 +42,7 @@ impl Validations {
             }
         }
         let reverse = vec![Operation::RemoveValidation {
-            sheet_id: validation.selection.sheet,
+            sheet_id: validation.selection.sheet_id,
             validation_id: validation.id,
         }];
         self.validations.push(validation);
@@ -209,7 +209,7 @@ mod tests {
         assert_eq!(
             reverse[0],
             Operation::RemoveValidation {
-                sheet_id: validation.selection.sheet,
+                sheet_id: validation.selection.sheet_id,
                 validation_id: validation.id
             }
         );
@@ -253,7 +253,7 @@ mod tests {
         assert_eq!(
             reverse[0],
             Operation::RemoveValidation {
-                sheet_id: validation.selection.sheet,
+                sheet_id: validation.selection.sheet_id,
                 validation_id: validation.id
             }
         );
@@ -293,7 +293,7 @@ mod tests {
         assert_eq!(
             reverse[0],
             Operation::RemoveValidation {
-                sheet_id: validation.selection.sheet,
+                sheet_id: validation.selection.sheet_id,
                 validation_id: validation.id
             }
         );
@@ -333,7 +333,7 @@ mod tests {
         assert_eq!(
             reverse[0],
             Operation::RemoveValidation {
-                sheet_id: validation.selection.sheet,
+                sheet_id: validation.selection.sheet_id,
                 validation_id: validation.id
             }
         );

@@ -26,7 +26,7 @@ impl Selection {
 
     #[wasm_bindgen(js_name = "getSheetId")]
     pub fn sheet_id(&self) -> String {
-        self.selection.sheet.to_string()
+        self.selection.sheet_id.to_string()
     }
 
     /// Saves the selection to a JSON string.
