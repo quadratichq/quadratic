@@ -127,10 +127,17 @@ impl GridController {
             let rects = sheet.selection_rects_values(selection);
             for rect in rects {
                 let cell_values = CellValues::new(rect.width(), rect.height());
+                let sheet_pos = SheetPos::from((rect.min.x, rect.min.y, selection.sheet_id));
+
+                // TODO(ddimaria): remove this once we have a way to delete data tables
                 ops.push(Operation::SetCellValues {
-                    sheet_pos: (rect.min.x, rect.min.y, selection.sheet_id).into(),
-                    values: cell_values,
+                    sheet_pos,
+                    values: cell_values.to_owned(),
                 });
+                ops.push(Operation::SetDataTableAt {
+                    sheet_pos,
+                    values: cell_values,
+                })
             }
         };
         ops

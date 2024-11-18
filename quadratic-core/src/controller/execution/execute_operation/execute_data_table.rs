@@ -112,13 +112,12 @@ impl GridController {
             let mut pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.first_data_table_within(pos)?;
-
-            // TODO(ddimaria): handle multiple values
-            if values.size() != 1 {
-                bail!("Only single values are supported for now");
-            }
-
             let data_table = sheet.data_table_result(data_table_pos)?;
+
+            if data_table.readonly {
+                dbgjs!(format!("Data table {} is readonly", data_table.name));
+                return Ok(());
+            }
 
             // if there is a display buffer, use it to find the source row index
             if data_table.display_buffer.is_some() {
@@ -131,11 +130,11 @@ impl GridController {
                 pos.y -= 1;
             }
 
-            let value = values.safe_get(0, 0).cloned()?;
-            let old_value = sheet.get_code_cell_value(pos).unwrap_or(CellValue::Blank);
+            let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
+            let old_values = sheet.get_code_cell_values(rect);
 
             // send the new value
-            sheet.set_code_cell_value(pos, value.to_owned());
+            sheet.set_code_cell_values(pos, values.to_owned());
 
             let data_table_rect = SheetRect::from_numbers(
                 sheet_pos.x,
@@ -150,7 +149,7 @@ impl GridController {
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SetDataTableAt {
                 sheet_pos,
-                values: old_value.into(),
+                values: old_values,
             }];
 
             self.data_table_operations(

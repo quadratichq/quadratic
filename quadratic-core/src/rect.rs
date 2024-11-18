@@ -2,7 +2,7 @@ use std::{collections::HashSet, ops::Range};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::SheetId, ArraySize, Pos, SheetRect};
+use crate::{cell_values::CellValues, grid::SheetId, ArraySize, Pos, SheetRect};
 
 /// Rectangular region of cells.
 #[derive(
@@ -272,6 +272,12 @@ impl From<SheetRect> for Rect {
             min: sheet_rect.min,
             max: sheet_rect.max,
         }
+    }
+}
+
+impl From<&CellValues> for Rect {
+    fn from(values: &CellValues) -> Self {
+        Rect::from_numbers(0, 0, values.w as i64, values.h as i64)
     }
 }
 

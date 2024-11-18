@@ -2,13 +2,14 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
+    cell_values::CellValues,
     formulas::replace_internal_cell_references,
     grid::{
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
         CodeCellLanguage, DataTableKind,
     },
-    CellValue, Pos, Rect,
+    CellValue, Pos, Rect, Value,
 };
 
 impl Sheet {
@@ -93,6 +94,29 @@ impl Sheet {
             })
     }
 
+    /// TODO(ddimaria): move to DataTable code
+    pub fn get_code_cell_values(&self, rect: Rect) -> CellValues {
+        self.iter_code_output_in_rect(rect)
+            .flat_map(|(new_rect, data_table)| match &data_table.value {
+                Value::Single(v) => vec![vec![v.to_owned()]],
+                Value::Array(a) => rect
+                    .y_range()
+                    .map(|y| {
+                        rect.x_range()
+                            .map(|x| {
+                                let new_x = u32::try_from(x - new_rect.min.x).unwrap_or(0);
+                                let new_y = u32::try_from(y - new_rect.min.y).unwrap_or(0);
+                                a.get(new_x, new_y).unwrap().to_owned()
+                            })
+                            .collect::<Vec<CellValue>>()
+                    })
+                    .collect::<Vec<Vec<CellValue>>>(),
+                Value::Tuple(_) => vec![vec![]],
+            })
+            .collect::<Vec<Vec<CellValue>>>()
+            .into()
+    }
+
     /// Sets the CellValue for a DataTable at the Pos.
     /// Returns true if the value was set.
     /// TODO(ddimaria): move to DataTable code
@@ -108,6 +132,28 @@ impl Sheet {
                 data_table.set_cell_value_at(x, y, value).then_some(|| true)
             })
             .is_some()
+    }
+
+    /// TODO(ddimaria): move to DataTable code
+    pub fn set_code_cell_values(&mut self, pos: Pos, values: CellValues) {
+        self.data_tables
+            .iter_mut()
+            .find(|(code_cell_pos, data_table)| {
+                data_table.output_rect(**code_cell_pos, false).contains(pos)
+            })
+            .map(|(code_cell_pos, data_table)| {
+                let rect = Rect::from(&values);
+
+                for y in rect.y_range() {
+                    for x in rect.x_range() {
+                        let new_x = u32::try_from(pos.x - code_cell_pos.x + x).unwrap_or(0);
+                        let new_y = u32::try_from(pos.y - code_cell_pos.y + y).unwrap_or(0);
+                        let value = values.get(x as u32, y as u32).unwrap_or(&CellValue::Blank);
+
+                        data_table.set_cell_value_at(new_x, new_y, value.to_owned());
+                    }
+                }
+            });
     }
 
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {

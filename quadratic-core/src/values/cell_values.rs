@@ -1,7 +1,7 @@
 //! CellValues is a 2D array of CellValue used for Operation::SetCellValues.
 //! The width and height may grow as needed.
 
-use crate::{Array, ArraySize, CellValue};
+use crate::{Array, ArraySize, CellValue, Rect};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -62,6 +62,42 @@ impl CellValues {
         Ok(cell_value)
     }
 
+    pub fn get_owned<'a>(&'a mut self, x: u32, y: u32) -> anyhow::Result<&'a mut CellValue> {
+        if !(x < self.w && y < self.h) {
+            anyhow::bail!(
+                "CellValues::safe_get out of bounds: w={}, h={}, x={}, y={}",
+                self.w,
+                self.h,
+                x,
+                y
+            );
+        }
+
+        let column = self
+            .columns
+            .get_mut(x as usize)
+            .ok_or_else(|| anyhow::anyhow!("No column found at {x}"))?;
+
+        column
+            .get_mut(&(y as u64))
+            .ok_or_else(|| anyhow::anyhow!("No value found at ({x}, {y})"))
+    }
+
+    pub fn get_rect(mut self, rect: Rect) -> Vec<Vec<CellValue>> {
+        let mut values =
+            vec![vec![CellValue::Blank; rect.width() as usize]; rect.height() as usize];
+
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let new_x = u32::try_from(rect.min.x + x).unwrap_or(0);
+                let new_y = u32::try_from(rect.min.y + y).unwrap_or(0);
+                values[new_y as usize][new_x as usize] =
+                    self.remove(new_x, new_y).unwrap_or(CellValue::Blank);
+            }
+        }
+        values
+    }
+
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
         if y >= self.h {
             self.h = y + 1;
@@ -77,9 +113,9 @@ impl CellValues {
         self.columns[x as usize].insert(y as u64, value);
     }
 
-    pub fn remove(&mut self, x: u32, y: u32) {
+    pub fn remove(&mut self, x: u32, y: u32) -> Option<CellValue> {
         assert!(x < self.w && y < self.h, "CellValues::remove out of bounds");
-        self.columns[x as usize].remove(&(y as u64));
+        self.columns[x as usize].remove(&(y as u64))
     }
 
     pub fn size(&self) -> u32 {
@@ -115,6 +151,13 @@ impl CellValues {
             col.into_iter()
                 .map(move |(y, value)| (x as u32, y as u32, value))
         })
+    }
+
+    pub fn into_vec(self) -> Vec<Vec<CellValue>> {
+        let width = self.w as i64;
+        let height = self.h as i64;
+
+        self.get_rect(Rect::new(0, 0, width, height))
     }
 
     #[cfg(test)]
@@ -200,6 +243,12 @@ impl From<Array> for CellValues {
         let cell_values_vec = array.into_cell_values_vec().into_vec();
 
         CellValues::from_flat_array(w.get(), h.get(), cell_values_vec)
+    }
+}
+
+impl From<CellValues> for Vec<Vec<CellValue>> {
+    fn from(cell_values: CellValues) -> Self {
+        cell_values.into_vec()
     }
 }
 
