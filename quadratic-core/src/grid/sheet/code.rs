@@ -106,7 +106,7 @@ impl Sheet {
                             .map(|x| {
                                 let new_x = u32::try_from(x - new_rect.min.x).unwrap_or(0);
                                 let new_y = u32::try_from(y - new_rect.min.y).unwrap_or(0);
-                                a.get(new_x, new_y).unwrap().to_owned()
+                                a.get(new_x, new_y).unwrap_or(&CellValue::Blank).to_owned()
                             })
                             .collect::<Vec<CellValue>>()
                     })
