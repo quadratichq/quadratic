@@ -1,8 +1,7 @@
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { cn } from '@/shared/shadcn/utils';
 import { DragEvent, useCallback } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { fileDragDropModalAtom } from '../atoms/fileDragDropModalAtom';
 
 interface FileDragDropProps {
@@ -11,7 +10,6 @@ interface FileDragDropProps {
 
 export function FileDragDrop({ className }: FileDragDropProps) {
   const [fileDragDropModal, setFileDragDropModal] = useRecoilState(fileDragDropModalAtom);
-  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
   const handleFileImport = useFileImport();
 
   const handleDrag = useCallback(
@@ -32,13 +30,12 @@ export function FileDragDrop({ className }: FileDragDropProps) {
       e.stopPropagation();
 
       setFileDragDropModal({ show: false, teamUuid: undefined, isPrivate: undefined });
-      setNewFileDialogState((prev) => ({ ...prev, show: false }));
 
       const files = e.dataTransfer.files;
       const { isPrivate, teamUuid } = fileDragDropModal;
       handleFileImport({ files, isPrivate, teamUuid });
     },
-    [fileDragDropModal, handleFileImport, setFileDragDropModal, setNewFileDialogState]
+    [fileDragDropModal, handleFileImport, setFileDragDropModal]
   );
 
   if (!fileDragDropModal.show) return null;

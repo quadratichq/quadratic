@@ -191,7 +191,7 @@ function SidebarNavLinkCreateButton({
           asChild
           variant="ghost"
           size="icon-sm"
-          className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100"
+          className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
         >
           <Link to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}>
             <AddIcon />

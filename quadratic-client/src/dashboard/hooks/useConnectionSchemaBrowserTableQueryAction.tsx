@@ -31,8 +31,8 @@ export const useConnectionSchemaBrowserTableQueryActionNewFile = ({
             mixpanel.track('[Connections].schemaViewer.newFileFromTable');
           }}
         >
-          <Button size="sm" variant="secondary" disabled={to.length === 0}>
-            New file querying selected table
+          <Button size="sm" disabled={to.length === 0}>
+            New file with selected table
           </Button>
         </Link>
       );
