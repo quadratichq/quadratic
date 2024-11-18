@@ -242,6 +242,15 @@ impl GridController {
             transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
             self.transactions.add_async_transaction(transaction);
         }
+
+        if cfg!(test) {
+            let _ = self.receive_ai_researcher_result(
+                transaction.id,
+                sheet_pos,
+                Some("result".to_string()),
+                None,
+            );
+        }
     }
 
     pub fn receive_ai_researcher_result(

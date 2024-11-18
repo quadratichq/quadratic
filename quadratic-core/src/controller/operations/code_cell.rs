@@ -189,6 +189,37 @@ mod test {
 
     #[test]
     #[parallel]
+    fn test_set_ai_researcher_code_cell_operations() {
+        let gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+        let pos = Pos { x: 0, y: 0 };
+
+        let operations = gc.set_code_cell_operations(
+            pos.to_sheet_pos(sheet_id),
+            CodeCellLanguage::Formula,
+            "AI('query', A1)".to_string(),
+        );
+        assert_eq!(operations.len(), 2);
+        assert_eq!(
+            operations[0],
+            Operation::SetCellValues {
+                sheet_pos: pos.to_sheet_pos(sheet_id),
+                values: CellValues::from(CellValue::Code(CodeCellValue {
+                    language: CodeCellLanguage::AIResearcher,
+                    code: "AI('query', R[1]C[0])".to_string(),
+                })),
+            }
+        );
+        assert_eq!(
+            operations[1],
+            Operation::ComputeCode {
+                sheet_pos: pos.to_sheet_pos(sheet_id),
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
     fn rerun_all_code_cells_operations() {
         let mut gc = GridController::default();
         gc.add_sheet(None);

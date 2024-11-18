@@ -756,4 +756,66 @@ mod test {
             Some(CellValue::Number(BigDecimal::from(6)))
         );
     }
+
+    #[test]
+    #[parallel]
+    fn paste_clipboard_with_ai_researcher() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["1"], vec!["2"], vec!["3"]],
+            None,
+        );
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 4,
+                sheet_id,
+            },
+            CodeCellLanguage::AIResearcher,
+            "AI('query', B1:B3)".to_string(),
+            None,
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((1, 4).into()),
+            Some(CellValue::Text("result".to_string()))
+        );
+
+        let (_, html) = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(&Selection {
+                sheet_id,
+                x: 1,
+                y: 1,
+                rects: Some(vec![Rect::new(1, 1, 2, 5)]),
+                ..Default::default()
+            })
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            Selection {
+                sheet_id,
+                x: 5,
+                y: 5,
+                ..Default::default()
+            },
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).get_code_cell_value((5, 8).into()),
+            Some(CellValue::Text("result".to_string()))
+        );
+    }
 }
