@@ -115,7 +115,7 @@ export class CellsArray extends Container {
       return;
     }
 
-    const cursor = sheets.sheet.cursor.getCursor();
+    const cursor = sheets.sheet.cursor.position;
     codeCells?.forEach((codeCell) => {
       const cell = inlineEditorHandler.getShowing();
       const editingCell = cell && codeCell.x === cell.x && codeCell.y === cell.y && cell.sheetId === this.sheetId;

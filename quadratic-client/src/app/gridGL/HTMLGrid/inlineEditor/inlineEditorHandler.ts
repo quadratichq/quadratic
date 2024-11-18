@@ -172,7 +172,7 @@ class InlineEditorHandler {
     if (input) {
       this.open = true;
       const sheet = sheets.sheet;
-      const cursor = sheet.cursor.getCursor();
+      const cursor = sheet.cursor.position;
       this.location = {
         sheetId: sheet.id,
         x: cursor.x,
@@ -470,15 +470,7 @@ class InlineEditorHandler {
     // Update Grid Interaction state, reset input value state
     if (deltaX || deltaY) {
       const position = sheets.sheet.cursor.position;
-      sheets.sheet.cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: {
-          x: position.x + deltaX,
-          y: position.y + deltaY,
-        },
-        ensureVisible: true,
-      });
+      sheets.sheet.cursor.moveTo(position.x + deltaX, position.y + deltaY);
     }
 
     // Set focus back to Grid

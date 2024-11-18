@@ -22,8 +22,7 @@ export const codeHintAtom = atom({
   effects: [
     ({ setSelf }) => {
       const updateMultipleSelection = () => {
-        const multipleSelection =
-          sheets.sheet.cursor.multiCursor !== undefined || sheets.sheet.cursor.columnRow !== undefined;
+        const multipleSelection = sheets.sheet.cursor.isMultiCursor();
         setSelf((prev) => {
           if (prev instanceof DefaultValue) return prev;
           return { ...prev, multipleSelection, sheetEmpty: sheets.sheet.bounds.type === 'empty' };

@@ -296,6 +296,33 @@ impl A1Selection {
 
         ret
     }
+
+    /// Returns the largest rectangle that can be formed by the selection.
+    pub fn largest_rectangle(&self) -> Rect {
+        let mut rect = Rect::single_pos(self.cursor);
+        self.ranges.iter().for_each(|range| {
+            if let Some(col) = range.start.col {
+                rect.min.x = rect.min.x.min(col.coord as i64);
+                rect.max.x = rect.max.x.max(col.coord as i64);
+            }
+            if let Some(row) = range.start.row {
+                rect.min.y = rect.min.y.min(row.coord as i64);
+                rect.max.y = rect.max.y.max(row.coord as i64);
+            }
+            if let Some(end) = range.end {
+                if let Some(end_col) = end.col {
+                    rect.min.x = rect.min.x.min(end_col.coord as i64);
+                    rect.max.x = rect.max.x.max(end_col.coord as i64);
+                }
+                if let Some(end_row) = end.row {
+                    rect.min.y = rect.min.y.min(end_row.coord as i64);
+                    rect.max.y = rect.max.y.max(end_row.coord as i64);
+                }
+            }
+        });
+
+        rect
+    }
 }
 
 fn cursor_pos_from_last_range(last_range: CellRefRange) -> Pos {
@@ -564,5 +591,16 @@ mod tests {
             selection.to_string(Some(sheet_id), &map),
             "Second!A1,Second!B1,Second!C1",
         );
+    }
+
+    #[test]
+    fn test_largest_rectangle() {
+        let selection = A1Selection::from_str(
+            "A1,B1:D2,E:G,2:3,5:7,F6:G8,4",
+            SheetId::test(),
+            &HashMap::new(),
+        )
+        .unwrap();
+        assert_eq!(selection.largest_rectangle(), Rect::new(1, 1, 7, 8));
     }
 }

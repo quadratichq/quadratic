@@ -3,7 +3,7 @@
 use std::cmp::Reverse;
 
 use crate::{
-    grid::{bounds::BoundsRect, Column, GridBounds},
+    grid::{Column, GridBounds},
     selection::OldSelection,
     CellValue, Pos, Rect,
 };
@@ -501,16 +501,6 @@ impl Sheet {
             rects.truncate(max_rects);
         }
         rects
-    }
-
-    /// Returns the bounds of the sheet.
-    ///
-    /// Returns `(data_bounds, format_bounds)`.
-    pub fn to_bounds_rects(&self) -> (Option<BoundsRect>, Option<BoundsRect>) {
-        (
-            self.data_bounds.to_bounds_rect(),
-            self.format_bounds.to_bounds_rect(),
-        )
     }
 }
 

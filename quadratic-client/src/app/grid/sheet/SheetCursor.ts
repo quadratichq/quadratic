@@ -5,6 +5,7 @@
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
@@ -106,22 +107,14 @@ export class SheetCursor {
   }
 
   // Returns the largest rectangle that contains all the multiCursor rectangles
-  getLargestMultiCursorRectangle(): Rectangle {
-    throw new Error('TODO getLargestMultiCursorRectangle');
-    // if (!this.multiCursor) {
-    //   return new Rectangle(this.cursorPosition.x, this.cursorPosition.y, 1, 1);
-    // }
-    // let left = Infinity;
-    // let top = Infinity;
-    // let right = -Infinity;
-    // let bottom = -Infinity;
-    // this.multiCursor.forEach((rect) => {
-    //   left = Math.min(left, rect.x);
-    //   top = Math.min(top, rect.y);
-    //   right = Math.max(right, rect.x + rect.width);
-    //   bottom = Math.max(bottom, rect.y + rect.height);
-    // });
-    // return new Rectangle(left, top, right - left, bottom - top);
+  getLargestRectangle(): Rectangle {
+    const rectStringified = this.selection.getLargestRectangle();
+    try {
+      const rect = JSON.parse(rectStringified);
+      return rectToRectangle(rect);
+    } catch (e) {
+      throw new Error('Failed to parse largest rectangle in SheetCursor');
+    }
   }
 
   overlapsSelection(): boolean {
@@ -198,9 +191,9 @@ export class SheetCursor {
     this.updatePosition(true);
   }
 
-  moveTo(x: number, y: number) {
+  moveTo(x: number, y: number, ensureVisible = true) {
     this.selection.moveTo(x, y);
-    this.updatePosition(true);
+    this.updatePosition(ensureVisible);
   }
 
   // Returns all columns that have a selection (used by cmd+space)

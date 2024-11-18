@@ -19,7 +19,7 @@ export function useSelectionContextMessages() {
             maxRects
           )
         : undefined;
-      const { cursorPosition } = sheets.sheet.cursor;
+      const { position } = sheets.sheet.cursor;
       return [
         {
           role: 'user',
@@ -59,7 +59,7 @@ Note: This selection JSON is only for your reference to data on the sheet. This 
     : ``
 }
 
-My cursor is on cell x:${cursorPosition.x} and y:${cursorPosition.y}.\n
+My cursor is on cell x:${position.x} and y:${position.y}.\n
 `,
 
           contextType: 'selection',

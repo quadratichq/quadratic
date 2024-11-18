@@ -1,5 +1,5 @@
 import { ZOOM_ANIMATION_TIME_MS, ZOOM_BUFFER } from '@/shared/constants/gridConstants';
-import { Point, Rectangle } from 'pixi.js';
+import { Point } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { intersects } from './intersects';
@@ -39,7 +39,7 @@ export async function zoomToFit() {
 }
 
 export function zoomInOut(scale: number): void {
-  const cursorPosition = sheets.sheet.cursor.getCursor();
+  const cursorPosition = sheets.sheet.cursor.position;
   const visibleBounds = pixiApp.viewport.getVisibleBounds();
 
   // If the center of the cell cursor's position is visible, then zoom to that point
@@ -70,25 +70,10 @@ export function zoomTo100() {
 }
 
 export function zoomToSelection(): void {
-  let screenRectangle: Rectangle;
   const sheet = sheets.sheet;
-  if (sheet.cursor.multiCursor) {
-    const rectangles = sheet.cursor.multiCursor;
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
-    for (const rectangle of rectangles) {
-      minX = Math.min(minX, rectangle.left);
-      minY = Math.min(minY, rectangle.top);
-      maxX = Math.max(maxX, rectangle.right);
-      maxY = Math.max(maxY, rectangle.bottom);
-    }
-    screenRectangle = sheet.getScreenRectangle(minX, minY, maxX - minX, maxY - minY);
-  } else {
-    const cursor = sheet.cursor.position;
-    screenRectangle = sheet.getScreenRectangle(cursor.x, cursor.y, 1, 1);
-  }
+  const rectangle = sheet.cursor.getLargestRectangle();
+  const screenRectangle = sheet.getScreenRectangle(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+
   // calc scale, and leave a little room on the top and sides
   let scale = pixiApp.viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);
 

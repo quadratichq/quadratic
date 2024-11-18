@@ -65,7 +65,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
   if (plainText || html) {
     quadraticCore.pasteFromClipboard({
       sheetId: sheets.sheet.id,
-      selection: sheets.sheet.cursor.getRustSelection(),
+      selection: sheets.sheet.cursor.save(),
       plainText,
       html,
       special: 'None',
@@ -166,7 +166,7 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
     }
     quadraticCore.pasteFromClipboard({
       sheetId: sheets.sheet.id,
-      selection: sheets.sheet.cursor.getRustSelection(),
+      selection: sheets.sheet.cursor.save(),
       plainText,
       html,
       special,
@@ -180,7 +180,7 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
     if (html) {
       quadraticCore.pasteFromClipboard({
         sheetId: sheets.sheet.id,
-        selection: sheets.sheet.cursor.getRustSelection(),
+        selection: sheets.sheet.cursor.save(),
         plainText: undefined,
         html,
         special,

@@ -3,7 +3,6 @@ import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
-  A1Selection,
   JsBordersSheet,
   JsCodeCell,
   JsHtmlOutput,
@@ -17,6 +16,7 @@ import {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
+import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -48,7 +48,7 @@ interface EventTypes {
   changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
-  setCursor: (selection?: A1Selection) => void;
+  setCursor: (selection?: Selection) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
   changeInput: (input: boolean, initialValue?: string) => void;

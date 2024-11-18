@@ -192,6 +192,13 @@ impl Rect {
         }
     }
 
+    pub fn union_in_place(&mut self, other: &Self) {
+        self.min.x = self.min.x.min(other.min.x);
+        self.min.y = self.min.y.min(other.min.y);
+        self.max.x = self.max.x.max(other.max.x);
+        self.max.y = self.max.y.max(other.max.y);
+    }
+
     pub fn count(&self) -> usize {
         self.width() as usize * self.height() as usize
     }
@@ -641,5 +648,12 @@ mod test {
         let rect = Rect::new(0, 2, 1, 0);
         assert_eq!(rect.min, Pos { x: 0, y: 0 });
         assert_eq!(rect.max, Pos { x: 1, y: 2 });
+    }
+
+    #[test]
+    fn test_union_in_place() {
+        let mut rect = Rect::new(0, 0, 1, 1);
+        rect.union_in_place(&Rect::new(1, 1, 2, 2));
+        assert_eq!(rect, Rect::new(0, 0, 2, 2));
     }
 }
