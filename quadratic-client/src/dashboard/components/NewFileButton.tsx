@@ -36,7 +36,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
 
   return (
     <div className="flex flex-row-reverse gap-2">
-      <Link to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}>
+      <Link to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)} reloadDocument>
         <Button variant="default">New file</Button>
       </Link>
       <input
