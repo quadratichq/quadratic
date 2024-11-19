@@ -42,7 +42,7 @@ export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeP
         <>
           {/* left-to-right: outer edge */}
           <ResizeControl
-            style={{ left: `-1px` }}
+            style={{ left: `0px` }}
             setState={(mouseEvent) => {
               const offsetFromRight = window.innerWidth - mouseEvent.x;
               const min = MIN_WIDTH_PANEL + MIN_WIDTH_EDITOR;
@@ -88,7 +88,7 @@ export const CodeEditorPanels = memo(({ codeEditorRef }: CodeEditorPanelsResizeP
         <>
           {/* top-to-bottom: editor width */}
           <ResizeControl
-            style={{ left: '-1px' }}
+            style={{ left: '0px' }}
             setState={(mouseEvent) => {
               const offsetFromRight = window.innerWidth - mouseEvent.x;
               const min = MIN_WIDTH_EDITOR;
