@@ -16,17 +16,24 @@ import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
+import { PanelPosition, useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CloseIcon, SaveAndRunIcon, SaveAndRunStopIcon } from '@/shared/components/Icons';
+import {
+  CloseIcon,
+  DockToBottomIcon,
+  DockToRightIcon,
+  SaveAndRunIcon,
+  SaveAndRunStopIcon,
+} from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
-import { useEffect, useMemo, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface CodeEditorHeaderProps {
@@ -50,7 +57,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
     [permissions, teamPermissions, isConnection]
   );
-
+  const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
   const connectionsFetcher = useConnectionsFetcher();
 
   // Get the connection name (it's possible the user won't have access to it
@@ -158,8 +165,16 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
+  const changePanelPosition = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
+      e.currentTarget.blur();
+    },
+    [setPanelPosition]
+  );
+
   return (
-    <div className="flex items-center py-1 pl-3 pr-2">
+    <div className="flex items-center border-l border-border py-1 pl-3 pr-2">
       <div
         className={cn(
           `relative`,
@@ -224,6 +239,14 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
             )}
           </>
         )}
+
+        <hr className="mx-2 h-4 border-l border-border" />
+
+        <TooltipPopover label={`Move panel ${panelPosition === 'left' ? 'to bottom' : 'to left'}`} side="bottom">
+          <Button onClick={changePanelPosition} size="icon-sm" variant="ghost" className="text-muted-foreground">
+            {panelPosition === 'left' ? <DockToBottomIcon /> : <DockToRightIcon />}
+          </Button>
+        </TooltipPopover>
 
         <TooltipPopover label={`Close`} shortcut={`Esc`} side="bottom">
           <Button
