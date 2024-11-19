@@ -33,13 +33,11 @@ pub(crate) async fn axum_to_reqwest(
         .into_iter()
         .filter(|(name, _)| !headers_to_ignore.contains(&name.as_str()))
         .map(|(name, value)| {
-            if name.to_string().starts_with(PROXY_HEADER_PREFIX) {
-                (
-                    name.to_string().replace(PROXY_HEADER_PREFIX, ""),
-                    value.to_str().unwrap().to_string(),
-                )
+            let name = name.as_str();
+            if let Some(name) = name.strip_prefix(PROXY_HEADER_PREFIX) {
+                (name, value)
             } else {
-                (name.to_string(), value.to_str().unwrap().to_string())
+                (name, value)
             }
         })
     {
