@@ -1,5 +1,6 @@
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
+import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
 import { CodeEditorEscapeEffect } from '@/app/ui/menus/CodeEditor/CodeEditorEscapeEffect';
@@ -73,11 +74,9 @@ export const CodeEditor = () => {
               }}
             >
               <SaveChangesAlert editorInst={editorInst} />
-
+              <CodeEditorDiffButtons />
               <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
-
               <CodeEditorEmptyState editorInst={editorInst} />
-
               <ReturnTypeInspector />
             </div>
 
