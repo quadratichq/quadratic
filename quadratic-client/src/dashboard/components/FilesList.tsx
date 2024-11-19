@@ -1,5 +1,4 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import { Action as FilesAction } from '@/routes/api.files.$uuid';
@@ -10,7 +9,7 @@ import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchem
 import { ReactNode, useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router-dom';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import { Empty } from './Empty';
 import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
@@ -129,7 +128,6 @@ export function FilesList({
   const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'delete');
   const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
 
-  const { show: newFileDialogShow } = useRecoilValue(newFileDialogAtom);
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
   const handleDragEnter = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -177,9 +175,7 @@ export function FilesList({
         />
       )}
 
-      {!newFileDialogShow && (
-        <FileDragDrop className={`lg:left-[${DRAWER_WIDTH}px] lg:w-[calc(100%-${DRAWER_WIDTH}px)]`} />
-      )}
+      <FileDragDrop className={`lg:left-[${DRAWER_WIDTH}px] lg:w-[calc(100%-${DRAWER_WIDTH}px)]`} />
     </div>
   );
 }

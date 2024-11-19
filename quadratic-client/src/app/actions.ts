@@ -66,8 +66,8 @@ export const isAvailableBecauseFileLocationIsAccessibleAndWriteable = ({
 export const createNewFileAction = {
   label: 'New',
   isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
-  run({ setEditorInteractionState }: { setEditorInteractionState: SetterOrUpdater<EditorInteractionState> }) {
-    setEditorInteractionState((prevState) => ({ ...prevState, showNewFileMenu: true }));
+  run({ teamUuid }: { teamUuid: string }) {
+    window.location.href = ROUTES.CREATE_FILE_PRIVATE(teamUuid);
   },
 };
 

@@ -1,15 +1,16 @@
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
+import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Label } from '@/shared/shadcn/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { KeyboardArrowRight } from '@mui/icons-material';
-import { ReloadIcon } from '@radix-ui/react-icons';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { ReactNode, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export const ConnectionSchemaBrowser = ({
@@ -26,6 +27,7 @@ export const ConnectionSchemaBrowser = ({
   uuid?: string;
 }) => {
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid });
+  const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
 
   if (type === undefined || uuid === undefined) return null;
 
@@ -34,20 +36,26 @@ export const ConnectionSchemaBrowser = ({
     <div
       className={cn('h-full overflow-auto text-sm', selfContained && 'h-96 overflow-auto rounded border border-border')}
     >
-      <div className={cn('flex items-center justify-between pb-1', selfContained ? 'px-2 pt-1.5' : 'px-2')}>
+      <div className={cn('sticky top-0 z-10 flex items-center justify-between bg-background px-2 py-1.5')}>
         <div className="flex items-center gap-1 truncate">
           {data && data.type ? (
-            <div className="flex h-6 w-6 items-center ">
+            <div className="flex h-6 w-6 flex-shrink-0 items-center">
               <LanguageIcon language={data.type} sx={{ width: 15, height: 15 }} />
             </div>
           ) : null}
           <h3 className="truncate font-medium tracking-tight">{data?.name ? data.name : ''}</h3>
         </div>
-        <div className="flex items-center gap-1">
-          {/* <Type variant="caption">{data?.tables ? data.tables.length + ' tables' : ''}</Type> */}
+        <div className="flex flex-row-reverse items-center gap-1">
+          <TableQueryAction
+            query={
+              !isLoading && data
+                ? getTableQuery({ table: data.tables[selectedTableIndex], connectionKind: data.type })
+                : ''
+            }
+          />
           <TooltipPopover label="Reload schema">
-            <Button onClick={reloadSchema} variant="ghost" size="icon-sm">
-              <ReloadIcon className={isLoading ? 'animate-spin' : ''} />
+            <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
+              <RefreshIcon className={cn(isLoading && 'animate-spin')} />
             </Button>
           </TooltipPopover>
         </div>
@@ -55,17 +63,20 @@ export const ConnectionSchemaBrowser = ({
       {isLoading && data === undefined && (
         <div className="mb-4 flex min-h-16 items-center justify-center text-muted-foreground">Loading…</div>
       )}
+
       {data && (
-        <ul className="text-sm">
+        <RadioGroup
+          value={String(selectedTableIndex)}
+          onValueChange={(newIndexStr) => {
+            const newIndex = Number(newIndexStr);
+            setSelectedTableIndex(newIndex);
+          }}
+          className="block"
+        >
           {data.tables.map((table, i) => (
-            <TableListItem
-              selfContained={selfContained}
-              data={table}
-              key={i}
-              tableQuery={<TableQueryAction query={getTableQuery({ table, connectionKind: data.type })} />}
-            />
+            <TableListItem index={i} selfContained={selfContained} data={table} key={i} />
           ))}
-        </ul>
+        </RadioGroup>
       )}
       {data === null && (
         <div className="mx-auto my-2 flex max-w-md flex-col items-center justify-center gap-2 pb-4 text-center text-sm text-muted-foreground">
@@ -113,60 +124,53 @@ type Column = {
 };
 
 function TableListItem({
+  index,
   data: { name, columns, schema },
   selfContained,
-  tableQuery,
 }: {
+  index: number;
   data: Table;
   selfContained?: boolean;
-  tableQuery: ReactNode;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const id = `sql-table-${index}`;
 
   return (
-    <li className="group relative z-10">
-      <div className={cn('sticky top-0', isExpanded && 'z-10 bg-accent')}>
+    <div className="group">
+      <Label
+        htmlFor={id}
+        className={cn('flex items-center justify-between group-has-[button[data-state=checked]]:bg-accent')}
+      >
         <button
           className={cn(
-            'z-10 flex h-8 w-full cursor-default items-stretch justify-between gap-1 bg-background group-hover:bg-accent',
-            isExpanded && 'bg-accent',
-            selfContained ? 'px-2' : 'px-1'
+            'flex h-8 min-w-0 flex-initial cursor-default items-center font-normal',
+            selfContained ? 'px-2' : 'px-1.5'
           )}
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             setIsExpanded((prev) => !prev);
           }}
         >
-          <div className="flex items-center truncate">
-            <div className="flex h-6 w-6 items-center justify-center">
-              <KeyboardArrowRight
-                fontSize="inherit"
-                className={cn(isExpanded && 'rotate-90', 'text-xs text-muted-foreground')}
-              />
-            </div>
-            <div className="truncate">{name}</div>
+          <div className="flex h-6 w-6 flex-none items-center">
+            <ChevronRightIcon className={cn('text-muted-foreground', isExpanded && 'rotate-90')} />
           </div>
+          <div className="truncate leading-normal">{name}</div>
+          <div className="ml-2 flex flex-none items-center text-xs text-muted-foreground">{columns.length} cols</div>
         </button>
-        <div
-          className={cn(
-            `absolute top-0.5 z-10 hidden group-hover:block`,
-            isExpanded && 'block',
-            selfContained ? 'right-2' : 'right-2'
-          )}
-        >
-          {tableQuery}
-        </div>
-      </div>
+
+        <RadioGroupItem value={String(index)} id={id} className="ml-4 mr-3 cursor-default" />
+      </Label>
       {isExpanded && (
-        <ul className={cn('pr-2', selfContained ? 'pl-5' : 'pl-4')}>
+        <ul className={cn('pl-8 pr-2')}>
           {columns.length ? (
             columns.map(({ name, type, is_nullable }, k) => (
-              <li key={k} className="border border-l border-transparent border-l-border pl-3">
+              <li key={k} className="border border-l border-transparent border-l-border pl-0">
                 <div className="flex w-full items-center gap-1 py-0.5 pl-2">
                   <div className="truncate after:ml-1 after:text-muted-foreground after:opacity-30 after:content-['/']">
                     {name}
                   </div>
 
-                  <div className="flex items-center gap-1 font-mono text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
                     {type}
                     {is_nullable && '?'}
                   </div>
@@ -180,7 +184,7 @@ function TableListItem({
           )}
         </ul>
       )}
-    </li>
+    </div>
   );
 }
 

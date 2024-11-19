@@ -11,7 +11,6 @@ export interface EditorInteractionState {
   showConnectionsMenu: boolean;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
-  showNewFileMenu: boolean;
   showRenameFileMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
@@ -33,7 +32,6 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   showConnectionsMenu: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
-  showNewFileMenu: false,
   showRenameFileMenu: false,
   showShareFileMenu: false,
   showSearch: false,
@@ -62,7 +60,6 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           oldValue.showConnectionsMenu ||
           oldValue.showGoToMenu ||
           oldValue.showFeedbackMenu ||
-          oldValue.showNewFileMenu ||
           oldValue.showRenameFileMenu ||
           oldValue.showShareFileMenu ||
           oldValue.showSearch ||
@@ -73,7 +70,6 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           newValue.showConnectionsMenu ||
           newValue.showGoToMenu ||
           newValue.showFeedbackMenu ||
-          newValue.showNewFileMenu ||
           newValue.showRenameFileMenu ||
           newValue.showShareFileMenu ||
           newValue.showSearch ||
@@ -103,7 +99,6 @@ export const editorInteractionStateShowCommandPaletteAtom = createSelector('show
 export const editorInteractionStateShowConnectionsMenuAtom = createSelector('showConnectionsMenu');
 export const editorInteractionStateShowGoToMenuAtom = createSelector('showGoToMenu');
 export const editorInteractionStateShowFeedbackMenuAtom = createSelector('showFeedbackMenu');
-export const editorInteractionStateShowNewFileMenuAtom = createSelector('showNewFileMenu');
 export const editorInteractionStateShowRenameFileMenuAtom = createSelector('showRenameFileMenu');
 export const editorInteractionStateShowShareFileMenuAtom = createSelector('showShareFileMenu');
 export const editorInteractionStateShowSearchAtom = createSelector('showSearch');
