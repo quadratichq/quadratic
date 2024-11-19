@@ -95,18 +95,6 @@ impl A1Selection {
             .push(CellRefRange::new_relative_pos(Pos::new(x, y)));
     }
 
-    pub fn is_multi_cursor(&self) -> bool {
-        if self.ranges.len() > 1 {
-            return true;
-        }
-        if let Some(last_range) = self.ranges.last() {
-            if let Some(end) = last_range.end {
-                return last_range.start != end && !last_range.start.is_multi_range();
-            }
-        }
-        false
-    }
-
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
     /// checks the last range (the same as Excel and Sheets)
     pub fn set_columns_selected(&mut self) {

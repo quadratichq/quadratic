@@ -31,11 +31,7 @@ export class UrlParamsUser {
     const x = parseInt(params.get('x') ?? '');
     const y = parseInt(params.get('y') ?? '');
     if (!isNaN(x) && !isNaN(y)) {
-      sheets.sheet.cursor.changePosition({
-        cursorPosition: { x, y },
-        keyboardMovePosition: { x, y },
-        ensureVisible: true,
-      });
+      sheets.sheet.cursor.moveTo(x, y);
     }
   }
 

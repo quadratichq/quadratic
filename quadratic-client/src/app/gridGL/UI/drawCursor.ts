@@ -1,13 +1,15 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ColumnRowCursor, RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import { ColumnRowCursor } from '@/app/grid/sheet/SheetCursor';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
+import { CellRefRange } from '@/app/quadratic-core-types';
+import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Graphics } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
 const drawCursorOutline = (g: Graphics, color: number) => {
   const sheet = sheets.sheet;
-  const cursor = sheet.cursor.getCursor();
+  const cursor = sheet.cursor.position;
   const outline = sheet.getCellOffsets(cursor.x, cursor.y);
   g.lineStyle({ width: CURSOR_THICKNESS, color, alignment: 0 });
   g.drawRect(outline.x, outline.y, outline.width, outline.height);
@@ -73,13 +75,42 @@ export const drawColumnRowCursor = (options: {
   drawCursorOutline(g, color);
 };
 
-export const drawMultiCursor = (g: Graphics, color: number, alpha: number, rectangles: RectangleLike[]) => {
-  const sheet = sheets.sheet;
+export const drawMultiCursor = (g: Graphics, color: number, alpha: number, selection: Selection) => {
   g.lineStyle(1, color, 1, 0, true);
   g.beginFill(color, alpha);
-  rectangles.forEach((rectangle) => {
-    const rect = sheet.getScreenRectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1);
-    g.drawShape(rect);
+
+  const rangesStringified = selection.getRanges();
+  let ranges: CellRefRange[] | undefined;
+  try {
+    ranges = JSON.parse(rangesStringified);
+  } catch (e) {
+    throw new Error('Failed to parse ranges in drawMultiCursor');
+  }
+
+  const sheet = sheets.sheet;
+  ranges?.forEach((range) => {
+    // we have all four points, just draw a rectangle
+    const { col, row } = range.start;
+    const end = range.end ? { col: range.end.col, row: range.end.row } : undefined;
+
+    // we have all four points, just draw a rectangle
+    if (col && row && end?.col && end?.row) {
+      const rect = sheet.getScreenRectangle(
+        Number(col.coord),
+        Number(row.coord),
+        Number(end.col.coord) - 1,
+        Number(end.row.coord) - 1
+      );
+      g.drawShape(rect);
+    }
+
+    // we only have one point, draw a single cell
+    else if (col && row && !end) {
+      const rect = sheet.getScreenRectangle(Number(col.coord), Number(row.coord), 0, 0);
+      g.drawShape(rect);
+    } else {
+      throw new Error('todo: drawCursor needs to handle rows, columns, and all');
+    }
   });
   g.endFill();
 };

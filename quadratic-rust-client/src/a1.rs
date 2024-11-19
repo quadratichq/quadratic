@@ -122,6 +122,16 @@ impl Selection {
         self.selection
             .extend_selection(column as u64, row as u64, append);
     }
+
+    #[wasm_bindgen(js_name = "getRanges")]
+    pub fn get_ranges(&self) -> Result<String, String> {
+        Ok(serde_json::to_string(&self.selection.ranges).map_err(|e| e.to_string())?)
+    }
+
+    #[wasm_bindgen(js_name = "isColumnRow")]
+    pub fn is_column_row(&self) -> bool {
+        self.selection.is_column_row()
+    }
 }
 
 #[wasm_bindgen(js_name = "stringToSelection")]

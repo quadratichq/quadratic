@@ -221,6 +221,10 @@ export class SheetCursor {
     return this.selection.isMultiCursor();
   }
 
+  isColumnRow(): boolean {
+    return this.selection.isColumnRow();
+  }
+
   toA1String(sheetId = sheets.sheet.id): string {
     return this.selection.toString(sheetId, sheets.getRustSheetMap());
   }

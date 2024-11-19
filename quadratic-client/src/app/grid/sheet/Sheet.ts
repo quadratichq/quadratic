@@ -1,8 +1,7 @@
 import { events } from '@/app/events/events';
 import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
-import { intersects } from '@/app/gridGL/helpers/intersects';
 import { ColumnRow, GridBounds, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { SheetOffsets, SheetOffsetsWasm, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
@@ -56,13 +55,8 @@ export class Sheet {
   // Returns all validations that intersect with the given point.
   getValidation(x: number, y: number): Validation[] | undefined {
     return this.validations.filter((v) => {
-      const selection = v.selection;
-      return (
-        selection.all ||
-        selection.columns?.find((c) => Number(c) === x) ||
-        selection.rows?.find((r) => Number(r) === y) ||
-        selection.rects?.find((r) => intersects.rectPoint(r, { x, y }))
-      );
+      const selection = stringToSelection(v.selection.toString(), this.id, sheets.getRustSheetMap());
+      return selection.contains(x, y);
     });
   }
 

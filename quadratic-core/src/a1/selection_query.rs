@@ -5,6 +5,21 @@ use crate::{Pos, Rect};
 use super::A1Selection;
 
 impl A1Selection {
+    pub fn is_multi_cursor(&self) -> bool {
+        if self.ranges.len() > 1 {
+            return true;
+        }
+        if let Some(last_range) = self.ranges.last() {
+            if last_range.start.is_multi_range() {
+                return true;
+            }
+            if let Some(end) = last_range.end {
+                return last_range.start != end && !last_range.start.is_multi_range();
+            }
+        }
+        false
+    }
+
     /// Returns whether the selection contains the given position.
     pub fn contains(&self, x: u64, y: u64) -> bool {
         self.ranges
@@ -146,5 +161,25 @@ mod tests {
         )
         .unwrap();
         assert_eq!(selection.largest_rect_finite(), Rect::new(1, 1, 7, 8));
+    }
+
+    #[test]
+    fn test_is_multi_cursor() {
+        let selection =
+            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_multi_cursor());
+
+        let selection =
+            A1Selection::from_str("A1,B1:C2", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_multi_cursor());
+
+        let selection = A1Selection::from_str("A", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_multi_cursor());
+
+        let selection = A1Selection::from_str("1", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_multi_cursor());
+
+        let selection = A1Selection::from_str("A1", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(!selection.is_multi_cursor());
     }
 }
