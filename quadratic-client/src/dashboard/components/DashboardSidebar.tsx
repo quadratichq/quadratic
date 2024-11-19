@@ -1,4 +1,3 @@
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
@@ -26,8 +25,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { ReactNode, useState } from 'react';
-import { NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
-import { useSetRecoilState } from 'recoil';
+import { Link, NavLink, useLocation, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 
 const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
 
@@ -68,7 +66,11 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               <DraftIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
-            {canEditTeam && <SidebarNavLinkCreateButton isPrivate={false}>New file</SidebarNavLinkCreateButton>}
+            {canEditTeam && (
+              <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
+                New file
+              </SidebarNavLinkCreateButton>
+            )}
           </div>
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
@@ -100,7 +102,9 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             <FilePrivateIcon className={classNameIcons} />
             My files
           </SidebarNavLink>
-          <SidebarNavLinkCreateButton isPrivate={true}>New private file</SidebarNavLinkCreateButton>
+          <SidebarNavLinkCreateButton isPrivate={true} teamUuid={activeTeamUuid}>
+            New personal file
+          </SidebarNavLinkCreateButton>
         </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
           <FileSharedWithMeIcon className={classNameIcons} />
@@ -171,18 +175,27 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
   );
 }
 
-function SidebarNavLinkCreateButton({ children, isPrivate }: { children: ReactNode; isPrivate: boolean }) {
-  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
+function SidebarNavLinkCreateButton({
+  children,
+  isPrivate,
+  teamUuid,
+}: {
+  children: ReactNode;
+  isPrivate: boolean;
+  teamUuid: string;
+}) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
+          asChild
           variant="ghost"
           size="icon-sm"
           className="absolute right-2 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
-          onClick={() => setNewFileDialogState({ show: true, isPrivate })}
         >
-          <AddIcon />
+          <Link to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}>
+            <AddIcon />
+          </Link>
         </Button>
       </TooltipTrigger>
       <TooltipContent>{children}</TooltipContent>

@@ -2,6 +2,7 @@ import { codeEditorCodeCellAtom, codeEditorShowCodeEditorAtom } from '@/app/atom
 import { AIResearcher } from '@/app/ui/menus/AIResearcher/AIResearcher';
 import { AIResearcherRequestHandler } from '@/app/ui/menus/AIResearcher/AIResearcherRequestHandler';
 import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
+import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
 import { CodeEditorEscapeEffect } from '@/app/ui/menus/CodeEditor/CodeEditorEscapeEffect';
@@ -82,6 +83,8 @@ export const CodeEditor = () => {
               <SaveChangesAlert editorInst={editorInst} />
 
               <CodeEditorHeader editorInst={editorInst} />
+
+              <CodeEditorDiffButtons />
 
               <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
 

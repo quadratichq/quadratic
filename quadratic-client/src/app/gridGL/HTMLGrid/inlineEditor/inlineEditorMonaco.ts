@@ -427,6 +427,8 @@ class InlineEditorMonaco {
       language: inlineEditorHandler.formula ? 'formula' : 'inline-editor',
     });
 
+    this.disableKeybindings();
+
     interface SuggestController {
       widget: { value: { onDidShow: (fn: () => void) => void; onDidHide: (fn: () => void) => void } };
     }
@@ -496,6 +498,38 @@ class InlineEditorMonaco {
       throw new Error('Expected editor to be defined in triggerSelection');
     }
     this.editor.trigger(null, 'editor.action.inlineSuggest.trigger', null);
+  }
+
+  disableKeybindings() {
+    editor.addKeybindingRules([
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyG,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyL,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyL,
+      },
+      {
+        keybinding: monaco.KeyCode.F1,
+      },
+      {
+        keybinding: monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.Shift | monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F3,
+      },
+    ]);
   }
 }
 

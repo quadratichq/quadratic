@@ -224,7 +224,7 @@ impl GridController {
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: Vec<TransactionServer>) {
         // used to track client changes when combining transactions
-        let results = PendingTransaction {
+        let mut results = PendingTransaction {
             transaction_type: TransactionType::Multiplayer,
             ..Default::default()
         };
@@ -245,6 +245,18 @@ impl GridController {
                 };
 
                 self.client_apply_transaction(&mut transaction, t.sequence_num);
+                results.generate_thumbnail |= transaction.generate_thumbnail;
+                results.validations.extend(transaction.validations);
+                results.dirty_hashes.extend(transaction.dirty_hashes);
+                results.sheet_borders.extend(transaction.sheet_borders);
+                results.code_cells.extend(transaction.code_cells);
+                results.html_cells.extend(transaction.html_cells);
+                results.image_cells.extend(transaction.image_cells);
+                results.fill_cells.extend(transaction.fill_cells);
+                results.sheet_info.extend(transaction.sheet_info);
+                results
+                    .offsets_modified
+                    .extend(transaction.offsets_modified);
             } else {
                 dbgjs!(
                     "Unable to decompress and deserialize operations in received_transactions()"

@@ -28,9 +28,9 @@ export function LanguageIcon({ language, ...props }: LanguageIconProps) {
   ) : language && 'mysql'.startsWith(language) ? (
     <MysqlIcon {...props} sx={{ color: colors.languageMysql, ...internalSx }} />
   ) : language && 'mssql'.startsWith(language) ? (
-    <MssqlIcon sx={{ color: colors.languageMssql, ...internalSx }} />
+    <MssqlIcon {...props} sx={{ color: colors.languageMssql, ...internalSx }} />
   ) : language && 'snowflake'.startsWith(language) ? (
-    <SnowflakeIcon sx={{ color: colors.languageSnowflake, ...internalSx }} />
+    <SnowflakeIcon {...props} sx={{ color: colors.languageSnowflake, ...internalSx }} />
   ) : (
     <Subject {...props} />
   );
