@@ -167,6 +167,22 @@ impl Sheet {
             })
     }
 
+    pub fn iter_code_output_intersects_rect(
+        &self,
+        rect: Rect,
+    ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
+        self.data_tables
+            .iter()
+            .filter_map(move |(pos, data_table)| {
+                let output_rect = data_table.output_rect(*pos, false);
+                output_rect
+                    .intersection(&rect)
+                    .and_then(|intersection_rect| {
+                        Some((output_rect, intersection_rect, data_table))
+                    })
+            })
+    }
+
     /// Returns whether a rect overlaps the output of a code cell.
     /// It will only check code_cells until it finds the data_table at code_pos (since later data_tables do not cause spills in earlier ones)
     pub fn has_code_cell_in_rect(&self, rect: &Rect, code_pos: Pos) -> bool {

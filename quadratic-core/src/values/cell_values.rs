@@ -83,14 +83,14 @@ impl CellValues {
             .ok_or_else(|| anyhow::anyhow!("No value found at ({x}, {y})"))
     }
 
-    pub fn get_rect(mut self, rect: Rect) -> Vec<Vec<CellValue>> {
+    pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<CellValue>> {
         let mut values =
             vec![vec![CellValue::Blank; rect.width() as usize]; rect.height() as usize];
 
         for y in rect.y_range() {
             for x in rect.x_range() {
-                let new_x = u32::try_from(rect.min.x + x).unwrap_or(0);
-                let new_y = u32::try_from(rect.min.y + y).unwrap_or(0);
+                let new_x = u32::try_from(x).unwrap_or(0);
+                let new_y = u32::try_from(y).unwrap_or(0);
                 values[new_y as usize][new_x as usize] =
                     self.remove(new_x, new_y).unwrap_or(CellValue::Blank);
             }
@@ -114,7 +114,12 @@ impl CellValues {
     }
 
     pub fn remove(&mut self, x: u32, y: u32) -> Option<CellValue> {
-        assert!(x < self.w && y < self.h, "CellValues::remove out of bounds");
+        assert!(
+            x < self.w && y < self.h,
+            "CellValues::remove out of bounds: x={x}, y={y}, w={}, h={}",
+            self.w,
+            self.h
+        );
         self.columns[x as usize].remove(&(y as u64))
     }
 
@@ -153,7 +158,7 @@ impl CellValues {
         })
     }
 
-    pub fn into_vec(self) -> Vec<Vec<CellValue>> {
+    pub fn into_vec(&mut self) -> Vec<Vec<CellValue>> {
         let width = self.w as i64;
         let height = self.h as i64;
 
@@ -247,7 +252,7 @@ impl From<Array> for CellValues {
 }
 
 impl From<CellValues> for Vec<Vec<CellValue>> {
-    fn from(cell_values: CellValues) -> Self {
+    fn from(mut cell_values: CellValues) -> Self {
         cell_values.into_vec()
     }
 }

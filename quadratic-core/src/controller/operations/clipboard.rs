@@ -15,7 +15,7 @@ use crate::grid::sheet::borders::BorderStyleCellUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::{CodeCellLanguage, DataTableKind};
 use crate::selection::Selection;
-use crate::{CellValue, Pos, SheetPos, SheetRect};
+use crate::{CellValue, Pos, Rect, SheetPos, SheetRect};
 
 // todo: break up this file so tests are easier to write
 
@@ -255,7 +255,47 @@ impl GridController {
                     special,
                 );
 
-                if let Some(values) = values {
+                if let Some(mut values) = values {
+                    if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                        let rect = Rect::from_numbers(
+                            start_pos.x,
+                            start_pos.y,
+                            clipboard.w as i64,
+                            clipboard.h as i64,
+                        );
+
+                        // Determine if the paste is happening within a data table.
+                        // If so, replace values in the data table with the
+                        // intersection of the data table and the paste
+                        sheet.iter_code_output_intersects_rect(rect).for_each(
+                            |(_, intersection_rect, data_table)| {
+                                // there is no pasting on top of code cell output
+                                if !data_table.readonly {
+                                    let adjusted_rect = Rect::from_numbers(
+                                        start_pos.x - intersection_rect.min.x,
+                                        start_pos.y - intersection_rect.min.y,
+                                        intersection_rect.width() as i64,
+                                        intersection_rect.height() as i64,
+                                    );
+
+                                    // pull the values from `values`, replacing
+                                    // the values in `values` with CellValue::Blank
+                                    let cell_values = values.get_rect(adjusted_rect);
+                                    let sheet_pos = SheetPos {
+                                        x: intersection_rect.min.x,
+                                        y: intersection_rect.min.y,
+                                        sheet_id: selection.sheet_id,
+                                    };
+
+                                    ops.push(Operation::SetDataTableAt {
+                                        sheet_pos,
+                                        values: CellValues::from(cell_values),
+                                    });
+                                }
+                            },
+                        );
+                    }
+
                     ops.push(Operation::SetCellValues {
                         sheet_pos: start_pos.to_sheet_pos(selection.sheet_id),
                         values,
