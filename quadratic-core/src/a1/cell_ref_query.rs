@@ -1,0 +1,75 @@
+use super::CellRefRange;
+
+impl CellRefRange {
+    pub fn only_column(&self, column: u64) -> bool {
+        // if there is no start column, then it's not a single column range
+        let Some(start_col) = self.start.col else {
+            return false;
+        };
+
+        // if the start column is not the column we're checking for, then it's not a
+        // single column range
+        if start_col.coord != column {
+            return false;
+        }
+
+        // if there is no end column, then it's a single column range
+        let Some(end) = self.end.as_ref().and_then(|end| end.col) else {
+            return true;
+        };
+
+        end.coord == column
+    }
+
+    pub fn only_row(&self, row: u64) -> bool {
+        // if there is not start row, then it's not a single row range
+        let Some(start_row) = self.start.row else {
+            return false;
+        };
+
+        // if the start row is not the row we're checking for, then it's not a
+        // single row range
+        if start_row.coord != row {
+            return false;
+        }
+
+        // if there is no end row, then it's a single row range
+        let Some(end) = self.end.as_ref().and_then(|end| end.row) else {
+            return true;
+        };
+
+        end.coord == row
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.start.row.is_none() && self.start.col.is_none()
+    }
+}
+
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_only_column() {
+        assert!(CellRefRange::test("A").only_column(1));
+        assert!(CellRefRange::test("A2:A5").only_column(1));
+
+        assert!(!CellRefRange::test("A").only_column(2));
+        assert!(!CellRefRange::test("A:B").only_column(2));
+        assert!(!CellRefRange::test("A1").only_column(2));
+        assert!(!CellRefRange::test("A1:D1").only_column(1));
+    }
+
+    #[test]
+    fn test_only_row() {
+        assert!(CellRefRange::test("2").only_row(2));
+        assert!(CellRefRange::test("A2:D2").only_row(2));
+
+        assert!(!CellRefRange::test("2").only_row(1));
+        assert!(!CellRefRange::test("1:2").only_row(1));
+        assert!(!CellRefRange::test("A2").only_row(1));
+        assert!(!CellRefRange::test("A2:D2").only_row(1));
+    }
+}

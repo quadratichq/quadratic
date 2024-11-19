@@ -86,7 +86,11 @@ impl Sheet {
         reverse_operations
     }
 
-    pub fn delete_column_offset(&mut self, transaction: &mut PendingTransaction, column: i64) {
+    pub(crate) fn delete_column_offset(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        column: i64,
+    ) {
         let (changed, new_size) = self.offsets.delete_column(column);
         if let Some(new_size) = new_size {
             transaction
@@ -106,7 +110,7 @@ impl Sheet {
     }
 
     /// Deletes columns and returns the operations to undo the deletion.
-    pub fn delete_column(&mut self, transaction: &mut PendingTransaction, column: i64) {
+    pub(crate) fn delete_column(&mut self, transaction: &mut PendingTransaction, column: i64) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
@@ -279,7 +283,7 @@ impl Sheet {
         }
     }
 
-    pub fn insert_column(
+    pub(crate) fn insert_column(
         &mut self,
         transaction: &mut PendingTransaction,
         column: i64,

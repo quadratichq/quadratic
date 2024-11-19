@@ -11,7 +11,7 @@ use super::{validation::Validation, Validations};
 impl Validations {
     /// Removes a column from all validations. Adds undo operations and client
     /// signalling to the transaction.
-    pub fn remove_column(
+    pub(crate) fn remove_column(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
@@ -41,7 +41,7 @@ impl Validations {
     /// Removes a row from all validations.
     ///
     /// Returns a list of operations that reverse the changes.
-    pub fn remove_row(
+    pub(crate) fn remove_row(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
@@ -71,7 +71,7 @@ impl Validations {
     /// Inserts a column into all validations.
     ///
     /// Returns a list of operations that reverse the changes.
-    pub fn insert_column(
+    pub(crate) fn insert_column(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
@@ -98,7 +98,7 @@ impl Validations {
     /// Inserts a row into all validations.
     ///
     /// Returns a list of operations that reverse the changes.
-    pub fn insert_row(
+    pub(crate) fn insert_row(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,

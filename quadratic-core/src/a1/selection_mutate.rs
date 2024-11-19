@@ -28,8 +28,14 @@ impl A1Selection {
     /// Potentially shrinks a selection after the removal of a row.
     pub fn removed_row(&mut self, row: u64) -> bool {
         let mut changed = false;
-        self.ranges.iter_mut().for_each(|range| {
-            changed |= range.removed_row(row);
+        self.ranges.retain_mut(|range| {
+            if range.only_row(row) {
+                changed = true;
+                false
+            } else {
+                changed |= range.removed_row(row);
+                true
+            }
         });
         changed
     }
