@@ -22,6 +22,7 @@ export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean
             You don’t have any files yet.{' '}
             <Link
               to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid)}
+              reloadDocument
               className="underline hover:text-primary"
               onClick={() => {
                 mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
