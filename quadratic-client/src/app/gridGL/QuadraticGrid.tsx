@@ -36,6 +36,7 @@ export default function QuadraticGrid() {
   return (
     <div
       ref={containerRef}
+      className="dark-mode-hack"
       style={{
         position: 'relative',
         width: '100%',

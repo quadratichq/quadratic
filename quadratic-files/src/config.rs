@@ -9,6 +9,14 @@ use crate::error::{FilesError, Result};
 use dotenv::dotenv;
 use quadratic_rust_shared::environment::Environment;
 use serde::Deserialize;
+use strum_macros::Display;
+
+#[derive(Deserialize, Debug, Display)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum StorageType {
+    S3,
+    FileSystem,
+}
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
@@ -27,13 +35,22 @@ pub(crate) struct Config {
     pub(crate) pubsub_active_channels: String,
     pub(crate) pubsub_processed_transactions_channel: String,
 
+    pub(crate) auth0_jwks_uri: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
 
-    pub(crate) aws_s3_region: String,
-    pub(crate) aws_s3_bucket_name: String,
-    pub(crate) aws_s3_access_key_id: String,
-    pub(crate) aws_s3_secret_access_key: String,
+    // Storage Type: s3 or file-system
+    pub(crate) storage_type: StorageType,
+
+    // StorageType::S3
+    pub(crate) aws_s3_region: Option<String>,
+    pub(crate) aws_s3_bucket_name: Option<String>,
+    pub(crate) aws_s3_access_key_id: Option<String>,
+    pub(crate) aws_s3_secret_access_key: Option<String>,
+
+    // StorageType::FileSystem
+    pub(crate) storage_dir: Option<String>,
+    pub(crate) storage_encryption_keys: Option<Vec<String>>,
 }
 
 /// Load the global configuration from the environment into Config.

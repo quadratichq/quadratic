@@ -2,6 +2,7 @@
 //! handles when the cursorIsMoving outside of the inline formula edit box.
 
 import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getSingleSelection } from '@/app/grid/sheet/selection';
@@ -338,6 +339,47 @@ class InlineEditorKeyboard {
         );
         quadraticCore.setCellStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough);
       }
+    }
+
+    // show go to menu
+    else if (matchShortcut(Action.ShowGoToMenu, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(0, 0, false).then(() => {
+        defaultActionSpec[Action.ShowGoToMenu].run();
+      });
+    }
+
+    // show find in current sheet
+    else if (matchShortcut(Action.FindInCurrentSheet, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(0, 0, false).then(() => {
+        defaultActionSpec[Action.FindInCurrentSheet].run();
+      });
+    }
+
+    // show command palette
+    else if (matchShortcut(Action.ShowCommandPalette, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      inlineEditorHandler.close(0, 0, false).then(() => {
+        defaultActionSpec[Action.ShowCommandPalette].run();
+      });
+    }
+
+    // switch sheet next
+    else if (matchShortcut(Action.SwitchSheetNext, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      defaultActionSpec[Action.SwitchSheetNext].run();
+    }
+
+    // switch sheet previous
+    else if (matchShortcut(Action.SwitchSheetPrevious, e)) {
+      e.stopPropagation();
+      e.preventDefault();
+      defaultActionSpec[Action.SwitchSheetPrevious].run();
     }
 
     // trigger cell type menu

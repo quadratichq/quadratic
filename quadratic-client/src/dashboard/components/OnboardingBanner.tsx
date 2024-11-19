@@ -36,6 +36,8 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 
+const SHOW_EXAMPLES = import.meta.env.VITE_STORAGE_TYPE !== 'file-system';
+
 export function OnboardingBanner() {
   const {
     activeTeam: {
@@ -89,16 +91,18 @@ export function OnboardingBanner() {
                 <PlusIcon className="mr-1" /> Create blank file
               </Link>
             </Button>
-            <Button variant="outline" className={contentBtnClassName} asChild>
-              <Link
-                to={ROUTES.EXAMPLES}
-                onClick={() => {
-                  mixpanel.track('[OnboardingBanner].newFileFromExample');
-                }}
-              >
-                <MixIcon className="mr-1" /> Explore example files
-              </Link>
-            </Button>
+            {SHOW_EXAMPLES && (
+              <Button variant="outline" className={contentBtnClassName} asChild>
+                <Link
+                  to={ROUTES.EXAMPLES}
+                  onClick={() => {
+                    mixpanel.track('[OnboardingBanner].newFileFromExample');
+                  }}
+                >
+                  <MixIcon className="mr-1" /> Explore example files
+                </Link>
+              </Button>
+            )}
           </div>
           <p>Or bring your own data:</p>
           <div className="flex flex-wrap gap-2">

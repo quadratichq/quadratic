@@ -29,6 +29,7 @@ export async function doubleClickCell(options: {
       pixiAppSettings.setCodeEditorState({
         ...pixiAppSettings.codeEditorState,
         escapePressed: false,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -55,6 +56,7 @@ export async function doubleClickCell(options: {
           ...pixiAppSettings.codeEditorState,
           showCodeEditor: true,
           escapePressed: false,
+          diffEditorContent: undefined,
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,

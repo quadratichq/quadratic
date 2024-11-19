@@ -1,16 +1,16 @@
 import { events } from '@/app/events/events';
+import { Borders } from '@/app/gridGL/cells/borders/Borders';
+import { CellsArray } from '@/app/gridGL/cells/CellsArray';
+import { CellsFills } from '@/app/gridGL/cells/CellsFills';
+import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
+import { CellsLabels } from '@/app/gridGL/cells/cellsLabel/CellsLabels';
+import { CellsMarkers } from '@/app/gridGL/cells/CellsMarkers';
+import { CellsSearch } from '@/app/gridGL/cells/CellsSearch';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle, Sprite } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsArray } from './CellsArray';
-import { Borders } from './borders/Borders';
-import { CellsFills } from './CellsFills';
-import { CellsImage } from './cellsImages/CellsImage';
-import { CellsImages } from './cellsImages/CellsImages';
-import { CellsLabels } from './cellsLabel/CellsLabels';
-import { CellsMarkers } from './CellsMarkers';
-import { CellsSearch } from './CellsSearch';
 
 export interface ErrorMarker {
   triangle?: Sprite;
@@ -51,6 +51,11 @@ export class CellsSheet extends Container {
     this.visible = false;
 
     events.on('renderValidationWarnings', this.renderValidations);
+  }
+
+  destroy() {
+    events.off('renderValidationWarnings', this.renderValidations);
+    super.destroy();
   }
 
   // used to render all cellsTextHashes to warm up the GPU

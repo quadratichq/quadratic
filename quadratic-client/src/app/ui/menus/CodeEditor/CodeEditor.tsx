@@ -1,5 +1,6 @@
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { CodeEditorBody } from '@/app/ui/menus/CodeEditor/CodeEditorBody';
+import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorEffects } from '@/app/ui/menus/CodeEditor/CodeEditorEffects';
 import { CodeEditorEmptyState } from '@/app/ui/menus/CodeEditor/CodeEditorEmptyState';
 import { CodeEditorEscapeEffect } from '@/app/ui/menus/CodeEditor/CodeEditorEscapeEffect';
@@ -32,6 +33,8 @@ export const CodeEditor = () => {
     <>
       <CodeEditorEffects />
 
+      <CodeEditorEscapeEffect editorInst={editorInst} />
+
       {showCodeEditor && (
         <div
           ref={codeEditorRef}
@@ -46,6 +49,9 @@ export const CodeEditor = () => {
             }px`,
             borderLeft: '1px solid black',
           }}
+          onCopy={(e) => e.stopPropagation()}
+          onCut={(e) => e.stopPropagation()}
+          onPaste={(e) => e.stopPropagation()}
         >
           <div
             id="QuadraticCodeEditorID"
@@ -69,14 +75,12 @@ export const CodeEditor = () => {
             <SaveChangesAlert editorInst={editorInst} />
 
             <CodeEditorHeader editorInst={editorInst} />
-
+            <CodeEditorDiffButtons />
             <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
 
             <CodeEditorEmptyState editorInst={editorInst} />
 
             <ReturnTypeInspector />
-
-            <CodeEditorEscapeEffect editorInst={editorInst} />
           </div>
 
           <div

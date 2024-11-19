@@ -1,14 +1,14 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { DASHED } from '@/app/gridGL/generateTextures';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
+import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
+import { convertColorStringToTint } from '@/app/helpers/convertColor';
+import { CellPosition, ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
-import { convertColorStringToTint } from '../../../helpers/convertColor';
-import { CellPosition, ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
-import { DASHED } from '../../generateTextures';
-import { drawDashedRectangle, drawDashedRectangleMarching } from './cellHighlightsDraw';
 
 // TODO: these files need to be cleaned up and properly typed. Lots of untyped
 // data passed around within the data.
@@ -47,8 +47,17 @@ export class CellHighlights extends Container {
     super();
     this.highlights = this.addChild(new Graphics());
     this.marchingHighlight = this.addChild(new Graphics());
-    events.on('changeSheet', () => (this.dirty = true));
+    events.on('changeSheet', this.setDirty);
   }
+
+  destroy() {
+    events.off('changeSheet', this.setDirty);
+    super.destroy();
+  }
+
+  setDirty = () => {
+    this.dirty = true;
+  };
 
   clear() {
     this.highlightedCells = [];

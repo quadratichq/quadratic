@@ -1,5 +1,6 @@
+import { hasPermissionToEditFile } from '@/app/actions';
 import {
-  editorInteractionStateShowNewFileMenuAtom,
+  editorInteractionStatePermissionsAtom,
   editorInteractionStateShowRenameFileMenuAtom,
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
@@ -10,7 +11,7 @@ import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import { PermissionOverlay } from '@/app/ui/components/PermissionOverlay';
 import PresentationModeHint from '@/app/ui/components/PresentationModeHint';
-import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
+import { AIAnalyst } from '@/app/ui/menus/AIAnalyst/AIAnalyst';
 import { BottomBar } from '@/app/ui/menus/BottomBar/BottomBar';
 import CellTypeMenu from '@/app/ui/menus/CellTypeMenu';
 import CodeEditor from '@/app/ui/menus/CodeEditor';
@@ -23,26 +24,24 @@ import { TopBar } from '@/app/ui/menus/TopBar/TopBar';
 import { ValidationPanel } from '@/app/ui/menus/Validations/ValidationPanel';
 import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
-import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { useMemo } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export default function QuadraticUI() {
-  const {
-    team: { uuid: teamUuid },
-  } = useFileRouteLoaderData();
-  const connectionsFetcher = useConnectionsFetcher();
+  const { isAuthenticated } = useRootRouteLoaderData();
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
   const { name, renameFile } = useFileContext();
   const [showShareFileMenu, setShowShareFileMenu] = useRecoilState(editorInteractionStateShowShareFileMenuAtom);
-  const [showNewFileMenu, setShowNewFileMenu] = useRecoilState(editorInteractionStateShowNewFileMenuAtom);
   const [showRenameFileMenu, setShowRenameFileMenu] = useRecoilState(editorInteractionStateShowRenameFileMenuAtom);
   const presentationMode = useRecoilValue(presentationModeAtom);
+  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
 
   return (
     <div
@@ -71,6 +70,7 @@ export default function QuadraticUI() {
             position: 'relative',
           }}
         >
+          {canEditFile && isAuthenticated && <AIAnalyst />}
           <FileDragDropWrapper>
             <QuadraticGrid />
             {!presentationMode && <SheetBar />}
@@ -84,14 +84,6 @@ export default function QuadraticUI() {
       {/* Global overlay menus */}
       <FeedbackMenu />
       {showShareFileMenu && <ShareFileDialog onClose={() => setShowShareFileMenu(false)} name={name} uuid={uuid} />}
-      {showNewFileMenu && (
-        <NewFileDialog
-          onClose={() => setShowNewFileMenu(false)}
-          isPrivate={true}
-          connections={connectionsFetcher.data ? connectionsFetcher.data.connections : []}
-          teamUuid={teamUuid}
-        />
-      )}
       {presentationMode && <PresentationModeHint />}
       <CellTypeMenu />
       <CommandPalette />

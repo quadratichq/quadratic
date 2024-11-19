@@ -2,6 +2,7 @@
 
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
@@ -11,6 +12,7 @@ import { FONT_SIZE, LINE_HEIGHT } from '@/app/web-workers/renderWebWorker/worker
 import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
 import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import JsonEditorWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import { inlineEditorEvents } from './inlineEditorEvents';
 
@@ -22,6 +24,8 @@ window.MonacoEnvironment = {
       case 'typescript':
       case 'javascript':
         return new TsEditorWorker({ name: label });
+      case 'json':
+        return new JsonEditorWorker({ name: label });
       default:
         return new DefaultEditorWorker({ name: label });
     }
@@ -31,6 +35,9 @@ window.MonacoEnvironment = {
 // Pixels needed when growing width to avoid monaco from scrolling the text
 // (determined by experimentation).
 const PADDING_FOR_GROWING_HORIZONTALLY = 20;
+
+// Padding for the inline editor when calling keepCursorVisible, to keep the editor/cursor in view.
+export const PADDING_FOR_INLINE_EDITOR = 5;
 
 class InlineEditorMonaco {
   editor?: editor.IStandaloneCodeEditor;
@@ -148,10 +155,22 @@ class InlineEditorMonaco {
       padding: { top: paddingTop, bottom: 0 },
     });
 
-    // set final width and height
     const scrollWidth = textarea.scrollWidth;
     width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY);
     height = Math.max(contentHeight, height);
+
+    const viewportRectangle = pixiApp.getViewportRectangle();
+    const maxWidthDueToViewport = viewportRectangle.width - 2 * PADDING_FOR_INLINE_EDITOR;
+    if (width > maxWidthDueToViewport) {
+      textWrap = 'wrap';
+      width = maxWidthDueToViewport;
+      this.editor.updateOptions({
+        wordWrap: textWrap === 'wrap' ? 'on' : 'off',
+        padding: { top: paddingTop, bottom: 0 },
+      });
+    }
+
+    // set final width and height
     this.editor.layout({ width, height });
 
     return { width, height };
@@ -409,6 +428,8 @@ class InlineEditorMonaco {
       language: inlineEditorHandler.formula ? 'formula' : 'inline-editor',
     });
 
+    this.disableKeybindings();
+
     interface SuggestController {
       widget: { value: { onDidShow: (fn: () => void) => void; onDidHide: (fn: () => void) => void } };
     }
@@ -428,7 +449,7 @@ class InlineEditorMonaco {
     monaco.languages.registerCompletionItemProvider('inline-editor', {
       provideCompletionItems: (model, position) => {
         const lowerCase = this.get().toLowerCase();
-        if (!this.autocompleteList?.find((t) => t.toLowerCase().startsWith(lowerCase))) {
+        if (!this.autocompleteList?.find((t) => t.toLowerCase().startsWith(lowerCase) && t.length > lowerCase.length)) {
           this.autocompleteSuggestionShowing = false;
           return;
         }
@@ -481,6 +502,38 @@ class InlineEditorMonaco {
       throw new Error('Expected editor to be defined in triggerSelection');
     }
     this.editor.trigger(null, 'editor.action.inlineSuggest.trigger', null);
+  }
+
+  disableKeybindings() {
+    editor.addKeybindingRules([
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyG,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyL,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyL,
+      },
+      {
+        keybinding: monaco.KeyCode.F1,
+      },
+      {
+        keybinding: monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.Shift | monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F3,
+      },
+    ]);
   }
 }
 

@@ -110,12 +110,11 @@ impl GridController {
 
         // convert the string to a cell value and generate necessary operations
         let (operations, cell_value) = self.string_to_cell_value(sheet_pos, value);
-        ops.extend(operations);
-
         ops.push(Operation::SetCellValues {
             sheet_pos,
             values: CellValues::from(cell_value),
         });
+        ops.extend(operations);
         ops
     }
 

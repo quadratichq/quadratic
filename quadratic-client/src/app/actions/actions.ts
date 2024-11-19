@@ -140,4 +140,5 @@ export enum Action {
   InsertRowBelow = 'insert_row_below',
   DeleteRow = 'delete_row',
   DeleteColumn = 'delete_column',
+  ToggleAIAnalyst = 'toggle_ai_analyst',
 }

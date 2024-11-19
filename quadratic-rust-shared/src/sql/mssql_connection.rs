@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
@@ -6,17 +7,18 @@ use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::{StreamExt, TryStreamExt};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use tiberius::xml::XmlData;
 use tiberius::ColumnData;
-use uuid::Uuid;
-
 use tiberius::{AuthMethod, Client, Column, Config, FromSql, FromSqlOwned, Row};
 use tokio::net::TcpStream;
 use tokio_util::compat::{Compat, TokioAsyncWriteCompatExt};
+use uuid::Uuid;
 
 use crate::arrow::arrow_type::ArrowType;
-use crate::error::{Result, SharedError, Sql};
+use crate::error::{Result, SharedError};
+use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::Connection;
 
@@ -51,13 +53,13 @@ impl MsSqlConnection {
         let mut row_stream = client
             .query(sql, &[])
             .await
-            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?
+            .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?
             .into_row_stream();
 
         while let Some(row_result) = row_stream.next().await {
             match row_result {
                 Ok(row) => rows.push(row),
-                Err(e) => return Err(SharedError::Sql(Sql::Query(e.to_string()))),
+                Err(e) => return Err(SharedError::Sql(SqlError::Query(e.to_string()))),
             }
         }
 
@@ -90,7 +92,9 @@ impl Connection for MsSqlConnection {
 
         if let Some(port) = &self.port {
             config.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(Sql::Connect("Could not parse port into a number".into()))
+                SharedError::Sql(SqlError::Connect(
+                    "Could not parse port into a number".into(),
+                ))
             })?);
         }
 
@@ -103,16 +107,17 @@ impl Connection for MsSqlConnection {
 
         config.trust_cert();
 
-        let tcp = TcpStream::connect(config.get_addr())
-            .await
-            .map_err(|e| SharedError::Sql(Sql::Connect(format!("Failed to connect: {}", e))))?;
-        tcp.set_nodelay(true)
-            .map_err(|e| SharedError::Sql(Sql::Connect(format!("Failed to set nodelay: {}", e))))?;
+        let tcp = TcpStream::connect(config.get_addr()).await.map_err(|e| {
+            SharedError::Sql(SqlError::Connect(format!("Failed to connect: {}", e)))
+        })?;
+        tcp.set_nodelay(true).map_err(|e| {
+            SharedError::Sql(SqlError::Connect(format!("Failed to set nodelay: {}", e)))
+        })?;
 
         let client = Client::connect(config, tcp.compat_write())
             .await
             .map_err(|e| {
-                SharedError::Sql(Sql::Connect(format!("Failed to create client: {}", e)))
+                SharedError::Sql(SqlError::Connect(format!("Failed to create client: {}", e)))
             })?;
 
         Ok(client)
@@ -133,7 +138,7 @@ impl Connection for MsSqlConnection {
             let mut row_stream = client
                 .query(sql, &[])
                 .await
-                .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?
+                .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?
                 .into_row_stream();
 
             while let Some(row_result) = row_stream.next().await {
@@ -148,7 +153,7 @@ impl Connection for MsSqlConnection {
 
                         rows.push(row);
                     }
-                    Err(e) => return Err(SharedError::Sql(Sql::Query(e.to_string()))),
+                    Err(e) => return Err(SharedError::Sql(SqlError::Query(e.to_string()))),
                 }
             }
         } else {
@@ -184,13 +189,13 @@ ORDER BY
         let row_stream = client
             .query(sql, &[])
             .await
-            .map_err(|e| SharedError::Sql(Sql::Schema(e.to_string())))?
+            .map_err(|e| SharedError::Sql(SqlError::Schema(e.to_string())))?
             .into_row_stream();
 
         let rows: Vec<Row> = row_stream
             .try_collect()
             .await
-            .map_err(|e| SharedError::Sql(Sql::Schema(e.to_string())))?;
+            .map_err(|e| SharedError::Sql(SqlError::Schema(e.to_string())))?;
 
         let mut schema = DatabaseSchema {
             database: self.database.to_owned(),
@@ -236,7 +241,9 @@ ORDER BY
                 ColumnData::F32(_) => convert_mssql_type::<f32, _>(column_data, ArrowType::Float32),
                 ColumnData::F64(_) => convert_mssql_type::<f64, _>(column_data, ArrowType::Float64),
                 ColumnData::Numeric(_) => {
-                    convert_mssql_type::<BigDecimal, _>(column_data, ArrowType::BigDecimal)
+                    convert_mssql_type::<Decimal, _>(column_data, |decimal| {
+                        ArrowType::BigDecimal(BigDecimal::from_str(&decimal.to_string()).unwrap())
+                    })
                 }
                 ColumnData::Guid(_) => convert_mssql_type::<Uuid, _>(column_data, ArrowType::Uuid),
                 ColumnData::String(_) => {
@@ -436,7 +443,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_mysql_schema() {
+    async fn test_mssql_schema() {
         let connection = new_mssql_connection();
         let mut client = connection.connect().await.unwrap();
         let schema = connection.schema(&mut client).await.unwrap();

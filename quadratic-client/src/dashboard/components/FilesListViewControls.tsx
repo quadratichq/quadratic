@@ -18,7 +18,11 @@ export function FilesListViewControls({
   return (
     <div className={`flex flex-row items-center justify-between gap-2 pb-4 `}>
       <div className={`max-w relative flex-grow md:max-w-sm`}>
-        <Input onChange={(e) => setFilterValue(e.target.value)} value={filterValue} placeholder="Filter by name…" />
+        <Input
+          onChange={(e) => setFilterValue(e.target.value)}
+          value={filterValue}
+          placeholder="Filter by file or creator name…"
+        />
         {filterValue && (
           <Button
             variant="ghost"

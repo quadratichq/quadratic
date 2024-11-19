@@ -3,16 +3,16 @@
 //! CellsTextHashSpecial. Since there are "infinite", we only apply them to the
 //! visible cells and redraw them whenever the viewport moves.
 
+import { hasPermissionToEditFile } from '@/app/actions';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Container, Point, Rectangle } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
+import { drawCheckbox, drawDropdown, SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { ValidationUIType, validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
-import { drawCheckbox, drawDropdown, SpecialSprite } from '../cells/cellsLabel/drawSpecial';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { hasPermissionToEditFile } from '@/app/actions';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { intersects } from '../helpers/intersects';
+import { Container, Point, Rectangle } from 'pixi.js';
 
 const MINIMUM_SCALE_TO_SHOW_VALIDATIONS = 0.25;
 const FADE_SCALE = 0.1;
@@ -25,17 +25,21 @@ export class UIValidations extends Container<SpecialSprite> {
   constructor() {
     super();
     this.occupied = new Set();
-    events.on('sheetValidations', (sheetId: string) => {
-      if (sheetId === sheets.sheet.id) {
-        this.dirty = true;
-      }
-    });
-    events.on('renderValidationWarnings', (sheetId: string) => {
-      if (sheetId === sheets.sheet.id) {
-        this.dirty = true;
-      }
-    });
+    events.on('sheetValidations', this.setDirty);
+    events.on('renderValidationWarnings', this.setDirty);
   }
+
+  destroy() {
+    events.off('sheetValidations', this.setDirty);
+    events.off('renderValidationWarnings', this.setDirty);
+    super.destroy();
+  }
+
+  setDirty = (sheetId: string) => {
+    if (sheetId === sheets.sheet.id) {
+      this.dirty = true;
+    }
+  };
 
   // Returns the visible range of cells within the viewport.
   getVisibleRange(): Rectangle {

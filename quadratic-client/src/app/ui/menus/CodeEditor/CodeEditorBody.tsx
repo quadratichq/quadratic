@@ -2,9 +2,11 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import {
   codeEditorCellsAccessedAtom,
   codeEditorCodeCellAtom,
+  codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
   codeEditorLoadingAtom,
   codeEditorShowCodeEditorAtom,
+  codeEditorShowDiffEditorAtom,
   codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
@@ -30,7 +32,7 @@ import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorke
 import { pyrightWorker, uri } from '@/app/web-workers/pythonLanguageServer/worker';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import Editor, { Monaco } from '@monaco-editor/react';
+import Editor, { DiffEditor, Monaco } from '@monaco-editor/react';
 import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -55,6 +57,8 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const monacoLanguage = useMemo(() => getLanguageForMonaco(codeCell.language), [codeCell.language]);
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
+  const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
+  const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const loading = useRecoilValue(codeEditorLoadingAtom);
   const cellsAccessedState = useRecoilValue(codeEditorCellsAccessedAtom);
@@ -210,7 +214,25 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
     [addCommands, monacoLanguage, setEditorInst]
   );
 
-  if (editorContent === undefined || loading) {
+  const addCommandsDiff = useCallback(
+    (editor: monaco.editor.IStandaloneDiffEditor, monaco: Monaco) => {
+      editor.addCommand(
+        monaco.KeyCode.Escape,
+        () => closeEditor(false),
+        '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
+      );
+    },
+    [closeEditor]
+  );
+
+  const onMountDiff = useCallback(
+    (editor: monaco.editor.IStandaloneDiffEditor, monaco: Monaco) => {
+      addCommandsDiff(editor, monaco);
+    },
+    [addCommandsDiff]
+  );
+
+  if (!showDiffEditor && (editorContent === undefined || loading)) {
     return (
       <div className="flex justify-center">
         <CircularProgress style={{ width: '18px', height: '18px' }} />
@@ -225,32 +247,59 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         minHeight: '2rem',
         flex: '2',
       }}
+      className="dark-mode-hack"
     >
-      <Editor
-        height="100%"
-        width="100%"
-        language={monacoLanguage}
-        value={editorContent}
-        onChange={setEditorContent}
-        onMount={onMount}
-        loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
-        options={{
-          theme: 'light',
-          readOnly: !canEdit,
-          minimap: { enabled: true },
-          overviewRulerLanes: 0,
-          hideCursorInOverviewRuler: true,
-          overviewRulerBorder: false,
-          scrollbar: {
-            horizontal: 'hidden',
-          },
-          wordWrap: 'on',
+      {!showDiffEditor ? (
+        <>
+          <Editor
+            height="100%"
+            width="100%"
+            language={monacoLanguage}
+            value={editorContent}
+            onChange={setEditorContent}
+            onMount={onMount}
+            loading={<CircularProgress style={{ width: '18px', height: '18px' }} />}
+            options={{
+              theme: 'light',
+              readOnly: !canEdit,
+              minimap: { enabled: true },
+              overviewRulerLanes: 0,
+              hideCursorInOverviewRuler: true,
+              overviewRulerBorder: false,
+              scrollbar: {
+                horizontal: 'hidden',
+              },
+              wordWrap: 'on',
 
-          // need to ignore unused b/c of the async wrapper around the code and import code
-          showUnused: codeCell.language === 'Javascript' ? false : true,
-        }}
-      />
-      <CodeEditorPlaceholder />
+              // need to ignore unused b/c of the async wrapper around the code and import code
+              showUnused: codeCell.language === 'Javascript' ? false : true,
+            }}
+          />
+          <CodeEditorPlaceholder />
+        </>
+      ) : (
+        <DiffEditor
+          height="100%"
+          width="100%"
+          language={monacoLanguage}
+          original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
+          modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
+          onMount={onMountDiff}
+          options={{
+            renderSideBySide: false,
+            readOnly: true,
+            minimap: { enabled: true },
+            overviewRulerLanes: 0,
+            hideCursorInOverviewRuler: true,
+            overviewRulerBorder: false,
+            scrollbar: {
+              horizontal: 'hidden',
+            },
+            wordWrap: 'on',
+            showUnused: codeCell.language === 'Javascript' ? false : true,
+          }}
+        />
+      )}
     </div>
   );
 };
