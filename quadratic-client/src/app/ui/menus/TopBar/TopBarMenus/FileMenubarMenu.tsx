@@ -65,7 +65,7 @@ export const FileMenubarMenu = () => {
                 </MenubarItem>
               ))}
             <MenubarSeparator />
-            <MenubarItem onClick={clearRecentFiles}>Clear recently open</MenubarItem>
+            <MenubarItem onClick={clearRecentFiles}>Clear</MenubarItem>
           </MenubarSubContent>
         </MenubarSub>
       </>
