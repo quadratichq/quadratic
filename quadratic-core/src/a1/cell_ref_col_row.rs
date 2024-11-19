@@ -8,48 +8,78 @@ impl CellRefRange {
     pub fn removed_column(&mut self, column: u64) -> bool {
         let mut changed = false;
 
-        // Check if the start column needs to be adjusted
         if let Some(start_col) = self.start.col.as_mut() {
-            // handle the case where the column being removed is the same as the start column
             if start_col.coord == column {
-                // todo: make this work properly...
-                if let Some(end) = self.end.as_mut() {
-                    if end.col.is_some_and(|col| col.coord == column) {
-                        self.end = None;
+                if let Some(end_col) = self.end.as_mut() {
+                    if end_col.col.is_some_and(|col| col.coord > column) {
+                        start_col.coord = end_col.coord;
                     } else {
                         start_col.coord -= 1;
                     }
                 } else {
-                    self.start.col = None;
+                    start_col = None;
                 }
             } else if start_col.coord > column {
-                // this should not happen
-                if start_col.coord <= 1 {
-                    self.start.col = None;
-                } else {
-                    start_col.coord -= 1;
-                }
-                changed = true;
+                start_col.coord -= 1;
             }
         }
 
-        // Check if the end column needs to be adjusted
-        if let Some(end) = self.end.as_mut() {
-            if let Some(end_col) = end.col.as_mut() {
-                if end_col.coord >= column {
-                    if end_col.coord <= 1 {
-                        end.col = None;
-                    } else {
-                        end_col.coord -= 1;
-                    }
-                    changed = true;
-                }
+        if let Some(end_col) = self.end.and_then(|end| end.col.as_mut()) {
+            if end_col.coord == column {
+                end_col = None;
+            } else if end_col.coord > column {
+                end_col.coord -= 1;
             }
         }
-        // clean up end if it's the same as start
-        if self.end.is_some_and(|end| end == self.start) {
-            self.end = None;
-        }
+
+        // // unpack the end_col if it exists
+        // let end_col = self
+        //     .end
+        //     .as_ref()
+        //     .and_then(|end| end.col.as_ref().map(|col| col.coord));
+
+        // let mut new_end_col: Option<u64> = None;
+
+        // // Check if the start column needs to be adjusted
+        // if let Some(start_col) = self.start.col.as_mut() {
+        //     // handle the case where the column being removed is the same as the start column
+        //     if start_col.coord == column {
+        //         if let Some(end_col) = end_col {
+        //             if start_col.coord == end_col {
+        //                 start_col.col = None;
+        //                 start_col.row = None;
+        //                 new_end_col = None;
+        //             }
+        //         } else {
+        //             // this should not happen since it's handled a level above
+        //             // (see note above)
+        //         }
+        //     } else if start_col.coord > column {
+        //         start_col.coord -= 1;
+        //         if let Some(end_col) = end_col {
+        //             new_end_col = Some(end_col - 1);
+        //         }
+        //     } else {
+        //         if let Some(end_col) = end_col {
+        //             if end_col > column {
+        //                 new_end_col = Some(end_col - 1);
+        //             }
+        //         }
+        //     }
+        // }
+
+        // if let Some(new_end_col) = new_end_col {
+        //     self.end.as_mut().map(|end| end.col = Some(CellRefCoord { coord: new_end_col }));
+        // } else {
+        //     self.end = None;
+        // }
+
+        // // clean up end if it's the same as start
+        // if self.end.is_some_and(|end| end == self.start) {
+        //     self.end = None;
+        // } else if self.start.col == None {
+        //     if let Some(end_col) = self.end
+        // }
 
         changed
     }
