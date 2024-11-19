@@ -138,8 +138,9 @@ impl DataTable {
     /// Get the indices of the columns to show.
     pub fn columns_to_show(&self) -> Vec<usize> {
         self.column_headers
+            .to_owned()
+            .unwrap_or_else(|| self.default_header(None))
             .iter()
-            .flatten()
             .enumerate()
             .filter(|(_, c)| c.display)
             .map(|(index, _)| index)

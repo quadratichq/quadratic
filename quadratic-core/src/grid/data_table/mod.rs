@@ -26,6 +26,8 @@ use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
 use table_formats::TableFormats;
+
+#[cfg(test)]
 use tabled::{
     builder::Builder,
     settings::{Color, Modify, Style},
@@ -341,6 +343,8 @@ impl DataTable {
         }
     }
 
+    /// Pretty print a data table for testing
+    #[cfg(test)]
     pub fn pretty_print_data_table(
         data_table: &DataTable,
         title: Option<&str>,
