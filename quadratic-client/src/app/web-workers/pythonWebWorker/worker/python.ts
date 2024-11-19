@@ -51,7 +51,7 @@ class Python {
     }
   };
 
-  init = async () => {
+  private init = async () => {
     const jwt = await pythonClient.getJwt();
 
     // patch XMLHttpRequest to send requests to the proxy
@@ -77,12 +77,31 @@ class Python {
           },
         });
 
+        xhr.setRequestHeader = new Proxy(xhr.setRequestHeader, {
+          apply: function (target, thisArg, args: [string, string]) {
+            // apply quadratic-authorization header as the only authorization header
+            // this is required for authentication with the proxy server
+            if (args[0] === 'Quadratic-Authorization') {
+              args[0] = 'Authorization';
+            } else {
+              // apply all headers on the original request prefixed with X-Proxy
+              args[0] = `X-Proxy-${args[0]}`;
+            }
+            return target.apply(thisArg, args);
+          },
+        });
+
         xhr.onreadystatechange = function () {
           if (xhr.readyState === XMLHttpRequest.OPENED) {
-            xhr.setRequestHeader('Proxy', (xhr as any).__url);
-            xhr.setRequestHeader('Authorization', `Bearer ${jwt}`);
+            // this applies the quadratic-authorization header as the only authorization header
+            // this is required for authentication with the proxy server
+            xhr.setRequestHeader('Quadratic-Authorization', `Bearer ${jwt}`);
+
+            // this applies the original request URL as the x-proxy-url header
+            // this will get prefixed with X-Proxy due to above setRequestHeader override
+            xhr.setRequestHeader('Url', (xhr as any).__url);
           }
-          // After complition of XHR request
+          // After completion of XHR request
           if (xhr.readyState === 4) {
             if (xhr.status === 401) {
             }
