@@ -11,7 +11,6 @@ import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } fr
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
-import { CodeEditorDiffButtons } from '@/app/ui/menus/CodeEditor/CodeEditorDiffButtons';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
@@ -195,39 +194,33 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
           </TooltipPopover>
         )}
 
-        {hasPermission && (
+        {hasPermission && !showDiffEditor && (
           <>
-            {showDiffEditor ? (
-              <CodeEditorDiffButtons />
+            {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
+
+            {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
+
+            {!isRunningComputation ? (
+              <TooltipPopover
+                label={`Save & run`}
+                shortcut={`${KeyboardSymbols.Command}${KeyboardSymbols.Enter}`}
+                side="bottom"
+              >
+                <Button
+                  id="QuadraticCodeEditorRunButtonID"
+                  onClick={saveAndRunCell}
+                  size="icon-sm"
+                  className="mx-1 rounded-full"
+                >
+                  <SaveAndRunIcon />
+                </Button>
+              </TooltipPopover>
             ) : (
-              <>
-                {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
-
-                {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
-
-                {!isRunningComputation ? (
-                  <TooltipPopover
-                    label={`Save & run`}
-                    shortcut={`${KeyboardSymbols.Command}${KeyboardSymbols.Enter}`}
-                    side="bottom"
-                  >
-                    <Button
-                      id="QuadraticCodeEditorRunButtonID"
-                      onClick={saveAndRunCell}
-                      size="icon-sm"
-                      className="mx-1 rounded-full"
-                    >
-                      <SaveAndRunIcon />
-                    </Button>
-                  </TooltipPopover>
-                ) : (
-                  <TooltipPopover label={`Cancel execution`} shortcut={`${KeyboardSymbols.Command} Esc`} side="bottom">
-                    <Button onClick={cancelRun} size="icon-sm" className="mx-1 rounded-full">
-                      <SaveAndRunStopIcon />
-                    </Button>
-                  </TooltipPopover>
-                )}
-              </>
+              <TooltipPopover label={`Cancel execution`} shortcut={`${KeyboardSymbols.Command} Esc`} side="bottom">
+                <Button onClick={cancelRun} size="icon-sm" className="mx-1 rounded-full">
+                  <SaveAndRunStopIcon />
+                </Button>
+              </TooltipPopover>
             )}
           </>
         )}

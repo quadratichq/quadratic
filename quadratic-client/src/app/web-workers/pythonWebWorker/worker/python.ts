@@ -186,7 +186,7 @@ class Python {
     if (!this.pyodide) {
       console.warn('Python not loaded');
     } else {
-      const output = await this.pyodide.globals.get('inspect_python')(pythonCode);
+      const output = await this.pyodide.runPythonAsync(`inspect_python(${JSON.stringify(pythonCode)})`);
 
       if (output === undefined) {
         return undefined;
