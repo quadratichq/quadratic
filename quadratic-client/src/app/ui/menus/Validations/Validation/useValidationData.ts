@@ -7,7 +7,8 @@ import {
   editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Selection, Validation, ValidationRule } from '@/app/quadratic-core-types';
+import { Validation, ValidationRule } from '@/app/quadratic-core-types';
+import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import {
   validationRuleSimple,
   ValidationRuleSimple,

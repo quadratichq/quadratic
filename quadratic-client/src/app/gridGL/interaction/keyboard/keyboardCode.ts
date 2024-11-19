@@ -37,8 +37,8 @@ export function keyboardCode(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   // Insert cell reference
   if (codeEditorState.showCodeEditor && matchShortcut(Action.InsertCellReference, event)) {
-    const { sheetId, pos, language } = codeEditorState.codeCell;
-    insertCellRef(pos, sheetId, language);
+    const { sheetId, language } = codeEditorState.codeCell;
+    insertCellRef(sheetId, language);
     return true;
   }
 

@@ -132,6 +132,12 @@ impl Selection {
     pub fn is_column_row(&self) -> bool {
         self.selection.is_column_row()
     }
+
+    #[wasm_bindgen(js_name = "overlapsA1Selection")]
+    pub fn overlaps_a1_selection(&self, _a1_selection: String) -> bool {
+        todo!()
+        // self.selection.overlaps_a1_selection(&a1_selection)
+    }
 }
 
 #[wasm_bindgen(js_name = "stringToSelection")]
@@ -152,4 +158,10 @@ pub fn new_single_selection(sheet_id: String, x: u32, y: u32) -> Result<Selectio
     Ok(Selection {
         selection: A1Selection::from_xy(x as i64, y as i64, sheet_id),
     })
+}
+
+#[wasm_bindgen(js_name = "A1SelectionStringToSelection")]
+pub fn a1_selection_string_to_selection(a1_selection: &str) -> Result<Selection, String> {
+    let selection = serde_json::from_str::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
+    Ok(Selection { selection })
 }

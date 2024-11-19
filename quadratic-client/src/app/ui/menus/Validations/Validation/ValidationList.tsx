@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { defaultSelection } from '@/app/grid/sheet/selection';
-import { Selection, ValidationRule } from '@/app/quadratic-core-types';
+import { ValidationRule } from '@/app/quadratic-core-types';
+import { newSingleSelection, Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { SheetRange } from '@/app/ui/components/SheetRange';
 import { useMemo } from 'react';
 import { ValidationData } from './useValidationData';
@@ -78,7 +78,7 @@ export const ValidationList = (props: Props) => {
   const changeSelection = (selection: Selection | undefined) => {
     const rule: ValidationRule = {
       List: {
-        source: { Selection: selection ?? defaultSelection(sheets.sheet.id) },
+        source: { Selection: selection ?? newSingleSelection(sheets.sheet.id, 1, 1) },
         ignore_blank: ignoreBlank,
         drop_down: showDropdown,
       },

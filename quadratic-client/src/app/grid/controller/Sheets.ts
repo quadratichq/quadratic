@@ -292,6 +292,10 @@ class Sheets {
     return this.sheet.cursor.save();
   }
 
+  getA1String(sheetId = this.current): string {
+    return this.sheet.cursor.selection.toString(sheetId, this.getSheetIdNameMap());
+  }
+
   /// Gets a stringified SheetIdNameMap for Rust's A1 functions
   getSheetIdNameMap(): string {
     const sheetMap: Record<string, { id: string }> = {};

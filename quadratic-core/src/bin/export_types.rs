@@ -43,7 +43,6 @@ use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::{
     BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
 };
-use quadratic_core::selection::OldSelection;
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement};
 use quadratic_core::wasm_bindings::controller::bounds::MinMax;
@@ -129,7 +128,6 @@ fn main() {
         RunErrorMsg,
         ScreenRect,
         SearchOptions,
-        OldSelection,
         SheetBounds,
         SheetId,
         SheetInfo,

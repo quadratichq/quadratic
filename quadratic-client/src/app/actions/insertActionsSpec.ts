@@ -237,8 +237,8 @@ export const insertActionsSpec: InsertActionSpec = {
     labelVerbose: 'Insert cell reference',
     run: () => {
       if (pixiAppSettings.codeEditorState.showCodeEditor) {
-        const { sheetId, pos, language } = pixiAppSettings.codeEditorState.codeCell;
-        insertCellRef(pos, sheetId, language);
+        const { sheetId, language } = pixiAppSettings.codeEditorState.codeCell;
+        insertCellRef(sheetId, language);
       }
     },
   },

@@ -118,9 +118,8 @@ export class SheetCursor {
     }
   }
 
-  overlapsSelection(): boolean {
-    throw new Error('TODO overlapsSelection');
-    // return selectionOverlapsSelection(this.getRustSelection(), selection);
+  overlapsSelection(a1Selection: string): boolean {
+    return this.selection.overlapsA1Selection(a1Selection);
   }
 
   hasOneColumnRowSelection(oneCell?: boolean): boolean {

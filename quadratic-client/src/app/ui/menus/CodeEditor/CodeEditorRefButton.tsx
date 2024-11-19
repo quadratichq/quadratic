@@ -62,7 +62,7 @@ export const CodeEditorRefButton = () => {
           className="text-muted-foreground"
           onClick={() => {
             if (disabled) return;
-            insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language, false);
+            insertCellRef(codeCell.sheetId, codeCell.language, false);
           }}
         >
           <InsertCellRefIcon />

@@ -147,10 +147,10 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
       editor.addCommand(monaco.KeyCode.KeyL | monaco.KeyMod.CtrlCmd, () => {
-        insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language);
+        insertCellRef(codeCell.sheetId, codeCell.language);
       });
     },
-    [closeEditor, codeCell.language, codeCell.pos, codeCell.sheetId]
+    [closeEditor, codeCell.language, codeCell.sheetId]
   );
 
   const runEditorAction = useCallback((e: CustomEvent<string>) => editorInst?.getAction(e.detail)?.run(), [editorInst]);
