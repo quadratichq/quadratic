@@ -1,95 +1,28 @@
+//! Generic draw cursor functions that is used by both Cursor.ts and
+//! UIMultiplayerCursor.ts.
+
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ColumnRowCursor } from '@/app/grid/sheet/SheetCursor';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellRefRange } from '@/app/quadratic-core-types';
-import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Graphics } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { Coordinate } from '../types/size';
 
-const drawCursorOutline = (g: Graphics, color: number) => {
-  const sheet = sheets.sheet;
-  const cursor = sheet.cursor.position;
-  const outline = sheet.getCellOffsets(cursor.x, cursor.y);
+export const drawCursorOutline = (g: Graphics, color: number, cursor: Coordinate) => {
+  const outline = sheets.sheet.getCellOffsets(cursor.x, cursor.y);
   g.lineStyle({ width: CURSOR_THICKNESS, color, alignment: 0 });
   g.drawRect(outline.x, outline.y, outline.width, outline.height);
 };
 
-// this is generic so it can be used by UIMultiplayerCursor
-export const drawColumnRowCursor = (options: {
-  g: Graphics;
-  cursorPosition: Coordinate;
-  columnRow: ColumnRowCursor;
-  color: number;
-  alpha: number;
-}) => {
-  const { g, cursorPosition, columnRow, color, alpha } = options;
-  const sheet = sheets.sheet;
-
-  g.lineStyle();
-  g.beginFill(color, alpha);
-  const bounds = pixiApp.viewport.getVisibleBounds();
-  if (columnRow.all) {
-    g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
-  } else {
-    if (columnRow.columns) {
-      let minX = Infinity,
-        maxX = -Infinity;
-      columnRow.columns.forEach((column) => {
-        const { x, width } = sheet.getCellOffsets(column, 0);
-        minX = Math.min(minX, x);
-        maxX = Math.max(maxX, x + width);
-        g.drawRect(x, bounds.y, width, bounds.height);
-        if (column === cursorPosition.x) {
-        }
-      });
-
-      // draw outline
-      g.lineStyle(1, color, 1, 0, true);
-      g.moveTo(minX, bounds.top);
-      g.lineTo(minX, bounds.bottom);
-      g.moveTo(maxX, bounds.top);
-      g.lineTo(maxX, bounds.bottom);
-    }
-    if (columnRow.rows) {
-      let minY = Infinity,
-        maxY = -Infinity;
-      columnRow.rows.forEach((row) => {
-        const { y, height } = sheet.getCellOffsets(0, row);
-        minY = Math.min(minY, y);
-        maxY = Math.max(maxY, y + height);
-        g.drawRect(bounds.x, y, bounds.width, height);
-        if (row === cursorPosition.y) {
-        }
-      });
-
-      // draw outline
-      g.lineStyle(1, color, 1, 0, true);
-      g.moveTo(bounds.left, minY);
-      g.lineTo(bounds.right, minY);
-      g.moveTo(bounds.left, maxY);
-      g.lineTo(bounds.right, maxY);
-    }
-  }
-  g.endFill();
-  drawCursorOutline(g, color);
-};
-
-export const drawMultiCursor = (g: Graphics, color: number, alpha: number, selection: Selection) => {
+// Draws a cursor with a finite number of cells (this is drawn once for each
+// selection setting).
+export const drawFiniteCursor = (g: Graphics, color: number, alpha: number, ranges: CellRefRange[]) => {
   g.lineStyle(1, color, 1, 0, true);
   g.beginFill(color, alpha);
 
-  const rangesStringified = selection.getRanges();
-  let ranges: CellRefRange[] | undefined;
-  try {
-    ranges = JSON.parse(rangesStringified);
-  } catch (e) {
-    throw new Error('Failed to parse ranges in drawMultiCursor');
-  }
-
   const sheet = sheets.sheet;
-  ranges?.forEach((range) => {
-    // we have all four points, just draw a rectangle
+  ranges.forEach((range) => {
     const { col, row } = range.start;
     const end = range.end ? { col: range.end.col, row: range.end.row } : undefined;
 
@@ -108,9 +41,70 @@ export const drawMultiCursor = (g: Graphics, color: number, alpha: number, selec
     else if (col && row && !end) {
       const rect = sheet.getScreenRectangle(Number(col.coord), Number(row.coord), 0, 0);
       g.drawShape(rect);
-    } else {
-      throw new Error('todo: drawCursor needs to handle rows, columns, and all');
     }
   });
+  g.endFill();
+};
+// Draws a cursor with an infinite number of cells (this is drawn on each
+// viewport update).
+export const drawInfiniteCursor = (options: { g: Graphics; color: number; alpha: number; ranges: CellRefRange[] }) => {
+  const { g, color, alpha, ranges } = options;
+  const sheet = sheets.sheet;
+
+  g.lineStyle();
+  g.beginFill(color, alpha);
+  const bounds = pixiApp.viewport.getVisibleBounds();
+
+  ranges.forEach((range) => {
+    const { col, row } = range.start;
+    const end = range.end ? { col: range.end.col, row: range.end.row } : undefined;
+
+    // we've already drawn this range in the drawFiniteCursor function
+    if (col && row && end?.col && end?.row) return;
+
+    // the entire sheet is selected
+    if (!col && !row && !end) {
+      g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
+    }
+
+    // one column is selected
+    else if (col && !row && !end) {
+      const { x, width } = sheet.getCellOffsets(col.coord, 0);
+      if (intersects.rectangleRectangle({ x, y: bounds.y, width, height: bounds.height }, bounds)) {
+        g.drawRect(x, bounds.y, width, bounds.height);
+      }
+    }
+
+    // multiple columns are selected
+    else if (col && !row && end && end.col && !end.row) {
+      const rect = sheet.getScreenRectangle(Number(col.coord), 0, Number(end.col.coord) - 1, 0);
+      rect.y = bounds.y;
+      rect.height = bounds.height;
+      if (intersects.rectangleRectangle(rect, bounds)) {
+        g.drawShape(rect);
+      }
+    }
+
+    // multiple columns are selected starting on a row
+    else if (col && !row && end && end.col && end.row) {
+      const rect = sheet.getScreenRectangle(Number(col.coord), 0, Number(end.col.coord) - 1, Number(end.row.coord) - 1);
+      rect.y = rect.bottom;
+      rect.height = bounds.height - rect.y;
+      if (intersects.rectangleRectangle(rect, bounds)) {
+        g.drawShape(rect);
+      }
+    }
+
+    // multiple columns are selected starting on a row
+    else if (col && row && end && end.col && !end.row) {
+      const rect = sheet.getScreenRectangle(Number(col.coord), 0, Number(end.col.coord) - 1, Number(row.coord) - 1);
+      rect.y = rect.bottom;
+      rect.height = bounds.height - rect.y;
+      if (intersects.rectangleRectangle(rect, bounds)) {
+        g.drawShape(rect);
+      }
+    }
+  });
+
   g.endFill();
 };

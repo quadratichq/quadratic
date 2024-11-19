@@ -30,16 +30,9 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
     (e: DragEvent<HTMLDivElement>) => {
       const { column, row } = getColumnRowFromScreen(e);
       const cursor = sheets.sheet.cursor;
-      const hasMoved =
-        cursor.position.x !== column ||
-        cursor.position.y !== row ||
-        cursor.keyboardMovePosition.x !== column ||
-        cursor.keyboardMovePosition.y !== row;
+      const hasMoved = cursor.position.x !== column || cursor.position.y !== row;
       if (hasMoved) {
-        cursor.changePosition({
-          cursorPosition: { x: column, y: row },
-          keyboardMovePosition: { x: column, y: row },
-        });
+        cursor.moveTo(column, row);
       }
     },
     [getColumnRowFromScreen]

@@ -5,6 +5,8 @@ use crate::{Pos, Rect};
 use super::A1Selection;
 
 impl A1Selection {
+    // Returns whether the selection is one cell or multiple cells (either a
+    // rect, column, row, or all)
     pub fn is_multi_cursor(&self) -> bool {
         if self.ranges.len() > 1 {
             return true;
@@ -18,6 +20,13 @@ impl A1Selection {
             }
         }
         false
+    }
+
+    // Returns whether the selection includes a selected column or row.
+    pub fn is_column_row(&self) -> bool {
+        self.ranges
+            .iter()
+            .any(|range| range.is_column_range() || range.is_row_range())
     }
 
     /// Returns whether the selection contains the given position.
@@ -181,5 +190,30 @@ mod tests {
 
         let selection = A1Selection::from_str("A1", SheetId::test(), &HashMap::new()).unwrap();
         assert!(!selection.is_multi_cursor());
+    }
+
+    #[test]
+    fn test_is_column_row() {
+        let selection =
+            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(!selection.is_column_row());
+
+        let selection = A1Selection::from_str("D", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_column_row());
+
+        let selection = A1Selection::from_str("A:C", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_column_row());
+
+        let selection = A1Selection::from_str("10", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_column_row());
+
+        let selection = A1Selection::from_str("1:3", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_column_row());
+
+        let selection = A1Selection::from_str("A1:3", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_column_row());
+
+        let selection = A1Selection::from_str("1:C3", SheetId::test(), &HashMap::new()).unwrap();
+        assert!(selection.is_column_row());
     }
 }

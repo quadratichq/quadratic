@@ -202,7 +202,8 @@ export class Multiplayer {
   cellIsBeingEdited(x: number, y: number, sheetId: string): { codeEditor: boolean; user: string } | undefined {
     for (const player of this.users.values()) {
       if (player.sheet_id === sheetId && player.cell_edit.active && player.parsedSelection) {
-        if (player.parsedSelection.cursorPosition.x === x && player.parsedSelection.cursorPosition.y === y) {
+        const cursor = player.parsedSelection.getCursor();
+        if (cursor.x === x && cursor.y === y) {
           const user = displayName(player, false);
           return { codeEditor: player.cell_edit.code_editor, user };
         }
@@ -332,12 +333,8 @@ export class Multiplayer {
       if (!update.cell_edit.code_editor) {
         if (player.parsedSelection) {
           // hide the label if the player is editing the cell
-          pixiApp.cellsSheets.showLabel(
-            player.parsedSelection.cursorPosition.x,
-            player.parsedSelection.cursorPosition.y,
-            player.sheet_id,
-            !player.cell_edit.active
-          );
+          const cursor = player.parsedSelection.getCursor();
+          pixiApp.cellsSheets.showLabel(cursor.x, cursor.y, player.sheet_id, !player.cell_edit.active);
         }
         events.emit('multiplayerCellEdit', update.cell_edit, player);
       }

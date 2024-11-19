@@ -6,7 +6,8 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { drawColumnRowCursor, drawMultiCursor } from '@/app/gridGL/UI/drawCursor';
+import { drawFiniteCursor, drawInfiniteCursor } from '@/app/gridGL/UI/drawCursor';
+import { CellRefRange } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
@@ -143,12 +144,12 @@ export class Cursor extends Container {
     }
   }
 
-  private drawMultiCursor() {
+  private drawFiniteCursor(ranges: CellRefRange[]) {
     const sheet = sheets.sheet;
     const { cursor } = sheet;
 
     this.startCell = sheet.getCellOffsets(cursor.position.x, cursor.position.y);
-    drawMultiCursor(this.graphics, pixiApp.accentColor, FILL_ALPHA, cursor.selection);
+    drawFiniteCursor(this.graphics, pixiApp.accentColor, FILL_ALPHA, ranges);
   }
 
   private drawCursorIndicator() {
@@ -232,18 +233,23 @@ export class Cursor extends Container {
       this.drawCodeCursor();
 
       if (!pixiAppSettings.input.show) {
-        this.drawMultiCursor();
-        const columnRow = sheets.sheet.cursor.columnRow;
+        const rangesStringified = cursor.selection.getRanges();
+        let ranges: CellRefRange[];
+        try {
+          ranges = JSON.parse(rangesStringified);
+        } catch (e) {
+          throw new Error('Failed to parse ranges in drawMultiCursor');
+        }
+        this.drawFiniteCursor(ranges);
         if (columnRow) {
-          drawColumnRowCursor({
+          drawInfiniteCursor({
             g: this.graphics,
-            columnRow,
             color: pixiApp.accentColor,
             alpha: FILL_ALPHA,
-            cursorPosition: sheets.sheet.cursor.position,
+            ranges,
           });
         }
-        if (!columnRow && (!multiCursor || multiCursor.length === 1)) {
+        if (!columnRow && !multiCursor) {
           this.drawCursorIndicator();
         }
       }

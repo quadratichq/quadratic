@@ -62,10 +62,7 @@ export function Search() {
     if (sheets.sheet.id !== pos.sheet_id.id) {
       sheets.current = pos.sheet_id.id;
     }
-    sheets.sheet.cursor.changePosition({
-      cursorPosition: { x: Number(pos.x), y: Number(pos.y) },
-      ensureVisible: true,
-    });
+    sheets.sheet.cursor.moveTo(Number(pos.x), Number(pos.y));
   };
 
   const navigate = (delta: 1 | -1) => {

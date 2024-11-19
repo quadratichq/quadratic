@@ -1,6 +1,5 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { useEffect, useState } from 'react';
 
 export const CursorSelectionDisplay = () => {
@@ -8,11 +7,7 @@ export const CursorSelectionDisplay = () => {
 
   useEffect(() => {
     const updateCursor = () => {
-      const a1String = selectionToA1String(
-        sheets.getRustSelectionStringified(),
-        sheets.sheet.id,
-        sheets.getRustSheetMap()
-      );
+      const a1String = sheets.sheet.cursor.selection.toString(sheets.sheet.id, sheets.getRustSheetMap());
       setCursorString(a1String);
     };
     updateCursor();

@@ -1,8 +1,7 @@
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Selection } from '@/app/quadratic-core-types';
-import { a1StringToSelection, selectionToA1String } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import '@/app/ui/styles/floating-dialog.css';
 import { GoToIcon } from '@/shared/components/Icons';
 import { Command, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
@@ -27,17 +26,13 @@ export const GoTo = () => {
       );
     }
     try {
-      const selection = a1StringToSelection(value, sheets.sheet.id, sheets.getRustSheetMap());
-      if (selection) {
-        const a1String = selectionToA1String(selection, sheets.sheet.id, sheets.getRustSheetMap());
-        return (
-          <span>
-            <span className="font-bold">{a1String}</span>
-          </span>
-        );
-      } else {
-        return <span>A1</span>;
-      }
+      const map = sheets.getRustSheetMap();
+      const selection = stringToSelection(value, sheets.sheet.id, map);
+      return (
+        <span>
+          <span className="font-bold">{selection.toString(sheets.sheet.id, map)}</span>
+        </span>
+      );
     } catch (e: any) {
       if (e) {
         try {
@@ -60,19 +55,13 @@ export const GoTo = () => {
   const onSelect = useCallback(() => {
     // if empty, then move cursor to A1
     if (!value) {
-      sheets.sheet.cursor.changePosition({
-        keyboardMovePosition: { x: 1, y: 1 },
-        cursorPosition: { x: 1, y: 1 },
-        multiCursor: null,
-        columnRow: null,
-        ensureVisible: true,
-      });
+      sheets.sheet.cursor.moveTo(1, 1);
       pixiApp.viewport.reset();
     } else {
       try {
-        const selection = a1StringToSelection(value, sheets.sheet.id, sheets.getRustSheetMap());
-        const s: Selection = JSON.parse(selection);
-        sheets.changeSelection(s);
+        const map = sheets.getRustSheetMap();
+        const selection = stringToSelection(value, sheets.sheet.id, map);
+        sheets.changeSelection(selection);
       } catch (_) {
         // nothing to do if we can't parse the input
       }

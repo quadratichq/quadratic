@@ -187,12 +187,12 @@ impl CellRefRange {
 
     /// Returns whether `self` is a column range.
     pub fn is_column_range(&self) -> bool {
-        self.start.row.is_none() && self.end.map_or(true, |end| end.row.is_none())
+        self.start.row.is_none() || self.end.map_or(false, |end| end.row.is_none())
     }
 
     /// Returns whether `self` is a row range.
     pub fn is_row_range(&self) -> bool {
-        self.start.col.is_none() && self.end.map_or(true, |end| end.col.is_none())
+        self.start.col.is_none() || self.end.map_or(false, |end| end.col.is_none())
     }
 
     /// Returns whether `self` is a finite range.
@@ -470,5 +470,26 @@ mod tests {
         assert_eq!(CellRefRange::test("A1:C").to_rect(), None);
         assert_eq!(CellRefRange::test("A:C3").to_rect(), None);
         assert_eq!(CellRefRange::test("*").to_rect(), None);
+    }
+
+    #[test]
+    fn test_is_column_row() {
+        assert!(!CellRefRange::test("A1").is_column_range());
+        assert!(CellRefRange::test("A").is_column_range());
+        assert!(!CellRefRange::test("A1:C3").is_column_range());
+        assert!(CellRefRange::test("A:C").is_column_range());
+        assert!(CellRefRange::test("A1:C").is_column_range());
+        assert!(CellRefRange::test("A:C1").is_column_range());
+    }
+
+    #[test]
+    fn test_is_row_range() {
+        assert!(!CellRefRange::test("A1").is_row_range());
+        assert!(!CellRefRange::test("A").is_row_range());
+        assert!(!CellRefRange::test("A1:C3").is_row_range());
+        assert!(CellRefRange::test("1").is_row_range());
+        assert!(CellRefRange::test("1:3").is_row_range());
+        assert!(CellRefRange::test("A1:3").is_row_range());
+        assert!(CellRefRange::test("1:C3").is_row_range());
     }
 }

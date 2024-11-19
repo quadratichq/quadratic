@@ -38,20 +38,21 @@ export const AIAnalystContext = ({
   useEffect(() => {
     if (!editing) return;
     const updateSelection = () => {
-      const selection = sheets.getRustSelection();
-      const rect = selection.rects?.[0];
-      let sheetRect = undefined;
-      if (rect && (rect.min.x !== rect.max.x || rect.min.y !== rect.max.y)) {
-        sheetRect = {
-          sheet_id: selection.sheet_id,
-          min: { x: Number(rect.min.x), y: Number(rect.min.y) },
-          max: { x: Number(rect.max.x), y: Number(rect.max.y) },
-        };
-      }
-      setContext((prev) => ({
-        ...prev,
-        selection: sheetRect,
-      }));
+      // todo...
+      // const selection = sheets.getRustSelection();
+      // const rect = selection.rects?.[0];
+      // let sheetRect = undefined;
+      // if (rect && (rect.min.x !== rect.max.x || rect.min.y !== rect.max.y)) {
+      //   sheetRect = {
+      //     sheet_id: selection.sheet_id,
+      //     min: { x: Number(rect.min.x), y: Number(rect.min.y) },
+      //     max: { x: Number(rect.max.x), y: Number(rect.max.y) },
+      //   };
+      // }
+      // setContext((prev) => ({
+      //   ...prev,
+      //   selection: sheetRect,
+      // }));
     };
     updateSelection();
 
@@ -121,7 +122,7 @@ export const AIAnalystContext = ({
         primary={
           context.selection
             ? `(${context.selection.min.x}, ${context.selection.min.y}), (${context.selection.max.x}, ${context.selection.max.y}) `
-            : `(${sheets.sheet.cursor.cursorPosition.x}, ${sheets.sheet.cursor.cursorPosition.y})`
+            : `(${sheets.sheet.cursor.position.x}, ${sheets.sheet.cursor.position.y})`
         }
         secondary="Cursor"
         onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
