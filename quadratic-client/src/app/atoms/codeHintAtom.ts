@@ -12,7 +12,7 @@ interface CodeHintState {
 }
 
 const defaultCodeHintState: CodeHintState = {
-  sheetEmpty: sheets.sheet.bounds.type === 'empty',
+  sheetEmpty: sheets.initialized ? sheets.sheet.bounds.type === 'empty' : false,
   multipleSelection: false,
 };
 

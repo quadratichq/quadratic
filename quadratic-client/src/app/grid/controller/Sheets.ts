@@ -7,6 +7,7 @@ import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 class Sheets {
+  initialized: boolean;
   sheets: Sheet[];
 
   // current sheet id
@@ -24,6 +25,7 @@ class Sheets {
     events.on('sheetInfoUpdate', this.updateSheet);
     events.on('setCursor', this.setCursor);
     events.on('sheetOffsets', this.updateOffsets);
+    this.initialized = false;
   }
 
   private create = (sheetInfo: SheetInfo[]) => {
@@ -35,6 +37,7 @@ class Sheets {
     this.sort();
     this._current = this.sheets[0].id;
     pixiApp.cellsSheets.create();
+    this.initialized = true;
   };
 
   private addSheet = (sheetInfo: SheetInfo, user: boolean) => {
