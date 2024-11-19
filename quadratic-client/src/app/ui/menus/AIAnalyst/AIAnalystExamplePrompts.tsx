@@ -28,7 +28,8 @@ export function AIAnalystExamplePrompts() {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   return (
-    <div className="flex flex-col gap-2 px-2 pt-1">
+    <div className="flex flex-col justify-center gap-2 px-2 pt-1">
+      <h2 className="mb-1 text-center text-lg font-bold">What can I help with?</h2>
       {examples.map(({ title, description, icon, prompt }) => (
         <button
           key={title}
