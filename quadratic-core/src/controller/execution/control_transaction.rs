@@ -36,8 +36,6 @@ impl GridController {
                 self.execute_operation(transaction, op);
             }
 
-            self.process_visible_dirty_hashes(transaction);
-
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;

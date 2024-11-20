@@ -395,6 +395,18 @@ impl GridController {
             }
         }
     }
+
+    /// Send transaction progress to client
+    pub fn send_transaction_progress(&self, transaction: &PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            return;
+        }
+
+        crate::wasm_bindings::js::jsTransactionProgress(
+            transaction.id.to_string(),
+            transaction.operations.len() as i32,
+        );
+    }
 }
 
 #[cfg(test)]

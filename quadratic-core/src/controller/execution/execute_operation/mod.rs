@@ -96,11 +96,7 @@ impl GridController {
             Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
         }
 
-        if cfg!(target_family = "wasm") || cfg!(test) {
-            crate::wasm_bindings::js::jsTransactionProgress(
-                transaction.id.to_string(),
-                transaction.operations.len() as i32,
-            );
-        }
+        self.send_transaction_progress(transaction);
+        self.process_visible_dirty_hashes(transaction);
     }
 }
