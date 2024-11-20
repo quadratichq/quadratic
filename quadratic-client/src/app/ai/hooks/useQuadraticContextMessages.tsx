@@ -26,7 +26,7 @@ ${
     : 'Choose the language of your response based on the context and user prompt.'
 }
 Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.
-Respond in minimum number of words with direct answer. Include a concise explanation of the answer.
+Respond in minimum number of words and include a concise explanation of the actions you are taking. Don't guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next.
 `,
         contextType: 'quadraticDocs',
       },
