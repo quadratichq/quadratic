@@ -27,7 +27,7 @@ export const InlineEditor = () => {
   height += CURSOR_THICKNESS * 1.5;
   const inlineShowing = inlineEditorHandler.getShowing();
   if (inlineShowing) {
-    height = Math.min(height, sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y).height);
+    height = Math.max(height, sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y).height);
   }
 
   return (
