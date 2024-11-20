@@ -354,7 +354,7 @@ export const defaultShortcuts: ActionShortcut = {
     windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.Semicolon]],
   },
   [Action.ToggleAIAnalyst]: {
-    mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.L]],
-    windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.L]],
+    mac: [[MacModifiers.Cmd, Keys.K]],
+    windows: [[WindowsModifiers.Ctrl, Keys.K]],
   },
 };
