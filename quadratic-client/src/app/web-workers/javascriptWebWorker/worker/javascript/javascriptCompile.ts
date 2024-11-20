@@ -5,10 +5,11 @@
 //! numbers to all return statements via a caught thrown error (the only way to
 //! get line numbers in JS).
 
+import { getJavascriptFetchOverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptFetchOverride';
+import { getJavascriptXHROverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptXHROverride';
 import * as esbuild from 'esbuild-wasm';
 import { LINE_NUMBER_VAR } from './javascript';
 import { javascriptLibrary } from './runner/generateJavascriptForRunner';
-
 export interface JavascriptTransformedCode {
   imports: string;
   code: string;
@@ -66,10 +67,16 @@ export function prepareJavascriptCode(
   transform: JavascriptTransformedCode,
   x: number,
   y: number,
-  withLineNumbers: boolean
+  withLineNumbers: boolean,
+  proxyUrl: string,
+  jwt: string
 ): string {
   const code = withLineNumbers ? javascriptAddLineNumberVars(transform) : transform.code;
+  const javascriptXHROverride = getJavascriptXHROverride(proxyUrl, jwt);
+  const javascriptFetchOverride = getJavascriptFetchOverride(proxyUrl, jwt);
   const compiledCode =
+    javascriptXHROverride +
+    javascriptFetchOverride +
     transform.imports +
     (withLineNumbers ? `let ${LINE_NUMBER_VAR} = 0;` : '') +
     javascriptLibrary.replace('{x:0,y:0}', `{x:${x},y:${y}}`) + // replace the pos() with the correct x,y coordinates
