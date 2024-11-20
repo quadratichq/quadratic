@@ -256,7 +256,7 @@ export class Cursor extends Container {
     if (!inlineShowing) return;
 
     const { visible, editMode, formula } = pixiAppSettings.inlineEditorState;
-    if (!visible || editMode) return;
+    if (!visible || !editMode) return;
 
     let { x, y, width, height } = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
