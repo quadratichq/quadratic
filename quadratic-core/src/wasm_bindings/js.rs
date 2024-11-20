@@ -136,8 +136,6 @@ extern "C" {
 
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
-    pub fn jsClearViewportBuffer(transaction_id: String);
-
     pub fn jsClientMessage(message: String, error: bool);
 }
 

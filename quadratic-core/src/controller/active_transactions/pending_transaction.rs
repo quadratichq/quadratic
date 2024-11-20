@@ -16,7 +16,6 @@ use crate::{
         sheet::validations::validation::Validation, CellsAccessed, CodeCellLanguage, CodeRun,
         Sheet, SheetId,
     },
-    viewport::ViewportBuffer,
     A1Selection, Pos, SheetPos, SheetRect,
 };
 
@@ -75,9 +74,6 @@ pub(crate) struct PendingTransaction {
     /// which hashes are dirty
     pub dirty_hashes: HashMap<SheetId, HashSet<Pos>>,
 
-    // sheets with updated borders
-    pub viewport_buffer: Option<ViewportBuffer>,
-
     /// sheets with updated borders
     pub sheet_borders: HashSet<SheetId>,
 
@@ -127,7 +123,6 @@ impl Default for PendingTransaction {
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
-            viewport_buffer: None,
         }
     }
 }
