@@ -26,12 +26,12 @@ openai_router.post('/openai/chat', validateAccessToken, ai_rate_limiter, async (
     });
     response.json(result.choices[0].message);
   } catch (error: any) {
-    if (error.response) {
-      response.status(error.response.status).json(error.response.data);
-      console.log(error.response.status, error.response.data);
+    if (error instanceof OpenAI.APIError) {
+      response.status(error.status ?? 400).json(error.message);
+      console.log(error.status, error.message);
     } else {
-      response.status(400).json(error.message);
-      console.log(error.message);
+      response.status(400).json(error);
+      console.log(error);
     }
   }
 });
@@ -65,12 +65,12 @@ openai_router.post('/openai/chat/stream', validateAccessToken, ai_rate_limiter, 
     }
   } catch (error: any) {
     if (!response.headersSent) {
-      if (error.response) {
-        response.status(error.response.status).json(error.response.data);
-        console.log(error.response.status, error.response.data);
+      if (error instanceof OpenAI.APIError) {
+        response.status(error.status ?? 400).json(error.message);
+        console.log(error.status, error.message);
       } else {
-        response.status(400).json(error.message);
-        console.log(error.message);
+        response.status(400).json(error);
+        console.log(error);
       }
     } else {
       console.error('Error occurred after headers were sent:', error);

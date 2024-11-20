@@ -23,14 +23,12 @@ export const AIAnalyst = () => {
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);
   useEffect(() => {
-    if (showAIAnalyst) {
-      if (initialLoadRef.current) {
-        initialLoadRef.current = false;
-      } else {
-        autoFocusRef.current = true;
-      }
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+    } else {
+      autoFocusRef.current = true;
     }
-  }, [showAIAnalyst]);
+  }, []);
 
   const handleResize = useCallback(
     (event: MouseEvent) => {
