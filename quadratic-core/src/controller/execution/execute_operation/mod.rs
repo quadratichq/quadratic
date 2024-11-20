@@ -95,8 +95,5 @@ impl GridController {
             Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
             Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
         }
-
-        self.send_transaction_progress(transaction);
-        self.process_visible_dirty_hashes(transaction);
     }
 }

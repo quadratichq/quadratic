@@ -34,6 +34,8 @@ impl GridController {
 
             if let Some(op) = transaction.operations.pop_front() {
                 self.execute_operation(transaction, op);
+                self.send_transaction_progress(transaction);
+                self.process_visible_dirty_hashes(transaction);
             }
 
             if transaction.has_async > 0 {
