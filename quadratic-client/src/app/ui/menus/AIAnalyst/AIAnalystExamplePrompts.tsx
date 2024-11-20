@@ -61,11 +61,11 @@ function TypewriterHeader() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [startTyping, setStartTyping] = useState(false);
 
-  // Delay starting the effect just a tad — it looks better
+  // Delay starting the effect just a tad — it looks better, especially on initial page load
   useEffect(() => {
     const initialDelay = setTimeout(() => {
       setStartTyping(true);
-    }, 80);
+    }, 50);
 
     return () => clearTimeout(initialDelay);
   }, []);
