@@ -115,6 +115,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 
             if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
               event.preventDefault();
+              if (loading) return;
 
               if (prompt.trim().length === 0) return;
 
@@ -128,6 +129,9 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
                 bottomTextareaRef.current?.focus();
               }
             }
+
+            if (loading) return;
+
             if (formOnKeyDown) {
               formOnKeyDown(event);
             }
