@@ -38,8 +38,8 @@ export function AskAISelection() {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const showAskAISelection = useCallback(() => {
-    const selection = sheets.sheet.cursor.getLargestRectangle();
-    if (selection.width !== 1 || selection.height !== 1) {
+    const selection = sheets.sheet.cursor.getSingleRectangle();
+    if (selection) {
       const sheetRect: Context['selection'] = {
         sheet_id: { id: sheets.sheet.id },
         min: { x: selection.x, y: selection.y },

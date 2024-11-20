@@ -78,7 +78,7 @@ impl Validations {
         let mut checkbox = false;
         let mut list = false;
         for v in &self.validations {
-            if v.selection.contains_pos(pos) {
+            if v.selection.might_contain_pos(pos) {
                 match v.rule {
                     validation_rules::ValidationRule::List(ref validation_list) => {
                         if validation_list.drop_down {
@@ -150,7 +150,7 @@ impl Validations {
     /// Validates a pos in the sheet. Returns any failing Validation.
     pub fn validate(&self, sheet: &Sheet, pos: Pos) -> Option<&Validation> {
         self.validations.iter().rev().find(|v| {
-            v.selection.contains_pos(pos) && !v.rule.validate(sheet, sheet.cell_value_ref(pos))
+            v.selection.might_contain_pos(pos) && !v.rule.validate(sheet, sheet.cell_value_ref(pos))
         })
     }
 
@@ -172,7 +172,7 @@ impl Validations {
     pub fn get_validation_from_pos(&self, pos: Pos) -> Option<&Validation> {
         self.validations
             .iter()
-            .find(|v| v.selection.contains_pos(pos))
+            .find(|v| v.selection.might_contain_pos(pos))
     }
 }
 

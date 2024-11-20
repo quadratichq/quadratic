@@ -111,9 +111,19 @@ impl Selection {
         Ok(self.selection.largest_rect())
     }
 
+    #[wasm_bindgen(js_name = "getSingleRectangle")]
+    pub fn get_single_rectangle(&self) -> Result<Option<Rect>, String> {
+        Ok(self.selection.single_rect())
+    }
+
+    #[wasm_bindgen(js_name = "getSingleRectangleOrCursor")]
+    pub fn get_single_rectangle_or_cursor(&self) -> Result<Option<Rect>, String> {
+        Ok(self.selection.single_rect_or_cursor())
+    }
+
     #[wasm_bindgen(js_name = "contains")]
     pub fn contains(&self, x: u32, y: u32) -> bool {
-        self.selection.contains(x as u64, y as u64)
+        self.selection.might_contain_xy(x as u64, y as u64)
     }
 
     #[wasm_bindgen(js_name = "extendSelection")]

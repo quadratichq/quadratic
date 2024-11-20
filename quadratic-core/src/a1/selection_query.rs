@@ -16,7 +16,7 @@ impl A1Selection {
                 return true;
             }
             if let Some(end) = last_range.end {
-                return last_range.start != end && !last_range.start.is_multi_range();
+                return last_range.start != end;
             }
         }
         false
@@ -30,15 +30,10 @@ impl A1Selection {
     }
 
     /// Returns whether the selection contains the given position.
-    pub fn contains(&self, x: u64, y: u64) -> bool {
+    pub fn might_contain_xy(&self, x: u64, y: u64) -> bool {
         self.ranges
             .iter()
             .any(|range| range.might_contain_pos(Pos::new(x as i64, y as i64)))
-    }
-
-    /// Returns whether any range in `self` might contain `pos`.
-    pub fn contains_pos(&self, pos: Pos) -> bool {
-        self.ranges.iter().any(|range| range.might_contain_pos(pos))
     }
 
     /// Returns whether any range in `self` might contain `pos`.
@@ -99,6 +94,27 @@ impl A1Selection {
         rect
     }
 
+    /// Returns rectangle in case of single range selection having more than one cell.
+    pub fn single_rect(&self) -> Option<Rect> {
+        if self.ranges.len() != 1 || !self.is_multi_cursor() {
+            None
+        } else {
+            self.ranges.first().and_then(|range| range.to_rect())
+        }
+    }
+
+    /// Returns rectangle in case of single range selection,
+    /// otherwise returns a rectangle that contains the cursor.
+    pub fn single_rect_or_cursor(&self) -> Option<Rect> {
+        if !self.is_multi_cursor() {
+            Some(Rect::single_pos(self.cursor))
+        } else if self.ranges.len() != 1 {
+            None
+        } else {
+            self.ranges.first().and_then(|range| range.to_rect())
+        }
+    }
+
     // Converts to a set of quadrant positions.
     pub fn rects_to_hashes(&self) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
@@ -130,16 +146,16 @@ mod tests {
     fn test_contains() {
         let selection =
             A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
-        assert!(selection.contains(1, 1));
-        assert!(!selection.contains(4, 1));
+        assert!(selection.might_contain_xy(1, 1));
+        assert!(!selection.might_contain_xy(4, 1));
     }
 
     #[test]
     fn test_contains_pos() {
         let selection =
             A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
-        assert!(selection.contains_pos(pos![A1]));
-        assert!(!selection.contains_pos(pos![D1]));
+        assert!(selection.might_contain_pos(pos![A1]));
+        assert!(!selection.might_contain_pos(pos![D1]));
     }
 
     #[test]

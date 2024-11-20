@@ -32,13 +32,13 @@ export class PointerAutoComplete {
 
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
-    if (cursor.isMultiCursor()) return false;
+    this.selection = cursor.getSingleRectangleOrCursor();
+    if (!this.selection) return false;
 
     // handle dragging from the corner
     if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       this.active = true;
       events.emit('cellMoving', true);
-      this.selection = cursor.getLargestRectangle();
       this.screenSelection = sheet.getScreenRectangle(
         this.selection.left,
         this.selection.top,

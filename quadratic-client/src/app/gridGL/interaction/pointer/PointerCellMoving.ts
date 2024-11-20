@@ -148,14 +148,11 @@ export class PointerCellMoving {
   }
 
   private pointerMoveHover(world: Point): boolean {
-    const sheet = sheets.sheet;
-    const rectangles = sheet.cursor.getRectangles();
-
     // we do not move if there are multiple rectangles (for now)
-    if (rectangles.length > 1) return false;
-    const rectangle = rectangles[0];
+    const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
+    if (!rectangle) return false;
 
-    const origin = sheet.cursor.position;
+    const origin = sheets.sheet.cursor.position;
     const column = origin.x;
     const row = origin.y;
 

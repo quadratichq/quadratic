@@ -96,21 +96,24 @@ export class SheetCursor {
     return this.selection.getCursor();
   }
 
-  // Gets all cursor Rectangles (either multiCursor or single cursor)
-  getRectangles(): Rectangle[] {
-    throw new Error('TODO getRectangles');
-
-    // if (this.multiCursor) {
-    //   return this.multiCursor;
-    // } else {
-    //   return [new Rectangle(this.cursorPosition.x, this.cursorPosition.y, 1, 1)];
-    // }
-  }
-
   // Returns the largest rectangle that contains all the multiCursor rectangles
   getLargestRectangle(): Rectangle {
     const rect = this.selection.getLargestRectangle();
     return rectToRectangle(rect);
+  }
+
+  // Returns rectangle in case of single range selection having more than one cell
+  // Returns undefined if there are multiple ranges or infinite range selection
+  getSingleRectangle(): Rectangle | undefined {
+    const rect = this.selection.getSingleRectangle();
+    return rect ? rectToRectangle(rect) : undefined;
+  }
+
+  // Returns rectangle in case of single range selection, otherwise returns a rectangle that represents the cursor
+  // Returns undefined if there are multiple ranges or infinite range selection
+  getSingleRectangleOrCursor(): Rectangle | undefined {
+    const rect = this.selection.getSingleRectangleOrCursor();
+    return rect ? rectToRectangle(rect) : undefined;
   }
 
   overlapsSelection(a1Selection: string): boolean {
