@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use quadratic_core::{grid::SheetId, A1Selection, Rect, SheetNameIdMap};
+use quadratic_core::{grid::SheetId, A1Selection, CellRefRange, Rect, SheetNameIdMap};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -107,9 +107,8 @@ impl Selection {
     }
 
     #[wasm_bindgen(js_name = "getLargestRectangle")]
-    pub fn get_largest_rectangle(&self) -> Result<String, String> {
-        let rect = self.selection.largest_rect();
-        Ok(serde_json::to_string(&rect).map_err(|e| e.to_string())?)
+    pub fn get_largest_rectangle(&self) -> Result<Rect, String> {
+        Ok(self.selection.largest_rect())
     }
 
     #[wasm_bindgen(js_name = "contains")]
@@ -124,8 +123,8 @@ impl Selection {
     }
 
     #[wasm_bindgen(js_name = "getRanges")]
-    pub fn get_ranges(&self) -> Result<String, String> {
-        Ok(serde_json::to_string(&self.selection.ranges).map_err(|e| e.to_string())?)
+    pub fn get_ranges(&self) -> Result<Vec<CellRefRange>, String> {
+        Ok(self.selection.ranges.clone())
     }
 
     #[wasm_bindgen(js_name = "isColumnRow")]

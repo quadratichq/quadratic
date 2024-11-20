@@ -956,7 +956,7 @@ class Core {
 
   connectionComplete(transactionId: string, data: ArrayBuffer, std_out?: string, std_err?: string, extra?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.connectionComplete(transactionId, data, std_out, std_err, extra);
+    this.gridController.connectionComplete(transactionId, new Uint8Array(data), std_out, std_err, extra);
   }
 
   getCells(transactionId: string, x: number, y: number, w: number, h?: number, sheet?: string, lineNumber?: number) {

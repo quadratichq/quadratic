@@ -1,5 +1,3 @@
-use js_sys::Uint8Array;
-
 use super::*;
 
 #[wasm_bindgen]
@@ -128,13 +126,12 @@ impl GridController {
     pub fn js_connection_complete(
         &mut self,
         transaction_id: String,
-        data: JsValue,
+        data: Vec<u8>,
         std_out: Option<String>,
         std_err: Option<String>,
         extra: Option<String>,
     ) -> Result<(), JsValue> {
-        let data = Uint8Array::new(&data);
-        self.connection_complete(transaction_id, data.to_vec(), std_out, std_err, extra)
+        self.connection_complete(transaction_id, data, std_out, std_err, extra)
             .map_err(|e| e.to_string())?;
 
         Ok(())

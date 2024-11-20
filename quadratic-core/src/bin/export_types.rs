@@ -4,7 +4,6 @@ use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBorder
 use crate::A1Error;
 use controller::execution::run_code::get_cells::CellA1Response;
 use controller::operations::clipboard::PasteSpecial;
-use formulas::{CellRef, CellRefCoord, RangeRef};
 use grid::formats::format::Format;
 use grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
@@ -67,20 +66,16 @@ fn main() {
 
     s += &generate_type_declarations!(
         A1Error,
-        JsCellsAccessed,
         ArraySize,
         Axis,
         BorderSelection,
         BorderStyle,
         BorderStyleCell,
         BorderStyleTimestamp,
+        CellA1Response,
         CellAlign,
         CellBorderLine,
         CellFormatSummary,
-        CellRef,
-        CellRefRange,
-        CellRefRangeEnd,
-        CellRefCoord,
         CellVerticalAlign,
         CellWrap,
         CodeCellLanguage,
@@ -94,13 +89,13 @@ fn main() {
         JsBorderHorizontal,
         JsBorderVertical,
         JsBordersSheet,
+        JsCellsAccessed,
         JsCellValue,
         JsCellValuePos,
         JsCellValuePosAIContext,
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
-        CellA1Response,
         JsGetCellResponse,
         JsHtmlOutput,
         JsNumber,
@@ -121,7 +116,6 @@ fn main() {
         PasteSpecial,
         Placement,
         Pos,
-        RangeRef,
         Rect,
         Rgba,
         RunError,

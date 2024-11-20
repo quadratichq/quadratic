@@ -109,13 +109,8 @@ export class SheetCursor {
 
   // Returns the largest rectangle that contains all the multiCursor rectangles
   getLargestRectangle(): Rectangle {
-    const rectStringified = this.selection.getLargestRectangle();
-    try {
-      const rect = JSON.parse(rectStringified);
-      return rectToRectangle(rect);
-    } catch (e) {
-      throw new Error('Failed to parse largest rectangle in SheetCursor');
-    }
+    const rect = this.selection.getLargestRectangle();
+    return rectToRectangle(rect);
   }
 
   overlapsSelection(a1Selection: string): boolean {

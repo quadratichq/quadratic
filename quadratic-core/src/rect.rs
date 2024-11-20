@@ -2,6 +2,7 @@ use std::{collections::HashSet, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
+use wasm_bindgen::prelude::*;
 
 use crate::{grid::SheetId, ArraySize, Pos, SheetRect};
 
@@ -22,6 +23,7 @@ use crate::{grid::SheetId, ArraySize, Pos, SheetRect};
     PartialOrd,
     ts_rs::TS,
 )]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Rect {
     /// Upper-left corner.
     pub min: Pos,
@@ -354,8 +356,6 @@ impl Arbitrary for Rect {
 #[serial_test::parallel]
 mod test {
     use super::*;
-
-    use proptest::prelude::*;
 
     #[test]
     fn test_rect_new_span() {

@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use wasm_bindgen::prelude::*;
 
 use super::{A1Error, SheetNameIdMap};
 use crate::{grid::SheetId, Pos, Rect};
@@ -53,6 +54,7 @@ impl SheetCellRefRange {
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(test, proptest(filter = "|range| range.is_valid()"))]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct CellRefRange {
     pub start: CellRefRangeEnd,
     pub end: Option<CellRefRangeEnd>,
@@ -238,6 +240,7 @@ impl CellRefRange {
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct CellRefRangeEnd {
     pub col: Option<CellRefCoord>,
     pub row: Option<CellRefCoord>,
@@ -346,9 +349,9 @@ impl CellRefRangeEnd {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct CellRefCoord {
     #[cfg_attr(test, proptest(strategy = "super::PROPTEST_COORDINATE_U64"))]
     pub coord: u64,

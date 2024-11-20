@@ -1,9 +1,8 @@
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { drawFiniteCursor, drawInfiniteCursor } from '@/app/gridGL/UI/drawCursor';
-import { CellRefRange } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Graphics } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { Coordinate } from '../types/size';
 
 export const CURSOR_THICKNESS = 1;
 const ALPHA = 0.5;
@@ -87,13 +86,7 @@ export class UIMultiPlayerCursor extends Graphics {
             cursor: player.parsedSelection?.getCursor(),
           });
 
-          const rangesStringified = player.parsedSelection.getRanges();
-          let ranges: CellRefRange[];
-          try {
-            ranges = JSON.parse(rangesStringified);
-          } catch (e) {
-            throw new Error('Failed to parse ranges in drawMultiCursor');
-          }
+          const ranges = player.parsedSelection.getRanges();
 
           const columnRow = player.parsedSelection.isColumnRow();
           if (columnRow) {

@@ -3,11 +3,11 @@
 
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
-import { CellRefRange } from '@/app/quadratic-core-types';
+import { CellRefRange } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Graphics } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
 
 export const drawCursorOutline = (g: Graphics, color: number, cursor: Coordinate) => {
   const outline = sheets.sheet.getCellOffsets(cursor.x, cursor.y);

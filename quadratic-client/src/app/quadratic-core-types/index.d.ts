@@ -2,20 +2,16 @@
 // Do not modify it manually.
 
 export type A1Error = { "InvalidCellReference": string } | { "InvalidSheetId": string } | { "InvalidSheetMap": string } | { "InvalidColumn": string } | { "InvalidSheetName": string } | { "InvalidSheetNameMissingQuotes": string } | { "InvalidRange": string } | { "InvalidRow": string } | { "SpuriousDollarSign": string } | { "TooManySheets": string } | { "MismatchedQuotes": string } | { "WrongCellCount": string } | { "InvalidExclusion": string } | { "TranslateInvalid": string };
-export interface JsCellsAccessed { cells: Record<string, Array<string>>, }
 export interface ArraySize { w: number, h: number, }
 export type Axis = "X" | "Y";
 export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertical" | "left" | "top" | "right" | "bottom" | "clear";
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export interface BorderStyleCell { top: BorderStyleTimestamp | null, bottom: BorderStyleTimestamp | null, left: BorderStyleTimestamp | null, right: BorderStyleTimestamp | null, }
 export interface BorderStyleTimestamp { color: Rgba, line: CellBorderLine, timestamp: SmallTimestamp, }
+export interface CellA1Response { cells: Array<JsGetCellResponse>, x: bigint, y: bigint, w: bigint, h: bigint, }
 export type CellAlign = "center" | "left" | "right";
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, }
-export interface CellRef { sheet: string | null, x: CellRefCoord, y: CellRefCoord, }
-export interface CellRefRange { start: CellRefRangeEnd, end: CellRefRangeEnd | null, }
-export interface CellRefRangeEnd { col: CellRefCoord | null, row: CellRefCoord | null, }
-export type CellRefCoord = { "type": "Relative", "coord": bigint } | { "type": "Absolute", "coord": bigint };
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript";
@@ -29,13 +25,13 @@ export interface Instant { seconds: number, }
 export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint, }
 export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint, }
 export interface JsBordersSheet { all: BorderStyleCell | null, columns: Record<string, BorderStyleCell> | null, rows: Record<string, BorderStyleCell> | null, horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
+export interface JsCellsAccessed { cells: Record<string, Array<string>>, }
 export interface JsCellValue { value: string, kind: string, }
 export interface JsCellValuePos { value: string, kind: string, pos: JsPos, }
 export interface JsCellValuePosAIContext { sheet_name: string, rect_origin: JsPos, rect_width: number, rect_height: number, starting_rect_values: Array<Array<JsCellValuePos>>, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: JsCellsAccessed | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
-export interface CellA1Response { cells: Array<JsGetCellResponse>, x: bigint, y: bigint, w: bigint, h: bigint, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: string | null, h: string | null, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
@@ -56,7 +52,6 @@ export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENT
 export type PasteSpecial = "None" | "Values" | "Formats";
 export interface Placement { index: number, position: number, size: number, }
 export interface Pos { x: bigint, y: bigint, }
-export type RangeRef = { "RowRange": { start: CellRefCoord, end: CellRefCoord, sheet: string | null, } } | { "ColRange": { start: CellRefCoord, end: CellRefCoord, sheet: string | null, } } | { "CellRange": { start: CellRef, end: CellRef, } } | { "Cell": { pos: CellRef, } };
 export interface Rect { min: Pos, max: Pos, }
 export interface Rgba { red: number, green: number, blue: number, alpha: number, }
 export interface RunError { span: Span | null, msg: RunErrorMsg, }

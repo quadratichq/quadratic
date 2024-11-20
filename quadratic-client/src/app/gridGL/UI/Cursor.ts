@@ -7,7 +7,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { drawFiniteCursor, drawInfiniteCursor } from '@/app/gridGL/UI/drawCursor';
-import { CellRefRange } from '@/app/quadratic-core-types';
+import { CellRefRange } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
@@ -233,13 +233,7 @@ export class Cursor extends Container {
       this.drawCodeCursor();
 
       if (!pixiAppSettings.input.show) {
-        const rangesStringified = cursor.selection.getRanges();
-        let ranges: CellRefRange[];
-        try {
-          ranges = JSON.parse(rangesStringified);
-        } catch (e) {
-          throw new Error('Failed to parse ranges in drawMultiCursor');
-        }
+        const ranges = cursor.selection.getRanges();
         this.drawFiniteCursor(ranges);
         if (columnRow) {
           drawInfiniteCursor({

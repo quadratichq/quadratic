@@ -210,10 +210,7 @@ export class PointerCellMoving {
       ) {
         const rectangle = sheets.sheet.cursor.getLargestRectangle();
         quadraticCore.moveCells(
-          rectToSheetRect(
-            new Rectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1),
-            sheets.sheet.id
-          ),
+          rectToSheetRect(rectangle, sheets.sheet.id),
           this.movingCells.toColumn,
           this.movingCells.toRow,
           sheets.sheet.id

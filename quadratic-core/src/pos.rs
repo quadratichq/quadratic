@@ -1,29 +1,20 @@
 use crate::{
     formulas::CellRef,
-    grid::{js_types::JsPos, SheetId},
+    grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
+use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(
-    Serialize,
-    Deserialize,
-    Debug,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    Default,
-    Copy,
-    Clone,
-    ts_rs::TS,
+    Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, TS,
 )]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Pos {
     /// Column
     #[cfg_attr(test, proptest(strategy = "crate::a1::PROPTEST_COORDINATE_I64"))]
