@@ -173,7 +173,7 @@ function CodeSnippetRunButton({
     <Button
       variant="ghost"
       size="sm"
-      className="px-2 text-muted-foreground hover:text-foreground"
+      className="bg-background px-2 text-muted-foreground hover:text-foreground"
       onClick={handleSaveAndRun}
       disabled={isLoading}
     >
@@ -210,7 +210,7 @@ function CodeSnippetCopyButton({
     <Button
       variant="ghost"
       size="sm"
-      className="px-2 text-muted-foreground hover:text-foreground"
+      className="bg-background px-2 text-muted-foreground hover:text-foreground"
       onClick={handleCopy}
       disabled={isLoading}
     >
