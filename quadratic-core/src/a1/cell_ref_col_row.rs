@@ -6,31 +6,32 @@ impl CellRefRange {
     /// Note: this does not handle the case where the deleted column is the same
     /// as self's column(s). That has to be handled one step above this call.
     pub fn removed_column(&mut self, column: u64) -> bool {
-        let mut changed = false;
+        todo!()
+        // let mut changed = false;
 
-        if let Some(start_col) = self.start.col.as_mut() {
-            if start_col.coord == column {
-                if let Some(end_col) = self.end.as_mut() {
-                    if end_col.col.is_some_and(|col| col.coord > column) {
-                        start_col.coord = end_col.coord;
-                    } else {
-                        start_col.coord -= 1;
-                    }
-                } else {
-                    start_col = None;
-                }
-            } else if start_col.coord > column {
-                start_col.coord -= 1;
-            }
-        }
+        // if let Some(start_col) = self.start.col.as_mut() {
+        //     if start_col.coord == column {
+        //         if let Some(end_col) = self.end.as_mut() {
+        //             if end_col.col.is_some_and(|col| col.coord > column) {
+        //                 start_col.coord = end_col.coord;
+        //             } else {
+        //                 start_col.coord -= 1;
+        //             }
+        //         } else {
+        //             start_col = None;
+        //         }
+        //     } else if start_col.coord > column {
+        //         start_col.coord -= 1;
+        //     }
+        // }
 
-        if let Some(end_col) = self.end.and_then(|end| end.col.as_mut()) {
-            if end_col.coord == column {
-                end_col = None;
-            } else if end_col.coord > column {
-                end_col.coord -= 1;
-            }
-        }
+        // if let Some(end_col) = self.end.and_then(|end| end.col.as_mut()) {
+        //     if end_col.coord == column {
+        //         end_col = None;
+        //     } else if end_col.coord > column {
+        //         end_col.coord -= 1;
+        //     }
+        // }
 
         // // unpack the end_col if it exists
         // let end_col = self
@@ -81,7 +82,7 @@ impl CellRefRange {
         //     if let Some(end_col) = self.end
         // }
 
-        changed
+        // changed
     }
 
     /// Handle the removal of a row. Returns whether the range was changed.
