@@ -9,8 +9,10 @@ impl A1Selection {
         self.ranges.push(CellRefRange::ALL);
     }
 
-    fn add_or_remove_column(&mut self, col: u32) {
-        let range = self.ranges.iter().find(|r| r.is_column_range());
+    fn add_or_remove_column(&mut self, col: u64) {
+        if let Some(range) = self.ranges.iter_mut().find(|r| r.has_column(col)) {
+            // range.remove_column(col);
+        }
     }
 
     /// Selects a single column. If append is true, then the column is appended
@@ -28,7 +30,7 @@ impl A1Selection {
             self.ranges
                 .push(CellRefRange::new_relative_column(col as u64));
         } else if ctrl_key && !shift_key {
-            self.add_or_remove_column(col);
+            self.add_or_remove_column(col as u64);
         }
 
         //  else if let Some(last_range) = self.ranges.last_mut() {
@@ -47,8 +49,8 @@ impl A1Selection {
     /// Selects a single row. If append is true, then the row is appended
     /// to the ranges (or, if the last selection was a row, then the end of
     /// that row is extended).
-    pub fn select_row(&mut self, row: u32, append: bool) {
-        if !append {
+    pub fn select_row(&mut self, row: u32, ctrl_key: bool, shift_key: bool, is_right_click: bool) {
+        if !ctrl_key && !shift_key {
             self.ranges.clear();
             self.ranges.push(CellRefRange::new_relative_row(row as u64));
         } else if let Some(last_range) = self.ranges.last_mut() {
@@ -348,7 +350,7 @@ mod tests {
     #[test]
     fn test_select_row() {
         let mut selection = A1Selection::test("A1,B2,C3");
-        selection.select_row(2, false);
+        selection.select_row(2, false, false, false);
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(2)]);
     }
 
