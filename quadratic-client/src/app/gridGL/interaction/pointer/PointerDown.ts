@@ -167,6 +167,8 @@ export class PointerDown {
       ) {
         this.pointerMoved = true;
         this.clearDoubleClick();
+      } else {
+        return;
       }
     }
 
@@ -178,48 +180,55 @@ export class PointerDown {
     // calculate mouse move position
     const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
-    // const columnRow = event.metaKey || event.ctrlKey ? undefined : null;
-
-    // cursor start and end in the same cell
-    if (column === this.position.x && row === this.position.y) {
-      // hide multi cursor when only selecting one cell
-      if (cursor.isMultiCursor()) {
-        cursor.moveTo(this.position.x, this.position.y, false);
-      }
-      this.previousPosition = new Point(this.position.x, this.position.y);
+    if (column !== this.previousPosition.x || row !== this.previousPosition.y) {
+      cursor.extendSelection(column, row, event.metaKey || event.ctrlKey);
+      this.previousPosition = new Point(column, row);
       if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
         pixiAppSettings.changeInput(false);
       }
-    } else {
-      // cursor origin and terminal are not in the same cell
-      // make origin top left, and terminal bottom right
-      // const originX = this.position.x < column ? this.position.x : column;
-      // const originY = this.position.y < row ? this.position.y : row;
-      // const termX = this.position.x > column ? this.position.x : column;
-      // const termY = this.position.y > row ? this.position.y : row;
-      // determine if the cursor has moved from the previous event
-      // const hasMoved = !(this.previousPosition.x === column && this.previousPosition.y === row);
-      // todo...
-      // // only set state if changed
-      // // this reduces the number of hooks fired
-      // if (hasMoved) {
-      //   // update multiCursor
-      //   const multiCursor = cursor.multiCursor ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1) : [];
-      //   multiCursor.push(new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1));
-      //   cursor.changePosition({
-      //     columnRow,
-      //     keyboardMovePosition: { x: column, y: row },
-      //     cursorPosition: { x: this.position.x, y: this.position.y },
-      //     multiCursor,
-      //     ensureVisible: false,
-      //   });
-      //   if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
-      //     pixiAppSettings.changeInput(false);
-      //   }
-      //   // update previousPosition
-      //   this.previousPosition = new Point(column, row);
-      // }
     }
+    // // const columnRow = event.metaKey || event.ctrlKey ? undefined : null;
+
+    // // cursor start and end in the same cell
+    // if (column === this.position.x && row === this.position.y) {
+    //   // // hide multi cursor when only selecting one cell
+    //   // if (cursor.isMultiCursor()) {
+    //   //   cursor.moveTo(this.position.x, this.position.y, false);
+    //   // }
+    //   this.previousPosition = new Point(this.position.x, this.position.y);
+    //   if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
+    //     pixiAppSettings.changeInput(false);
+    //   }
+    // } else {
+    //   // cursor origin and terminal are not in the same cell
+    //   // make origin top left, and terminal bottom right
+    //   // const originX = this.position.x < column ? this.position.x : column;
+    //   // const originY = this.position.y < row ? this.position.y : row;
+    //   // const termX = this.position.x > column ? this.position.x : column;
+    //   // const termY = this.position.y > row ? this.position.y : row;
+    //   // determine if the cursor has moved from the previous event
+    //   // const hasMoved = !(this.previousPosition.x === column && this.previousPosition.y === row);
+    //   // todo...
+    //   // // only set state if changed
+    //   // // this reduces the number of hooks fired
+    //   // if (hasMoved) {
+    //   //   // update multiCursor
+    //   //   const multiCursor = cursor.multiCursor ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1) : [];
+    //   //   multiCursor.push(new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1));
+    //   //   cursor.changePosition({
+    //   //     columnRow,
+    //   //     keyboardMovePosition: { x: column, y: row },
+    //   //     cursorPosition: { x: this.position.x, y: this.position.y },
+    //   //     multiCursor,
+    //   //     ensureVisible: false,
+    //   //   });
+    //   //   if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
+    //   //     pixiAppSettings.changeInput(false);
+    //   //   }
+    //   //   // update previousPosition
+    //   //   this.previousPosition = new Point(column, row);
+    //   // }
+    // }
   }
 
   pointerUp(event?: PointerEvent): void {

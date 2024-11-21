@@ -196,18 +196,19 @@ export class SheetCursor {
     this.updatePosition(true);
   }
 
-  selectColumn(column: number, extend: boolean) {
-    this.selection.selectColumn(column, extend);
+  selectColumn(column: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean) {
+    this.selection.selectColumn(column, ctrlKey || shiftKey, shiftKey, isRightClick);
     this.updatePosition(true);
   }
 
-  selectRow(row: number, extend: boolean) {
-    this.selection.selectRow(row, extend);
+  selectRow(row: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean) {
+    this.selection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick);
     this.updatePosition(true);
   }
 
-  selectColumns(columns: number[]) {
-    throw new Error('TODO selectColumns');
+  selectColumns(column: number, append: boolean) {
+    this.selection.selectColumn(column, append);
+    this.updatePosition(true);
   }
 
   selectRows(row: number[], startRow?: number) {
