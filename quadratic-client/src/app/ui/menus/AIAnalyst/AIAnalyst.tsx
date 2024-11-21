@@ -44,6 +44,8 @@ export const AIAnalyst = () => {
     [setPanelWidth]
   );
 
+  console.log('AIAnalyst', initialLoadRef.current, autoFocusRef.current, showAIAnalyst);
+
   if (!showAIAnalyst || presentationMode) {
     return null;
   }
