@@ -63,6 +63,8 @@ impl A1Selection {
                 end: Some(CellRefRangeEnd::new_relative_xy(right, bottom)),
             });
         }
+        self.cursor.x = right as i64;
+        self.cursor.y = bottom as i64;
     }
 
     /// Selects a rectangular range from the cursor to the given position. If append is true, then the
