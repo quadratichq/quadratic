@@ -6,8 +6,9 @@ use controller::operations::clipboard::PasteSpecial;
 use grid::formats::format::Format;
 use grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
-    JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCodeCell,
-    JsRenderCodeCellState, JsRenderFill, JsRowHeight, JsSheetFill, JsValidationWarning,
+    JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
+    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
+    JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::validations::validation::{
@@ -23,12 +24,14 @@ use grid::sheet::validations::validation_rules::validation_logical::ValidationLo
 use grid::sheet::validations::validation_rules::validation_number::{
     NumberRange, ValidationNumber,
 };
-use grid::sheet::validations::validation_rules::validation_text::{TextMatch, ValidationText};
+use grid::sheet::validations::validation_rules::validation_text::{
+    TextCase, TextMatch, ValidationText,
+};
 use grid::sheet::validations::validation_rules::ValidationRule;
-use grid::JsCellsAccessed;
 use grid::{
     CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
+use grid::{JsCellsAccessed, RenderSize};
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::run_code::get_cells::JsGetCellResponse;
@@ -41,6 +44,7 @@ use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
 use quadratic_core::{Rect, *};
+use small_timestamp::SmallTimestamp;
 use ts_rs::TS;
 
 macro_rules! generate_type_declarations {
@@ -58,6 +62,7 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
+        A1Selection,
         ArraySize,
         Axis,
         BorderSelection,
@@ -91,9 +96,11 @@ fn main() {
         JsNumber,
         JsOffset,
         JsRenderCell,
+        JsRenderCellSpecial,
         JsRenderCodeCell,
         JsRenderCodeCellState,
         JsRenderFill,
+        JsReturnInfo,
         JsRowHeight,
         JsSheetFill,
         JsValidationWarning,
@@ -103,6 +110,7 @@ fn main() {
         PasteSpecial,
         Pos,
         Rect,
+        RenderSize,
         Rgba,
         RunError,
         RunErrorMsg,
@@ -112,7 +120,9 @@ fn main() {
         SheetInfo,
         SheetPos,
         SheetRect,
+        SmallTimestamp,
         Span,
+        TextCase,
         TextMatch,
         TransactionName,
         TransientResize,
