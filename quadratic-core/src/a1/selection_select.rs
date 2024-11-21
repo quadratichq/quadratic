@@ -75,6 +75,22 @@ impl A1Selection {
         }
     }
 
+    /// Extends the last column range or creates a new one.
+    pub fn extend_column(&mut self, col: u64, top: i64) {
+        if let Some(last) = self.ranges.last_mut() {
+            if last.is_column_range() {
+                last.end = Some(CellRefRangeEnd::new_relative_column(col));
+            } else {
+                last.end = Some(CellRefRangeEnd::new_relative_column(col));
+                self.cursor.y = last.start.row.map_or(top, |r| r.coord as i64);
+            }
+        } else {
+            self.ranges.push(CellRefRange::new_relative_column(col));
+            self.cursor.x = col as i64;
+            self.cursor.y = top;
+        }
+    }
+
     /// Selects a single column based on keyboard modifiers.
     pub fn select_column(
         &mut self,
@@ -94,7 +110,7 @@ impl A1Selection {
         } else if ctrl_key && !shift_key {
             self.add_or_remove_column(col, top);
         } else if shift_key {
-            // self.extend_column(col as u64);
+            self.extend_column(col as u64, top);
         }
 
         //  else if let Some(last_range) = self.ranges.last_mut() {
@@ -154,6 +170,10 @@ impl A1Selection {
         if append {
             if let Some(last_range) = self.ranges.last_mut() {
                 last_range.end = Some(CellRefRangeEnd::new_relative_xy(x, y));
+                crate::util::dbgjs(&last_range);
+                if last_range.start.row.is_none() {
+                    self.cursor.y = y as i64;
+                }
             } else {
                 self.ranges.push(CellRefRange {
                     start: CellRefRangeEnd::new_relative_xy(
@@ -483,6 +503,18 @@ mod tests {
         selection.add_or_remove_column(1, 2);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A2")]);
         assert_eq!(selection.cursor.x, 1);
+        assert_eq!(selection.cursor.y, 1);
+    }
+
+    #[test]
+    fn test_extend_column() {
+        let mut selection = A1Selection::test("A1,B");
+        selection.extend_column(4, 2);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test("A1"), CellRefRange::test("B:D")]
+        );
+        assert_eq!(selection.cursor.x, 2);
         assert_eq!(selection.cursor.y, 1);
     }
 }

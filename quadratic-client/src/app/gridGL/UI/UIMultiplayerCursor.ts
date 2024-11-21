@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Coordinate } from '@/app/gridGL/types/size';
-import { drawFiniteCursor, drawInfiniteCursor } from '@/app/gridGL/UI/drawCursor';
+import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Graphics } from 'pixi.js';
 
@@ -90,14 +90,14 @@ export class UIMultiPlayerCursor extends Graphics {
 
           const columnRow = player.parsedSelection.isColumnRow();
           if (columnRow) {
-            drawInfiniteCursor({
+            drawInfiniteSelection({
               g: this,
               color,
               alpha: FILL_ALPHA,
               ranges,
             });
           } else if (player.parsedSelection.isMultiCursor()) {
-            drawFiniteCursor(this, color, FILL_ALPHA, ranges);
+            drawFiniteSelection(this, color, FILL_ALPHA, ranges);
           }
         }
       });
