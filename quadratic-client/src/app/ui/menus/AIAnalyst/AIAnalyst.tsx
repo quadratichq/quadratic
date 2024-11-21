@@ -28,7 +28,7 @@ export const AIAnalyst = () => {
     } else {
       autoFocusRef.current = true;
     }
-  }, []);
+  }, [showAIAnalyst]);
 
   const handleResize = useCallback(
     (event: MouseEvent) => {
@@ -43,8 +43,6 @@ export const AIAnalyst = () => {
     },
     [setPanelWidth]
   );
-
-  console.log('AIAnalyst', initialLoadRef.current, autoFocusRef.current, showAIAnalyst);
 
   if (!showAIAnalyst || presentationMode) {
     return null;

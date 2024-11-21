@@ -56,11 +56,8 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   useImperativeHandle(ref, () => textareaRef.current!);
 
-  console.log('AIUserMessageForm', autoFocusRef?.current, textareaRef.current);
-
   // Focus the input when relevant & the tab comes into focus
   useEffect(() => {
-    console.log('AIUserMessageForm useEffect', autoFocusRef?.current, textareaRef.current);
     if (autoFocusRef?.current) {
       textareaRef.current?.focus();
     }
