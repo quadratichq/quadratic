@@ -161,7 +161,7 @@ export class Cursor extends Container {
       const codeCell = codeEditorState.codeCell;
       const cell = cursor.position;
 
-      const endCell = cursor.selection.bottomRightCell();
+      const endCell = cursor.jsSelection.bottomRightCell();
       this.endCell = sheets.sheet.getCellOffsets(endCell.x, endCell.y);
 
       // draw cursor indicator
@@ -237,7 +237,7 @@ export class Cursor extends Container {
       this.drawCodeCursor();
 
       if (!pixiAppSettings.input.show) {
-        const ranges = cursor.selection.getRanges();
+        const ranges = cursor.jsSelection.getRanges();
         this.drawFiniteCursor(ranges);
         if (columnRow) {
           drawInfiniteCursor({

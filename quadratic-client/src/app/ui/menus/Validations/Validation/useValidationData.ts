@@ -8,7 +8,7 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Validation, ValidationRule } from '@/app/quadratic-core-types';
-import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import {
   validationRuleSimple,
   ValidationRuleSimple,
@@ -27,7 +27,7 @@ export interface ValidationData {
   validation: ValidationUndefined | undefined;
   rule: ValidationRuleSimple;
   setValidation: SetState<ValidationUndefined | undefined>;
-  setSelection: (selection: Selection | undefined) => void;
+  setSelection: (jsSelection: JsSelection | undefined) => void;
   changeRule: (rule: ValidationRuleSimple) => void;
   showUI: boolean;
   changeShowUI: (checked: boolean) => void;
@@ -286,8 +286,8 @@ export const useValidationData = (): ValidationData => {
 
   // Set the selection for the validation. Note: we use Selection: { x, y,
   // sheet_id, ..default } to indicate that the Selection is blank.
-  const setSelection = (selection: Selection | undefined) => {
-    if (!selection) {
+  const setSelection = (jsSelection: JsSelection | undefined) => {
+    if (!jsSelection) {
       setValidation((old) => {
         if (old) {
           return {
@@ -307,7 +307,7 @@ export const useValidationData = (): ValidationData => {
     } else {
       setValidation((old) => {
         if (old) {
-          return { ...old, selection };
+          return { ...old, selection: jsSelection };
         }
       });
     }

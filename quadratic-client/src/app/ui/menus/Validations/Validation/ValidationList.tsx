@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ValidationRule } from '@/app/quadratic-core-types';
-import { newSingleSelection, Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { JsSelection, newSingleSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { SheetRange } from '@/app/ui/components/SheetRange';
 import { ValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { ValidationInput } from '@/app/ui/menus/Validations/Validation/ValidationUI/ValidationInput';
@@ -78,10 +78,10 @@ export const ValidationList = (props: Props) => {
     }
   }, [validation]);
 
-  const changeSelection = (selection: Selection | undefined) => {
+  const changeSelection = (jsSelection: JsSelection | undefined) => {
     const rule: ValidationRule = {
       List: {
-        source: { Selection: selection ?? newSingleSelection(sheets.sheet.id, 1, 1) },
+        source: { Selection: jsSelection ?? newSingleSelection(sheets.sheet.id, 1, 1) },
         ignore_blank: ignoreBlank,
         drop_down: showDropdown,
       },

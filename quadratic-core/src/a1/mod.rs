@@ -5,6 +5,7 @@ mod cell_ref_query;
 mod cell_ref_request;
 mod column_names;
 mod error;
+mod js_selection;
 mod selection;
 mod selection_mutate;
 mod selection_query;
@@ -16,6 +17,7 @@ pub use cell_ref::*;
 pub use cell_ref_request::*;
 pub use column_names::*;
 pub use error::*;
+pub use js_selection::*;
 pub use selection::*;
 pub use subspaces::*;
 

@@ -3,15 +3,15 @@
 //! cursor, or you save the cursor state in the URL at ?state=.
 
 import { sheets } from '@/app/grid/controller/Sheets';
+import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Coordinate } from '@/app/gridGL/types/size';
+import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { Coordinate } from '../../gridGL/types/size';
-import { Sheet } from './Sheet';
 
 // Select column and/or row for the entire sheet.
 export interface ColumnRowCursor {
@@ -39,13 +39,13 @@ export interface SheetCursorSave {
 export class SheetCursor {
   private _viewport?: IViewportTransformState;
 
-  selection: Selection;
+  jsSelection: JsSelection;
 
   // used to determine if the boxCells (ie, autocomplete) is active
   boxCells: boolean;
 
   constructor(sheet: Sheet) {
-    this.selection = new Selection(sheet.id);
+    this.jsSelection = new JsSelection(sheet.id);
     this.boxCells = false;
   }
 
@@ -62,17 +62,17 @@ export class SheetCursor {
   }
 
   save(): string {
-    return this.selection.save();
+    return this.jsSelection.save();
   }
 
-  load(selection: string): void {
-    this.selection = Selection.load(selection);
+  load(jsSelectionString: string): void {
+    this.jsSelection = JsSelection.load(jsSelectionString);
     multiplayer.sendSelection(this.save());
     pixiApp.cursor.dirty = true;
   }
 
-  loadFromSelection(selection: Selection, skipMultiplayer = false) {
-    this.selection = selection;
+  loadFromSelection(jsSelection: JsSelection, skipMultiplayer = false) {
+    this.jsSelection = jsSelection;
     if (!skipMultiplayer) {
       multiplayer.sendSelection(this.save());
     }
@@ -93,31 +93,31 @@ export class SheetCursor {
   }
 
   get position(): Coordinate {
-    return this.selection.getCursor();
+    return this.jsSelection.getCursor();
   }
 
   // Returns the largest rectangle that contains all the multiCursor rectangles
   getLargestRectangle(): Rectangle {
-    const rect = this.selection.getLargestRectangle();
+    const rect = this.jsSelection.getLargestRectangle();
     return rectToRectangle(rect);
   }
 
   // Returns rectangle in case of single range selection having more than one cell
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangle(): Rectangle | undefined {
-    const rect = this.selection.getSingleRectangle();
+    const rect = this.jsSelection.getSingleRectangle();
     return rect ? rectToRectangle(rect) : undefined;
   }
 
   // Returns rectangle in case of single range selection, otherwise returns a rectangle that represents the cursor
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangleOrCursor(): Rectangle | undefined {
-    const rect = this.selection.getSingleRectangleOrCursor();
+    const rect = this.jsSelection.getSingleRectangleOrCursor();
     return rect ? rectToRectangle(rect) : undefined;
   }
 
   overlapsSelection(a1Selection: string): boolean {
-    return this.selection.overlapsA1Selection(a1Selection);
+    return this.jsSelection.overlapsA1Selection(a1Selection);
   }
 
   hasOneColumnRowSelection(oneCell?: boolean): boolean {
@@ -171,64 +171,64 @@ export class SheetCursor {
   }
 
   selectAll() {
-    this.selection.selectAll();
+    this.jsSelection.selectAll();
     this.updatePosition(true);
   }
 
   selectDeltaSize(deltaX: number, deltaY: number) {
-    this.selection.deltaSize(deltaX, deltaY);
+    this.jsSelection.deltaSize(deltaX, deltaY);
     this.updatePosition(true);
   }
 
   moveTo(x: number, y: number, ensureVisible = true) {
-    this.selection.moveTo(x, y);
+    this.jsSelection.moveTo(x, y);
     this.updatePosition(ensureVisible);
   }
 
   // Returns all columns that have a selection (used by cmd+space)
   setColumnsSelected() {
-    this.selection.setColumnsSelected();
+    this.jsSelection.setColumnsSelected();
     this.updatePosition(true);
   }
 
   setRowsSelected() {
-    this.selection.setRowsSelected();
+    this.jsSelection.setRowsSelected();
     this.updatePosition(true);
   }
 
   selectColumn(column: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean, top: number) {
-    this.selection.selectColumn(column, ctrlKey || shiftKey, shiftKey, isRightClick, top);
+    this.jsSelection.selectColumn(column, ctrlKey || shiftKey, shiftKey, isRightClick, top);
     this.updatePosition(true);
   }
 
   selectRow(row: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean) {
-    this.selection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick);
+    this.jsSelection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick);
     this.updatePosition(true);
   }
 
   isMultiCursor(): boolean {
-    return this.selection.isMultiCursor();
+    return this.jsSelection.isMultiCursor();
   }
 
   isColumnRow(): boolean {
-    return this.selection.isColumnRow();
+    return this.jsSelection.isColumnRow();
   }
 
   toA1String(sheetId = sheets.sheet.id): string {
-    return this.selection.toString(sheetId, sheets.getRustSheetMap());
+    return this.jsSelection.toString(sheetId, sheets.getRustSheetMap());
   }
 
   contains(x: number, y: number): boolean {
-    return this.selection.contains(x, y);
+    return this.jsSelection.contains(x, y);
   }
 
   selectRect(left: number, top: number, right: number, bottom: number, append = false, ensureVisible = true) {
-    this.selection.selectRect(left, top, right, bottom, append);
+    this.jsSelection.selectRect(left, top, right, bottom, append);
     this.updatePosition(ensureVisible);
   }
 
   extendSelection(column: number, row: number, append: boolean) {
-    this.selection.extendSelection(column, row, append);
+    this.jsSelection.extendSelection(column, row, append);
     this.updatePosition(true);
   }
 }

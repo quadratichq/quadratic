@@ -3,7 +3,7 @@ import { Sheet } from '@/app/grid/sheet/Sheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { JsOffset, Rect, SheetInfo, SheetRect } from '@/app/quadratic-core-types';
-import { Selection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 class Sheets {
@@ -296,7 +296,7 @@ class Sheets {
   }
 
   getA1String(sheetId = this.current): string {
-    return this.sheet.cursor.selection.toString(sheetId, this.getSheetIdNameMap());
+    return this.sheet.cursor.jsSelection.toString(sheetId, this.getSheetIdNameMap());
   }
 
   /// Gets a stringified SheetIdNameMap for Rust's A1 functions
@@ -314,9 +314,9 @@ class Sheets {
   }
 
   // Changes the cursor to the incoming selection
-  changeSelection(selection: Selection, ensureVisible = true) {
+  changeSelection(jsSelection: JsSelection, ensureVisible = true) {
     // change the sheet id if needed
-    const sheetId = selection.getSheetId();
+    const sheetId = jsSelection.getSheetId();
     if (sheetId !== this.current) {
       if (this.getById(sheetId)) {
         this.current = sheetId;
@@ -324,7 +324,7 @@ class Sheets {
     }
 
     const cursor = sheets.sheet.cursor;
-    cursor.loadFromSelection(selection);
+    cursor.loadFromSelection(jsSelection);
     cursor.updatePosition(true);
   }
 

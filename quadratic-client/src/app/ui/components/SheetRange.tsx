@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Selection, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { JsSelection, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
@@ -11,8 +11,8 @@ import { FocusEvent, useCallback, useEffect, useMemo, useRef, useState } from 'r
 
 interface Props {
   label?: string;
-  initial?: Selection;
-  onChangeSelection: (selection: Selection | undefined) => void;
+  initial?: JsSelection;
+  onChangeSelection: (jsSelection: JsSelection | undefined) => void;
 
   // used to trigger an error if the range is empty
   triggerError?: boolean;
@@ -54,9 +54,9 @@ export const SheetRange = (props: Props) => {
   // insert the range of the current selection
   const onInsert = useCallback(() => {
     if (ref.current) {
-      const selection = sheets.sheet.cursor.selection;
-      ref.current.value = selection.toString(a1SheetId, sheets.getSheetIdNameMap());
-      onChangeRange(selection);
+      const jsSelection = sheets.sheet.cursor.jsSelection;
+      ref.current.value = jsSelection.toString(a1SheetId, sheets.getSheetIdNameMap());
+      onChangeRange(jsSelection);
       setRangeError(undefined);
     }
   }, [a1SheetId, onChangeRange]);

@@ -1,7 +1,10 @@
 use std::str::FromStr;
 
-use quadratic_core::{grid::SheetId, A1Selection, CellRefRange, Rect, SheetNameIdMap};
 use wasm_bindgen::prelude::*;
+
+use crate::{grid::SheetId, Rect};
+
+use super::{A1Selection, CellRefRange, SheetNameIdMap};
 
 #[wasm_bindgen]
 pub struct JsCoordinate {
@@ -10,16 +13,16 @@ pub struct JsCoordinate {
 }
 
 #[wasm_bindgen]
-pub struct Selection {
+pub struct JsSelection {
     selection: A1Selection,
 }
 
 #[wasm_bindgen]
-impl Selection {
+impl JsSelection {
     #[wasm_bindgen(constructor)]
     pub fn new(sheet_id: String) -> Self {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Selection {
+        JsSelection {
             selection: A1Selection::from_xy(1, 1, sheet_id),
         }
     }
@@ -37,9 +40,9 @@ impl Selection {
 
     /// Loads the selection from a JSON string.
     #[wasm_bindgen]
-    pub fn load(selection: String) -> Result<Selection, String> {
+    pub fn load(selection: String) -> Result<JsSelection, String> {
         let selection: A1Selection = serde_json::from_str(&selection).map_err(|e| e.to_string())?;
-        Ok(Selection { selection })
+        Ok(JsSelection { selection })
     }
 
     /// Returns the cursor position (as a JsCoordinate)
@@ -153,7 +156,8 @@ impl Selection {
 
     #[wasm_bindgen(js_name = "getRanges")]
     pub fn get_ranges(&self) -> Result<Vec<CellRefRange>, String> {
-        Ok(self.selection.ranges.clone())
+        // Ok(self.selection.ranges.clone())
+        Ok(vec![])
     }
 
     #[wasm_bindgen(js_name = "isColumnRow")]
@@ -181,23 +185,23 @@ pub fn to_selection(
     a1: &str,
     default_sheet_id: &str,
     sheet_map: &str,
-) -> Result<Selection, String> {
+) -> Result<JsSelection, String> {
     let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
     let sheet_map = serde_json::from_str::<SheetNameIdMap>(sheet_map).map_err(|e| e.to_string())?;
     let selection = A1Selection::from_str(&a1, default_sheet_id, &sheet_map)?;
-    Ok(Selection { selection })
+    Ok(JsSelection { selection })
 }
 
 #[wasm_bindgen(js_name = "newSingleSelection")]
-pub fn new_single_selection(sheet_id: String, x: u32, y: u32) -> Result<Selection, String> {
+pub fn new_single_selection(sheet_id: String, x: u32, y: u32) -> Result<JsSelection, String> {
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-    Ok(Selection {
+    Ok(JsSelection {
         selection: A1Selection::from_xy(x as i64, y as i64, sheet_id),
     })
 }
 
 #[wasm_bindgen(js_name = "A1SelectionStringToSelection")]
-pub fn a1_selection_string_to_selection(a1_selection: &str) -> Result<Selection, String> {
+pub fn a1_selection_string_to_selection(a1_selection: &str) -> Result<JsSelection, String> {
     let selection = serde_json::from_str::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
-    Ok(Selection { selection })
+    Ok(JsSelection { selection })
 }
