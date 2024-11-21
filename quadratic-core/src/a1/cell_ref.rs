@@ -151,14 +151,10 @@ impl CellRefRange {
         }
     }
 
-    /// Returns a reference to a rectangle.
-    ///
-    /// 1x1 rectangles are simplified to single-cell references.
-    pub fn new_relative_rect(rect: Rect) -> Self {
-        CellRefRange {
-            start: CellRefRangeEnd::new_relative_pos(rect.min),
-            end: (rect.min != rect.max).then_some(CellRefRangeEnd::new_relative_pos(rect.max)),
-        }
+    // This is not implemented because a Rect is always normalized, but a
+    // CellRefRange is not.
+    pub fn new_relative_rect(_rect: crate::Rect) -> Self {
+        unimplemented!()
     }
 
     /// Returns whether `self` might intersect `rect`.

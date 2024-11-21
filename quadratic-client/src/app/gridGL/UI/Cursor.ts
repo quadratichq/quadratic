@@ -161,6 +161,8 @@ export class Cursor extends Container {
       const codeCell = codeEditorState.codeCell;
       const cell = cursor.position;
 
+      this.endCell = sheets.sheet.getCellOffsets(cell.x, cell.y);
+
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
       const x = this.endCell.x + this.endCell.width;
@@ -168,13 +170,15 @@ export class Cursor extends Container {
       this.indicator.x = x - indicatorSize / 2;
       this.indicator.y = y - indicatorSize / 2;
       this.graphics.lineStyle(0);
+
       // have cursor color match code editor mode
       let color = pixiApp.accentColor;
       if (
         inlineEditorHandler.getShowing(cell.x, cell.y) ||
         (codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y)
-      )
+      ) {
         color = pixiApp.accentColor;
+      }
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
     }
   }

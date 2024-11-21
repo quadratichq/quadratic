@@ -167,8 +167,7 @@ export class PointerDown {
     // Keep track of multiCursor previous position
     this.previousPosition = new Point(column, row);
 
-    // Move cursor to mouse down position
-    // For single click, hide multiCursor
+    sheets.sheet.cursor.moveTo(column, row);
 
     // If the input is rejected, we cannot move the cursor
     if (await inlineEditorHandler.handleCellPointerDown()) {

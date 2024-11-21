@@ -95,7 +95,7 @@ macro_rules! pos {
 }
 
 /// Returns a human-friendly list of things, joined at the end by the given
-/// conjuction.
+/// conjunction.
 pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {
     match items {
         [] => "(none)".to_string(),
