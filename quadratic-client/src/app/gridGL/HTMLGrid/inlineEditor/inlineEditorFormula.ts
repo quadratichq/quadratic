@@ -152,7 +152,8 @@ class InlineEditorFormula {
   wantsCellRef() {
     const lastCharacter = inlineEditorMonaco.getNonWhitespaceCharBeforeCursor();
     return (
-      !!lastCharacter && ['', ',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{'].includes(lastCharacter)
+      !!lastCharacter &&
+      ['', ',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{', ':', '!'].includes(lastCharacter)
     );
   }
 
