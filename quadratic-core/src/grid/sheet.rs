@@ -700,7 +700,7 @@ mod test {
     use crate::controller::GridController;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::formats::Formats;
-    use crate::grid::js_types::{JsPos, JsReturnInfo};
+    use crate::grid::js_types::JsReturnInfo;
     use crate::grid::{Bold, CodeCellLanguage, CodeRunResult, Italic, NumericFormat};
     use crate::selection::OldSelection;
     use crate::test_util::print_table;
@@ -1298,7 +1298,7 @@ mod test {
             Some(JsCellValuePos {
                 value: "test".to_string(),
                 kind: "text".to_string(),
-                pos: JsPos { x: 1, y: 1 },
+                pos: Pos { x: 1, y: 1 },
             })
         );
 
@@ -1312,7 +1312,7 @@ mod test {
             Some(JsCellValuePos {
                 value: "Javascript chart".to_string(),
                 kind: "image".to_string(),
-                pos: JsPos { x: 2, y: 2 }
+                pos: Pos { x: 2, y: 2 }
             })
         );
 
@@ -1326,7 +1326,7 @@ mod test {
             Some(JsCellValuePos {
                 value: "Python chart".to_string(),
                 kind: "html".to_string(),
-                pos: JsPos { x: 3, y: 3 }
+                pos: Pos { x: 3, y: 3 }
             })
         );
     }
@@ -1377,7 +1377,7 @@ mod test {
                             JsCellValuePos {
                                 value: "heading".to_string(),
                                 kind: "text".to_string(),
-                                pos: JsPos {
+                                pos: Pos {
                                     x: col,
                                     y: row as i64,
                                 },
@@ -1386,7 +1386,7 @@ mod test {
                             JsCellValuePos {
                                 value: "value".to_string(),
                                 kind: "text".to_string(),
-                                pos: JsPos {
+                                pos: Pos {
                                     x: col,
                                     y: row as i64,
                                 },
@@ -1461,7 +1461,7 @@ mod test {
         let expected_js_ai_context_rects_in_sheet_rect = vec![
             JsCellValuePosAIContext {
                 sheet_name: sheet.name.clone(),
-                rect_origin: JsPos { x: 1, y: 1 },
+                rect_origin: Pos { x: 1, y: 1 },
                 rect_width: 10,
                 rect_height: 1000,
                 starting_rect_values: sheet.js_cell_value_pos_rect(
@@ -1474,7 +1474,7 @@ mod test {
             },
             JsCellValuePosAIContext {
                 sheet_name: sheet.name.clone(),
-                rect_origin: JsPos { x: 31, y: 101 },
+                rect_origin: Pos { x: 31, y: 101 },
                 rect_width: 10,
                 rect_height: 1000,
                 starting_rect_values: sheet.js_cell_value_pos_rect(

@@ -19,17 +19,16 @@ import {
   Format,
   JsCellValue,
   JsCellValuePosAIContext,
+  JsClipboard,
   JsCodeCell,
-  JsPos,
   JsRenderCell,
-  MinMax,
   PasteSpecial,
   SearchOptions,
   SheetPos,
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { JsSummarizeSelectionResult } from '@/app/quadratic-core/quadratic_core';
+import { JsSummarizeSelectionResult, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
 import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
@@ -845,10 +844,10 @@ class QuadraticCore {
 
   //#region Clipboard
 
-  copyToClipboard(selection: string): Promise<{ plainText: string; html: string }> {
+  copyToClipboard(selection: string): Promise<JsClipboard> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
+      this.waitingForResponse[id] = (message: JsClipboard) => {
         resolve(message);
       };
       this.send({
@@ -859,10 +858,10 @@ class QuadraticCore {
     });
   }
 
-  cutToClipboard(selection: string, cursor: string): Promise<{ plainText: string; html: string }> {
+  cutToClipboard(selection: string, cursor: string): Promise<JsClipboard> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
+      this.waitingForResponse[id] = (message: JsClipboard) => {
         resolve(message);
       };
       this.send({
@@ -981,7 +980,7 @@ class QuadraticCore {
     y: number;
     sheetEnd: boolean;
     reverse: boolean;
-  }): Promise<JsPos> {
+  }): Promise<Pos> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellVertically) => {
@@ -1012,7 +1011,7 @@ class QuadraticCore {
     y: number;
     sheetEnd: boolean;
     reverse: boolean;
-  }): Promise<JsPos> {
+  }): Promise<Pos> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellHorizontally) => {

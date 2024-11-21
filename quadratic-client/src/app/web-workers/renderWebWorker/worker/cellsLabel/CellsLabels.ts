@@ -9,15 +9,8 @@ import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { isFloatEqual } from '@/app/helpers/float';
-import {
-  ColumnRow,
-  JsOffset,
-  JsPos,
-  JsRenderCell,
-  JsRowHeight,
-  SheetBounds,
-  SheetInfo,
-} from '@/app/quadratic-core-types';
+import { ColumnRow, JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { Pos } from '@/app/quadratic-core/quadratic_core';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -423,7 +416,7 @@ export class CellsLabels {
 
   setHashesDirty(hashesString: string): void {
     try {
-      const hashes = JSON.parse(hashesString) as JsPos[];
+      const hashes = JSON.parse(hashesString) as Pos[];
       hashes.forEach(({ x, y }) => {
         const hashX = Number(x);
         const hashY = Number(y);

@@ -1,20 +1,17 @@
 use std::fs::create_dir_all;
 
 use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
-use crate::A1Error;
 use controller::execution::run_code::get_cells::CellA1Response;
 use controller::operations::clipboard::PasteSpecial;
 use grid::formats::format::Format;
 use grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
-    JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsPos, JsRenderCell, JsRenderCellSpecial,
-    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsRowHeight, JsSheetFill,
-    JsValidationWarning,
+    JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCodeCell,
+    JsRenderCodeCellState, JsRenderFill, JsRowHeight, JsSheetFill, JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::validations::validation::{
-    Validation, ValidationDisplay, ValidationDisplaySheet, ValidationError, ValidationMessage,
-    ValidationStyle,
+    Validation, ValidationError, ValidationMessage, ValidationStyle,
 };
 use grid::sheet::validations::validation_rules::validation_date_time::{
     DateTimeRange, ValidationDateTime,
@@ -26,9 +23,7 @@ use grid::sheet::validations::validation_rules::validation_logical::ValidationLo
 use grid::sheet::validations::validation_rules::validation_number::{
     NumberRange, ValidationNumber,
 };
-use grid::sheet::validations::validation_rules::validation_text::{
-    TextCase, TextMatch, ValidationText,
-};
+use grid::sheet::validations::validation_rules::validation_text::{TextMatch, ValidationText};
 use grid::sheet::validations::validation_rules::ValidationRule;
 use grid::JsCellsAccessed;
 use grid::{
@@ -43,8 +38,7 @@ use quadratic_core::grid::{
     BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
 };
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
-use quadratic_core::sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement};
-use quadratic_core::wasm_bindings::controller::bounds::MinMax;
+use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
 use quadratic_core::{Rect, *};
 use ts_rs::TS;
@@ -64,7 +58,6 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        A1Error,
         ArraySize,
         Axis,
         BorderSelection,
@@ -81,10 +74,8 @@ fn main() {
         ColumnRow,
         ConnectionKind,
         DateTimeRange,
-        Duration,
         Format,
         GridBounds,
-        Instant,
         JsBorderHorizontal,
         JsBorderVertical,
         JsBordersSheet,
@@ -99,27 +90,22 @@ fn main() {
         JsHtmlOutput,
         JsNumber,
         JsOffset,
-        JsPos,
         JsRenderCell,
-        JsRenderCellSpecial,
         JsRenderCodeCell,
         JsRenderCodeCellState,
         JsRenderFill,
         JsRowHeight,
         JsSheetFill,
         JsValidationWarning,
-        MinMax,
         NumberRange,
         NumericFormat,
         NumericFormatKind,
         PasteSpecial,
-        Placement,
         Pos,
         Rect,
         Rgba,
         RunError,
         RunErrorMsg,
-        ScreenRect,
         SearchOptions,
         SheetBounds,
         SheetId,
@@ -127,14 +113,11 @@ fn main() {
         SheetPos,
         SheetRect,
         Span,
-        TextCase,
         TextMatch,
         TransactionName,
         TransientResize,
         Validation,
         ValidationDateTime,
-        ValidationDisplay,
-        ValidationDisplaySheet,
         ValidationError,
         ValidationList,
         ValidationListSource,

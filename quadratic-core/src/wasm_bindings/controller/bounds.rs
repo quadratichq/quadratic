@@ -1,7 +1,10 @@
+use ts_rs::TS;
+use wasm_bindgen::prelude::*;
+
 use super::*;
 
-#[derive(Serialize, Deserialize, Debug)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, TS)]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct MinMax {
     pub min: i32,
     pub max: i32,
@@ -32,7 +35,7 @@ impl GridController {
         column_start: i32,
         column_end: i32,
         ignore_formatting: bool,
-    ) -> Option<String> {
+    ) -> Option<MinMax> {
         let sheet = self.try_sheet_from_string_id(sheet_id)?;
         if let Some(bounds) =
             sheet.columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
@@ -41,7 +44,7 @@ impl GridController {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             };
-            serde_json::to_string(&min_max).ok()
+            Some(min_max)
         } else {
             None
         }
@@ -55,7 +58,7 @@ impl GridController {
         row_start: i32,
         row_end: i32,
         ignore_formatting: bool,
-    ) -> Option<String> {
+    ) -> Option<MinMax> {
         let sheet = self.try_sheet_from_string_id(sheet_id)?;
         if let Some(bounds) = sheet.rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
         {
@@ -63,7 +66,7 @@ impl GridController {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             };
-            serde_json::to_string(&min_max).ok()
+            Some(min_max)
         } else {
             None
         }

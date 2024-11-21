@@ -10,7 +10,7 @@ use super::formats::format::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
-use crate::{Pos, SheetPos};
+use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum JsRenderCellSpecial {
@@ -63,13 +63,13 @@ pub struct JsCellValue {
 pub struct JsCellValuePos {
     pub value: String,
     pub kind: String,
-    pub pos: JsPos,
+    pub pos: Pos,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsCellValuePosAIContext {
     pub sheet_name: String,
-    pub rect_origin: JsPos,
+    pub rect_origin: Pos,
     pub rect_width: u32,
     pub rect_height: u32,
     pub starting_rect_values: Vec<Vec<JsCellValuePos>>,
@@ -271,28 +271,6 @@ impl fmt::Display for JsOffset {
             "JsOffset(column: {:?}, row: {:?}, size: {})",
             self.column, self.row, self.size
         )
-    }
-}
-
-#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, TS)]
-#[serde(rename_all = "camelCase")]
-pub struct JsPos {
-    pub x: i64,
-    pub y: i64,
-}
-impl fmt::Display for JsPos {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "JsPos(x: {}, y: {})", self.x, self.y)
-    }
-}
-impl From<Pos> for JsPos {
-    fn from(pos: Pos) -> Self {
-        JsPos { x: pos.x, y: pos.y }
-    }
-}
-impl From<SheetPos> for JsPos {
-    fn from(pos: SheetPos) -> Self {
-        JsPos { x: pos.x, y: pos.y }
     }
 }
 

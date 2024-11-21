@@ -14,13 +14,11 @@ import {
   JsCodeCell,
   JsHtmlOutput,
   JsOffset,
-  JsPos,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
-  MinMax,
   SearchOptions,
   SheetBounds,
   SheetInfo,
@@ -29,7 +27,7 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { JsSummarizeSelectionResult } from '@/app/quadratic-core/quadratic_core';
+import { JsSummarizeSelectionResult, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
 import { CodeRun } from '@/app/web-workers/CodeRun';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 
@@ -912,7 +910,7 @@ export interface ClientCoreMoveCodeCellVertically {
 
 export interface CoreClientMoveCodeCellVertically {
   type: 'coreClientMoveCodeCellVertically';
-  pos: JsPos;
+  pos: Pos;
   id: number;
 }
 
@@ -929,7 +927,7 @@ export interface ClientCoreMoveCodeCellHorizontally {
 
 export interface CoreClientMoveCodeCellHorizontally {
   type: 'coreClientMoveCodeCellHorizontally';
-  pos: JsPos;
+  pos: Pos;
   id: number;
 }
 
@@ -985,7 +983,7 @@ export interface ClientCoreGetValidationList {
 export interface CoreClientGetValidationList {
   type: 'coreClientGetValidationList';
   id: number;
-  validations: string[];
+  validations: string[] | undefined;
 }
 
 export interface ClientCoreGetDisplayCell {

@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use crate::{
     grid::{
-        js_types::{JsOffset, JsPos, JsRenderFill},
+        js_types::{JsOffset, JsRenderFill},
         RenderSize, SheetId,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -121,11 +121,7 @@ impl GridController {
             return;
         }
 
-        let hashes = dirty_hashes
-            .iter()
-            .map(|pos| JsPos::from(*pos))
-            .collect::<Vec<JsPos>>();
-
+        let hashes = dirty_hashes.iter().cloned().collect::<Vec<Pos>>();
         if let Ok(hashes_string) = serde_json::to_string(&hashes) {
             crate::wasm_bindings::js::jsHashesDirty(sheet_id.to_string(), hashes_string);
         }
