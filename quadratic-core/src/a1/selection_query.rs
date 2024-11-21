@@ -131,105 +131,129 @@ impl A1Selection {
         });
         hashes
     }
+
+    /// Returns the bottom-right cell for the selection. It defaults to the cursor if it's
+    /// a non-finite range.
+    pub fn bottom_right_cell(&self) -> Pos {
+        if let Some(range) = self.ranges.last() {
+            // Get the start coordinates
+            let mut max_x = range
+                .start
+                .col
+                .map(|col| col.coord as i64)
+                .unwrap_or(self.cursor.x);
+            let mut max_y = range
+                .start
+                .row
+                .map(|row| row.coord as i64)
+                .unwrap_or(self.cursor.y);
+
+            // If there's an end position, compare with start to find max
+            if let Some(end) = &range.end {
+                if let Some(col) = &end.col {
+                    max_x = max_x.max(col.coord as i64);
+                }
+                if let Some(row) = &end.row {
+                    max_y = max_y.max(row.coord as i64);
+                }
+            }
+
+            Pos { x: max_x, y: max_y }
+        } else {
+            self.cursor
+        }
+    }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use std::collections::HashMap;
-
-    use crate::grid::SheetId;
-
     use super::*;
 
     #[test]
     fn test_contains() {
-        let selection =
-            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A1,B2,C3");
         assert!(selection.might_contain_xy(1, 1));
         assert!(!selection.might_contain_xy(4, 1));
     }
 
     #[test]
     fn test_contains_pos() {
-        let selection =
-            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A1,B2,C3");
         assert!(selection.might_contain_pos(pos![A1]));
         assert!(!selection.might_contain_pos(pos![D1]));
     }
 
     #[test]
     fn test_might_contain_pos() {
-        let selection =
-            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A1,B2,C3");
         assert!(selection.might_contain_pos(pos![A1]));
         assert!(!selection.might_contain_pos(pos![D1]));
     }
 
     #[test]
     fn test_largest_rect() {
-        let selection = A1Selection::from_str(
-            "A1,B1:D2,E:G,2:3,5:7,F6:G8,4",
-            SheetId::test(),
-            &HashMap::new(),
-        )
-        .unwrap();
+        let selection = A1Selection::test("A1,B1:D2,E:G,2:3,5:7,F6:G8,4");
         assert_eq!(selection.largest_rect(), Rect::new(1, 1, 7, 8));
     }
 
     #[test]
     fn test_largest_rect_finite() {
-        let selection = A1Selection::from_str(
-            "A1,B1:D2,E:G,2:3,5:7,F6:G8,4",
-            SheetId::test(),
-            &HashMap::new(),
-        )
-        .unwrap();
+        let selection = A1Selection::test("A1,B1:D2,E:G,2:3,5:7,F6:G8,4");
         assert_eq!(selection.largest_rect_finite(), Rect::new(1, 1, 7, 8));
     }
 
     #[test]
     fn test_is_multi_cursor() {
-        let selection =
-            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A1,B2,C3");
         assert!(selection.is_multi_cursor());
 
-        let selection =
-            A1Selection::from_str("A1,B1:C2", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A1,B1:C2");
         assert!(selection.is_multi_cursor());
 
-        let selection = A1Selection::from_str("A", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A");
         assert!(selection.is_multi_cursor());
 
-        let selection = A1Selection::from_str("1", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("1");
         assert!(selection.is_multi_cursor());
 
-        let selection = A1Selection::from_str("A1", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A1");
         assert!(!selection.is_multi_cursor());
     }
 
     #[test]
     fn test_is_column_row() {
-        let selection =
-            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A1,B2,C3");
         assert!(!selection.is_column_row());
 
-        let selection = A1Selection::from_str("D", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("D");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::from_str("A:C", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A:C");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::from_str("10", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("10");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::from_str("1:3", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("1:3");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::from_str("A1:3", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("A1:3");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::from_str("1:C3", SheetId::test(), &HashMap::new()).unwrap();
+        let selection = A1Selection::test("1:C3");
         assert!(selection.is_column_row());
+    }
+
+    #[test]
+    fn test_bottom_right_cell() {
+        let selection = A1Selection::test("A1,B2,C3");
+        assert_eq!(selection.bottom_right_cell(), pos![C3]);
+
+        let selection = A1Selection::test("A1,B1:C2");
+        assert_eq!(selection.bottom_right_cell(), pos![C2]);
+
+        let selection = A1Selection::test("C2:B1");
+        assert_eq!(selection.bottom_right_cell(), pos![C2]);
     }
 }

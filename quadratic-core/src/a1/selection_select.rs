@@ -261,6 +261,10 @@ mod tests {
         selection = A1Selection::test("A1");
         selection.delta_size(-1, -1);
         assert_eq!(selection.test_string(), "A1");
+
+        selection = A1Selection::test("E5:G6");
+        selection.delta_size(-3, -3);
+        assert_eq!(selection.test_string(), "E5:D3");
     }
 
     #[test]
