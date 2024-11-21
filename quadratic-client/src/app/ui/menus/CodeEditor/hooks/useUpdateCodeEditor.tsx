@@ -1,6 +1,5 @@
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { JsCodeCell, Pos } from '@/app/quadratic-core-types';
+import { JsCodeCell, JsCoordinate, Pos } from '@/app/quadratic-core-types';
 import { useRecoilCallback } from 'recoil';
 
 export const useUpdateCodeEditor = () => {
@@ -42,7 +41,7 @@ export const useUpdateCodeEditor = () => {
             cellsAccessed: undefined, //codeCell.cells_accessed,
 
             consoleOutput: { stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined },
-            spillError: codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)),
+            spillError: codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as JsCoordinate)),
             initialCode: undefined,
           }));
         } else {

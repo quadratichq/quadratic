@@ -1,4 +1,3 @@
-import { Coordinate } from '@/app/gridGL/types/size';
 import {
   BorderSelection,
   BorderStyle,
@@ -12,6 +11,7 @@ import {
   JsCellValue,
   JsCellValuePosAIContext,
   JsCodeCell,
+  JsCoordinate,
   JsHtmlOutput,
   JsOffset,
   JsRenderCell,
@@ -450,7 +450,7 @@ export interface ClientCoreImportFile {
   fileName: string;
   fileType: 'csv' | 'parquet' | 'excel';
   sheetId?: string;
-  location?: Coordinate;
+  location?: JsCoordinate;
   cursor?: string;
   id: number;
 }

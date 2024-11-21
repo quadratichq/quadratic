@@ -4,12 +4,12 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { CellRefRange } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Graphics } from 'pixi.js';
 
-export const drawCursorOutline = (g: Graphics, color: number, cursor: Coordinate) => {
+export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordinate) => {
   const outline = sheets.sheet.getCellOffsets(cursor.x, cursor.y);
   g.lineStyle({ width: CURSOR_THICKNESS, color, alignment: 0 });
   g.drawRect(outline.x, outline.y, outline.width, outline.height);

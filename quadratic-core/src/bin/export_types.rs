@@ -91,6 +91,7 @@ fn main() {
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
+        JsCoordinate,
         JsGetCellResponse,
         JsHtmlOutput,
         JsNumber,

@@ -1,9 +1,9 @@
 //! Cloned from pixi-viewport Drag plugin to add clamping only for changes when
 //! dragging (zoom has different clamping).
 
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { Decelerate, Plugin, Viewport } from 'pixi-viewport';
 import { InteractionEvent, Point } from 'pixi.js';
-import { Coordinate } from '../../types/size';
 
 /** Options for {@link Drag}. */
 export interface IDragOptions {
@@ -153,7 +153,7 @@ export class Drag extends Plugin {
   protected underflowY!: -1 | 0 | 1;
 
   /** Last pointer position while panning. */
-  protected last?: Coordinate | null;
+  protected last?: JsCoordinate | null;
 
   /** The ID of the pointer currently panning the viewport. */
   protected current?: number;

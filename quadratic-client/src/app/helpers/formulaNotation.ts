@@ -1,7 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { CursorCell } from '@/app/gridGL/UI/Cursor';
 import { StringId } from '@/app/helpers/getKey';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { CellRefId } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 
 export function getCoordinatesFromStringId(stringId: StringId): [number, number] {
@@ -46,7 +46,7 @@ export type ParseFormulaReturnType = {
   }[];
 };
 
-export function getCellFromFormulaNotation(sheetId: string, cellRefId: CellRefId, editorCursorPosition: Coordinate) {
+export function getCellFromFormulaNotation(sheetId: string, cellRefId: CellRefId, editorCursorPosition: JsCoordinate) {
   const isSimpleCell = !cellRefId.includes(':');
 
   if (isSimpleCell) {
@@ -65,7 +65,7 @@ export function getCellFromFormulaNotation(sheetId: string, cellRefId: CellRefId
 
 function getCellWithLimit(
   sheetId: string,
-  editorCursorPosition: Coordinate,
+  editorCursorPosition: JsCoordinate,
   row: number,
   column: number,
   offset = 20000

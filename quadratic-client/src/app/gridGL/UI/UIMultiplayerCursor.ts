@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Graphics } from 'pixi.js';
 
@@ -28,7 +28,7 @@ export class UIMultiPlayerCursor extends Graphics {
     code,
   }: {
     color: number;
-    cursor: Coordinate;
+    cursor: JsCoordinate;
     editing: boolean;
     sessionId: string;
     code: boolean;

@@ -2,8 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { ColumnRow, GridBounds, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
+import { ColumnRow, GridBounds, JsCoordinate, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -102,7 +101,7 @@ export class Sheet {
   //#endregion
 
   //#region get grid information
-  getMinMax(onlyData: boolean): Coordinate[] | undefined {
+  getMinMax(onlyData: boolean): JsCoordinate[] | undefined {
     const bounds = onlyData ? this.boundsWithoutFormatting : this.bounds;
     if (bounds.type === 'empty') return;
     return [
@@ -143,7 +142,7 @@ export class Sheet {
     return this.offsets.getRowPlacement(y).position;
   }
 
-  getColumnRow(x: number, y: number): Coordinate {
+  getColumnRow(x: number, y: number): JsCoordinate {
     const columnRowStringified = this.offsets.getColumnRowFromScreen(x, y);
     const columnRow: ColumnRow = JSON.parse(columnRowStringified);
     return { x: columnRow.column, y: columnRow.row };

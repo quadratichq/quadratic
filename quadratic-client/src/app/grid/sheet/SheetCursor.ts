@@ -6,7 +6,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -30,8 +30,8 @@ export interface RectangleLike {
 // Save object for the cursor state.
 export interface SheetCursorSave {
   sheetId: string;
-  keyboardMovePosition: Coordinate;
-  cursorPosition: Coordinate;
+  keyboardMovePosition: JsCoordinate;
+  cursorPosition: JsCoordinate;
   multiCursor?: RectangleLike[];
   columnRow?: ColumnRowCursor;
 }
@@ -92,7 +92,7 @@ export class SheetCursor {
     }
   }
 
-  get position(): Coordinate {
+  get position(): JsCoordinate {
     return this.jsSelection.getCursor();
   }
 

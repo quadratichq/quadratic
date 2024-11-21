@@ -3,11 +3,10 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { DASHED } from '@/app/gridGL/generateTextures';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import { CellPosition, ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
-import { JsCellsAccessed } from '@/app/quadratic-core-types';
+import { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 
@@ -165,7 +164,7 @@ export class CellHighlights extends Container {
 
   private fromCellRange(
     cellRange: { type: 'CellRange'; start: CellPosition; end: CellPosition; sheet?: string },
-    origin: Coordinate,
+    origin: JsCoordinate,
     sheet: string,
     span: Span,
     index: number
@@ -185,7 +184,7 @@ export class CellHighlights extends Container {
     });
   }
 
-  private fromCell(cell: CellPosition, origin: Coordinate, sheet: string, span: Span, index: number) {
+  private fromCell(cell: CellPosition, origin: JsCoordinate, sheet: string, span: Span, index: number) {
     this.highlightedCells.push({
       column: this.evalCoord(cell.x, origin.x),
       row: this.evalCoord(cell.y, origin.y),
@@ -197,7 +196,7 @@ export class CellHighlights extends Container {
     });
   }
 
-  fromFormula(formula: ParseFormulaReturnType, cell: Coordinate, sheet: string) {
+  fromFormula(formula: ParseFormulaReturnType, cell: JsCoordinate, sheet: string) {
     this.highlightedCells = [];
 
     formula.cell_refs.forEach((cellRef, index) => {
@@ -217,7 +216,7 @@ export class CellHighlights extends Container {
     pixiApp.cellHighlights.dirty = true;
   }
 
-  fromCellsAccessed(cellsAccessed: JsCellsAccessed, cell: Coordinate, sheet: string) {
+  fromCellsAccessed(cellsAccessed: JsCellsAccessed, cell: JsCoordinate, sheet: string) {
     this.highlightedCells = [];
     for (const sheetId in cellsAccessed.cells) {
       if (sheetId === sheet) {

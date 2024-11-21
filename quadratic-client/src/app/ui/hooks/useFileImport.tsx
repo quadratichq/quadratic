@@ -1,5 +1,5 @@
-import { Coordinate } from '@/app/gridGL/types/size';
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
@@ -32,7 +32,7 @@ export function useFileImport() {
   }: {
     files?: FileList | File[];
     sheetId?: string;
-    insertAt?: Coordinate;
+    insertAt?: JsCoordinate;
     cursor?: string; // cursor is available when importing into a existing file, it is also being used as a flag to denote this
     isPrivate?: boolean;
     teamUuid?: string;

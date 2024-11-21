@@ -1,20 +1,19 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
 import { getKey, StringId } from '@/app/helpers/getKey';
-import { SheetRect } from '@/app/quadratic-core-types';
+import { JsCoordinate, SheetRect } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 
 export function extractCellsFromParseFormula(
   parsedFormula: ParseFormulaReturnType,
-  cell: Coordinate,
+  cell: JsCoordinate,
   sheet: string
 ): { cellId: CellRefId; span: Span; index: number }[] {
   return parsedFormula.cell_refs.map(({ cell_ref, span }, index) => {

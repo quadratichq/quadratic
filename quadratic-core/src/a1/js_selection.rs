@@ -1,11 +1,13 @@
 use std::str::FromStr;
 
+use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 use crate::{grid::SheetId, Rect};
 
 use super::{A1Selection, CellRefRange, SheetNameIdMap};
 
+#[derive(Debug, Clone, TS)]
 #[wasm_bindgen]
 pub struct JsCoordinate {
     pub x: u32,

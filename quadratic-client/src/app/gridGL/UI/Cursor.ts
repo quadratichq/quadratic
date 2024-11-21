@@ -5,8 +5,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { CellRefRange } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
@@ -46,7 +46,7 @@ export class Cursor extends Container {
   }
 
   // redraws corners if there is an error
-  private drawError(cell: Coordinate, x: number, y: number, width: number, height: number) {
+  private drawError(cell: JsCoordinate, x: number, y: number, width: number, height: number) {
     const error = pixiApp.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
     if (error) {
       if (error.triangle) {

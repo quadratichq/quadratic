@@ -7,6 +7,7 @@ import {
 } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { Background } from '@/app/gridGL/UI/Background';
 import { Cursor } from '@/app/gridGL/UI/Cursor';
 import { GridLines } from '@/app/gridGL/UI/GridLines';
 import { HtmlPlaceholders } from '@/app/gridGL/UI/HtmlPlaceholders';
@@ -25,15 +26,14 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { isEmbed } from '@/app/helpers/isEmbed';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Rectangle, Renderer, utils } from 'pixi.js';
-import { Background } from '../UI/Background';
 import './pixiApp.css';
 
 utils.skipHello();
@@ -323,7 +323,7 @@ export class PixiApp {
     });
   }
 
-  updateCursorPosition(visible: boolean | Coordinate = true) {
+  updateCursorPosition(visible: boolean | JsCoordinate = true) {
     this.cursor.dirty = true;
     this.cellHighlights.dirty = true;
     this.headings.dirty = true;

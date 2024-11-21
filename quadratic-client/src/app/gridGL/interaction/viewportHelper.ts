@@ -1,9 +1,9 @@
+import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { Point } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { intersects } from '../helpers/intersects';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { Coordinate } from '../types/size';
 
 export function getVisibleTopRow(): number {
   const viewport = pixiApp.viewport.getVisibleBounds();
@@ -62,7 +62,7 @@ export function isColumnVisible(column: number): boolean {
 }
 
 // Makes a rect visible in the viewport
-export function rectVisible(min: Coordinate, max: Coordinate): boolean {
+export function rectVisible(min: JsCoordinate, max: JsCoordinate): boolean {
   // returns true if the rect is visible in the viewport
   const { viewport, headings } = pixiApp;
   const sheet = sheets.sheet;
@@ -93,7 +93,7 @@ export function rectVisible(min: Coordinate, max: Coordinate): boolean {
   return !is_off_screen;
 }
 
-export function ensureRectVisible(min: Coordinate, max: Coordinate) {
+export function ensureRectVisible(min: JsCoordinate, max: JsCoordinate) {
   if (!rectVisible(min, max)) {
     pixiApp.viewportChanged();
   }
@@ -101,7 +101,7 @@ export function ensureRectVisible(min: Coordinate, max: Coordinate) {
 
 // Makes a cell visible in the viewport
 export function cellVisible(
-  coordinate: Coordinate = {
+  coordinate: JsCoordinate = {
     x: sheets.sheet.cursor.position.x,
     y: sheets.sheet.cursor.position.y,
   }
@@ -134,7 +134,7 @@ export function cellVisible(
 }
 
 // Ensures the cursor is always visible
-export function ensureVisible(visible: Coordinate | undefined) {
+export function ensureVisible(visible: JsCoordinate | undefined) {
   if (!cellVisible(visible)) {
     pixiApp.viewportChanged();
   }
@@ -150,7 +150,7 @@ export function ensureVisible(visible: Coordinate | undefined) {
  * @param [options.pageDown] move viewport down one page
  * @param [options.force] force viewport to move even if cell is already visible
  */
-export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinate; force?: boolean }): void {
+export function moveViewport(options: { center?: JsCoordinate; topLeft?: JsCoordinate; force?: boolean }): void {
   const { center, topLeft, force } = options;
   if (!center && !topLeft) return;
 

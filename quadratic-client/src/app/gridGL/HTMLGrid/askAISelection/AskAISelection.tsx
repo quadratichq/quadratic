@@ -2,8 +2,8 @@ import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -31,7 +31,7 @@ export function AskAISelection() {
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
   const [currentSheet, setCurrentSheet] = useState(sheets.current);
   const [selection, setSelection] = useState<Context['selection']>();
-  const [displayPos, setDisplayPos] = useState<Coordinate | undefined>();
+  const [displayPos, setDisplayPos] = useState<JsCoordinate | undefined>();
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | undefined>();
 

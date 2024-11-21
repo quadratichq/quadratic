@@ -14,8 +14,8 @@ import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/d
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Link } from '@/app/gridGL/types/links';
-import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
-import { JsRenderCell } from '@/app/quadratic-core-types';
+import { DrawRects } from '@/app/gridGL/types/size';
+import { JsCoordinate, JsRenderCell } from '@/app/quadratic-core-types';
 import { CellLabel } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
@@ -36,7 +36,7 @@ export class CellsTextHash {
   private labels: Map<string, CellLabel>;
 
   // tracks which grid lines should not be drawn for this hash
-  private overflowGridLines: Coordinate[] = [];
+  private overflowGridLines: JsCoordinate[] = [];
 
   private drawRects: DrawRects[] = [];
 
