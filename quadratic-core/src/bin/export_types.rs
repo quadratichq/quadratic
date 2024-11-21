@@ -62,7 +62,7 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        A1Selection,
+        // A1Selection,
         ArraySize,
         Axis,
         BorderSelection,
