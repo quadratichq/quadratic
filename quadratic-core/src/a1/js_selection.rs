@@ -156,8 +156,7 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "getRanges")]
     pub fn get_ranges(&self) -> Result<Vec<CellRefRange>, String> {
-        // Ok(self.selection.ranges.clone())
-        Ok(vec![])
+        Ok(self.selection.ranges.clone())
     }
 
     #[wasm_bindgen(js_name = "isColumnRow")]
