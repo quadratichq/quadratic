@@ -256,7 +256,7 @@ impl GridController {
                 );
 
                 if let Some(mut values) = values {
-                    if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                    if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
                         let rect = Rect::from_numbers(
                             start_pos.x,
                             start_pos.y,
@@ -268,15 +268,51 @@ impl GridController {
                         // If so, replace values in the data table with the
                         // intersection of the data table and the paste
                         sheet.iter_code_output_intersects_rect(rect).for_each(
-                            |(_, intersection_rect, data_table)| {
+                            |(output_rect, intersection_rect, data_table)| {
                                 // there is no pasting on top of code cell output
                                 if !data_table.readonly {
                                     let adjusted_rect = Rect::from_numbers(
-                                        start_pos.x - intersection_rect.min.x,
-                                        start_pos.y - intersection_rect.min.y,
+                                        intersection_rect.min.x - start_pos.x,
+                                        intersection_rect.min.y - start_pos.y,
                                         intersection_rect.width() as i64,
                                         intersection_rect.height() as i64,
                                     );
+
+                                    let contains_header =
+                                        intersection_rect.y_range().contains(&output_rect.min.y);
+                                    let headers = data_table.column_headers.to_owned();
+
+                                    if let (Some(mut headers), true) = (headers, contains_header) {
+                                        let y = output_rect.min.y - start_pos.y;
+
+                                        for x in intersection_rect.x_range() {
+                                            let new_x = x - output_rect.min.x;
+
+                                            if let Some(header) = headers.get_mut(new_x as usize) {
+                                                let header_rect =
+                                                    Rect::from_numbers(x - start_pos.x, y, 1, 1);
+                                                let new_x =
+                                                    u32::try_from(x - start_pos.x).unwrap_or(0);
+                                                let new_y = u32::try_from(y).unwrap_or(0);
+
+                                                let cell_value = values
+                                                    .remove(new_x, new_y)
+                                                    .unwrap_or(CellValue::Blank);
+
+                                                header.name = cell_value;
+                                            }
+                                        }
+
+                                        let sheet_pos =
+                                            output_rect.min.to_sheet_pos(selection.sheet_id);
+                                        ops.push(Operation::DataTableMeta {
+                                            sheet_pos,
+                                            name: None,
+                                            alternating_colors: None,
+                                            columns: Some(headers.to_vec()),
+                                            show_header: None,
+                                        });
+                                    }
 
                                     // pull the values from `values`, replacing
                                     // the values in `values` with CellValue::Blank
@@ -500,10 +536,11 @@ mod test {
 
     use super::{PasteSpecial, *};
     use crate::controller::active_transactions::transaction_name::TransactionName;
-    use crate::controller::user_actions::import::tests::simple_csv;
+    use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::SheetId;
+    use crate::test_util::{assert_cell_value_row, print_data_table, print_table};
     use crate::Rect;
 
     #[test]
@@ -820,6 +857,22 @@ mod test {
     #[parallel]
     fn paste_clipboard_with_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv();
+        let rect = Rect::new(0, 0, 3, 10);
+
+        let paste = |gc: &mut GridController, x, y, html| {
+            gc.paste_from_clipboard(
+                Selection {
+                    sheet_id,
+                    x,
+                    y,
+                    ..Default::default()
+                },
+                None,
+                Some(html),
+                PasteSpecial::None,
+                None,
+            )
+        };
 
         let (_, html) = gc
             .sheet(sheet_id)
@@ -827,27 +880,90 @@ mod test {
                 sheet_id,
                 x: 0,
                 y: 0,
-                rects: Some(vec![Rect::new(0, 0, 3, 10)]),
+                rects: Some(vec![rect]),
                 ..Default::default()
             })
             .unwrap();
 
-        gc.paste_from_clipboard(
-            Selection {
-                sheet_id,
-                x: 20,
-                y: 20,
-                ..Default::default()
-            },
-            None,
-            Some(html),
-            PasteSpecial::None,
-            None,
-        );
+        let expected_row1 = vec!["city", "region", "country", "population"];
 
-        assert_eq!(
-            gc.sheet(sheet_id).cell_value((20, 20).into()),
-            Some(CellValue::Text("city".into()))
-        );
+        // paste side by side
+        paste(&mut gc, 4, 0, html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 10));
+        assert_cell_value_row(&mut gc, sheet_id, 4, 0, 0, expected_row1);
+    }
+
+    #[test]
+    #[parallel]
+    fn paste_clipboard_on_top_of_data_table() {
+        let (mut gc, sheet_id, _, _) = simple_csv_at(Pos { x: 2, y: 0 });
+        let rect = Rect::from_numbers(10, 0, 2, 2);
+        let sheet = gc.sheet_mut(sheet_id);
+
+        sheet.test_set_values(10, 0, 2, 2, vec!["1", "2", "3", "4"]);
+        let (_, html) = sheet
+            .copy_to_clipboard(&Selection {
+                sheet_id,
+                x: 10,
+                y: 0,
+                rects: Some(vec![rect]),
+                ..Default::default()
+            })
+            .unwrap();
+
+        let paste = |gc: &mut GridController, x, y, html| {
+            gc.paste_from_clipboard(
+                Selection {
+                    sheet_id,
+                    x,
+                    y,
+                    ..Default::default()
+                },
+                None,
+                Some(html),
+                PasteSpecial::None,
+                None,
+            )
+        };
+
+        let expected_row1 = vec!["1", "2"];
+        let expected_row2 = vec!["3", "4"];
+
+        // paste overlap inner
+        paste(&mut gc, 4, 2, html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
+        assert_cell_value_row(&mut gc, sheet_id, 4, 5, 2, expected_row1.clone());
+        assert_cell_value_row(&mut gc, sheet_id, 4, 5, 3, expected_row2.clone());
+        gc.undo(None);
+
+        // paste overlap with right grid
+        paste(&mut gc, 5, 2, html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
+        assert_cell_value_row(&mut gc, sheet_id, 5, 6, 2, expected_row1.clone());
+        assert_cell_value_row(&mut gc, sheet_id, 5, 6, 3, expected_row2.clone());
+        gc.undo(None);
+
+        // paste overlap with bottom grid
+        paste(&mut gc, 4, 10, html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
+        assert_cell_value_row(&mut gc, sheet_id, 4, 5, 10, expected_row1.clone());
+        assert_cell_value_row(&mut gc, sheet_id, 4, 5, 11, expected_row2.clone());
+        gc.undo(None);
+
+        // paste overlap with bottom left grid
+        paste(&mut gc, 1, 10, html.clone());
+        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
+        // print_table(&gc, sheet_id, Rect::from_numbers(1, 10, 2, 2));
+        assert_cell_value_row(&mut gc, sheet_id, 1, 2, 10, expected_row1.clone());
+        assert_cell_value_row(&mut gc, sheet_id, 1, 2, 11, expected_row2.clone());
+        gc.undo(None);
+
+        // paste overlap with top left grid
+        paste(&mut gc, 3, 0, html.clone());
+        print_data_table(&gc, sheet_id, Rect::from_numbers(2, 0, 4, 4));
+        // print_table(&gc, sheet_id, Rect::from_numbers(2, 0, 4, 4));
+        // assert_cell_value_row(&mut gc, sheet_id, 1, 2, 10, expected_row1.clone());
+        // assert_cell_value_row(&mut gc, sheet_id, 1, 2, 11, expected_row2.clone());
+        gc.undo(None);
     }
 }

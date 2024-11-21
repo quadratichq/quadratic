@@ -84,15 +84,19 @@ impl CellValues {
     }
 
     pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<CellValue>> {
+        // let size = rect.size();
+        // let mut values = CellValues::new(size.w.get(), size.h.get());
         let mut values =
             vec![vec![CellValue::Blank; rect.width() as usize]; rect.height() as usize];
 
-        for y in rect.y_range() {
-            for x in rect.x_range() {
+        for (y_index, y) in rect.y_range().enumerate() {
+            for (x_index, x) in rect.x_range().enumerate() {
                 let new_x = u32::try_from(x).unwrap_or(0);
                 let new_y = u32::try_from(y).unwrap_or(0);
-                values[new_y as usize][new_x as usize] =
-                    self.remove(new_x, new_y).unwrap_or(CellValue::Blank);
+
+                values[y_index as usize][x_index as usize] = self
+                    .remove(new_x as u32, new_y as u32)
+                    .unwrap_or(CellValue::Blank);
             }
         }
         values

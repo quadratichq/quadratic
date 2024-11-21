@@ -369,6 +369,7 @@ impl DataTable {
                     .as_ref()
                     .unwrap()
                     .iter()
+                    .filter(|h| h.display)
                     .map(|h| h.name.to_string())
                     .collect::<Vec<_>>();
                 builder.set_header([display_index, headers].concat());

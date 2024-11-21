@@ -252,9 +252,11 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, rect: Re
 #[track_caller]
 #[cfg(test)]
 pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rect: Rect) {
-    if let Some(sheet) = grid_controller.try_sheet(sheet_id) {
-        let data_table = sheet.data_table(rect.min).unwrap();
+    let sheet = grid_controller
+        .try_sheet(sheet_id)
+        .expect("Sheet not found");
 
+    if let Some(data_table) = sheet.data_table(rect.min) {
         let max = rect.max.y - rect.min.y + 1;
         crate::grid::data_table::test::pretty_print_data_table(
             data_table,
@@ -262,7 +264,7 @@ pub fn print_data_table(grid_controller: &GridController, sheet_id: SheetId, rec
             Some(max as usize),
         );
     } else {
-        println!("Sheet not found");
+        println!("Data table not found at {:?}", rect.min);
     }
 }
 

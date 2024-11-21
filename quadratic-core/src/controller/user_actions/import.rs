@@ -109,10 +109,13 @@ pub(crate) mod tests {
     // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
 
     pub(crate) fn simple_csv() -> (GridController, SheetId, Pos, &'static str) {
+        simple_csv_at(Pos { x: 0, y: 0 })
+    }
+
+    pub(crate) fn simple_csv_at(pos: Pos) -> (GridController, SheetId, Pos, &'static str) {
         let csv_file = read_test_csv_file("simple.csv");
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
         let file_name = "simple.csv";
 
         gc.import_csv(sheet_id, csv_file.as_slice().to_vec(), file_name, pos, None)
