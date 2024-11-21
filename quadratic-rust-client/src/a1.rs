@@ -58,8 +58,15 @@ impl Selection {
     }
 
     #[wasm_bindgen(js_name = "selectColumn")]
-    pub fn select_column(&mut self, column: u32, append: bool) {
-        self.selection.select_column(column, append);
+    pub fn select_column(
+        &mut self,
+        column: u32,
+        ctrl_key: bool,
+        shift_key: bool,
+        is_right_click: bool,
+    ) {
+        self.selection
+            .select_column(column, ctrl_key || shift_key, shift_key, is_right_click);
     }
 
     #[wasm_bindgen(js_name = "selectRow")]

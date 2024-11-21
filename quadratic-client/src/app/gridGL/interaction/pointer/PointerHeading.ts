@@ -114,102 +114,11 @@ export class PointerHeading {
       // row and the current one.
       const isRightClick =
         (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
-      if (event.ctrlKey || event.metaKey || isRightClick) {
-        if (intersects.column !== null) {
-          // todo...
-          throw new Error('todo');
-          // let column = intersects.column;
-          // const columns = cursor.columnRow?.columns || [];
-          // if (event.shiftKey) {
-          //   if (columns.length === 0) {
-          //     selectColumns([column], undefined, true);
-          //   } else {
-          //     const lastColumn = columns[columns.length - 1];
-          //     if (lastColumn < column) {
-          //       selectColumns([...columns, ...fillArray(lastColumn + 1, column)], undefined, true);
-          //     } else {
-          //       selectColumns([...columns, ...fillArray(column, lastColumn - 1)], undefined, true);
-          //     }
-          //   }
-          // } else {
-          //   if (columns.includes(column)) {
-          //     if (isRightClick) {
-          //       events.emit('gridContextMenu', world, column, null);
-          //     } else {
-          //       selectColumns(
-          //         columns.filter((c) => c !== column),
-          //         undefined,
-          //         true
-          //       );
-          //     }
-          //   } else {
-          //     if (isRightClick) {
-          //       selectColumns([column], undefined, true);
-          //       // need the timeout to allow the cursor events to complete
-          //       setTimeout(() => events.emit('gridContextMenu', world, column, null));
-          //     } else {
-          //       selectColumns([...columns, column], undefined, true);
-          //     }
-          //   }
-          // }
-        } else if (intersects.row !== null) {
-          throw new Error('todo');
-          // let row = intersects.row;
-          // const rows = cursor.columnRow?.rows || [];
-          // if (event.shiftKey) {
-          //   if (rows.length === 0) {
-          //     selectRows([row], undefined, true);
-          //   } else {
-          //     const lastRow = rows[rows.length - 1];
-          //     if (lastRow < row) {
-          //       selectRows([...rows, ...fillArray(lastRow + 1, row)], undefined, true);
-          //     } else {
-          //       selectRows([...rows, ...fillArray(row, lastRow - 1)], undefined, true);
-          //     }
-          //   }
-          // } else {
-          //   if (rows.includes(row)) {
-          //     if (isRightClick) {
-          //       events.emit('gridContextMenu', world, null, row);
-          //     } else {
-          //       selectRows(
-          //         rows.filter((c) => c !== row),
-          //         undefined,
-          //         true
-          //       );
-          //     }
-          //   } else {
-          //     if (isRightClick) {
-          //       selectRows([row], undefined, true);
-          //       // need the timeout to allow the cursor events to complete
-          //       setTimeout(() => events.emit('gridContextMenu', world, null, row));
-          //     } else {
-          //       selectRows([...rows, row], undefined, true);
-          //     }
-          //   }
-          // }
-        }
-      }
 
-      // If a column/row is not selected, then it selects that column/row.
-      // Otherwise it selects between the last selected column/row and the
-      // current one.
-      else if (event.shiftKey) {
-        if (intersects.column !== null) {
-          cursor.selectColumn(intersects.column, true);
-        } else if (intersects.row !== null) {
-          cursor.selectRow(intersects.row, true);
-        }
-      }
-
-      // Otherwise, it selects the column/row.
-      else {
-        if (intersects.column !== null) {
-          cursor.selectColumns([intersects.column]);
-          // check if we're trying to open the context menu
-        } else if (intersects.row !== null) {
-          cursor.selectRows([intersects.row]);
-        }
+      if (intersects.column !== null) {
+        cursor.selectColumn(intersects.column, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick);
+      } else if (intersects.row !== null) {
+        cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick);
       }
     }
 

@@ -9,25 +9,39 @@ impl A1Selection {
         self.ranges.push(CellRefRange::ALL);
     }
 
+    fn add_or_remove_column(&mut self, col: u32) {
+        let range = self.ranges.iter().find(|r| r.is_column_range());
+    }
+
     /// Selects a single column. If append is true, then the column is appended
     /// to the ranges (or, if the last selection was a column, then the end of
     /// that column is extended).
-    pub fn select_column(&mut self, col: u32, append: bool) {
-        if !append {
+    pub fn select_column(
+        &mut self,
+        col: u32,
+        ctrl_key: bool,
+        shift_key: bool,
+        is_right_click: bool,
+    ) {
+        if !ctrl_key && !shift_key {
             self.ranges.clear();
             self.ranges
                 .push(CellRefRange::new_relative_column(col as u64));
-        } else if let Some(last_range) = self.ranges.last_mut() {
-            if last_range.is_column_range() {
-                last_range.end = Some(CellRefRangeEnd::new_relative_column(col as u64));
-            } else {
-                self.ranges
-                    .push(CellRefRange::new_relative_column(col as u64));
-            }
-        } else {
-            self.ranges
-                .push(CellRefRange::new_relative_column(col as u64));
+        } else if ctrl_key && !shift_key {
+            self.add_or_remove_column(col);
         }
+
+        //  else if let Some(last_range) = self.ranges.last_mut() {
+        //     if last_range.is_column_range() {
+        //         last_range.end = Some(CellRefRangeEnd::new_relative_column(col as u64));
+        //     } else {
+        //         self.ranges
+        //             .push(CellRefRange::new_relative_column(col as u64));
+        //     }
+        // } else {
+        //     self.ranges
+        //         .push(CellRefRange::new_relative_column(col as u64));
+        // }
     }
 
     /// Selects a single row. If append is true, then the row is appended
@@ -210,9 +224,7 @@ mod tests {
 
     #[test]
     fn test_select_column() {
-        let mut selection = A1Selection::test("A1,B1,C1");
-        selection.select_column(2, false);
-        assert_eq!(selection.test_string(), "B");
+        todo!();
     }
 
     #[test]
