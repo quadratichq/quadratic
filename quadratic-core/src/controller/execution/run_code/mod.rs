@@ -517,7 +517,7 @@ mod test {
         };
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
-            "Table 1",
+            "Table 2",
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
             false,

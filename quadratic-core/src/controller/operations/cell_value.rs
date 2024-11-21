@@ -348,19 +348,26 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
+
         let selection = Selection::rect(Rect::from_numbers(1, 2, 2, 1), sheet_id);
         let operations = gc.delete_cells_operations(&selection);
-        assert_eq!(operations.len(), 1);
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        let values = CellValues::new(2, 1);
+
+        assert_eq!(operations.len(), 2);
         assert_eq!(
             operations,
-            vec![Operation::SetCellValues {
-                sheet_pos: SheetPos {
-                    x: 1,
-                    y: 2,
-                    sheet_id
+            vec![
+                Operation::SetCellValues {
+                    sheet_pos,
+                    values: values.clone()
                 },
-                values: CellValues::new(2, 1)
-            }]
+                Operation::SetDataTableAt { sheet_pos, values },
+            ]
         );
     }
 
@@ -389,26 +396,28 @@ mod test {
         );
         let selection = Selection::columns(&[1, 2], sheet_id);
         let operations = gc.delete_cells_operations(&selection);
-        assert_eq!(operations.len(), 2);
+        let values = CellValues::new(1, 1);
+
+        assert_eq!(operations.len(), 4);
         assert_eq!(
             operations,
             vec![
                 Operation::SetCellValues {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 2,
-                        sheet_id
-                    },
-                    values: CellValues::new(1, 1)
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: values.clone()
+                },
+                Operation::SetDataTableAt {
+                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
+                    values: values.clone()
                 },
                 Operation::SetCellValues {
-                    sheet_pos: SheetPos {
-                        x: 2,
-                        y: 2,
-                        sheet_id
-                    },
-                    values: CellValues::new(1, 1)
-                }
+                    sheet_pos: SheetPos::new(sheet_id, 2, 2),
+                    values: values.clone()
+                },
+                Operation::SetDataTableAt {
+                    sheet_pos: SheetPos::new(sheet_id, 2, 2),
+                    values: values.clone()
+                },
             ]
         );
     }

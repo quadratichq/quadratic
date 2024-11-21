@@ -262,7 +262,7 @@ mod test {
             result,
             DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "JavaScript 1",
+                "JavaScript1",
                 Value::Single(CellValue::Number(12.into())),
                 false,
                 false,
@@ -332,7 +332,7 @@ mod test {
             result,
             DataTable::new(
                 DataTableKind::CodeRun(code_run),
-                "JavaScript 1",
+                "JavaScript1",
                 Value::Array(array),
                 false,
                 false,

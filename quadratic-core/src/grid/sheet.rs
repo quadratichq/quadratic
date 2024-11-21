@@ -1186,6 +1186,7 @@ mod test {
         let mut dt = dt.clone();
         dt.chart_output = Some((5, 5));
         sheet.data_tables.insert(pos, dt);
+        println!("{:?}", sheet.data_tables);
         assert!(sheet.has_content(pos));
         assert!(sheet.has_content(Pos { x: 1, y: 1 }));
         assert!(sheet.has_content(Pos { x: 5, y: 1 }));
