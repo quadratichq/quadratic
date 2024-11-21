@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::Pos;
 
 use super::{A1Selection, CellRefRange, CellRefRangeEnd};
@@ -9,28 +11,90 @@ impl A1Selection {
         self.ranges.push(CellRefRange::ALL);
     }
 
-    fn add_or_remove_column(&mut self, col: u64) {
-        if let Some(range) = self.ranges.iter_mut().find(|r| r.has_column(col)) {
-            // range.remove_column(col);
+    /// Removes a column if it is in any column ranges, or adds it if it is not.
+    fn add_or_remove_column(&mut self, col: u64, top: i64) {
+        // Find the index of the first range that contains this column
+        let i = self.ranges.iter().position(|range| range.has_column(col));
+
+        if let Some(i) = i {
+            // Remove just that one range
+            let mut range = self.ranges.remove(i);
+            let start_col = range.start.col.map(|col| col.coord);
+            let end_col = range.end.map(|end| end.col.map(|col| col.coord)).flatten();
+
+            if let (Some(start_col), Some(end_col)) = (start_col, end_col) {
+                // If the range is a single column, then nothing more to do
+                if start_col == end_col {
+                    return;
+                }
+                // handle case where start_col is deleted
+                else if start_col == col {
+                    // if end_col is the column right after the one being
+                    // deleted, then we no longer have a range
+                    if end_col == col - 1 {
+                        range.start = CellRefRangeEnd::new_relative_column(col + 1);
+                        range.end = None;
+                        self.ranges.push(range);
+                    }
+                    // otherwise we move the start to the next column
+                    else {
+                        range.start = CellRefRangeEnd::new_relative_column(col + 1);
+                        self.ranges.push(range);
+                    }
+                }
+                // handle case where end_col is deleted
+                else if end_col == col {
+                    // if start_col is the column right before the one being deleted, then we no
+                    // longer have a range
+                    if start_col == col - 1 {
+                        range.end = None;
+                        self.ranges.push(range);
+                    }
+                    // otherwise we move the end to the previous column
+                    else {
+                        range.end = Some(CellRefRangeEnd::new_relative_column(col - 1));
+                        self.ranges.push(range);
+                    }
+                }
+            }
+
+            // if we deleted the last range, then we use the cursor + top as the
+            // new range
+            if self.ranges.is_empty() {
+                self.ranges.push(CellRefRange::new_relative_xy(
+                    self.cursor.x as u64,
+                    top as u64,
+                ));
+                self.cursor.y = top;
+            }
+        } else {
+            // Add the column if it wasn't found and set the cursor position
+            self.ranges.push(CellRefRange::new_relative_column(col));
+            self.cursor.x = col as i64;
+            self.cursor.y = top as i64;
         }
     }
 
-    /// Selects a single column. If append is true, then the column is appended
-    /// to the ranges (or, if the last selection was a column, then the end of
-    /// that column is extended).
+    /// Selects a single column based on keyboard modifiers.
     pub fn select_column(
         &mut self,
-        col: u32,
+        col: u64,
         ctrl_key: bool,
         shift_key: bool,
         is_right_click: bool,
+
+        // top of the screen to change the cursor position when selecting a column
+        top: i64,
     ) {
-        if !ctrl_key && !shift_key {
+        if is_right_click || (!ctrl_key && !shift_key) {
             self.ranges.clear();
-            self.ranges
-                .push(CellRefRange::new_relative_column(col as u64));
+            self.ranges.push(CellRefRange::new_relative_column(col));
+            self.cursor.x = col as i64;
+            self.cursor.y = top as i64;
         } else if ctrl_key && !shift_key {
-            self.add_or_remove_column(col as u64);
+            self.add_or_remove_column(col, top);
+        } else if shift_key {
+            // self.extend_column(col as u64);
         }
 
         //  else if let Some(last_range) = self.ranges.last_mut() {
@@ -384,5 +448,41 @@ mod tests {
         let mut selection = A1Selection::test("A1,B2,C3");
         selection.select_to(2, 2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test("C3:B2")]);
+    }
+
+    #[test]
+    fn test_add_or_remove_column() {
+        let mut selection = A1Selection::test("A1,B1,C1");
+        selection.add_or_remove_column(4, 2);
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::test("A1"),
+                CellRefRange::test("B1"),
+                CellRefRange::test("C1"),
+                CellRefRange::test("D")
+            ]
+        );
+        assert_eq!(selection.cursor.x, 4);
+        assert_eq!(selection.cursor.y, 2);
+
+        let mut selection = A1Selection::test("A:D,B1,A");
+        selection.add_or_remove_column(1, 2);
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::test("B1"),
+                CellRefRange::test("A"),
+                CellRefRange::test("B:D"),
+            ]
+        );
+        assert_eq!(selection.cursor.x, 1);
+        assert_eq!(selection.cursor.y, 1);
+
+        let mut selection = A1Selection::test("A");
+        selection.add_or_remove_column(1, 2);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A2")]);
+        assert_eq!(selection.cursor.x, 1);
+        assert_eq!(selection.cursor.y, 1);
     }
 }

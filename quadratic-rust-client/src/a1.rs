@@ -64,9 +64,15 @@ impl Selection {
         ctrl_key: bool,
         shift_key: bool,
         is_right_click: bool,
+        top: u32,
     ) {
-        self.selection
-            .select_column(column, ctrl_key || shift_key, shift_key, is_right_click);
+        self.selection.select_column(
+            column as u64,
+            ctrl_key || shift_key,
+            shift_key,
+            is_right_click,
+            top as i64,
+        );
     }
 
     #[wasm_bindgen(js_name = "selectRow")]
