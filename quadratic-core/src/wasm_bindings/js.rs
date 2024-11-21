@@ -131,7 +131,7 @@ extern "C" {
 
     pub fn jsMultiplayerSynced();
 
-    // hashes: Vec<JsPos>
+    // hashes: Vec<Pos>
     pub fn jsHashesDirty(sheet_id: String, hashes: String);
 
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
@@ -663,7 +663,7 @@ pub fn jsMultiplayerSynced() {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<JsPos>*/) {
+pub fn jsHashesDirty(sheet_id: String, hashes: String /*Vec<Pos>*/) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsHashesDirty",
         format!("{},{}", sheet_id, hashes),

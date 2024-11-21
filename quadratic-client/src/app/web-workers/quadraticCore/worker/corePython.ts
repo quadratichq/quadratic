@@ -131,15 +131,15 @@ class CorePython {
   ) {
     const int32View = new Int32Array(sharedBuffer, 0, 3);
     try {
-      const response = core.getCellsA1(transactionId, a1, lineNumber);
+      const cellsString = core.getCellsA1(transactionId, a1, lineNumber);
 
       // need to get the bytes of the string (which covers unicode characters)
-      const length = new Blob([response]).size;
+      const length = new Blob([cellsString]).size;
 
       Atomics.store(int32View, 1, length);
       if (length !== 0) {
         const id = this.id++;
-        this.getCellsResponses[id] = response;
+        this.getCellsResponses[id] = cellsString;
         Atomics.store(int32View, 2, id);
       }
       Atomics.store(int32View, 0, 1);
@@ -150,14 +150,14 @@ class CorePython {
   }
 
   private sendGetCellsData(id: number, sharedBuffer: SharedArrayBuffer) {
-    const cells = this.getCellsResponses[id];
+    const cellsString = this.getCellsResponses[id];
     delete this.getCellsResponses[id];
     const int32View = new Int32Array(sharedBuffer, 0, 1);
-    if (cells === undefined) {
+    if (cellsString === undefined) {
       console.warn('[corePython] No cells found for id:', id);
     } else {
       const encoder = new TextEncoder();
-      const encodedCells = encoder.encode(cells);
+      const encodedCells = encoder.encode(cellsString);
       const uint8View = new Uint8Array(sharedBuffer, 4, encodedCells.length);
       uint8View.set(encodedCells);
     }

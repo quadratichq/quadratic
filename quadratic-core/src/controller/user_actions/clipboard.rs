@@ -1,10 +1,9 @@
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::clipboard::PasteSpecial;
 use crate::controller::GridController;
-use crate::grid::js_types::JsPos;
 use crate::grid::{GridBounds, SheetId};
 use crate::selection::OldSelection;
-use crate::{Rect, SheetPos, SheetRect};
+use crate::{Pos, Rect, SheetPos, SheetRect};
 
 // To view you clipboard contents, go to https://evercoder.github.io/clipboard-inspector/
 // To decode the html, use https://codebeautify.org/html-decode-string
@@ -56,7 +55,7 @@ impl GridController {
         sheet_end: bool,
         reverse: bool,
         cursor: Option<String>,
-    ) -> JsPos {
+    ) -> Pos {
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
             let mut dest = SheetPos::new(sheet_id, x, y);
@@ -90,7 +89,7 @@ impl GridController {
                 return dest_js_pos;
             }
         }
-        JsPos { x, y }
+        Pos { x, y }
     }
 
     pub fn move_code_cell_horizontally(
@@ -101,7 +100,7 @@ impl GridController {
         sheet_end: bool,
         reverse: bool,
         cursor: Option<String>,
-    ) -> JsPos {
+    ) -> Pos {
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
             let mut dest = SheetPos::new(sheet_id, x, y);
@@ -135,7 +134,7 @@ impl GridController {
                 return dest_js_pos;
             }
         }
-        JsPos { x, y }
+        Pos { x, y }
     }
 }
 
@@ -1095,50 +1094,50 @@ mod test {
 
         // Move down
         let result = gc.move_code_cell_vertically(sheet_id, 1, 1, false, false, None);
-        assert_eq!(result, JsPos { x: 1, y: 4 });
+        assert_eq!(result, Pos { x: 1, y: 4 });
         assert_cell_values(&gc, sheet_id, &[(1, 4, 1), (1, 5, 2), (1, 6, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 1), (1, 2), (1, 3)]);
 
         // Move up
         let result = gc.move_code_cell_vertically(sheet_id, 1, 4, false, true, None);
-        assert_eq!(result, JsPos { x: 1, y: 1 });
+        assert_eq!(result, Pos { x: 1, y: 1 });
         assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (1, 2, 2), (1, 3, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 4), (1, 5), (1, 6)]);
 
         // Move to sheet end (down)
         set_cell_value(&mut gc, sheet_id, "obstacle", 1, 10);
         let result = gc.move_code_cell_vertically(sheet_id, 1, 1, true, false, None);
-        assert_eq!(result, JsPos { x: 1, y: 11 });
+        assert_eq!(result, Pos { x: 1, y: 11 });
         assert_cell_values(&gc, sheet_id, &[(1, 11, 1), (1, 12, 2), (1, 13, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 1), (1, 2), (1, 3)]);
 
         // Move to sheet start (up)
         set_cell_value(&mut gc, sheet_id, "obstacle1", 1, 3);
         let result = gc.move_code_cell_vertically(sheet_id, 1, 11, true, true, None);
-        assert_eq!(result, JsPos { x: 1, y: 0 });
+        assert_eq!(result, Pos { x: 1, y: 0 });
         assert_cell_values(&gc, sheet_id, &[(1, 0, 1), (1, 1, 2), (1, 2, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 11), (1, 12), (1, 13)]);
 
         // Move when there's no code cell
         let result = gc.move_code_cell_vertically(sheet_id, 20, 20, false, false, None);
-        assert_eq!(result, JsPos { x: 20, y: 20 });
+        assert_eq!(result, Pos { x: 20, y: 20 });
 
         // Move down with obstacles
         set_cell_value(&mut gc, sheet_id, "obstacle2", 1, 4);
         set_cell_value(&mut gc, sheet_id, "obstacle3", 1, 5);
         let result = gc.move_code_cell_vertically(sheet_id, 1, 0, false, false, None);
-        assert_eq!(result, JsPos { x: 1, y: 6 });
+        assert_eq!(result, Pos { x: 1, y: 6 });
         assert_cell_values(&gc, sheet_id, &[(1, 6, 1), (1, 7, 2), (1, 8, 3)]);
 
         // Move up with obstacles
         let result = gc.move_code_cell_vertically(sheet_id, 1, 6, false, true, None);
-        assert_eq!(result, JsPos { x: 1, y: 0 });
+        assert_eq!(result, Pos { x: 1, y: 0 });
         assert_cell_values(&gc, sheet_id, &[(1, 0, 1), (1, 1, 2), (1, 2, 3)]);
 
         // Move a single-cell code output
         set_formula_code_cell(&mut gc, sheet_id, "42", 1, 15);
         let result = gc.move_code_cell_vertically(sheet_id, 1, 15, false, false, None);
-        assert_eq!(result, JsPos { x: 1, y: 16 });
+        assert_eq!(result, Pos { x: 1, y: 16 });
         assert_cell_values(&gc, sheet_id, &[(1, 16, 42)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 15)]);
 
@@ -1161,50 +1160,50 @@ mod test {
 
         // Move right
         let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, false, false, None);
-        assert_eq!(result, JsPos { x: 4, y: 1 });
+        assert_eq!(result, Pos { x: 4, y: 1 });
         assert_cell_values(&gc, sheet_id, &[(4, 1, 1), (5, 1, 2), (6, 1, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 1), (2, 1), (3, 1)]);
 
         // Move left
         let result = gc.move_code_cell_horizontally(sheet_id, 4, 1, false, true, None);
-        assert_eq!(result, JsPos { x: 1, y: 1 });
+        assert_eq!(result, Pos { x: 1, y: 1 });
         assert_cell_values(&gc, sheet_id, &[(1, 1, 1), (2, 1, 2), (3, 1, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(4, 1), (5, 1), (6, 1)]);
 
         // Move to sheet end (right)
         set_cell_value(&mut gc, sheet_id, "obstacle", 10, 1);
         let result = gc.move_code_cell_horizontally(sheet_id, 1, 1, true, false, None);
-        assert_eq!(result, JsPos { x: 11, y: 1 });
+        assert_eq!(result, Pos { x: 11, y: 1 });
         assert_cell_values(&gc, sheet_id, &[(11, 1, 1), (12, 1, 2), (13, 1, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(1, 1), (2, 1), (3, 1)]);
 
         // Move to sheet start (left)
         set_cell_value(&mut gc, sheet_id, "obstacle1", 3, 1);
         let result = gc.move_code_cell_horizontally(sheet_id, 11, 1, true, true, None);
-        assert_eq!(result, JsPos { x: 0, y: 1 });
+        assert_eq!(result, Pos { x: 0, y: 1 });
         assert_cell_values(&gc, sheet_id, &[(0, 1, 1), (1, 1, 2), (2, 1, 3)]);
         assert_empty_cells(&gc, sheet_id, &[(11, 1), (12, 1), (13, 1)]);
 
         // Move when there's no code cell
         let result = gc.move_code_cell_horizontally(sheet_id, 20, 20, false, false, None);
-        assert_eq!(result, JsPos { x: 20, y: 20 });
+        assert_eq!(result, Pos { x: 20, y: 20 });
 
         // Move right with obstacles
         set_cell_value(&mut gc, sheet_id, "obstacle2", 4, 1);
         set_cell_value(&mut gc, sheet_id, "obstacle3", 5, 1);
         let result = gc.move_code_cell_horizontally(sheet_id, 0, 1, false, false, None);
-        assert_eq!(result, JsPos { x: 6, y: 1 });
+        assert_eq!(result, Pos { x: 6, y: 1 });
         assert_cell_values(&gc, sheet_id, &[(6, 1, 1), (7, 1, 2), (8, 1, 3)]);
 
         // Move left with obstacles
         let result = gc.move_code_cell_horizontally(sheet_id, 6, 1, false, true, None);
-        assert_eq!(result, JsPos { x: 0, y: 1 });
+        assert_eq!(result, Pos { x: 0, y: 1 });
         assert_cell_values(&gc, sheet_id, &[(0, 1, 1), (1, 1, 2), (2, 1, 3)]);
 
         // Move a single-cell code output
         set_formula_code_cell(&mut gc, sheet_id, "42", 15, 1);
         let result = gc.move_code_cell_horizontally(sheet_id, 15, 1, false, false, None);
-        assert_eq!(result, JsPos { x: 16, y: 1 });
+        assert_eq!(result, Pos { x: 16, y: 1 });
         assert_cell_values(&gc, sheet_id, &[(16, 1, 42)]);
         assert_empty_cells(&gc, sheet_id, &[(15, 1)]);
 
