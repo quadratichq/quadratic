@@ -152,6 +152,14 @@ impl Selection {
         todo!()
         // self.selection.overlaps_a1_selection(&a1_selection)
     }
+
+    #[wasm_bindgen(js_name = "bottomRightCell")]
+    pub fn bottom_right_cell(&self) -> JsCoordinate {
+        JsCoordinate {
+            x: self.selection.bottom_right_cell().x as u32,
+            y: self.selection.bottom_right_cell().y as u32,
+        }
+    }
 }
 
 #[wasm_bindgen(js_name = "stringToSelection")]

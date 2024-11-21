@@ -161,7 +161,8 @@ export class Cursor extends Container {
       const codeCell = codeEditorState.codeCell;
       const cell = cursor.position;
 
-      this.endCell = sheets.sheet.getCellOffsets(cell.x, cell.y);
+      const endCell = cursor.selection.bottomRightCell();
+      this.endCell = sheets.sheet.getCellOffsets(endCell.x, endCell.y);
 
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
@@ -224,7 +225,6 @@ export class Cursor extends Container {
   update(viewportDirty: boolean) {
     const cursor = sheets.sheet.cursor;
     const columnRow = cursor.isColumnRow();
-    const multiCursor = cursor.isMultiCursor();
     if (this.dirty || (viewportDirty && columnRow)) {
       this.dirty = false;
       this.graphics.clear();
@@ -247,7 +247,7 @@ export class Cursor extends Container {
             ranges,
           });
         }
-        if (!columnRow && !multiCursor) {
+        if (!columnRow) {
           this.drawCursorIndicator();
         }
       }

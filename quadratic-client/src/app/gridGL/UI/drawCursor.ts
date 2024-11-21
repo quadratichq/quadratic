@@ -28,12 +28,11 @@ export const drawFiniteCursor = (g: Graphics, color: number, alpha: number, rang
 
     // we have all four points, just draw a rectangle
     if (col && row && end?.col && end?.row) {
-      const rect = sheet.getScreenRectangle(
-        Number(col.coord),
-        Number(row.coord),
-        Number(end.col.coord) - Number(col.coord) + 1,
-        Number(end.row.coord) - Number(row.coord) + 1
-      );
+      const startX = Math.min(Number(col.coord), Number(end.col.coord));
+      const startY = Math.min(Number(row.coord), Number(end.row.coord));
+      const width = Math.abs(Number(end.col.coord) - Number(col.coord)) + 1;
+      const height = Math.abs(Number(end.row.coord) - Number(row.coord)) + 1;
+      const rect = sheet.getScreenRectangle(startX, startY, width, height);
       g.drawShape(rect);
     }
 

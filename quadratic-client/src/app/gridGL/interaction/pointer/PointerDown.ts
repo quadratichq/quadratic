@@ -107,34 +107,6 @@ export class PointerDown {
 
       const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
       cursor.extendSelection(column, row, event.metaKey || event.ctrlKey);
-
-      // const cursorPosition = cursor.position;
-      // if (column !== cursorPosition.x || row !== cursorPosition.y) {
-      //   // make origin top left, and terminal bottom right
-      //   const originX = cursorPosition.x < column ? cursorPosition.x : column;
-      //   const originY = cursorPosition.y < row ? cursorPosition.y : row;
-      //   const termX = cursorPosition.x > column ? cursorPosition.x : column;
-      //   const termY = cursorPosition.y > row ? cursorPosition.y : row;
-      //   const newRectangle = new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1);
-
-      //   // todo...use selection here
-      //   if (cursor.multiCursor?.length) {
-      //     const multiCursor = [...cursor.multiCursor];
-      //     multiCursor[multiCursor.length - 1] = newRectangle;
-      //     cursor.changePosition({
-      //       columnRow: event.metaKey || event.ctrlKey ? undefined : null,
-      //       keyboardMovePosition: { x: column, y: row },
-      //       multiCursor,
-      //       ensureVisible: false,
-      //     });
-      //   } else {
-      //     cursor.changePosition({
-      //       keyboardMovePosition: { x: column, y: row },
-      //       multiCursor: [newRectangle],
-      //       ensureVisible: false,
-      //     });
-      //   }
-      // }
       this.active = true;
       this.position = new Point(cursor.position.x, cursor.position.y);
       this.previousPosition = new Point(column, row);
