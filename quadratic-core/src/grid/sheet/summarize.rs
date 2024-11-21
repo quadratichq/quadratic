@@ -12,38 +12,40 @@ impl Sheet {
     /// than two values, then returns None.
     pub fn summarize_selection(
         &self,
-        selection: A1Selection,
-        max_decimals: i64,
+        _selection: A1Selection,
+        _max_decimals: i64,
     ) -> Option<SummarizeSelectionResult> {
-        // sum and count
-        let mut count: i64 = 0;
-        let mut sum = BigDecimal::zero();
+        None
 
-        let values =
-            self.selection(&selection, Some(MAX_SUMMARIZE_SELECTION_SIZE), false, false)?;
-        values.iter().for_each(|(_pos, value)| match value {
-            CellValue::Number(n) => {
-                sum += n;
-                count += 1;
-            }
-            CellValue::Blank => {}
-            CellValue::Code(_) => {}
-            _ => {
-                count += 1;
-            }
-        });
+        // // sum and count
+        // let mut count: i64 = 0;
+        // let mut sum = BigDecimal::zero();
 
-        if count <= 1 {
-            return None;
-        }
+        // let values =
+        //     self.selection(&selection, Some(MAX_SUMMARIZE_SELECTION_SIZE), false, false)?;
+        // values.iter().for_each(|(_pos, value)| match value {
+        //     CellValue::Number(n) => {
+        //         sum += n;
+        //         count += 1;
+        //     }
+        //     CellValue::Blank => {}
+        //     CellValue::Code(_) => {}
+        //     _ => {
+        //         count += 1;
+        //     }
+        // });
 
-        let average: BigDecimal = &sum / count;
+        // if count <= 1 {
+        //     return None;
+        // }
 
-        Some(SummarizeSelectionResult {
-            count,
-            sum: sum.to_f64().map(|num| round(num, max_decimals)),
-            average: average.to_f64().map(|num| round(num, max_decimals)),
-        })
+        // let average: BigDecimal = &sum / count;
+
+        // Some(SummarizeSelectionResult {
+        //     count,
+        //     sum: sum.to_f64().map(|num| round(num, max_decimals)),
+        //     average: average.to_f64().map(|num| round(num, max_decimals)),
+        // })
     }
 }
 
