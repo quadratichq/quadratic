@@ -1,9 +1,10 @@
-use crate::selection::OldSelection;
 use crate::wasm_bindings::GridController;
+use crate::A1Selection;
 use serde::Serialize;
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::prelude::*;
 
 #[derive(Debug, ts_rs::TS, Serialize, PartialEq)]
+#[wasm_bindgen]
 pub struct SummarizeSelectionResult {
     pub count: i64,
     pub sum: Option<f64>,
@@ -18,19 +19,12 @@ impl GridController {
         &mut self,
         selection: String,
         max_decimals: i64,
-    ) -> Option<String> {
-        let Ok(selection) = serde_json::from_str::<OldSelection>(&selection) else {
+    ) -> Option<SummarizeSelectionResult> {
+        let Ok(selection) = serde_json::from_str::<A1Selection>(&selection) else {
             dbgjs!("Unable to parse selection in core.summarizeSelection");
             return None;
         };
         let sheet = self.try_sheet(selection.sheet_id)?;
-        let summary = sheet.summarize_selection(selection, max_decimals);
-        match serde_json::to_string(&summary) {
-            Ok(s) => Some(s),
-            Err(e) => {
-                dbgjs!(format!("Error serializing summary: {:?}", e));
-                None
-            }
-        }
+        sheet.summarize_selection(selection, max_decimals)
     }
 }

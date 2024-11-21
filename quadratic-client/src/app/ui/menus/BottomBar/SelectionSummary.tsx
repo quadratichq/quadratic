@@ -30,8 +30,8 @@ export const SelectionSummary = () => {
     let result = await quadraticCore.summarizeSelection(DECIMAL_PLACES, sheets.getRustSelection());
     if (result) {
       setCount(result.count.toString());
-      setSum(result.sum === null ? undefined : result.sum.toString());
-      setAvg(result.average === null ? undefined : result.average.toString());
+      setSum(result.sum === undefined ? undefined : result.sum.toString());
+      setAvg(result.average === undefined ? undefined : result.average.toString());
     } else {
       setCount(undefined);
       setSum(undefined);

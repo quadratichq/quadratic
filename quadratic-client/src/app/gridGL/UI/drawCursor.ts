@@ -31,15 +31,15 @@ export const drawFiniteCursor = (g: Graphics, color: number, alpha: number, rang
       const rect = sheet.getScreenRectangle(
         Number(col.coord),
         Number(row.coord),
-        Number(end.col.coord) - 1,
-        Number(end.row.coord) - 1
+        Number(end.col.coord) - Number(col.coord) + 1,
+        Number(end.row.coord) - Number(row.coord) + 1
       );
       g.drawShape(rect);
     }
 
     // we only have one point, draw a single cell
     else if (col && row && !end) {
-      const rect = sheet.getScreenRectangle(Number(col.coord), Number(row.coord), 0, 0);
+      const rect = sheet.getScreenRectangle(Number(col.coord), Number(row.coord), 1, 1);
       g.drawShape(rect);
     }
   });

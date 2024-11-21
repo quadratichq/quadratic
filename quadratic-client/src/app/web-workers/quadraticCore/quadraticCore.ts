@@ -27,11 +27,9 @@ import {
   SearchOptions,
   SheetPos,
   SheetRect,
-  SummarizeSelectionResult,
   Validation,
 } from '@/app/quadratic-core-types';
-import { authClient } from '@/auth/auth';
-import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
+import { SummarizeSelectionResult } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
@@ -65,7 +63,9 @@ import {
   CoreClientSearch,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
-} from './coreClientMessages';
+} from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
+import { authClient } from '@/auth/auth';
 
 class QuadraticCore {
   private worker?: Worker;

@@ -1,12 +1,12 @@
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { GridOverflowLines } from '@/app/grid/sheet/GridOverflowLines';
+import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { ColumnRow, GridBounds, SheetBounds, SheetInfo, Validation } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
-import { Coordinate } from '../../gridGL/types/size';
-import { sheets } from '../controller/Sheets';
-import { RectangleLike, SheetCursor } from './SheetCursor';
 
 export class Sheet {
   id: string;
@@ -150,16 +150,10 @@ export class Sheet {
   }
 
   // @returns screen rectangle for a column/row rectangle
-  getScreenRectangle(column: number | RectangleLike, row?: number, width?: number, height?: number): Rectangle {
-    if (typeof column === 'object') {
-      row = column.y;
-      width = column.width;
-      height = column.height;
-      column = column.x;
-    }
-    const topLeft = this.getCellOffsets(column, row!);
-    const bottomRight = this.getCellOffsets(column + width!, row! + height!);
-    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
+  getScreenRectangle(column: number, row: number, width: number, height: number): Rectangle {
+    const topLeft = this.getCellOffsets(column, row);
+    const bottomRight = this.getCellOffsets(column + width, row + height);
+    return new Rectangle(topLeft.left, topLeft.top, bottomRight.left - topLeft.left, bottomRight.top - topLeft.top);
   }
 
   updateSheetOffsets(column: number | null, row: number | null, size: number) {

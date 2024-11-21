@@ -26,12 +26,12 @@ import {
   SheetInfo,
   SheetPos,
   SheetRect,
-  SummarizeSelectionResult,
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { CodeRun } from '../CodeRun';
-import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
+import { SummarizeSelectionResult } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { CodeRun } from '@/app/web-workers/CodeRun';
+import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 
 //#region Initialize
 

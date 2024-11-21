@@ -69,7 +69,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   const row = 1;
   const width = 1;
   const height = 1;
-  const rectangle = sheets.sheet.getScreenRectangle(column, row, width - 1, height - 1);
+  const rectangle = sheets.sheet.getScreenRectangle(column, row, width, height);
 
   // captures bottom-right border size
   rectangle.width += borderSize * 2;

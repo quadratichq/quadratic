@@ -25,10 +25,10 @@ import {
   SearchOptions,
   SheetPos,
   SheetRect,
-  SummarizeSelectionResult,
   Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
+import { SummarizeSelectionResult } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -377,15 +377,8 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const summary = this.gridController.summarizeSelection(
-          JSON.stringify(message.selection, bigIntReplacer),
-          BigInt(message.decimalPlaces)
-        );
-        if (summary) {
-          resolve(JSON.parse(summary));
-        } else {
-          resolve(undefined);
-        }
+        const summary = this.gridController.summarizeSelection(message.selection, BigInt(message.decimalPlaces));
+        resolve(summary);
       });
     });
   }
