@@ -29,7 +29,7 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { SummarizeSelectionResult } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { JsSummarizeSelectionResult } from '@/app/quadratic-core/quadratic_core';
 import { CodeRun } from '@/app/web-workers/CodeRun';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 
@@ -230,7 +230,7 @@ export interface ClientCoreSummarizeSelection {
 export interface CoreClientSummarizeSelection {
   type: 'coreClientSummarizeSelection';
   id: number;
-  summary: SummarizeSelectionResult | undefined;
+  summary: JsSummarizeSelectionResult | undefined;
 }
 
 export interface ClientCoreSearch {

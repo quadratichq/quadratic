@@ -29,7 +29,7 @@ import {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { SummarizeSelectionResult } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { JsSummarizeSelectionResult } from '@/app/quadratic-core/quadratic_core';
 import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
@@ -589,7 +589,7 @@ class QuadraticCore {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
   }
 
-  summarizeSelection(decimalPlaces: number, selection: string): Promise<SummarizeSelectionResult | undefined> {
+  summarizeSelection(decimalPlaces: number, selection: string): Promise<JsSummarizeSelectionResult | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       const message: ClientCoreSummarizeSelection = {

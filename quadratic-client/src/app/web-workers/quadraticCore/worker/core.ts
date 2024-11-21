@@ -27,14 +27,11 @@ import {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
-import { SummarizeSelectionResult } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import initCore, { GridController, JsSummarizeSelectionResult } from '@/app/quadratic-core/quadratic_core';
 import {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import * as Sentry from '@sentry/react';
-import { Buffer } from 'buffer';
 import {
   ClientCoreFindNextColumn,
   ClientCoreFindNextColumnForRect,
@@ -46,11 +43,18 @@ import {
   ClientCoreMoveCodeCellHorizontally,
   ClientCoreMoveCodeCellVertically,
   ClientCoreSummarizeSelection,
-} from '../coreClientMessages';
-import { coreClient } from './coreClient';
-import { coreRender } from './coreRender';
-import { offline } from './offline';
-import { numbersToRectStringified, pointsToRect, posToPos, posToRect } from './rustConversions';
+} from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
+import { coreRender } from '@/app/web-workers/quadraticCore/worker/coreRender';
+import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
+import {
+  numbersToRectStringified,
+  pointsToRect,
+  posToPos,
+  posToRect,
+} from '@/app/web-workers/quadraticCore/worker/rustConversions';
+import * as Sentry from '@sentry/react';
+import { Buffer } from 'buffer';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -373,7 +377,7 @@ class Core {
     });
   }
 
-  summarizeSelection(message: ClientCoreSummarizeSelection): Promise<SummarizeSelectionResult | undefined> {
+  summarizeSelection(message: ClientCoreSummarizeSelection): Promise<JsSummarizeSelectionResult | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');

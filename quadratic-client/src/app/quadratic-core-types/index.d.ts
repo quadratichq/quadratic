@@ -64,7 +64,6 @@ export interface SheetInfo { sheet_id: string, name: string, order: string, colo
 export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
 export interface SheetRect { min: Pos, max: Pos, sheet_id: SheetId, }
 export interface Span { start: number, end: number, }
-export interface SummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
 export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";

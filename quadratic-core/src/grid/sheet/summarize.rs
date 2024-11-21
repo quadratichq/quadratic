@@ -1,8 +1,5 @@
 use super::Sheet;
-use crate::{
-    util::round, wasm_bindings::controller::summarize::SummarizeSelectionResult, A1Selection,
-    CellValue,
-};
+use crate::{grid::js_types::JsSummarizeSelectionResult, util::round, A1Selection, CellValue};
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 
 const MAX_SUMMARIZE_SELECTION_SIZE: i64 = 50000;
@@ -14,7 +11,7 @@ impl Sheet {
         &self,
         selection: A1Selection,
         max_decimals: i64,
-    ) -> Option<SummarizeSelectionResult> {
+    ) -> Option<JsSummarizeSelectionResult> {
         // sum and count
         let mut count: i64 = 0;
         let mut sum = BigDecimal::zero();
@@ -39,7 +36,7 @@ impl Sheet {
 
         let average: BigDecimal = &sum / count;
 
-        Some(SummarizeSelectionResult {
+        Some(JsSummarizeSelectionResult {
             count,
             sum: sum.to_f64().map(|num| round(num, max_decimals)),
             average: average.to_f64().map(|num| round(num, max_decimals)),

@@ -41,7 +41,7 @@ impl Sheet {
         _skip_code_runs: bool,
         _include_blanks: bool,
     ) -> Option<IndexMap<Pos, &CellValue>> {
-        todo!();
+        None
         // let mut count = 0;
 
         // // we use a IndexMap to maintain the order of the cells
