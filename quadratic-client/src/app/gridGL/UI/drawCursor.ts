@@ -17,7 +17,7 @@ export const drawCursorOutline = (g: Graphics, color: number, cursor: Coordinate
 
 // Draws a cursor with a finite number of cells (this is drawn once for each
 // selection setting).
-export const drawFiniteCursor = (g: Graphics, color: number, alpha: number, ranges: CellRefRange[]) => {
+export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, ranges: CellRefRange[]) => {
   g.lineStyle(1, color, 1, 0, true);
   g.beginFill(color, alpha);
 
@@ -46,7 +46,12 @@ export const drawFiniteCursor = (g: Graphics, color: number, alpha: number, rang
 };
 // Draws a cursor with an infinite number of cells (this is drawn on each
 // viewport update).
-export const drawInfiniteCursor = (options: { g: Graphics; color: number; alpha: number; ranges: CellRefRange[] }) => {
+export const drawInfiniteSelection = (options: {
+  g: Graphics;
+  color: number;
+  alpha: number;
+  ranges: CellRefRange[];
+}) => {
   const { g, color, alpha, ranges } = options;
   const sheet = sheets.sheet;
 
@@ -76,7 +81,9 @@ export const drawInfiniteCursor = (options: { g: Graphics; color: number; alpha:
 
     // multiple columns are selected
     else if (col && !row && end && end.col && !end.row) {
-      const rect = sheet.getScreenRectangle(Number(col.coord), 0, Number(end.col.coord) - 1, 0);
+      const startX = Math.min(Number(col.coord), Number(end.col.coord));
+      const width = Math.abs(Number(end.col.coord) - Number(col.coord)) + 1;
+      const rect = sheet.getScreenRectangle(startX, 0, width, 0);
       rect.y = bounds.y;
       rect.height = bounds.height;
       if (intersects.rectangleRectangle(rect, bounds)) {
@@ -84,9 +91,11 @@ export const drawInfiniteCursor = (options: { g: Graphics; color: number; alpha:
       }
     }
 
-    // multiple columns are selected starting on a row
+    // multiple columns are selected ending on a row
     else if (col && !row && end && end.col && end.row) {
-      const rect = sheet.getScreenRectangle(Number(col.coord), 0, Number(end.col.coord) - 1, Number(end.row.coord) - 1);
+      const startX = Math.min(Number(col.coord), Number(end.col.coord));
+      const width = Math.abs(Number(end.col.coord) - Number(col.coord)) + 1;
+      const rect = sheet.getScreenRectangle(startX, 0, width, Number(end.row.coord));
       rect.y = rect.bottom;
       rect.height = bounds.height - rect.y;
       if (intersects.rectangleRectangle(rect, bounds)) {
@@ -96,9 +105,13 @@ export const drawInfiniteCursor = (options: { g: Graphics; color: number; alpha:
 
     // multiple columns are selected starting on a row
     else if (col && row && end && end.col && !end.row) {
-      const rect = sheet.getScreenRectangle(Number(col.coord), 0, Number(end.col.coord) - 1, Number(row.coord) - 1);
-      rect.y = rect.bottom;
-      rect.height = bounds.height - rect.y;
+      const startX = Math.min(Number(col.coord), Number(end.col.coord));
+      const endX = Math.max(Number(col.coord), Number(end.col.coord));
+      const rect = sheet.getScreenRectangle(startX, Number(row.coord), endX - startX + 1, Number(row.coord));
+      if (rect.y > bounds.bottom) return;
+
+      rect.y = Math.max(rect.top, bounds.top);
+      rect.height = bounds.bottom - rect.y;
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
       }
