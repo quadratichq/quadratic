@@ -269,8 +269,11 @@ impl GridController {
                         // intersection of the data table and the paste
                         sheet.iter_code_output_intersects_rect(rect).for_each(
                             |(output_rect, intersection_rect, data_table)| {
+                                let contains_source_cell =
+                                    intersection_rect.contains(output_rect.min);
+
                                 // there is no pasting on top of code cell output
-                                if !data_table.readonly {
+                                if !data_table.readonly && !contains_source_cell {
                                     let adjusted_rect = Rect::from_numbers(
                                         intersection_rect.min.x - start_pos.x,
                                         intersection_rect.min.y - start_pos.y,
@@ -289,14 +292,12 @@ impl GridController {
                                             let new_x = x - output_rect.min.x;
 
                                             if let Some(header) = headers.get_mut(new_x as usize) {
-                                                let header_rect =
-                                                    Rect::from_numbers(x - start_pos.x, y, 1, 1);
-                                                let new_x =
+                                                let safe_x =
                                                     u32::try_from(x - start_pos.x).unwrap_or(0);
-                                                let new_y = u32::try_from(y).unwrap_or(0);
+                                                let safe_y = u32::try_from(y).unwrap_or(0);
 
                                                 let cell_value = values
-                                                    .remove(new_x, new_y)
+                                                    .remove(safe_x, safe_y)
                                                     .unwrap_or(CellValue::Blank);
 
                                                 header.name = cell_value;
