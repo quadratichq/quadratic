@@ -114,11 +114,14 @@ export class PointerHeading {
       // row and the current one.
       const isRightClick =
         (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
-
+      const bounds = pixiApp.viewport.getVisibleBounds();
+      const headingSize = pixiApp.headings.headingSize;
       if (intersects.column !== null) {
-        cursor.selectColumn(intersects.column, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick);
+        const top = sheets.sheet.getRowFromScreen(bounds.top + headingSize.height);
+        cursor.selectColumn(intersects.column, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, top);
       } else if (intersects.row !== null) {
-        cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick);
+        // const top = sheets.sheet.getRowFromScreen(bounds.top);
+        // cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, top);
       }
     }
 

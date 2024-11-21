@@ -231,7 +231,7 @@ export class Cursor extends Container {
       while (this.children.length > 1) {
         this.removeChildAt(1);
       }
-      if (!columnRow && !inlineEditorHandler.isEditingFormula()) {
+      if (!inlineEditorHandler.isEditingFormula()) {
         this.drawCursor();
       }
       this.drawCodeCursor();

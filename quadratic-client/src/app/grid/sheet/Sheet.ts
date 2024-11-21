@@ -164,6 +164,14 @@ export class Sheet {
     }
   }
 
+  getColumnFromScreen(x: number): number {
+    return this.offsets.getColumnFromScreen(x);
+  }
+
+  getRowFromScreen(y: number): number {
+    return this.offsets.getRowFromScreen(y);
+  }
+
   getColumnRowFromScreen(x: number, y: number): ColumnRow {
     const columnRowStringified = this.offsets.getColumnRowFromScreen(x, y);
     return JSON.parse(columnRowStringified);
