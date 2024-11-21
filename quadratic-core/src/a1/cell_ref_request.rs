@@ -38,7 +38,6 @@ impl FromStr for CellRefRequest {
 #[serial_test::parallel]
 mod tests {
     use super::*;
-    use crate::Rect;
 
     #[test]
     fn test_to_cells_all() {
@@ -85,20 +84,14 @@ mod tests {
     #[test]
     fn test_to_cells_rect() {
         let result = CellRefRequest::from_str("A1:C3").unwrap();
-        assert_eq!(
-            result.cells,
-            CellRefRange::new_relative_rect(Rect::new(1, 1, 3, 3))
-        );
+        assert_eq!(result.cells, CellRefRange::test("A1:C3"));
         assert_eq!(result.sheet_name, None);
     }
 
     #[test]
     fn test_to_cells_with_sheet_name() {
         let result = CellRefRequest::from_str("Sheet1!A1:C3").unwrap();
-        assert_eq!(
-            result.cells,
-            CellRefRange::new_relative_rect(Rect::new(1, 1, 3, 3)),
-        );
+        assert_eq!(result.cells, CellRefRange::test("A1:C3"),);
         assert_eq!(result.sheet_name, Some("Sheet1".to_string()));
     }
 

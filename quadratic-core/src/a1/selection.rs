@@ -291,11 +291,21 @@ impl A1Selection {
     pub fn test_sheet_id(a1: &str, sheet_id: SheetId) -> Self {
         Self::from_str(a1, sheet_id, &std::collections::HashMap::new()).unwrap()
     }
+
+    /// Returns an A1-style string describing the selection with default
+    /// SheetId.
+    #[cfg(test)]
+    pub fn test_string(&self) -> String {
+        self.to_string(Some(SheetId::test()), &std::collections::HashMap::new())
+    }
 }
 
+/// Returns the position from the last range (either the end, or if not defined,
+/// the start).
 fn cursor_pos_from_last_range(last_range: CellRefRange) -> Pos {
-    let x = last_range.start.col.map_or(1, |col| col.coord) as i64;
-    let y = last_range.start.row.map_or(1, |row| row.coord) as i64;
+    let range = last_range.end.unwrap_or(last_range.start);
+    let x = range.col.map_or(1, |col| col.coord) as i64;
+    let y = range.row.map_or(1, |row| row.coord) as i64;
     Pos { x, y }
 }
 
@@ -306,6 +316,18 @@ mod tests {
 
     use super::*;
     use crate::CellRefRangeEnd;
+
+    #[test]
+    fn test_cursor_pos_from_last_range() {
+        assert_eq!(
+            cursor_pos_from_last_range(CellRefRange::test("A1")),
+            pos![A1]
+        );
+        assert_eq!(
+            cursor_pos_from_last_range(CellRefRange::test("A1:C3")),
+            pos![C3]
+        );
+    }
 
     #[test]
     fn test_from_a1() {
@@ -501,8 +523,6 @@ mod tests {
                 CellRefRange::new_relative_row_range(1, 5),
                 CellRefRange::new_relative_row_range(10, 12),
                 CellRefRange::new_relative_row(15),
-                CellRefRange::new_relative_rect(Rect::new(1, 1, 2, 2)),
-                CellRefRange::new_relative_rect(Rect::new(3, 3, 4, 4)),
             ],
         };
         assert_eq!(
@@ -516,7 +536,7 @@ mod tests {
         let selection = A1Selection {
             sheet_id: SheetId::test(),
             cursor: Pos { x: 1, y: 1 },
-            ranges: vec![CellRefRange::new_relative_rect(Rect::new(1, 1, 1, 1))],
+            ranges: vec![CellRefRange::test("A1:A1")],
         };
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &HashMap::new()),

@@ -1,4 +1,4 @@
-use crate::{Pos, Rect};
+use crate::Pos;
 
 use super::{A1Selection, CellRefRange, CellRefRangeEnd};
 
@@ -51,17 +51,42 @@ impl A1Selection {
     /// Selects a rectangular range. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of
     /// that range is extended).
-    pub fn select_rect(&mut self, rect: Rect, append: bool) {
+    pub fn select_rect(&mut self, left: u64, top: u64, right: u64, bottom: u64, append: bool) {
         if !append {
             self.ranges.clear();
         }
-        if rect.width() == 1 && rect.height() == 1 {
-            self.ranges.push(CellRefRange::new_relative_xy(
-                rect.min.x as u64,
-                rect.min.y as u64,
-            ));
+        if left == right && top == bottom {
+            self.ranges.push(CellRefRange::new_relative_xy(left, top));
         } else {
-            self.ranges.push(CellRefRange::new_relative_rect(rect));
+            self.ranges.push(CellRefRange {
+                start: CellRefRangeEnd::new_relative_xy(left, top),
+                end: Some(CellRefRangeEnd::new_relative_xy(right, bottom)),
+            });
+        }
+    }
+
+    /// Selects a rectangular range from the cursor to the given position. If append is true, then the
+    /// range is appended to the ranges (or, if the last selection was a range, then the end of that
+    /// range is extended).
+    pub fn select_to(&mut self, x: u64, y: u64, append: bool) {
+        if append {
+            if let Some(last_range) = self.ranges.last_mut() {
+                last_range.end = Some(CellRefRangeEnd::new_relative_xy(x, y));
+            } else {
+                self.ranges.push(CellRefRange {
+                    start: CellRefRangeEnd::new_relative_xy(
+                        self.cursor.x as u64,
+                        self.cursor.y as u64,
+                    ),
+                    end: Some(CellRefRangeEnd::new_relative_xy(x, y)),
+                });
+            }
+        } else {
+            self.ranges.clear();
+            self.ranges.push(CellRefRange {
+                start: CellRefRangeEnd::new_relative_xy(self.cursor.x as u64, self.cursor.y as u64),
+                end: Some(CellRefRangeEnd::new_relative_xy(x, y)),
+            });
         }
     }
 
@@ -77,12 +102,13 @@ impl A1Selection {
                 });
             }
         } else {
-            self.ranges.push(CellRefRange::new_relative_rect(Rect::new(
-                self.cursor.x,
-                self.cursor.y,
-                self.cursor.x + delta_x,
-                self.cursor.y + delta_y,
-            )));
+            self.ranges.push(CellRefRange {
+                start: CellRefRangeEnd::new_relative_xy(self.cursor.x as u64, self.cursor.y as u64),
+                end: Some(CellRefRangeEnd::new_relative_xy(
+                    (self.cursor.x as i64 + delta_x) as u64,
+                    (self.cursor.y as i64 + delta_y) as u64,
+                )),
+            });
         }
     }
 
@@ -171,238 +197,172 @@ impl A1Selection {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use std::{collections::HashMap, str::FromStr};
-
-    use crate::grid::SheetId;
-
     use super::*;
 
     #[test]
     fn test_select_all() {
-        let mut selection =
-            A1Selection::from_str("A1,B1,C1", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1,B1,C1");
         selection.select_all();
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "*"
-        );
+        assert_eq!(selection.test_string(), "*");
     }
 
     #[test]
     fn test_select_column() {
-        let mut selection =
-            A1Selection::from_str("A1,B1,C1", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1,B1,C1");
         selection.select_column(2, false);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "B"
-        );
+        assert_eq!(selection.test_string(), "B");
     }
 
     #[test]
     fn test_delta_size() {
-        let mut selection =
-            A1Selection::from_str("A1,B1,C1", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1,B1,C1");
         selection.delta_size(1, 1);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "A1,B1,C1:D2"
-        );
+        assert_eq!(selection.test_string(), "A1,B1,C1:D2");
 
-        selection = A1Selection::from_str("D2:E2", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("D2:E2");
         selection.delta_size(1, 0);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "D2:F2"
-        );
+        assert_eq!(selection.test_string(), "D2:F2");
 
-        selection = A1Selection::from_str("D:E", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("D:E");
         selection.delta_size(1, 0);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "D:F"
-        );
+        assert_eq!(selection.test_string(), "D:F");
 
-        selection = A1Selection::from_str("D:E", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("D:E");
         selection.delta_size(0, 1);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "D:E"
-        );
+        assert_eq!(selection.test_string(), "D:E");
 
-        selection = A1Selection::from_str("A1,3", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("A1,3");
         selection.delta_size(0, 1);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "A1,3:4"
-        );
+        assert_eq!(selection.test_string(), "A1,3:4");
 
-        selection = A1Selection::from_str("A1:B2", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("A1:B2");
         selection.delta_size(-1, -1);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "A1:A1"
-        );
+        assert_eq!(selection.test_string(), "A1");
 
-        selection = A1Selection::from_str("2:4", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("2:4");
         selection.delta_size(0, 2);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "2:6"
-        );
+        assert_eq!(selection.test_string(), "2:6");
 
-        selection = A1Selection::from_str("A:C", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("A:C");
         selection.delta_size(-1, 0);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "A:B"
-        );
+        assert_eq!(selection.test_string(), "A:B");
 
-        selection = A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("A1,B2,C3");
         selection.delta_size(1, 1);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "A1,B2,C3:D4"
-        );
+        assert_eq!(selection.test_string(), "A1,B2,C3:D4");
     }
 
     #[test]
     fn test_delta_negative_range() {
-        let mut selection = A1Selection::from_str("B2", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("B2");
         selection.delta_size(-2, -2);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "B2:A1"
-        );
+        assert_eq!(selection.test_string(), "B2:A1");
 
-        selection = A1Selection::from_str("A1", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("A1");
         selection.delta_size(-1, -1);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "A1"
-        );
+        assert_eq!(selection.test_string(), "A1");
     }
 
     #[test]
     fn test_delta_size_zero() {
-        let mut selection = A1Selection::from_str("A1", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1");
         selection.delta_size(0, 0);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "A1"
-        );
+        assert_eq!(selection.test_string(), "A1");
     }
 
     #[test]
     fn test_move_to() {
-        let mut selection =
-            A1Selection::from_str("A1,B1,C1", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1,B1,C1");
         selection.move_to(2, 2);
-        assert_eq!(
-            selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "B2"
-        );
+        assert_eq!(selection.test_string(), "B2");
     }
 
     #[test]
     fn test_columns_selected() {
-        let mut selection =
-            A1Selection::from_str("A1,B1,C1", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1,B1,C1");
         selection.set_columns_selected();
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_column(3)]);
 
-        let mut selection =
-            A1Selection::from_str("A1:C1", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1:C1");
         selection.set_columns_selected();
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_column_range(1, 3)]
         );
 
-        let mut selection = A1Selection::from_str("A:C", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A:C");
         selection.set_columns_selected();
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_column_range(1, 3)]
         );
 
-        // this covers the case of a row selection where it uses the cursor's x as the column selection
-        let mut selection = A1Selection::from_str("2:3", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("2:3");
         selection.set_columns_selected();
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_column(1)]);
     }
 
     #[test]
     fn test_rows_selected() {
-        let mut selection =
-            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1,B2,C3");
         selection.set_rows_selected();
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(3)]);
 
-        let mut selection =
-            A1Selection::from_str("A1:C3", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1:C3");
         selection.set_rows_selected();
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_row_range(1, 3)]
         );
 
-        let mut selection = A1Selection::from_str("1:3", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("1:3");
         selection.set_rows_selected();
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_row_range(1, 3)]
         );
 
-        // this covers the case of a column selection where it uses the cursor's y as the row selection
-        let mut selection = A1Selection::from_str("C:D", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("C:D");
         selection.set_rows_selected();
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(1)]);
     }
 
     #[test]
     fn test_select_row() {
-        let mut selection =
-            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1,B2,C3");
         selection.select_row(2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(2)]);
     }
 
     #[test]
     fn test_select_rect() {
-        let mut selection =
-            A1Selection::from_str("A1,B2,C3", SheetId::test(), &HashMap::new()).unwrap();
-        selection.select_rect(Rect::new(1, 1, 2, 2), false);
-        assert_eq!(
-            selection.ranges,
-            vec![CellRefRange::new_relative_rect(Rect::new(1, 1, 2, 2))]
-        );
+        let mut selection = A1Selection::test("A1,B2,C3");
+        selection.select_rect(1, 1, 2, 2, false);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A1:B2")]);
 
-        selection = A1Selection::from_str("A1:C3", SheetId::test(), &HashMap::new()).unwrap();
-        selection.select_rect(Rect::new(3, 3, 5, 5), true);
+        selection = A1Selection::test("A1:C3");
+        selection.select_rect(3, 3, 5, 5, true);
         assert_eq!(
             selection.ranges,
-            vec![
-                CellRefRange::from_str("A1:C3").unwrap(),
-                CellRefRange::from_str("D4:F6").unwrap(),
-            ]
+            vec![CellRefRange::test("A1:C3"), CellRefRange::test("C3:E5"),]
         );
     }
 
     #[test]
     fn test_extend_selection() {
-        let mut selection = A1Selection::from_str("A1", SheetId::test(), &HashMap::new()).unwrap();
+        let mut selection = A1Selection::test("A1");
         selection.extend_selection(2, 2, false);
-        assert_eq!(
-            selection.ranges,
-            vec![CellRefRange::from_str("A1:B2").unwrap()]
-        );
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A1:B2")]);
 
-        selection = A1Selection::from_str("A:B", SheetId::test(), &HashMap::new()).unwrap();
+        selection = A1Selection::test("A:B");
         selection.extend_selection(2, 2, false);
-        assert_eq!(
-            selection.ranges,
-            vec![CellRefRange::from_str("A:B2").unwrap()]
-        );
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A:B2")]);
+    }
+
+    #[test]
+    fn test_select_to() {
+        let mut selection = A1Selection::test("A1,B2,C3");
+        selection.select_to(2, 2, false);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("C3:B2")]);
     }
 }

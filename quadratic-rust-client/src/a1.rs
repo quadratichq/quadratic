@@ -69,8 +69,13 @@ impl Selection {
 
     #[wasm_bindgen(js_name = "selectRect")]
     pub fn select_rect(&mut self, left: u32, top: u32, right: u32, bottom: u32, append: bool) {
-        let rect = Rect::new(left as i64, top as i64, right as i64, bottom as i64);
-        self.selection.select_rect(rect, append);
+        self.selection
+            .select_rect(left as u64, top as u64, right as u64, bottom as u64, append);
+    }
+
+    #[wasm_bindgen(js_name = "selectTo")]
+    pub fn select_to(&mut self, x: u32, y: u32, append: bool) {
+        self.selection.select_to(x as u64, y as u64, append);
     }
 
     #[wasm_bindgen(js_name = "toString")]
