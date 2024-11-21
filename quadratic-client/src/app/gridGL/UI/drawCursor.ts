@@ -68,9 +68,9 @@ export const drawInfiniteCursor = (options: { g: Graphics; color: number; alpha:
 
     // one column is selected
     else if (col && !row && !end) {
-      const { x, width } = sheet.getCellOffsets(col.coord, 0);
-      if (intersects.rectangleRectangle({ x, y: bounds.y, width, height: bounds.height }, bounds)) {
-        g.drawRect(x, bounds.y, width, bounds.height);
+      const { position, size } = sheet.offsets.getColumnPlacement(Number(col.coord));
+      if (intersects.rectangleRectangle({ x: position, y: bounds.y, width: size, height: bounds.height }, bounds)) {
+        g.drawRect(position, bounds.y, size, bounds.height);
       }
     }
 

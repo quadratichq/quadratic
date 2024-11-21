@@ -104,6 +104,16 @@ impl SheetOffsets {
         }
     }
 
+    #[wasm_bindgen(js_name = "getColumnFromScreen")]
+    pub fn js_column_from_screen(&mut self, x: f64) -> i32 {
+        self.column_from_x(x).0 as i32
+    }
+
+    #[wasm_bindgen(js_name = "getRowFromScreen")]
+    pub fn js_row_from_screen(&mut self, y: f64) -> i32 {
+        self.row_from_y(y).0 as i32
+    }
+
     /// gets the column and row based on the pixels' coordinates. Returns a (column, row) index
     #[wasm_bindgen(js_name = "getColumnRowFromScreen")]
     pub fn js_get_column_row_from_screen(&mut self, x: f64, y: f64) -> String {
