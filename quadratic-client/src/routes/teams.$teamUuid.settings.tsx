@@ -73,7 +73,7 @@ export const Component = () => {
   return (
     <>
       <DashboardHeader title="Team settings" />
-      <div className="flex flex-col gap-4 sm:grid sm:max-w-2xl sm:items-center">
+      <div className="flex flex-col gap-4 sm:grid sm:max-w-xl sm:items-center">
         <div className={`mb-6 mt-6 flex flex-col gap-6`}>
           <Row>
             <Type variant="body2" className="font-bold">
