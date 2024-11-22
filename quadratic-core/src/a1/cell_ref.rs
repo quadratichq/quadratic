@@ -96,10 +96,19 @@ impl FromStr for CellRefRange {
         }
 
         match s.split_once(':') {
-            Some((left, right)) => Ok(CellRefRange {
-                start: left.parse()?,
-                end: Some(right.parse()?),
-            }),
+            Some((left, right)) => {
+                let start = left.parse::<CellRefRangeEnd>()?;
+                let end = right.parse::<CellRefRangeEnd>()?;
+
+                if start == end {
+                    Ok(CellRefRange { start, end: None })
+                } else {
+                    Ok(CellRefRange {
+                        start: left.parse()?,
+                        end: Some(right.parse()?),
+                    })
+                }
+            }
             None => Ok(CellRefRange {
                 start: s.parse()?,
                 end: None,
@@ -139,12 +148,18 @@ impl CellRefRange {
     }
 
     pub fn new_relative_column_range(x1: u64, x2: u64) -> Self {
+        if x1 == x2 {
+            return Self::new_relative_column(x1);
+        }
         Self {
             start: CellRefRangeEnd::new_relative_column(x1),
             end: Some(CellRefRangeEnd::new_relative_column(x2)),
         }
     }
     pub fn new_relative_row_range(y1: u64, y2: u64) -> Self {
+        if y1 == y2 {
+            return Self::new_relative_row(y1);
+        }
         Self {
             start: CellRefRangeEnd::new_relative_row(y1),
             end: Some(CellRefRangeEnd::new_relative_row(y2)),

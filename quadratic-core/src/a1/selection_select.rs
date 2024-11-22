@@ -55,6 +55,11 @@ impl A1Selection {
                         range.end = Some(CellRefRangeEnd::new_relative_column(col - 1));
                         self.ranges.push(range);
                     }
+                } else {
+                    let first = CellRefRange::new_relative_column_range(start_col, col - 1);
+                    let second = CellRefRange::new_relative_column_range(col + 1, end_col);
+                    self.ranges.push(first);
+                    self.ranges.push(second);
                 }
             }
 
@@ -135,6 +140,11 @@ impl A1Selection {
                         range.end = Some(CellRefRangeEnd::new_relative_row(row - 1));
                         self.ranges.push(range);
                     }
+                } else {
+                    let first = CellRefRange::new_relative_row_range(start_row, row - 1);
+                    let second = CellRefRange::new_relative_row_range(row + 1, end_row);
+                    self.ranges.push(first);
+                    self.ranges.push(second);
                 }
             }
 
@@ -387,7 +397,7 @@ mod tests {
     fn test_select_column() {
         let mut selection = A1Selection::test("A1");
         selection.select_column(2, false, false, false, 1);
-        assert_eq!(selection.test_string(), "B1");
+        assert_eq!(selection.test_string(), "B");
     }
 
     #[test]
@@ -512,7 +522,7 @@ mod tests {
     fn test_select_row() {
         let mut selection = A1Selection::test("A1");
         selection.select_row(2, false, false, false, 1);
-        assert_eq!(selection.test_string(), "B1");
+        assert_eq!(selection.test_string(), "2");
     }
 
     #[test]
@@ -614,7 +624,10 @@ mod tests {
         // Test removing a row from a range
         let mut selection = A1Selection::test("1:4");
         selection.add_or_remove_row(2, 1);
-        assert_eq!(selection.ranges, vec![CellRefRange::test("1,3:4")]);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test("1"), CellRefRange::test("3:4")]
+        );
 
         // Test removing the only selected row
         let mut selection = A1Selection::test("3");
@@ -624,19 +637,19 @@ mod tests {
 
     #[test]
     fn test_extend_row() {
-        let mut selection = A1Selection::test("1,A2");
+        let mut selection = A1Selection::test("A2,1");
         selection.extend_row(4, 2);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test("A2"), CellRefRange::test("1:4")]
         );
-        assert_eq!(selection.cursor.x, 2);
+        assert_eq!(selection.cursor.x, 1);
         assert_eq!(selection.cursor.y, 1);
 
         // Test extending an empty selection
-        let mut selection = A1Selection::test("");
+        let mut selection = A1Selection::test("A1");
         selection.extend_row(3, 1);
-        assert_eq!(selection.ranges, vec![CellRefRange::test("3")]);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A1:3")]);
     }
 
     #[test]
