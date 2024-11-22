@@ -12,7 +12,7 @@ import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { Context, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAnalystContextProps = {
@@ -35,6 +35,7 @@ export const AIAnalystContext = ({
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const [, setCurrentSheet] = useState(sheets.sheet.name);
 
   useEffect(() => {
     if (!editing) return;
@@ -55,14 +56,17 @@ export const AIAnalystContext = ({
   }, [editing, setContext]);
 
   useEffect(() => {
-    if (!editing) return;
     const updateCurrentSheet = () => {
-      setContext((prev) => ({
-        ...prev,
-        sheets: prev.sheets.filter((sheet) => sheet !== sheets.sheet.name),
-        currentSheet: sheets.sheet.name,
-      }));
+      if (editing) {
+        setContext((prev) => ({
+          ...prev,
+          sheets: prev.sheets.filter((sheet) => sheet !== sheets.sheet.name),
+          currentSheet: sheets.sheet.name,
+        }));
+      }
+      setCurrentSheet(sheets.sheet.name);
     };
+
     updateCurrentSheet();
 
     events.on('changeSheet', updateCurrentSheet);

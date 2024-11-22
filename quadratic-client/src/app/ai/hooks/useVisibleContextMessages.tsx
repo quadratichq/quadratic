@@ -8,16 +8,12 @@ export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
     const visibleSelection = sheets.getVisibleSelection();
-    console.log('visibleSelection', visibleSelection);
     const [visibleContext, erroredCodeCells] = visibleSelection
       ? await Promise.all([
           quadraticCore.getAIContextRectsInSelections([visibleSelection], maxRects),
           quadraticCore.getErroredCodeCellsInSelections([visibleSelection]),
         ])
       : [undefined, undefined];
-
-    console.log('visibleContext', visibleContext);
-    console.log('erroredCodeCells', erroredCodeCells);
 
     return [
       {
