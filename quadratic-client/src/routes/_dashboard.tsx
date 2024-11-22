@@ -1,10 +1,8 @@
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
-import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { apiClient } from '@/shared/api/apiClient';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
@@ -31,7 +29,7 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
-import { RecoilRoot, useRecoilState } from 'recoil';
+import { RecoilRoot } from 'recoil';
 
 export const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
@@ -225,33 +223,11 @@ export const Component = () => {
           </div>
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
-        <NewFileDialogWrapper />
         <ImportProgressList />
       </TooltipProvider>
     </RecoilRoot>
   );
 };
-
-function NewFileDialogWrapper() {
-  const [newFileDialogState, setNewFileDialogState] = useRecoilState(newFileDialogAtom);
-  const {
-    activeTeam: {
-      connections,
-      team: { uuid: teamUuid },
-    },
-  } = useDashboardRouteLoaderData();
-
-  if (!newFileDialogState.show) return null;
-
-  return (
-    <NewFileDialog
-      connections={connections}
-      teamUuid={teamUuid}
-      onClose={() => setNewFileDialogState((prev) => ({ ...prev, show: false }))}
-      isPrivate={newFileDialogState.isPrivate}
-    />
-  );
-}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();

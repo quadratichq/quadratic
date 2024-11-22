@@ -3,6 +3,7 @@
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -427,6 +428,8 @@ class InlineEditorMonaco {
       language: inlineEditorHandler.formula ? 'formula' : 'inline-editor',
     });
 
+    this.disableKeybindings();
+
     interface SuggestController {
       widget: { value: { onDidShow: (fn: () => void) => void; onDidHide: (fn: () => void) => void } };
     }
@@ -469,7 +472,10 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.keyDown(e.browserEvent);
     });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
+    this.editor.onMouseDown(() => {
+      inlineEditorKeyboard.resetKeyboardPosition();
+      pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
+    });
     this.editor.onDidChangeModelContent(() => inlineEditorEvents.emit('valueChanged', this.get()));
   }
 
@@ -496,6 +502,38 @@ class InlineEditorMonaco {
       throw new Error('Expected editor to be defined in triggerSelection');
     }
     this.editor.trigger(null, 'editor.action.inlineSuggest.trigger', null);
+  }
+
+  disableKeybindings() {
+    editor.addKeybindingRules([
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyG,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyL,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyL,
+      },
+      {
+        keybinding: monaco.KeyCode.F1,
+      },
+      {
+        keybinding: monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.Shift | monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F3,
+      },
+    ]);
   }
 }
 

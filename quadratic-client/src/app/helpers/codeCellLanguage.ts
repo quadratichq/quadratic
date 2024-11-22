@@ -2,7 +2,7 @@ import { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 export type CodeCellType = 'Python' | 'Javascript' | 'Formula' | 'Connection';
 
-const codeCellsById = {
+export const codeCellsById = {
   Formula: { id: 'Formula', label: 'Formula', type: undefined },
   Javascript: { id: 'Javascript', label: 'JavaScript', type: undefined },
   Python: { id: 'Python', label: 'Python', type: undefined },

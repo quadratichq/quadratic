@@ -68,9 +68,10 @@ Add imports to the top of the code cell and do not use any libraries or function
 Use any functions that are part of the code cell language library.\n
 A code cell can return only one type of value as specified in the Quadratic documentation.\n
 A code cell cannot display both a chart and return a data frame at the same time.\n
+Do not use conditional returns in code cells.\n
 A code cell cannot display multiple charts at the same time.\n
 Do not use any markdown syntax besides triple backticks for code cell language code blocks.\n
-Do not reply code blocks in plain text, use markdown with triple backticks and language name code cell language.
+Do not reply code blocks in plain text, use markdown with triple backticks and language name code cell language.\n
 
 ${erroredCodeCells[0].map(({ x, y, language, code_string, std_out, std_err }) => {
   const consoleOutput = {

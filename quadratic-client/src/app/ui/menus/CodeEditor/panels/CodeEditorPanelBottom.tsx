@@ -75,7 +75,7 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
 
       {showAIAssistant && (
         <TabsContent value="ai-assistant" className="m-0 grow overflow-hidden">
-          {!bottomHidden && <AIAssistant autoFocus={true} />}
+          {!bottomHidden && <AIAssistant />}
         </TabsContent>
       )}
 

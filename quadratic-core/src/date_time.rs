@@ -97,7 +97,11 @@ fn find_items_date_start(items: &[Item<'_>]) -> Option<usize> {
 /// Converts a NaiveDateTime to a date and time string using a strftime format string.
 pub fn date_time_to_date_time_string(date_time: NaiveDateTime, format: Option<String>) -> String {
     let format = format.map_or(DEFAULT_DATE_TIME_FORMAT.to_string(), |f| f);
-    date_time.format(&format).to_string()
+    let strftime_items = StrftimeItems::new(&format);
+    let Ok(items) = strftime_items.parse() else {
+        return date_time.format(DEFAULT_DATE_TIME_FORMAT).to_string();
+    };
+    date_time.format_with_items(items.iter()).to_string()
 }
 
 /// Converts a NaiveDateTime to a date-only string using a strftime format string.

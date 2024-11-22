@@ -356,17 +356,16 @@ export function useAIRequestToAPI() {
         });
 
         if (!response.ok) {
+          const data = await response.json();
           const error =
             response.status === 429
               ? 'You have exceeded the maximum number of requests. Please try again later.'
-              : `Looks like there was a problem. Status Code: ${response.status}`;
+              : `Looks like there was a problem. Error: ${data}`;
           setMessages?.((prev) => [
             ...prev.slice(0, -1),
             { role: 'assistant', content: error, contextType: 'userPrompt', model, toolCalls: [] },
           ]);
-          if (response.status !== 429) {
-            console.error(`Error retrieving data from AI API: ${response.status}`);
-          }
+          console.error(`Error retrieving data from AI API. Error: ${data}`);
           return { error: true, content: error, toolCalls: [] };
         }
 

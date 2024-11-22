@@ -122,6 +122,7 @@ export enum Action {
   MoveCursorRightWithSelection = 'move_cursor_right_with_selection',
   MoveCursorLeftWithSelection = 'move_cursor_left_with_selection',
   EditCell = 'edit_cell',
+  ToggleArrowMode = 'toggle_arrow_mode',
   DeleteCell = 'delete_cell',
   ShowCellTypeMenu = 'show_cell_type_menu',
   CloseInlineEditor = 'close_inline_editor',

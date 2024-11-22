@@ -151,7 +151,10 @@ class InlineEditorFormula {
   // or by keyboard input) or whether they want to switch to a different cell.
   wantsCellRef() {
     const lastCharacter = inlineEditorMonaco.getNonWhitespaceCharBeforeCursor();
-    return ['', ',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{'].includes(lastCharacter);
+    return (
+      !!lastCharacter &&
+      ['', ',', '+', '-', '*', '/', '%', '=', '<', '>', '&', '.', '(', '{', ':', '!'].includes(lastCharacter)
+    );
   }
 
   // Returns whether we are editing a formula only if it is valid (used for

@@ -1,5 +1,6 @@
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
@@ -51,7 +52,7 @@ interface EventTypes {
   setCursor: (cursor?: string, selection?: Selection) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
-  changeInput: (input: boolean, initialValue?: string) => void;
+  changeInput: (input: boolean, initialValue?: string, cursorMode?: CursorMode) => void;
   headingSize: (width: number, height: number) => void;
   gridSettings: () => void;
 
