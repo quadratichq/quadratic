@@ -201,8 +201,8 @@ export class SheetCursor {
     this.updatePosition(true);
   }
 
-  selectRow(row: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean) {
-    this.jsSelection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick);
+  selectRow(row: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean, left: number) {
+    this.jsSelection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick, left);
     this.updatePosition(true);
   }
 

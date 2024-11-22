@@ -120,8 +120,8 @@ export class PointerHeading {
         const top = sheets.sheet.getRowFromScreen(bounds.top + headingSize.height);
         cursor.selectColumn(intersects.column, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, top);
       } else if (intersects.row !== null) {
-        // const top = sheets.sheet.getRowFromScreen(bounds.top);
-        // cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, top);
+        const left = sheets.sheet.getColumnFromScreen(bounds.left);
+        cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
       }
     }
 

@@ -91,6 +91,70 @@ impl A1Selection {
         }
     }
 
+    /// Removes a row if it is in any row ranges, or adds it if it is not.
+    fn add_or_remove_row(&mut self, row: u64, left: u64) {
+        // Find the index of the first range that contains this row
+        let i = self.ranges.iter().position(|range| range.has_row(row));
+
+        if let Some(i) = i {
+            // Remove just that one range
+            let mut range = self.ranges.remove(i);
+            let start_row = range.start.row.map(|row| row.coord);
+            let end_row = range.end.map(|end| end.row.map(|row| row.coord)).flatten();
+
+            if let (Some(start_row), Some(end_row)) = (start_row, end_row) {
+                // If the range is a single row, then nothing more to do
+                if start_row == end_row {
+                    return;
+                }
+                // handle case where start_row is deleted
+                else if start_row == row {
+                    // if end_row is the row right after the one being
+                    // deleted, then we no longer have a range
+                    if end_row == row - 1 {
+                        range.start = CellRefRangeEnd::new_relative_row(row + 1);
+                        range.end = None;
+                        self.ranges.push(range);
+                    }
+                    // otherwise we move the start to the next column
+                    else {
+                        range.start = CellRefRangeEnd::new_relative_row(row + 1);
+                        self.ranges.push(range);
+                    }
+                }
+                // handle case where end_row is deleted
+                else if end_row == row {
+                    // if start_row is the row right before the one being deleted, then we no
+                    // longer have a range
+                    if start_row == row - 1 {
+                        range.end = None;
+                        self.ranges.push(range);
+                    }
+                    // otherwise we move the end to the previous row
+                    else {
+                        range.end = Some(CellRefRangeEnd::new_relative_row(row - 1));
+                        self.ranges.push(range);
+                    }
+                }
+            }
+
+            // if we deleted the last range, then we use the cursor + top as the
+            // new range
+            if self.ranges.is_empty() {
+                self.ranges.push(CellRefRange::new_relative_xy(
+                    left as u64,
+                    self.cursor.y as u64,
+                ));
+                self.cursor.x = left as i64;
+            }
+        } else {
+            // Add the row if it wasn't found and set the cursor position
+            self.ranges.push(CellRefRange::new_relative_row(row));
+            self.cursor.x = left as i64;
+            self.cursor.y = row as i64;
+        }
+    }
+
     /// Selects a single column based on keyboard modifiers.
     pub fn select_column(
         &mut self,
@@ -112,35 +176,46 @@ impl A1Selection {
         } else if shift_key {
             self.extend_column(col as u64, top);
         }
+    }
 
-        //  else if let Some(last_range) = self.ranges.last_mut() {
-        //     if last_range.is_column_range() {
-        //         last_range.end = Some(CellRefRangeEnd::new_relative_column(col as u64));
-        //     } else {
-        //         self.ranges
-        //             .push(CellRefRange::new_relative_column(col as u64));
-        //     }
-        // } else {
-        //     self.ranges
-        //         .push(CellRefRange::new_relative_column(col as u64));
-        // }
+    /// Extends the last row range or creates a new one.
+    pub fn extend_row(&mut self, row: u64, left: u64) {
+        if let Some(last) = self.ranges.last_mut() {
+            if last.is_row_range() {
+                last.end = Some(CellRefRangeEnd::new_relative_row(row));
+            } else {
+                last.end = Some(CellRefRangeEnd::new_relative_row(row));
+                self.cursor.x = last.start.col.map_or(left as i64, |c| c.coord as i64);
+            }
+        } else {
+            self.ranges.push(CellRefRange::new_relative_row(row));
+            self.cursor.x = left as i64;
+            self.cursor.y = row as i64;
+        }
     }
 
     /// Selects a single row. If append is true, then the row is appended
     /// to the ranges (or, if the last selection was a row, then the end of
     /// that row is extended).
-    pub fn select_row(&mut self, row: u32, ctrl_key: bool, shift_key: bool, is_right_click: bool) {
-        if !ctrl_key && !shift_key {
+    pub fn select_row(
+        &mut self,
+        row: u32,
+        ctrl_key: bool,
+        shift_key: bool,
+        is_right_click: bool,
+
+        // left of the screen to change the cursor position when selecting a row
+        left: u64,
+    ) {
+        if is_right_click || (!ctrl_key && !shift_key) {
             self.ranges.clear();
             self.ranges.push(CellRefRange::new_relative_row(row as u64));
-        } else if let Some(last_range) = self.ranges.last_mut() {
-            if last_range.is_row_range() {
-                last_range.end = Some(CellRefRangeEnd::new_relative_row(row as u64));
-            } else {
-                self.ranges.push(CellRefRange::new_relative_row(row as u64));
-            }
-        } else {
-            self.ranges.push(CellRefRange::new_relative_row(row as u64));
+            self.cursor.x = left as i64;
+            self.cursor.y = row as i64;
+        } else if ctrl_key && !shift_key {
+            self.add_or_remove_row(row as u64, left);
+        } else if shift_key {
+            self.extend_row(row as u64, left);
         }
     }
 
@@ -310,7 +385,9 @@ mod tests {
 
     #[test]
     fn test_select_column() {
-        todo!();
+        let mut selection = A1Selection::test("A1");
+        selection.select_column(2, false, false, false, 1);
+        assert_eq!(selection.test_string(), "B1");
     }
 
     #[test]
@@ -433,9 +510,9 @@ mod tests {
 
     #[test]
     fn test_select_row() {
-        let mut selection = A1Selection::test("A1,B2,C3");
-        selection.select_row(2, false, false, false);
-        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(2)]);
+        let mut selection = A1Selection::test("A1");
+        selection.select_row(2, false, false, false, 1);
+        assert_eq!(selection.test_string(), "B1");
     }
 
     #[test]
@@ -503,7 +580,7 @@ mod tests {
         selection.add_or_remove_column(1, 2);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A2")]);
         assert_eq!(selection.cursor.x, 1);
-        assert_eq!(selection.cursor.y, 1);
+        assert_eq!(selection.cursor.y, 2);
     }
 
     #[test]
@@ -516,5 +593,69 @@ mod tests {
         );
         assert_eq!(selection.cursor.x, 2);
         assert_eq!(selection.cursor.y, 1);
+    }
+
+    #[test]
+    fn test_add_or_remove_row() {
+        let mut selection = A1Selection::test("A1,B2,3");
+        selection.add_or_remove_row(4, 2);
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::test("A1"),
+                CellRefRange::test("B2"),
+                CellRefRange::test("3"),
+                CellRefRange::test("4")
+            ]
+        );
+        assert_eq!(selection.cursor.x, 2);
+        assert_eq!(selection.cursor.y, 4);
+
+        // Test removing a row from a range
+        let mut selection = A1Selection::test("1:4");
+        selection.add_or_remove_row(2, 1);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("1,3:4")]);
+
+        // Test removing the only selected row
+        let mut selection = A1Selection::test("3");
+        selection.add_or_remove_row(3, 1);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A3")]);
+    }
+
+    #[test]
+    fn test_extend_row() {
+        let mut selection = A1Selection::test("1,A2");
+        selection.extend_row(4, 2);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test("A2"), CellRefRange::test("1:4")]
+        );
+        assert_eq!(selection.cursor.x, 2);
+        assert_eq!(selection.cursor.y, 1);
+
+        // Test extending an empty selection
+        let mut selection = A1Selection::test("");
+        selection.extend_row(3, 1);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("3")]);
+    }
+
+    #[test]
+    fn test_select_rect_single_cell() {
+        let mut selection = A1Selection::test("A1");
+        selection.select_rect(2, 2, 2, 2, false);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("B2")]);
+        assert_eq!(selection.cursor.x, 2);
+        assert_eq!(selection.cursor.y, 2);
+    }
+
+    #[test]
+    fn test_select_to_with_append() {
+        let mut selection = A1Selection::test("A1");
+        selection.select_to(2, 2, true);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A1:B2")]);
+
+        // Test appending to existing selection
+        selection.select_to(3, 3, true);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A1:C3")]);
     }
 }

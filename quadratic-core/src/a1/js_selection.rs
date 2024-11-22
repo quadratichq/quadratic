@@ -81,9 +81,21 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "selectRow")]
-    pub fn select_row(&mut self, row: u32, ctrl_key: bool, shift_key: bool, is_right_click: bool) {
-        self.selection
-            .select_row(row, ctrl_key || shift_key, shift_key, is_right_click);
+    pub fn select_row(
+        &mut self,
+        row: u32,
+        ctrl_key: bool,
+        shift_key: bool,
+        is_right_click: bool,
+        left: u32,
+    ) {
+        self.selection.select_row(
+            row,
+            ctrl_key || shift_key,
+            shift_key,
+            is_right_click,
+            left as u64,
+        );
     }
 
     #[wasm_bindgen(js_name = "selectRect")]
