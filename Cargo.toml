@@ -16,7 +16,7 @@ edition = "2021"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
 repository = "https://github.com/quadratichq/quadratic"
 license-file = "LICENSE"
-version = "0.5.2"
+version = "0.5.3"
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.
