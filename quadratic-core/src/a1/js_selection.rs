@@ -3,7 +3,7 @@ use std::str::FromStr;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::SheetId, Rect};
+use crate::{grid::SheetId, Rect, SheetRect};
 
 use super::{A1Selection, CellRefRange, SheetNameIdMap};
 
@@ -97,12 +97,17 @@ impl JsSelection {
         self.selection.select_to(x as u64, y as u64, append);
     }
 
-    #[wasm_bindgen(js_name = "toString")]
+    #[wasm_bindgen(js_name = "toA1String")]
     pub fn to_string(&self, default_sheet_id: String, sheet_map: &str) -> Result<String, String> {
         let sheet_map =
             serde_json::from_str::<SheetNameIdMap>(sheet_map).map_err(|e| e.to_string())?;
         let default_sheet_id = SheetId::from_str(&default_sheet_id).map_err(|e| e.to_string())?;
         Ok(self.selection.to_string(Some(default_sheet_id), &sheet_map))
+    }
+
+    #[wasm_bindgen(js_name = "toCursorA1String")]
+    pub fn to_cursor_a1_string(&self) -> Result<String, String> {
+        Ok(self.selection.to_cursor_a1_string())
     }
 
     #[wasm_bindgen(js_name = "deltaSize")]
@@ -198,6 +203,29 @@ pub fn new_single_selection(sheet_id: String, x: u32, y: u32) -> Result<JsSelect
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     Ok(JsSelection {
         selection: A1Selection::from_xy(x as i64, y as i64, sheet_id),
+    })
+}
+
+#[wasm_bindgen(js_name = "newRectSelection")]
+pub fn new_rect_selection(
+    sheet_id: String,
+    x0: i64,
+    y0: i64,
+    x1: i64,
+    y1: i64,
+) -> Result<JsSelection, String> {
+    let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+    let sheet_rect = SheetRect::new(x0, y0, x1, y1, sheet_id);
+    Ok(JsSelection {
+        selection: A1Selection::from_rect(sheet_rect),
+    })
+}
+
+#[wasm_bindgen(js_name = "newAllSelection")]
+pub fn new_all_selection(sheet_id: String) -> Result<JsSelection, String> {
+    let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+    Ok(JsSelection {
+        selection: A1Selection::from_all(sheet_id),
     })
 }
 

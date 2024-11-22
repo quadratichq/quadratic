@@ -30,6 +30,7 @@ const ASK_AI_SELECTION_DELAY = 500;
 export function AskAISelection() {
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
   const [currentSheet, setCurrentSheet] = useState(sheets.current);
+  const [selectionSheetId, setSelectionSheetId] = useState<string | undefined>();
   const [selection, setSelection] = useState<Context['selection']>();
   const [displayPos, setDisplayPos] = useState<JsCoordinate | undefined>();
   const [loading, setLoading] = useState(false);
@@ -38,26 +39,26 @@ export function AskAISelection() {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const showAskAISelection = useCallback(() => {
-    const selection = sheets.sheet.cursor.getSingleRectangle();
-    if (selection) {
-      const sheetRect: Context['selection'] = {
-        sheet_id: { id: sheets.sheet.id },
-        min: { x: selection.x, y: selection.y },
-        max: { x: selection.x + selection.width, y: selection.y + selection.height },
-      };
-      const hasContent = pixiApp.cellsSheets.getById(sheets.sheet.id)?.cellsLabels.hasCellInRect(selection);
+    const singleRect = sheets.sheet.cursor.getSingleRectangle();
+    if (singleRect) {
+      const hasContent = pixiApp.cellsSheets.getById(sheets.current)?.cellsLabels.hasCellInRect(singleRect);
       if (hasContent && !inlineEditorState.visible) {
-        setSelection(sheetRect);
+        const selection = sheets.sheet.cursor.save();
+        const screenRect = sheets.sheet.getScreenRectangleFromRect(singleRect);
+        setSelection(selection);
+        setSelectionSheetId(sheets.current);
         setDisplayPos({
-          x: selection.x + selection.width,
-          y: selection.y,
+          x: screenRect.x + screenRect.width,
+          y: screenRect.y,
         });
       } else {
         setSelection(undefined);
+        setSelectionSheetId(undefined);
         setDisplayPos(undefined);
       }
     } else {
       setSelection(undefined);
+      setSelectionSheetId(undefined);
       setDisplayPos(undefined);
     }
   }, [inlineEditorState.visible]);
@@ -65,6 +66,7 @@ export function AskAISelection() {
   const updateSelection = useCallback(() => {
     clearTimeout(timeoutRef.current);
     setSelection(undefined);
+    setSelectionSheetId(undefined);
     setDisplayPos(undefined);
 
     timeoutRef.current = setTimeout(() => {
@@ -88,6 +90,7 @@ export function AskAISelection() {
         .finally(() => {
           setLoading(false);
           setSelection(undefined);
+          setSelectionSheetId(undefined);
           setDisplayPos(undefined);
         });
     },
@@ -128,7 +131,7 @@ export function AskAISelection() {
     };
   }, [currentSheet, updateSelection]);
 
-  if (selection?.sheet_id.id !== currentSheet || displayPos === undefined) return null;
+  if (selectionSheetId !== currentSheet || displayPos === undefined) return null;
 
   return (
     <div

@@ -55,7 +55,7 @@ export const SheetRange = (props: Props) => {
   const onInsert = useCallback(() => {
     if (ref.current) {
       const jsSelection = sheets.sheet.cursor.jsSelection;
-      ref.current.value = jsSelection.toString(a1SheetId, sheets.getSheetIdNameMap());
+      ref.current.value = jsSelection.toA1String(a1SheetId, sheets.getSheetIdNameMap());
       onChangeRange(jsSelection);
       setRangeError(undefined);
     }
@@ -91,7 +91,7 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial ? initial.toString(a1SheetId, sheets.getRustSheetMap()) : '';
+      ref.current.value = initial ? initial.toA1String(a1SheetId, sheets.getRustSheetMap()) : '';
     }
   }, [changeCursor, a1SheetId, initial]);
 

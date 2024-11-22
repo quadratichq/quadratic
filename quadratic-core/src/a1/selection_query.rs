@@ -94,7 +94,7 @@ impl A1Selection {
         rect
     }
 
-    /// Returns rectangle in case of single range selection having more than one cell.
+    /// Returns rectangle in case of single finite range selection having more than one cell.
     pub fn single_rect(&self) -> Option<Rect> {
         if self.ranges.len() != 1 || !self.is_multi_cursor() {
             None
@@ -103,7 +103,7 @@ impl A1Selection {
         }
     }
 
-    /// Returns rectangle in case of single range selection,
+    /// Returns rectangle in case of single finite range selection,
     /// otherwise returns a rectangle that contains the cursor.
     pub fn single_rect_or_cursor(&self) -> Option<Rect> {
         if !self.is_multi_cursor() {

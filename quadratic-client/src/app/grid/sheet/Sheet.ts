@@ -155,6 +155,11 @@ export class Sheet {
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.left - topLeft.left, bottomRight.top - topLeft.top);
   }
 
+  // @returns screen rectangle from a selection rectangle
+  getScreenRectangleFromRect(rect: Rectangle): Rectangle {
+    return this.getScreenRectangle(rect.x, rect.y, rect.width, rect.height);
+  }
+
   updateSheetOffsets(column: number | null, row: number | null, size: number) {
     if (column !== null) {
       this.offsets.setColumnWidth(column, size);

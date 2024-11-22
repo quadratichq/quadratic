@@ -382,8 +382,8 @@ class QuadraticCore {
     });
   }
 
-  getAIContextRectsInSheetRects(
-    sheetRects: SheetRect[],
+  getAIContextRectsInSelections(
+    selections: string[],
     maxRects?: number
   ): Promise<JsCellValuePosAIContext[][] | undefined> {
     return new Promise((resolve) => {
@@ -391,17 +391,17 @@ class QuadraticCore {
       this.waitingForResponse[id] = (message: { value: JsCellValuePosAIContext[][] | undefined }) => {
         resolve(message.value);
       };
-      this.send({ type: 'clientCoreGetAIContextRectsInSheetRects', sheetRects, maxRects, id });
+      this.send({ type: 'clientCoreGetAIContextRectsInSelections', selections, maxRects, id });
     });
   }
 
-  getErroredCodeCellsInSheetRects(sheetRects: SheetRect[]): Promise<JsCodeCell[][] | undefined> {
+  getErroredCodeCellsInSelections(selections: string[]): Promise<JsCodeCell[][] | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { value: JsCodeCell[][] | undefined }) => {
         resolve(message.value);
       };
-      this.send({ type: 'clientCoreGetErroredCodeCellsInSheetRects', sheetRects, id });
+      this.send({ type: 'clientCoreGetErroredCodeCellsInSelections', selections, id });
     });
   }
 

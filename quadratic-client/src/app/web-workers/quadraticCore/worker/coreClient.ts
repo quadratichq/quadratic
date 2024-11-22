@@ -605,19 +605,19 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreGetAIContextRectsInSheetRects':
+      case 'clientCoreGetAIContextRectsInSelections':
         this.send({
-          type: 'coreClientGetAIContextRectsInSheetRects',
+          type: 'coreClientGetAIContextRectsInSelections',
           id: e.data.id,
-          value: core.getAIContextRectsInSheetRects(e.data.sheetRects, e.data.maxRects),
+          value: core.getAIContextRectsInSelection(e.data.selections, e.data.maxRects),
         });
         return;
 
-      case 'clientCoreGetErroredCodeCellsInSheetRects':
+      case 'clientCoreGetErroredCodeCellsInSelections':
         this.send({
-          type: 'coreClientGetErroredCodeCellsInSheetRects',
+          type: 'coreClientGetErroredCodeCellsInSelections',
           id: e.data.id,
-          value: core.getErroredCodeCellsInSheetRects(e.data.sheetRects),
+          value: core.getErroredCodeCellsInSelection(e.data.selections),
         });
         return;
 

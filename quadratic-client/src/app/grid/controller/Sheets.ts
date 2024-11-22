@@ -1,8 +1,9 @@
 import { events } from '@/app/events/events';
+import { getRectSelection } from '@/app/grid/sheet/selection';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsOffset, Rect, SheetInfo, SheetRect } from '@/app/quadratic-core-types';
+import { JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
@@ -295,9 +296,9 @@ class Sheets {
     return this.sheet.cursor.save();
   }
 
-  getA1String(sheetId = this.current): string {
-    return this.sheet.cursor.jsSelection.toString(sheetId, this.getSheetIdNameMap());
-  }
+  getA1String = (sheetId = this.current): string => {
+    return this.sheet.cursor.jsSelection.toA1String(sheetId, this.getSheetIdNameMap());
+  };
 
   /// Gets a stringified SheetIdNameMap for Rust's A1 functions
   getSheetIdNameMap(): string {
@@ -328,11 +329,11 @@ class Sheets {
     cursor.updatePosition(true);
   }
 
-  getRustSelection(): string {
+  getRustSelection = (): string => {
     return this.sheet.cursor.save();
-  }
+  };
 
-  getVisibleRect(): Rect {
+  getVisibleRect = (): Rect => {
     const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
     const scale = pixiApp.viewport.scale.x;
     let { width: leftHeadingWidth, height: topHeadingHeight } = pixiApp.headings.headingSize;
@@ -344,29 +345,26 @@ class Sheets {
       min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
       max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
     };
-  }
+  };
 
-  getVisibleSheetRect(): SheetRect | undefined {
+  getVisibleSelection = (): string | undefined => {
     const sheetBounds = this.sheet.boundsWithoutFormatting;
     if (sheetBounds.type === 'empty') {
       return undefined;
     }
+
     const sheetBoundsRect: Rect = {
       min: sheetBounds.min,
       max: sheetBounds.max,
     };
-
     const visibleRect = this.getVisibleRect();
     if (!intersects.rectRect(sheetBoundsRect, visibleRect)) {
       return undefined;
     }
 
-    const visibleSheetRect: SheetRect = {
-      sheet_id: { id: this.sheet.id },
-      ...visibleRect,
-    };
-    return visibleSheetRect;
-  }
+    const visibleRectSelection = getRectSelection(this.current, visibleRect);
+    return visibleRectSelection;
+  };
 }
 
 export const sheets = new Sheets();

@@ -46,7 +46,7 @@ export function useSubmitAIAnalystPrompt() {
         const otherSheetsContext = await getOtherSheetsContext({ sheetNames: context.sheets });
         const currentSheetContext = await getCurrentSheetContext({ currentSheetName: context.currentSheet });
         const visibleContext = await getVisibleContext();
-        const selectionContext = await getSelectionContext({ selectionSheetRect: context.selection });
+        const selectionContext = await getSelectionContext({ selection: context.selection });
 
         let updatedMessages: ChatMessage[] = [];
         set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {

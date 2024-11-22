@@ -13,7 +13,7 @@ export async function zoomToFit() {
   const sheet = sheets.sheet;
   const gridBounds = sheet.getBounds(false);
   if (gridBounds) {
-    const screenRectangle = sheet.getScreenRectangle(gridBounds.x, gridBounds.y, gridBounds.width, gridBounds.height);
+    const screenRectangle = sheet.getScreenRectangleFromRect(gridBounds);
 
     // calc scale, and leave a little room on the top and sides
     let scale = viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);
@@ -72,7 +72,7 @@ export function zoomTo100() {
 export function zoomToSelection(): void {
   const sheet = sheets.sheet;
   const rectangle = sheet.cursor.getLargestRectangle();
-  const screenRectangle = sheet.getScreenRectangle(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+  const screenRectangle = sheet.getScreenRectangleFromRect(rectangle);
 
   // calc scale, and leave a little room on the top and sides
   let scale = pixiApp.viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);

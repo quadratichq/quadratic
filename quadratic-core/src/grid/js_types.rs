@@ -63,13 +63,13 @@ pub struct JsCellValue {
 pub struct JsCellValuePos {
     pub value: String,
     pub kind: String,
-    pub pos: Pos,
+    pub pos: String,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsCellValuePosAIContext {
     pub sheet_name: String,
-    pub rect_origin: Pos,
+    pub rect_origin: String,
     pub rect_width: u32,
     pub rect_height: u32,
     pub starting_rect_values: Vec<Vec<JsCellValuePos>>,
