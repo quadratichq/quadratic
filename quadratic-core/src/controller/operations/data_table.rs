@@ -64,6 +64,48 @@ impl GridController {
         }]
     }
 
+    pub fn data_table_mutations_operations(
+        &self,
+        sheet_pos: SheetPos,
+        column_to_add: Option<u32>,
+        column_to_remove: Option<u32>,
+        row_to_add: Option<u32>,
+        row_to_remove: Option<u32>,
+        _cursor: Option<String>,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        if let Some(column_to_add) = column_to_add {
+            ops.push(Operation::InsertDataTableColumn {
+                sheet_pos,
+                index: column_to_add,
+            });
+        }
+
+        if let Some(column_to_remove) = column_to_remove {
+            ops.push(Operation::DeleteDataTableColumn {
+                sheet_pos,
+                index: column_to_remove,
+            });
+        }
+
+        if let Some(row_to_add) = row_to_add {
+            ops.push(Operation::InsertDataTableRow {
+                sheet_pos,
+                index: row_to_add,
+            });
+        }
+
+        if let Some(row_to_remove) = row_to_remove {
+            ops.push(Operation::DeleteDataTableRow {
+                sheet_pos,
+                index: row_to_remove,
+            });
+        }
+
+        ops
+    }
+
     pub fn sort_data_table_operations(
         &self,
         sheet_pos: SheetPos,

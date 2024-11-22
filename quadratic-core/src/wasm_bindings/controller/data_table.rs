@@ -125,4 +125,30 @@ impl GridController {
 
         Ok(())
     }
+
+    #[wasm_bindgen(js_name = "dataTableMutations")]
+    pub fn js_data_table_mutations(
+        &mut self,
+        sheet_id: String,
+        pos: String,
+        column_to_add: Option<u32>,
+        column_to_remove: Option<u32>,
+        row_to_add: Option<u32>,
+        row_to_remove: Option<u32>,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+
+        self.data_table_mutations(
+            pos.to_sheet_pos(sheet_id),
+            column_to_add,
+            column_to_remove,
+            row_to_add,
+            row_to_remove,
+            cursor,
+        );
+
+        Ok(())
+    }
 }

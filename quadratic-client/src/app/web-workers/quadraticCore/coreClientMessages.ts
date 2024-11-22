@@ -1053,6 +1053,18 @@ export interface ClientCoreDataTableMeta {
   cursor: string;
 }
 
+export interface ClientCoreDataTableMutations {
+  type: 'clientCoreDataTableMutations';
+  sheetId: string;
+  x: number;
+  y: number;
+  column_to_add?: number;
+  column_to_remove?: number;
+  row_to_add?: number;
+  row_to_remove?: number;
+  cursor?: string;
+}
+
 export interface ClientCoreSortDataTable {
   type: 'clientCoreSortDataTable';
   sheetId: string;
@@ -1154,6 +1166,7 @@ export type ClientCoreMessage =
   | ClientCoreCodeDataTableToDataTable
   | ClientCoreGridToDataTable
   | ClientCoreDataTableMeta
+  | ClientCoreDataTableMutations
   | ClientCoreSortDataTable
   | ClientCoreDataTableFirstRowAsHeader;
 

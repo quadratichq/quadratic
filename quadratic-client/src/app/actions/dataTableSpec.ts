@@ -8,6 +8,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { JsDataTableColumnHeader, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
+  AddIcon,
   DeleteIcon,
   EditIcon,
   FileRenameIcon,
@@ -38,6 +39,10 @@ type DataTableSpec = Pick<
   | Action.RenameTableColumn
   | Action.SortTableColumnAscending
   | Action.SortTableColumnDescending
+  | Action.InsertTableColumn
+  | Action.RemoveTableColumn
+  | Action.InsertTableRow
+  | Action.RemoveTableRow
   | Action.HideTableColumn
   | Action.ShowAllColumns
   | Action.EditTableCode
@@ -245,6 +250,50 @@ export const dataTableSpec: DataTableSpec = {
             sheets.getCursorPosition()
           );
         }
+      }
+    },
+  },
+  [Action.InsertTableColumn]: {
+    label: 'Insert column',
+    Icon: AddIcon,
+    run: () => {
+      const table = getTable();
+
+      if (table) {
+        let nextColumn = table.columns.length;
+
+        quadraticCore.dataTableMutations(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          nextColumn,
+          undefined,
+          undefined,
+          undefined,
+          sheets.getCursorPosition()
+        );
+      }
+    },
+  },
+  [Action.RemoveTableColumn]: {
+    label: 'Remove column',
+    Icon: DeleteIcon,
+    run: () => {
+      const table = getTable();
+      const columns = getDisplayColumns();
+      const selectedColumn = pixiAppSettings.contextMenu?.selectedColumn;
+
+      if (table && columns && selectedColumn !== undefined && columns[selectedColumn]) {
+        quadraticCore.dataTableMutations(
+          sheets.sheet.id,
+          table.x,
+          table.y,
+          undefined,
+          selectedColumn,
+          undefined,
+          undefined,
+          sheets.getCursorPosition()
+        );
       }
     },
   },

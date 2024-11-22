@@ -65,6 +65,8 @@ export const TableMenu = (props: Props) => {
       {!isImageOrHtmlCell && !spillError && isCodeCell && <ContextMenuItemAction action={Action.CodeToDataTable} />}
       {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.FlattenTable} />}
       {<ContextMenuItemAction action={Action.DeleteDataTable} />}
+      {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.InsertTableColumn} />}
+      {!isImageOrHtmlCell && !spillError && <ContextMenuItemAction action={Action.RemoveTableColumn} />}
     </>
   );
 };

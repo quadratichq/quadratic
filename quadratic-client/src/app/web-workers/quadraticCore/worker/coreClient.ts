@@ -598,6 +598,19 @@ class CoreClient {
         );
         return;
 
+      case 'clientCoreDataTableMutations':
+        core.dataTableMutations(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.column_to_add,
+          e.data.column_to_remove,
+          e.data.row_to_add,
+          e.data.row_to_remove,
+          e.data.cursor
+        );
+        return;
+
       case 'clientCoreSortDataTable':
         core.sortDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.sort, e.data.cursor);
         return;

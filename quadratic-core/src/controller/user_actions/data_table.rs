@@ -68,6 +68,27 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::DataTableMeta);
     }
 
+    pub fn data_table_mutations(
+        &mut self,
+        sheet_pos: SheetPos,
+        column_to_add: Option<u32>,
+        column_to_remove: Option<u32>,
+        row_to_add: Option<u32>,
+        row_to_remove: Option<u32>,
+        cursor: Option<String>,
+    ) {
+        let ops = self.data_table_mutations_operations(
+            sheet_pos,
+            column_to_add,
+            column_to_remove,
+            row_to_add,
+            row_to_remove,
+            cursor.to_owned(),
+        );
+
+        self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
+    }
+
     pub fn sort_data_table(
         &mut self,
         sheet_pos: SheetPos,

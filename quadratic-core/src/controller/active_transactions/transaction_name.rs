@@ -20,6 +20,7 @@ pub enum TransactionName {
     SwitchDataTableKind,
     GridToDataTable,
     DataTableMeta,
+    DataTableMutations,
     DataTableFirstRowAsHeader,
     Import,
 

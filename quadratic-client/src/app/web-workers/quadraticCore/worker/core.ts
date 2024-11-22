@@ -1145,6 +1145,28 @@ class Core {
     );
   }
 
+  dataTableMutations(
+    sheetId: string,
+    x: number,
+    y: number,
+    column_to_add?: number,
+    column_to_remove?: number,
+    row_to_add?: number,
+    row_to_remove?: number,
+    cursor?: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.dataTableMutations(
+      sheetId,
+      posToPos(x, y),
+      column_to_add,
+      column_to_remove,
+      row_to_add,
+      row_to_remove,
+      cursor
+    );
+  }
+
   sortDataTable(
     sheetId: string,
     x: number,
