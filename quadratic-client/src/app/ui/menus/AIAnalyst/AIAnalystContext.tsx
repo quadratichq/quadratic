@@ -5,6 +5,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { A1SelectionStringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { CloseIcon } from '@/shared/components/Icons';
@@ -38,21 +39,10 @@ export const AIAnalystContext = ({
   useEffect(() => {
     if (!editing) return;
     const updateSelection = () => {
-      // todo...
-      // const selection = sheets.getRustSelection();
-      // const rect = selection.rects?.[0];
-      // let sheetRect = undefined;
-      // if (rect && (rect.min.x !== rect.max.x || rect.min.y !== rect.max.y)) {
-      //   sheetRect = {
-      //     sheet_id: selection.sheet_id,
-      //     min: { x: Number(rect.min.x), y: Number(rect.min.y) },
-      //     max: { x: Number(rect.max.x), y: Number(rect.max.y) },
-      //   };
-      // }
-      // setContext((prev) => ({
-      //   ...prev,
-      //   selection: sheetRect,
-      // }));
+      setContext((prev) => ({
+        ...prev,
+        selection: sheets.sheet.cursor.save(),
+      }));
     };
     updateSelection();
 
@@ -121,8 +111,8 @@ export const AIAnalystContext = ({
         key="cursor"
         primary={
           context.selection
-            ? `(${context.selection.min.x}, ${context.selection.min.y}), (${context.selection.max.x}, ${context.selection.max.y}) `
-            : `(${sheets.sheet.cursor.position.x}, ${sheets.sheet.cursor.position.y})`
+            ? A1SelectionStringToSelection(context.selection).toA1String(sheets.current, sheets.getRustSheetMap())
+            : sheets.sheet.cursor.toCursorA1String()
         }
         secondary="Cursor"
         onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}

@@ -27,10 +27,10 @@ export const GoTo = () => {
     }
     try {
       const map = sheets.getRustSheetMap();
-      const selection = stringToSelection(value, sheets.sheet.id, map);
+      const selection = stringToSelection(value, sheets.current, map);
       return (
         <span>
-          <span className="font-bold">{selection.toString(sheets.sheet.id, map)}</span>
+          <span className="font-bold">{selection.toA1String(sheets.current, map)}</span>
         </span>
       );
     } catch (e: any) {

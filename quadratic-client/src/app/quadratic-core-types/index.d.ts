@@ -24,7 +24,7 @@ export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint
 export interface JsBordersSheet { all: BorderStyleCell | null, columns: Record<string, BorderStyleCell> | null, rows: Record<string, BorderStyleCell> | null, horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
 export interface JsCellsAccessed { cells: Record<string, Array<string>>, }
 export interface JsCellValue { value: string, kind: string, }
-export interface JsCellValuePos { value: string, kind: string, pos: Pos, }
+export interface JsCellValuePos { value: string, kind: string, pos: string, }
 export interface JsCellValuePosAIContext { sheet_name: string, rect_origin: Pos, rect_width: number, rect_height: number, starting_rect_values: Array<Array<JsCellValuePos>>, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: JsCellsAccessed | null, }

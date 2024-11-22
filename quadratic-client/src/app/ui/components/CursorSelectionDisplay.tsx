@@ -7,7 +7,7 @@ export const CursorSelectionDisplay = () => {
 
   useEffect(() => {
     const updateCursor = () => {
-      const a1String = sheets.sheet.cursor.jsSelection.toString(sheets.sheet.id, sheets.getRustSheetMap());
+      const a1String = sheets.sheet.cursor.toA1String();
       setCursorString(a1String);
     };
     updateCursor();

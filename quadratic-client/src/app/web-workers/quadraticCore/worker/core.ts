@@ -23,7 +23,6 @@ import {
   JsRenderCell,
   SearchOptions,
   SheetPos,
-  SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController, JsSummarizeSelectionResult, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
@@ -1167,23 +1166,18 @@ class Core {
     }
   }
 
-  getAIContextRectsInSheetRects(sheetRects: SheetRect[], maxRects?: number): JsCellValuePosAIContext[][] | undefined {
+  getAIContextRectsInSelection(selections: string[], maxRects?: number): JsCellValuePosAIContext[][] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const aiContextRectsStringified = this.gridController.getAIContextRectsInSheetRects(
-      JSON.stringify(sheetRects, bigIntReplacer),
-      maxRects
-    );
+    const aiContextRectsStringified = this.gridController.getAIContextRectsInSelections(selections, maxRects);
     if (aiContextRectsStringified) {
       const aiContextRects = JSON.parse(aiContextRectsStringified) as JsCellValuePosAIContext[][];
       return aiContextRects;
     }
   }
 
-  getErroredCodeCellsInSheetRects(sheetRects: SheetRect[]): JsCodeCell[][] | undefined {
+  getErroredCodeCellsInSelection(selections: string[]): JsCodeCell[][] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const erroredCodeCellsStringified = this.gridController.getErroredCodeCellsInSheetRects(
-      JSON.stringify(sheetRects, bigIntReplacer)
-    );
+    const erroredCodeCellsStringified = this.gridController.getErroredCodeCellsInSelections(selections);
     if (erroredCodeCellsStringified) {
       const erroredCodeCells = JSON.parse(erroredCodeCellsStringified) as JsCodeCell[][];
       return erroredCodeCells;

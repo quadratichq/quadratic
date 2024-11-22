@@ -2,9 +2,9 @@ use std::str::FromStr;
 
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{
-    controller::GridController, grid::SheetId, selection::OldSelection, Pos, Rect, SheetRect,
-};
+use super::js_types::{JsCellValuePosAIContext, JsCodeCell};
+use crate::A1Selection;
+use crate::{controller::GridController, grid::SheetId, selection::OldSelection, Pos, Rect};
 
 #[wasm_bindgen]
 impl GridController {
@@ -150,19 +150,25 @@ impl GridController {
 
     /// gets values, types with position for all cells in selection
     /// returns a stringified array of JsCellValuePosAIContext for all sheet_rects
-    #[wasm_bindgen(js_name = "getAIContextRectsInSheetRects")]
-    pub fn js_ai_context_rects_in_sheet_rects(
+    #[wasm_bindgen(js_name = "getAIContextRectsInSelections")]
+    pub fn js_ai_context_rects_in_selections(
         &self,
-        sheet_rects: String,
+        selections: Vec<String>,
         max_rects: Option<usize>,
     ) -> Result<String, JsValue> {
-        let sheet_rects: Vec<SheetRect> = serde_json::from_str::<Vec<SheetRect>>(&sheet_rects)
-            .map_err(|_| JsValue::from_str("Invalid sheet rects"))?;
-        let mut all_ai_context_rects = Vec::new();
-        for sheet_rect in sheet_rects {
-            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+        let selections = selections
+            .iter()
+            .map(|selection| serde_json::from_str::<A1Selection>(selection))
+            .collect::<Result<Vec<A1Selection>, _>>()
+            .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
+        let mut all_ai_context_rects: Vec<Vec<JsCellValuePosAIContext>> = Vec::new();
+        for selection in selections {
+            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                // todo(ayush): use sheet.resolve_cell_ref to get selection_rects <- in this PR before merge
+
+                let selection_rects = selection.subspaces().rects;
                 let ai_context_rects =
-                    sheet.js_ai_context_rects_in_sheet_rect(sheet_rect.into(), max_rects);
+                    sheet.get_ai_context_rects_in_selection_rects(selection_rects, max_rects);
                 all_ai_context_rects.push(ai_context_rects);
             }
         }
@@ -171,17 +177,24 @@ impl GridController {
 
     /// gets JsCodeCell for all cells in sheet_rects that have errors
     /// returns a stringified array of JsCodeCell for all sheet_rects
-    #[wasm_bindgen(js_name = "getErroredCodeCellsInSheetRects")]
-    pub fn js_errored_code_cells_in_sheet_rects(
+    #[wasm_bindgen(js_name = "getErroredCodeCellsInSelections")]
+    pub fn js_errored_code_cells_in_selections(
         &self,
-        sheet_rects: String,
+        selections: Vec<String>,
     ) -> Result<String, JsValue> {
-        let sheet_rects: Vec<SheetRect> = serde_json::from_str::<Vec<SheetRect>>(&sheet_rects)
-            .map_err(|_| JsValue::from_str("Invalid sheet rects"))?;
-        let mut all_errored_code_cells = Vec::new();
-        for sheet_rect in sheet_rects {
-            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-                let errored_code_cells = sheet.js_errored_code_cell_rect(sheet_rect.into());
+        let selections = selections
+            .iter()
+            .map(|selection| serde_json::from_str::<A1Selection>(selection))
+            .collect::<Result<Vec<A1Selection>, _>>()
+            .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
+        let mut all_errored_code_cells: Vec<Vec<JsCodeCell>> = Vec::new();
+        for selection in selections {
+            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                // todo(ayush): use sheet.resolve_cell_ref to get selection_rects <- in this PR before merge
+                let selection_rects = selection.subspaces().rects;
+
+                let errored_code_cells =
+                    sheet.get_errored_code_cells_in_selection_rects(selection_rects);
                 all_errored_code_cells.push(errored_code_cells);
             }
         }

@@ -39,12 +39,7 @@ export class PointerAutoComplete {
     if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       this.active = true;
       events.emit('cellMoving', true);
-      this.screenSelection = sheet.getScreenRectangle(
-        this.selection.left,
-        this.selection.top,
-        this.selection.width,
-        this.selection.height
-      );
+      this.screenSelection = sheet.getScreenRectangleFromRect(this.selection);
       cursor.changeBoxCells(true);
 
       return true;

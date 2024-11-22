@@ -1048,27 +1048,27 @@ export interface CoreClientGetCellValue {
   value: JsCellValue | undefined;
 }
 
-export interface ClientCoreGetAIContextRectsInSheetRects {
-  type: 'clientCoreGetAIContextRectsInSheetRects';
+export interface ClientCoreGetAIContextRectsInSelections {
+  type: 'clientCoreGetAIContextRectsInSelections';
   id: number;
-  sheetRects: SheetRect[];
+  selections: string[];
   maxRects: number | undefined;
 }
 
-export interface CoreClientGetAIContextRectsInSheetRects {
-  type: 'coreClientGetAIContextRectsInSheetRects';
+export interface CoreClientGetAIContextRectsInSelections {
+  type: 'coreClientGetAIContextRectsInSelections';
   id: number;
   value: JsCellValuePosAIContext[][] | undefined;
 }
 
-export interface ClientCoreGetErroredCodeCellsInSheetRects {
-  type: 'clientCoreGetErroredCodeCellsInSheetRects';
+export interface ClientCoreGetErroredCodeCellsInSelections {
+  type: 'clientCoreGetErroredCodeCellsInSelections';
   id: number;
-  sheetRects: SheetRect[];
+  selections: string[];
 }
 
-export interface CoreClientGetErroredCodeCellsInSheetRects {
-  type: 'coreClientGetErroredCodeCellsInSheetRects';
+export interface CoreClientGetErroredCodeCellsInSelections {
+  type: 'coreClientGetErroredCodeCellsInSelections';
   id: number;
   value: JsCodeCell[][] | undefined;
 }
@@ -1205,8 +1205,8 @@ export type ClientCoreMessage =
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
   | ClientCoreGetCellValue
-  | ClientCoreGetAIContextRectsInSheetRects
-  | ClientCoreGetErroredCodeCellsInSheetRects
+  | ClientCoreGetAIContextRectsInSelections
+  | ClientCoreGetErroredCodeCellsInSelections
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
@@ -1275,8 +1275,8 @@ export type CoreClientMessage =
   | CoreClientBordersSheet
   | CoreClientGetCellValue
   | CoreClientClientMessage
-  | CoreClientGetAIContextRectsInSheetRects
-  | CoreClientGetErroredCodeCellsInSheetRects
+  | CoreClientGetAIContextRectsInSelections
+  | CoreClientGetErroredCodeCellsInSelections
   | CoreClientFindNextColumnForRect
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically

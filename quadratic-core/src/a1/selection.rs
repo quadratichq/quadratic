@@ -113,6 +113,12 @@ impl A1Selection {
         let sheet_id = sheet;
         Self::from_single_cell(SheetPos { x, y, sheet_id })
     }
+
+    /// Constructs a selection all for a sheet.
+    pub fn from_all(sheet: SheetId) -> Self {
+        Self::from_range(CellRefRange::ALL, sheet)
+    }
+
     /// Constructs a selection containing a set of columns.
     #[cfg(test)]
     pub fn from_column_ranges(column_ranges: &[RangeInclusive<u64>], sheet: SheetId) -> Self {
@@ -214,6 +220,10 @@ impl A1Selection {
             .iter()
             .map(|&cells| SheetCellRefRange { sheet, cells }.to_string(default_sheet_id, sheet_map))
             .join(",")
+    }
+
+    pub fn to_cursor_a1_string(&self) -> String {
+        self.cursor.a1_string()
     }
 
     /// Returns `true` on exactly the regions/cells that the range includes, and

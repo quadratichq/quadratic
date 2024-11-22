@@ -102,14 +102,14 @@ export class SheetCursor {
     return rectToRectangle(rect);
   }
 
-  // Returns rectangle in case of single range selection having more than one cell
+  // Returns rectangle in case of single finite range selection having more than one cell
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangle(): Rectangle | undefined {
     const rect = this.jsSelection.getSingleRectangle();
     return rect ? rectToRectangle(rect) : undefined;
   }
 
-  // Returns rectangle in case of single range selection, otherwise returns a rectangle that represents the cursor
+  // Returns rectangle in case of single finite range selection, otherwise returns a rectangle that represents the cursor
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangleOrCursor(): Rectangle | undefined {
     const rect = this.jsSelection.getSingleRectangleOrCursor();
@@ -214,8 +214,12 @@ export class SheetCursor {
     return this.jsSelection.isColumnRow();
   }
 
-  toA1String(sheetId = sheets.sheet.id): string {
-    return this.jsSelection.toString(sheetId, sheets.getRustSheetMap());
+  toA1String(sheetId = sheets.current): string {
+    return this.jsSelection.toA1String(sheetId, sheets.getRustSheetMap());
+  }
+
+  toCursorA1String(): string {
+    return this.jsSelection.toCursorA1String();
   }
 
   contains(x: number, y: number): boolean {

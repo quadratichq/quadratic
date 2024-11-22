@@ -465,42 +465,50 @@ impl Sheet {
         }
     }
 
-    pub fn find_tabular_data_rects(&self, rect: Rect, max_rects: Option<usize>) -> Vec<Rect> {
-        let mut rects = Vec::new();
+    pub fn find_tabular_data_rects_in_selection_rects(
+        &self,
+        selection_rects: Vec<Rect>,
+        max_rects: Option<usize>,
+    ) -> Vec<Rect> {
+        let mut tabular_data_rects = Vec::new();
 
-        for y in rect.y_range() {
-            for x in rect.x_range() {
-                let pos = Pos { x, y };
+        for selection_rect in selection_rects {
+            for y in selection_rect.y_range() {
+                for x in selection_rect.x_range() {
+                    let pos = Pos { x, y };
 
-                let is_visited = rects.iter().any(|rect: &Rect| rect.contains(pos));
-                if is_visited {
-                    continue;
+                    let is_visited = tabular_data_rects
+                        .iter()
+                        .any(|prev_tabular_data_rect: &Rect| prev_tabular_data_rect.contains(pos));
+                    if is_visited {
+                        continue;
+                    }
+
+                    let has_value = self.display_value(pos).is_some();
+                    if !has_value {
+                        continue;
+                    }
+
+                    let last_row = self
+                        .find_next_row(pos.y + 1, pos.x, false, false)
+                        .unwrap_or(pos.y + 1)
+                        - 1;
+
+                    let last_col = self
+                        .find_next_column(pos.x + 1, pos.y, false, false)
+                        .unwrap_or(pos.x + 1)
+                        - 1;
+
+                    let tabular_data_rect = Rect::new(pos.x, pos.y, last_col, last_row);
+                    tabular_data_rects.push(tabular_data_rect);
                 }
-
-                let has_value = self.display_value(pos).is_some();
-                if !has_value {
-                    continue;
-                }
-
-                let last_row = self
-                    .find_next_row(pos.y + 1, pos.x, false, false)
-                    .unwrap_or(pos.y + 1)
-                    - 1;
-
-                let last_col = self
-                    .find_next_column(pos.x + 1, pos.y, false, false)
-                    .unwrap_or(pos.x + 1)
-                    - 1;
-
-                let tabular_data_rect = Rect::new(pos.x, pos.y, last_col, last_row);
-                rects.push(tabular_data_rect);
             }
         }
         if let Some(max_rects) = max_rects {
-            rects.sort_by_key(|rect| Reverse(rect.len()));
-            rects.truncate(max_rects);
+            tabular_data_rects.sort_by_key(|rect| Reverse(rect.len()));
+            tabular_data_rects.truncate(max_rects);
         }
-        rects
+        tabular_data_rects
     }
 }
 
@@ -1211,7 +1219,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn find_tabular_data_rects() {
+    fn find_tabular_data_rects_in_selection_rects() {
         let mut sheet = Sheet::test();
         sheet.set_cell_values(
             Rect {
@@ -1257,7 +1265,8 @@ mod test {
             ),
         );
 
-        let tabular_data_rects = sheet.find_tabular_data_rects(Rect::new(1, 1, 10000, 10000), None);
+        let tabular_data_rects = sheet
+            .find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10000, 10000)], None);
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![
