@@ -94,7 +94,7 @@ export class PointerHtmlCells {
         // click with meta / ctrl key
         // select cell and add to selection
         else if (event.metaKey || event.ctrlKey) {
-          cursor.selectRect(cell.x, cell.y, cell.x, cell.y, true);
+          cursor.moveTo(cell.x, cell.y, true);
         }
         // click without meta / ctrl key
         // select cell and clear selection

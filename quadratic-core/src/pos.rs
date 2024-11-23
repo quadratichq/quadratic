@@ -84,6 +84,12 @@ impl From<SheetPos> for Pos {
         }
     }
 }
+impl From<&str> for Pos {
+    fn from(s: &str) -> Self {
+        Self::try_a1_string(&s).expect("invalid cell reference")
+    }
+}
+
 impl fmt::Display for Pos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.x, self.y)

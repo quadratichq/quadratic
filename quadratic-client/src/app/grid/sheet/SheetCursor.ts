@@ -175,22 +175,24 @@ export class SheetCursor {
     this.updatePosition(true);
   }
 
-  selectDeltaSize(deltaX: number, deltaY: number) {
-    this.jsSelection.deltaSize(deltaX, deltaY);
+  keyboardExtend(deltaX: number, deltaY: number) {
+    this.jsSelection.keyboardExtend(deltaX, deltaY);
     this.updatePosition(true);
   }
 
+  // Moves the cursor to the given position. This replaces any selection.
   moveTo(x: number, y: number, ensureVisible = true) {
-    this.jsSelection.moveTo(x, y);
+    this.jsSelection.moveTo(x, y, false);
     this.updatePosition(ensureVisible);
   }
 
-  // Returns all columns that have a selection (used by cmd+space)
+  // Selects columns that have a current selection (used by cmd+space)
   setColumnsSelected() {
     this.jsSelection.setColumnsSelected();
     this.updatePosition(true);
   }
 
+  // Selects rows that have a current selection (used by shift+cmd+space)
   setRowsSelected() {
     this.jsSelection.setRowsSelected();
     this.updatePosition(true);
@@ -231,8 +233,8 @@ export class SheetCursor {
     this.updatePosition(ensureVisible);
   }
 
-  extendSelection(column: number, row: number, append: boolean) {
-    this.jsSelection.extendSelection(column, row, append);
+  pointerDown(column: number, row: number, ctrlKey: boolean, shiftKey: boolean) {
+    this.jsSelection.pointerDown(column, row, ctrlKey, shiftKey);
     this.updatePosition(true);
   }
 }

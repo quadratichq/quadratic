@@ -1,3 +1,5 @@
+use crate::Pos;
+
 use super::CellRefRange;
 
 impl CellRefRange {
@@ -44,6 +46,20 @@ impl CellRefRange {
     pub fn is_empty(&self) -> bool {
         self.start.row.is_none() && self.start.col.is_none()
     }
+
+    pub fn is_pos_range(&self, p1: Pos, p2: Option<Pos>) -> bool {
+        if self.start.is_pos(p1) {
+            if let Some(p2) = p2 {
+                self.end.is_some_and(|end| end.is_pos(p2))
+            } else {
+                true
+            }
+        } else if self.end.is_some_and(|end| end.is_pos(p1)) {
+            p2.is_some_and(|p2| self.start.is_pos(p2))
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -71,5 +87,22 @@ mod tests {
         assert!(!CellRefRange::test("1:2").only_row(1));
         assert!(!CellRefRange::test("A2").only_row(1));
         assert!(!CellRefRange::test("A2:D2").only_row(1));
+    }
+
+    #[test]
+    fn test_is_pos_range() {
+        assert!(CellRefRange::test("A1").is_pos_range(Pos { x: 1, y: 1 }, None));
+        assert!(!CellRefRange::test("A1").is_pos_range(Pos { x: 2, y: 1 }, None));
+        assert!(!CellRefRange::test("A1").is_pos_range(Pos { x: 1, y: 2 }, None));
+
+        assert!(
+            CellRefRange::test("A1:B2").is_pos_range(Pos { x: 1, y: 1 }, Some(Pos { x: 2, y: 1 }))
+        );
+        assert!(
+            !CellRefRange::test("A1").is_pos_range(Pos { x: 2, y: 1 }, Some(Pos { x: 1, y: 1 }))
+        );
+        assert!(
+            !CellRefRange::test("A1").is_pos_range(Pos { x: 1, y: 2 }, Some(Pos { x: 1, y: 1 }))
+        );
     }
 }

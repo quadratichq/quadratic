@@ -271,33 +271,13 @@ impl A1Selection {
         }
     }
 
-    /// Changes the size of the last selection by the given delta.
-    pub fn delta_size(&mut self, delta_x: i64, delta_y: i64) {
-        if let Some(last_range) = self.ranges.last_mut() {
-            if let Some(end) = last_range.end {
-                last_range.end = Some(end.delta_size(delta_x, delta_y));
-            } else {
-                last_range.end = Some(CellRefRangeEnd {
-                    col: last_range.start.col.map(|c| c.clone().delta_size(delta_x)),
-                    row: last_range.start.row.map(|r| r.clone().delta_size(delta_y)),
-                });
-            }
-        } else {
-            self.ranges.push(CellRefRange {
-                start: CellRefRangeEnd::new_relative_xy(self.cursor.x as u64, self.cursor.y as u64),
-                end: Some(CellRefRangeEnd::new_relative_xy(
-                    (self.cursor.x as i64 + delta_x) as u64,
-                    (self.cursor.y as i64 + delta_y) as u64,
-                )),
-            });
-        }
-    }
-
     /// Moves the cursor to the given position and clears the selection.
-    pub fn move_to(&mut self, x: i64, y: i64) {
+    pub fn move_to(&mut self, x: i64, y: i64, append: bool) {
         self.cursor.x = x as i64;
         self.cursor.y = y as i64;
-        self.ranges.clear();
+        if !append {
+            self.ranges.clear();
+        }
         self.ranges
             .push(CellRefRange::new_relative_pos(Pos::new(x, y)));
     }
@@ -360,7 +340,7 @@ impl A1Selection {
 
     /// Extends the last selection to the given position. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of that range is extended).
-    pub fn extend_selection(&mut self, column: u64, row: u64, append: bool) {
+    pub(crate) fn extend_selection(&mut self, column: u64, row: u64, append: bool) {
         // if the selection is empty, then we use the cursor as the starting point
         if self.ranges.is_empty() {
             self.ranges
@@ -401,70 +381,9 @@ mod tests {
     }
 
     #[test]
-    fn test_delta_size() {
-        let mut selection = A1Selection::test("A1,B1,C1");
-        selection.delta_size(1, 1);
-        assert_eq!(selection.test_string(), "A1,B1,C1:D2");
-
-        selection = A1Selection::test("D2:E2");
-        selection.delta_size(1, 0);
-        assert_eq!(selection.test_string(), "D2:F2");
-
-        selection = A1Selection::test("D:E");
-        selection.delta_size(1, 0);
-        assert_eq!(selection.test_string(), "D:F");
-
-        selection = A1Selection::test("D:E");
-        selection.delta_size(0, 1);
-        assert_eq!(selection.test_string(), "D:E");
-
-        selection = A1Selection::test("A1,3");
-        selection.delta_size(0, 1);
-        assert_eq!(selection.test_string(), "A1,3:4");
-
-        selection = A1Selection::test("A1:B2");
-        selection.delta_size(-1, -1);
-        assert_eq!(selection.test_string(), "A1");
-
-        selection = A1Selection::test("2:4");
-        selection.delta_size(0, 2);
-        assert_eq!(selection.test_string(), "2:6");
-
-        selection = A1Selection::test("A:C");
-        selection.delta_size(-1, 0);
-        assert_eq!(selection.test_string(), "A:B");
-
-        selection = A1Selection::test("A1,B2,C3");
-        selection.delta_size(1, 1);
-        assert_eq!(selection.test_string(), "A1,B2,C3:D4");
-    }
-
-    #[test]
-    fn test_delta_negative_range() {
-        let mut selection = A1Selection::test("B2");
-        selection.delta_size(-2, -2);
-        assert_eq!(selection.test_string(), "B2:A1");
-
-        selection = A1Selection::test("A1");
-        selection.delta_size(-1, -1);
-        assert_eq!(selection.test_string(), "A1");
-
-        selection = A1Selection::test("E5:G6");
-        selection.delta_size(-3, -3);
-        assert_eq!(selection.test_string(), "E5:D3");
-    }
-
-    #[test]
-    fn test_delta_size_zero() {
-        let mut selection = A1Selection::test("A1");
-        selection.delta_size(0, 0);
-        assert_eq!(selection.test_string(), "A1");
-    }
-
-    #[test]
     fn test_move_to() {
         let mut selection = A1Selection::test("A1,B1,C1");
-        selection.move_to(2, 2);
+        selection.move_to(2, 2, false);
         assert_eq!(selection.test_string(), "B2");
     }
 

@@ -347,7 +347,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection up
   if (matchShortcut(Action.ExpandSelectionUp, event)) {
-    cursor.selectDeltaSize(0, -1);
+    cursor.keyboardExtend(0, -1);
     return true;
   }
 
@@ -371,7 +371,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection down
   if (matchShortcut(Action.ExpandSelectionDown, event)) {
-    cursor.selectDeltaSize(0, 1);
+    cursor.keyboardExtend(0, 1);
     return true;
   }
 
@@ -395,7 +395,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection left
   if (matchShortcut(Action.ExpandSelectionLeft, event)) {
-    cursor.selectDeltaSize(-1, 0);
+    cursor.keyboardExtend(-1, 0);
     return true;
   }
 
@@ -419,7 +419,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection right
   if (matchShortcut(Action.ExpandSelectionRight, event)) {
-    cursor.selectDeltaSize(1, 0);
+    cursor.keyboardExtend(1, 0);
     return true;
   }
 

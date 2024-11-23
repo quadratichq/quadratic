@@ -394,14 +394,18 @@ impl CellRefRangeEnd {
         let row = Some(CellRefCoord::new_rel(y));
         CellRefRangeEnd { col: None, row }
     }
-    pub fn delta_size(self, delta_x: i64, delta_y: i64) -> Self {
+    pub fn expand(self, delta_x: i64, delta_y: i64) -> Self {
         CellRefRangeEnd {
-            col: self.col.map(|c| c.delta_size(delta_x)),
-            row: self.row.map(|r| r.delta_size(delta_y)),
+            col: self.col.map(|c| c.expand(delta_x)),
+            row: self.row.map(|r| r.expand(delta_y)),
         }
     }
     pub fn is_multi_range(&self) -> bool {
         self.col.is_none() || self.row.is_none()
+    }
+    pub fn is_pos(&self, pos: Pos) -> bool {
+        self.col.map_or(false, |col| col.coord == pos.x as u64)
+            || self.row.map_or(false, |row| row.coord == pos.y as u64)
     }
 }
 
@@ -435,7 +439,7 @@ impl CellRefCoord {
         let is_absolute = true;
         Self { coord, is_absolute }
     }
-    pub fn delta_size(self, delta: i64) -> Self {
+    pub fn expand(self, delta: i64) -> Self {
         let coord = if delta + self.coord as i64 <= 0 {
             1
         } else {
@@ -491,13 +495,10 @@ mod tests {
     #[test]
     fn test_delta_size() {
         assert_eq!(
-            CellRefCoord::new_rel(1).delta_size(-1),
+            CellRefCoord::new_rel(1).expand(-1),
             CellRefCoord::new_rel(1)
         );
-        assert_eq!(
-            CellRefCoord::new_rel(1).delta_size(1),
-            CellRefCoord::new_rel(2)
-        );
+        assert_eq!(CellRefCoord::new_rel(1).expand(1), CellRefCoord::new_rel(2));
     }
 
     #[test]
@@ -577,5 +578,14 @@ mod tests {
         assert!(!CellRefRange::test("A1").has_row(1));
         assert!(!CellRefRange::test("A").has_row(1));
         assert!(!CellRefRange::test("A1:C3").has_row(2));
+    }
+
+    #[test]
+    fn test_cell_ref_range_end_is_pos() {
+        assert!(CellRefRangeEnd::new_relative_xy(1, 2).is_pos(Pos { x: 1, y: 2 }));
+        assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_pos(Pos { x: 2, y: 1 }));
+        assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_pos(Pos { x: 1, y: 2 }));
+        assert!(!CellRefRangeEnd::new_relative_column(1).is_pos(Pos { x: 1, y: 1 }));
+        assert!(!CellRefRangeEnd::new_relative_row(1).is_pos(Pos { x: 1, y: 1 }));
     }
 }

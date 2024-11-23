@@ -7,6 +7,8 @@ mod column_names;
 mod error;
 mod js_selection;
 mod selection;
+mod selection_exclude;
+mod selection_input;
 mod selection_mutate;
 mod selection_query;
 mod selection_select;

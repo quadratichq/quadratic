@@ -105,54 +105,60 @@ export class PointerDown {
       }
     }
 
-    // Select cells between pressed and cursor position. Uses last multiCursor
-    // or creates a multiCursor.
-    if (event.shiftKey) {
-      // do nothing if we have text is invalid in the input
-      if (!(await this.isInputValid())) return;
+    // do nothing if we have text is invalid in the input
+    if (!(await this.isInputValid())) return;
 
-      const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
-      cursor.extendSelection(column, row, event.metaKey || event.ctrlKey);
-      this.active = true;
-      this.position = new Point(cursor.position.x, cursor.position.y);
-      this.previousPosition = new Point(column, row);
-      this.pointerMoved = false;
+    if (column === this.previousPosition?.x && row === this.previousPosition?.y) {
       return;
     }
-
-    // select another multiCursor range
-    if (!this.active && (event.metaKey || event.ctrlKey)) {
-      if (!(await this.isInputValid())) return;
-
-      const cursorPosition = cursor.position;
-      if (cursor.isMultiCursor() || column !== cursorPosition.x || row !== cursorPosition.y) {
-        event.stopPropagation();
-        cursor.extendSelection(column, row, true);
-        this.active = true;
-        this.position = new Point(column, row);
-
-        // Keep track of multiCursor previous position
-        this.previousPosition = new Point(column, row);
-
-        this.pointerMoved = false;
-        return;
-      }
-    }
-
-    this.active = true;
-    this.position = new Point(column, row);
-
-    // Keep track of multiCursor previous position
+    cursor.pointerDown(column, row, event.metaKey || event.ctrlKey, event.shiftKey);
     this.previousPosition = new Point(column, row);
 
-    sheets.sheet.cursor.moveTo(column, row);
+    // // Select cells between pressed and cursor position. Uses last multiCursor
+    // // or creates a multiCursor.
+    // if (event.shiftKey) {
+    //   cursor.extendSelection(column, row, event.metaKey || event.ctrlKey);
+    //   this.active = true;
+    //   this.position = new Point(cursor.position.x, cursor.position.y);
+    //   this.previousPosition = new Point(column, row);
+    //   this.pointerMoved = false;
+    //   return;
+    // }
 
+    // // select another multiCursor range
+    // if (!this.active && (event.metaKey || event.ctrlKey)) {
+    //   if (!(await this.isInputValid())) return;
+
+    //   const cursorPosition = cursor.position;
+    //   if (cursor.isMultiCursor() || column !== cursorPosition.x || row !== cursorPosition.y) {
+    //     event.stopPropagation();
+    //     cursor.extendSelection(column, row, true);
+    //     this.active = true;
+    //     this.position = new Point(column, row);
+
+    //     // Keep track of multiCursor previous position
+    //     this.previousPosition = new Point(column, row);
+
+    //     this.pointerMoved = false;
+    //     return;
+    //   }
+    // }
+
+    // this.active = true;
+    // this.position = new Point(column, row);
+
+    // // Keep track of multiCursor previous position
+    // this.previousPosition = new Point(column, row);
+
+    // sheets.sheet.cursor.moveTo(column, row);
+
+    // todo...not sure what this does
     // If the input is rejected, we cannot move the cursor
-    if (await inlineEditorHandler.handleCellPointerDown()) {
-      cursor.selectRect(column, row, column, row, event.metaKey || event.ctrlKey);
-    } else {
-      inlineEditorMonaco.focus();
-    }
+    // if (await inlineEditorHandler.handleCellPointerDown()) {
+    //   cursor.selectRect(column, row, column, row, event.metaKey || event.ctrlKey);
+    // } else {
+    //   inlineEditorMonaco.focus();
+    // }
     events.emit('clickedToCell', column, row, world);
     this.pointerMoved = false;
   }
@@ -164,7 +170,7 @@ export class PointerDown {
 
     const { viewport } = pixiApp;
     const sheet = sheets.sheet;
-    const cursor = sheet.cursor;
+    // const cursor = sheet.cursor;
 
     if (!this.pointerMoved && this.positionRaw) {
       if (
@@ -187,7 +193,7 @@ export class PointerDown {
     const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
     if (column !== this.previousPosition.x || row !== this.previousPosition.y) {
-      cursor.extendSelection(column, row, event.metaKey || event.ctrlKey);
+      // cursor.pointerMove(column, row, event.metaKey || event.ctrlKey, event.shiftKey);
       this.previousPosition = new Point(column, row);
       if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
         pixiAppSettings.changeInput(false);
