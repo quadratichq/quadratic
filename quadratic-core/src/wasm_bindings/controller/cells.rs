@@ -164,11 +164,8 @@ impl GridController {
         let mut all_ai_context_rects: Vec<Vec<JsCellValuePosAIContext>> = Vec::new();
         for selection in selections {
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                // todo(ayush): use sheet.resolve_cell_ref to get selection_rects <- in this PR before merge
-
-                let selection_rects = selection.subspaces().rects;
                 let ai_context_rects =
-                    sheet.get_ai_context_rects_in_selection_rects(selection_rects, max_rects);
+                    sheet.get_ai_context_rects_in_selection(selection, max_rects);
                 all_ai_context_rects.push(ai_context_rects);
             }
         }
@@ -190,11 +187,7 @@ impl GridController {
         let mut all_errored_code_cells: Vec<Vec<JsCodeCell>> = Vec::new();
         for selection in selections {
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                // todo(ayush): use sheet.resolve_cell_ref to get selection_rects <- in this PR before merge
-                let selection_rects = selection.subspaces().rects;
-
-                let errored_code_cells =
-                    sheet.get_errored_code_cells_in_selection_rects(selection_rects);
+                let errored_code_cells = sheet.get_errored_code_cells_in_selection(selection);
                 all_errored_code_cells.push(errored_code_cells);
             }
         }

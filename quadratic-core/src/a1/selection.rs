@@ -93,6 +93,7 @@ impl A1Selection {
             ranges: vec![range],
         }
     }
+
     /// Constructs a selection containing a single cell.
     pub fn from_single_cell(sheet_pos: SheetPos) -> Self {
         Self::from_range(
@@ -100,6 +101,7 @@ impl A1Selection {
             sheet_pos.sheet_id,
         )
     }
+
     /// Constructs a selection containing a single rectangle.
     pub fn from_rect(sheet_rect: SheetRect) -> Self {
         Self::from_range(

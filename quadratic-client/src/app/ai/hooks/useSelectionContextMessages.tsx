@@ -16,7 +16,7 @@ export function useSelectionContextMessages() {
           role: 'user',
           content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 ${
-  selectionContext && selectionContext.length === 1
+  selectionContext && selectionContext.length === 1 && selectionContext[0].length > 0
     ? `
 Quadratic, like most spreadsheets, allows the user to select cells on the sheet.\n
 

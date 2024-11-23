@@ -134,6 +134,7 @@ impl CellRefRange {
         let start = CellRefRangeEnd::new_relative_xy(x, y);
         CellRefRange { start, end: None }
     }
+
     pub fn new_relative_pos(pos: Pos) -> Self {
         Self::new_relative_xy(pos.x as u64, pos.y as u64)
     }
@@ -142,6 +143,7 @@ impl CellRefRange {
         let start = CellRefRangeEnd::new_relative_column(x);
         Self { start, end: None }
     }
+
     pub fn new_relative_row(y: u64) -> Self {
         let start = CellRefRangeEnd::new_relative_row(y);
         Self { start, end: None }
@@ -156,6 +158,7 @@ impl CellRefRange {
             end: Some(CellRefRangeEnd::new_relative_column(x2)),
         }
     }
+
     pub fn new_relative_row_range(y1: u64, y2: u64) -> Self {
         if y1 == y2 {
             return Self::new_relative_row(y1);
@@ -168,8 +171,12 @@ impl CellRefRange {
 
     // This is not implemented because a Rect is always normalized, but a
     // CellRefRange is not.
-    pub fn new_relative_rect(_rect: crate::Rect) -> Self {
-        unimplemented!()
+    pub fn new_relative_rect(rect: Rect) -> Self {
+        dbgjs!("[new_relative_rect] temporary implementation to get selection from rect, correct implementation before merge");
+        Self {
+            start: CellRefRangeEnd::new_relative_pos(rect.min),
+            end: Some(CellRefRangeEnd::new_relative_pos(rect.max)),
+        }
     }
 
     /// Returns whether `self` might intersect `rect`.

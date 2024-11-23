@@ -12,9 +12,10 @@ export function useCurrentSheetContextMessages() {
       if (!sheet) return [];
       const sheetBounds = sheet.boundsWithoutFormatting;
       const selection: string | undefined = sheetBounds.type === 'empty' ? undefined : getAllSelection(sheet.id);
-      const sheetRectContext = selection
+      const currentSheetContext = selection
         ? await quadraticCore.getAIContextRectsInSelections([selection], maxRects)
         : undefined;
+
       return [
         {
           role: 'user',
@@ -28,7 +29,7 @@ ${
 }\n\n
 
 ${
-  sheetRectContext
+  currentSheetContext && currentSheetContext.length === 1
     ? `
 Data in the currently open sheet:\n
 
@@ -52,7 +53,7 @@ Use this sheet data in the context of following messages. Refer to cells if requ
 
 Current sheet data is:\n
 \`\`\`json
-${JSON.stringify(sheetRectContext)}
+${JSON.stringify(currentSheetContext[0])}
 \`\`\`
 Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q\`, i.e. \`q(a1_notation)\`, to reference data cells in code. Always use sheet name to reference cells in other sheets.\n\n
 `

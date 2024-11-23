@@ -276,13 +276,14 @@ impl Sheet {
         rect_values
     }
 
-    /// Returns tabular data rects of JsCellValuePos in selection rects
-    pub fn get_ai_context_rects_in_selection_rects(
+    /// Returns tabular data rects of JsCellValuePos in a1 selection
+    pub fn get_ai_context_rects_in_selection(
         &self,
-        selection_rects: Vec<Rect>,
+        selection: A1Selection,
         max_rects: Option<usize>,
     ) -> Vec<JsCellValuePosAIContext> {
         let mut ai_context_rects = Vec::new();
+        let selection_rects = self.selection_to_rects(&selection);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
@@ -300,11 +301,9 @@ impl Sheet {
     }
 
     /// Returns JsCodeCell for all code cells in selection rects that have errors
-    pub fn get_errored_code_cells_in_selection_rects(
-        &self,
-        selection_rects: Vec<Rect>,
-    ) -> Vec<JsCodeCell> {
+    pub fn get_errored_code_cells_in_selection(&self, selection: A1Selection) -> Vec<JsCodeCell> {
         let mut code_cells = Vec::new();
+        let selection_rects = self.selection_to_rects(&selection);
         for selection_rect in selection_rects {
             for x in selection_rect.x_range() {
                 if let Some(column) = self.get_column(x) {
@@ -711,7 +710,7 @@ mod test {
     use crate::grid::{Bold, CodeCellLanguage, CodeRunResult, Italic, NumericFormat};
     use crate::selection::OldSelection;
     use crate::test_util::print_table;
-    use crate::{CodeCellValue, RunError, RunErrorMsg, SheetPos, Value};
+    use crate::{CodeCellValue, RunError, RunErrorMsg, SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -1457,13 +1456,9 @@ mod test {
             ),
         );
 
-        let ai_context_rects_in_selection = sheet.get_ai_context_rects_in_selection_rects(
-            vec![Rect {
-                min: Pos { x: 1, y: 1 },
-                max: Pos { x: 10000, y: 10000 },
-            }],
-            None,
-        );
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 10000, 10000, sheet.id));
+        let ai_context_rects_in_selection =
+            sheet.get_ai_context_rects_in_selection(selection, None);
 
         let max_rows = 3;
 
@@ -1579,10 +1574,8 @@ mod test {
         );
         sheet.set_code_run(Pos { x: 19, y: 15 }, Some(code_run_3));
 
-        let js_errored_code_cells = sheet.get_errored_code_cells_in_selection_rects(vec![Rect {
-            min: Pos { x: 1, y: 1 },
-            max: Pos { x: 1000, y: 1000 },
-        }]);
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1000, 1000, sheet.id));
+        let js_errored_code_cells = sheet.get_errored_code_cells_in_selection(selection);
 
         assert_eq!(js_errored_code_cells.len(), 2);
 
