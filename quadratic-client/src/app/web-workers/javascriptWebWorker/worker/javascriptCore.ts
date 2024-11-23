@@ -74,7 +74,7 @@ class JavascriptCore {
     });
   }
 
-  sendGetA1Cells(
+  sendGetCellsA1(
     transactionId: string,
     a1: string,
     lineNumber?: number
@@ -83,11 +83,11 @@ class JavascriptCore {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreJavascriptGetCells) => {
         if (message.x === undefined || message.y === undefined || message.w === undefined || message.h === undefined) {
-          throw new Error('[javascriptCore] sendGetA1Cells: x, y, w or h is undefined');
+          throw new Error('[javascriptCore] sendGetCellsA1: x, y, w or h is undefined');
         }
         resolve({ cells: message.cells, x: message.x, y: message.y, w: message.w, h: message.h });
       };
-      this.send({ type: 'javascriptCoreGetA1Cells', transactionId, id, a1, lineNumber });
+      this.send({ type: 'javascriptCoreGetCellsA1', transactionId, id, a1, lineNumber });
     });
   }
 }

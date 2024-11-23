@@ -36,6 +36,7 @@ mod ids;
 pub mod js_types;
 pub mod resize;
 pub mod search;
+pub mod selection;
 pub mod series;
 pub mod sheet;
 pub mod sheets;

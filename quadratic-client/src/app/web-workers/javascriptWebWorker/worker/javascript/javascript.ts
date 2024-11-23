@@ -149,7 +149,7 @@ export class Javascript {
               setTimeout(this.next, 0);
             }
           });
-        } else if (e.data.type === 'getA1CellsLength') {
+        } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
           this.api.getCellsA1(a1).then((cells) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);

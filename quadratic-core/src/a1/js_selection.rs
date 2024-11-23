@@ -206,7 +206,7 @@ pub fn to_selection(
 ) -> Result<JsSelection, String> {
     let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
     let sheet_map = serde_json::from_str::<SheetNameIdMap>(sheet_map).map_err(|e| e.to_string())?;
-    let selection = A1Selection::from_str(&a1, default_sheet_id, &sheet_map)?;
+    let selection = A1Selection::from_str(&a1, &default_sheet_id, &sheet_map)?;
     Ok(JsSelection { selection })
 }
 

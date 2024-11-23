@@ -48,7 +48,7 @@ impl Sheet {
                         }
                         if matches!(old_wrap, Some(Some(CellWrap::Wrap)))
                             || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
-                            || (format_update.need_to_rewrap() && self.check_if_wrap_in_cell(x, y))
+                            || (format_update.need_to_rewrap() && self.check_if_wrap_in_cell(pos))
                         {
                             resize_rows.insert(pos.y);
                         }

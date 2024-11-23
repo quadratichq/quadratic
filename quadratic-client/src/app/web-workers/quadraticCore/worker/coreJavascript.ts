@@ -43,8 +43,8 @@ class CoreJavascript {
         );
         break;
 
-      case 'javascriptCoreGetA1Cells':
-        this.handleGetA1CellsResponse(e.data.id, e.data.transactionId, e.data.a1, e.data.lineNumber);
+      case 'javascriptCoreGetCellsA1':
+        this.handleGetCellsA1Response(e.data.id, e.data.transactionId, e.data.a1, e.data.lineNumber);
         break;
 
       default:
@@ -84,7 +84,7 @@ class CoreJavascript {
     });
   };
 
-  private handleGetA1CellsResponse = (id: number, transactionId: string, a1: string, lineNumber?: number) => {
+  private handleGetCellsA1Response = (id: number, transactionId: string, a1: string, lineNumber?: number) => {
     let cells: CellA1Response | undefined;
     try {
       const cellsString = core.getCellsA1(transactionId, a1, lineNumber);

@@ -29,7 +29,7 @@ export class JavascriptAPI {
     if (!this.javascript.transactionId) {
       throw new Error('No transactionId in getCells');
     }
-    const results = await javascriptCore.sendGetA1Cells(this.javascript.transactionId, a1, lineNumber);
+    const results = await javascriptCore.sendGetCellsA1(this.javascript.transactionId, a1, lineNumber);
 
     // error was thrown while getting cells
     if (!results) {

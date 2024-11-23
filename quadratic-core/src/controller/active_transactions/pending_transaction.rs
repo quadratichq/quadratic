@@ -25,7 +25,7 @@ use super::transaction_name::TransactionName;
 type SheetOffsets = HashMap<(Option<i64>, Option<i64>), f64>;
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct PendingTransaction {
+pub struct PendingTransaction {
     pub id: Uuid,
 
     /// a name for the transaction for user display purposes

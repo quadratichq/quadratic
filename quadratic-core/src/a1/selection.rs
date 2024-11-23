@@ -180,7 +180,7 @@ impl A1Selection {
     /// explicit sheet use `default_sheet_id`.
     pub fn from_str(
         a1: &str,
-        default_sheet_id: SheetId,
+        default_sheet_id: &SheetId,
         sheet_map: &SheetNameIdMap,
     ) -> Result<Self, A1Error> {
         let mut sheet = None;
@@ -201,7 +201,7 @@ impl A1Selection {
             .ok_or_else(|| A1Error::InvalidRange(a1.to_string()))?;
 
         Ok(Self {
-            sheet_id: sheet.unwrap_or(default_sheet_id),
+            sheet_id: sheet.unwrap_or(default_sheet_id.to_owned()),
             cursor: cursor_pos_from_last_range(last_range),
             ranges,
         })
@@ -295,12 +295,12 @@ impl A1Selection {
     /// Returns a test selection from the A1-string with SheetId::test().
     #[cfg(test)]
     pub fn test(a1: &str) -> Self {
-        Self::from_str(a1, SheetId::test(), &std::collections::HashMap::new()).unwrap()
+        Self::from_str(a1, &SheetId::test(), &std::collections::HashMap::new()).unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
     #[cfg(test)]
-    pub fn test_sheet_id(a1: &str, sheet_id: SheetId) -> Self {
+    pub fn test_sheet_id(a1: &str, sheet_id: &SheetId) -> Self {
         Self::from_str(a1, sheet_id, &std::collections::HashMap::new()).unwrap()
     }
 
@@ -345,7 +345,7 @@ mod tests {
     fn test_from_a1() {
         let sheet_id = SheetId::test();
         assert_eq!(
-            A1Selection::from_str("A1", sheet_id, &HashMap::new()),
+            A1Selection::from_str("A1", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_xy(1, 1, sheet_id)),
         );
     }
@@ -354,7 +354,7 @@ mod tests {
     fn test_from_a1_all() {
         let sheet_id = SheetId::test();
         assert_eq!(
-            A1Selection::from_str("*", sheet_id, &HashMap::new()),
+            A1Selection::from_str("*", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_range(CellRefRange::ALL, sheet_id)),
         );
     }
@@ -363,7 +363,7 @@ mod tests {
     fn test_from_a1_columns() {
         let sheet_id = SheetId::test();
         assert_eq!(
-            A1Selection::from_str("A:C", sheet_id, &HashMap::new()),
+            A1Selection::from_str("A:C", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_column_ranges(&[1..=3], sheet_id)),
         );
     }
@@ -372,7 +372,7 @@ mod tests {
     fn test_from_a1_rows() {
         let sheet_id = SheetId::test();
         assert_eq!(
-            A1Selection::from_str("1:3", sheet_id, &HashMap::new()),
+            A1Selection::from_str("1:3", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_row_ranges(&[1..=3], sheet_id)),
         );
     }
@@ -385,15 +385,15 @@ mod tests {
             end: Some(CellRefRangeEnd::new_relative_xy(1, 5)),
         };
         assert_eq!(
-            A1Selection::from_str("A1:B2", sheet_id, &HashMap::new()),
+            A1Selection::from_str("A1:B2", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id))),
         );
         assert_eq!(
-            A1Selection::from_str("D1:A5", sheet_id, &HashMap::new()),
+            A1Selection::from_str("D1:A5", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_range(d1a5, sheet_id)),
         );
         assert_eq!(
-            A1Selection::from_str("A1:B2,D1:A5", sheet_id, &HashMap::new()),
+            A1Selection::from_str("A1:B2,D1:A5", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_ranges(
                 [CellRefRange::new_relative_rect(Rect::new(1, 1, 2, 2)), d1a5].into_iter(),
                 sheet_id,
@@ -405,7 +405,7 @@ mod tests {
     fn test_from_a1_everything() {
         let sheet_id = SheetId::test();
         let selection =
-            A1Selection::from_str("A1,B1:D2,E:G,2:3,5:7,F6:G8,4", sheet_id, &HashMap::new())
+            A1Selection::from_str("A1,B1:D2,E:G,2:3,5:7,F6:G8,4", &sheet_id, &HashMap::new())
                 .unwrap();
 
         assert_eq!(selection.sheet_id, sheet_id);
@@ -428,7 +428,7 @@ mod tests {
     fn test_row_to_a1() {
         let sheet_id = SheetId::test();
         assert_eq!(
-            A1Selection::from_str("1", sheet_id, &HashMap::new()),
+            A1Selection::from_str("1", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_range(
                 CellRefRange::new_relative_row(1),
                 sheet_id,
@@ -436,12 +436,12 @@ mod tests {
         );
 
         assert_eq!(
-            A1Selection::from_str("1:3", sheet_id, &HashMap::new()),
+            A1Selection::from_str("1:3", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_row_ranges(&[1..=3], sheet_id)),
         );
 
         assert_eq!(
-            A1Selection::from_str("1:", sheet_id, &HashMap::new()),
+            A1Selection::from_str("1:", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_range(
                 CellRefRange {
                     start: CellRefRangeEnd::new_relative_row(1),
@@ -465,7 +465,7 @@ mod tests {
             .map(|(&id, name)| (crate::util::case_fold(name), id))
             .collect();
         assert_eq!(
-            A1Selection::from_str("'Second'!A1", sheet_id, &rev_map),
+            A1Selection::from_str("'Second'!A1", &sheet_id, &rev_map),
             Ok(A1Selection::from_xy(1, 1, sheet_id2)),
         );
     }
@@ -559,14 +559,14 @@ mod tests {
     #[test]
     fn test_extra_comma() {
         let sheet_id = SheetId::test();
-        let selection = A1Selection::from_str("1,", sheet_id, &HashMap::new()).unwrap();
+        let selection = A1Selection::from_str("1,", &sheet_id, &HashMap::new()).unwrap();
         assert_eq!(selection.to_string(Some(sheet_id), &HashMap::new()), "1");
     }
 
     #[test]
     fn test_multiple_one_sized_rects() {
         let sheet_id = SheetId::test();
-        let selection = A1Selection::from_str("A1,B1,C1", sheet_id, &HashMap::new()).unwrap();
+        let selection = A1Selection::from_str("A1,B1,C1", &sheet_id, &HashMap::new()).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &HashMap::new()),
             "A1,B1,C1",
@@ -586,7 +586,7 @@ mod tests {
             .map(|(name, &id)| (crate::util::case_fold(name), id))
             .collect();
         let selection =
-            A1Selection::from_str("second!A1,second!B1,second!C1", sheet_id, &rev_map).unwrap();
+            A1Selection::from_str("second!A1,second!B1,second!C1", &sheet_id, &rev_map).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &map),
             "Second!A1,Second!B1,Second!C1",

@@ -21,7 +21,7 @@ impl SheetCellRefRange {
     /// Ranges without an explicit sheet use `default_sheet_id`.
     pub fn from_str(
         a1: &str,
-        default_sheet_id: SheetId,
+        default_sheet_id: &SheetId,
         sheet_map: &SheetNameIdMap,
     ) -> Result<Self, A1Error> {
         let (sheet, cells_str) =

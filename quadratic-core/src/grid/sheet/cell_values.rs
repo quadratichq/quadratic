@@ -221,7 +221,7 @@ mod test {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_sheet_id("A1:C1", sheet.id),
+            selection: A1Selection::test_sheet_id("A1:C1", &sheet.id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),

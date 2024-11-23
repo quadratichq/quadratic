@@ -1,4 +1,3 @@
-use self::selection::OldSelection;
 use super::*;
 
 #[wasm_bindgen]

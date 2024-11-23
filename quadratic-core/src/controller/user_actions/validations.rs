@@ -137,7 +137,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_sheet_id("*", sheet_id);
+        let selection = A1Selection::test_sheet_id("*", &sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -168,7 +168,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_sheet_id("*", sheet_id);
+        let selection = A1Selection::test_sheet_id("*", &sheet_id);
         let validation1 = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -183,7 +183,7 @@ mod tests {
 
         let validation2 = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_sheet_id("A1", sheet_id),
+            selection: A1Selection::test_sheet_id("A1", &sheet_id),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -221,7 +221,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_sheet_id("A1", sheet_id);
+        let selection = A1Selection::test_sheet_id("A1", &sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
             selection: selection.clone(),
@@ -259,7 +259,7 @@ mod tests {
         };
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_sheet_id("A1", sheet_id),
+            selection: A1Selection::test_sheet_id("A1", &sheet_id),
             rule: ValidationRule::List(list),
             message: Default::default(),
             error: Default::default(),
@@ -285,13 +285,13 @@ mod tests {
         sheet.set_cell_value((0, 3).into(), "123");
 
         let list = ValidationList {
-            source: ValidationListSource::Selection(A1Selection::test_sheet_id("A1:A5", sheet_id)),
+            source: ValidationListSource::Selection(A1Selection::test_sheet_id("A1:A5", &sheet_id)),
             ignore_blank: true,
             drop_down: true,
         };
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_sheet_id("B1", sheet_id),
+            selection: A1Selection::test_sheet_id("B1", &sheet_id),
             rule: ValidationRule::List(list),
             message: Default::default(),
             error: Default::default(),
@@ -323,7 +323,7 @@ mod tests {
         };
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_sheet_id("A1", sheet_id),
+            selection: A1Selection::test_sheet_id("A1", &sheet_id),
             rule: ValidationRule::List(list),
             message: Default::default(),
             error: Default::default(),
@@ -338,7 +338,7 @@ mod tests {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_sheet_id("A2", sheet_id),
+            selection: A1Selection::test_sheet_id("A2", &sheet_id),
             rule: ValidationRule::None,
             message: Default::default(),
             error: ValidationError {
@@ -360,7 +360,7 @@ mod tests {
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_sheet_id("A3", sheet_id),
+            selection: A1Selection::test_sheet_id("A3", &sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),

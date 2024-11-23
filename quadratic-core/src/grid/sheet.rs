@@ -537,10 +537,9 @@ impl Sheet {
         }
     }
 
-    // TODO: take `Pos` instead of x,y
-    pub fn check_if_wrap_in_cell(&self, x: i64, y: i64) -> bool {
-        let value: Option<CellValue> = self.cell_value(Pos { x, y });
-        let format = self.format_cell(x, y, true);
+    pub fn check_if_wrap_in_cell(&self, pos: Pos) -> bool {
+        let value: Option<CellValue> = self.cell_value(pos);
+        let format = self.format_cell(pos.x, pos.y, true);
         value.is_some() && Some(CellWrap::Wrap) == format.wrap
     }
 
@@ -1102,8 +1101,9 @@ mod test {
     #[test]
     fn test_check_if_wrap_in_cell() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
-        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+        let pos = Pos { x: 0, y: 0 };
+        sheet.set_cell_value(pos, "test");
+        assert!(!sheet.check_if_wrap_in_cell(pos));
         let selection = OldSelection::pos(0, 0, sheet.id);
         sheet.set_formats_selection(
             &selection,
@@ -1115,7 +1115,7 @@ mod test {
                 1,
             ),
         );
-        assert!(sheet.check_if_wrap_in_cell(0, 0));
+        assert!(sheet.check_if_wrap_in_cell(pos));
         sheet.set_formats_selection(
             &selection,
             &Formats::repeat(
@@ -1126,7 +1126,7 @@ mod test {
                 1,
             ),
         );
-        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+        assert!(!sheet.check_if_wrap_in_cell(pos));
         sheet.set_formats_selection(
             &selection,
             &Formats::repeat(
@@ -1137,7 +1137,7 @@ mod test {
                 1,
             ),
         );
-        assert!(sheet.check_if_wrap_in_cell(0, 0));
+        assert!(sheet.check_if_wrap_in_cell(pos));
         sheet.set_formats_selection(
             &selection,
             &Formats::repeat(
@@ -1148,13 +1148,14 @@ mod test {
                 1,
             ),
         );
-        assert!(!sheet.check_if_wrap_in_cell(0, 0));
+        assert!(!sheet.check_if_wrap_in_cell(pos));
     }
 
     #[test]
     fn test_check_if_wrap_in_row() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, "test");
+        let pos = Pos { x: 0, y: 0 };
+        sheet.set_cell_value(pos, "test");
         assert!(!sheet.check_if_wrap_in_row(0));
         let selection = OldSelection::pos(0, 0, sheet.id);
         sheet.set_formats_selection(

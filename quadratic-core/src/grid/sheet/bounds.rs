@@ -1045,7 +1045,7 @@ mod test {
                     show_checkbox: true,
                     ignore_blank: true,
                 }),
-                selection: A1Selection::test_sheet_id("A1", sheet_id),
+                selection: A1Selection::test_sheet_id("A1", &sheet_id),
                 message: Default::default(),
                 error: Default::default(),
             },

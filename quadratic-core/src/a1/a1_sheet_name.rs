@@ -42,7 +42,7 @@ pub(crate) fn parse_optional_sheet_name<'a>(
 
 pub(crate) fn parse_optional_sheet_name_to_id<'a>(
     a1: &'a str,
-    default_sheet_id: SheetId,
+    default_sheet_id: &SheetId,
     sheet_map: &SheetNameIdMap,
 ) -> Result<(SheetId, &'a str), A1Error> {
     let (sheet_name, rest) = parse_optional_sheet_name(a1)?;
@@ -50,7 +50,7 @@ pub(crate) fn parse_optional_sheet_name_to_id<'a>(
         Some(sheet_name) => *sheet_map
             .get(&crate::util::case_fold(&sheet_name))
             .ok_or(A1Error::InvalidSheetName(sheet_name))?,
-        None => default_sheet_id,
+        None => default_sheet_id.to_owned(),
     };
     Ok((sheet_id, rest))
 }
@@ -123,27 +123,27 @@ mod tests {
             ("Sheet 2".to_string(), sheet_2),
         ]);
         assert_eq!(
-            parse_optional_sheet_name_to_id("Sheet1!A1", sheet_1, &map),
+            parse_optional_sheet_name_to_id("Sheet1!A1", &sheet_1, &map),
             Ok((sheet_1, "A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("'Sheet 2'!A1", sheet_1, &map),
+            parse_optional_sheet_name_to_id("'Sheet 2'!A1", &sheet_1, &map),
             Ok((sheet_2, "A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("A1", sheet_1, &map),
+            parse_optional_sheet_name_to_id("A1", &sheet_1, &map),
             Ok((sheet_1, "A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("Sheet1!A1:B2", sheet_1, &map),
+            parse_optional_sheet_name_to_id("Sheet1!A1:B2", &sheet_1, &map),
             Ok((sheet_1, "A1:B2"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("Sheet1!Sheet2A1", sheet_1, &map),
+            parse_optional_sheet_name_to_id("Sheet1!Sheet2A1", &sheet_1, &map),
             Ok((sheet_1, "Sheet2A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("Sheet 1!A1", sheet_1, &map),
+            parse_optional_sheet_name_to_id("Sheet 1!A1", &sheet_1, &map),
             Err(A1Error::InvalidSheetNameMissingQuotes(
                 "Sheet 1".to_string()
             ))

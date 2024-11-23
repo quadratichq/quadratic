@@ -321,14 +321,13 @@ export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, delt
 
 export const rc = relCell;
 
-export const q = (a1: string): (number | string | boolean | Date | undefined)[][] | number | string | boolean | Date | undefined => {
+export const q = (
+  a1: string
+): (number | string | boolean | Date | undefined)[][] | number | string | boolean | Date | undefined => {
   if (typeof a1 !== 'string') {
     const line = lineNumber();
     throw new Error(
-      'q requires at least 1 argument, received q(' +
-        a1 +
-        ')' +
-        (line !== undefined ? ' at line ' + (line - 1) : '')
+      'q requires at least 1 argument, received q(' + a1 + ')' + (line !== undefined ? ' at line ' + (line - 1) : '')
     );
   }
 
@@ -337,7 +336,7 @@ export const q = (a1: string): (number | string | boolean | Date | undefined)[][
     let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
     Atomics.store(int32View, 0, 0);
 
-    self.postMessage({ type: 'getA1CellsLength', sharedBuffer, a1 });
+    self.postMessage({ type: 'getCellsA1Length', sharedBuffer, a1 });
     let result = Atomics.wait(int32View, 0, 0);
     const length = int32View[1];
     if (result !== 'ok' || length === 0) return [];
