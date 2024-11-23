@@ -315,7 +315,7 @@ impl A1Selection {
 /// Returns the position from the last range (either the end, or if not defined,
 /// the start).
 fn cursor_pos_from_last_range(last_range: CellRefRange) -> Pos {
-    let range = last_range.end.unwrap_or(last_range.start);
+    let range = last_range.start;
     let x = range.col.map_or(1, |col| col.coord) as i64;
     let y = range.row.map_or(1, |row| row.coord) as i64;
     Pos { x, y }

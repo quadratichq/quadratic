@@ -405,7 +405,7 @@ impl CellRefRangeEnd {
     }
     pub fn is_pos(&self, pos: Pos) -> bool {
         self.col.map_or(false, |col| col.coord == pos.x as u64)
-            || self.row.map_or(false, |row| row.coord == pos.y as u64)
+            && self.row.map_or(false, |row| row.coord == pos.y as u64)
     }
 }
 

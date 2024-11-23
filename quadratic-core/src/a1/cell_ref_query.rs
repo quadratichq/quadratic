@@ -52,7 +52,7 @@ impl CellRefRange {
             if let Some(p2) = p2 {
                 self.end.is_some_and(|end| end.is_pos(p2))
             } else {
-                true
+                p2.is_none() && self.end.is_none()
             }
         } else if self.end.is_some_and(|end| end.is_pos(p1)) {
             p2.is_some_and(|p2| self.start.is_pos(p2))
@@ -94,9 +94,8 @@ mod tests {
         assert!(CellRefRange::test("A1").is_pos_range(Pos { x: 1, y: 1 }, None));
         assert!(!CellRefRange::test("A1").is_pos_range(Pos { x: 2, y: 1 }, None));
         assert!(!CellRefRange::test("A1").is_pos_range(Pos { x: 1, y: 2 }, None));
-
         assert!(
-            CellRefRange::test("A1:B2").is_pos_range(Pos { x: 1, y: 1 }, Some(Pos { x: 2, y: 1 }))
+            CellRefRange::test("A1:B2").is_pos_range(Pos { x: 1, y: 1 }, Some(Pos { x: 2, y: 2 }))
         );
         assert!(
             !CellRefRange::test("A1").is_pos_range(Pos { x: 2, y: 1 }, Some(Pos { x: 1, y: 1 }))
