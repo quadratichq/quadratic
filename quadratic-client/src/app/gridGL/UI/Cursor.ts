@@ -212,7 +212,7 @@ export class Cursor extends Container {
     }
     if (!color || !offsets) return;
     this.graphics.lineStyle({
-      width: CURSOR_THICKNESS * 1,
+      width: CURSOR_THICKNESS,
       color,
       alignment: 0.5,
     });

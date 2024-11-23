@@ -121,7 +121,7 @@ export class PointerDown {
       const cursorPosition = cursor.position;
       if (cursor.isMultiCursor() || column !== cursorPosition.x || row !== cursorPosition.y) {
         event.stopPropagation();
-        cursor.selectRect(column, row, column, row, true);
+        cursor.extendSelection(column, row, true);
         this.active = true;
         this.position = new Point(column, row);
 

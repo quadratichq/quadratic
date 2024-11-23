@@ -9,6 +9,8 @@ import { JsCoordinate } from '@/app/quadratic-core-types';
 import { CellRefRange } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Graphics } from 'pixi.js';
 
+const SECTION_OUTLINE_WIDTH = 1;
+
 export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordinate) => {
   const outline = sheets.sheet.getCellOffsets(cursor.x, cursor.y);
   g.lineStyle({ width: CURSOR_THICKNESS, color, alignment: 0 });
@@ -18,7 +20,7 @@ export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordina
 // Draws a cursor with a finite number of cells (this is drawn once for each
 // selection setting).
 export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, ranges: CellRefRange[]) => {
-  g.lineStyle(1, color, 1, 0, true);
+  g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 0, native: true });
   g.beginFill(color, alpha);
 
   const sheet = sheets.sheet;
@@ -55,9 +57,13 @@ export const drawInfiniteSelection = (options: {
   const { g, color, alpha, ranges } = options;
   const sheet = sheets.sheet;
 
-  g.lineStyle();
-  g.beginFill(color, alpha);
+  // we use headingSize to avoid getting column/row 0 from the viewport in
+  // getScreenRectangle
+  const headingSize = pixiApp.headings.headingSize;
+
   const bounds = pixiApp.viewport.getVisibleBounds();
+  bounds.x = Math.max(bounds.x, 0);
+  bounds.y = Math.max(bounds.y, 0);
 
   ranges.forEach((range) => {
     const { col, row } = range.start;
@@ -66,9 +72,18 @@ export const drawInfiniteSelection = (options: {
     // we've already drawn this range in the drawFiniteCursor function
     if (col && row && end?.col && end?.row) return;
 
+    g.lineStyle();
+    g.beginFill(color, alpha);
+
     // the entire sheet is selected
-    if (!col && !row && !end) {
+    if (!col && !row && !end?.col && !end?.row) {
       g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      g.endFill();
+      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+      g.moveTo(0, 0);
+      g.lineTo(0, bounds.height);
+      g.moveTo(0, 0);
+      g.lineTo(bounds.width, 0);
     }
 
     // one column is selected
@@ -76,6 +91,12 @@ export const drawInfiniteSelection = (options: {
       const { position, size } = sheet.offsets.getColumnPlacement(Number(col.coord));
       if (intersects.rectangleRectangle({ x: position, y: bounds.y, width: size, height: bounds.height }, bounds)) {
         g.drawRect(position, bounds.y, size, bounds.height);
+        g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.moveTo(position, bounds.top);
+        g.lineTo(position, bounds.bottom);
+        g.moveTo(position + size, bounds.top);
+        g.lineTo(position + size, bounds.bottom);
       }
     }
 
@@ -83,24 +104,44 @@ export const drawInfiniteSelection = (options: {
     else if (col && !row && end && end.col && !end.row) {
       const startX = Math.min(Number(col.coord), Number(end.col.coord));
       const width = Math.abs(Number(end.col.coord) - Number(col.coord)) + 1;
-      const rect = sheet.getScreenRectangle(startX, 0, width, 0);
-      rect.y = bounds.y;
+      const rect = sheet.getScreenRectangle(startX, headingSize.height, width, 0);
+      rect.y = Math.max(0, bounds.y);
       rect.height = bounds.height;
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
       }
+      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+      g.moveTo(rect.left, 0);
+      g.lineTo(rect.right, 0);
+      g.moveTo(rect.left, Math.max(0, bounds.top));
+      g.lineTo(rect.left, bounds.bottom);
+      g.moveTo(rect.right, Math.max(0, bounds.top));
+      g.lineTo(rect.right, bounds.bottom);
     }
 
     // multiple columns are selected ending on a row
     else if (col && !row && end && end.col && end.row) {
       const startX = Math.min(Number(col.coord), Number(end.col.coord));
       const width = Math.abs(Number(end.col.coord) - Number(col.coord)) + 1;
-      const rect = sheet.getScreenRectangle(startX, 0, width, Number(end.row.coord));
+      const rect = sheet.getScreenRectangle(
+        startX,
+        headingSize.height,
+        width,
+        Number(end.row.coord) - headingSize.height
+      );
       rect.y = rect.bottom;
       rect.height = bounds.height - rect.y;
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
       }
+      g.endFill();
+      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+      g.moveTo(rect.left, rect.top);
+      g.lineTo(rect.right, rect.top);
+      g.moveTo(rect.left, rect.top);
+      g.lineTo(rect.left, bounds.bottom);
+      g.moveTo(rect.right, rect.top);
+      g.lineTo(rect.right, bounds.bottom);
     }
 
     // multiple columns are selected starting on a row
@@ -115,8 +156,13 @@ export const drawInfiniteSelection = (options: {
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
       }
+      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+      g.moveTo(rect.left, rect.top);
+      g.lineTo(rect.right, rect.top);
+      g.moveTo(rect.left, rect.top);
+      g.lineTo(rect.left, bounds.bottom);
+      g.moveTo(rect.right, rect.top);
+      g.lineTo(rect.right, bounds.bottom);
     }
   });
-
-  g.endFill();
 };

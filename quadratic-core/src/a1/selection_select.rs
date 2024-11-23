@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 use crate::Pos;
 
 use super::{A1Selection, CellRefRange, CellRefRangeEnd};
@@ -255,10 +253,6 @@ impl A1Selection {
         if append {
             if let Some(last_range) = self.ranges.last_mut() {
                 last_range.end = Some(CellRefRangeEnd::new_relative_xy(x, y));
-                crate::util::dbgjs(&last_range);
-                if last_range.start.row.is_none() {
-                    self.cursor.y = y as i64;
-                }
             } else {
                 self.ranges.push(CellRefRange {
                     start: CellRefRangeEnd::new_relative_xy(
@@ -374,6 +368,12 @@ impl A1Selection {
         };
         if let Some(last) = self.ranges.last_mut() {
             last.end = Some(CellRefRangeEnd::new_relative_xy(column, row));
+            if last.start.row.is_none() {
+                self.cursor.y = row as i64;
+            }
+            if last.start.col.is_none() {
+                self.cursor.x = column as i64;
+            }
         }
         if !append {
             self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
