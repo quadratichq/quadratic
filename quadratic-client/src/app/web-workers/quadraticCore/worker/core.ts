@@ -17,7 +17,6 @@ import {
   Format,
   JsCellValue,
   JsCellValuePosAIContext,
-  JsClipboard,
   JsCodeCell,
   JsCodeResult,
   JsRenderCell,
@@ -25,7 +24,13 @@ import {
   SheetPos,
   Validation,
 } from '@/app/quadratic-core-types';
-import initCore, { GridController, JsSummarizeSelectionResult, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
+import initCore, {
+  GridController,
+  JsClipboard,
+  JsSummarizeSelectionResult,
+  MinMax,
+  Pos,
+} from '@/app/quadratic-core/quadratic_core';
 import {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -754,8 +759,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const result = this.gridController.copyToClipboard(selection);
-        const jsClipboard = JSON.parse(result) as JsClipboard;
+        const jsClipboard = this.gridController.copyToClipboard(selection);
         resolve(jsClipboard);
       });
     });
@@ -765,20 +769,25 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const result = this.gridController.cutToClipboard(selection, cursor);
-        const jsClipboard = JSON.parse(result) as JsClipboard;
+        const jsClipboard = this.gridController.cutToClipboard(selection, cursor);
         resolve(jsClipboard);
       });
     });
   }
 
-  pasteFromClipboard(
-    selection: string,
-    plainText: string | undefined,
-    html: string | undefined,
-    special: string,
-    cursor: string
-  ) {
+  pasteFromClipboard({
+    selection,
+    plainText,
+    html,
+    special,
+    cursor,
+  }: {
+    selection: string;
+    plainText: string | undefined;
+    html: string | undefined;
+    special: string;
+    cursor: string;
+  }) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');

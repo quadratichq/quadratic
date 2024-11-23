@@ -933,9 +933,9 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
 
-        let rect = Rect::from_numbers(0, 0, 2, 2);
-        let selection = &OldSelection::rect(rect, sheet_id);
-        gc.delete_cells(selection, None);
+        let rect = SheetRect::from_numbers(0, 0, 2, 2, sheet_id);
+        let selection = A1Selection::from_rect(rect);
+        gc.delete_cells(&selection, None);
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
@@ -956,7 +956,7 @@ mod test {
                 language: CodeCellLanguage::Formula,
             }),
         );
-        gc.delete_cells(&OldSelection::pos(0, 0, sheet_id), None);
+        gc.delete_cells(&A1Selection::from_xy(0, 0, sheet_id), None);
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
@@ -1623,7 +1623,7 @@ mod test {
     #[test]
     #[parallel]
     fn test_cell_ref_range_to_rect() {
-        let mut sheet = Sheet::test();
+        // let mut sheet = Sheet::test();
         panic!("todo! test this thing");
     }
 }

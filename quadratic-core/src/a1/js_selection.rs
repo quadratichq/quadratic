@@ -43,7 +43,8 @@ impl JsSelection {
     /// Loads the selection from a JSON string.
     #[wasm_bindgen]
     pub fn load(selection: String) -> Result<JsSelection, String> {
-        let selection: A1Selection = serde_json::from_str(&selection).map_err(|e| e.to_string())?;
+        let selection =
+            serde_json::from_str::<A1Selection>(&selection).map_err(|e| e.to_string())?;
         Ok(JsSelection { selection })
     }
 

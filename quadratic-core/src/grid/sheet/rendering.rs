@@ -612,7 +612,6 @@ mod tests {
             },
             Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
         },
-        selection::OldSelection,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
         A1Selection, CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
@@ -660,7 +659,7 @@ mod tests {
         );
         assert!(sheet.has_render_cells(rect));
 
-        let selection = OldSelection::pos(2, 3, sheet_id);
+        let selection = A1Selection::from_xy(2, 3, sheet_id);
         gc.delete_cells(&selection, None);
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.has_render_cells(rect));
@@ -1248,7 +1247,6 @@ mod tests {
     #[serial]
     fn send_all_validation_warnings() {
         let mut sheet = Sheet::test();
-        let sheet_id = sheet.id;
         let validation_id = Uuid::new_v4();
         sheet.validations.set(Validation {
             id: validation_id,

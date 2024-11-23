@@ -19,7 +19,6 @@ import {
   Format,
   JsCellValue,
   JsCellValuePosAIContext,
-  JsClipboard,
   JsCodeCell,
   JsRenderCell,
   PasteSpecial,
@@ -28,7 +27,7 @@ import {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { JsSummarizeSelectionResult, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
+import { JsClipboard, JsSummarizeSelectionResult, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
 import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
@@ -874,7 +873,6 @@ class QuadraticCore {
   }
 
   pasteFromClipboard(options: {
-    sheetId: string;
     selection: string;
     plainText: string | undefined;
     html: string | undefined;

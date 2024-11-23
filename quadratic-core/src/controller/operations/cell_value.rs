@@ -7,8 +7,7 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formatting::CellFmtArray;
 use crate::grid::{CodeCellLanguage, NumericFormat, NumericFormatKind};
-use crate::selection::OldSelection;
-use crate::{CellValue, CodeCellValue, RunLengthEncoding, SheetPos, SheetRect};
+use crate::{A1Selection, CellValue, CodeCellValue, RunLengthEncoding, SheetPos, SheetRect};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -120,10 +119,10 @@ impl GridController {
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
-    pub fn delete_cells_operations(&self, selection: &OldSelection) -> Vec<Operation> {
+    pub fn delete_cells_operations(&self, selection: &A1Selection) -> Vec<Operation> {
         let mut ops = vec![];
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_rects_values(selection);
+            let rects = sheet.selection_to_rects(selection);
             for rect in rects {
                 let cell_values = CellValues::new(rect.width(), rect.height());
                 ops.push(Operation::SetCellValues {
@@ -138,7 +137,7 @@ impl GridController {
     /// Generates and returns the set of operations to clear the formatting in a sheet_rect
     pub fn delete_values_and_formatting_operations(
         &mut self,
-        selection: &OldSelection,
+        selection: &A1Selection,
     ) -> Vec<Operation> {
         let mut ops = self.delete_cells_operations(selection);
         ops.extend(self.clear_format_selection_operations(selection));
@@ -157,8 +156,7 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, SheetId};
-    use crate::selection::OldSelection;
-    use crate::{CellValue, CodeCellValue, Rect, SheetPos};
+    use crate::{A1Selection, CellValue, CodeCellValue, SheetPos, SheetRect};
 
     #[test]
     #[parallel]
@@ -340,7 +338,7 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
-        let selection = OldSelection::rect(Rect::from_numbers(1, 2, 2, 1), sheet_id);
+        let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
         let operations = gc.delete_cells_operations(&selection);
         assert_eq!(operations.len(), 1);
         assert_eq!(
@@ -379,7 +377,7 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
-        let selection = OldSelection::columns(&[1, 2], sheet_id);
+        let selection = A1Selection::from_column_ranges(&[1..=2], sheet_id);
         let operations = gc.delete_cells_operations(&selection);
         assert_eq!(operations.len(), 2);
         assert_eq!(

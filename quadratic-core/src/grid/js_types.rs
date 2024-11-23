@@ -226,10 +226,12 @@ pub enum JsRenderCodeCellState {
     Success,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-#[serde(rename_all = "camelCase")]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[wasm_bindgen]
 pub struct JsClipboard {
+    #[wasm_bindgen(getter_with_clone, js_name = plainText)]
     pub plain_text: String,
+    #[wasm_bindgen(getter_with_clone)]
     pub html: String,
 }
 

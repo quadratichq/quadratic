@@ -3,6 +3,7 @@ use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
 use crate::formulas::replace_a1_notation;
 use crate::grid::formats::Formats;
+use crate::grid::js_types::JsClipboard;
 use crate::grid::{CodeCellLanguage, Sheet};
 use crate::selection::OldSelection;
 use crate::{CellValue, Pos, Rect};
@@ -11,7 +12,7 @@ impl Sheet {
     /// Copies the selection to the clipboard.
     ///
     /// Returns the copied SheetRect, plain text, and html.
-    pub fn copy_to_clipboard(&self, selection: &OldSelection) -> Result<(String, String), String> {
+    pub fn copy_to_clipboard(&self, selection: &OldSelection) -> Result<JsClipboard, String> {
         let mut clipboard_origin = ClipboardOrigin::default();
         let mut html = String::from("<tbody>");
         let mut plain_text = String::new();
@@ -288,7 +289,7 @@ impl Sheet {
         final_html.push_str(&encoded);
         final_html.push_str(&String::from("\">"));
         final_html.push_str(&html);
-        Ok((plain_text, final_html))
+        Ok(JsClipboard { plain_text, html })
     }
 }
 
@@ -296,11 +297,12 @@ impl Sheet {
 mod tests {
     use serial_test::parallel;
 
-    use super::*;
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::GridController;
+    use crate::grid::js_types::JsClipboard;
     use crate::grid::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::{Rect, SheetRect};
+    use crate::selection::OldSelection;
+    use crate::{Pos, Rect, SheetRect};
 
     #[test]
     #[parallel]
@@ -311,7 +313,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(0, 0, 4, 1, vec!["1", "2", "3", "4"]);
 
-        let (_, html) = sheet
+        let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&OldSelection {
                 rects: Some(vec![
                     Rect::single_pos(Pos { x: 0, y: 0 }),
@@ -322,7 +324,7 @@ mod tests {
             .unwrap();
 
         gc.paste_from_clipboard(
-            OldSelection::pos(0, 5, sheet_id),
+            &OldSelection::pos(0, 5, sheet_id),
             None,
             Some(html),
             PasteSpecial::None,
@@ -348,10 +350,10 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let (_, html) = sheet.copy_to_clipboard(&selection).unwrap();
+        let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
-            OldSelection::pos(2, 2, sheet_id),
+            &OldSelection::pos(2, 2, sheet_id),
             None,
             Some(html),
             PasteSpecial::None,

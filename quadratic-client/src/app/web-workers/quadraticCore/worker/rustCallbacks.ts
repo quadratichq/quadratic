@@ -16,7 +16,6 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -44,7 +43,7 @@ declare var self: WorkerGlobalScope &
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSetCursorSelection: (jsSelection: JsSelection) => void;
+    sendSetCursorSelection: (jsSelection: string) => void;
     requestTransactions: (sequenceNum: number) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetOffsetsRender: (sheetId: string, offsets: JsOffset[]) => void;
@@ -167,9 +166,8 @@ export const jsSetCursor = (cursor: string) => {
   self.sendSetCursor(cursor);
 };
 
-export const jsSetCursorSelection = (jsSelectionStringified: string) => {
-  const jsSelection = JSON.parse(jsSelectionStringified) as JsSelection;
-  self.sendSetCursorSelection(jsSelection);
+export const jsSetCursorSelection = (selection: string) => {
+  self.sendSetCursorSelection(selection);
 };
 
 export const jsHtmlOutput = (htmlStringified: string) => {

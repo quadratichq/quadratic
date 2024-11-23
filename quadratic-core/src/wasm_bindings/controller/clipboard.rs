@@ -15,12 +15,10 @@ use super::Pos;
 impl GridController {
     /// Returns the clipboard [`JsClipboard`]
     #[wasm_bindgen(js_name = "copyToClipboard")]
-    pub fn js_copy_to_clipboard(&self, selection: String) -> Result<JsValue, JsValue> {
+    pub fn js_copy_to_clipboard(&self, selection: String) -> Result<JsClipboard, JsValue> {
         let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
         let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
-        let (plain_text, html) = sheet.copy_to_clipboard(&selection)?;
-        let output = JsClipboard { plain_text, html };
-        Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
+        Ok(sheet.copy_to_clipboard(&selection)?)
     }
 
     /// Returns the clipboard [`JsClipboard`]
@@ -29,11 +27,9 @@ impl GridController {
         &mut self,
         selection: String,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
+    ) -> Result<JsClipboard, JsValue> {
         let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        let (plain_text, html) = self.cut_to_clipboard(&selection, cursor)?;
-        let output = JsClipboard { plain_text, html };
-        Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
+        Ok(self.cut_to_clipboard(&selection, cursor)?)
     }
 
     #[wasm_bindgen(js_name = "pasteFromClipboard")]
@@ -55,7 +51,7 @@ impl GridController {
             return Err(JsValue::from_str("Invalid special"));
         };
         let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.paste_from_clipboard(selection, plain_text, html, special, cursor);
+        self.paste_from_clipboard(&selection, plain_text, html, special, cursor);
         Ok(())
     }
 

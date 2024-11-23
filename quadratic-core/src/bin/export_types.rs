@@ -5,9 +5,9 @@ use controller::execution::run_code::get_cells::CellA1Response;
 use controller::operations::clipboard::PasteSpecial;
 use grid::formats::format::Format;
 use grid::js_types::{
-    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
-    JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
-    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
+    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsCodeCell,
+    JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+    JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
     JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
@@ -88,7 +88,6 @@ fn main() {
         JsCellValue,
         JsCellValuePos,
         JsCellValuePosAIContext,
-        JsClipboard,
         JsCodeCell,
         JsCodeResult,
         JsCoordinate,

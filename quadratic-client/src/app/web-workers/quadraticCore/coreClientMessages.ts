@@ -708,8 +708,8 @@ export interface CoreClientCutToClipboard {
 export interface ClientCorePasteFromClipboard {
   type: 'clientCorePasteFromClipboard';
   selection: string;
-  plainText?: string;
-  html?: string;
+  plainText: string | undefined;
+  html: string | undefined;
   special: string;
   cursor: string;
 }

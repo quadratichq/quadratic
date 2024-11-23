@@ -32,6 +32,7 @@ export const SelectionSummary = () => {
       setCount(result.count.toString());
       setSum(result.sum === undefined ? undefined : result.sum.toString());
       setAvg(result.average === undefined ? undefined : result.average.toString());
+      result.free();
     } else {
       setCount(undefined);
       setSum(undefined);

@@ -29,8 +29,9 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   if (!canvasIsTarget()) return;
   e.preventDefault();
   debugTimeReset();
-  const { plainText, html } = await quadraticCore.copyToClipboard(sheets.getRustSelection());
-  toClipboard(plainText, html);
+  const jsClipboard = await quadraticCore.copyToClipboard(sheets.getRustSelection());
+  await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  jsClipboard.free();
   debugTimeCheck('copy to clipboard');
 };
 
@@ -39,8 +40,9 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   e.preventDefault();
   debugTimeReset();
-  const { plainText, html } = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
-  toClipboard(plainText, html);
+  const jsClipboard = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
+  await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  jsClipboard.free();
   debugTimeCheck('[Clipboard] cut to clipboard');
 };
 
@@ -64,7 +66,6 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
   }
   if (plainText || html) {
     quadraticCore.pasteFromClipboard({
-      sheetId: sheets.sheet.id,
       selection: sheets.sheet.cursor.save(),
       plainText,
       html,
@@ -82,11 +83,11 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
 //#region triggered via menu (limited support on Firefox)
 
 // copies plainText and html to the clipboard
-const toClipboard = (plainText: string, html: string) => {
+const toClipboard = async (plainText: string, html: string) => {
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
   // browser support clipboard api navigator.clipboard
   if (fullClipboardSupport()) {
-    navigator.clipboard.write([
+    await navigator.clipboard.write([
       new ClipboardItem({
         'text/html': new Blob([html], { type: 'text/html' }),
         'text/plain': new Blob([plainText], { type: 'text/plain' }),
@@ -96,23 +97,24 @@ const toClipboard = (plainText: string, html: string) => {
 
   // fallback support for firefox
   else {
-    navigator.clipboard.writeText(plainText);
-    localforage.setItem(clipboardLocalStorageKey, html);
+    await Promise.all([navigator.clipboard.writeText(plainText), localforage.setItem(clipboardLocalStorageKey, html)]);
   }
 };
 
 export const cutToClipboard = async () => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
-  const { plainText, html } = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
-  toClipboard(plainText, html);
+  const jsClipboard = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
+  await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  jsClipboard.free();
   debugTimeCheck('cut to clipboard (fallback)');
 };
 
 export const copyToClipboard = async () => {
   debugTimeReset();
-  const { plainText, html } = await quadraticCore.copyToClipboard(sheets.getRustSelection());
-  toClipboard(plainText, html);
+  const jsClipboard = await quadraticCore.copyToClipboard(sheets.getRustSelection());
+  await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  jsClipboard.free();
   debugTimeCheck('copy to clipboard');
 };
 
@@ -165,7 +167,6 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
       html = await item.text();
     }
     quadraticCore.pasteFromClipboard({
-      sheetId: sheets.sheet.id,
       selection: sheets.sheet.cursor.save(),
       plainText,
       html,
@@ -179,7 +180,6 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
     const html = (await localforage.getItem(clipboardLocalStorageKey)) as string;
     if (html) {
       quadraticCore.pasteFromClipboard({
-        sheetId: sheets.sheet.id,
         selection: sheets.sheet.cursor.save(),
         plainText: undefined,
         html,

@@ -9,7 +9,7 @@ use crate::{
     },
     selection::OldSelection,
     util::maybe_reverse,
-    CellValue, Pos, Rect, SheetPos, SheetRect,
+    A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use itertools::Itertools;
@@ -151,10 +151,10 @@ impl GridController {
     }
 
     /// Delete cell values and formats in a given range.
-    fn shrink(&mut self, delete_range: SheetRect) -> Vec<Operation> {
+    fn shrink(&mut self, delete_rect: SheetRect) -> Vec<Operation> {
         let mut ops = vec![];
 
-        let selection = OldSelection::sheet_rect(delete_range);
+        let selection = A1Selection::from_rect(delete_rect);
         ops.extend(self.delete_cells_operations(&selection));
         ops.extend(self.clear_format_selection_operations(&selection));
         ops

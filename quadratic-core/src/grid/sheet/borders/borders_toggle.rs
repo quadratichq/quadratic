@@ -274,7 +274,7 @@ impl Borders {
 mod test {
     use serial_test::parallel;
 
-    use crate::{color::Rgba, controller::GridController, Rect, SheetRect};
+    use crate::{color::Rgba, controller::GridController, A1Selection, Rect, SheetRect};
 
     use super::*;
 
@@ -452,7 +452,9 @@ mod test {
         assert!(!sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::All, &different_style));
-        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
+
+        gc.clear_format(&A1Selection::from_all(sheet_id), None)
+            .unwrap();
 
         // Test BorderSelection::Inner
         gc.set_borders_selection(selection.clone(), BorderSelection::Inner, Some(style), None);
@@ -460,7 +462,8 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Inner, &style));
-        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
+        gc.clear_format(&A1Selection::from_all(sheet_id), None)
+            .unwrap();
 
         // Test BorderSelection::Outer
         gc.set_borders_selection(selection.clone(), BorderSelection::Outer, Some(style), None);
@@ -468,7 +471,8 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Outer, &style));
-        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
+        gc.clear_format(&A1Selection::from_all(sheet_id), None)
+            .unwrap();
 
         // Test BorderSelection::Horizontal
         gc.set_borders_selection(
@@ -481,7 +485,8 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Horizontal, &style));
-        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
+        gc.clear_format(&A1Selection::from_all(sheet_id), None)
+            .unwrap();
 
         // Test BorderSelection::Vertical
         gc.set_borders_selection(
@@ -494,7 +499,8 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Vertical, &style));
-        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
+        gc.clear_format(&A1Selection::from_all(sheet_id), None)
+            .unwrap();
 
         // Test BorderSelection::Left
         gc.set_borders_selection(selection.clone(), BorderSelection::Left, Some(style), None);
@@ -502,7 +508,8 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Left, &style));
-        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
+        gc.clear_format(&A1Selection::from_all(sheet_id), None)
+            .unwrap();
 
         // Test BorderSelection::Top
         gc.set_borders_selection(selection.clone(), BorderSelection::Top, Some(style), None);
@@ -510,7 +517,8 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Top, &style));
-        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
+        gc.clear_format(&A1Selection::from_all(sheet_id), None)
+            .unwrap();
 
         // Test BorderSelection::Right
         gc.set_borders_selection(selection.clone(), BorderSelection::Right, Some(style), None);
@@ -518,7 +526,8 @@ mod test {
         assert!(sheet
             .borders
             .is_same_rect(&rect, &BorderSelection::Right, &style));
-        gc.clear_format(OldSelection::all(sheet_id), None).unwrap();
+        gc.clear_format(&A1Selection::from_all(sheet_id), None)
+            .unwrap();
 
         // Test BorderSelection::Bottom
         gc.set_borders_selection(

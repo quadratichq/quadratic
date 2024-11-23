@@ -375,17 +375,25 @@ class CoreClient {
         break;
 
       case 'clientCoreCopyToClipboard':
-        const result = await core.copyToClipboard(e.data.selection);
-        this.send({ type: 'coreClientCopyToClipboard', id: e.data.id, ...result });
+        const copyResult = await core.copyToClipboard(e.data.selection);
+        this.send({
+          type: 'coreClientCopyToClipboard',
+          id: e.data.id,
+          ...copyResult,
+        });
         return;
 
       case 'clientCoreCutToClipboard':
         const cutResult = await core.cutToClipboard(e.data.selection, e.data.cursor);
-        this.send({ type: 'coreClientCutToClipboard', id: e.data.id, ...cutResult });
+        this.send({
+          type: 'coreClientCutToClipboard',
+          id: e.data.id,
+          ...cutResult,
+        });
         return;
 
       case 'clientCorePasteFromClipboard':
-        await core.pasteFromClipboard(e.data.selection, e.data.plainText, e.data.html, e.data.special, e.data.cursor);
+        await core.pasteFromClipboard(e.data);
         return;
 
       case 'clientCoreSetBorders':

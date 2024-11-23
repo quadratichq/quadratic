@@ -11,11 +11,12 @@ use crate::grid::formats::format_update::FormatUpdate;
 use crate::grid::formats::Formats;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
 use crate::selection::OldSelection;
+use crate::A1Selection;
 
 impl GridController {
     pub(crate) fn clear_format(
         &mut self,
-        selection: OldSelection,
+        selection: &A1Selection,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let ops = self.clear_format_selection_operations(&selection);
@@ -117,10 +118,12 @@ impl GridController {
     /// to 2.
     pub(crate) fn set_currency_selection(
         &mut self,
-        selection: OldSelection,
+        selection: &A1Selection,
         symbol: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let subspaces = selection.subspaces();
+        let rle_len = subspaces.rle_len();
         let formats = Formats::repeat(
             FormatUpdate {
                 numeric_format: Some(Some(NumericFormat {
@@ -130,9 +133,13 @@ impl GridController {
                 numeric_decimals: Some(Some(2)),
                 ..Default::default()
             },
-            selection.count(),
+            rle_len,
         );
-        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
+            subspaces,
+            formats,
+        }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -314,7 +321,7 @@ mod test {
     use crate::controller::GridController;
     use crate::grid::{CellWrap, StrikeThrough, Underline};
     use crate::selection::OldSelection;
-    use crate::{Pos, Rect};
+    use crate::{A1Selection, Pos, Rect};
 
     #[test]
     #[parallel]
@@ -426,24 +433,13 @@ mod test {
     fn set_numeric_format_currency() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_currency_selection(
-            OldSelection {
-                sheet_id,
-                x: 0,
-                y: 0,
-                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
-            },
-            "€".to_string(),
-            None,
-        )
-        .unwrap();
+        let selection = A1Selection::from_xy(1, 1, sheet_id);
+        gc.set_currency_selection(&selection, "€".to_string(), None)
+            .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().numeric_format.get(0),
+            sheet.columns.get(&1).unwrap().numeric_format.get(1),
             Some(crate::grid::NumericFormat {
                 kind: crate::grid::NumericFormatKind::Currency,
                 symbol: Some("€".to_string())
@@ -728,9 +724,9 @@ mod test {
         gc.set_text_color_selection(
             OldSelection {
                 sheet_id,
-                x: 0,
-                y: 0,
-                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                x: 1,
+                y: 1,
+                rects: Some(vec![Rect::from_numbers(1, 1, 1, 1)]),
                 rows: None,
                 columns: None,
                 all: false,
@@ -742,26 +738,15 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().text_color.get(0),
+            sheet.columns.get(&1).unwrap().text_color.get(1),
             Some("red".to_string())
         );
 
-        gc.clear_format(
-            OldSelection {
-                sheet_id,
-                x: 0,
-                y: 0,
-                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-                rows: None,
-                columns: None,
-                all: false,
-            },
-            None,
-        )
-        .unwrap();
+        let selection = A1Selection::from_xy(1, 1, sheet_id);
+        gc.clear_format(&selection, None).unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.columns.get(&0).unwrap().text_color.get(0), None);
+        assert_eq!(sheet.columns.get(&1).unwrap().text_color.get(1), None);
     }
 
     #[test]
@@ -772,11 +757,11 @@ mod test {
         gc.set_text_color_selection(
             OldSelection {
                 sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 rects: None,
                 rows: None,
-                columns: Some(vec![0]),
+                columns: Some(vec![1]),
                 all: false,
             },
             Some("red".to_string()),
@@ -785,24 +770,13 @@ mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.format_column(0).text_color, Some("red".to_string()));
+        assert_eq!(sheet.format_column(1).text_color, Some("red".to_string()));
 
-        gc.clear_format(
-            OldSelection {
-                sheet_id,
-                x: 0,
-                y: 0,
-                rects: None,
-                rows: None,
-                columns: Some(vec![0]),
-                all: false,
-            },
-            None,
-        )
-        .unwrap();
+        let selection = A1Selection::from_column_ranges(&[1..=1], sheet_id);
+        gc.clear_format(&selection, None).unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.format_column(0).text_color, None);
+        assert_eq!(sheet.format_column(1).text_color, None);
         assert!(sheet.formats_columns.is_empty());
     }
 

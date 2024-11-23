@@ -4,7 +4,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use super::js_types::{JsCellValuePosAIContext, JsCodeCell};
 use crate::A1Selection;
-use crate::{controller::GridController, grid::SheetId, selection::OldSelection, Pos, Rect};
+use crate::{controller::GridController, grid::SheetId, Pos, Rect};
 
 #[wasm_bindgen]
 impl GridController {
@@ -142,8 +142,8 @@ impl GridController {
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection)
-            .map_err(|_| JsValue::from_str("Invalid selection"))?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
         self.delete_cells(&selection, cursor);
         Ok(())
     }

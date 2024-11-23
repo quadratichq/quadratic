@@ -79,8 +79,9 @@ impl GridController {
         symbol: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_currency_selection(selection, symbol, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_currency_selection(&selection, symbol, cursor)?;
         Ok(())
     }
 
@@ -256,8 +257,9 @@ impl GridController {
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.clear_format(selection, cursor)
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.clear_format(&selection, cursor)
     }
 
     #[wasm_bindgen(js_name = "getFormatAll")]

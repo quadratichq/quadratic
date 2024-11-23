@@ -11,6 +11,7 @@ use crate::controller::GridController;
 use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::format::Format;
 use crate::grid::formats::Formats;
+use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::BorderStyleCellUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::CodeCellLanguage;
@@ -77,14 +78,14 @@ impl GridController {
     pub fn cut_to_clipboard_operations(
         &mut self,
         selection: &OldSelection,
-    ) -> Result<(Vec<Operation>, String, String), String> {
+    ) -> Result<(Vec<Operation>, JsClipboard), String> {
         let sheet = self
             .try_sheet(selection.sheet_id)
             .ok_or("Unable to find Sheet")?;
 
-        let (plain_text, html) = sheet.copy_to_clipboard(selection)?;
-        let operations = self.delete_values_and_formatting_operations(selection);
-        Ok((operations, plain_text, html))
+        let js_clipboard = sheet.copy_to_clipboard(selection)?;
+        let operations = self.delete_values_and_formatting_operations(&selection.to_owned().into());
+        Ok((operations, js_clipboard))
     }
 
     /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
@@ -440,6 +441,7 @@ mod test {
     use super::{PasteSpecial, *};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::SheetId;
     use crate::{A1Selection, Rect};
@@ -463,7 +465,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(0, 5, 1, 5, vec!["1", "2", "3", "4", "5"]);
-        let (_, html) = sheet
+        let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&OldSelection {
                 sheet_id,
                 x: 0,
@@ -501,7 +503,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(5, 2, 5, 1, vec!["1", "2", "3", "4", "5"]);
-        let (_, html) = sheet
+        let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&OldSelection {
                 sheet_id,
                 x: 0,
@@ -541,7 +543,7 @@ mod test {
         sheet.test_set_values(3, 3, 2, 2, vec!["1", "2", "3", "4"]);
         sheet.recalculate_bounds();
 
-        let (_, html) = sheet
+        let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&OldSelection {
                 sheet_id,
                 x: 0,
@@ -603,7 +605,7 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let (_, html) = sheet
+        let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&OldSelection {
                 sheet_id,
                 x: 1,
@@ -615,7 +617,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            OldSelection {
+            &OldSelection {
                 sheet_id,
                 x: 3,
                 y: 3,
@@ -721,7 +723,7 @@ mod test {
             Some(CellValue::Number(BigDecimal::from(6)))
         );
 
-        let (_, html) = gc
+        let JsClipboard { html, .. } = gc
             .sheet(sheet_id)
             .copy_to_clipboard(&OldSelection {
                 sheet_id,
@@ -733,7 +735,7 @@ mod test {
             .unwrap();
 
         gc.paste_from_clipboard(
-            OldSelection {
+            &OldSelection {
                 sheet_id,
                 x: 5,
                 y: 5,

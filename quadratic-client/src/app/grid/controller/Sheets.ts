@@ -102,9 +102,14 @@ class Sheets {
     pixiApp.multiplayerCursor.dirty = true;
   };
 
-  private setCursor = (selection?: string) => {
-    if (selection !== undefined) {
-      this.sheet.cursor.load(selection);
+  private setCursor = (selectionStringified?: string) => {
+    if (selectionStringified !== undefined) {
+      try {
+        const selection = JSON.parse(selectionStringified);
+        this.sheet.cursor.load(selection);
+      } catch (e) {
+        console.error('Error loading cursor', e);
+      }
     }
   };
 
