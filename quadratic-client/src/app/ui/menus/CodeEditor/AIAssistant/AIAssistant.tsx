@@ -3,15 +3,16 @@ import { AIAssistantMessages } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAss
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { useRef } from 'react';
 
-export const AIAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
+export const AIAssistant = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const autoFocusRef = useRef(true);
 
   return (
     <div className="grid h-full grid-rows-[1fr_auto]">
       <AIAssistantMessages textareaRef={textareaRef} />
 
       <div className="flex h-full flex-col justify-end px-2 py-0.5">
-        <AIAssistantUserMessageForm ref={textareaRef} autoFocus={autoFocus} textareaRef={textareaRef} />
+        <AIAssistantUserMessageForm ref={textareaRef} autoFocusRef={autoFocusRef} textareaRef={textareaRef} />
         <AIUserMessageFormDisclaimer />
       </div>
     </div>

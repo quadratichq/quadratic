@@ -353,6 +353,53 @@ impl PendingTransaction {
             offsets_modified.insert((None, Some(row)), size.unwrap_or(0.0));
         }
     }
+
+    pub fn add_updates_from_transaction(&mut self, transaction: PendingTransaction) {
+        self.generate_thumbnail |= transaction.generate_thumbnail;
+
+        self.validations.extend(transaction.validations);
+
+        for (sheet_id, dirty_hashes) in transaction.dirty_hashes {
+            self.dirty_hashes
+                .entry(sheet_id)
+                .or_default()
+                .extend(dirty_hashes);
+        }
+
+        self.sheet_borders.extend(transaction.sheet_borders);
+
+        for (sheet_id, code_cells) in transaction.code_cells {
+            self.code_cells
+                .entry(sheet_id)
+                .or_default()
+                .extend(code_cells);
+        }
+
+        for (sheet_id, html_cells) in transaction.html_cells {
+            self.html_cells
+                .entry(sheet_id)
+                .or_default()
+                .extend(html_cells);
+        }
+
+        for (sheet_id, image_cells) in transaction.image_cells {
+            self.image_cells
+                .entry(sheet_id)
+                .or_default()
+                .extend(image_cells);
+        }
+
+        self.fill_cells.extend(transaction.fill_cells);
+
+        self.sheet_info.extend(transaction.sheet_info);
+
+        for (sheet_id, offsets_modified) in transaction.offsets_modified {
+            self.offsets_modified
+                .entry(sheet_id)
+                .or_default()
+                .extend(offsets_modified);
+        }
+    }
 }
 
 #[cfg(test)]

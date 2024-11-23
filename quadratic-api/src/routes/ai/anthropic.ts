@@ -28,12 +28,12 @@ anthropic_router.post('/anthropic/chat', validateAccessToken, ai_rate_limiter, a
     });
     response.json(result.content);
   } catch (error: any) {
-    if (error.response) {
-      response.status(error.response.status).json(error.response.data);
-      console.log(error.response.status, error.response.data);
+    if (error instanceof Anthropic.APIError) {
+      response.status(error.status ?? 400).json(error.message);
+      console.log(error.status, error.message);
     } else {
-      response.status(400).json(error.message);
-      console.log(error.message);
+      response.status(400).json(error);
+      console.log(error);
     }
   }
 });
@@ -75,14 +75,15 @@ anthropic_router.post(
       }
     } catch (error: any) {
       if (!response.headersSent) {
-        if (error.response) {
-          response.status(error.response.status).json(error.response.data);
-          console.log(error.response.status, error.response.data);
+        if (error instanceof Anthropic.APIError) {
+          response.status(error.status ?? 400).json(error.message);
+          console.log(error.status, error.message);
         } else {
-          response.status(400).json(error.message);
-          console.log(error.message);
+          response.status(400).json(error);
+          console.log(error);
         }
       } else {
+        response.status(500).json('Error occurred after headers were sent');
         console.error('Error occurred after headers were sent:', error);
       }
     }

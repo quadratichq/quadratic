@@ -1,6 +1,7 @@
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isLinux } from '@/shared/utils/isLinux';
 import { isMac } from '@/shared/utils/isMac';
@@ -89,10 +90,15 @@ export class PointerDown {
         event.preventDefault();
         const code = await quadraticCore.getCodeCell(sheet.id, column, row);
         if (code) {
-          doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+          doubleClickCell({
+            column: Number(code.x),
+            row: Number(code.y),
+            language: code.language,
+            cell: '',
+          });
         } else {
           const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
-          doubleClickCell({ column, row, cell });
+          doubleClickCell({ column, row, cell, cursorMode: cell ? CursorMode.Edit : CursorMode.Enter });
         }
         this.active = false;
         return;

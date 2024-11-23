@@ -68,6 +68,7 @@ Use any functions that are part of the ${language} library.\n
 A code cell can return only one type of value as specified in the Quadratic documentation.\n
 A code cell cannot display both a chart and return a data frame at the same time.\n
 A code cell cannot display multiple charts at the same time.\n
+Do not use conditional returns in code cells.\n
 Do not use any markdown syntax besides triple backticks for ${language} code blocks.\n
 Do not reply code blocks in plain text, use markdown with triple backticks and language name ${language}.`
 }

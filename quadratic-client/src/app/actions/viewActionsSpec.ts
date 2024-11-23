@@ -128,7 +128,6 @@ export const viewActionsSpec: ViewActionSpec = {
           showConnectionsMenu: false,
           showGoToMenu: false,
           showFeedbackMenu: false,
-          showNewFileMenu: false,
           showRenameFileMenu: false,
           showShareFileMenu: false,
           showSearch: false,

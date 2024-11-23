@@ -2,6 +2,8 @@
 
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -33,6 +35,9 @@ window.MonacoEnvironment = {
 // Pixels needed when growing width to avoid monaco from scrolling the text
 // (determined by experimentation).
 const PADDING_FOR_GROWING_HORIZONTALLY = 20;
+
+// Padding for the inline editor when calling keepCursorVisible, to keep the editor/cursor in view.
+export const PADDING_FOR_INLINE_EDITOR = 5;
 
 class InlineEditorMonaco {
   editor?: editor.IStandaloneCodeEditor;
@@ -150,10 +155,22 @@ class InlineEditorMonaco {
       padding: { top: paddingTop, bottom: 0 },
     });
 
-    // set final width and height
     const scrollWidth = textarea.scrollWidth;
     width = textWrap === 'wrap' ? width : Math.max(width, scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY);
     height = Math.max(contentHeight, height);
+
+    const viewportRectangle = pixiApp.getViewportRectangle();
+    const maxWidthDueToViewport = viewportRectangle.width - 2 * PADDING_FOR_INLINE_EDITOR;
+    if (width > maxWidthDueToViewport) {
+      textWrap = 'wrap';
+      width = maxWidthDueToViewport;
+      this.editor.updateOptions({
+        wordWrap: textWrap === 'wrap' ? 'on' : 'off',
+        padding: { top: paddingTop, bottom: 0 },
+      });
+    }
+
+    // set final width and height
     this.editor.layout({ width, height });
 
     return { width, height };
@@ -411,6 +428,8 @@ class InlineEditorMonaco {
       language: inlineEditorHandler.formula ? 'formula' : 'inline-editor',
     });
 
+    this.disableKeybindings();
+
     interface SuggestController {
       widget: { value: { onDidShow: (fn: () => void) => void; onDidHide: (fn: () => void) => void } };
     }
@@ -453,7 +472,10 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.keyDown(e.browserEvent);
     });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
+    this.editor.onMouseDown(() => {
+      inlineEditorKeyboard.resetKeyboardPosition();
+      pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
+    });
     this.editor.onDidChangeModelContent(() => inlineEditorEvents.emit('valueChanged', this.get()));
   }
 
@@ -480,6 +502,38 @@ class InlineEditorMonaco {
       throw new Error('Expected editor to be defined in triggerSelection');
     }
     this.editor.trigger(null, 'editor.action.inlineSuggest.trigger', null);
+  }
+
+  disableKeybindings() {
+    editor.addKeybindingRules([
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyG,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyL,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyL,
+      },
+      {
+        keybinding: monaco.KeyCode.F1,
+      },
+      {
+        keybinding: monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.Shift | monaco.KeyCode.F3,
+      },
+      {
+        keybinding: monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F3,
+      },
+    ]);
   }
 }
 

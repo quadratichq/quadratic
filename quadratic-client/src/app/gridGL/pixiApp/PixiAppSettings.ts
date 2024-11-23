@@ -7,6 +7,7 @@ import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditor
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -184,7 +185,7 @@ class PixiAppSettings {
     }
   }
 
-  changeInput(input: boolean, initialValue?: string) {
+  changeInput(input: boolean, initialValue?: string, cursorMode?: CursorMode) {
     if (input === false) {
       multiplayer.sendEndCellEdit();
     }
@@ -211,7 +212,7 @@ class PixiAppSettings {
     this.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility
-    events.emit('changeInput', input, initialValue);
+    events.emit('changeInput', input, initialValue, cursorMode);
   }
 
   get input() {

@@ -223,6 +223,7 @@ The required location (x,y) for this code cell is one which satisfies the follow
  - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the currently open sheet.\n
  - Consider the overall layout and organization of the currently open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
  - A plot returned by the code cell occupies just one cell, the plot overlay is larger but the code cell is always just one cell.\n
+ - Do not use conditional returns in code cells.\n
  `,
   },
   [AITool.MoveCells]: {

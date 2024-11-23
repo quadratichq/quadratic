@@ -3,7 +3,6 @@ import { JsCoordinate } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -15,7 +14,6 @@ import { useSetRecoilState } from 'recoil';
 export function useFileImport() {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
   const setFilesImportProgressListState = useSetRecoilState(filesImportProgressListAtom);
-  const setNewFileDialogState = useSetRecoilState(newFileDialogAtom);
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
@@ -192,9 +190,7 @@ export function useFileImport() {
               updateCurrentFileState({ step: 'done', progress: 100, uuid, abortController: undefined });
               if (openImportedFile) {
                 setFilesImportProgressListState({ show: false });
-                setNewFileDialogState((prev) => ({ ...prev, show: false }));
-                const imported = quadraticCore.receivedClientMessage ? '?negative_offsets' : '';
-                window.location.href = ROUTES.FILE(uuid) + imported;
+                window.location.href = ROUTES.FILE(uuid);
               }
             })
             .catch((error) => {
@@ -236,7 +232,6 @@ export function useFileImport() {
     }
 
     setFilesImportProgressState((prev) => ({ ...prev, importing: false }));
-    setNewFileDialogState((prev) => ({ ...prev, show: false }));
   };
 
   return handleImport;

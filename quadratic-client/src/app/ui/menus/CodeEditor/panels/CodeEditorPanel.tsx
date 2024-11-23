@@ -1,18 +1,14 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
-import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
-import { PanelPosition, useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useConnectionSchemaBrowserTableQueryActionInsertQuery } from '@/dashboard/hooks/useConnectionSchemaBrowserTableQueryAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { ConnectionSchemaBrowser } from '@/shared/components/connections/ConnectionSchemaBrowser';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import { Button } from '@/shared/shadcn/ui/button';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { cn } from '@/shared/shadcn/utils';
 import * as monaco from 'monaco-editor';
-import { MouseEvent, memo, useCallback, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type CodeEditorPanelProps = {
@@ -28,15 +24,7 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
   } = useFileRouteLoaderData();
   const { language } = useRecoilValue(codeEditorCodeCellAtom);
   const connectionInfo = useMemo(() => getConnectionInfo(language), [language]);
-  const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
-
-  const changePanelPosition = useCallback(
-    (e: MouseEvent<HTMLButtonElement>) => {
-      setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
-      e.currentTarget.blur();
-    },
-    [setPanelPosition]
-  );
+  const { panelPosition } = useCodeEditorPanelData();
 
   const { TableQueryAction } = useConnectionSchemaBrowserTableQueryActionInsertQuery({ editorInst });
   const schemaBrowser =
@@ -53,21 +41,6 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
 
   return (
     <>
-      {/* Panel position (left/bottom) control */}
-      <div
-        className={cn(
-          'absolute z-10',
-          panelPosition === 'bottom' ? 'right-1.5 top-1' : 'right-0.5 top-0.5',
-          'text-muted-foreground hover:text-foreground'
-        )}
-      >
-        <TooltipPopover label={panelPosition === 'bottom' ? 'Move panel left' : 'Move panel bottom'} side="bottom">
-          <Button onClick={changePanelPosition} size="icon-sm" variant="ghost">
-            {panelPosition === 'left' ? <PanelPositionBottomIcon /> : <PanelPositionLeftIcon />}
-          </Button>
-        </TooltipPopover>
-      </div>
-
       {panelPosition === 'left' && (
         <CodeEditorPanelSide
           codeEditorRef={codeEditorRef}

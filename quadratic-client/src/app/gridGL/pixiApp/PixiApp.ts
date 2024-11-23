@@ -187,6 +187,22 @@ export class PixiApp {
     document.removeEventListener('cut', cutToClipboardEvent);
   }
 
+  // calculate sheet rectangle, without heading, factoring in scale
+  getViewportRectangle(): Rectangle {
+    const headingSize = this.headings.headingSize;
+    const scale = this.viewport.scale.x;
+
+    const viewportBounds = this.viewport.getVisibleBounds();
+    const rectangle = new Rectangle(
+      viewportBounds.left + headingSize.width / scale,
+      viewportBounds.top + headingSize.height / scale,
+      viewportBounds.width - headingSize.width / scale,
+      viewportBounds.height - headingSize.height / scale
+    );
+
+    return rectangle;
+  }
+
   setViewportDirty(): void {
     this.viewport.dirty = true;
   }

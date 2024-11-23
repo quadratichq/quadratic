@@ -14,7 +14,7 @@ import { SetterOrUpdater } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
-  autoFocus?: boolean;
+  autoFocusRef?: React.RefObject<boolean>;
   initialPrompt?: string;
   messageIndex?: number;
 };
@@ -36,7 +36,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
   const {
     initialPrompt,
     ctx,
-    autoFocus,
+    autoFocusRef,
     textareaRef: bottomTextareaRef,
     abortController,
     loading,
@@ -58,12 +58,10 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 
   // Focus the input when relevant & the tab comes into focus
   useEffect(() => {
-    if (autoFocus) {
-      window.requestAnimationFrame(() => {
-        textareaRef.current?.focus();
-      });
+    if (autoFocusRef?.current) {
+      textareaRef.current?.focus();
     }
-  }, [autoFocus, textareaRef]);
+  }, [autoFocusRef, textareaRef]);
 
   useEffect(() => {
     if (loading && initialPrompt !== undefined) {
@@ -115,6 +113,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 
             if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
               event.preventDefault();
+              if (loading) return;
 
               if (prompt.trim().length === 0) return;
 
@@ -128,6 +127,9 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
                 bottomTextareaRef.current?.focus();
               }
             }
+
+            if (loading) return;
+
             if (formOnKeyDown) {
               formOnKeyDown(event);
             }
@@ -199,7 +201,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
 export const AIUserMessageFormDisclaimer = () => {
   return (
     <p className="py-0.5 text-center text-xs text-muted-foreground">
-      Some sheet data is sent to the AI model.
+      Some sheet data is sent to the AI model.{' '}
       <a href={AI_SECURITY} target="_blank" rel="noreferrer" className="underline hover:text-foreground">
         Learn more.
       </a>
