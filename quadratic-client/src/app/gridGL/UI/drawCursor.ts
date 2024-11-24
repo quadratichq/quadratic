@@ -92,6 +92,8 @@ export const drawInfiniteSelection = (options: {
         g.drawRect(position, bounds.y, size, bounds.height);
         g.endFill();
         g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.moveTo(position, 0);
+        g.lineTo(position + size, 0);
         g.moveTo(position, bounds.top);
         g.lineTo(position, bounds.bottom);
         g.moveTo(position + size, bounds.top);
@@ -108,39 +110,15 @@ export const drawInfiniteSelection = (options: {
       rect.height = bounds.height;
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
+        g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.moveTo(rect.left, 0);
+        g.lineTo(rect.right, 0);
+        g.moveTo(rect.left, Math.max(0, bounds.top));
+        g.lineTo(rect.left, bounds.bottom);
+        g.moveTo(rect.right, Math.max(0, bounds.top));
+        g.lineTo(rect.right, bounds.bottom);
       }
-      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
-      g.moveTo(rect.left, 0);
-      g.lineTo(rect.right, 0);
-      g.moveTo(rect.left, Math.max(0, bounds.top));
-      g.lineTo(rect.left, bounds.bottom);
-      g.moveTo(rect.right, Math.max(0, bounds.top));
-      g.lineTo(rect.right, bounds.bottom);
-    }
-
-    // multiple columns are selected ending on a row
-    else if (col && !row && end && end.col && end.row) {
-      const startX = Math.min(Number(col.coord), Number(end.col.coord));
-      const width = Math.abs(Number(end.col.coord) - Number(col.coord)) + 1;
-      const rect = sheet.getScreenRectangle(
-        startX,
-        headingSize.height,
-        width,
-        Number(end.row.coord) - headingSize.height
-      );
-      rect.y = rect.bottom;
-      rect.height = bounds.height - rect.y;
-      if (intersects.rectangleRectangle(rect, bounds)) {
-        g.drawShape(rect);
-      }
-      g.endFill();
-      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
-      g.moveTo(rect.left, rect.top);
-      g.lineTo(rect.right, rect.top);
-      g.moveTo(rect.left, rect.top);
-      g.lineTo(rect.left, bounds.bottom);
-      g.moveTo(rect.right, rect.top);
-      g.lineTo(rect.right, bounds.bottom);
     }
 
     // multiple columns are selected starting on a row
@@ -154,14 +132,125 @@ export const drawInfiniteSelection = (options: {
       rect.height = bounds.bottom - rect.y;
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
+        g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.moveTo(rect.left, rect.top);
+        g.lineTo(rect.right, rect.top);
+        g.moveTo(rect.left, rect.top);
+        g.lineTo(rect.left, bounds.bottom);
+        g.moveTo(rect.right, rect.top);
+        g.lineTo(rect.right, bounds.bottom);
       }
-      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
-      g.moveTo(rect.left, rect.top);
-      g.lineTo(rect.right, rect.top);
-      g.moveTo(rect.left, rect.top);
-      g.lineTo(rect.left, bounds.bottom);
-      g.moveTo(rect.right, rect.top);
-      g.lineTo(rect.right, bounds.bottom);
+    }
+
+    // multiple columns are selected ending on a row
+    else if (col && !row && end && end.col && end.row) {
+      const startX = Math.min(Number(col.coord), Number(end.col.coord));
+      const endX = Math.max(Number(col.coord), Number(end.col.coord));
+      const rect = sheet.getScreenRectangle(
+        startX,
+        Number(end.row.coord),
+        endX - startX + 1,
+        Number(end.row.coord) - headingSize.height
+      );
+      if (rect.y > bounds.bottom) return;
+
+      rect.y = Math.max(rect.top, bounds.top);
+      rect.height = bounds.height - rect.y;
+      if (intersects.rectangleRectangle(rect, bounds)) {
+        g.drawShape(rect);
+        g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.moveTo(rect.left, rect.top);
+        g.lineTo(rect.right, rect.top);
+        g.moveTo(rect.left, rect.top);
+        g.lineTo(rect.left, bounds.bottom);
+        g.moveTo(rect.right, rect.top);
+        g.lineTo(rect.right, bounds.bottom);
+      }
+    }
+
+    // one row is selected
+    else if (!col && row && !end) {
+      const { position, size } = sheet.offsets.getRowPlacement(Number(row.coord));
+      if (intersects.rectangleRectangle({ x: bounds.x, y: position, width: bounds.width, height: size }, bounds)) {
+        g.drawRect(bounds.x, position, bounds.width, size);
+        g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.moveTo(0, position);
+        g.lineTo(0, position + size);
+        g.moveTo(bounds.left, position);
+        g.lineTo(bounds.right, position);
+        g.moveTo(bounds.left, position + size);
+        g.lineTo(bounds.right, position + size);
+      }
+    }
+
+    // multiple rows are selected
+    else if (!col && row && end && end.row && !end.col) {
+      const startY = Math.min(Number(row.coord), Number(end.row.coord));
+      const height = Math.abs(Number(end.row.coord) - Number(row.coord)) + 1;
+      const rect = sheet.getScreenRectangle(headingSize.width, startY, 0, height);
+      rect.x = Math.max(0, bounds.x);
+      rect.width = bounds.width;
+      if (intersects.rectangleRectangle(rect, bounds)) {
+        g.drawShape(rect);
+        g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.moveTo(0, rect.top);
+        g.lineTo(0, rect.bottom);
+        g.moveTo(bounds.left, rect.top);
+        g.lineTo(bounds.right, rect.top);
+        g.moveTo(bounds.left, rect.bottom);
+        g.lineTo(bounds.right, rect.bottom);
+      }
+    }
+
+    // multiple rows are selected starting on a column
+    else if (row && col && end && end.row && !end.col) {
+      const startY = Math.min(Number(row.coord), Number(end.row.coord));
+      const endY = Math.max(Number(row.coord), Number(end.row.coord));
+      const rect = sheet.getScreenRectangle(Number(col.coord), startY, Number(col.coord), endY - startY + 1);
+      if (rect.x > bounds.right) return;
+
+      rect.x = Math.max(rect.left, bounds.x);
+      rect.width = bounds.right - rect.x;
+      if (intersects.rectangleRectangle(rect, bounds)) {
+        g.drawShape(rect);
+        g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.moveTo(rect.left, rect.top);
+        g.lineTo(rect.left, rect.bottom);
+        g.moveTo(rect.left, rect.top);
+        g.lineTo(bounds.right, rect.top);
+        g.moveTo(rect.left, rect.bottom);
+        g.lineTo(rect.right, rect.bottom);
+      }
+    }
+
+    // multiple rows are selected ending on a column
+    else if (row && !col && end && end.row && end.col) {
+      const startY = Math.min(Number(row.coord), Number(end.row.coord));
+      const height = Math.abs(Number(end.row.coord) - Number(row.coord)) + 1;
+      const rect = sheet.getScreenRectangle(
+        headingSize.width,
+        startY,
+        Number(end.col.coord) - headingSize.width,
+        height
+      );
+      rect.x = rect.right;
+      rect.width = bounds.width - rect.x;
+      if (intersects.rectangleRectangle(rect, bounds)) {
+        g.drawShape(rect);
+        g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.moveTo(rect.left, rect.top);
+        g.lineTo(rect.right, rect.top);
+        g.moveTo(rect.left, rect.top);
+        g.lineTo(rect.left, bounds.bottom);
+        g.moveTo(rect.right, rect.top);
+        g.lineTo(rect.right, bounds.bottom);
+      }
     }
   });
 };
