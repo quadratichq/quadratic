@@ -354,6 +354,12 @@ impl A1Selection {
             if last.start.col.is_none() {
                 self.cursor.x = column as i64;
             }
+            // we don't need an end if it's the same as the start
+            if last.start.col.is_some_and(|start| start.coord == column)
+                && last.start.row.is_some_and(|start| start.coord == row)
+            {
+                last.end = None;
+            }
         }
         if !append {
             self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));

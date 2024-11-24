@@ -36,12 +36,11 @@ export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, r
       const height = Math.abs(Number(end.row.coord) - Number(row.coord)) + 1;
       const rect = sheet.getScreenRectangle(startX, startY, width, height);
       g.drawShape(rect);
-    }
-
-    // we only have one point, draw a single cell
-    else if (col && row && !end) {
-      const rect = sheet.getScreenRectangle(Number(col.coord), Number(row.coord), 1, 1);
-      g.drawShape(rect);
+    } else if (col && row && !end) {
+      if (ranges.length !== 1) {
+        const rect = sheet.getScreenRectangle(Number(col.coord), Number(row.coord), 1, 1);
+        g.drawShape(rect);
+      }
     }
   });
   g.endFill();
