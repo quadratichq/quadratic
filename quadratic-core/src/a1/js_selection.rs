@@ -3,7 +3,7 @@ use std::str::FromStr;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::SheetId, Rect, SheetRect};
+use crate::{grid::SheetId, Pos, Rect, SheetRect};
 
 use super::{A1Selection, CellRefRange, SheetNameIdMap};
 
@@ -17,6 +17,15 @@ pub struct JsCoordinate {
 #[wasm_bindgen]
 pub struct JsSelection {
     selection: A1Selection,
+}
+
+impl From<Pos> for JsCoordinate {
+    fn from(pos: Pos) -> Self {
+        JsCoordinate {
+            x: pos.x as u32,
+            y: pos.y as u32,
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -55,6 +64,16 @@ impl JsSelection {
             x: self.selection.cursor.x as u32,
             y: self.selection.cursor.y as u32,
         }
+    }
+
+    #[wasm_bindgen(js_name = "getSelectionEnd")]
+    pub fn get_selection_end(&self) -> JsCoordinate {
+        self.selection.last_selection_end().into()
+    }
+
+    #[wasm_bindgen(js_name = "getBottomRightCell")]
+    pub fn get_bottom_right_cell(&self) -> JsCoordinate {
+        self.selection.bottom_right_cell().into()
     }
 
     /// Selects the entire sheet.
@@ -123,12 +142,6 @@ impl JsSelection {
         Ok(self.selection.to_cursor_a1_string())
     }
 
-    #[wasm_bindgen(js_name = "keyboardExtend")]
-    pub fn keyboard_extend(&mut self, delta_x: i32, delta_y: i32) {
-        self.selection
-            .keyboard_extend(delta_x as i64, delta_y as i64);
-    }
-
     #[wasm_bindgen(js_name = "moveTo")]
     pub fn move_to(&mut self, x: i32, y: i32, append: bool) {
         self.selection.move_to(x as i64, y as i64, append);
@@ -169,18 +182,6 @@ impl JsSelection {
         self.selection.might_contain_xy(x as u64, y as u64)
     }
 
-    #[wasm_bindgen(js_name = "pointerDown")]
-    pub fn pointer_down(&mut self, column: u32, row: u32, ctrl_key: bool, shift_key: bool) {
-        self.selection
-            .pointer_down(column as u64, row as u64, ctrl_key, shift_key);
-    }
-
-    #[wasm_bindgen(js_name = "pointerDragSelection")]
-    pub fn pointer_drag_selection(&mut self, column: u32, row: u32) {
-        self.selection
-            .pointer_drag_selection(column as u64, row as u64);
-    }
-
     #[wasm_bindgen(js_name = "getRanges")]
     pub fn get_ranges(&self) -> Result<Vec<CellRefRange>, String> {
         Ok(self.selection.ranges.clone())
@@ -200,8 +201,8 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "bottomRightCell")]
     pub fn bottom_right_cell(&self) -> JsCoordinate {
         JsCoordinate {
-            x: self.selection.bottom_right_cell().x as u32,
-            y: self.selection.bottom_right_cell().y as u32,
+            x: self.selection.last_selection_end().x as u32,
+            y: self.selection.last_selection_end().y as u32,
         }
     }
 }

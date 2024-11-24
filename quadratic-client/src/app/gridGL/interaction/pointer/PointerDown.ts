@@ -111,12 +111,12 @@ export class PointerDown {
     if (column === this.previousPosition?.x && row === this.previousPosition?.y) {
       return;
     }
-    if (event.metaKey || event.ctrlKey || event.shiftKey) {
-      cursor.pointerDown(column, row, event.metaKey || event.ctrlKey, event.shiftKey);
+    if (event.shiftKey) {
+      cursor.selectTo(column, row, event.metaKey || event.ctrlKey);
     } else {
       // If the input is rejected, we cannot move the cursor
       if (await inlineEditorHandler.handleCellPointerDown()) {
-        cursor.selectRect(column, row, column, row, event.metaKey || event.ctrlKey);
+        cursor.moveTo(column, row, event.metaKey || event.ctrlKey);
       } else {
         inlineEditorMonaco.focus();
       }
@@ -157,7 +157,7 @@ export class PointerDown {
     const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
     if (column !== this.previousPosition.x || row !== this.previousPosition.y) {
-      sheet.cursor.pointerDragSelection(column, row);
+      sheet.cursor.selectTo(column, row, event.ctrlKey || event.metaKey);
       this.previousPosition = new Point(column, row);
 
       if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {

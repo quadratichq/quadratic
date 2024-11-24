@@ -163,6 +163,25 @@ impl A1Selection {
             self.cursor
         }
     }
+
+    /// Returns the last selection's end. It defaults to the cursor if it's
+    /// a non-finite range.
+    pub fn last_selection_end(&self) -> Pos {
+        if let Some(range) = self.ranges.last() {
+            let end_or_start = range.end.unwrap_or(range.start);
+            let x = end_or_start
+                .col
+                .map(|col| col.coord as i64)
+                .unwrap_or(self.cursor.x);
+            let y = end_or_start
+                .row
+                .map(|row| row.coord as i64)
+                .unwrap_or(self.cursor.y);
+            Pos { x, y }
+        } else {
+            self.cursor
+        }
+    }
 }
 
 #[cfg(test)]
@@ -243,6 +262,18 @@ mod tests {
 
         let selection = A1Selection::test("1:C3");
         assert!(selection.is_column_row());
+    }
+
+    #[test]
+    fn test_selection_end() {
+        let selection = A1Selection::test("A1,B2,C3");
+        assert_eq!(selection.last_selection_end(), pos![C3]);
+
+        let selection = A1Selection::test("A1,B1:C2");
+        assert_eq!(selection.last_selection_end(), pos![C2]);
+
+        let selection = A1Selection::test("C2:B1");
+        assert_eq!(selection.last_selection_end(), pos![B1]);
     }
 
     #[test]

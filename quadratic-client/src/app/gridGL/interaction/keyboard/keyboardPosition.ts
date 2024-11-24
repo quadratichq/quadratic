@@ -330,9 +330,13 @@ function moveCursor(deltaX: number, deltaY: number) {
   cursor.moveTo(newPos.x, newPos.y);
 }
 
-export function keyboardPosition(event: KeyboardEvent): boolean {
+function selectTo(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
+  const selectionEnd = cursor.selectionEnd;
+  cursor.selectTo(selectionEnd.x + deltaX, selectionEnd.y + deltaY, false);
+}
 
+export function keyboardPosition(event: KeyboardEvent): boolean {
   // Move cursor up
   if (matchShortcut(Action.MoveCursorUp, event)) {
     moveCursor(0, -1);
@@ -347,7 +351,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection up
   if (matchShortcut(Action.ExpandSelectionUp, event)) {
-    cursor.keyboardExtend(0, -1);
+    selectTo(0, -1);
     return true;
   }
 
@@ -371,7 +375,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection down
   if (matchShortcut(Action.ExpandSelectionDown, event)) {
-    cursor.keyboardExtend(0, 1);
+    selectTo(0, 1);
     return true;
   }
 
@@ -395,7 +399,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection left
   if (matchShortcut(Action.ExpandSelectionLeft, event)) {
-    cursor.keyboardExtend(-1, 0);
+    selectTo(-1, 0);
     return true;
   }
 
@@ -419,7 +423,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection right
   if (matchShortcut(Action.ExpandSelectionRight, event)) {
-    cursor.keyboardExtend(1, 0);
+    selectTo(1, 0);
     return true;
   }
 

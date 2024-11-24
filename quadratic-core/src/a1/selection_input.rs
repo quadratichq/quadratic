@@ -23,20 +23,6 @@ impl A1Selection {
             });
         }
     }
-
-    /// Handles the pointer down event.
-    pub fn pointer_down(&mut self, column: u64, row: u64, ctrl_key: bool, shift_key: bool) {
-        if shift_key {
-            self.extend_selection(column, row, ctrl_key);
-        } else {
-            self.move_to(column as i64, row as i64, ctrl_key);
-        }
-    }
-
-    /// Handles dragging the selection.
-    pub fn pointer_drag_selection(&mut self, column: u64, row: u64) {
-        self.extend_selection(column, row, true);
-    }
 }
 
 #[cfg(test)]
@@ -103,44 +89,5 @@ mod tests {
         let mut selection = A1Selection::test("A1");
         selection.keyboard_extend(0, 0);
         assert_eq!(selection.test_string(), "A1");
-    }
-
-    #[test]
-    fn test_pointer_down() {
-        let mut selection = A1Selection::test("A1");
-        selection.pointer_down(2, 2, false, false);
-        assert_eq!(selection.ranges, vec![CellRefRange::test("B2")]);
-        assert_eq!(selection.cursor, "B2".into());
-    }
-
-    #[test]
-    fn test_pointer_down_with_ctrl() {
-        let mut selection = A1Selection::test("A1");
-        selection.pointer_down(2, 2, true, false);
-        assert_eq!(
-            selection.ranges,
-            vec![CellRefRange::test("A1"), CellRefRange::test("B2")]
-        );
-        assert_eq!(selection.cursor, "B2".into());
-
-        selection = A1Selection::test("A1,A1:B3");
-        selection.pointer_down(4, 4, true, false);
-        assert_eq!(
-            selection.ranges,
-            vec![
-                CellRefRange::test("A1"),
-                CellRefRange::test("A1:B3"),
-                CellRefRange::test("D4")
-            ]
-        );
-        assert_eq!(selection.cursor, "D4".into());
-    }
-
-    #[test]
-    fn test_pointer_down_with_shift() {
-        let mut selection = A1Selection::test("A1");
-        selection.pointer_down(2, 2, false, true);
-        assert_eq!(selection.ranges, vec![CellRefRange::test("A1:B2")]);
-        assert_eq!(selection.cursor, "A1".into());
     }
 }

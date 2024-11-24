@@ -92,8 +92,19 @@ export class SheetCursor {
     }
   }
 
+  // Returns the cursor position.
   get position(): JsCoordinate {
     return this.jsSelection.getCursor();
+  }
+
+  // Returns the last selection's end cell.
+  get selectionEnd(): JsCoordinate {
+    return this.jsSelection.getSelectionEnd();
+  }
+
+  // Returns the bottom-right cell for the selection.
+  get bottomRight(): JsCoordinate {
+    return this.jsSelection.getBottomRightCell();
   }
 
   // Returns the largest rectangle that contains all the multiCursor rectangles
@@ -175,14 +186,14 @@ export class SheetCursor {
     this.updatePosition(true);
   }
 
-  keyboardExtend(deltaX: number, deltaY: number) {
-    this.jsSelection.keyboardExtend(deltaX, deltaY);
-    this.updatePosition(true);
+  // Moves the cursor to the given position. This replaces any selection.
+  moveTo(x: number, y: number, append = false, ensureVisible = true) {
+    this.jsSelection.moveTo(x, y, append);
+    this.updatePosition(ensureVisible);
   }
 
-  // Moves the cursor to the given position. This replaces any selection.
-  moveTo(x: number, y: number, ensureVisible = true) {
-    this.jsSelection.moveTo(x, y, false);
+  selectTo(x: number, y: number, append: boolean, ensureVisible = true) {
+    this.jsSelection.selectTo(x, y, append);
     this.updatePosition(ensureVisible);
   }
 
@@ -231,16 +242,6 @@ export class SheetCursor {
   selectRect(left: number, top: number, right: number, bottom: number, append = false, ensureVisible = true) {
     this.jsSelection.selectRect(left, top, right, bottom, append);
     this.updatePosition(ensureVisible);
-  }
-
-  pointerDown(column: number, row: number, ctrlKey: boolean, shiftKey: boolean) {
-    this.jsSelection.pointerDown(column, row, ctrlKey, shiftKey);
-    this.updatePosition(true);
-  }
-
-  pointerDragSelection(column: number, row: number) {
-    this.jsSelection.pointerDragSelection(column, row);
-    this.updatePosition(true);
   }
 
   a1String(): string {

@@ -160,7 +160,7 @@ export class Cursor extends Container {
       const codeCell = codeEditorState.codeCell;
       const cell = cursor.position;
 
-      const endCell = cursor.jsSelection.bottomRightCell();
+      const endCell = cursor.bottomRight;
       this.endCell = sheets.sheet.getCellOffsets(endCell.x, endCell.y);
 
       // draw cursor indicator
