@@ -100,8 +100,8 @@ export class GridHeadings extends Container {
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
     this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+
     const selectedColumns = cursor.getSelectedColumnRanges(leftColumn, rightColumn);
-    console.log(selectedColumns, leftColumn, rightColumn);
     for (let i = 0; i < selectedColumns.length; i += 2) {
       const startPlacement = offsets.getColumnPlacement(selectedColumns[i]);
       const start = startPlacement.position;
@@ -221,9 +221,10 @@ export class GridHeadings extends Container {
 
     const viewport = pixiApp.viewport;
     const bounds = viewport.getVisibleBounds();
-    const offsets = sheets.sheet.offsets;
-    // const cursor = sheets.sheet.cursor;
-    const clamp = sheets.sheet.clamp;
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+    const offsets = sheet.offsets;
+    const clamp = sheet.clamp;
 
     const start = offsets.getYPlacement(bounds.top);
     const end = offsets.getYPlacement(bounds.bottom);
@@ -246,60 +247,24 @@ export class GridHeadings extends Container {
     this.headingsGraphics.endFill();
     this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
 
-    // todo
-    // // fill the entire viewport if all cells are selected
-    // if (cursor.columnRow?.all) {
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-    //   this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, bounds.height);
-    //   this.headingsGraphics.endFill();
-    // }
+    const topRow = sheet.getRowFromScreen(top);
+    const bottomRow = sheet.getRowFromScreen(top + bounds.height);
+    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
-    // // dark fill headings if there is a columnRow selection
-    // if (cursor.columnRow?.rows) {
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-    //   cursor.columnRow.rows.forEach((row) => {
-    //     const offset = offsets.getRowPlacement(row);
-    //     this.headingsGraphics.drawRect(bounds.left, offset.position, this.rowWidth, offset.size);
-    //   });
-    //   this.headingsGraphics.endFill();
-    // }
-
-    // // if we're selecting columns, then show all rows as selected
-    // if (cursor.columnRow?.columns) {
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-    //   this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, bounds.height);
-    //   this.headingsGraphics.endFill();
-    // }
-
-    // // selected cells based on multiCursor
-    // if (cursor.multiCursor) {
-    //   const selectedRows = new Set<number>();
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-    //   cursor.multiCursor.forEach((rectangle) => {
-    //     const start = offsets.getRowPlacement(rectangle.top);
-    //     const end = offsets.getRowPlacement(rectangle.bottom - 1);
-    //     this.headingsGraphics.drawRect(
-    //       bounds.left,
-    //       start.position,
-    //       this.rowWidth,
-    //       end.position + end.size - start.position
-    //     );
-    //     for (let y = rectangle.top; y < rectangle.bottom; y++) {
-    //       selectedRows.add(y);
-    //     }
-    //   });
-    //   this.headingsGraphics.endFill();
-    //   this.selectedRows = Array.from(selectedRows);
-    // }
-
-    // // otherwise selected cursor is cursorPosition
-    // if (!cursor.multiCursor && !cursor.columnRow) {
-    //   const offset = offsets.getRowPlacement(cursor.cursorPosition.y);
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-    //   this.headingsGraphics.drawRect(bounds.left, offset.position, this.rowWidth, offset.size);
-    //   this.headingsGraphics.endFill();
-    //   this.selectedRows = [cursor.position.y];
-    // }
+    const selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
+    for (let i = 0; i < selectedRows.length; i += 2) {
+      const startPlacement = offsets.getRowPlacement(selectedRows[i]);
+      const start = startPlacement.position;
+      let end: number;
+      if (selectedRows[i] === selectedRows[i + 1]) {
+        end = start + startPlacement.size;
+      } else {
+        const endPlacement = offsets.getRowPlacement(selectedRows[i + 1]);
+        end = endPlacement.position + endPlacement.size;
+      }
+      this.headingsGraphics.drawRect(bounds.left, start, this.rowWidth, end - start);
+    }
+    this.headingsGraphics.endFill();
   }
 
   private verticalLabels() {

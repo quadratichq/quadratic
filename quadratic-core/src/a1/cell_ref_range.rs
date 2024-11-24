@@ -258,10 +258,12 @@ impl CellRefRange {
             }
         } else if let Some(end) = self.end {
             if let Some(end_col) = end.col {
-                columns.extend(from..=end_col.coord.min(to));
+                columns.extend(end_col.coord.max(from)..=to);
             } else {
                 columns.extend(from..=to);
             }
+        } else {
+            columns.extend(from..=to);
         }
         columns
     }
@@ -281,10 +283,12 @@ impl CellRefRange {
             }
         } else if let Some(end) = self.end {
             if let Some(end_row) = end.row {
-                rows.extend(from..=end_row.coord.min(to));
+                rows.extend(end_row.coord.max(from)..=to);
             } else {
                 rows.extend(from..=to);
             }
+        } else {
+            rows.extend(from..=to);
         }
         rows
     }
@@ -403,7 +407,7 @@ mod tests {
         );
         assert_eq!(
             CellRefRange::test("1:D").selected_columns(1, 10),
-            vec![1, 2, 3, 4]
+            vec![4, 5, 6, 7, 8, 9, 10]
         );
         assert_eq!(
             CellRefRange::test("A1:C3").selected_columns(1, 10),
@@ -417,10 +421,12 @@ mod tests {
             CellRefRange::test("*").selected_columns(2, 5),
             vec![2, 3, 4, 5]
         );
+        assert_eq!(CellRefRange::test(":D").selected_columns(2, 5), vec![4, 5]);
         assert_eq!(
-            CellRefRange::test(":D").selected_columns(2, 5),
-            vec![2, 3, 4]
+            CellRefRange::test("10").selected_columns(2, 5),
+            vec![2, 3, 4, 5]
         );
+        assert_eq!(CellRefRange::test("4:E").selected_columns(2, 5), vec![4, 5]);
     }
 
     #[test]
@@ -448,10 +454,25 @@ mod tests {
             CellRefRange::test("A1:").selected_rows(1, 10),
             vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         );
-        assert_eq!(CellRefRange::test(":4").selected_rows(2, 10), vec![2, 3, 4]);
+        assert_eq!(
+            CellRefRange::test(":4").selected_rows(2, 10),
+            vec![4, 5, 6, 7, 8, 9, 10]
+        );
         assert_eq!(
             CellRefRange::test("*").selected_rows(2, 5),
             vec![2, 3, 4, 5]
+        );
+        assert_eq!(
+            CellRefRange::test("A").selected_rows(2, 5),
+            vec![2, 3, 4, 5]
+        );
+        assert_eq!(
+            CellRefRange::test("C:E5").selected_rows(1, 10),
+            vec![5, 6, 7, 8, 9, 10]
+        );
+        assert_eq!(
+            CellRefRange::test("E5:C").selected_rows(1, 10),
+            vec![5, 6, 7, 8, 9, 10]
         );
     }
 }
