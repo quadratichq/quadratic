@@ -1,55 +1,11 @@
-use std::str::FromStr;
-use std::{fmt, ops::RangeInclusive};
-
-use lazy_static::lazy_static;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::str::FromStr;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-use super::{A1Error, SheetNameIdMap};
-use crate::{grid::SheetId, Pos, Rect};
-
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct SheetCellRefRange {
-    pub sheet: SheetId,
-    pub cells: CellRefRange,
-}
-impl SheetCellRefRange {
-    /// Parses a selection from a comma-separated list of ranges.
-    ///
-    /// Ranges without an explicit sheet use `default_sheet_id`.
-    pub fn from_str(
-        a1: &str,
-        default_sheet_id: &SheetId,
-        sheet_map: &SheetNameIdMap,
-    ) -> Result<Self, A1Error> {
-        let (sheet, cells_str) =
-            super::parse_optional_sheet_name_to_id(a1, default_sheet_id, sheet_map)?;
-        let cells = cells_str.parse()?;
-        Ok(Self { sheet, cells })
-    }
-
-    /// Returns an A1-style string describing the range. The sheet name is
-    /// included in the output only if `default_sheet_id` is `None` or differs
-    /// from the ID of the sheet containing the range.
-    pub fn to_string(
-        self,
-        default_sheet_id: Option<SheetId>,
-        sheet_map: &SheetNameIdMap,
-    ) -> String {
-        if default_sheet_id.is_some_and(|it| it != self.sheet) {
-            let sheet_name = sheet_map
-                .iter()
-                .find(|(_, id)| **id == self.sheet)
-                .map(|(name, _)| name.clone())
-                .unwrap_or(super::UNKNOWN_SHEET_NAME.to_string());
-            format!("{}!{}", super::quote_sheet_name(&sheet_name), self.cells)
-        } else {
-            format!("{}", self.cells)
-        }
-    }
-}
+use super::{range_might_contain_coord, range_might_intersect, A1Error, CellRefRangeEnd};
+use crate::{Pos, Rect};
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -287,194 +243,40 @@ impl CellRefRange {
         }
     }
 
+    /// Returns the selected columns in the range.
+    pub fn selected_columns(&self) -> Vec<u64> {
+        let mut columns = vec![];
+        if let Some(start_col) = self.start.col {
+            if let Some(end_col) = self.end.and_then(|end| end.col) {
+                columns.extend(start_col.coord..=end_col.coord);
+            } else {
+                columns.push(start_col.coord);
+            }
+        } else if let Some(end_col) = self.end.and_then(|end| end.col) {
+            columns.extend(1..=end_col.coord);
+        }
+        columns
+    }
+
+    /// Returns the selected rows in the range.
+    pub fn selected_rows(&self) -> Vec<u64> {
+        let mut rows = vec![];
+        if let Some(start_row) = self.start.row {
+            if let Some(end_row) = self.end.and_then(|end| end.row) {
+                rows.extend(start_row.coord..=end_row.coord);
+            } else {
+                rows.push(start_row.coord);
+            }
+        } else if let Some(end_row) = self.end.and_then(|end| end.row) {
+            rows.extend(1..=end_row.coord);
+        }
+        rows
+    }
+
     /// Returns a test range from the A1-string.
     #[cfg(test)]
     pub fn test(a1: &str) -> Self {
         Self::from_str(a1).unwrap()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
-#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(feature = "js", wasm_bindgen)]
-pub struct CellRefRangeEnd {
-    pub col: Option<CellRefCoord>,
-    pub row: Option<CellRefCoord>,
-}
-impl fmt::Display for CellRefRangeEnd {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(col) = self.col {
-            col.fmt_as_column(f)?;
-        }
-        if let Some(row) = self.row {
-            row.fmt_as_row(f)?;
-        }
-        Ok(())
-    }
-}
-impl FromStr for CellRefRangeEnd {
-    type Err = A1Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        lazy_static! {
-            static ref A1_REGEX: Regex =
-                Regex::new(r#"(\$?)([A-Z]*)(\$?)(\d*)"#).expect("bad regex");
-        }
-
-        let captures = A1_REGEX
-            .captures(s)
-            .ok_or_else(|| A1Error::InvalidCellReference(s.to_string()))?;
-
-        let mut col_is_absolute = !captures[1].is_empty();
-        let col_str = &captures[2];
-        let mut row_is_absolute = !captures[3].is_empty();
-        let row_str = &captures[4];
-
-        // If there is no column, then an absolute row will be parsed as
-        // `($)()()(row)` instead of `()()($)(row)`. Let's fix that.
-        if col_is_absolute && col_str.is_empty() {
-            std::mem::swap(&mut row_is_absolute, &mut col_is_absolute);
-        }
-
-        let col = match col_str {
-            "" => None,
-            _ => Some(
-                super::column_from_name(col_str)
-                    .ok_or_else(|| A1Error::InvalidColumn(col_str.to_owned()))?,
-            ),
-        };
-        let row = match row_str {
-            "" => None,
-            _ => Some(
-                row_str
-                    .parse()
-                    .ok()
-                    .filter(|&y| y > 0)
-                    .ok_or_else(|| A1Error::InvalidRow(row_str.to_owned()))?,
-            ),
-        };
-
-        if col_is_absolute && col.is_none() || row_is_absolute && row.is_none() {
-            return Err(A1Error::SpuriousDollarSign(s.to_owned()));
-        }
-
-        Ok(CellRefRangeEnd {
-            col: col.map(|coord| {
-                let is_absolute = col_is_absolute;
-                CellRefCoord { coord, is_absolute }
-            }),
-            row: row.map(|coord| {
-                let is_absolute = row_is_absolute;
-                CellRefCoord { coord, is_absolute }
-            }),
-        })
-    }
-}
-impl CellRefRangeEnd {
-    /// End of a range that is unbounded on both axes.
-    pub const UNBOUNDED: Self = Self {
-        col: None,
-        row: None,
-    };
-
-    pub fn new_relative_xy(x: u64, y: u64) -> Self {
-        let col = Some(CellRefCoord::new_rel(x));
-        let row = Some(CellRefCoord::new_rel(y));
-        CellRefRangeEnd { col, row }
-    }
-    pub fn new_relative_pos(pos: Pos) -> Self {
-        Self::new_relative_xy(pos.x as u64, pos.y as u64)
-    }
-
-    pub fn new_relative_column(x: u64) -> Self {
-        let col = Some(CellRefCoord::new_rel(x));
-        CellRefRangeEnd { col, row: None }
-    }
-    pub fn new_relative_row(y: u64) -> Self {
-        let row = Some(CellRefCoord::new_rel(y));
-        CellRefRangeEnd { col: None, row }
-    }
-    pub fn expand(self, delta_x: i64, delta_y: i64) -> Self {
-        CellRefRangeEnd {
-            col: self.col.map(|c| c.expand(delta_x)),
-            row: self.row.map(|r| r.expand(delta_y)),
-        }
-    }
-    pub fn is_multi_range(&self) -> bool {
-        self.col.is_none() || self.row.is_none()
-    }
-    pub fn is_pos(&self, pos: Pos) -> bool {
-        self.col.map_or(false, |col| col.coord == pos.x as u64)
-            && self.row.map_or(false, |row| row.coord == pos.y as u64)
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
-#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(feature = "js", wasm_bindgen)]
-pub struct CellRefCoord {
-    #[cfg_attr(test, proptest(strategy = "super::PROPTEST_COORDINATE_U64"))]
-    pub coord: u64,
-    pub is_absolute: bool,
-}
-impl CellRefCoord {
-    fn fmt_as_column(self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.is_absolute {
-            write!(f, "$")?;
-        }
-        write!(f, "{}", super::column_name(self.coord))
-    }
-    fn fmt_as_row(self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.is_absolute {
-            write!(f, "$")?;
-        }
-        write!(f, "{}", self.coord)
-    }
-
-    pub fn new_rel(coord: u64) -> Self {
-        let is_absolute = false;
-        Self { coord, is_absolute }
-    }
-    pub fn new_abs(coord: u64) -> Self {
-        let is_absolute = true;
-        Self { coord, is_absolute }
-    }
-    pub fn expand(self, delta: i64) -> Self {
-        let coord = if delta + self.coord as i64 <= 0 {
-            1
-        } else {
-            self.coord as i64 + delta
-        } as u64;
-        Self {
-            coord,
-            is_absolute: self.is_absolute,
-        }
-    }
-}
-
-/// Returns whether `range` might intersect the region from `start` to `end`.
-fn range_might_intersect(
-    range: RangeInclusive<u64>,
-    mut start: Option<CellRefCoord>,
-    mut end: Option<CellRefCoord>,
-) -> bool {
-    if let (Some(a), Some(b)) = (start, end) {
-        if b.coord < a.coord {
-            std::mem::swap(&mut start, &mut end);
-        }
-    }
-    let range_excluded_by_start = start.map_or(false, |a| *range.end() < a.coord);
-    let range_excluded_by_end = end.map_or(false, |b| b.coord < *range.start());
-    !range_excluded_by_start && !range_excluded_by_end
-}
-
-/// Returns whether `range` might contain `coord`.
-///
-/// If `coord` is `None`, returns `true`.
-fn range_might_contain_coord(range: RangeInclusive<u64>, coord: Option<CellRefCoord>) -> bool {
-    match coord {
-        Some(a) => range.contains(&a.coord),
-        None => true,
     }
 }
 
@@ -488,24 +290,11 @@ mod tests {
     proptest! {
         #[test]
         fn proptest_cell_ref_range_parsing(cell_ref_range: CellRefRange) {
-            assert_eq!(cell_ref_range, cell_ref_range.to_string().parse().unwrap());
+            // We skip tests where start = end since we remove the end when parsing
+            if cell_ref_range.end.is_none_or(|end| end != cell_ref_range.start) {
+                assert_eq!(cell_ref_range, cell_ref_range.to_string().parse().unwrap());
+            }
         }
-    }
-
-    #[test]
-    fn test_delta_size() {
-        assert_eq!(
-            CellRefCoord::new_rel(1).expand(-1),
-            CellRefCoord::new_rel(1)
-        );
-        assert_eq!(CellRefCoord::new_rel(1).expand(1), CellRefCoord::new_rel(2));
-    }
-
-    #[test]
-    fn test_is_multi_range() {
-        assert!(CellRefRangeEnd::new_relative_column(1).is_multi_range());
-        assert!(CellRefRangeEnd::new_relative_row(1).is_multi_range());
-        assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_multi_range());
     }
 
     #[test]
@@ -581,11 +370,36 @@ mod tests {
     }
 
     #[test]
-    fn test_cell_ref_range_end_is_pos() {
-        assert!(CellRefRangeEnd::new_relative_xy(1, 2).is_pos(Pos { x: 1, y: 2 }));
-        assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_pos(Pos { x: 2, y: 1 }));
-        assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_pos(Pos { x: 1, y: 2 }));
-        assert!(!CellRefRangeEnd::new_relative_column(1).is_pos(Pos { x: 1, y: 1 }));
-        assert!(!CellRefRangeEnd::new_relative_row(1).is_pos(Pos { x: 1, y: 1 }));
+    fn test_selected_columns() {
+        assert_eq!(CellRefRange::test("A1").selected_columns(), vec![1]);
+        assert_eq!(CellRefRange::test("A").selected_columns(), vec![1]);
+        assert_eq!(CellRefRange::test("A:B").selected_columns(), vec![1, 2]);
+        assert_eq!(CellRefRange::test("A1:B2").selected_columns(), vec![1, 2]);
+        assert_eq!(
+            CellRefRange::test("A1:D1").selected_columns(),
+            vec![1, 2, 3, 4]
+        );
+        assert_eq!(
+            CellRefRange::test("1:D").selected_columns(),
+            vec![1, 2, 3, 4]
+        );
+        assert_eq!(
+            CellRefRange::test("A1:C3").selected_columns(),
+            vec![1, 2, 3]
+        );
+    }
+
+    #[test]
+    fn test_selected_rows() {
+        assert_eq!(CellRefRange::test("A1").selected_rows(), vec![1]);
+        assert_eq!(CellRefRange::test("1").selected_rows(), vec![1]);
+        assert_eq!(CellRefRange::test("1:3").selected_rows(), vec![1, 2, 3]);
+        assert_eq!(CellRefRange::test("A1:B2").selected_rows(), vec![1, 2]);
+        assert_eq!(
+            CellRefRange::test("A1:A4").selected_rows(),
+            vec![1, 2, 3, 4]
+        );
+        assert_eq!(CellRefRange::test("1:4").selected_rows(), vec![1, 2, 3, 4]);
+        assert_eq!(CellRefRange::test("A1:C3").selected_rows(), vec![1, 2, 3]);
     }
 }

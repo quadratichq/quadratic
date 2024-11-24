@@ -1,14 +1,13 @@
 #[cfg(test)]
 use std::ops::RangeInclusive;
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::A1Subspaces;
+use super::{A1Subspaces, SheetCellRefRange};
 use crate::{
-    grid::SheetId, selection::OldSelection, A1Error, CellRefRange, Pos, Rect, SheetCellRefRange,
-    SheetNameIdMap, SheetPos, SheetRect,
+    grid::SheetId, selection::OldSelection, A1Error, CellRefRange, Pos, Rect, SheetNameIdMap,
+    SheetPos, SheetRect,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -147,7 +146,7 @@ impl A1Selection {
     }
     #[cfg(test)]
     pub fn from_ranges(ranges: impl Iterator<Item = CellRefRange>, sheet: SheetId) -> Self {
-        let ranges = ranges.collect_vec();
+        let ranges = ranges.collect::<Vec<_>>();
         let last_range = ranges.last().expect("empty selection is invalid");
         let cursor = Pos {
             x: last_range.start.col.map_or(1, |col| col.coord as i64),
@@ -221,6 +220,7 @@ impl A1Selection {
         self.ranges
             .iter()
             .map(|&cells| SheetCellRefRange { sheet, cells }.to_string(default_sheet_id, sheet_map))
+            .collect::<Vec<_>>()
             .join(",")
     }
 

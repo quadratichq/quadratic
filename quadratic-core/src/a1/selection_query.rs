@@ -182,6 +182,78 @@ impl A1Selection {
             self.cursor
         }
     }
+
+    /// Returns the selected column ranges as a list of [start, end] pairs between two coordinates.
+    pub fn selected_column_ranges(&self, from: u64, to: u64) -> Vec<u64> {
+        let mut columns = HashSet::new();
+        self.ranges.iter().for_each(|range| {
+            columns.extend(
+                range
+                    .selected_columns()
+                    .iter()
+                    .filter(|c| c >= &&from && c <= &&to),
+            )
+        });
+
+        let mut columns = columns.into_iter().collect::<Vec<_>>();
+        columns.sort_unstable();
+        let mut ranges = Vec::new();
+        if !columns.is_empty() {
+            let mut start = columns[0];
+            let mut end = start;
+
+            for &col in &columns[1..] {
+                if col == end + 1 {
+                    end = col;
+                } else {
+                    ranges.push(start);
+                    ranges.push(end);
+                    start = col;
+                    end = start;
+                }
+            }
+
+            ranges.push(start);
+            ranges.push(end);
+        }
+        ranges
+    }
+
+    /// Returns the selected row ranges as a list of [start, end] pairs between two coordinates.
+    pub fn selected_row_ranges(&self, from: u64, to: u64) -> Vec<u64> {
+        let mut rows = HashSet::new();
+        self.ranges.iter().for_each(|range| {
+            rows.extend(
+                range
+                    .selected_rows()
+                    .iter()
+                    .filter(|r| r >= &&from && r <= &&to),
+            )
+        });
+
+        let mut rows = rows.into_iter().collect::<Vec<_>>();
+        rows.sort_unstable();
+        let mut ranges = Vec::new();
+        if !rows.is_empty() {
+            let mut start = rows[0];
+            let mut end = start;
+
+            for &row in &rows[1..] {
+                if row == end + 1 {
+                    end = row;
+                } else {
+                    ranges.push(start);
+                    ranges.push(end);
+                    start = row;
+                    end = start;
+                }
+            }
+
+            ranges.push(start);
+            ranges.push(end);
+        }
+        ranges
+    }
 }
 
 #[cfg(test)]
@@ -286,5 +358,29 @@ mod tests {
 
         let selection = A1Selection::test("C2:B1");
         assert_eq!(selection.bottom_right_cell(), pos![C2]);
+    }
+
+    #[test]
+    fn test_selected_column_ranges() {
+        let selection = A1Selection::test("A1,B2,C3,D4:E5,F6:G7,H8");
+        assert_eq!(selection.selected_column_ranges(1, 10), vec![1, 8]);
+
+        let selection = A1Selection::test("A1,B2,D4:E5,F6:G7,H8");
+        assert_eq!(selection.selected_column_ranges(1, 10), vec![1, 2, 4, 8]);
+
+        let selection = A1Selection::test("A1,B2,D4:E5,F6:G7,H8");
+        assert_eq!(selection.selected_column_ranges(2, 5), vec![2, 2, 4, 5]);
+    }
+
+    #[test]
+    fn test_selected_row_ranges() {
+        let selection = A1Selection::test("A1,B2,C3,D4:E5,F6:G7,H8");
+        assert_eq!(selection.selected_row_ranges(1, 10), vec![1, 8]);
+
+        let selection = A1Selection::test("A1,B2,D4:E5,F6:G7,H8");
+        assert_eq!(selection.selected_row_ranges(1, 10), vec![1, 2, 4, 8]);
+
+        let selection = A1Selection::test("A1,B2,D4:E5,F6:G7,H8");
+        assert_eq!(selection.selected_row_ranges(2, 5), vec![2, 2, 4, 5]);
     }
 }

@@ -205,6 +205,24 @@ impl JsSelection {
             y: self.selection.last_selection_end().y as u32,
         }
     }
+
+    #[wasm_bindgen(js_name = "getSelectedColumnRanges")]
+    pub fn get_selected_column_ranges(&self, from: u32, to: u32) -> Vec<u32> {
+        self.selection
+            .selected_column_ranges(from as u64, to as u64)
+            .iter()
+            .map(|c| *c as u32)
+            .collect()
+    }
+
+    #[wasm_bindgen(js_name = "getSelectedRowRanges")]
+    pub fn get_selected_row_ranges(&self, from: u32, to: u32) -> Vec<u32> {
+        self.selection
+            .selected_row_ranges(from as u64, to as u64)
+            .iter()
+            .map(|c| *c as u32)
+            .collect()
+    }
 }
 
 #[wasm_bindgen(js_name = "stringToSelection")]

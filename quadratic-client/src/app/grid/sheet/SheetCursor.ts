@@ -102,6 +102,16 @@ export class SheetCursor {
     return this.jsSelection.getSelectionEnd();
   }
 
+  // Returns the columns that are selected via ranges [c1_start, c1_end, c2_start, c2_end, ...].
+  getSelectedColumnRanges(from: number, to: number): number[] {
+    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to));
+  }
+
+  // Returns the rows that are selected via ranges [r1_start, r1_end, r2_start, r2_end, ...].
+  getSelectedRowRanges(from: number, to: number): number[] {
+    return Array.from(this.jsSelection.getSelectedRowRanges(from, to));
+  }
+
   // Returns the bottom-right cell for the selection.
   get bottomRight(): JsCoordinate {
     return this.jsSelection.getBottomRightCell();

@@ -85,9 +85,10 @@ export class GridHeadings extends Container {
     const bounds = viewport.getVisibleBounds();
     const scale = viewport.scaled;
     const cellHeight = CELL_HEIGHT / scale;
-    // const offsets = sheets.sheet.offsets;
-    // const cursor = sheets.sheet.cursor;
-    const clamp = sheets.sheet.clamp;
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
+    const cursor = sheet.cursor;
+    const clamp = sheet.clamp;
 
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
@@ -96,63 +97,24 @@ export class GridHeadings extends Container {
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
 
-    // todo...
-    // // fill the entire viewport if all cells are selected
-    // if (cursor.columnRow?.all) {
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-    //   this.headingsGraphics.drawRect(viewport.left, viewport.top, viewport.screenWidthInWorldPixels, cellHeight);
-    //   this.headingsGraphics.endFill();
-    //   return 'all';
-    // }
-
-    // // dark fill headings if there is a columnRow selection
-    // if (cursor.columnRow?.columns) {
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-    //   cursor.columnRow.columns.forEach((column) => {
-    //     const offset = offsets.getColumnPlacement(column);
-    //     this.headingsGraphics.drawRect(offset.position, viewport.top, offset.size, cellHeight);
-    //   });
-    //   this.headingsGraphics.endFill();
-    //   return cursor.columnRow.columns;
-    // }
-
-    // // if we're selecting rows, then show all columns as selected
-    // if (cursor.columnRow?.rows) {
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-    //   this.headingsGraphics.drawRect(viewport.left, viewport.top, viewport.screenWidthInWorldPixels, cellHeight);
-    //   this.headingsGraphics.endFill();
-    //   return 'all';
-    // }
-
-    // // selected cells based on multiCursor
-    // else if (cursor.multiCursor) {
-    //   const selectedColumns = new Set<number>();
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-    //   cursor.multiCursor.forEach((rectangle) => {
-    //     const start = offsets.getColumnPlacement(rectangle.left);
-    //     const end = offsets.getColumnPlacement(rectangle.right - 1);
-    //     this.headingsGraphics.drawRect(
-    //       start.position,
-    //       viewport.top,
-    //       end.position + end.size - start.position,
-    //       cellHeight
-    //     );
-    //     for (let x = rectangle.left; x < rectangle.right; x++) {
-    //       selectedColumns.add(x);
-    //     }
-    //   });
-    //   this.headingsGraphics.endFill();
-    //   this.selectedColumns = Array.from(selectedColumns);
-    // }
-
-    // otherwise selected cursor is cursorPosition
-    // else {
-    //   const offset = offsets.getColumnPlacement(cursor.position.x);
-    //   this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-    //   this.headingsGraphics.drawRect(offset.position, viewport.top, offset.size, cellHeight);
-    //   this.headingsGraphics.endFill();
-    //   this.selectedColumns = [cursor.position.x];
-    // }
+    const leftColumn = sheet.getColumnFromScreen(left);
+    const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
+    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    const selectedColumns = cursor.getSelectedColumnRanges(leftColumn, rightColumn);
+    console.log(selectedColumns, leftColumn, rightColumn);
+    for (let i = 0; i < selectedColumns.length; i += 2) {
+      const startPlacement = offsets.getColumnPlacement(selectedColumns[i]);
+      const start = startPlacement.position;
+      let end: number;
+      if (selectedColumns[i] === selectedColumns[i + 1]) {
+        end = start + startPlacement.size;
+      } else {
+        const endPlacement = offsets.getColumnPlacement(selectedColumns[i + 1]);
+        end = endPlacement.position + endPlacement.size;
+      }
+      this.headingsGraphics.drawRect(start, viewport.top, end - start, cellHeight);
+    }
+    this.headingsGraphics.endFill();
   }
 
   // Adds horizontal labels

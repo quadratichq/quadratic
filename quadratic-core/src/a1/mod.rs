@@ -1,7 +1,9 @@
 mod a1_sheet_name;
-mod cell_ref;
 mod cell_ref_col_row;
+mod cell_ref_coord;
+mod cell_ref_end;
 mod cell_ref_query;
+mod cell_ref_range;
 mod cell_ref_request;
 mod column_names;
 mod error;
@@ -11,15 +13,19 @@ mod selection_exclude;
 mod selection_mutate;
 mod selection_query;
 mod selection_select;
+mod sheet_cell_ref_range;
 mod subspaces;
 
 pub use a1_sheet_name::*;
-pub use cell_ref::*;
+pub use cell_ref_coord::*;
+pub use cell_ref_end::*;
+pub use cell_ref_range::*;
 pub use cell_ref_request::*;
 pub use column_names::*;
 pub use error::*;
 pub use js_selection::*;
 pub use selection::*;
+pub use sheet_cell_ref_range::*;
 pub use subspaces::*;
 
 /// Name to use when a sheet ID has no corresponding name.
