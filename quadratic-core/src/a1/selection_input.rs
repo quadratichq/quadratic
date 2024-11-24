@@ -32,6 +32,11 @@ impl A1Selection {
             self.move_to(column as i64, row as i64, ctrl_key);
         }
     }
+
+    /// Handles dragging the selection.
+    pub fn pointer_drag_selection(&mut self, column: u64, row: u64) {
+        self.extend_selection(column, row, true);
+    }
 }
 
 #[cfg(test)]

@@ -237,4 +237,13 @@ export class SheetCursor {
     this.jsSelection.pointerDown(column, row, ctrlKey, shiftKey);
     this.updatePosition(true);
   }
+
+  pointerDragSelection(column: number, row: number) {
+    this.jsSelection.pointerDragSelection(column, row);
+    this.updatePosition(true);
+  }
+
+  a1String(): string {
+    return this.jsSelection.toA1String(sheets.sheet.id, sheets.getRustSheetMap());
+  }
 }

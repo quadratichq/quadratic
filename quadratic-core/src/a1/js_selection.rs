@@ -175,6 +175,12 @@ impl JsSelection {
             .pointer_down(column as u64, row as u64, ctrl_key, shift_key);
     }
 
+    #[wasm_bindgen(js_name = "pointerDragSelection")]
+    pub fn pointer_drag_selection(&mut self, column: u32, row: u32) {
+        self.selection
+            .pointer_drag_selection(column as u64, row as u64);
+    }
+
     #[wasm_bindgen(js_name = "getRanges")]
     pub fn get_ranges(&self) -> Result<Vec<CellRefRange>, String> {
         Ok(self.selection.ranges.clone())

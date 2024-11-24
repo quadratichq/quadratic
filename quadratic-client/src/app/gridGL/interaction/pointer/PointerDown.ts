@@ -111,56 +111,21 @@ export class PointerDown {
     if (column === this.previousPosition?.x && row === this.previousPosition?.y) {
       return;
     }
-    cursor.pointerDown(column, row, event.metaKey || event.ctrlKey, event.shiftKey);
+    if (event.metaKey || event.ctrlKey || event.shiftKey) {
+      cursor.pointerDown(column, row, event.metaKey || event.ctrlKey, event.shiftKey);
+    } else {
+      // If the input is rejected, we cannot move the cursor
+      if (await inlineEditorHandler.handleCellPointerDown()) {
+        cursor.selectRect(column, row, column, row, event.metaKey || event.ctrlKey);
+      } else {
+        inlineEditorMonaco.focus();
+      }
+    }
     this.previousPosition = new Point(column, row);
-
-    // // Select cells between pressed and cursor position. Uses last multiCursor
-    // // or creates a multiCursor.
-    // if (event.shiftKey) {
-    //   cursor.extendSelection(column, row, event.metaKey || event.ctrlKey);
-    //   this.active = true;
-    //   this.position = new Point(cursor.position.x, cursor.position.y);
-    //   this.previousPosition = new Point(column, row);
-    //   this.pointerMoved = false;
-    //   return;
-    // }
-
-    // // select another multiCursor range
-    // if (!this.active && (event.metaKey || event.ctrlKey)) {
-    //   if (!(await this.isInputValid())) return;
-
-    //   const cursorPosition = cursor.position;
-    //   if (cursor.isMultiCursor() || column !== cursorPosition.x || row !== cursorPosition.y) {
-    //     event.stopPropagation();
-    //     cursor.extendSelection(column, row, true);
-    //     this.active = true;
-    //     this.position = new Point(column, row);
-
-    //     // Keep track of multiCursor previous position
-    //     this.previousPosition = new Point(column, row);
-
-    //     this.pointerMoved = false;
-    //     return;
-    //   }
-    // }
-
-    // this.active = true;
-    // this.position = new Point(column, row);
-
-    // // Keep track of multiCursor previous position
-    // this.previousPosition = new Point(column, row);
-
-    // sheets.sheet.cursor.moveTo(column, row);
-
-    // todo...not sure what this does
-    // If the input is rejected, we cannot move the cursor
-    // if (await inlineEditorHandler.handleCellPointerDown()) {
-    //   cursor.selectRect(column, row, column, row, event.metaKey || event.ctrlKey);
-    // } else {
-    //   inlineEditorMonaco.focus();
-    // }
     events.emit('clickedToCell', column, row, world);
     this.pointerMoved = false;
+    this.position = new Point(column, row);
+    this.active = true;
   }
 
   pointerMove(world: Point, event: PointerEvent): void {
@@ -170,7 +135,6 @@ export class PointerDown {
 
     const { viewport } = pixiApp;
     const sheet = sheets.sheet;
-    // const cursor = sheet.cursor;
 
     if (!this.pointerMoved && this.positionRaw) {
       if (
@@ -193,54 +157,13 @@ export class PointerDown {
     const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
     if (column !== this.previousPosition.x || row !== this.previousPosition.y) {
-      // cursor.pointerMove(column, row, event.metaKey || event.ctrlKey, event.shiftKey);
+      sheet.cursor.pointerDragSelection(column, row);
       this.previousPosition = new Point(column, row);
+
       if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
         pixiAppSettings.changeInput(false);
       }
     }
-    // // const columnRow = event.metaKey || event.ctrlKey ? undefined : null;
-
-    // // cursor start and end in the same cell
-    // if (column === this.position.x && row === this.position.y) {
-    //   // // hide multi cursor when only selecting one cell
-    //   // if (cursor.isMultiCursor()) {
-    //   //   cursor.moveTo(this.position.x, this.position.y, false);
-    //   // }
-    //   this.previousPosition = new Point(this.position.x, this.position.y);
-    //   if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
-    //     pixiAppSettings.changeInput(false);
-    //   }
-    // } else {
-    //   // cursor origin and terminal are not in the same cell
-    //   // make origin top left, and terminal bottom right
-    //   // const originX = this.position.x < column ? this.position.x : column;
-    //   // const originY = this.position.y < row ? this.position.y : row;
-    //   // const termX = this.position.x > column ? this.position.x : column;
-    //   // const termY = this.position.y > row ? this.position.y : row;
-    //   // determine if the cursor has moved from the previous event
-    //   // const hasMoved = !(this.previousPosition.x === column && this.previousPosition.y === row);
-    //   // todo...
-    //   // // only set state if changed
-    //   // // this reduces the number of hooks fired
-    //   // if (hasMoved) {
-    //   //   // update multiCursor
-    //   //   const multiCursor = cursor.multiCursor ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1) : [];
-    //   //   multiCursor.push(new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1));
-    //   //   cursor.changePosition({
-    //   //     columnRow,
-    //   //     keyboardMovePosition: { x: column, y: row },
-    //   //     cursorPosition: { x: this.position.x, y: this.position.y },
-    //   //     multiCursor,
-    //   //     ensureVisible: false,
-    //   //   });
-    //   //   if (inlineEditorHandler.isOpen() && !inlineEditorHandler.isEditingFormula()) {
-    //   //     pixiAppSettings.changeInput(false);
-    //   //   }
-    //   //   // update previousPosition
-    //   //   this.previousPosition = new Point(column, row);
-    //   // }
-    // }
   }
 
   pointerUp(event?: PointerEvent): void {
