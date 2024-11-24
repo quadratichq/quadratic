@@ -48,7 +48,14 @@ pub(crate) fn parse_optional_sheet_name_to_id<'a>(
     let (sheet_name, rest) = parse_optional_sheet_name(a1)?;
     let sheet_id = match sheet_name {
         Some(sheet_name) => *sheet_map
-            .get(&crate::util::case_fold(&sheet_name))
+            .iter()
+            .find_map(|(name, id)| {
+                if crate::util::case_fold(name) == crate::util::case_fold(&sheet_name) {
+                    Some(id)
+                } else {
+                    None
+                }
+            })
             .ok_or(A1Error::InvalidSheetName(sheet_name))?,
         None => default_sheet_id.to_owned(),
     };
