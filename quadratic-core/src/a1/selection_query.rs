@@ -189,7 +189,7 @@ impl A1Selection {
         self.ranges.iter().for_each(|range| {
             columns.extend(
                 range
-                    .selected_columns()
+                    .selected_columns(from, to)
                     .iter()
                     .filter(|c| c >= &&from && c <= &&to),
             )
@@ -222,14 +222,9 @@ impl A1Selection {
     /// Returns the selected row ranges as a list of [start, end] pairs between two coordinates.
     pub fn selected_row_ranges(&self, from: u64, to: u64) -> Vec<u64> {
         let mut rows = HashSet::new();
-        self.ranges.iter().for_each(|range| {
-            rows.extend(
-                range
-                    .selected_rows()
-                    .iter()
-                    .filter(|r| r >= &&from && r <= &&to),
-            )
-        });
+        self.ranges
+            .iter()
+            .for_each(|range| rows.extend(range.selected_rows(from, to).iter()));
 
         let mut rows = rows.into_iter().collect::<Vec<_>>();
         rows.sort_unstable();

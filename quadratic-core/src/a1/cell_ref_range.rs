@@ -243,32 +243,48 @@ impl CellRefRange {
         }
     }
 
-    /// Returns the selected columns in the range.
-    pub fn selected_columns(&self) -> Vec<u64> {
+    /// Returns the selected columns in the range that fall between `from` and `to`.
+    pub fn selected_columns(&self, from: u64, to: u64) -> Vec<u64> {
         let mut columns = vec![];
         if let Some(start_col) = self.start.col {
-            if let Some(end_col) = self.end.and_then(|end| end.col) {
-                columns.extend(start_col.coord..=end_col.coord);
-            } else {
+            if let Some(end) = self.end {
+                if let Some(end_col) = end.col {
+                    columns.extend(start_col.coord.max(from)..=end_col.coord.min(to));
+                } else {
+                    columns.extend(start_col.coord.max(from)..=to);
+                }
+            } else if start_col.coord >= from && start_col.coord <= to {
                 columns.push(start_col.coord);
             }
-        } else if let Some(end_col) = self.end.and_then(|end| end.col) {
-            columns.extend(1..=end_col.coord);
+        } else if let Some(end) = self.end {
+            if let Some(end_col) = end.col {
+                columns.extend(from..=end_col.coord.min(to));
+            } else {
+                columns.extend(from..=to);
+            }
         }
         columns
     }
 
-    /// Returns the selected rows in the range.
-    pub fn selected_rows(&self) -> Vec<u64> {
+    /// Returns the selected rows in the range that fall between `from` and `to`.
+    pub fn selected_rows(&self, from: u64, to: u64) -> Vec<u64> {
         let mut rows = vec![];
         if let Some(start_row) = self.start.row {
-            if let Some(end_row) = self.end.and_then(|end| end.row) {
-                rows.extend(start_row.coord..=end_row.coord);
-            } else {
+            if let Some(end) = self.end {
+                if let Some(end_row) = end.row {
+                    rows.extend(start_row.coord.max(from)..=end_row.coord.min(to));
+                } else {
+                    rows.extend(start_row.coord.max(from)..=to);
+                }
+            } else if start_row.coord >= from && start_row.coord <= to {
                 rows.push(start_row.coord);
             }
-        } else if let Some(end_row) = self.end.and_then(|end| end.row) {
-            rows.extend(1..=end_row.coord);
+        } else if let Some(end) = self.end {
+            if let Some(end_row) = end.row {
+                rows.extend(from..=end_row.coord.min(to));
+            } else {
+                rows.extend(from..=to);
+            }
         }
         rows
     }
@@ -371,35 +387,71 @@ mod tests {
 
     #[test]
     fn test_selected_columns() {
-        assert_eq!(CellRefRange::test("A1").selected_columns(), vec![1]);
-        assert_eq!(CellRefRange::test("A").selected_columns(), vec![1]);
-        assert_eq!(CellRefRange::test("A:B").selected_columns(), vec![1, 2]);
-        assert_eq!(CellRefRange::test("A1:B2").selected_columns(), vec![1, 2]);
+        assert_eq!(CellRefRange::test("A1").selected_columns(1, 10), vec![1]);
+        assert_eq!(CellRefRange::test("A").selected_columns(1, 10), vec![1]);
         assert_eq!(
-            CellRefRange::test("A1:D1").selected_columns(),
+            CellRefRange::test("A:B").selected_columns(1, 10),
+            vec![1, 2]
+        );
+        assert_eq!(
+            CellRefRange::test("A1:B2").selected_columns(1, 10),
+            vec![1, 2]
+        );
+        assert_eq!(
+            CellRefRange::test("A1:D1").selected_columns(1, 10),
             vec![1, 2, 3, 4]
         );
         assert_eq!(
-            CellRefRange::test("1:D").selected_columns(),
+            CellRefRange::test("1:D").selected_columns(1, 10),
             vec![1, 2, 3, 4]
         );
         assert_eq!(
-            CellRefRange::test("A1:C3").selected_columns(),
+            CellRefRange::test("A1:C3").selected_columns(1, 10),
             vec![1, 2, 3]
+        );
+        assert_eq!(
+            CellRefRange::test("A1:").selected_columns(1, 10),
+            vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        );
+        assert_eq!(
+            CellRefRange::test("*").selected_columns(2, 5),
+            vec![2, 3, 4, 5]
+        );
+        assert_eq!(
+            CellRefRange::test(":D").selected_columns(2, 5),
+            vec![2, 3, 4]
         );
     }
 
     #[test]
     fn test_selected_rows() {
-        assert_eq!(CellRefRange::test("A1").selected_rows(), vec![1]);
-        assert_eq!(CellRefRange::test("1").selected_rows(), vec![1]);
-        assert_eq!(CellRefRange::test("1:3").selected_rows(), vec![1, 2, 3]);
-        assert_eq!(CellRefRange::test("A1:B2").selected_rows(), vec![1, 2]);
+        assert_eq!(CellRefRange::test("A1").selected_rows(1, 10), vec![1]);
+        assert_eq!(CellRefRange::test("1").selected_rows(1, 10), vec![1]);
         assert_eq!(
-            CellRefRange::test("A1:A4").selected_rows(),
+            CellRefRange::test("1:3").selected_rows(1, 10),
+            vec![1, 2, 3]
+        );
+        assert_eq!(CellRefRange::test("A1:B2").selected_rows(1, 10), vec![1, 2]);
+        assert_eq!(
+            CellRefRange::test("A1:A4").selected_rows(1, 10),
             vec![1, 2, 3, 4]
         );
-        assert_eq!(CellRefRange::test("1:4").selected_rows(), vec![1, 2, 3, 4]);
-        assert_eq!(CellRefRange::test("A1:C3").selected_rows(), vec![1, 2, 3]);
+        assert_eq!(
+            CellRefRange::test("1:4").selected_rows(1, 10),
+            vec![1, 2, 3, 4]
+        );
+        assert_eq!(
+            CellRefRange::test("A1:C3").selected_rows(1, 10),
+            vec![1, 2, 3]
+        );
+        assert_eq!(
+            CellRefRange::test("A1:").selected_rows(1, 10),
+            vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        );
+        assert_eq!(CellRefRange::test(":4").selected_rows(2, 10), vec![2, 3, 4]);
+        assert_eq!(
+            CellRefRange::test("*").selected_rows(2, 5),
+            vec![2, 3, 4, 5]
+        );
     }
 }
