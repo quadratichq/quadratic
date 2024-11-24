@@ -10,6 +10,7 @@ import { CellRefRange } from '@/app/quadratic-rust-client/quadratic_rust_client'
 import { Graphics } from 'pixi.js';
 
 const SECTION_OUTLINE_WIDTH = 1;
+const SECTION_OUTLINE_NATIVE = true;
 
 export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordinate) => {
   const outline = sheets.sheet.getCellOffsets(cursor.x, cursor.y);
@@ -20,7 +21,7 @@ export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordina
 // Draws a cursor with a finite number of cells (this is drawn once for each
 // selection setting).
 export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, ranges: CellRefRange[]) => {
-  g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 0, native: true });
+  g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 0, native: SECTION_OUTLINE_NATIVE });
   g.beginFill(color, alpha);
 
   const sheet = sheets.sheet;
@@ -78,7 +79,7 @@ export const drawInfiniteSelection = (options: {
     if (!col && !row && !end?.col && !end?.row) {
       g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
       g.endFill();
-      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+      g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
       g.moveTo(0, 0);
       g.lineTo(0, bounds.height);
       g.moveTo(0, 0);
@@ -91,7 +92,7 @@ export const drawInfiniteSelection = (options: {
       if (intersects.rectangleRectangle({ x: position, y: bounds.y, width: size, height: bounds.height }, bounds)) {
         g.drawRect(position, bounds.y, size, bounds.height);
         g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
         g.moveTo(position, 0);
         g.lineTo(position + size, 0);
         g.moveTo(position, bounds.top);
@@ -111,7 +112,7 @@ export const drawInfiniteSelection = (options: {
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
         g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
         g.moveTo(rect.left, 0);
         g.lineTo(rect.right, 0);
         g.moveTo(rect.left, Math.max(0, bounds.top));
@@ -133,7 +134,7 @@ export const drawInfiniteSelection = (options: {
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
         g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
         g.moveTo(rect.left, rect.top);
         g.lineTo(rect.right, rect.top);
         g.moveTo(rect.left, rect.top);
@@ -156,11 +157,11 @@ export const drawInfiniteSelection = (options: {
       if (rect.y > bounds.bottom) return;
 
       rect.y = Math.max(rect.top, bounds.top);
-      rect.height = bounds.height - rect.y;
+      rect.height = bounds.bottom - rect.y;
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
         g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
         g.moveTo(rect.left, rect.top);
         g.lineTo(rect.right, rect.top);
         g.moveTo(rect.left, rect.top);
@@ -176,7 +177,7 @@ export const drawInfiniteSelection = (options: {
       if (intersects.rectangleRectangle({ x: bounds.x, y: position, width: bounds.width, height: size }, bounds)) {
         g.drawRect(bounds.x, position, bounds.width, size);
         g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
         g.moveTo(0, position);
         g.lineTo(0, position + size);
         g.moveTo(bounds.left, position);
@@ -196,7 +197,7 @@ export const drawInfiniteSelection = (options: {
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
         g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
         g.moveTo(0, rect.top);
         g.lineTo(0, rect.bottom);
         g.moveTo(bounds.left, rect.top);
@@ -218,7 +219,7 @@ export const drawInfiniteSelection = (options: {
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
         g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
         g.moveTo(rect.left, rect.top);
         g.lineTo(rect.left, rect.bottom);
         g.moveTo(rect.left, rect.top);
@@ -231,25 +232,20 @@ export const drawInfiniteSelection = (options: {
     // multiple rows are selected ending on a column
     else if (row && !col && end && end.row && end.col) {
       const startY = Math.min(Number(row.coord), Number(end.row.coord));
-      const height = Math.abs(Number(end.row.coord) - Number(row.coord)) + 1;
-      const rect = sheet.getScreenRectangle(
-        headingSize.width,
-        startY,
-        Number(end.col.coord) - headingSize.width,
-        height
-      );
-      rect.x = rect.right;
-      rect.width = bounds.width - rect.x;
+      const endY = Math.max(Number(row.coord), Number(end.row.coord));
+      const rect = sheet.getScreenRectangle(Number(end.col.coord), startY, Number(end.col.coord), endY - startY + 1);
+      rect.x = Math.max(rect.left, bounds.x);
+      rect.width = bounds.right - rect.x;
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
         g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: true });
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
+        g.moveTo(rect.left, rect.top);
+        g.lineTo(rect.left, rect.bottom);
         g.moveTo(rect.left, rect.top);
         g.lineTo(rect.right, rect.top);
-        g.moveTo(rect.left, rect.top);
-        g.lineTo(rect.left, bounds.bottom);
-        g.moveTo(rect.right, rect.top);
-        g.lineTo(rect.right, bounds.bottom);
+        g.moveTo(rect.left, rect.bottom);
+        g.lineTo(rect.right, rect.bottom);
       }
     }
   });
