@@ -141,16 +141,9 @@ export class SheetCursor {
     return this.jsSelection.overlapsA1Selection(a1Selection);
   }
 
+  // Returns true if the selection is a single cell or a single column or single row.
   hasOneColumnRowSelection(oneCell?: boolean): boolean {
-    throw new Error('TODO hasOneColumnRowSelection');
-    // return (
-    //   !this.columnRow?.all &&
-    //   !!(
-    //     (this.columnRow?.columns && this.columnRow.columns.length === 1) ||
-    //     (this.columnRow?.rows && this.columnRow.rows.length === 1) ||
-    //     (oneCell && !this.multiCursor)
-    //   )
-    // );
+    return this.jsSelection.hasOneColumnRowSelection(oneCell ?? false);
   }
 
   // Returns the columns that are selected.

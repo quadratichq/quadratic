@@ -308,6 +308,11 @@ impl CellRefRange {
         range
     }
 
+    /// Returns true if the range is a single cell.
+    pub fn is_single_cell(&self) -> bool {
+        self.start.col.is_some() && self.start.row.is_some() && self.end.is_none()
+    }
+
     /// Returns a test range from the A1-string.
     #[cfg(test)]
     pub fn test(a1: &str) -> Self {
@@ -489,5 +494,13 @@ mod tests {
             CellRefRange::test("E5:C").selected_rows(1, 10),
             vec![5, 6, 7, 8, 9, 10]
         );
+    }
+
+    #[test]
+    fn test_is_single_cell() {
+        assert!(CellRefRange::test("A1").is_single_cell());
+        assert!(!CellRefRange::test("A").is_single_cell());
+        assert!(!CellRefRange::test("3").is_single_cell());
+        assert!(!CellRefRange::test("A1:B2").is_single_cell());
     }
 }

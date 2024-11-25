@@ -251,6 +251,18 @@ impl A1Selection {
         }
         ranges
     }
+
+    /// Returns true if the selection is a single column or row range or
+    /// one_cell is true and the selection is only a single cell.
+    pub fn has_one_column_row_selection(&self, one_cell: bool) -> bool {
+        if self.ranges.len() != 1 {
+            return false;
+        }
+        let Some(range) = self.ranges.first() else {
+            return false;
+        };
+        range.is_column_range() || range.is_row_range() || (one_cell && range.is_single_cell())
+    }
 }
 
 #[cfg(test)]
@@ -379,5 +391,20 @@ mod tests {
 
         let selection = A1Selection::test("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(selection.selected_row_ranges(2, 5), vec![2, 2, 4, 5]);
+    }
+
+    #[test]
+    fn has_one_column_row_selection() {
+        assert!(A1Selection::test("A").has_one_column_row_selection(false));
+        assert!(A1Selection::test("1").has_one_column_row_selection(false));
+        assert!(!A1Selection::test("A,B").has_one_column_row_selection(false));
+        assert!(!A1Selection::test("A1").has_one_column_row_selection(false));
+        assert!(!A1Selection::test("A1:B2").has_one_column_row_selection(false));
+
+        assert!(A1Selection::test("A").has_one_column_row_selection(true));
+        assert!(A1Selection::test("1").has_one_column_row_selection(true));
+        assert!(A1Selection::test("A1").has_one_column_row_selection(true));
+        assert!(!A1Selection::test("A,B").has_one_column_row_selection(true));
+        assert!(!A1Selection::test("A1:B2").has_one_column_row_selection(true));
     }
 }
