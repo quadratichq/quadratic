@@ -206,6 +206,34 @@ impl JsSelection {
         }
     }
 
+    #[wasm_bindgen(js_name = "isSelectedColumnsFinite")]
+    pub fn is_selected_columns_finite(&self) -> bool {
+        self.selection.is_selected_columns_finite()
+    }
+
+    #[wasm_bindgen(js_name = "isSelectedRowsFinite")]
+    pub fn is_selected_rows_finite(&self) -> bool {
+        self.selection.is_selected_rows_finite()
+    }
+
+    #[wasm_bindgen(js_name = "getSelectedColumns")]
+    pub fn get_selected_columns(&self) -> Vec<u32> {
+        self.selection
+            .selected_columns_finite()
+            .iter()
+            .map(|c| *c as u32)
+            .collect()
+    }
+
+    #[wasm_bindgen(js_name = "getSelectedRows")]
+    pub fn get_selected_rows(&self) -> Vec<u32> {
+        self.selection
+            .selected_rows_finite()
+            .iter()
+            .map(|c| *c as u32)
+            .collect()
+    }
+
     #[wasm_bindgen(js_name = "getSelectedColumnRanges")]
     pub fn get_selected_column_ranges(&self, from: u32, to: u32) -> Vec<u32> {
         self.selection

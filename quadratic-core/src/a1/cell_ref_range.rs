@@ -243,6 +243,21 @@ impl CellRefRange {
         }
     }
 
+    /// Returns only the finite columns in the range.
+    pub fn selected_columns_finite(&self) -> Vec<u64> {
+        let mut columns = vec![];
+        if let Some(start_col) = self.start.col {
+            if let Some(end) = self.end {
+                if let Some(end_col) = end.col {
+                    columns.extend(start_col.coord..=end_col.coord);
+                }
+            } else {
+                columns.push(start_col.coord);
+            }
+        }
+        columns
+    }
+
     /// Returns the selected columns in the range that fall between `from` and `to`.
     pub fn selected_columns(&self, from: u64, to: u64) -> Vec<u64> {
         let mut columns = vec![];
@@ -266,6 +281,21 @@ impl CellRefRange {
             columns.extend(from..=to);
         }
         columns
+    }
+
+    /// Returns only the finite rows in the range.
+    pub fn selected_rows_finite(&self) -> Vec<u64> {
+        let mut rows = vec![];
+        if let Some(start_row) = self.start.row {
+            if let Some(end) = self.end {
+                if let Some(end_row) = end.row {
+                    rows.extend(start_row.coord..=end_row.coord);
+                }
+            } else {
+                rows.push(start_row.coord);
+            }
+        }
+        rows
     }
 
     /// Returns the selected rows in the range that fall between `from` and `to`.
@@ -502,5 +532,35 @@ mod tests {
         assert!(!CellRefRange::test("A").is_single_cell());
         assert!(!CellRefRange::test("3").is_single_cell());
         assert!(!CellRefRange::test("A1:B2").is_single_cell());
+    }
+
+    #[test]
+    fn test_selected_columns_finite() {
+        assert_eq!(CellRefRange::test("A1").selected_columns_finite(), vec![1]);
+        assert_eq!(CellRefRange::test("A").selected_columns_finite(), vec![1]);
+        assert_eq!(
+            CellRefRange::test("A:B").selected_columns_finite(),
+            vec![1, 2]
+        );
+        assert!(CellRefRange::test("A1:")
+            .selected_columns_finite()
+            .is_empty());
+        assert!(CellRefRange::test("*").selected_columns_finite().is_empty());
+        assert!(CellRefRange::test(":B")
+            .selected_columns_finite()
+            .is_empty());
+    }
+
+    #[test]
+    fn test_selected_rows_finite() {
+        assert_eq!(CellRefRange::test("A1").selected_rows_finite(), vec![1]);
+        assert_eq!(CellRefRange::test("1").selected_rows_finite(), vec![1]);
+        assert_eq!(
+            CellRefRange::test("1:3").selected_rows_finite(),
+            vec![1, 2, 3]
+        );
+        assert!(CellRefRange::test("A1:").selected_rows_finite().is_empty());
+        assert!(CellRefRange::test("*").selected_rows_finite().is_empty());
+        assert!(CellRefRange::test(":3").selected_rows_finite().is_empty());
     }
 }

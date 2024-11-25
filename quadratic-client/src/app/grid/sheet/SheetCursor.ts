@@ -146,36 +146,22 @@ export class SheetCursor {
     return this.jsSelection.hasOneColumnRowSelection(oneCell ?? false);
   }
 
+  isSelectedColumnsFinite(): boolean {
+    return this.jsSelection.isSelectedColumnsFinite();
+  }
+
+  isSelectedRowsFinite(): boolean {
+    return this.jsSelection.isSelectedRowsFinite();
+  }
+
   // Returns the columns that are selected.
-  getColumnsSelection(): number[] {
-    throw new Error('TODO getColumnsSelection');
-    // const columns = new Set<number>();
-    // if (this.columnRow?.columns) {
-    //   this.columnRow.columns.forEach((column) => columns.add(column));
-    // }
-    // if (this.multiCursor) {
-    //   for (const rect of this.multiCursor) {
-    //     columns.add(rect.x);
-    //   }
-    // }
-    // columns.add(this.cursorPosition.x);
-    // return Array.from(columns);
+  getSelectedColumns(): number[] {
+    return Array.from(this.jsSelection.getSelectedColumns());
   }
 
   // Returns the rows that are selected.
-  getRowsSelection(): number[] {
-    throw new Error('TODO getRowsSelection');
-    // const rows = new Set<number>();
-    // if (this.columnRow?.rows) {
-    //   this.columnRow.rows.forEach((row) => rows.add(row));
-    // }
-    // if (this.multiCursor) {
-    //   for (const rect of this.multiCursor) {
-    //     rows.add(rect.y);
-    //   }
-    // }
-    // rows.add(this.cursorPosition.y);
-    // return Array.from(rows);
+  getSelectedRows(): number[] {
+    return Array.from(this.jsSelection.getSelectedRows());
   }
 
   // Returns true if the cursor is only selecting a single cell

@@ -31,7 +31,7 @@ const deleteColumns: ActionSpec<void> = {
   isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated,
   Icon: DeleteIcon,
   run: () => {
-    const columns = sheets.sheet.cursor.getColumnsSelection();
+    const columns = sheets.sheet.cursor.getSelectedColumns();
     quadraticCore.deleteColumns(sheets.sheet.id, columns, sheets.getCursorPosition());
   },
 };
@@ -56,7 +56,7 @@ const deleteRows: ActionSpec<void> = {
   isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated,
   Icon: DeleteIcon,
   run: () => {
-    const rows = sheets.sheet.cursor.getRowsSelection();
+    const rows = sheets.sheet.cursor.getSelectedRows();
     quadraticCore.deleteRows(sheets.sheet.id, rows, sheets.getCursorPosition());
   },
 };

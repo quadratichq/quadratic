@@ -185,6 +185,22 @@ impl A1Selection {
         }
     }
 
+    /// Returns true if all the selected columns are finite.
+    pub fn is_selected_columns_finite(&self) -> bool {
+        self.ranges
+            .iter()
+            .all(|range| !range.selected_columns_finite().is_empty())
+    }
+
+    /// Returns the selected columns as a list of column numbers.
+    pub fn selected_columns_finite(&self) -> Vec<u64> {
+        let mut columns = HashSet::new();
+        self.ranges.iter().for_each(|range| {
+            columns.extend(range.selected_columns_finite());
+        });
+        columns.into_iter().collect::<Vec<_>>()
+    }
+
     /// Returns the selected column ranges as a list of [start, end] pairs between two coordinates.
     pub fn selected_column_ranges(&self, from: u64, to: u64) -> Vec<u64> {
         let mut columns = HashSet::new();
@@ -219,6 +235,22 @@ impl A1Selection {
             ranges.push(end);
         }
         ranges
+    }
+
+    /// Returns true if all the selected rows are finite.
+    pub fn is_selected_rows_finite(&self) -> bool {
+        self.ranges
+            .iter()
+            .all(|range| !range.selected_rows_finite().is_empty())
+    }
+
+    /// Returns the selected rows as a list of row numbers.
+    pub fn selected_rows_finite(&self) -> Vec<u64> {
+        let mut rows = HashSet::new();
+        self.ranges.iter().for_each(|range| {
+            rows.extend(range.selected_rows_finite());
+        });
+        rows.into_iter().collect::<Vec<_>>()
     }
 
     /// Returns the selected row ranges as a list of [start, end] pairs between two coordinates.
@@ -428,5 +460,24 @@ mod tests {
         assert!(!A1Selection::test("A").is_single_selection());
         assert!(!A1Selection::test("3").is_single_selection());
         assert!(!A1Selection::test("A1,B2").is_single_selection());
+    }
+
+    #[test]
+    fn test_is_selected_columns_finite() {
+        assert!(A1Selection::test("A1,B2,C3").is_selected_columns_finite());
+        assert!(A1Selection::test("A1,B2,C3,D:E").is_selected_columns_finite());
+        assert!(A1Selection::test("A:B").is_selected_columns_finite());
+        assert!(!A1Selection::test("*").is_selected_columns_finite());
+        assert!(!A1Selection::test("1:2").is_selected_columns_finite());
+        assert!(!A1Selection::test("A1:2").is_selected_columns_finite());
+    }
+
+    #[test]
+    fn test_is_selected_rows_finite() {
+        assert!(A1Selection::test("A1,B2,C3").is_selected_rows_finite());
+        assert!(A1Selection::test("1:2").is_selected_rows_finite());
+        assert!(!A1Selection::test("A1,B2,C3,D:E").is_selected_rows_finite());
+        assert!(!A1Selection::test("A:B").is_selected_rows_finite());
+        assert!(!A1Selection::test("*").is_selected_rows_finite());
     }
 }
