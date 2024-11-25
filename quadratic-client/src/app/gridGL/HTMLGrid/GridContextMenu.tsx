@@ -33,6 +33,8 @@ export const GridContextMenu = () => {
   const ref = useRef<HTMLDivElement>(null);
 
   const isColumnRowAvailable = sheets.sheet.cursor.hasOneColumnRowSelection(true);
+  const isColumnFinite = sheets.sheet.cursor.isSelectedColumnsFinite();
+  const isRowFinite = sheets.sheet.cursor.isSelectedRowsFinite();
 
   return (
     <div
@@ -62,19 +64,19 @@ export const GridContextMenu = () => {
 
         {show.column === null ? null : (
           <>
-            <MenuDivider />
-            {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnLeft} />}
-            {isColumnRowAvailable && <MenuItemAction action={Action.InsertColumnRight} />}
-            <MenuItemAction action={Action.DeleteColumn} />
+            {isColumnFinite && <MenuDivider />}
+            {isColumnRowAvailable && isColumnFinite && <MenuItemAction action={Action.InsertColumnLeft} />}
+            {isColumnRowAvailable && isColumnFinite && <MenuItemAction action={Action.InsertColumnRight} />}
+            {isColumnFinite && <MenuItemAction action={Action.DeleteColumn} />}
           </>
         )}
 
         {show.row === null ? null : (
           <>
-            {isColumnRowAvailable && <MenuDivider />}
-            {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowAbove} />}
-            {isColumnRowAvailable && <MenuItemAction action={Action.InsertRowBelow} />}
-            <MenuItemAction action={Action.DeleteRow} />
+            {isRowFinite && <MenuDivider />}
+            {isColumnRowAvailable && isRowFinite && <MenuItemAction action={Action.InsertRowAbove} />}
+            {isColumnRowAvailable && isRowFinite && <MenuItemAction action={Action.InsertRowBelow} />}
+            {isRowFinite && <MenuItemAction action={Action.DeleteRow} />}
           </>
         )}
       </ControlledMenu>
