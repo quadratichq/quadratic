@@ -32,10 +32,6 @@ export const GridContextMenu = () => {
 
   const ref = useRef<HTMLDivElement>(null);
 
-  if (show.world === undefined) {
-    return null;
-  }
-
   const isColumnRowAvailable = sheets.sheet.cursor.hasOneColumnRowSelection(true);
 
   return (
