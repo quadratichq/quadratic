@@ -4,6 +4,7 @@ use crate::{
         operations::operation::Operation,
     },
     grid::SheetId,
+    A1Selection,
 };
 
 use super::{validation::Validation, Validations};
@@ -16,13 +17,17 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
-    ) {
+    ) -> Vec<A1Selection> {
         let mut reverse_operations = Vec::new();
-
+        let mut changed_selections = vec![];
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.removed_column(column as u64) {
-                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
+                changed_selections.extend(transaction.validation_changed(
+                    sheet_id,
+                    validation,
+                    Some(&original_selection),
+                ));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -36,6 +41,7 @@ impl Validations {
         });
 
         transaction.reverse_operations.extend(reverse_operations);
+        changed_selections
     }
 
     /// Removes a row from all validations.
@@ -46,13 +52,17 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
-    ) {
+    ) -> Vec<A1Selection> {
+        let mut changed_selections = vec![];
         let mut reverse_operations = Vec::new();
-
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.removed_row(row as u64) {
-                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
+                changed_selections.extend(transaction.validation_changed(
+                    sheet_id,
+                    validation,
+                    Some(&original_selection),
+                ));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -64,8 +74,8 @@ impl Validations {
                 true
             }
         });
-
         transaction.reverse_operations.extend(reverse_operations);
+        changed_selections
     }
 
     /// Inserts a column into all validations.
@@ -76,13 +86,18 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
-    ) {
+    ) -> Vec<A1Selection> {
+        let mut changed_selections = vec![];
         let mut reverse_operations = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.inserted_column(column as u64) {
-                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
+                changed_selections.extend(transaction.validation_changed(
+                    sheet_id,
+                    validation,
+                    Some(&original_selection),
+                ));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -93,6 +108,7 @@ impl Validations {
         });
 
         transaction.reverse_operations.extend(reverse_operations);
+        changed_selections
     }
 
     /// Inserts a row into all validations.
@@ -103,13 +119,18 @@ impl Validations {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
-    ) {
+    ) -> Vec<A1Selection> {
+        let mut changed_selections = vec![];
         let mut reverse_operations = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.inserted_row(row as u64) {
-                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
+                changed_selections.extend(transaction.validation_changed(
+                    sheet_id,
+                    validation,
+                    Some(&original_selection),
+                ));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -120,6 +141,7 @@ impl Validations {
         });
 
         transaction.reverse_operations.extend(reverse_operations);
+        changed_selections
     }
 }
 
@@ -132,8 +154,7 @@ mod tests {
         grid::sheet::validations::validation_rules::{
             validation_logical::ValidationLogical, ValidationRule,
         },
-        selection::OldSelection,
-        A1Selection, Rect,
+        A1Selection,
     };
 
     use super::*;

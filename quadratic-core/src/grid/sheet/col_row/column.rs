@@ -246,7 +246,8 @@ impl Sheet {
         // mark hashes of new columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
-        self.validations.remove_column(transaction, self.id, column);
+        let changed_selections = self.validations.remove_column(transaction, self.id, column);
+        transaction.add_dirty_hashes_from_selections(self, changed_selections);
     }
 
     /// Copies column formats to the new column.
@@ -371,7 +372,8 @@ impl Sheet {
         // mark hashes of new columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
-        self.validations.insert_column(transaction, self.id, column);
+        let changed_selections = self.validations.insert_column(transaction, self.id, column);
+        transaction.add_dirty_hashes_from_selections(self, changed_selections);
 
         self.copy_column_formats(transaction, column, copy_formats);
 

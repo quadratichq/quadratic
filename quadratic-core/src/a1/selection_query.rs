@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{Pos, Rect};
+use crate::{grid::Sheet, Pos, Rect};
 
 use super::A1Selection;
 
@@ -116,10 +116,14 @@ impl A1Selection {
     }
 
     // Converts to a set of quadrant positions.
-    pub fn rects_to_hashes(&self) -> HashSet<Pos> {
+    pub fn rects_to_hashes(&self, sheet: &Sheet) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
         self.ranges.iter().for_each(|range| {
-            if let Some(rect) = range.to_rect() {
+            // handle finite ranges
+            if let Some(rect) = range
+                .to_rect()
+                .or_else(|| sheet.find_rect_from_infinite_range(range))
+            {
                 for x in rect.min.x..=rect.max.x {
                     for y in rect.min.y..=rect.max.y {
                         let mut pos = Pos { x, y };

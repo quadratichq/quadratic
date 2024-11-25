@@ -278,7 +278,8 @@ impl Sheet {
             copy_formats: CopyFormats::None,
         });
 
-        self.validations.remove_row(transaction, self.id, row);
+        let changed_selections = self.validations.remove_row(transaction, self.id, row);
+        transaction.add_dirty_hashes_from_selections(self, changed_selections);
     }
 
     /// Removes any value at row and shifts the remaining values up by 1.
@@ -444,7 +445,8 @@ impl Sheet {
         // mark hashes of new rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
-        self.validations.insert_row(transaction, self.id, row);
+        let changed_selections = self.validations.insert_row(transaction, self.id, row);
+        transaction.add_dirty_hashes_from_selections(self, changed_selections);
 
         self.copy_row_formats(transaction, row, copy_formats);
 

@@ -310,31 +310,40 @@ impl PendingTransaction {
         self.image_cells.entry(sheet_id).or_default().insert(pos);
     }
 
-    /// Updates the dirty hashes for a validation. This includes triggering the
-    /// validation changes for a Sheet and any dirty hashes resulting from a
-    /// change in a checkbox or dropdown.
+    /// Adds dirty hashes for all hashes from a list of selections.
+    pub fn add_dirty_hashes_from_selections(
+        &mut self,
+        sheet: &Sheet,
+        selections: Vec<A1Selection>,
+    ) {
+        selections.iter().for_each(|selection| {
+            let dirty_hashes = selection.rects_to_hashes(sheet);
+            self.dirty_hashes
+                .entry(sheet.id)
+                .or_default()
+                .extend(dirty_hashes);
+        });
+    }
+
+    /// Inserts the changed validations into PendingTransaction. Also returns an
+    /// A1Selection that can be used to insert changed hashes (we cannot do that
+    /// here b/c we need &Sheet, and cannot borrow &Sheet and Sheet.validations
+    /// at the same time).
     pub fn validation_changed(
         &mut self,
         sheet_id: SheetId,
         validation: &Validation,
         changed_selection: Option<&A1Selection>,
-    ) {
+    ) -> Vec<A1Selection> {
+        let mut changed_selections = Vec::new();
         self.validations.insert(sheet_id);
         if validation.render_special().is_some() {
-            let dirty_hashes = validation.selection.rects_to_hashes();
-            self.dirty_hashes
-                .entry(sheet_id)
-                .or_default()
-                .extend(dirty_hashes);
-
+            changed_selections.push(validation.selection.clone());
             if let Some(changed_selection) = changed_selection {
-                let changed_hashes = changed_selection.rects_to_hashes();
-                self.dirty_hashes
-                    .entry(sheet_id)
-                    .or_default()
-                    .extend(changed_hashes);
+                changed_selections.push(changed_selection.clone());
             }
         }
+        changed_selections
     }
 
     /// Updates the offsets modified for a column or row.
