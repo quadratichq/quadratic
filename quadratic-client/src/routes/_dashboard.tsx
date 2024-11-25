@@ -91,10 +91,10 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   } else if (teams.length > 0) {
     initialActiveTeamUuid = teams[0].team.uuid;
 
-    // 4) there's no teams in the API, so create one and send the user to it
+    // 4) there's no teams in the API, so create one, then send the user to a new file
   } else if (teams.length === 0) {
     const newTeam = await apiClient.teams.create({ name: 'My Team' });
-    return redirect(ROUTES.TEAM(newTeam.uuid));
+    return redirect(ROUTES.CREATE_FILE(newTeam.uuid));
   }
 
   // This should never happen, but if it does, we'll log it to sentry
