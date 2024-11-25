@@ -10,35 +10,38 @@ impl GridController {
     ///
     /// Returns a [`String`].
     pub fn export_csv_selection(&self, selection: A1Selection) -> Result<String> {
-        todo!()
-        // let sheet = self
-        //     .try_sheet(selection.sheet_id)
-        //     .context("Sheet not found")?;
-        // let bounds = sheet.selection_bounds(&selection).context("No values")?;
-        // let values = sheet.selection_sorted_vec(&selection, false);
-        // let mut writer = Writer::from_writer(vec![]);
-        // let mut iter = values.iter();
-        // for y in bounds.min.y..=bounds.max.y {
-        //     let mut line = vec![];
-        //     for x in bounds.min.x..=bounds.max.x {
-        //         // we need to ignore unselected columns or rows
-        //         if selection.rects.is_some() || selection.contains_pos(Pos { x, y }) {
-        //             if let Some((_, value)) = iter.peeking_next(|(pos, _)| pos.x == x && pos.y == y)
-        //             {
-        //                 line.push(value.to_string());
-        //             } else {
-        //                 line.push("".to_string());
-        //             }
-        //         }
-        //     }
-        //     if !line.is_empty() {
-        //         writer.write_record(line)?;
-        //     }
-        // }
+        let sheet = self
+            .try_sheet(selection.sheet_id)
+            .context("Sheet not found")?;
+        let rects = sheet.selection_to_rects(&selection);
+        if rects.is_empty() || rects.len() > 1 {
+            return Err(anyhow::anyhow!("Invalid selection"));
+        }
+        let bounds = rects[0];
+        let values = sheet.selection_sorted_vec(&selection, false);
+        let mut writer = Writer::from_writer(vec![]);
+        let mut iter = values.iter();
+        for y in bounds.min.y..=bounds.max.y {
+            let mut line = vec![];
+            for x in bounds.min.x..=bounds.max.x {
+                // we need to ignore unselected columns or rows
+                if selection.might_contain_pos(Pos { x, y }) {
+                    if let Some((_, value)) = iter.peeking_next(|(pos, _)| pos.x == x && pos.y == y)
+                    {
+                        line.push(value.to_string());
+                    } else {
+                        line.push("".to_string());
+                    }
+                }
+            }
+            if !line.is_empty() {
+                writer.write_record(line)?;
+            }
+        }
 
-        // let output = String::from_utf8(writer.into_inner()?)?;
+        let output = String::from_utf8(writer.into_inner()?)?;
 
-        // Ok(output)
+        Ok(output)
     }
 }
 
