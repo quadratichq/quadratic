@@ -10,9 +10,15 @@ const isColumnRowAvailable = ({ isAuthenticated }: ActionAvailabilityArgs) => {
   return !isEmbed && isAuthenticated;
 };
 
+const isColumnFinite = () => sheets.sheet.cursor.isSelectedColumnsFinite();
+const isColumnRowAvailableAndColumnFinite = (args: ActionAvailabilityArgs) =>
+  isColumnRowAvailable(args) && isColumnFinite();
+const isRowFinite = () => sheets.sheet.cursor.isSelectedRowsFinite();
+const isColumnRowAvailableAndRowFinite = (args: ActionAvailabilityArgs) => isColumnRowAvailable(args) && isRowFinite();
+
 const insertColumnLeft: ActionSpec<void> = {
   label: 'Insert column to the left',
-  isAvailable: isColumnRowAvailable,
+  isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddIcon,
   run: () =>
     quadraticCore.insertColumn(sheets.sheet.id, sheets.sheet.cursor.position.x, true, sheets.getCursorPosition()),
@@ -20,7 +26,7 @@ const insertColumnLeft: ActionSpec<void> = {
 
 const insertColumnRight: ActionSpec<void> = {
   label: 'Insert column to the right',
-  isAvailable: isColumnRowAvailable,
+  isAvailable: isColumnRowAvailableAndColumnFinite,
   Icon: AddIcon,
   run: () =>
     quadraticCore.insertColumn(sheets.sheet.id, sheets.sheet.cursor.position.x + 1, false, sheets.getCursorPosition()),
@@ -28,7 +34,7 @@ const insertColumnRight: ActionSpec<void> = {
 
 const deleteColumns: ActionSpec<void> = {
   label: 'Delete columns',
-  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated,
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isColumnFinite(),
   Icon: DeleteIcon,
   run: () => {
     const columns = sheets.sheet.cursor.getSelectedColumns();
@@ -38,14 +44,14 @@ const deleteColumns: ActionSpec<void> = {
 
 const insertRowAbove: ActionSpec<void> = {
   label: 'Insert row above',
-  isAvailable: isColumnRowAvailable,
+  isAvailable: isColumnRowAvailableAndRowFinite,
   Icon: AddIcon,
   run: () => quadraticCore.insertRow(sheets.sheet.id, sheets.sheet.cursor.position.y, true, sheets.getCursorPosition()),
 };
 
 const insertRowBelow: ActionSpec<void> = {
   label: 'Insert row below',
-  isAvailable: isColumnRowAvailable,
+  isAvailable: isColumnRowAvailableAndRowFinite,
   Icon: AddIcon,
   run: () =>
     quadraticCore.insertRow(sheets.sheet.id, sheets.sheet.cursor.position.y + 1, false, sheets.getCursorPosition()),
@@ -53,7 +59,7 @@ const insertRowBelow: ActionSpec<void> = {
 
 const deleteRows: ActionSpec<void> = {
   label: 'Delete rows',
-  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated,
+  isAvailable: ({ isAuthenticated }: ActionAvailabilityArgs) => !isEmbed && isAuthenticated && isRowFinite(),
   Icon: DeleteIcon,
   run: () => {
     const rows = sheets.sheet.cursor.getSelectedRows();
