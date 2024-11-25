@@ -145,4 +145,22 @@ impl GridController {
             row_start
         }
     }
+
+    #[wasm_bindgen(js_name = "finiteRectFromSelection")]
+    pub fn js_finite_rect_from_selection(&self, selection: String) -> Result<String, String> {
+        let selection =
+            serde_json::from_str::<A1Selection>(&selection).map_err(|e| e.to_string())?;
+        if selection.ranges.is_empty() || selection.ranges.len() > 1 {
+            return Err("Expected a single range in selection".to_string());
+        }
+        let sheet = self
+            .try_sheet(selection.sheet_id)
+            .ok_or_else(|| "Sheet not found".to_string())?;
+        let selection = sheet.finitize_selection(&selection);
+        if let Some(rect) = selection.ranges[0].to_rect() {
+            Ok(serde_json::to_string(&rect).map_err(|e| e.to_string())?)
+        } else {
+            Ok("".to_string())
+        }
+    }
 }

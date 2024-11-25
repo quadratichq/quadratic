@@ -45,6 +45,7 @@ import {
   ClientCoreUpgradeGridFile,
   CoreClientFindNextColumnForRect,
   CoreClientFindNextRowForRect,
+  CoreClientFiniteRectFromSelection,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
@@ -66,6 +67,7 @@ import {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
+import { Rectangle } from 'pixi.js';
 
 class QuadraticCore {
   private worker?: Worker;
@@ -1189,6 +1191,18 @@ class QuadraticCore {
       row,
       size,
       cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  finiteRectFromSelection(selection: string): Promise<Rectangle | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientFiniteRectFromSelection) => resolve(message.rect);
+      this.send({
+        type: 'clientCoreFiniteRectFromSelection',
+        id,
+        selection,
+      });
     });
   }
 

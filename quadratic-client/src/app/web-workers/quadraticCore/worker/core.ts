@@ -27,6 +27,7 @@ import {
   Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
+import { Rect } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -54,6 +55,7 @@ import {
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
+import { Rectangle } from 'pixi.js';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -1230,6 +1232,26 @@ class Core {
   getCellsA1(transactionId: string, a1: string, lineNumber?: number): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.calculationGetCellsA1(transactionId, a1, lineNumber);
+  }
+
+  finiteRectFromSelection(selection: string): Rectangle | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const rectStringified = this.gridController.finiteRectFromSelection(selection);
+    if (rectStringified) {
+      let rect: Rect;
+      try {
+        rect = JSON.parse(rectStringified) as Rect;
+      } catch (e) {
+        console.log('Error in finiteRectFromSelection', e);
+        return;
+      }
+      return new Rectangle(
+        Number(rect.min.x),
+        Number(rect.min.y),
+        Number(rect.max.x - rect.min.x) + 1,
+        Number(rect.max.y - rect.min.y) + 1
+      );
+    }
   }
 }
 

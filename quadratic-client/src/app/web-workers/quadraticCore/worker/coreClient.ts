@@ -645,6 +645,14 @@ class CoreClient {
         core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
         return;
 
+      case 'clientCoreFiniteRectFromSelection':
+        this.send({
+          type: 'coreClientFiniteRectFromSelection',
+          id: e.data.id,
+          rect: core.finiteRectFromSelection(e.data.selection),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

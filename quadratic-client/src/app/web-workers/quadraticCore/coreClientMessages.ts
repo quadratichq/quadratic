@@ -31,6 +31,7 @@ import {
 import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
 import { CodeRun } from '@/app/web-workers/CodeRun';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import { Rectangle } from 'pixi.js';
 
 //#region Initialize
 
@@ -1124,6 +1125,18 @@ export interface CoreClientClientMessage {
   error: boolean;
 }
 
+export interface ClientCoreFiniteRectFromSelection {
+  type: 'clientCoreFiniteRectFromSelection';
+  id: number;
+  selection: string;
+}
+
+export interface CoreClientFiniteRectFromSelection {
+  type: 'coreClientFiniteRectFromSelection';
+  id: number;
+  rect?: Rectangle;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1211,7 +1224,8 @@ export type ClientCoreMessage =
   | ClientCoreFindNextColumnForRect
   | ClientCoreFindNextRowForRect
   | ClientCoreMoveCodeCellVertically
-  | ClientCoreMoveCodeCellHorizontally;
+  | ClientCoreMoveCodeCellHorizontally
+  | ClientCoreFiniteRectFromSelection;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1281,4 +1295,5 @@ export type CoreClientMessage =
   | CoreClientFindNextColumnForRect
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically
-  | CoreClientMoveCodeCellHorizontally;
+  | CoreClientMoveCodeCellHorizontally
+  | CoreClientFiniteRectFromSelection;
