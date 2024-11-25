@@ -18,6 +18,7 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSummarizeSelectionResult,
   JsValidationWarning,
   SearchOptions,
   SheetBounds,
@@ -27,7 +28,7 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { JsSummarizeSelectionResult, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
+import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
 import { CodeRun } from '@/app/web-workers/CodeRun';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 
@@ -632,6 +633,11 @@ export interface CoreClientSetCursor {
   cursor: string;
 }
 
+export interface CoreClientSetCursorSelection {
+  type: 'coreClientSetCursorSelection';
+  selection: string;
+}
+
 export interface CoreClientSheetOffsets {
   type: 'coreClientSheetOffsets';
   sheetId: string;
@@ -931,11 +937,6 @@ export interface CoreClientMoveCodeCellHorizontally {
   id: number;
 }
 
-export interface CoreClientSetCursorSelection {
-  type: 'coreClientSetCursorSelection';
-  selection: string;
-}
-
 //#endregion
 
 export interface CoreClientImage {
@@ -1226,6 +1227,7 @@ export type CoreClientMessage =
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
   | CoreClientSetCursor
+  | CoreClientSetCursorSelection
   | CoreClientSheetOffsets
   | CoreClientUpgradeFile
   | CoreClientExport
@@ -1260,7 +1262,6 @@ export type CoreClientMessage =
   | CoreClientGetFormatRow
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
-  | CoreClientSetCursorSelection
   | CoreClientOfflineTransactionsApplied
   | CoreClientGetValidations
   | CoreClientSheetValidations

@@ -1,8 +1,7 @@
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+
 use crate::wasm_bindings::GridController;
 use crate::A1Selection;
-use wasm_bindgen::prelude::*;
-
-use super::JsSummarizeSelectionResult;
 
 #[wasm_bindgen]
 impl GridController {
@@ -12,12 +11,14 @@ impl GridController {
         &mut self,
         selection: String,
         max_decimals: i64,
-    ) -> Option<JsSummarizeSelectionResult> {
-        let Ok(selection) = serde_json::from_str::<A1Selection>(&selection) else {
-            dbgjs!("Unable to parse selection in core.summarizeSelection");
-            return None;
-        };
-        let sheet = self.try_sheet(selection.sheet_id)?;
-        sheet.summarize_selection(selection, max_decimals)
+    ) -> Result<JsValue, JsValue> {
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            let selection_summary = sheet.summarize_selection(selection, max_decimals);
+            Ok(serde_wasm_bindgen::to_value(&selection_summary).map_err(|e| e.to_string())?)
+        } else {
+            Ok(JsValue::null())
+        }
     }
 }

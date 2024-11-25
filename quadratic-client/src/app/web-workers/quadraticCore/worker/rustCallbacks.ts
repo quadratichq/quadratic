@@ -43,7 +43,7 @@ declare var self: WorkerGlobalScope &
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSetCursorSelection: (jsSelection: string) => void;
+    sendSetCursorSelection: (selection: string) => void;
     requestTransactions: (sequenceNum: number) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetOffsetsRender: (sheetId: string, offsets: JsOffset[]) => void;

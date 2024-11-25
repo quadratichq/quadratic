@@ -81,7 +81,7 @@ impl CellRefRange {
 
     /// Returns whether the range is **valid**.
     ///
-    /// A range is valid iff it can be represented using a nonempty string.
+    /// A range is valid if it can be represented using a nonempty string.
     pub fn is_valid(self) -> bool {
         self.start.col.is_some() || self.start.row.is_some() || self.end.is_some()
     }
@@ -291,6 +291,21 @@ impl CellRefRange {
             rows.extend(from..=to);
         }
         rows
+    }
+
+    /// Translates the range in place by the given delta.
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+        dbgjs!("todo(ayush): add tests for this");
+        self.start.translate(x, y);
+        self.end.as_mut().map(|end| end.translate(x, y));
+    }
+
+    /// Returns a new range translated by the given delta.
+    pub fn translate(&self, x: i64, y: i64) -> Self {
+        dbgjs!("todo(ayush): add tests for this");
+        let mut range = *self;
+        range.translate_in_place(x, y);
+        range
     }
 
     /// Returns a test range from the A1-string.

@@ -31,7 +31,6 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   debugTimeReset();
   const jsClipboard = await quadraticCore.copyToClipboard(sheets.getRustSelection());
   await toClipboard(jsClipboard.plainText, jsClipboard.html);
-  jsClipboard.free();
   debugTimeCheck('copy to clipboard');
 };
 
@@ -42,7 +41,6 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   debugTimeReset();
   const jsClipboard = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
   await toClipboard(jsClipboard.plainText, jsClipboard.html);
-  jsClipboard.free();
   debugTimeCheck('[Clipboard] cut to clipboard');
 };
 
@@ -106,7 +104,6 @@ export const cutToClipboard = async () => {
   debugTimeReset();
   const jsClipboard = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
   await toClipboard(jsClipboard.plainText, jsClipboard.html);
-  jsClipboard.free();
   debugTimeCheck('cut to clipboard (fallback)');
 };
 
@@ -114,7 +111,6 @@ export const copyToClipboard = async () => {
   debugTimeReset();
   const jsClipboard = await quadraticCore.copyToClipboard(sheets.getRustSelection());
   await toClipboard(jsClipboard.plainText, jsClipboard.html);
-  jsClipboard.free();
   debugTimeCheck('copy to clipboard');
 };
 

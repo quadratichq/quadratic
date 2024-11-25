@@ -19,7 +19,7 @@ impl GridController {
         selection: &A1Selection,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let ops = self.clear_format_selection_operations(&selection);
+        let ops = self.clear_format_selection_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }

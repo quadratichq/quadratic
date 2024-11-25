@@ -4,7 +4,7 @@ use regex::Regex;
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, ConnectionKind, SheetId},
-    A1Error, Pos, RunError, RunErrorMsg, SheetPos,
+    A1Error, RunError, RunErrorMsg, SheetPos,
 };
 
 use lazy_static::lazy_static;
@@ -18,15 +18,15 @@ impl GridController {
     /// Attempts to replace handlebars with the actual value from the grid
     fn replace_handlebars(
         &self,
-        transaction: &mut PendingTransaction,
+        _transaction: &mut PendingTransaction,
 
         // todo: do we need this?
         _sheet_pos: SheetPos,
         code: &str,
-        default_sheet_id: SheetId,
+        _default_sheet_id: SheetId,
     ) -> Result<String, A1Error> {
         let mut result = String::new();
-        let mut last_match_end = 0;
+        let last_match_end = 0;
 
         for cap in HANDLEBARS_REGEX.captures_iter(code) {
             let Some(whole_match) = cap.get(0) else {
@@ -35,9 +35,9 @@ impl GridController {
 
             result.push_str(&code[last_match_end..whole_match.start()]);
 
-            let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
+            let _content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
 
-            return todo!("a1 stuff -- only allow single cell!");
+            todo!("a1 stuff -- only allow single cell!");
 
             // let (range_type, sheet_name) = A1::to_a1_range_type(content)?;
 
@@ -133,7 +133,13 @@ impl GridController {
 mod tests {
     use serial_test::parallel;
 
-    use super::*;
+    use crate::{
+        controller::{
+            active_transactions::pending_transaction::PendingTransaction, GridController,
+        },
+        grid::{CodeCellLanguage, ConnectionKind, SheetId},
+        Pos, RunError, RunErrorMsg, SheetPos,
+    };
 
     #[test]
     #[parallel]

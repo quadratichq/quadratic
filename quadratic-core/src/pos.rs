@@ -69,6 +69,21 @@ impl Pos {
         let base = pos![A1];
         Some(CellRef::parse_a1(a1, base)?.resolve_from(base))
     }
+
+    /// Translates the pos in place by the given delta, clamping the result to the given min.
+    pub fn translate_in_place(&mut self, x: i64, y: i64, min_x: i64, min_y: i64) {
+        dbgjs!("todo(ayush): add tests for this");
+        self.x = (self.x + x).max(min_x);
+        self.y = (self.y + y).max(min_y);
+    }
+
+    /// Returns a new Pos translated by the given delta, clamping the result to the given min.
+    pub fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
+        dbgjs!("todo(ayush): add tests for this");
+        let mut pos = *self;
+        pos.translate_in_place(x, y, min_x, min_y);
+        pos
+    }
 }
 
 impl From<(i64, i64)> for Pos {
@@ -86,7 +101,7 @@ impl From<SheetPos> for Pos {
 }
 impl From<&str> for Pos {
     fn from(s: &str) -> Self {
-        Self::try_a1_string(&s).expect("invalid cell reference")
+        Self::try_a1_string(s).expect("invalid cell reference")
     }
 }
 
@@ -190,16 +205,16 @@ mod test {
     #[test]
     #[parallel]
     fn test_a1_string() {
-        let pos = Pos { x: 1, y: 2 };
+        let pos = Pos { x: 2, y: 2 };
         assert_eq!(pos.a1_string(), "B2");
-        let pos = Pos { x: 0, y: 0 };
-        assert_eq!(pos.a1_string(), "A0");
-        let pos = Pos { x: 26, y: 0 };
-        assert_eq!(pos.a1_string(), "AA0");
+        let pos = Pos { x: 1, y: 1 };
+        assert_eq!(pos.a1_string(), "A1");
         let pos = Pos { x: 26, y: 1 };
-        assert_eq!(pos.a1_string(), "AA1");
-        let pos = Pos { x: 26, y: -1 };
-        assert_eq!(pos.a1_string(), "AAn1");
+        assert_eq!(pos.a1_string(), "Z1");
+        let pos = Pos { x: 27, y: 2 };
+        assert_eq!(pos.a1_string(), "AA2");
+        let pos = Pos { x: 52, y: 3 };
+        assert_eq!(pos.a1_string(), "AZ3");
     }
 
     #[test]

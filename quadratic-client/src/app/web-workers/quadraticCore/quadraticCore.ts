@@ -19,15 +19,17 @@ import {
   Format,
   JsCellValue,
   JsCellValuePosAIContext,
+  JsClipboard,
   JsCodeCell,
   JsRenderCell,
+  JsSummarizeSelectionResult,
   PasteSpecial,
   SearchOptions,
   SheetPos,
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { JsClipboard, JsSummarizeSelectionResult, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
+import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
 import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
@@ -106,6 +108,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSetCursor') {
       events.emit('setCursor', e.data.cursor);
       return;
+    } else if (e.data.type === 'coreClientSetCursorSelection') {
+      events.emit('setCursor', e.data.selection);
+      return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
       events.emit('sheetOffsets', e.data.sheetId, e.data.offsets);
       return;
@@ -170,9 +175,6 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSheetMetaFills') {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
-      return;
-    } else if (e.data.type === 'coreClientSetCursorSelection') {
-      events.emit('setCursor', e.data.selection);
       return;
     } else if (e.data.type === 'coreClientSheetValidations') {
       events.emit('sheetValidations', e.data.sheetId, e.data.validations);

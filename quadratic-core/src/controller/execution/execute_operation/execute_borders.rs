@@ -1,12 +1,10 @@
 use crate::{
-    color::Rgba,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::sheet::borders::{BorderStyle, BorderStyleCellUpdate},
-    selection::OldSelection,
-    A1Selection, Pos, RunLengthEncoding,
+    grid::sheet::borders::BorderStyleCellUpdate,
+    selection::OldSelection, Pos, RunLengthEncoding,
 };
 
 impl GridController {

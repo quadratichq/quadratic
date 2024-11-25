@@ -1,10 +1,10 @@
-use crate::{grid::GridBounds, CellRefRange, CellRefRequest, Rect};
+use crate::{CellRefRange, Rect};
 
 use super::Sheet;
 
 impl Sheet {
     /// Resolves a cell reference to a `Rect`.
-    pub fn resolve_cell_ref(&self, cell_ref: CellRefRange) -> Option<Rect> {
+    pub fn resolve_cell_ref(&self, _cell_ref: CellRefRange) -> Option<Rect> {
         todo!("resolve reference for formulas")
 
         // match a1.cells {

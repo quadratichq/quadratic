@@ -228,6 +228,11 @@ impl A1Selection {
         self.cursor.a1_string()
     }
 
+    pub fn to_cursor_sheet_pos(&self) -> SheetPos {
+        dbgjs!("todo(ayush): add tests for this");
+        self.cursor.to_sheet_pos(self.sheet_id)
+    }
+
     /// Returns `true` on exactly the regions/cells that the range includes, and
     /// `false` or nothing elsewhere.
     pub fn subspaces(&self) -> A1Subspaces {
@@ -315,9 +320,17 @@ impl A1Selection {
 /// Returns the position from the last range (either the end, or if not defined,
 /// the start).
 fn cursor_pos_from_last_range(last_range: CellRefRange) -> Pos {
-    let range = last_range.start;
-    let x = range.col.map_or(1, |col| col.coord) as i64;
-    let y = range.row.map_or(1, |row| row.coord) as i64;
+    let default_coord = 1;
+    let x = last_range
+        .start
+        .col
+        .or_else(|| last_range.end.and_then(|end| end.col))
+        .map_or(default_coord, |col| col.coord) as i64;
+    let y = last_range
+        .start
+        .row
+        .or_else(|| last_range.end.and_then(|end| end.row))
+        .map_or(default_coord, |row| row.coord) as i64;
     Pos { x, y }
 }
 
@@ -337,7 +350,7 @@ mod tests {
         );
         assert_eq!(
             cursor_pos_from_last_range(CellRefRange::test("A1:C3")),
-            pos![C3]
+            pos![A1]
         );
     }
 
@@ -539,7 +552,7 @@ mod tests {
         };
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "A:E,J:L,O,1:5,10:12,15,A1:B2,C3:D4",
+            "A:E,J:L,O,1:5,10:12,15",
         );
     }
 

@@ -197,8 +197,8 @@ impl GridController {
             let cells = sheet.get_cells_response(*rect);
             CellA1Response {
                 cells,
-                x: rect.min.x as i64,
-                y: rect.min.y as i64,
+                x: rect.min.x,
+                y: rect.min.y,
                 w: rect.width() as i64,
                 h: rect.height() as i64,
             }

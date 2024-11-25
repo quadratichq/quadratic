@@ -3,23 +3,21 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    formulas::{replace_cell_references_with, CellRefCoord},
     grid::{GridBounds, SheetId},
-    CellValue, CodeCellValue,
 };
 
 impl GridController {
     fn adjust_formulas(
         &self,
-        transaction: &mut PendingTransaction,
-        sheet_id: SheetId,
-        sheet_name: String,
-        column: Option<i64>,
-        row: Option<i64>,
-        delta: i64,
+        _transaction: &mut PendingTransaction,
+        _sheet_id: SheetId,
+        _sheet_name: String,
+        _column: Option<i64>,
+        _row: Option<i64>,
+        _delta: i64,
     ) {
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_runs.iter().for_each(|(pos, code_run)| {
+            sheet.code_runs.iter().for_each(|(_pos, _code_run)| {
                 todo!("adjust formulas")
                 // if let Some(column) = column {
                 //     if code_run.cells_accessed.sheet_iter(sheet_id).any(|range| {
@@ -314,16 +312,11 @@ mod tests {
     use std::collections::HashMap;
 
     use serial_test::{parallel, serial};
-    use uuid::Uuid;
 
     use crate::{
-        grid::{
-            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
-            CodeCellLanguage,
-        },
-        selection::OldSelection,
+        grid::CodeCellLanguage,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
-        Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT,
+        CellValue, CodeCellValue, Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT,
     };
 
     use super::*;

@@ -18,7 +18,7 @@ impl A1Selection {
             // Remove just that one range
             let mut range = self.ranges.remove(i);
             let start_col = range.start.col.map(|col| col.coord);
-            let end_col = range.end.map(|end| end.col.map(|col| col.coord)).flatten();
+            let end_col = range.end.and_then(|end| end.col.map(|col| col.coord));
 
             if let (Some(start_col), Some(end_col)) = (start_col, end_col) {
                 // If the range is a single column, then nothing more to do
@@ -74,7 +74,7 @@ impl A1Selection {
             // Add the column if it wasn't found and set the cursor position
             self.ranges.push(CellRefRange::new_relative_column(col));
             self.cursor.x = col as i64;
-            self.cursor.y = top as i64;
+            self.cursor.y = top;
         }
     }
 
@@ -103,7 +103,7 @@ impl A1Selection {
             // Remove just that one range
             let mut range = self.ranges.remove(i);
             let start_row = range.start.row.map(|row| row.coord);
-            let end_row = range.end.map(|end| end.row.map(|row| row.coord)).flatten();
+            let end_row = range.end.and_then(|end| end.row.map(|row| row.coord));
 
             if let (Some(start_row), Some(end_row)) = (start_row, end_row) {
                 // If the range is a single row, then nothing more to do
@@ -150,7 +150,7 @@ impl A1Selection {
             // new range
             if self.ranges.is_empty() {
                 self.ranges.push(CellRefRange::new_relative_xy(
-                    left as u64,
+                    left,
                     self.cursor.y as u64,
                 ));
                 self.cursor.x = left as i64;
@@ -178,11 +178,11 @@ impl A1Selection {
             self.ranges.clear();
             self.ranges.push(CellRefRange::new_relative_column(col));
             self.cursor.x = col as i64;
-            self.cursor.y = top as i64;
+            self.cursor.y = top;
         } else if ctrl_key && !shift_key {
             self.add_or_remove_column(col, top);
         } else if shift_key {
-            self.extend_column(col as u64, top);
+            self.extend_column(col, top);
         }
     }
 
@@ -248,8 +248,8 @@ impl A1Selection {
 
     /// Moves the cursor to the given position and clears the selection.
     pub fn move_to(&mut self, x: i64, y: i64, append: bool) {
-        self.cursor.x = x as i64;
-        self.cursor.y = y as i64;
+        self.cursor.x = x;
+        self.cursor.y = y;
         if !append {
             self.ranges.clear();
         }
@@ -309,7 +309,7 @@ impl A1Selection {
         self.ranges.clear();
         self.ranges.push(CellRefRange {
             start: CellRefRangeEnd::new_relative_column(start),
-            end: end.map(|end| CellRefRangeEnd::new_relative_column(end)),
+            end: end.map(CellRefRangeEnd::new_relative_column),
         });
     }
 
@@ -337,7 +337,7 @@ impl A1Selection {
         self.ranges.clear();
         self.ranges.push(CellRefRange {
             start: CellRefRangeEnd::new_relative_row(start),
-            end: end.map(|end| CellRefRangeEnd::new_relative_row(end)),
+            end: end.map(CellRefRangeEnd::new_relative_row),
         });
     }
 }

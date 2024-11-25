@@ -15,14 +15,12 @@ impl A1Selection {
                     if range.might_intersect_rect(Rect { min: p1, max: p2 }) {
                         // do something
                     }
-                } else {
-                    if range.might_contain_pos(p1) {
-                        // do something
-                    }
+                } else if range.might_contain_pos(p1) {
+                    // do something
                 }
                 true
             }
-        })
+        });
     }
 }
 

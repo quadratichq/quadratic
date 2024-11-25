@@ -73,41 +73,61 @@ impl Sheet {
     pub fn cell_ref_range_to_rect(&self, cell_ref_range: CellRefRange) -> Rect {
         let CellRefRange { start, end } = cell_ref_range;
 
-        let start_col = start.col.map_or(1, |c| c.coord) as i64;
-        let start_row = start.row.map_or(1, |r| r.coord) as i64;
-        let start = Pos {
-            x: start_col,
-            y: start_row,
+        let rect_start = Pos {
+            x: start.col.map_or(1, |c| c.coord) as i64,
+            y: start.row.map_or(1, |r| r.coord) as i64,
         };
 
         let ignore_bounds = false;
         let bounds = match self.bounds(ignore_bounds) {
-            GridBounds::Empty => Rect::single_pos(start),
+            GridBounds::Empty => Rect::single_pos(rect_start),
             GridBounds::NonEmpty(rect) => rect,
         };
-        let end_col = end.and_then(|end| end.col).map(|r| r.coord as i64);
-        let end_row = end.and_then(|end| end.row).map(|r| r.coord as i64);
 
-        let end = Pos {
-            x: end_col.unwrap_or_else(|| {
-                let a = start_row;
-                let b = end_row.unwrap_or(bounds.max.y);
-                match self.rows_bounds(std::cmp::min(a, b), std::cmp::max(a, b), ignore_bounds) {
-                    Some((_lo, hi)) => hi,
-                    None => start_row,
+        let rect_end = match end {
+            // if there is an end, then calculate the end, goes up to bounds.max if infinite
+            Some(end) => {
+                let end_col = end.col.map(|c| c.coord as i64);
+                let end_row = end.row.map(|r| r.coord as i64);
+                Pos {
+                    x: end_col.unwrap_or_else(|| {
+                        let a = rect_start.y;
+                        let b = end_row.unwrap_or(bounds.max.y);
+                        // get max column for the range of rows
+                        self.rows_bounds(std::cmp::min(a, b), std::cmp::max(a, b), ignore_bounds)
+                            .map_or(rect_start.x, |(_, hi)| hi)
+                    }),
+                    y: end_row.unwrap_or_else(|| {
+                        let a = rect_start.x;
+                        let b = end_col.unwrap_or(bounds.max.y);
+                        // get max row for the range of columns
+                        self.columns_bounds(std::cmp::min(a, b), std::cmp::max(a, b), ignore_bounds)
+                            .map_or(rect_start.y, |(_, hi)| hi)
+                    }),
                 }
-            }),
-            y: end_col.unwrap_or_else(|| {
-                let a = start_col;
-                let b = end_col.unwrap_or(bounds.max.y);
-                match self.columns_bounds(std::cmp::min(a, b), std::cmp::max(a, b), ignore_bounds) {
-                    Some((_lo, hi)) => hi,
-                    None => start_col,
-                }
-            }),
+            }
+            // if no end, build end same as start, if start is infinite then end is infinite
+            None => match (start.col, start.row) {
+                (None, None) => bounds.max,
+                (Some(_), None) => Pos {
+                    x: rect_start.x,
+                    // get max column for the row
+                    y: self
+                        .column_bounds(rect_start.x, ignore_bounds)
+                        .map_or(rect_start.y, |(_, hi)| hi),
+                },
+                (None, Some(_)) => Pos {
+                    // get max row for the column
+                    x: self
+                        .row_bounds(rect_start.y, ignore_bounds)
+                        .map_or(rect_start.x, |(_, hi)| hi),
+                    y: rect_start.y,
+                },
+                (Some(_), Some(_)) => rect_start,
+            },
         };
 
-        Rect::new_span(start, end)
+        Rect::new_span(rect_start, rect_end)
     }
 
     /// Resolves a selection to a union of rectangles. This is important for

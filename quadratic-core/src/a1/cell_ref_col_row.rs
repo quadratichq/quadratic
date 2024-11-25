@@ -5,7 +5,7 @@ impl CellRefRange {
     ///
     /// Note: this does not handle the case where the deleted column is the same
     /// as self's column(s). That has to be handled one step above this call.
-    pub fn removed_column(&mut self, column: u64) -> bool {
+    pub fn removed_column(&mut self, _column: u64) -> bool {
         todo!()
         // let mut changed = false;
 
@@ -95,24 +95,28 @@ impl CellRefRange {
         // Check if the start row needs to be adjusted
         if let Some(start_row) = self.start.row.as_mut() {
             // handle the case where the row being removed is the same as the start row
-            if start_row.coord == row {
-                if let Some(end) = self.end.as_mut() {
-                    if end.row.is_some_and(|r| r.coord == row) {
-                        self.end = None;
+            match start_row.coord.cmp(&row) {
+                std::cmp::Ordering::Equal => {
+                    if let Some(end) = self.end.as_mut() {
+                        if end.row.is_some_and(|r| r.coord == row) {
+                            self.end = None;
+                        } else {
+                            start_row.coord -= 1;
+                        }
+                    } else {
+                        self.start.row = None;
+                    }
+                }
+                std::cmp::Ordering::Greater => {
+                    // this should not happen
+                    if start_row.coord <= 1 {
+                        self.start.row = None;
                     } else {
                         start_row.coord -= 1;
                     }
-                } else {
-                    self.start.row = None;
+                    changed = true;
                 }
-            } else if start_row.coord > row {
-                // this should not happen
-                if start_row.coord <= 1 {
-                    self.start.row = None;
-                } else {
-                    start_row.coord -= 1;
-                }
-                changed = true;
+                std::cmp::Ordering::Less => {}
             }
         }
 
@@ -154,11 +158,11 @@ mod tests {
     #[test]
     fn test_removed_column() {
         let mut range = CellRefRange::test("A1:B2");
-        assert_eq!(range.removed_column(1), true);
+        assert!(range.removed_column(1));
         assert_eq!(range, CellRefRange::test("A1:A2"));
 
         range = CellRefRange::test("D2:E5");
-        assert_eq!(range.removed_column(1), true);
+        assert!(range.removed_column(1));
         assert_eq!(range, CellRefRange::test("C2:D5"));
     }
 }

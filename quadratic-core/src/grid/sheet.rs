@@ -67,7 +67,7 @@ pub struct Sheet {
     // the fill_color, which is used to determine the z-order for overlapping
     // column and row fills.
     //
-    // TODO: newtype for timestamp, or change this to an infinite range along
+    // TODO: new type for timestamp, or change this to an infinite range along
     // the column
     #[serde(
         skip_serializing_if = "BTreeMap::is_empty",

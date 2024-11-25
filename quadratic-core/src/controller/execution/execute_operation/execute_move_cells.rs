@@ -6,7 +6,7 @@ use crate::{
         operations::{clipboard::PasteSpecial, operation::Operation},
         GridController,
     },
-    selection::OldSelection,
+    A1Selection,
 };
 
 impl GridController {
@@ -19,11 +19,11 @@ impl GridController {
             // easily implement cut/paste/move without resorting to this
             // approach.
             let mut operations = VecDeque::new();
-            let selection = OldSelection::rect(source.into(), source.sheet_id);
+            let selection = A1Selection::from_rect(source);
             if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection) {
                 operations.extend(cut_ops);
                 if let Ok(paste_ops) = self.paste_html_operations(
-                    &OldSelection::sheet_rect(dest.into()),
+                    &A1Selection::from_single_cell(dest),
                     js_clipboard.html,
                     PasteSpecial::None,
                 ) {

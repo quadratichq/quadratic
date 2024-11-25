@@ -9,16 +9,12 @@ impl GridController {
     /// exports a CSV string from a selection on the grid.
     ///
     /// Returns a [`String`].
-    pub fn export_csv_selection(&self, selection: A1Selection) -> Result<String> {
+    pub fn export_csv_selection(&self, selection: &A1Selection) -> Result<String> {
         let sheet = self
             .try_sheet(selection.sheet_id)
             .context("Sheet not found")?;
-        let rects = sheet.selection_to_rects(&selection);
-        if rects.is_empty() || rects.len() > 1 {
-            return Err(anyhow::anyhow!("Invalid selection"));
-        }
-        let bounds = rects[0];
-        let values = sheet.selection_sorted_vec(&selection, false);
+        let bounds = sheet.selection_bounds(selection).context("No values")?;
+        let values = sheet.selection_sorted_vec(selection, false);
         let mut writer = Writer::from_writer(vec![]);
         let mut iter = values.iter();
         for y in bounds.min.y..=bounds.max.y {
@@ -38,9 +34,7 @@ impl GridController {
                 writer.write_record(line)?;
             }
         }
-
         let output = String::from_utf8(writer.into_inner()?)?;
-
         Ok(output)
     }
 }
@@ -71,7 +65,7 @@ mod tests {
             }
         }
 
-        let result = gc.export_csv_selection(selected).unwrap();
+        let result = gc.export_csv_selection(&selected).unwrap();
         let expected = "1,2,3,4\n5,6,7,8\n9,10,11,12\n13,14,15,16\n";
 
         assert_eq!(&result, expected);

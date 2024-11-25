@@ -29,8 +29,8 @@ pub fn import_selection(selection: current::A1SelectionSchema) -> A1Selection {
         // todo: handle error more gracefully
         sheet_id: SheetId::from_str(&selection.sheet_id.to_string()).unwrap(),
         cursor: Pos {
-            x: selection.cursor.x as i64,
-            y: selection.cursor.y as i64,
+            x: selection.cursor.x,
+            y: selection.cursor.y,
         },
         ranges: selection
             .ranges
@@ -64,8 +64,8 @@ pub fn export_selection(selection: A1Selection) -> current::A1SelectionSchema {
     current::A1SelectionSchema {
         sheet_id: selection.sheet_id.to_string().into(),
         cursor: current::PosSchema {
-            x: selection.cursor.x as i64,
-            y: selection.cursor.y as i64,
+            x: selection.cursor.x,
+            y: selection.cursor.y,
         },
         ranges: selection
             .ranges

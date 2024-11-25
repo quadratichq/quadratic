@@ -20,7 +20,7 @@ pub struct ValidationList {
 impl ValidationList {
     /// Compares all CellValues within a Selection to the provided CellValue.
     fn validate_selection(sheet: &Sheet, selection: &A1Selection, value: &CellValue) -> bool {
-        if let Some(values) = sheet.selection(selection, None, false, true) {
+        if let Some(values) = sheet.selection_values(selection, None, false, true) {
             values.iter().any(|(_, search)| *search == value)
         } else {
             false
@@ -48,7 +48,7 @@ impl ValidationList {
         }
         match &self.source {
             ValidationListSource::Selection(selection) => {
-                let values = sheet.selection(selection, None, false, false)?;
+                let values = sheet.selection_values(selection, None, false, false)?;
                 Some(
                     values
                         .values()

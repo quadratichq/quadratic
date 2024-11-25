@@ -3,7 +3,6 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
-use wasm_bindgen::prelude::*;
 
 use super::cells_accessed::JsCellsAccessed;
 use super::formats::format::Format;
@@ -226,12 +225,10 @@ pub enum JsRenderCodeCellState {
     Success,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[serde(rename_all = "camelCase")]
 pub struct JsClipboard {
-    #[wasm_bindgen(getter_with_clone, js_name = plainText)]
     pub plain_text: String,
-    #[wasm_bindgen(getter_with_clone)]
     pub html: String,
 }
 
@@ -285,7 +282,6 @@ pub struct JsValidationWarning {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
-#[wasm_bindgen]
 pub struct JsSummarizeSelectionResult {
     pub count: i64,
     pub sum: Option<f64>,

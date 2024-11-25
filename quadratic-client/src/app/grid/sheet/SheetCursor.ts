@@ -65,8 +65,8 @@ export class SheetCursor {
     return this.jsSelection.save();
   }
 
-  load(jsSelectionString: string): void {
-    this.jsSelection = JsSelection.load(jsSelectionString);
+  load(selectionString: string): void {
+    this.jsSelection = JsSelection.load(selectionString);
     multiplayer.sendSelection(this.save());
     pixiApp.cursor.dirty = true;
   }

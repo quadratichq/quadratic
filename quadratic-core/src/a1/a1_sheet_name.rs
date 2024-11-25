@@ -15,9 +15,9 @@ pub type SheetNameIdMap = HashMap<String, SheetId>;
 /// not contain `!`, then this function returns `Ok((None, _))`. If the string
 /// does contain `!`, then the left side is parsed as a sheet name that may be
 /// quoted or unquoted.
-pub(crate) fn parse_optional_sheet_name<'a>(
-    a1: &'a str,
-) -> Result<(Option<String>, &'a str), A1Error> {
+pub(crate) fn parse_optional_sheet_name(
+    a1: &str,
+) -> Result<(Option<String>, &str), A1Error> {
     let Some((sheet_name, rest)) = a1.rsplit_once('!') else {
         return Ok((None, a1));
     };
@@ -48,14 +48,7 @@ pub(crate) fn parse_optional_sheet_name_to_id<'a>(
     let (sheet_name, rest) = parse_optional_sheet_name(a1)?;
     let sheet_id = match sheet_name {
         Some(sheet_name) => *sheet_map
-            .iter()
-            .find_map(|(name, id)| {
-                if crate::util::case_fold(name) == crate::util::case_fold(&sheet_name) {
-                    Some(id)
-                } else {
-                    None
-                }
-            })
+            .get(&sheet_name)
             .ok_or(A1Error::InvalidSheetName(sheet_name))?,
         None => default_sheet_id.to_owned(),
     };

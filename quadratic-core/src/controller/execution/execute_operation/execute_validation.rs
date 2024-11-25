@@ -54,44 +54,43 @@ impl GridController {
     // Applies a Validation to the selection and adds necessary ops to the transaction.
     fn apply_validation_warnings(
         &mut self,
-        _transaction: &mut PendingTransaction,
-        _sheet_id: SheetId,
-        _validation: Validation,
-        _client_warnings: &mut HashMap<Pos, JsValidationWarning>,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        validation: Validation,
+        client_warnings: &mut HashMap<Pos, JsValidationWarning>,
     ) {
-        todo!();
-        // if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-        //     let mut warnings = vec![];
-        //     if let Some(values) = sheet.selection(&validation.selection, None, false, true) {
-        //         values.iter().for_each(|(pos, _)| {
-        //             if let Some(validation) = sheet.validations.validate(sheet, *pos) {
-        //                 warnings.push((*pos, validation.id));
-        //             }
-        //         });
-        //     }
-        //     warnings.iter().for_each(|(pos, validation_id)| {
-        //         let sheet_pos = pos.to_sheet_pos(sheet_id);
-        //         let old = sheet
-        //             .validations
-        //             .set_warning(sheet_pos, Some(*validation_id));
-        //         transaction
-        //             .forward_operations
-        //             .push(Operation::SetValidationWarning {
-        //                 sheet_pos,
-        //                 validation_id: Some(validation.id),
-        //             });
-        //         transaction.reverse_operations.push(old);
-        //         client_warnings.insert(
-        //             *pos,
-        //             JsValidationWarning {
-        //                 x: pos.x,
-        //                 y: pos.y,
-        //                 style: Some(validation.error.style.clone()),
-        //                 validation: Some(*validation_id),
-        //             },
-        //         );
-        //     });
-        // }
+        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+            let mut warnings = vec![];
+            if let Some(values) = sheet.selection_values(&validation.selection, None, false, true) {
+                values.iter().for_each(|(pos, _)| {
+                    if let Some(validation) = sheet.validations.validate(sheet, *pos) {
+                        warnings.push((*pos, validation.id));
+                    }
+                });
+            }
+            warnings.iter().for_each(|(pos, validation_id)| {
+                let sheet_pos = pos.to_sheet_pos(sheet_id);
+                let old = sheet
+                    .validations
+                    .set_warning(sheet_pos, Some(*validation_id));
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidationWarning {
+                        sheet_pos,
+                        validation_id: Some(validation.id),
+                    });
+                transaction.reverse_operations.push(old);
+                client_warnings.insert(
+                    *pos,
+                    JsValidationWarning {
+                        x: pos.x,
+                        y: pos.y,
+                        style: Some(validation.error.style.clone()),
+                        validation: Some(*validation_id),
+                    },
+                );
+            });
+        }
     }
 
     pub(crate) fn execute_set_validation(

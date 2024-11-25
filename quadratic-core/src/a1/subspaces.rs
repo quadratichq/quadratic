@@ -181,7 +181,7 @@ impl A1Subspaces {
         for new_rect in rects {
             let mut new_rects: SmallVec<[Rect; 1]> = smallvec![new_rect];
             let subtract_from_each =
-                |rect_list: &[Rect], r| rect_list.into_iter().flat_map(|q| q.subtract(r)).collect();
+                |rect_list: &[Rect], r| rect_list.iter().flat_map(|q| q.subtract(r)).collect();
 
             if let Some(all) = self.all {
                 if new_rect.max.x >= all.x && new_rect.max.y >= all.y {

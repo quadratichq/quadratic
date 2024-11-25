@@ -27,7 +27,7 @@ pub fn column_name(mut column: u64) -> String {
 pub fn column_from_name(s: &str) -> Option<u64> {
     fn digit(c: char) -> Option<u8> {
         let c = c.to_ascii_uppercase();
-        ('A'..='Z').contains(&c).then(|| c as u8 - b'A')
+        c.is_ascii_uppercase().then(|| c as u8 - b'A')
     }
 
     let mut ret = 0_u64;

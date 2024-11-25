@@ -158,8 +158,8 @@ impl Borders {
     /// Sets the borders for a selection.
     pub fn set_borders_a1(
         &mut self,
-        subspaces: &A1Subspaces,
-        borders: &BorderStyleCellUpdates,
+        _subspaces: &A1Subspaces,
+        _borders: &BorderStyleCellUpdates,
     ) -> Vec<Operation> {
         // let mut undo = vec![];
         // let mut undo_borders = RunLengthEncoding::new();
@@ -235,7 +235,7 @@ mod tests {
     fn set_borders() {
         let sheet_id = SheetId::test();
         let mut borders = Borders::default();
-        let selection = OldSelection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id)).into();
+        let selection = OldSelection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id));
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 10 * 10);
         borders.set_borders_selection(&selection, &value);
 
@@ -255,7 +255,7 @@ mod tests {
     fn set_borders_erase() {
         let sheet_id = SheetId::test();
         let mut borders = Borders::default();
-        let selection = OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)).into();
+        let selection = OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1);
         borders.set_borders_selection(&selection, &value);
 
@@ -278,14 +278,14 @@ mod tests {
     #[test]
     #[parallel]
     fn set_borders_all() {
-        let sheet_id = SheetId::test();
-        let mut borders = Borders::default();
-        assert!(borders.all.left.is_none());
-        assert!(borders.all.right.is_none());
-        assert!(borders.all.top.is_none());
-        assert!(borders.all.bottom.is_none());
-
         todo!();
+
+        // let sheet_id = SheetId::test();
+        // let mut borders = Borders::default();
+        // assert!(borders.all.left.is_none());
+        // assert!(borders.all.right.is_none());
+        // assert!(borders.all.top.is_none());
+        // assert!(borders.all.bottom.is_none());
 
         // borders.set_borders_a1(
         //     &A1Subspaces::All(sheet_id),

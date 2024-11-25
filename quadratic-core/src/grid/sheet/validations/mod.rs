@@ -121,7 +121,7 @@ impl Validations {
             v.selection.ranges.iter().for_each(|range| {
                 if !range.is_finite() {
                     displays.push(ValidationDisplay {
-                        range: range.clone(),
+                        range: *range,
                         checkbox: v.rule.is_logical(),
                         list: v.rule.is_list(),
                     });

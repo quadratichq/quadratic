@@ -9,8 +9,8 @@ impl A1Selection {
         let mut ranges_to_delete = Vec::new();
         self.ranges.iter_mut().for_each(|range| {
             // if the range is only in the deleted column, then mark it for deletion
-            if !range.end.is_some() && range.start.col.is_some_and(|col| col.coord == column) {
-                ranges_to_delete.push(range.clone());
+            if range.end.is_none() && range.start.col.is_some_and(|col| col.coord == column) {
+                ranges_to_delete.push(*range);
             } else {
                 changed |= range.removed_column(column);
             }
@@ -56,8 +56,19 @@ impl A1Selection {
         changed
     }
 
-    pub fn translate_in_place(&mut self, _x: i64, _y: i64) {
-        unimplemented!()
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+        dbgjs!("todo(ayush): add tests for this");
+        self.cursor.translate_in_place(x, y, 1, 1);
+        self.ranges.iter_mut().for_each(|range| {
+            range.translate_in_place(x, y);
+        });
+    }
+
+    pub fn translate(&self, x: i64, y: i64) -> Self {
+        dbgjs!("todo(ayush): add tests for this");
+        let mut selection = self.clone();
+        selection.translate_in_place(x, y);
+        selection
     }
 }
 
@@ -69,11 +80,11 @@ mod tests {
     #[test]
     fn test_removed_column() {
         let mut selection = A1Selection::test("A1:B2");
-        assert_eq!(selection.removed_column(1), true);
+        assert!(selection.removed_column(1));
         assert_eq!(selection, A1Selection::test("A1"));
 
         selection = A1Selection::test("A1");
-        assert_eq!(selection.removed_column(1), true);
+        assert!(selection.removed_column(1));
         assert!(selection.ranges.is_empty());
     }
 }

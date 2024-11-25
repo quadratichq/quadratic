@@ -257,7 +257,7 @@ pub struct RenderSize {
 impl Arbitrary for RenderSize {
     type Parameters = ();
 
-    fn arbitrary_with(args: Self::Parameters) -> Self::Strategy {
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
         (u8::arbitrary(), u8::arbitrary()).prop_map(|(w, h)| RenderSize {
             w: w.to_string(),
             h: h.to_string(),

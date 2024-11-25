@@ -102,10 +102,9 @@ class Sheets {
     pixiApp.multiplayerCursor.dirty = true;
   };
 
-  private setCursor = (selectionStringified?: string) => {
-    if (selectionStringified !== undefined) {
+  private setCursor = (selection?: string) => {
+    if (selection !== undefined) {
       try {
-        const selection = JSON.parse(selectionStringified);
         this.sheet.cursor.load(selection);
       } catch (e) {
         console.error('Error loading cursor', e);
@@ -294,7 +293,7 @@ class Sheets {
   }
 
   getCursorPosition(): string {
-    return JSON.stringify(this.sheet.cursor.save());
+    return this.sheet.cursor.save();
   }
 
   getMultiplayerSelection(): string {

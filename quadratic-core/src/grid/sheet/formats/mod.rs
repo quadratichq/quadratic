@@ -96,9 +96,9 @@ impl Sheet {
 
     pub fn set_formats_a1(
         &mut self,
-        sheet_id: SheetId,
-        subspaces: &A1Subspaces,
-        formats: &Formats,
+        _sheet_id: SheetId,
+        _subspaces: &A1Subspaces,
+        _formats: &Formats,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         // if selection.all {
         //     self.set_format_all(formats)

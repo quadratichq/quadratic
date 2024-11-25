@@ -19,6 +19,7 @@ impl CellRefCoord {
         }
         write!(f, "{}", super::column_name(self.coord))
     }
+
     pub(crate) fn fmt_as_row(self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.is_absolute {
             write!(f, "$")?;
@@ -30,16 +31,14 @@ impl CellRefCoord {
         let is_absolute = false;
         Self { coord, is_absolute }
     }
+
     pub fn new_abs(coord: u64) -> Self {
         let is_absolute = true;
         Self { coord, is_absolute }
     }
-    pub fn expand(self, delta: i64) -> Self {
-        let coord = if delta + self.coord as i64 <= 0 {
-            1
-        } else {
-            self.coord as i64 + delta
-        } as u64;
+
+    pub fn translate(self, delta: i64) -> Self {
+        let coord = (self.coord as i64 + delta).max(1) as u64;
         Self {
             coord,
             is_absolute: self.is_absolute,
@@ -82,12 +81,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_expand() {
+    fn test_translate() {
         assert_eq!(
-            CellRefCoord::new_rel(1).expand(-1),
+            CellRefCoord::new_rel(1).translate(-1),
             CellRefCoord::new_rel(1)
         );
-        assert_eq!(CellRefCoord::new_rel(1).expand(1), CellRefCoord::new_rel(2));
+        assert_eq!(
+            CellRefCoord::new_rel(1).translate(1),
+            CellRefCoord::new_rel(2)
+        );
     }
 
     #[test]

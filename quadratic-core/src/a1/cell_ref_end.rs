@@ -106,19 +106,23 @@ impl CellRefRangeEnd {
         let col = Some(CellRefCoord::new_rel(x));
         CellRefRangeEnd { col, row: None }
     }
+
     pub fn new_relative_row(y: u64) -> Self {
         let row = Some(CellRefCoord::new_rel(y));
         CellRefRangeEnd { col: None, row }
     }
-    pub fn expand(self, delta_x: i64, delta_y: i64) -> Self {
+
+    pub fn translate(self, delta_x: i64, delta_y: i64) -> Self {
         CellRefRangeEnd {
-            col: self.col.map(|c| c.expand(delta_x)),
-            row: self.row.map(|r| r.expand(delta_y)),
+            col: self.col.map(|c| c.translate(delta_x)),
+            row: self.row.map(|r| r.translate(delta_y)),
         }
     }
+
     pub fn is_multi_range(&self) -> bool {
         self.col.is_none() || self.row.is_none()
     }
+
     pub fn is_pos(&self, pos: Pos) -> bool {
         self.col.map_or(false, |col| col.coord == pos.x as u64)
             && self.row.map_or(false, |row| row.coord == pos.y as u64)
@@ -202,12 +206,15 @@ mod tests {
     }
 
     #[test]
-    fn test_expand() {
+    fn test_translate() {
         let ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
-        assert_eq!(ref_end.expand(1, 2), CellRefRangeEnd::new_relative_xy(2, 3));
+        assert_eq!(
+            ref_end.translate(1, 2),
+            CellRefRangeEnd::new_relative_xy(2, 3)
+        );
         let ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
         assert_eq!(
-            ref_end.expand(-1, -1),
+            ref_end.translate(-1, -1),
             CellRefRangeEnd::new_relative_xy(1, 2)
         );
     }

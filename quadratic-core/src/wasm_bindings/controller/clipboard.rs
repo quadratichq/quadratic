@@ -3,10 +3,8 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
     controller::{operations::clipboard::PasteSpecial, GridController},
-    grid::js_types::JsClipboard,
     grid::SheetId,
-    selection::OldSelection,
-    SheetPos, SheetRect,
+    A1Selection, SheetPos, SheetRect,
 };
 
 use super::Pos;
@@ -15,10 +13,12 @@ use super::Pos;
 impl GridController {
     /// Returns the clipboard [`JsClipboard`]
     #[wasm_bindgen(js_name = "copyToClipboard")]
-    pub fn js_copy_to_clipboard(&self, selection: String) -> Result<JsClipboard, JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
+    pub fn js_copy_to_clipboard(&self, selection: String) -> Result<JsValue, JsValue> {
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
         let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
-        Ok(sheet.copy_to_clipboard(&selection)?)
+        let js_clipboard = sheet.copy_to_clipboard(&selection)?;
+        Ok(serde_wasm_bindgen::to_value(&js_clipboard).map_err(|e| e.to_string())?)
     }
 
     /// Returns the clipboard [`JsClipboard`]
@@ -27,9 +27,11 @@ impl GridController {
         &mut self,
         selection: String,
         cursor: Option<String>,
-    ) -> Result<JsClipboard, JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        Ok(self.cut_to_clipboard(&selection, cursor)?)
+    ) -> Result<JsValue, JsValue> {
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        let js_clipboard = self.cut_to_clipboard(&selection, cursor)?;
+        Ok(serde_wasm_bindgen::to_value(&js_clipboard).map_err(|e| e.to_string())?)
     }
 
     #[wasm_bindgen(js_name = "pasteFromClipboard")]
@@ -50,7 +52,8 @@ impl GridController {
         } else {
             return Err(JsValue::from_str("Invalid special"));
         };
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
         self.paste_from_clipboard(&selection, plain_text, html, special, cursor);
         Ok(())
     }

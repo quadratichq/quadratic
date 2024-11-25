@@ -203,33 +203,9 @@ impl OldSelection {
 
     // Translates the selection and returns a new selection.
     pub fn translate(&self, delta_x: i64, delta_y: i64) -> OldSelection {
-        OldSelection {
-            x: self.x + delta_x,
-            y: self.y + delta_y,
-            columns: self
-                .columns
-                .as_ref()
-                .map(|c| c.iter().map(|x| x + delta_x).collect()),
-            rows: self
-                .rows
-                .as_ref()
-                .map(|r| r.iter().map(|y| y + delta_y).collect()),
-            rects: self.rects.as_ref().map(|r| {
-                r.iter()
-                    .map(|rect| Rect {
-                        min: Pos {
-                            x: rect.min.x + delta_x,
-                            y: rect.min.y + delta_y,
-                        },
-                        max: Pos {
-                            x: rect.max.x + delta_x,
-                            y: rect.max.y + delta_y,
-                        },
-                    })
-                    .collect()
-            }),
-            ..self.clone()
-        }
+        let mut selection = self.clone();
+        selection.translate_in_place(delta_x, delta_y);
+        selection
     }
 
     /// Determines whether the Selection is empty.

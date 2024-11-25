@@ -5,10 +5,10 @@ use controller::execution::run_code::get_cells::CellA1Response;
 use controller::operations::clipboard::PasteSpecial;
 use grid::formats::format::Format;
 use grid::js_types::{
-    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsCodeCell,
-    JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-    JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
-    JsValidationWarning,
+    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
+    JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
+    JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
+    JsSummarizeSelectionResult, JsValidationWarning,
 };
 use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use grid::sheet::validations::validation::{
@@ -88,6 +88,7 @@ fn main() {
         JsCellValue,
         JsCellValuePos,
         JsCellValuePosAIContext,
+        JsClipboard,
         JsCodeCell,
         JsCodeResult,
         JsCoordinate,
@@ -103,6 +104,7 @@ fn main() {
         JsReturnInfo,
         JsRowHeight,
         JsSheetFill,
+        JsSummarizeSelectionResult,
         JsValidationWarning,
         NumberRange,
         NumericFormat,

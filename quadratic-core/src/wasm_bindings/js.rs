@@ -424,15 +424,6 @@ pub fn jsSetCursorSelection(selection: String) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSetCursorA1(selection: String) {
-    TEST_ARRAY
-        .lock()
-        .unwrap()
-        .push(TestFunction::new("jsSetCursorA1", selection));
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
 pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/) {
     TEST_ARRAY
         .lock()

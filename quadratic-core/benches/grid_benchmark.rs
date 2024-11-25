@@ -5,7 +5,6 @@ use quadratic_core::grid::formats::format_update::FormatUpdate;
 use quadratic_core::grid::formats::Formats;
 use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::grid::{CellAlign, Grid};
-use quadratic_core::selection::OldSelection;
 use quadratic_core::{A1Selection, Pos, Rect, SheetRect};
 use std::time::Duration;
 
@@ -58,13 +57,15 @@ fn criterion_benchmark(c: &mut Criterion) {
                 max: Pos { x: 10, y: 10 },
                 sheet_id,
             };
-            let pos = Pos { x: 10000, y: 10000 };
+
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let JsClipboard { plain_text, html } = sheet
-                .copy_to_clipboard(&OldSelection::sheet_rect(sheet_rect))
+                .copy_to_clipboard(&A1Selection::from_rect(sheet_rect))
                 .unwrap();
+
+            let pos = Pos { x: 10000, y: 10000 };
             gc.paste_from_clipboard(
-                &OldSelection::rect(pos.into(), sheet_id),
+                &A1Selection::from_xy(pos.x, pos.y, sheet_id),
                 Some(plain_text),
                 Some(html),
                 PasteSpecial::None,
@@ -82,13 +83,15 @@ fn criterion_benchmark(c: &mut Criterion) {
                 max: Pos { x: 100, y: 100 },
                 sheet_id,
             };
-            let pos = Pos { x: 10000, y: 10000 };
+
             let sheet = gc.try_sheet(sheet_id).unwrap();
             let JsClipboard { plain_text, html } = sheet
-                .copy_to_clipboard(&OldSelection::sheet_rect(sheet_rect))
+                .copy_to_clipboard(&A1Selection::from_rect(sheet_rect))
                 .unwrap();
+
+            let pos = Pos { x: 10000, y: 10000 };
             gc.paste_from_clipboard(
-                &OldSelection::rect(pos.into(), sheet_id),
+                &A1Selection::from_xy(pos.x, pos.y, sheet_id),
                 Some(plain_text),
                 Some(html),
                 PasteSpecial::None,

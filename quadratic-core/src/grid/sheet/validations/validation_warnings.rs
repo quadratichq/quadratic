@@ -39,9 +39,8 @@ mod tests {
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Sheet, SheetId,
+            Sheet,
         },
-        selection::OldSelection,
         A1Selection,
     };
 

@@ -118,7 +118,7 @@ impl A1Selection {
     // Converts to a set of quadrant positions.
     pub fn rects_to_hashes(&self, sheet: &Sheet) -> HashSet<Pos> {
         let mut hashes = HashSet::new();
-        let finite_selection = sheet.finitize_selection(&self);
+        let finite_selection = sheet.finitize_selection(self);
         finite_selection.ranges.iter().for_each(|range| {
             // handle finite ranges
             if let Some(rect) = range.to_rect() {
@@ -194,7 +194,7 @@ impl A1Selection {
                     .selected_columns(from, to)
                     .iter()
                     .filter(|c| c >= &&from && c <= &&to),
-            )
+            );
         });
 
         let mut columns = columns.into_iter().collect::<Vec<_>>();

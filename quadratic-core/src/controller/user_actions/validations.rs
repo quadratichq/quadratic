@@ -221,10 +221,9 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_sheet_id("A1", &sheet_id);
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: selection.clone(),
+            selection: A1Selection::test_sheet_id("A1", &sheet_id),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -235,13 +234,13 @@ mod tests {
         gc.update_validation(validation.clone(), None);
 
         assert_eq!(
-            gc.get_validation_from_pos(sheet_id, (0, 0).into()),
+            gc.get_validation_from_pos(sheet_id, (1, 1).into()),
             Some(&validation)
         );
 
         // missing sheet_id should return None
         assert!(gc
-            .get_validation_from_pos(SheetId::new(), (0, 0).into())
+            .get_validation_from_pos(SheetId::new(), (1, 1).into())
             .is_none());
     }
 
