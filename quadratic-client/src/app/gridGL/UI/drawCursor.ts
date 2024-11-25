@@ -46,6 +46,7 @@ export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, r
   });
   g.endFill();
 };
+
 // Draws a cursor with an infinite number of cells (this is drawn on each
 // viewport update).
 export const drawInfiniteSelection = (options: {
@@ -84,6 +85,37 @@ export const drawInfiniteSelection = (options: {
       g.lineTo(0, bounds.height);
       g.moveTo(0, 0);
       g.lineTo(bounds.width, 0);
+    }
+
+    // the entire sheet is selected starting from the start location
+    else if (col && row && end && !end.col && !end.row) {
+      const rect = sheet.getCellOffsets(col.coord, row.coord);
+      rect.x = Math.max(rect.x, bounds.x);
+      rect.y = Math.max(rect.y, bounds.y);
+      rect.width = bounds.right - rect.x;
+      rect.height = bounds.bottom - rect.y;
+      if (intersects.rectangleRectangle(rect, bounds)) {
+        g.drawShape(rect);
+        g.endFill();
+      }
+    }
+
+    // the entire sheet is selected ending at the end location
+    else if (!col && !row && end?.col && end.row) {
+      console.log('here');
+      const rect = sheet.getCellOffsets(end.col.coord, end.row.coord);
+      rect.x = Math.max(rect.x, bounds.x);
+      rect.y = Math.max(rect.y, bounds.y);
+      rect.width = bounds.right - rect.x;
+      rect.height = bounds.bottom - rect.y;
+      if (intersects.rectangleRectangle(rect, bounds)) {
+        g.drawShape(rect);
+        g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
+        g.moveTo(bounds.right, rect.y);
+        g.lineTo(rect.x, rect.y);
+        g.lineTo(rect.x, bounds.bottom);
+      }
     }
 
     // one column is selected
