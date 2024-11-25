@@ -97,6 +97,10 @@ export const drawInfiniteSelection = (options: {
       if (intersects.rectangleRectangle(rect, bounds)) {
         g.drawShape(rect);
         g.endFill();
+        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
+        g.moveTo(rect.right, rect.top);
+        g.lineTo(rect.left, rect.top);
+        g.lineTo(rect.left, rect.bottom);
       }
     }
 

@@ -4,9 +4,15 @@ use super::{A1Selection, CellRefRange, CellRefRangeEnd};
 
 impl A1Selection {
     /// Selects the entire sheet.
-    pub fn select_all(&mut self) {
-        self.ranges.clear();
-        self.ranges.push(CellRefRange::ALL);
+    pub fn select_all(&mut self, append: bool) {
+        if append {
+            if let Some(last) = self.ranges.last_mut() {
+                last.end = Some(CellRefRangeEnd::UNBOUNDED);
+            }
+        } else {
+            self.ranges.clear();
+            self.ranges.push(CellRefRange::ALL);
+        }
     }
 
     /// Removes a column if it is in any column ranges, or adds it if it is not.
@@ -149,10 +155,8 @@ impl A1Selection {
             // if we deleted the last range, then we use the cursor + top as the
             // new range
             if self.ranges.is_empty() {
-                self.ranges.push(CellRefRange::new_relative_xy(
-                    left,
-                    self.cursor.y as u64,
-                ));
+                self.ranges
+                    .push(CellRefRange::new_relative_xy(left, self.cursor.y as u64));
                 self.cursor.x = left as i64;
             }
         } else {
@@ -350,8 +354,12 @@ mod tests {
     #[test]
     fn test_select_all() {
         let mut selection = A1Selection::test("A1,B1,C1");
-        selection.select_all();
+        selection.select_all(false);
         assert_eq!(selection.test_string(), "*");
+
+        selection = A1Selection::test("B1");
+        selection.select_all(true);
+        assert_eq!(selection.test_string(), "B1:");
     }
 
     #[test]

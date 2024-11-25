@@ -191,8 +191,8 @@ export class SheetCursor {
     // return !this.multiCursor?.length && !this.columnRow;
   }
 
-  selectAll() {
-    this.jsSelection.selectAll();
+  selectAll(append?: boolean) {
+    this.jsSelection.selectAll(append ?? false);
     this.updatePosition(true);
   }
 

@@ -78,8 +78,8 @@ impl JsSelection {
 
     /// Selects the entire sheet.
     #[wasm_bindgen(js_name = "selectAll")]
-    pub fn select_all(&mut self) {
-        self.selection.select_all();
+    pub fn select_all(&mut self, append: bool) {
+        self.selection.select_all(append);
     }
 
     #[wasm_bindgen(js_name = "selectColumn")]
