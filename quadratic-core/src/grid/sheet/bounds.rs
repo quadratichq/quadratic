@@ -5,7 +5,7 @@ use std::cmp::Reverse;
 use crate::{
     grid::{Column, GridBounds},
     selection::OldSelection,
-    CellRefRange, CellValue, Pos, Rect,
+    CellValue, Pos, Rect,
 };
 
 use super::Sheet;
