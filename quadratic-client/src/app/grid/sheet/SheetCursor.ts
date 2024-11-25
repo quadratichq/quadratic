@@ -180,8 +180,7 @@ export class SheetCursor {
 
   // Returns true if the cursor is only selecting a single cell
   onlySingleSelection(): boolean {
-    throw new Error('TODO onlySingleSelection');
-    // return !this.multiCursor?.length && !this.columnRow;
+    return this.jsSelection.isSingleSelection();
   }
 
   selectAll(append?: boolean) {

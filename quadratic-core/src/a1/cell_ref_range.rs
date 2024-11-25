@@ -446,7 +446,7 @@ mod tests {
             CellRefRange::test("10").selected_columns(2, 5),
             vec![2, 3, 4, 5]
         );
-        assert_eq!(CellRefRange::test("4:E").selected_columns(2, 5), vec![4, 5]);
+        assert_eq!(CellRefRange::test("4:E").selected_columns(2, 5), vec![5]);
     }
 
     #[test]

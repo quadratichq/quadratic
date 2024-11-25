@@ -263,6 +263,19 @@ impl A1Selection {
         };
         range.is_column_range() || range.is_row_range() || (one_cell && range.is_single_cell())
     }
+
+    /// Returns true if the selection is a single cell.
+    pub fn is_single_selection(&self) -> bool {
+        if self.ranges.len() != 1 {
+            return false;
+        }
+
+        if let Some(range) = self.ranges.first() {
+            range.is_single_cell()
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -406,5 +419,14 @@ mod tests {
         assert!(A1Selection::test("A1").has_one_column_row_selection(true));
         assert!(!A1Selection::test("A,B").has_one_column_row_selection(true));
         assert!(!A1Selection::test("A1:B2").has_one_column_row_selection(true));
+    }
+
+    #[test]
+    fn is_single_selection() {
+        assert!(A1Selection::test("A1").is_single_selection());
+        assert!(!A1Selection::test("A1:B4").is_single_selection());
+        assert!(!A1Selection::test("A").is_single_selection());
+        assert!(!A1Selection::test("3").is_single_selection());
+        assert!(!A1Selection::test("A1,B2").is_single_selection());
     }
 }

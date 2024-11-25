@@ -228,6 +228,11 @@ impl JsSelection {
     pub fn has_one_column_row_selection(&self, one_cell: bool) -> bool {
         self.selection.has_one_column_row_selection(one_cell)
     }
+
+    #[wasm_bindgen(js_name = "isSingleSelection")]
+    pub fn is_single_selection(&self) -> bool {
+        self.selection.is_single_selection()
+    }
 }
 
 #[wasm_bindgen(js_name = "stringToSelection")]
