@@ -274,7 +274,7 @@ impl Sheet {
     ) {
         dbgjs!(
             "copy_row_formats - this function isn't necessary; the data structure does it for you!"
-        )
+        );
         // let delta = match copy_formats {
         //     CopyFormats::After => 1,
         //     CopyFormats::Before => -1,

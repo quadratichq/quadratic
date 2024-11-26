@@ -101,7 +101,7 @@ impl Offsets {
     /// up the search.
     pub fn find_offset(&self, pixel: f64) -> (i64, f64) {
         let mut current_sum = 0.0;
-        let mut current_index = 0;
+        let mut current_index = 1;
         let mut current_size = self.get_size(current_index);
         while current_sum + current_size <= pixel {
             current_sum += current_size;
@@ -111,14 +111,9 @@ impl Offsets {
 
         (
             // Ensure the current_index is 1-based.
-            current_index + 1,
+            current_index,
             current_sum,
         )
-    }
-
-    /// Returns the total size of a range of columns/rows.
-    pub fn size(&self, start: i64, end: i64) -> f64 {
-        self.iter_offsets(start..end).last().unwrap_or(0.0)
     }
 
     /// Iterates over the sizes of all columns/rows.
@@ -196,12 +191,11 @@ impl Offsets {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use super::*;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_offsets_structure() {
         let mut offsets = Offsets::new(10.0);
         assert_eq!(offsets.get_size(1), 10.0);
@@ -223,7 +217,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_offsets_move() {
         let mut offsets = Offsets::new(10.0);
         for i in 0..10 {
@@ -243,7 +236,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_find_offsets_default() {
         let offsets = Offsets::new(10.0);
 
@@ -255,7 +247,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_insert() {
         let mut offsets = Offsets::new(10.0);
 
@@ -277,7 +268,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_delete() {
         let mut offsets = Offsets::new(10.0);
 
@@ -293,5 +283,45 @@ mod tests {
         assert_eq!(offsets.get_size(1), 20.0);
         assert_eq!(offsets.get_size(2), 40.0);
         assert_eq!(offsets.get_size(3), offsets.default);
+    }
+
+    #[test]
+    fn test_find_offsets_custom() {
+        let mut offsets = Offsets::new(10.0);
+        offsets.set_size(1, 20.0);
+        offsets.set_size(3, 30.0);
+
+        // 1/0-20 2/20-30 3/30-60 4/60-70 ...
+
+        assert_eq!(offsets.find_offset(0.0), (1, 0.0));
+        assert_eq!(offsets.find_offset(15.0), (1, 0.0));
+        assert_eq!(offsets.find_offset(20.0), (2, 20.0));
+        assert_eq!(offsets.find_offset(25.0), (2, 20.0));
+        assert_eq!(offsets.find_offset(30.0), (3, 30.0));
+        assert_eq!(offsets.find_offset(55.0), (3, 30.0));
+        assert_eq!(offsets.find_offset(62.0), (4, 60.0));
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut offsets = Offsets::new(10.0);
+        offsets.set_size(1, 20.0);
+        offsets.set_size(2, 30.0);
+
+        assert_eq!(offsets.reset(1), 20.0);
+        assert_eq!(offsets.get_size(1), 10.0);
+        assert_eq!(offsets.reset(3), 10.0); // Resetting non-existent entry
+    }
+
+    #[test]
+    fn test_from_iter() {
+        let items = vec![(1, 20.0), (3, 30.0), (5, 50.0)];
+        let offsets = Offsets::from_iter(10.0, items);
+
+        assert_eq!(offsets.get_size(1), 20.0);
+        assert_eq!(offsets.get_size(2), 10.0);
+        assert_eq!(offsets.get_size(3), 30.0);
+        assert_eq!(offsets.get_size(4), 10.0);
+        assert_eq!(offsets.get_size(5), 50.0);
     }
 }

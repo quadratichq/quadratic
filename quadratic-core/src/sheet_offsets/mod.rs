@@ -260,14 +260,6 @@ impl SheetOffsets {
         }
     }
 
-    pub fn total_column_width(&self, start: i64, end: i64) -> f64 {
-        self.column_widths.size(start, end)
-    }
-
-    pub fn total_row_height(&self, start: i64, end: i64) -> f64 {
-        self.row_heights.size(start, end)
-    }
-
     /// Inserts a column offset at the given column index.
     ///
     /// Returns a vector of changes made to the offsets structure, where each change
@@ -309,15 +301,13 @@ impl SheetOffsets {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
-    use serial_test::parallel;
-
     use super::*;
 
     use crate::Rect;
 
     #[test]
-    #[parallel]
     fn test_screen_rect_cell_offsets() {
         let offsets = SheetOffsets::default();
         let rect = Rect::new(1, 1, 1, 1);
@@ -336,7 +326,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn rect_cell_offsets() {
         let offsets = SheetOffsets::default();
         let rect = Rect::new(1, 1, 1, 1);
@@ -355,7 +344,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_defaults() {
         let sheet = super::SheetOffsets::default();
         assert_eq!(sheet.defaults(), (100.0, 21.0));

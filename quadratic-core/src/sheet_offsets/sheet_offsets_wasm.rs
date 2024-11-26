@@ -154,16 +154,4 @@ impl SheetOffsets {
         let transient_resize = self.pop_local_transient_resize()?;
         serde_json::to_string(&transient_resize).ok()
     }
-
-    /// Returns the width of all the columns in a range.
-    #[wasm_bindgen(js_name = "getRangeColumnWidth")]
-    pub fn js_get_total_column_width(&self, start: u32, end: u32) -> f64 {
-        self.total_column_width(start as i64, end as i64)
-    }
-
-    /// Returns the height of all the rows in a range.
-    #[wasm_bindgen(js_name = "getRangeRowHeight")]
-    pub fn js_get_total_row_height(&self, start: u32, end: u32) -> f64 {
-        self.total_row_height(start as i64, end as i64)
-    }
 }
