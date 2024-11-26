@@ -272,7 +272,9 @@ impl Sheet {
         _row: i64,
         _copy_formats: CopyFormats,
     ) {
-        todo!("this function isn't necessary; the data structure does it for you!")
+        dbgjs!(
+            "copy_row_formats - this function isn't necessary; the data structure does it for you!"
+        )
         // let delta = match copy_formats {
         //     CopyFormats::After => 1,
         //     CopyFormats::Before => -1,
@@ -351,7 +353,7 @@ impl Sheet {
 
         // update the indices of all column-based formats impacted by the deletion
         if true {
-            todo!("insert row with format data");
+            dbgjs!("todo: insert row with format data");
         }
 
         // signal client to update the borders for changed columns

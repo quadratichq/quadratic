@@ -196,7 +196,7 @@ impl Sheet {
         let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
             true => column.has_data_in_row(row),
             false => {
-                dbgjs!("TODO: row_bounds - has data or format in row");
+                // dbgjs!("TODO: row_bounds - has data or format in row");
                 false
             }
         };
