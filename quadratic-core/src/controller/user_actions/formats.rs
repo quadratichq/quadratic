@@ -342,6 +342,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .align,
             Some(crate::grid::CellAlign::Center)
@@ -373,6 +374,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .vertical_align,
             Some(crate::grid::CellVerticalAlign::Middle)
@@ -404,6 +406,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .bold,
             Some(true)
@@ -435,6 +438,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .wrap,
             Some(CellWrap::Clip)
@@ -455,6 +459,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 1, y: 1 })
+                .cloned()
                 .unwrap_or_default()
                 .numeric_format,
             Some(crate::grid::NumericFormat {
@@ -490,6 +495,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .numeric_format,
             Some(crate::grid::NumericFormat {
@@ -525,6 +531,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .numeric_format,
             Some(crate::grid::NumericFormat {
@@ -558,6 +565,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .numeric_commas,
             Some(true)
@@ -582,6 +590,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .numeric_commas,
             Some(false)
@@ -613,6 +622,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .italic,
             Some(true)
@@ -644,6 +654,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .text_color,
             Some("red".to_string())
@@ -675,6 +686,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .fill_color,
             Some("blue".to_string())
@@ -708,6 +720,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .numeric_decimals,
             Some(2)
@@ -793,6 +806,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 1, y: 1 })
+                .cloned()
                 .unwrap_or_default()
                 .text_color,
             Some("red".to_string())
@@ -806,6 +820,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 1, y: 1 })
+                .cloned()
                 .unwrap_or_default()
                 .text_color,
             None
@@ -892,6 +907,7 @@ mod test {
             sheet
                 .format
                 .get(Pos { x: 0, y: 0 })
+                .cloned()
                 .unwrap_or_default()
                 .date_time,
             Some("yyyy-mm-dd".to_string())

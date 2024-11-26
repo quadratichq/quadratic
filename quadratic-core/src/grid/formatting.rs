@@ -5,10 +5,12 @@ use proptest::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
-use super::{Contiguous2D, SheetFormatting};
+use super::Format;
 use crate::RunLengthEncoding;
 
 /// Array of a single cell formatting attribute.
+///
+/// TODO: this is NOT needed anymore. delete it.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CellFmtArray {
     Align(RunLengthEncoding<Option<CellAlign>>),
@@ -28,55 +30,57 @@ pub enum CellFmtArray {
 }
 
 /// Cell formatting attribute.
+///
+/// TODO: this is NOT needed anymore. delete it. replace the generic functions.
 pub trait CellFmtAttr {
     type Value: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + Eq;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value>;
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value>;
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value>;
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value>;
 }
 
 impl CellFmtAttr for CellAlign {
     type Value = Self;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.align
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.align
     }
 }
 impl CellFmtAttr for CellVerticalAlign {
     type Value = Self;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.vertical_align
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.vertical_align
     }
 }
 impl CellFmtAttr for CellWrap {
     type Value = Self;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.wrap
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.wrap
     }
 }
 impl CellFmtAttr for NumericFormat {
     type Value = Self;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.numeric_format
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.numeric_format
     }
 }
 pub struct NumericDecimals;
 impl CellFmtAttr for NumericDecimals {
     type Value = i16;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.numeric_decimals
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.numeric_decimals
     }
 }
@@ -84,10 +88,10 @@ impl CellFmtAttr for NumericDecimals {
 pub struct NumericCommas;
 impl CellFmtAttr for NumericCommas {
     type Value = bool;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.numeric_commas
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.numeric_commas
     }
 }
@@ -95,50 +99,50 @@ impl CellFmtAttr for NumericCommas {
 pub struct Bold;
 impl CellFmtAttr for Bold {
     type Value = bool;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.bold
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.bold
     }
 }
 pub struct Italic;
 impl CellFmtAttr for Italic {
     type Value = bool;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.italic
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.italic
     }
 }
 pub struct TextColor;
 impl CellFmtAttr for TextColor {
     type Value = String;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.text_color
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.text_color
     }
 }
 pub struct FillColor;
 impl CellFmtAttr for FillColor {
     type Value = String;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.fill_color
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.fill_color
     }
 }
 
 impl CellFmtAttr for RenderSize {
     type Value = Self;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.render_size
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.render_size
     }
 }
@@ -146,20 +150,20 @@ impl CellFmtAttr for RenderSize {
 pub struct Underline;
 impl CellFmtAttr for Underline {
     type Value = bool;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.underline
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.underline
     }
 }
 pub struct StrikeThrough;
 impl CellFmtAttr for StrikeThrough {
     type Value = bool;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.strike_through
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.strike_through
     }
 }
@@ -299,10 +303,10 @@ pub enum NumericFormatKind {
 pub struct DateTimeFormatting;
 impl CellFmtAttr for DateTimeFormatting {
     type Value = String;
-    fn sheet_data_ref(fmt: &SheetFormatting) -> &Contiguous2D<Self::Value> {
+    fn get_from_format(fmt: &Format) -> &Option<Self::Value> {
         &fmt.date_time
     }
-    fn sheet_data_mut(fmt: &mut SheetFormatting) -> &mut Contiguous2D<Self::Value> {
+    fn get_from_format_mut(fmt: &mut Format) -> &mut Option<Self::Value> {
         &mut fmt.date_time
     }
 }

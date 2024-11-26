@@ -303,7 +303,7 @@ impl Sheet {
     ///
     /// TODO: move this onto [`SheetFormatting`] as `get_value()`.
     pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
-        A::sheet_data_ref(&self.format).get(pos).cloned()
+        A::get_from_format(self.format.get(pos)?).clone()
     }
 
     /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
@@ -316,7 +316,7 @@ impl Sheet {
 
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.format.get(pos).unwrap_or_default();
+        let format = self.format.get(pos).cloned().unwrap_or_default();
         let cell_type = self
             .display_value(pos)
             .and_then(|cell_value| match cell_value {
@@ -346,7 +346,10 @@ impl Sheet {
         pos: Pos,
         value: Option<A::Value>,
     ) -> Option<A::Value> {
-        A::sheet_data_mut(&mut self.format).set(pos, value)
+        // TODO(perf): avoid double lookup
+        let mut cell_format = self.format.get(pos).cloned().unwrap_or_default();
+        *A::get_from_format_mut(&mut cell_format) = value;
+        A::get_from_format(&self.format.set(pos, Some(cell_format))?).clone()
     }
 
     /// Returns a column of a sheet from the column index.

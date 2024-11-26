@@ -89,6 +89,24 @@ impl Format {
         }
     }
 
+    /// Applies a [`FormatUpdate`] and returns a [`FormatUpdate`] to undo the
+    /// change.
+    ///
+    /// Returns `None` for the new format if it is default. Returns `None` for
+    /// the update if it is empty.
+    #[must_use]
+    pub fn apply_update_opt(
+        &self,
+        update: &FormatUpdate,
+    ) -> (Option<Format>, Option<FormatUpdate>) {
+        let mut ret = self.clone();
+        let reverse_update = ret.apply_update(update);
+        (
+            (!ret.is_default()).then_some(ret),
+            (!reverse_update.is_default()).then_some(reverse_update),
+        )
+    }
+
     /// Returns a FormatUpdate only if the current format needs to be cleared.
     /// This does not change the self's format.
     ///
