@@ -29,7 +29,11 @@ impl Sheet {
 
     /// Gets a format for a cell, returning Format::default if not set.
     pub fn format_cell(&self, _x: i64, _y: i64, _include_sheet: bool) -> Format {
-        todo!("isn't this implemented elsewhere?")
+        dbgjs!("todo: format_cell - isn't this implemented elsewhere?");
+        // it is not
+
+        Format::default()
+
         // let format = self.get_column(x).map(|column| Format {
         //     align: column.align.get(y),
         //     vertical_align: column.vertical_align.get(y),
@@ -59,6 +63,7 @@ impl Sheet {
     /// Tries to get a format for a cell, returning None if no formatting is set, or the A1 is invalid.
     pub fn format_cell_a1(&self, _a1: &str, _include_sheet: bool) -> Option<Format> {
         todo!("wrong level of abstraction. parse A1 elsewhere, then call some lower-level function. or make this #[cfg(test)]")
+
         // if let Some(pos) = Pos::try_a1_string(a1) {
         //     let format = self.format_cell(pos.x, pos.y, include_sheet);
         //     if format.is_default() {
