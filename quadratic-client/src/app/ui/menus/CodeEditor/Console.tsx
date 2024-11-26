@@ -8,6 +8,7 @@ import { colors } from '@/app/theme/colors';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
+import Linkify from 'react-linkify';
 
 export function Console() {
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
@@ -55,8 +56,11 @@ export function Console() {
             </span>
           )}
           {consoleOutput?.stdErr && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
-              ERROR: {consoleOutput?.stdErr}
+            <span style={{ alignItems: 'center', gap: '8px', color: colors.error }}>
+              ERROR:{' '}
+              <Linkify>
+                <div contentEditable="false">{consoleOutput?.stdErr}</div>
+              </Linkify>
             </span>
           )}
           {consoleOutput?.stdOut}
