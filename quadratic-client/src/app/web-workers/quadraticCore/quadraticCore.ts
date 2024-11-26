@@ -21,8 +21,10 @@ import {
   JsCellValuePosAIContext,
   JsClipboard,
   JsCodeCell,
+  JsCoordinate,
   JsRenderCell,
   JsSummarizeSelectionResult,
+  JumpDirection,
   PasteSpecial,
   SearchOptions,
   SheetPos,
@@ -56,6 +58,7 @@ import {
   CoreClientGetRowsBounds,
   CoreClientGetValidationList,
   CoreClientHasRenderCells,
+  CoreClientJumpCursor,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -1066,6 +1069,22 @@ class QuadraticCore {
         end,
         id,
         ignoreFormatting,
+      });
+    });
+  }
+
+  jumpCursor(sheetId: string, current: JsCoordinate, direction: JumpDirection): Promise<JsCoordinate | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
+        resolve(message.coordinate);
+      };
+      this.send({
+        type: 'clientCoreJumpCursor',
+        sheetId,
+        current,
+        direction,
+        id,
       });
     });
   }

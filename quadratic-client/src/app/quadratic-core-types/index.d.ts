@@ -47,6 +47,7 @@ export interface JsRowHeight { row: bigint, height: number, }
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
+export type JumpDirection = "Up" | "Down" | "Left" | "Right";
 export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };
 export interface NumericFormat { type: NumericFormatKind, symbol: string | null, }
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";

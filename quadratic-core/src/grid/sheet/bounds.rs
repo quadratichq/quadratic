@@ -195,7 +195,10 @@ impl Sheet {
     pub fn row_bounds(&self, row: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
             true => column.has_data_in_row(row),
-            false => todo!("has data or format in row"),
+            false => {
+                dbgjs!("TODO: row_bounds - has data or format in row");
+                false
+            }
         };
         let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
             Some(*index)
@@ -224,8 +227,10 @@ impl Sheet {
     /// Returns the lower and upper bounds of formatting in a row, or `None` if
     /// the row has no formatting.
     pub fn row_bounds_formats(&self, _row: i64) -> Option<(i64, i64)> {
-        let column_has_row =
-            |(_x, _column): &(&i64, &Column)| todo!("column.has_format_in_row(row)");
+        let column_has_row = |(_x, _column): &(&i64, &Column)| {
+            dbgjs!("TODO: row_bounds_formats -column.has_format_in_row(row)");
+            false
+        };
         let min = self
             .columns
             .iter()

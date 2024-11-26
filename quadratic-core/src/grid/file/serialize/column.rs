@@ -169,7 +169,7 @@ pub(crate) fn import_column_builder(
         .map(|(x, column)| {
             let mut col = Column::new(x);
             if true {
-                todo!("update this too");
+                dbgjs!("Update import_column_builder");
             }
             // set_column_format_align(&mut col.align, column.align);
             // set_column_format_vertical_align(&mut col.vertical_align, column.vertical_align);

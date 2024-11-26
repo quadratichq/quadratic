@@ -5,6 +5,7 @@ import { Action } from '@/app/actions/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { moveViewport, pageUpDown } from '@/app/gridGL/interaction/viewportHelper';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts.js';
+import { JumpDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 function setCursorPosition(x: number, y: number) {
@@ -21,298 +22,24 @@ function setCursorPosition(x: number, y: number) {
 // - if on a filled cell but the next cell is empty then select to the first cell with a value
 // - if there are no more cells then select the next cell over (excel selects to the end of the sheet; we don’t have an end (yet) so right now I select one cell over)
 //   the above checks are always made relative to the original cursor position (the highlighted cell)
-async function jumpCursor(deltaX: number, deltaY: number, select: boolean) {
-  // todo...
-  // const sheet = sheets.sheet;
-  // const cursor = sheet.cursor;
-  // const sheetId = sheet.id;
-  // const clamp = sheet.clamp;
-  // // holds either the existing multiCursor or creates a new one based on cursor position
-  // const multiCursor = cursor.multiCursor ?? [new Rectangle(cursor.position.x, cursor.position.y, 1, 1)];
-  // // the last multiCursor entry, which is what we change with the keyboard
-  // const lastMultiCursor = multiCursor[multiCursor.length - 1];
-  // const keyboardX = cursor.keyboardMovePosition.x;
-  // const keyboardY = cursor.keyboardMovePosition.y;
-  // if (deltaX === 1) {
-  //   let x = keyboardX;
-  //   const y = cursor.keyboardMovePosition.y;
-  //   // always use the original cursor position to search
-  //   const yCheck = cursor.position.y;
-  //   // handle case of cell with content
-  //   let nextCol: number | undefined = undefined;
-  //   if (await quadraticCore.cellHasContent(sheetId, x, yCheck)) {
-  //     // if next cell is empty, find the next cell with content
-  //     if (!(await quadraticCore.cellHasContent(sheetId, x + 1, yCheck))) {
-  //       nextCol = await quadraticCore.findNextColumn({
-  //         sheetId,
-  //         columnStart: x + 2,
-  //         row: yCheck,
-  //         reverse: false,
-  //         withContent: true,
-  //       });
-  //     }
-  //     // if next cell is not empty, find the next empty cell
-  //     else {
-  //       nextCol =
-  //         ((await quadraticCore.findNextColumn({
-  //           sheetId,
-  //           columnStart: x + 2,
-  //           row: yCheck,
-  //           reverse: false,
-  //           withContent: false,
-  //         })) ?? x + 2) - 1;
-  //     }
-  //   }
-  //   // otherwise find the next cell with content
-  //   else {
-  //     nextCol = await quadraticCore.findNextColumn({
-  //       sheetId,
-  //       columnStart: x + 1,
-  //       row: yCheck,
-  //       reverse: false,
-  //       withContent: true,
-  //     });
-  //   }
-  //   if (nextCol === undefined) {
-  //     nextCol = x + 1 < clamp.left ? clamp.left : x + 1;
-  //   }
-  //   nextCol = Math.min(nextCol, clamp.right);
-  //   x = nextCol;
-  //   if (x === keyboardX) x++;
-  //   if (select) {
-  //     lastMultiCursor.x = Math.min(cursor.position.x, x);
-  //     lastMultiCursor.width = Math.abs(cursor.position.x - x) + 1;
-  //     cursor.changePosition({
-  //       multiCursor,
-  //       keyboardMovePosition: { x, y },
-  //       ensureVisible: { x: lastMultiCursor.right, y },
-  //     });
-  //   } else {
-  //     setCursorPosition(x, y);
-  //   }
-  // } else if (deltaX === -1) {
-  //   let x = keyboardX;
-  //   const y = cursor.keyboardMovePosition.y;
-  //   // always use the original cursor position to search
-  //   const yCheck = cursor.position.y;
-  //   // handle case of cell with content
-  //   let nextCol: number | undefined = undefined;
-  //   if (await quadraticCore.cellHasContent(sheetId, x, yCheck)) {
-  //     // if next cell is empty, find the next cell with content
-  //     if (!(await quadraticCore.cellHasContent(sheetId, x - 1, yCheck))) {
-  //       nextCol = await quadraticCore.findNextColumn({
-  //         sheetId,
-  //         columnStart: x - 2,
-  //         row: yCheck,
-  //         reverse: true,
-  //         withContent: true,
-  //       });
-  //     }
-  //     // if next cell is not empty, find the next empty cell
-  //     else {
-  //       nextCol =
-  //         ((await quadraticCore.findNextColumn({
-  //           sheetId,
-  //           columnStart: x - 2,
-  //           row: yCheck,
-  //           reverse: true,
-  //           withContent: false,
-  //         })) ?? x - 2) + 1;
-  //     }
-  //   }
-  //   // otherwise find the next cell with content
-  //   else {
-  //     nextCol = await quadraticCore.findNextColumn({
-  //       sheetId,
-  //       columnStart: x - 1,
-  //       row: yCheck,
-  //       reverse: true,
-  //       withContent: true,
-  //     });
-  //   }
-  //   if (nextCol === undefined) {
-  //     nextCol = x > 0 ? 0 : x - 1;
-  //   }
-  //   x = nextCol;
-  //   if (keyboardX > 0) {
-  //     x = Math.max(x, 0);
-  //   }
-  //   if (x === keyboardX) x--;
-  //   x = Math.max(x, clamp.left);
-  //   if (select) {
-  //     lastMultiCursor.x = Math.min(cursor.position.x, x);
-  //     lastMultiCursor.width = Math.abs(cursor.position.x - x) + 1;
-  //     cursor.changePosition({
-  //       multiCursor,
-  //       keyboardMovePosition: { x, y },
-  //       ensureVisible: { x: lastMultiCursor.x, y },
-  //     });
-  //   } else {
-  //     setCursorPosition(x, y);
-  //   }
-  // } else if (deltaY === 1) {
-  //   let y = keyboardY;
-  //   const x = cursor.keyboardMovePosition.x;
-  //   // always use the original cursor position to search
-  //   const xCheck = cursor.position.x;
-  //   // handle case of cell with content
-  //   let nextRow: number | undefined = undefined;
-  //   if (await quadraticCore.cellHasContent(sheetId, xCheck, y)) {
-  //     // if next cell is empty, find the next cell with content
-  //     if (!(await quadraticCore.cellHasContent(sheetId, xCheck, y + 1))) {
-  //       nextRow = await quadraticCore.findNextRow({
-  //         sheetId,
-  //         column: xCheck,
-  //         rowStart: y + 2,
-  //         reverse: false,
-  //         withContent: true,
-  //       });
-  //     }
-  //     // if next cell is not empty, find the next empty cell
-  //     else {
-  //       nextRow =
-  //         ((await quadraticCore.findNextRow({
-  //           sheetId,
-  //           column: xCheck,
-  //           rowStart: y + 2,
-  //           reverse: false,
-  //           withContent: false,
-  //         })) ?? y + 2) - 1;
-  //     }
-  //   }
-  //   // otherwise find the next cell with content
-  //   else {
-  //     nextRow = await quadraticCore.findNextRow({
-  //       sheetId,
-  //       column: xCheck,
-  //       rowStart: y + 1,
-  //       reverse: false,
-  //       withContent: true,
-  //     });
-  //   }
-  //   if (nextRow === undefined) {
-  //     nextRow = y < 0 ? 0 : y + 1;
-  //   }
-  //   y = nextRow;
-  //   if (y === keyboardY) y++;
-  //   y = Math.max(y, clamp.top);
-  //   if (select) {
-  //     lastMultiCursor.y = Math.min(cursor.position.y, y);
-  //     lastMultiCursor.height = Math.abs(cursor.position.y - y) + 1;
-  //     cursor.changePosition({
-  //       multiCursor,
-  //       keyboardMovePosition: { x, y },
-  //       ensureVisible: { x, y: lastMultiCursor.bottom },
-  //     });
-  //   } else {
-  //     setCursorPosition(x, y);
-  //   }
-  // } else if (deltaY === -1) {
-  //   let y = keyboardY;
-  //   const x = cursor.keyboardMovePosition.x;
-  //   // always use the original cursor position to search
-  //   const xCheck = cursor.position.x;
-  //   // handle case of cell with content
-  //   let nextRow: number | undefined = undefined;
-  //   if (await quadraticCore.cellHasContent(sheetId, xCheck, y)) {
-  //     // if next cell is empty, find the next cell with content
-  //     if (!(await quadraticCore.cellHasContent(sheetId, xCheck, y - 1))) {
-  //       nextRow = await quadraticCore.findNextRow({
-  //         sheetId,
-  //         column: xCheck,
-  //         rowStart: y - 2,
-  //         reverse: true,
-  //         withContent: true,
-  //       });
-  //     }
-  //     // if next cell is not empty, find the next empty cell
-  //     else {
-  //       nextRow =
-  //         ((await quadraticCore.findNextRow({
-  //           sheetId,
-  //           column: xCheck,
-  //           rowStart: y - 2,
-  //           reverse: true,
-  //           withContent: false,
-  //         })) ?? y - 2) + 1;
-  //     }
-  //   }
-  //   // otherwise find the next cell with content
-  //   else {
-  //     nextRow = await quadraticCore.findNextRow({
-  //       sheetId,
-  //       column: xCheck,
-  //       rowStart: y - 1,
-  //       reverse: true,
-  //       withContent: true,
-  //     });
-  //   }
-  //   if (nextRow === undefined) {
-  //     nextRow = y > 0 ? 0 : y - 1;
-  //   }
-  //   y = nextRow;
-  //   if (keyboardY > 0) {
-  //     y = Math.max(y, 0);
-  //   }
-  //   if (y === keyboardY) y--;
-  //   y = Math.max(y, clamp.top);
-  //   if (select) {
-  //     lastMultiCursor.y = Math.min(cursor.position.y, y);
-  //     lastMultiCursor.height = Math.abs(cursor.position.y - y) + 1;
-  //     cursor.changePosition({
-  //       multiCursor,
-  //       keyboardMovePosition: { x, y },
-  //       ensureVisible: { x, y: lastMultiCursor.y },
-  //     });
-  //   } else {
-  //     setCursorPosition(x, y);
-  //   }
-  // }
+async function jumpCursor(direction: JumpDirection, select: boolean) {
+  const cursor = sheets.sheet.cursor;
+  const sheetId = sheets.sheet.id;
+
+  const keyboardX = cursor.position.x;
+  const keyboardY = cursor.position.y;
+
+  const position = await quadraticCore.jumpCursor(sheetId, { x: keyboardX, y: keyboardY }, direction);
+
+  // something went wrong
+  if (!position) return;
+
+  if (select) {
+    cursor.selectTo(position.x, position.y, false);
+  } else {
+    cursor.moveTo(position.x, position.y);
+  }
 }
-
-// // use arrow to select when shift key is pressed
-// function expandSelection(deltaX: number, deltaY: number) {
-//   const clamp = sheets.sheet.clamp;
-//   const cursor = sheets.sheet.cursor;
-
-//   const downPosition = cursor.position;
-//   const movePosition = cursor.keyboardMovePosition;
-
-//   // holds either the existing multiCursor or creates a new one based on cursor position
-//   const multiCursor = cursor.multiCursor ?? [new Rectangle(cursor.position.x, cursor.position.y, 1, 1)];
-
-//   // the last multiCursor entry, which is what we change with the keyboard
-//   const lastMultiCursor = multiCursor[multiCursor.length - 1];
-
-//   const newMovePosition = { x: movePosition.x + deltaX, y: movePosition.y + deltaY };
-//   lastMultiCursor.x = downPosition.x < newMovePosition.x ? downPosition.x : newMovePosition.x;
-//   lastMultiCursor.y = downPosition.y < newMovePosition.y ? downPosition.y : newMovePosition.y;
-//   lastMultiCursor.width = Math.abs(newMovePosition.x - downPosition.x) + 1;
-//   lastMultiCursor.height = Math.abs(newMovePosition.y - downPosition.y) + 1;
-//   if (lastMultiCursor.x < clamp.left) {
-//     lastMultiCursor.width -= clamp.left - lastMultiCursor.x;
-//     lastMultiCursor.x = clamp.left;
-//   }
-//   if (lastMultiCursor.y < clamp.top) {
-//     lastMultiCursor.height -= clamp.top - lastMultiCursor.y;
-//     lastMultiCursor.y = clamp.top;
-//   }
-//   if (lastMultiCursor.right > clamp.right) {
-//     lastMultiCursor.width -= lastMultiCursor.right - clamp.right;
-//   }
-//   if (lastMultiCursor.bottom > clamp.bottom) {
-//     lastMultiCursor.height -= lastMultiCursor.bottom - clamp.bottom;
-//   }
-//   cursor.changePosition({
-//     columnRow: null,
-//     multiCursor,
-//     keyboardMovePosition: newMovePosition,
-//     ensureVisible: { x: newMovePosition.x, y: newMovePosition.y },
-//   });
-//   if (!inlineEditorHandler.cursorIsMoving) {
-//     pixiAppSettings.changeInput(false);
-//   }
-// }
 
 function moveCursor(deltaX: number, deltaY: number) {
   const clamp = sheets.sheet.clamp;
@@ -345,7 +72,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move cursor to the top of the content block of cursor cell
   if (matchShortcut(Action.JumpCursorContentTop, event)) {
-    jumpCursor(0, -1, false);
+    jumpCursor('Up', false);
     return true;
   }
 
@@ -357,7 +84,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection to the top of the content block of cursor cell
   if (matchShortcut(Action.ExpandSelectionContentTop, event)) {
-    jumpCursor(0, -1, true);
+    jumpCursor('Up', true);
     return true;
   }
 
@@ -369,7 +96,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move cursor to the bottom of the content block of cursor cell
   if (matchShortcut(Action.JumpCursorContentBottom, event)) {
-    jumpCursor(0, 1, false);
+    jumpCursor('Down', false);
     return true;
   }
 
@@ -381,7 +108,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection to the bottom of the content block of cursor cell
   if (matchShortcut(Action.ExpandSelectionContentBottom, event)) {
-    jumpCursor(0, 1, true);
+    jumpCursor('Down', true);
     return true;
   }
 
@@ -393,7 +120,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move cursor to the left of the content block of cursor cell
   if (matchShortcut(Action.JumpCursorContentLeft, event)) {
-    jumpCursor(-1, 0, false);
+    jumpCursor('Left', false);
     return true;
   }
 
@@ -405,7 +132,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection to the left of the content block of cursor cell
   if (matchShortcut(Action.ExpandSelectionContentLeft, event)) {
-    jumpCursor(-1, 0, true);
+    jumpCursor('Left', true);
     return true;
   }
 
@@ -417,7 +144,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Move cursor to the right of the content block of cursor cell
   if (matchShortcut(Action.JumpCursorContentRight, event)) {
-    jumpCursor(1, 0, false);
+    jumpCursor('Right', false);
     return true;
   }
 
@@ -429,7 +156,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
 
   // Expand selection to the right of the content block of cursor cell
   if (matchShortcut(Action.ExpandSelectionContentRight, event)) {
-    jumpCursor(1, 0, true);
+    jumpCursor('Right', true);
     return true;
   }
 

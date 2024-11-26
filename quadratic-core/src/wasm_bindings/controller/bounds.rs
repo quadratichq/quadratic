@@ -1,3 +1,4 @@
+use sheet::jump_cursor::JumpDirection;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
@@ -162,5 +163,24 @@ impl GridController {
         } else {
             Ok("".to_string())
         }
+    }
+
+    #[wasm_bindgen(js_name = "jumpCursor")]
+    pub fn js_jump_cursor(
+        &self,
+        sheet_id: String,
+        pos: String,
+        direction: String,
+    ) -> Result<String, JsValue> {
+        let sheet = self
+            .try_sheet_from_string_id(sheet_id)
+            .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
+        let pos: Pos = serde_json::from_str(&pos)
+            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
+        let direction: JumpDirection = serde_json::from_str(&direction)
+            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {}", e)))?;
+        let next = sheet.jump_cursor(pos, direction);
+        serde_json::to_string(&next)
+            .map_err(|e| JsValue::from_str(&format!("Failed to serialize next position: {}", e)))
     }
 }

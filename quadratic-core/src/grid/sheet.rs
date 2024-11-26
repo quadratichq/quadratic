@@ -29,6 +29,7 @@ pub mod code;
 pub mod col_row;
 pub mod formats;
 pub mod formatting;
+pub mod jump_cursor;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
@@ -186,6 +187,20 @@ impl Sheet {
 
     pub fn iter_columns(&self) -> impl Iterator<Item = (&i64, &Column)> {
         self.columns.iter()
+    }
+
+    /// Returns true if the cell at Pos has content (ie, not blank). Also checks
+    /// tables. Ignores Blanks.
+    pub fn has_content(&self, pos: Pos) -> bool {
+        if self
+            .get_column(pos.x)
+            .and_then(|column| column.values.get(&pos.y))
+            .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string())
+        {
+            return true;
+        }
+        // self.has_table_content(pos)
+        false
     }
 
     /// Returns the cell_value at a Pos using both column.values and code_runs (i.e., what would be returned if code asked
@@ -500,7 +515,7 @@ mod test {
     use crate::controller::GridController;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::formats::Formats;
-    use crate::grid::{Bold, CodeCellLanguage, Italic, NumericFormat};
+    use crate::grid::{Bold, CodeCellLanguage, Italic};
     use crate::test_util::print_table;
     use crate::{A1Selection, CodeCellValue, SheetPos, SheetRect};
 

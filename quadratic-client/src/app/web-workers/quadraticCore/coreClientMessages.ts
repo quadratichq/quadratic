@@ -20,6 +20,7 @@ import {
   JsSheetFill,
   JsSummarizeSelectionResult,
   JsValidationWarning,
+  JumpDirection,
   SearchOptions,
   SheetBounds,
   SheetInfo,
@@ -755,6 +756,20 @@ export interface CoreClientGetRowsBounds {
   id: number;
 }
 
+export interface ClientCoreJumpCursor {
+  type: 'clientCoreJumpCursor';
+  id: number;
+  sheetId: string;
+  current: JsCoordinate;
+  direction: JumpDirection;
+}
+
+export interface CoreClientJumpCursor {
+  type: 'coreClientJumpCursor';
+  id: number;
+  coordinate?: JsCoordinate;
+}
+
 export interface ClientCoreFindNextColumn {
   type: 'clientCoreFindNextColumn';
   id: number;
@@ -1189,6 +1204,7 @@ export type ClientCoreMessage =
   | ClientCoreExportCsvSelection
   | ClientCoreGetColumnsBounds
   | ClientCoreGetRowsBounds
+  | ClientCoreJumpCursor
   | ClientCoreFindNextColumn
   | ClientCoreFindNextRow
   | ClientCoreCommitTransientResize
@@ -1254,6 +1270,7 @@ export type CoreClientMessage =
   | CoreClientExportCsvSelection
   | CoreClientGetColumnsBounds
   | CoreClientGetRowsBounds
+  | CoreClientJumpCursor
   | CoreClientFindNextColumn
   | CoreClientFindNextRow
   | CoreClientGenerateThumbnail

@@ -15,6 +15,7 @@ use quadratic_core::grid::js_types::{
 };
 use quadratic_core::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use quadratic_core::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
+use quadratic_core::grid::sheet::jump_cursor::JumpDirection;
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::validation::{
     Validation, ValidationError, ValidationMessage, ValidationStyle,
@@ -115,6 +116,7 @@ fn main() {
         JsSheetFill,
         JsSummarizeSelectionResult,
         JsValidationWarning,
+        JumpDirection,
         NumberRange,
         NumericFormat,
         NumericFormatKind,

@@ -20,8 +20,10 @@ import {
   JsClipboard,
   JsCodeCell,
   JsCodeResult,
+  JsCoordinate,
   JsRenderCell,
   JsSummarizeSelectionResult,
+  JumpDirection,
   SearchOptions,
   SheetPos,
   Validation,
@@ -881,6 +883,26 @@ class Core {
         const result = this.gridController.getRowsBounds(sheetId, start, end, ignoreFormatting);
         if (result) resolve(result);
         else resolve(undefined);
+      });
+    });
+  }
+
+  jumpCursor(sheetId: string, current: JsCoordinate, direction: JumpDirection): Promise<JsCoordinate | undefined> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        try {
+          const result = this.gridController.jumpCursor(
+            sheetId,
+            posToPos(current.x, current.y),
+            JSON.stringify(direction)
+          );
+          const pos = JSON.parse(result);
+          resolve({ x: Number(pos.x), y: Number(pos.y) });
+        } catch (error: any) {
+          console.warn(error);
+          resolve(undefined);
+        }
       });
     });
   }
