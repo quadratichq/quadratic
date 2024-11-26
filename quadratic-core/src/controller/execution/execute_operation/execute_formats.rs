@@ -179,7 +179,8 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        unwrap_op!(let SetCellFormatsA1 { sheet_id, subspaces, formats } = op);
+        unwrap_op!(let SetCellFormatsA1 { sheet_id, formats } = op);
+        let subspaces = formats.subspaces();
 
         transaction.generate_thumbnail |= self.thumbnail_dirty_subspaces(sheet_id, &subspaces);
 
@@ -187,8 +188,7 @@ impl GridController {
             return; // sheet may have been deleted
         };
 
-        let (reverse_operations, hashes, rows) =
-            sheet.set_formats_a1(sheet_id, &subspaces, &formats);
+        let (reverse_operations, hashes, rows) = sheet.set_formats_a1(sheet_id, &formats);
         if reverse_operations.is_empty() {
             return;
         }
@@ -209,11 +209,7 @@ impl GridController {
 
         transaction
             .forward_operations
-            .push(Operation::SetCellFormatsA1 {
-                sheet_id,
-                subspaces,
-                formats,
-            });
+            .push(Operation::SetCellFormatsA1 { sheet_id, formats });
 
         transaction
             .reverse_operations

@@ -129,6 +129,17 @@ pub fn minmax<T: PartialOrd>(a: T, b: T) -> (T, T) {
         (a, b)
     }
 }
+/// Returns the minimum and maximum extent of two values, in that order. `None`
+/// is considered the largest possible possible.
+pub fn minmax_opt<T: PartialOrd>(a: T, b: Option<T>) -> (T, Option<T>) {
+    match b {
+        Some(b) => {
+            let (lo, hi) = minmax(a, b);
+            (lo, Some(hi))
+        }
+        None => (a, None),
+    }
+}
 
 pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Option<Range<i64>> {
     ranges

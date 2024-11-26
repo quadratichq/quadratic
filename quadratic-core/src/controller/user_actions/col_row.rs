@@ -1,10 +1,10 @@
 use crate::{
     controller::{
-        active_transactions::transaction_name::TransactionName,
-        operations::operation::{CopyFormats, Operation},
+        active_transactions::transaction_name::TransactionName, operations::operation::Operation,
         GridController,
     },
     grid::SheetId,
+    CopyFormats,
 };
 
 impl GridController {

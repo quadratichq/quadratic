@@ -293,7 +293,7 @@ mod test {
             Some(CellValue::Text(String::from("1, 1")))
         );
         assert_eq!(
-            sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
+            sheet.cell_format_summary(Pos { x: 1, y: 1 }),
             CellFormatSummary {
                 bold: Some(true),
                 italic: None,
@@ -314,7 +314,7 @@ mod test {
             Some(CellValue::Number(BigDecimal::from(12)))
         );
         assert_eq!(
-            sheet.cell_format_summary(Pos { x: 3, y: 2 }, false),
+            sheet.cell_format_summary(Pos { x: 3, y: 2 }),
             CellFormatSummary {
                 bold: None,
                 italic: Some(true),
@@ -335,7 +335,7 @@ mod test {
             Some(CellValue::Text(String::from("underline")))
         );
         assert_eq!(
-            sheet.cell_format_summary(Pos { x: 5, y: 3 }, false),
+            sheet.cell_format_summary(Pos { x: 5, y: 3 }),
             CellFormatSummary {
                 bold: None,
                 italic: None,
@@ -356,7 +356,7 @@ mod test {
             Some(CellValue::Text(String::from("strike through")))
         );
         assert_eq!(
-            sheet.cell_format_summary(Pos { x: 7, y: 4 }, false),
+            sheet.cell_format_summary(Pos { x: 7, y: 4 }),
             CellFormatSummary {
                 bold: None,
                 italic: None,
@@ -841,7 +841,7 @@ mod test {
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
         assert_eq!(sheet.display_value(Pos { x: 2, y: 2 }), None);
         assert_eq!(
-            sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
+            sheet.cell_format_summary(Pos { x: 1, y: 1 }),
             CellFormatSummary {
                 bold: Some(true),
                 italic: None,
@@ -858,7 +858,7 @@ mod test {
             }
         );
         assert_eq!(
-            sheet.cell_format_summary(Pos { x: 2, y: 2 }, false),
+            sheet.cell_format_summary(Pos { x: 2, y: 2 }),
             CellFormatSummary {
                 bold: None,
                 italic: Some(true),
@@ -999,7 +999,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.cell_format_summary(Pos { x: 1, y: 2 }, false),
+            sheet.cell_format_summary(Pos { x: 1, y: 2 }),
             CellFormatSummary {
                 bold: Some(true),
                 italic: None,
@@ -1016,7 +1016,7 @@ mod test {
             }
         );
         assert_eq!(
-            sheet.cell_format_summary(Pos { x: 3, y: 4 }, false),
+            sheet.cell_format_summary(Pos { x: 3, y: 4 }),
             CellFormatSummary {
                 bold: None,
                 italic: None,

@@ -9,13 +9,13 @@ impl GridController {
         &self,
         sheet_id: String,
         pos: String,
-        include_sheet_info: bool,
+        _include_sheet_info: bool, // TODO: remove this parameter
     ) -> Result<JsValue, JsValue> {
         let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return Result::Err("Sheet not found".into());
         };
-        let output: CellFormatSummary = sheet.cell_format_summary(pos, include_sheet_info);
+        let output: CellFormatSummary = sheet.cell_format_summary(pos);
         Ok(serde_wasm_bindgen::to_value(&output)?)
     }
 

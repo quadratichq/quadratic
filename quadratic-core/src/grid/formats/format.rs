@@ -62,66 +62,31 @@ impl Format {
         self.strike_through = None;
     }
 
-    /// Merges a FormatUpdate into this Format, returning a FormatUpdate to undo the change.
-    pub fn merge_update_into(&mut self, update: &FormatUpdate) -> FormatUpdate {
-        let mut old = FormatUpdate::default();
-        if let Some(align) = update.align {
-            old.align = Some(self.align);
-            self.align = align;
+    /// Applies a [`FormatUpdate`] and returns a [`FormatUpdate`] to undo the
+    /// change.
+    pub fn apply_update(&mut self, update: &FormatUpdate) -> FormatUpdate {
+        fn replace_opt<T: Clone>(opt: &mut T, update: &Option<T>) -> Option<T> {
+            update
+                .as_ref()
+                .map(|new_value| std::mem::replace(opt, new_value.clone()))
         }
-        if let Some(vertical_align) = update.vertical_align {
-            old.vertical_align = Some(self.vertical_align);
-            self.vertical_align = vertical_align;
+
+        FormatUpdate {
+            align: replace_opt(&mut self.align, &update.align),
+            vertical_align: replace_opt(&mut self.vertical_align, &update.vertical_align),
+            wrap: replace_opt(&mut self.wrap, &update.wrap),
+            numeric_format: replace_opt(&mut self.numeric_format, &update.numeric_format),
+            numeric_decimals: replace_opt(&mut self.numeric_decimals, &update.numeric_decimals),
+            numeric_commas: replace_opt(&mut self.numeric_commas, &update.numeric_commas),
+            bold: replace_opt(&mut self.bold, &update.bold),
+            italic: replace_opt(&mut self.italic, &update.italic),
+            text_color: replace_opt(&mut self.text_color, &update.text_color),
+            fill_color: replace_opt(&mut self.fill_color, &update.fill_color),
+            render_size: replace_opt(&mut self.render_size, &update.render_size),
+            date_time: replace_opt(&mut self.date_time, &update.date_time),
+            underline: replace_opt(&mut self.underline, &update.underline),
+            strike_through: replace_opt(&mut self.strike_through, &update.strike_through),
         }
-        if let Some(wrap) = update.wrap {
-            old.wrap = Some(self.wrap);
-            self.wrap = wrap;
-        }
-        if let Some(numeric_format) = update.numeric_format.as_ref() {
-            old.numeric_format = Some(self.numeric_format.clone());
-            self.numeric_format.clone_from(numeric_format);
-        }
-        if let Some(numeric_decimals) = update.numeric_decimals {
-            old.numeric_decimals = Some(self.numeric_decimals);
-            self.numeric_decimals = numeric_decimals;
-        }
-        if let Some(numeric_commas) = update.numeric_commas {
-            old.numeric_commas = Some(self.numeric_commas);
-            self.numeric_commas = numeric_commas;
-        }
-        if let Some(bold) = update.bold {
-            old.bold = Some(self.bold);
-            self.bold = bold;
-        }
-        if let Some(italic) = update.italic {
-            old.italic = Some(self.italic);
-            self.italic = italic;
-        }
-        if let Some(text_color) = update.text_color.as_ref() {
-            old.text_color = Some(self.text_color.clone());
-            self.text_color.clone_from(text_color);
-        }
-        if let Some(fill_color) = update.fill_color.as_ref() {
-            old.fill_color = Some(self.fill_color.clone());
-            self.fill_color.clone_from(fill_color);
-        }
-        if let Some(render_size) = update.render_size.as_ref() {
-            old.render_size = Some(self.render_size.clone());
-            self.render_size.clone_from(render_size);
-        }
-        if let Some(date_time) = update.date_time.as_ref() {
-            old.date_time = Some(self.date_time.clone());
-            self.date_time.clone_from(date_time);
-        }
-        if let Some(underline) = update.underline {
-            old.underline = Some(self.underline);
-            self.underline = underline;
-        }
-        if let Some(strike_through) = update.strike_through {
-            old.strike_through = Some(self.strike_through);
-            self.strike_through = strike_through;
-        }
-        old
     }
 
     /// Returns a FormatUpdate only if the current format needs to be cleared.
@@ -185,59 +150,24 @@ impl Format {
         }
     }
 
-    /// Combines formatting from a cell, column, or, and sheet (in that order)
-    pub fn combine(
-        cell: Option<&Format>,
-        column: Option<&Format>,
-        row: Option<&Format>,
-        sheet: Option<&Format>,
-    ) -> Format {
-        let mut format = Format::default();
-        if let Some(sheet) = sheet {
-            format.merge_update_into(&sheet.into());
-        }
-        if let Some(row) = row {
-            format.merge_update_into(&row.into());
-        }
-        if let Some(column) = column {
-            format.merge_update_into(&column.into());
-        }
-        if let Some(cell) = cell {
-            format.merge_update_into(&cell.into());
-        }
-        format
-    }
-
     /// Turns a Format into a FormatUpdate, with None set to Some(None) to
     /// replace the entire value.
     pub fn to_replace(&self) -> FormatUpdate {
         FormatUpdate {
-            align: self.align.map_or(Some(None), |a| Some(Some(a))),
-            vertical_align: self.vertical_align.map_or(Some(None), |v| Some(Some(v))),
-            wrap: self.wrap.map_or(Some(None), |w| Some(Some(w))),
-            numeric_format: self
-                .numeric_format
-                .clone()
-                .map_or(Some(None), |n| Some(Some(n))),
-            numeric_decimals: self.numeric_decimals.map_or(Some(None), |d| Some(Some(d))),
-            numeric_commas: self.numeric_commas.map_or(Some(None), |c| Some(Some(c))),
-            bold: self.bold.map_or(Some(None), |b| Some(Some(b))),
-            italic: self.italic.map_or(Some(None), |i| Some(Some(i))),
-            text_color: self
-                .text_color
-                .clone()
-                .map_or(Some(None), |t| Some(Some(t))),
-            fill_color: self
-                .fill_color
-                .clone()
-                .map_or(Some(None), |f| Some(Some(f))),
-            render_size: self
-                .render_size
-                .clone()
-                .map_or(Some(None), |r| Some(Some(r))),
-            date_time: self.date_time.clone().map_or(Some(None), |d| Some(Some(d))),
-            underline: self.underline.map_or(Some(None), |u| Some(Some(u))),
-            strike_through: self.strike_through.map_or(Some(None), |s| Some(Some(s))),
+            align: Some(self.align),
+            vertical_align: Some(self.vertical_align),
+            wrap: Some(self.wrap),
+            numeric_format: Some(self.numeric_format.clone()),
+            numeric_decimals: Some(self.numeric_decimals),
+            numeric_commas: Some(self.numeric_commas),
+            bold: Some(self.bold),
+            italic: Some(self.italic),
+            text_color: Some(self.text_color.clone()),
+            fill_color: Some(self.fill_color.clone()),
+            render_size: Some(self.render_size.clone()),
+            date_time: Some(self.date_time.clone()),
+            underline: Some(self.underline),
+            strike_through: Some(self.strike_through),
         }
     }
 }
@@ -465,7 +395,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn merge_update_into() {
+    fn test_apply_update() {
         let mut format = Format::default();
         let update = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -490,7 +420,7 @@ mod test {
             strike_through: Some(Some(true)),
         };
 
-        let old = format.merge_update_into(&update);
+        let old = format.apply_update(&update);
 
         assert_eq!(format.align, Some(CellAlign::Center));
         assert_eq!(format.vertical_align, Some(CellVerticalAlign::Middle));
@@ -519,62 +449,9 @@ mod test {
         assert_eq!(format.underline, Some(true));
         assert_eq!(format.strike_through, Some(true));
 
-        let undo = format.merge_update_into(&old);
+        let undo = format.apply_update(&old);
         assert!(format.is_default());
         assert_eq!(undo, update);
-    }
-
-    #[test]
-    #[parallel]
-    fn combine() {
-        let cell = Format {
-            bold: Some(false),
-            ..Default::default()
-        };
-        assert_eq!(
-            Format::combine(Some(&cell), None, None, None),
-            Format {
-                bold: Some(false),
-                ..Default::default()
-            }
-        );
-
-        let sheet = Format {
-            align: Some(CellAlign::Center),
-            ..Default::default()
-        };
-        let row = Format {
-            align: Some(CellAlign::Left),
-            ..Default::default()
-        };
-        let column = Format {
-            align: Some(CellAlign::Right),
-            ..Default::default()
-        };
-        let cell = Format::default();
-        assert_eq!(
-            Format::combine(Some(&cell), Some(&column), Some(&row), Some(&sheet)),
-            Format {
-                align: Some(CellAlign::Right),
-                ..Default::default()
-            }
-        );
-        assert_eq!(
-            Format::combine(None, Some(&column), Some(&row), Some(&sheet)),
-            Format {
-                align: Some(CellAlign::Right),
-                ..Default::default()
-            }
-        );
-        assert_eq!(
-            Format::combine(None, None, None, Some(&sheet)),
-            Format {
-                align: Some(CellAlign::Center),
-                ..Default::default()
-            }
-        );
-
-        assert_eq!(Format::combine(None, None, None, None), Format::default());
     }
 
     #[test]

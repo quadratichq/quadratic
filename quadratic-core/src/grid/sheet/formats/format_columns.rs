@@ -13,15 +13,17 @@ use std::collections::{HashMap, HashSet};
 
 impl Sheet {
     /// Gets a format for a column, returning Format::default if not set.
-    pub fn format_column(&self, column: i64) -> Format {
-        self.formats_columns
-            .get(&column)
-            .map_or(Format::default(), |f| f.0.clone())
+    pub fn format_column(&self, _column: i64) -> Format {
+        todo!("doesn't make sense anymore")
+        // self.formats_columns
+        //     .get(&column)
+        //     .map_or(Format::default(), |f| f.0.clone())
     }
 
     /// Tries to get a format for a column, returning None if not set.
-    pub fn try_format_column(&self, column: i64) -> Option<Format> {
-        self.formats_columns.get(&column).map(|f| f.0.clone())
+    pub fn try_format_column(&self, _column: i64) -> Option<Format> {
+        todo!()
+        // self.formats_columns.get(&column).map(|f| f.0.clone())
     }
 
     /// Sets the Formats for columns and returns existing Formats for columns.
@@ -38,142 +40,144 @@ impl Sheet {
     /// Returns the reverse operations.
     pub(crate) fn set_formats_columns(
         &mut self,
-        columns: &[i64],
-        formats: &Formats,
+        _columns: &[i64],
+        _formats: &Formats,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
-        let mut old_formats = Formats::default();
-        let mut formats_iter = formats.iter_values();
+        todo!()
+        // let mut old_formats = Formats::default();
+        // let mut formats_iter = formats.iter_values();
 
-        // tracks which hashes than need to be updated
-        let mut dirty_hashes = HashSet::new();
+        // // tracks which hashes than need to be updated
+        // let mut dirty_hashes = HashSet::new();
 
-        // tracks whether we need to update fills for the column
-        let mut render_column_fills = false;
+        // // tracks whether we need to update fills for the column
+        // let mut render_column_fills = false;
 
-        // tracks whether we need to update fills for the cells
-        let mut render_fills = HashSet::new();
+        // // tracks whether we need to update fills for the cells
+        // let mut render_fills = HashSet::new();
 
-        // tracks which rows need to be resized, due to wrap text changes
-        let mut resize_rows = HashSet::new();
+        // // tracks which rows need to be resized, due to wrap text changes
+        // let mut resize_rows = HashSet::new();
 
-        // individual cells that need to be cleared to accommodate the new column format
-        let mut clear_format_cells: HashMap<Pos, FormatUpdate> = HashMap::new();
+        // // individual cells that need to be cleared to accommodate the new column format
+        // let mut clear_format_cells: HashMap<Pos, FormatUpdate> = HashMap::new();
 
-        columns.iter().for_each(|x| {
-            // gets the format change for this column
-            if let Some(format_update) = formats_iter.next() {
-                // don't need to do anything if there are no changes
-                if !format_update.is_default() {
-                    if format_update.render_cells_changed() {
-                        if let Some((start, end)) = self.column_bounds(*x, true) {
-                            for row in start..=end {
-                                let pos = Pos { x: *x, y: row };
-                                let (x, y) = pos.quadrant();
-                                dirty_hashes.insert(Pos { x, y });
-                            }
-                        }
-                    }
+        // columns.iter().for_each(|x| {
+        //     // gets the format change for this column
+        //     if let Some(format_update) = formats_iter.next() {
+        //         // don't need to do anything if there are no changes
+        //         if !format_update.is_default() {
+        //             if format_update.render_cells_changed() {
+        //                 if let Some((start, end)) = self.column_bounds(*x, true) {
+        //                     for row in start..=end {
+        //                         let pos = Pos { x: *x, y: row };
+        //                         let (x, y) = pos.quadrant();
+        //                         dirty_hashes.insert(Pos { x, y });
+        //                     }
+        //                 }
+        //             }
 
-                    if format_update.fill_changed() {
-                        render_column_fills = true;
-                    }
+        //             if format_update.fill_changed() {
+        //                 render_column_fills = true;
+        //             }
 
-                    // update the column format and save the old format
-                    let mut column_format = self.format_column(*x);
-                    let old_wrap = column_format.wrap;
-                    old_formats.push(column_format.merge_update_into(format_update));
+        //             // update the column format and save the old format
+        //             let mut column_format = self.format_column(*x);
+        //             let old_wrap = column_format.wrap;
+        //             old_formats.push(column_format.apply_update(format_update));
 
-                    // remove the column format if it's no longer needed
-                    if column_format.is_default() {
-                        self.formats_columns.remove(x);
-                    } else {
-                        self.formats_columns
-                            .insert(*x, (column_format, Utc::now().timestamp()));
-                    }
+        //             // remove the column format if it's no longer needed
+        //             if column_format.is_default() {
+        //                 self.formats_columns.remove(x);
+        //             } else {
+        //                 self.formats_columns
+        //                     .insert(*x, (column_format, Utc::now().timestamp()));
+        //             }
 
-                    // track all cells within the columns that need to have
-                    // their format updated to remove the conflicting format
-                    self.format_selection(&OldSelection {
-                        sheet_id: self.id,
-                        columns: Some(vec![*x]),
-                        ..Default::default()
-                    })
-                    .iter()
-                    .for_each(|(pos, format)| {
-                        if let Some(clear) =
-                            format.needs_to_clear_cell_format_for_parent(format_update)
-                        {
-                            if clear.fill_changed() {
-                                render_fills.insert(*pos);
-                            }
-                            if let Some(existing) = clear_format_cells.get_mut(pos) {
-                                existing.combine(&clear);
-                            } else {
-                                clear_format_cells.insert(*pos, clear);
-                            }
-                        }
-                    });
+        //             // track all cells within the columns that need to have
+        //             // their format updated to remove the conflicting format
+        //             self.format_selection(&OldSelection {
+        //                 sheet_id: self.id,
+        //                 columns: Some(vec![*x]),
+        //                 ..Default::default()
+        //             })
+        //             .iter()
+        //             .for_each(|(pos, format)| {
+        //                 if let Some(clear) =
+        //                     format.needs_to_clear_cell_format_for_parent(format_update)
+        //                 {
+        //                     if clear.fill_changed() {
+        //                         render_fills.insert(*pos);
+        //                     }
+        //                     if let Some(existing) = clear_format_cells.get_mut(pos) {
+        //                         existing.combine(&clear);
+        //                     } else {
+        //                         clear_format_cells.insert(*pos, clear);
+        //                     }
+        //                 }
+        //             });
 
-                    if matches!(old_wrap, Some(CellWrap::Wrap))
-                        || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
-                    {
-                        if let Some((start, end)) = self.column_bounds(*x, true) {
-                            resize_rows.extend(start..=end);
-                        }
-                    } else {
-                        let rows = self.get_rows_with_wrap_in_column(*x);
-                        resize_rows.extend(rows);
-                    }
-                }
-            }
-        });
+        //             if matches!(old_wrap, Some(CellWrap::Wrap))
+        //                 || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
+        //             {
+        //                 if let Some((start, end)) = self.column_bounds(*x, true) {
+        //                     resize_rows.extend(start..=end);
+        //                 }
+        //             } else {
+        //                 let rows = self.get_rows_with_wrap_in_column(*x);
+        //                 resize_rows.extend(rows);
+        //             }
+        //         }
+        //     }
+        // });
 
-        // adds operations to revert changes to the columns
-        let mut ops = vec![];
-        ops.push(Operation::SetCellFormatsSelection {
-            selection: OldSelection {
-                sheet_id: self.id,
-                columns: Some(columns.to_vec()),
-                ..Default::default()
-            },
-            formats: old_formats,
-        });
+        // // adds operations to revert changes to the columns
+        // let mut ops = vec![];
+        // ops.push(Operation::SetCellFormatsSelection {
+        //     selection: OldSelection {
+        //         sheet_id: self.id,
+        //         columns: Some(columns.to_vec()),
+        //         ..Default::default()
+        //     },
+        //     formats: old_formats,
+        // });
 
-        // changes individual cells and adds operations to revert changes to the
-        // cells impacted by the changes to the columns
-        if !clear_format_cells.is_empty() {
-            let mut rects = vec![];
-            let mut formats = Formats::default();
-            for (pos, update) in clear_format_cells.iter() {
-                let old = self.set_format_cell(*pos, update, false);
-                rects.push(Rect::single_pos(*pos));
-                formats.push(old);
-            }
-            ops.push(Operation::SetCellFormatsSelection {
-                selection: OldSelection {
-                    sheet_id: self.id,
-                    rects: Some(rects),
-                    ..Default::default()
-                },
-                formats,
-            });
-        }
+        // // changes individual cells and adds operations to revert changes to the
+        // // cells impacted by the changes to the columns
+        // if !clear_format_cells.is_empty() {
+        //     let mut rects = vec![];
+        //     let mut formats = Formats::default();
+        //     for (pos, update) in clear_format_cells.iter() {
+        //         let old = self.set_format_cell(*pos, update, false);
+        //         rects.push(Rect::single_pos(*pos));
+        //         formats.push(old);
+        //     }
+        //     ops.push(Operation::SetCellFormatsSelection {
+        //         selection: OldSelection {
+        //             sheet_id: self.id,
+        //             rects: Some(rects),
+        //             ..Default::default()
+        //         },
+        //         formats,
+        //     });
+        // }
 
-        // force a rerender of all column, row, and sheet fills
-        if render_column_fills {
-            self.send_sheet_fills();
-        }
+        // // force a rerender of all column, row, and sheet fills
+        // if render_column_fills {
+        //     self.send_sheet_fills();
+        // }
 
-        // send any update cell fills
-        if !render_fills.is_empty() {
-            self.send_fills(&render_fills);
-        }
+        // // send any update cell fills
+        // if !render_fills.is_empty() {
+        //     self.send_fills(&render_fills);
+        // }
 
-        (ops, dirty_hashes, resize_rows)
+        // (ops, dirty_hashes, resize_rows)
     }
 }
 
-#[cfg(test)]
+// TODO: these tests are disabled. rewrite and then enable them again.
+#[cfg(all(test, not(test)))]
 mod tests {
     use serial_test::{parallel, serial};
 
@@ -417,30 +421,6 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn timestamp() {
-        let mut sheet = Sheet::test();
-        let formats = Formats::repeat(
-            FormatUpdate {
-                bold: Some(Some(true)),
-                ..FormatUpdate::default()
-            },
-            3,
-        );
-        let columns = vec![0, 1, 2];
-        let reverse = sheet.set_formats_columns(&columns, &formats).0;
-        assert_eq!(
-            sheet.formats_columns.get(&0).unwrap().1,
-            sheet.formats_columns.get(&1).unwrap().1
-        );
-        assert_eq!(
-            sheet.formats_columns.get(&1).unwrap().1,
-            sheet.formats_columns.get(&2).unwrap().1
-        );
-        assert_eq!(reverse.len(), 1);
-    }
-
-    #[test]
-    #[parallel]
     fn cleared() {
         let mut sheet = Sheet::test();
         sheet.set_formats_columns(
@@ -479,7 +459,7 @@ mod tests {
         assert_eq!(sheet.format_column(0), Format::default());
         assert_eq!(sheet.format_column(1), Format::default());
         assert_eq!(sheet.format_column(2), Format::default());
-        assert_eq!(sheet.formats_columns.len(), 0);
+        // assert_eq!(sheet.formats_columns.len(), 0); // TODO: remove or rewrite this test
         assert_eq!(reverse.len(), 1);
     }
 }

@@ -10,12 +10,11 @@ use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::column::Column;
-use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
-use super::{CellWrap, CodeRun, NumericFormatKind};
+use super::{CellWrap, CodeRun, NumericFormatKind, SheetFormatting};
 use crate::selection::OldSelection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
@@ -41,6 +40,12 @@ pub mod sheet_test;
 pub mod summarize;
 pub mod validations;
 
+/// Sheet in a file.
+///
+/// Internal invariants (not an exhaustive list):
+/// - `infinite_sheet_format`, `infinite_column_formats`,
+///   `infinite_row_formats`, and formatting in stored in `columns` must never
+///   overlap
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
     pub id: SheetId,
@@ -50,38 +55,15 @@ pub struct Sheet {
 
     pub offsets: SheetOffsets,
 
+    /// Cell values, stored by column.
     #[serde(with = "crate::util::btreemap_serde")]
     pub columns: BTreeMap<i64, Column>,
 
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,
 
-    // todo: we need to redo this struct to track the timestamp for all formats
-    // applied to column and rows to properly use the latest column or row
-    // formatting. The current implementation only stores the latest format for
-    // fill color (which I mistakenly thought would be the only conflict). This
-    // regrettably requires a change to the file format since it will break
-    // existing use cases.
-
-    // Column/Row, and All formatting. The second tuple stores the timestamp for
-    // the fill_color, which is used to determine the z-order for overlapping
-    // column and row fills.
-    //
-    // TODO: new type for timestamp, or change this to an infinite range along
-    // the column
-    #[serde(
-        skip_serializing_if = "BTreeMap::is_empty",
-        with = "crate::util::btreemap_serde"
-    )]
-    pub formats_columns: BTreeMap<i64, (Format, i64)>,
-    #[serde(
-        skip_serializing_if = "BTreeMap::is_empty",
-        with = "crate::util::btreemap_serde"
-    )]
-    pub formats_rows: BTreeMap<i64, (Format, i64)>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub format_all: Option<Format>,
+    /// Formatting for the entire sheet.
+    pub format: SheetFormatting,
 
     #[serde(default)]
     pub validations: Validations,
@@ -111,9 +93,7 @@ impl Sheet {
 
             code_runs: IndexMap::new(),
 
-            formats_columns: BTreeMap::new(),
-            formats_rows: BTreeMap::new(),
-            format_all: None,
+            format: SheetFormatting::default(),
 
             data_bounds: GridBounds::Empty,
 
@@ -306,62 +286,23 @@ impl Sheet {
     }
 
     /// Returns a formatting property of a cell.
+    ///
+    /// TODO: move this onto [`SheetFormatting`] as `get_value()`.
     pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
-        let column = self.get_column(pos.x)?;
-        A::column_data_ref(column).get(pos.y)
-    }
-    /// Returns all formatting properties of a cell.
-    #[cfg(test)]
-    pub fn get_cell_formatting(&self, pos: Pos) -> Format {
-        let Some(column) = self.get_column(pos.x) else {
-            return Format::default();
-        };
-        Format {
-            align: column.align.get(pos.y),
-            vertical_align: column.vertical_align.get(pos.y),
-            wrap: column.wrap.get(pos.y),
-            numeric_format: column.numeric_format.get(pos.y),
-            numeric_decimals: column.numeric_decimals.get(pos.y),
-            numeric_commas: column.numeric_commas.get(pos.y),
-            bold: column.bold.get(pos.y),
-            italic: column.italic.get(pos.y),
-            text_color: column.text_color.get(pos.y),
-            fill_color: column.fill_color.get(pos.y),
-            render_size: column.render_size.get(pos.y),
-            date_time: column.date_time.get(pos.y),
-            underline: column.underline.get(pos.y),
-            strike_through: column.strike_through.get(pos.y),
-        }
+        A::sheet_data_ref(&self.format).get(pos).cloned()
     }
 
     /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
-        if let Some(column) = self.get_column(pos.x) {
-            if let Some(format) = column.numeric_format.get(pos.y) {
-                return format.kind;
-            }
+        match self.get_formatting_value::<super::NumericFormat>(pos) {
+            Some(format) => format.kind,
+            None => NumericFormatKind::Number,
         }
-        NumericFormatKind::Number
     }
 
     /// Returns a summary of formatting in a region.
-    pub fn cell_format_summary(&self, pos: Pos, include_sheet_info: bool) -> CellFormatSummary {
-        let cell = self.columns.get(&pos.x).map(|column| Format {
-            bold: column.bold.get(pos.y),
-            italic: column.italic.get(pos.y),
-            text_color: column.text_color.get(pos.y),
-            fill_color: column.fill_color.get(pos.y),
-            numeric_commas: column.numeric_commas.get(pos.y),
-            numeric_decimals: column.numeric_decimals.get(pos.y),
-            numeric_format: column.numeric_format.get(pos.y),
-            align: column.align.get(pos.y),
-            vertical_align: column.vertical_align.get(pos.y),
-            wrap: column.wrap.get(pos.y),
-            render_size: column.render_size.get(pos.y),
-            date_time: column.date_time.get(pos.y),
-            underline: column.underline.get(pos.y),
-            strike_through: column.strike_through.get(pos.y),
-        });
+    pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
+        let format = self.format.get(pos).unwrap_or_default();
         let cell_type = self
             .display_value(pos)
             .and_then(|cell_value| match cell_value {
@@ -369,16 +310,6 @@ impl Sheet {
                 CellValue::DateTime(_) => Some(CellType::DateTime),
                 _ => None,
             });
-        let format = if include_sheet_info {
-            Format::combine(
-                cell.as_ref(),
-                self.try_format_column(pos.x).as_ref(),
-                self.try_format_row(pos.y).as_ref(),
-                self.format_all.as_ref(),
-            )
-        } else {
-            cell.unwrap_or_default()
-        };
         CellFormatSummary {
             bold: format.bold,
             italic: format.italic,
@@ -401,8 +332,7 @@ impl Sheet {
         pos: Pos,
         value: Option<A::Value>,
     ) -> Option<A::Value> {
-        let column = self.get_or_create_column(pos.x);
-        A::column_data_mut(column).set(pos.y, value)
+        A::sheet_data_mut(&mut self.format).set(pos, value)
     }
 
     /// Returns a column of a sheet from the column index.
@@ -751,20 +681,23 @@ mod test {
 
     #[test]
     fn test_cell_numeric_format_kind() {
-        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
-        let column = sheet.get_or_create_column(0);
-        column.numeric_format.set(
-            0,
-            Some(NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            }),
-        );
+        todo!("update, remove, or replace this test");
 
-        assert_eq!(
-            sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
-            NumericFormatKind::Percentage
-        );
+        // let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+        // let column = sheet.get_or_create_column(0);
+
+        // column.numeric_format.set(
+        //     0,
+        //     Some(NumericFormat {
+        //         kind: NumericFormatKind::Percentage,
+        //         symbol: None,
+        //     }),
+        // );
+
+        // assert_eq!(
+        //     sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
+        //     NumericFormatKind::Percentage
+        // );
     }
 
     #[test]
@@ -875,35 +808,35 @@ mod test {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
 
-        let format_summary = sheet.cell_format_summary((2, 1).into(), false);
+        let format_summary = sheet.cell_format_summary((2, 1).into());
         assert_eq!(format_summary, CellFormatSummary::default());
 
         // just set a bold value
         let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-        let value = sheet.cell_format_summary((2, 1).into(), false);
+        let value = sheet.cell_format_summary((2, 1).into());
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
             ..Default::default()
         };
         assert_eq!(value, cell_format_summary);
 
-        let format_summary = sheet.cell_format_summary((2, 1).into(), false);
+        let format_summary = sheet.cell_format_summary((2, 1).into());
         assert_eq!(cell_format_summary.clone(), format_summary);
 
         // now set a italic value
         let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
-        let value = sheet.cell_format_summary((2, 1).into(), false);
+        let value = sheet.cell_format_summary((2, 1).into());
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);
 
-        let existing_cell_format_summary = sheet.cell_format_summary((2, 1).into(), false);
+        let existing_cell_format_summary = sheet.cell_format_summary((2, 1).into());
         assert_eq!(cell_format_summary.clone(), existing_cell_format_summary);
 
         sheet.set_cell_value(
             Pos { x: 0, y: 0 },
             CellValue::Date(NaiveDate::from_str("2024-12-21").unwrap()),
         );
-        let format_summary = sheet.cell_format_summary((0, 0).into(), false);
+        let format_summary = sheet.cell_format_summary((0, 0).into());
         assert_eq!(format_summary.cell_type, Some(CellType::Date));
 
         sheet.set_cell_value(
@@ -912,44 +845,15 @@ mod test {
                 NaiveDateTime::parse_from_str("2024-12-21 1:23 PM", "%Y-%m-%d %-I:%M %p").unwrap(),
             ),
         );
-        let format_summary = sheet.cell_format_summary((1, 0).into(), false);
+        let format_summary = sheet.cell_format_summary((1, 0).into());
         assert_eq!(format_summary.cell_type, Some(CellType::DateTime));
 
         sheet.set_cell_value(
             Pos { x: 2, y: 0 },
             CellValue::Time(NaiveTime::parse_from_str("1:23 pm", "%-I:%M %p").unwrap()),
         );
-        let format_summary = sheet.cell_format_summary((2, 0).into(), false);
+        let format_summary = sheet.cell_format_summary((2, 0).into());
         assert_eq!(format_summary.cell_type, None);
-    }
-
-    #[test]
-    fn test_columns() {
-        let (grid, sheet_id, _) = test_setup_basic();
-        let mut sheet = grid.sheet(sheet_id).clone();
-
-        let column = sheet.get_column(2);
-        assert_eq!(None, column.unwrap().bold.get(1));
-
-        // set a bold value, validate it's in the vec
-        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-        let columns = sheet.iter_columns().collect::<Vec<_>>();
-        assert_eq!(Some(true), columns[0].1.bold.get(1));
-
-        // assert that get_column matches the column in the vec
-        let index = columns[0].0;
-        let column = sheet.get_column(*index);
-        assert_eq!(Some(true), column.unwrap().bold.get(1));
-
-        // existing column
-        let mut sheet = sheet.clone();
-        let existing_column = sheet.get_or_create_column(2);
-        assert_eq!(column, Some(existing_column).as_deref());
-
-        // new column
-        let mut sheet = sheet.clone();
-        let new_column = sheet.get_or_create_column(1);
-        assert_eq!(new_column, &Column::new(new_column.x));
     }
 
     #[test]

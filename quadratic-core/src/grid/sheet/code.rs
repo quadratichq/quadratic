@@ -99,9 +99,10 @@ impl Sheet {
     }
 
     /// returns the render-size for a html-like cell
+    ///
+    /// TODO: inline this method everywhere it's used
     pub fn render_size(&self, pos: Pos) -> Option<RenderSize> {
-        let column = self.get_column(pos.x)?;
-        column.render_size.get(pos.y)
+        self.get_formatting_value::<RenderSize>(pos)
     }
 
     /// Returns whether a rect overlaps the output of a code cell.

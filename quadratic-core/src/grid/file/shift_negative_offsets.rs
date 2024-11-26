@@ -5,11 +5,9 @@
 //! before applying any received changes.
 
 use crate::{
-    controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::CopyFormats,
-    },
+    controller::active_transactions::pending_transaction::PendingTransaction,
     grid::{Grid, GridBounds},
+    CopyFormats,
 };
 
 /// Shifts all negative offsets in the grid and signals client.

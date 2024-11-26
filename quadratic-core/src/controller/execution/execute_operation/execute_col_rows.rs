@@ -7,6 +7,13 @@ use crate::{
 };
 
 impl GridController {
+    /// Change cell references in a formula when pasting.
+    ///
+    /// Tentative guess at how this works:
+    /// - If `column` is `Some`, then everything after that column should be
+    ///   adjusted by `delta`.
+    /// - If `row` is `Some`, then everything after that column should be
+    ///   adjusted by `delta`.
     fn adjust_formulas(
         &self,
         _transaction: &mut PendingTransaction,

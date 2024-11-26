@@ -6,6 +6,7 @@ use crate::{
     cell_values::CellValues,
     grid::{
         file::sheet_schema::SheetSchema,
+        formats::format_update::SheetFormatUpdates,
         formats::Formats,
         formatting::CellFmtArray,
         js_types::JsRowHeight,
@@ -13,17 +14,8 @@ use crate::{
         CodeRun, CodeRunOld, Sheet, SheetBorders, SheetId,
     },
     selection::OldSelection,
-    A1Selection, A1Subspaces, SheetPos, SheetRect,
+    A1Selection, A1Subspaces, CopyFormats, SheetPos, SheetRect,
 };
-
-/// Determine whether to copy the formats during an Insert operation from the
-/// column/row before or after (or none).
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
-pub enum CopyFormats {
-    Before,
-    After,
-    None,
-}
 
 /// Description of changes to make to a file.
 ///
@@ -75,8 +67,7 @@ pub enum Operation {
     /// Updates cell formats for all cells in a selection.
     SetCellFormatsA1 {
         sheet_id: SheetId,
-        subspaces: A1Subspaces,
-        formats: Formats,
+        formats: SheetFormatUpdates,
     },
 
     /// **Deprecated** Nov 2024 in favor of `SetBordersA1`.
@@ -204,7 +195,7 @@ impl fmt::Display for Operation {
                 index,
             } => write!(
                 fmt,
-                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} index: {} }}",
+                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?}, index: {} }}",
                 sheet_pos, run, index
             ),
             Operation::SetCodeRunVersion {
@@ -214,26 +205,22 @@ impl fmt::Display for Operation {
                 version,
             } => write!(
                 fmt,
-                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} index: {} version: {} }}",
+                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?}, index: {} version: {} }}",
                 sheet_pos, run, index, version
             ),
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ [deprecated] }}",),
             Operation::SetCellFormatsSelection { selection, formats } => {
                 write!(
                     fmt,
-                    "SetCellFormatsSelection {{ selection: {:?} formats: {:?} }}",
+                    "SetCellFormatsSelection {{ selection: {:?}, formats: {:?} }}",
                     selection, formats
                 )
             }
-            Operation::SetCellFormatsA1 {
-                sheet_id,
-                subspaces,
-                formats,
-            } => {
+            Operation::SetCellFormatsA1 { sheet_id, formats } => {
                 write!(
                     fmt,
-                    "SetCellFormatsA1 {{ sheet_id: {:?}, subspaces: {:?} formats: {:?} }}",
-                    sheet_id, subspaces, formats
+                    "SetCellFormatsA1 {{ sheet_id: {:?}, formats: {:?} }}",
+                    sheet_id, formats
                 )
             }
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),

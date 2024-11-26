@@ -7,7 +7,7 @@ use wasm_bindgen::JsValue;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
-use crate::grid::formats::format_update::FormatUpdate;
+use crate::grid::formats::format_update::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::formats::Formats;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
 use crate::selection::OldSelection;
@@ -122,23 +122,17 @@ impl GridController {
         symbol: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let subspaces = selection.subspaces();
-        let rle_len = subspaces.rle_len();
-        let formats = Formats::repeat(
-            FormatUpdate {
-                numeric_format: Some(Some(NumericFormat {
-                    kind: NumericFormatKind::Currency,
-                    symbol: Some(symbol),
-                })),
-                numeric_decimals: Some(Some(2)),
-                ..Default::default()
-            },
-            rle_len,
-        );
+        let format_update = FormatUpdate {
+            numeric_format: Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some(symbol),
+            })),
+            numeric_decimals: Some(Some(2)),
+            ..Default::default()
+        };
         let ops = vec![Operation::SetCellFormatsA1 {
             sheet_id: selection.sheet_id,
-            subspaces,
-            formats,
+            formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
@@ -345,7 +339,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().align.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .align,
             Some(crate::grid::CellAlign::Center)
         );
     }
@@ -372,7 +370,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().vertical_align.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .vertical_align,
             Some(crate::grid::CellVerticalAlign::Middle)
         );
     }
@@ -398,7 +400,14 @@ mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.columns.get(&0).unwrap().bold.get(0), Some(true));
+        assert_eq!(
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .bold,
+            Some(true)
+        );
     }
 
     #[test]
@@ -423,7 +432,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().wrap.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .wrap,
             Some(CellWrap::Clip)
         );
     }
@@ -439,7 +452,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&1).unwrap().numeric_format.get(1),
+            sheet
+                .format
+                .get(Pos { x: 1, y: 1 })
+                .unwrap_or_default()
+                .numeric_format,
             Some(crate::grid::NumericFormat {
                 kind: crate::grid::NumericFormatKind::Currency,
                 symbol: Some("€".to_string())
@@ -470,7 +487,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().numeric_format.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .numeric_format,
             Some(crate::grid::NumericFormat {
                 kind: crate::grid::NumericFormatKind::Exponential,
                 symbol: None
@@ -501,7 +522,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().numeric_format.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .numeric_format,
             Some(crate::grid::NumericFormat {
                 kind: crate::grid::NumericFormatKind::Percentage,
                 symbol: None
@@ -530,7 +555,11 @@ mod test {
         .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().numeric_commas.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .numeric_commas,
             Some(true)
         );
 
@@ -550,7 +579,11 @@ mod test {
         .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().numeric_commas.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .numeric_commas,
             Some(false)
         );
     }
@@ -576,7 +609,14 @@ mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.columns.get(&0).unwrap().italic.get(0), Some(true));
+        assert_eq!(
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .italic,
+            Some(true)
+        );
     }
 
     #[test]
@@ -601,7 +641,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().text_color.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .text_color,
             Some("red".to_string())
         );
     }
@@ -628,7 +672,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().fill_color.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .fill_color,
             Some("blue".to_string())
         );
     }
@@ -657,7 +705,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().numeric_decimals.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .numeric_decimals,
             Some(2)
         );
     }
@@ -738,7 +790,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&1).unwrap().text_color.get(1),
+            sheet
+                .format
+                .get(Pos { x: 1, y: 1 })
+                .unwrap_or_default()
+                .text_color,
             Some("red".to_string())
         );
 
@@ -746,7 +802,14 @@ mod test {
         gc.clear_format(&selection, None).unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.columns.get(&1).unwrap().text_color.get(1), None);
+        assert_eq!(
+            sheet
+                .format
+                .get(Pos { x: 1, y: 1 })
+                .unwrap_or_default()
+                .text_color,
+            None
+        );
     }
 
     #[test]
@@ -777,7 +840,8 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.format_column(1).text_color, None);
-        assert!(sheet.formats_columns.is_empty());
+        todo!("remove this last line, probably?")
+        // assert!(sheet.formats_columns.is_empty());
     }
 
     #[test]
@@ -825,7 +889,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.columns.get(&0).unwrap().date_time.get(0),
+            sheet
+                .format
+                .get(Pos { x: 0, y: 0 })
+                .unwrap_or_default()
+                .date_time,
             Some("yyyy-mm-dd".to_string())
         );
     }

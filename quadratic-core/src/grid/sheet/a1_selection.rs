@@ -80,8 +80,8 @@ impl Sheet {
                     y: start.row.map_or(1, |r| r.coord) as i64,
                 };
 
-                let ignore_bounds = false;
-                let bounds = match self.bounds(ignore_bounds) {
+                let ignore_formatting = false;
+                let bounds = match self.bounds(ignore_formatting) {
                     GridBounds::Empty => Rect::single_pos(rect_start),
                     GridBounds::NonEmpty(rect) => rect,
                 };
@@ -99,7 +99,7 @@ impl Sheet {
                                 self.rows_bounds(
                                     std::cmp::min(a, b),
                                     std::cmp::max(a, b),
-                                    ignore_bounds,
+                                    ignore_formatting,
                                 )
                                 .map_or(rect_start.x, |(_, hi)| hi)
                             }),
@@ -110,7 +110,7 @@ impl Sheet {
                                 self.columns_bounds(
                                     std::cmp::min(a, b),
                                     std::cmp::max(a, b),
-                                    ignore_bounds,
+                                    ignore_formatting,
                                 )
                                 .map_or(rect_start.y, |(_, hi)| hi)
                             }),
@@ -123,13 +123,13 @@ impl Sheet {
                             x: rect_start.x,
                             // get max column for the row
                             y: self
-                                .column_bounds(rect_start.x, ignore_bounds)
+                                .column_bounds(rect_start.x, ignore_formatting)
                                 .map_or(rect_start.y, |(_, hi)| hi),
                         },
                         (None, Some(_)) => Pos {
                             // get max row for the column
                             x: self
-                                .row_bounds(rect_start.y, ignore_bounds)
+                                .row_bounds(rect_start.y, ignore_formatting)
                                 .map_or(rect_start.x, |(_, hi)| hi),
                             y: rect_start.y,
                         },

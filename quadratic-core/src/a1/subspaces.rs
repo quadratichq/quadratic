@@ -3,6 +3,7 @@ use std::collections::{btree_map, BTreeMap};
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
+use crate::grid::Contiguous2D;
 use crate::{Pos, Rect};
 
 /// Structure representing a selection using axis-aligned linear subspaces of a
@@ -216,6 +217,21 @@ impl A1Subspaces {
 
             self.rects.extend(new_rects);
         }
+    }
+
+    pub fn from_contiguous<T: Clone + PartialEq>(contiguous: Contiguous2D<T>) -> Self {
+        let mut ret = A1Subspaces::default();
+        for (x1, y1, x2, y2) in contiguous.to_rects() {
+            match (x2, y2) {
+                (None, None) => ret.all = Some(Pos::new(x1 as i64, y1 as i64)),
+                (None, Some(y2)) => ret.rows.extend((y1..=y2).map(|y| (y, x1))),
+                (Some(x2), None) => ret.cols.extend((x1..=x2).map(|x| (x, y1))),
+                (Some(x2), Some(y2)) => ret
+                    .rects
+                    .push(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64)),
+            }
+        }
+        ret
     }
 
     /// Returns the length of a corresponding [`RunLengthEncoding`] for a

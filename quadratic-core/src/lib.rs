@@ -9,6 +9,7 @@ pub mod a1;
 pub mod color;
 pub mod compression;
 pub mod controller;
+mod copy_formats;
 pub mod date_time;
 pub mod error_core;
 pub mod ext;
@@ -31,6 +32,7 @@ pub mod viewport;
 pub mod wasm_bindings;
 
 pub use a1::*;
+pub use copy_formats::CopyFormats;
 pub use error_run::*;
 pub use ext::*;
 pub use pos::*;

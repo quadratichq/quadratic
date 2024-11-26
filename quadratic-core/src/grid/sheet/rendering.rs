@@ -1,12 +1,11 @@
 use code_run::CodeRunResult;
 
 use super::Sheet;
-use crate::grid::formats::format::Format;
 use crate::grid::js_types::{
     JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
 };
-use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun, Column};
+use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun};
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
@@ -26,7 +25,6 @@ impl Sheet {
         &self,
         x: i64,
         y: i64,
-        column: Option<&Column>,
         value: &CellValue,
         language: Option<CodeCellLanguage>,
     ) -> JsRenderCell {
@@ -78,77 +76,36 @@ impl Sheet {
             }
         });
 
-        match column {
-            None => {
-                let format = Format::combine(
-                    None,
-                    self.try_format_column(x).as_ref(),
-                    self.try_format_row(y).as_ref(),
-                    self.format_all.as_ref(),
-                );
-                let align = format.align.or(align);
-                let number: Option<JsNumber> = if matches!(value, CellValue::Number(_)) {
-                    Some((&format).into())
-                } else {
-                    None
-                };
-                let value = Self::value_date_time(value, format.date_time);
-                JsRenderCell {
-                    x,
-                    y,
-                    value,
-                    language,
-                    align,
-                    vertical_align: format.vertical_align,
-                    wrap: format.wrap,
-                    bold: format.bold,
-                    italic: format.italic,
-                    text_color: format.text_color,
-                    special,
-                    number,
-                    underline: format.underline,
-                    strike_through: format.strike_through,
-                }
+        let mut format = self.format.get(Pos { x, y }).unwrap_or_default();
+        let mut number: Option<JsNumber> = None;
+        let value = match &value {
+            CellValue::Number(_) => {
+                // get numeric_format and numeric_decimal to turn number into a string
+                // if align is not set, set it to right only for numbers
+                format.align = format.align.or(Some(CellAlign::Right));
+                number = Some((&format).into());
+                value.to_display()
             }
-            Some(column) => {
-                let format_cell = column.format(y);
-                let mut format = Format::combine(
-                    format_cell.as_ref(),
-                    self.try_format_column(x).as_ref(),
-                    self.try_format_row(y).as_ref(),
-                    self.format_all.as_ref(),
-                );
-                let mut number: Option<JsNumber> = None;
-                let value = match &value {
-                    CellValue::Number(_) => {
-                        // get numeric_format and numeric_decimal to turn number into a string
-                        // if align is not set, set it to right only for numbers
-                        format.align = format.align.or(Some(CellAlign::Right));
-                        number = Some((&format).into());
-                        value.to_display()
-                    }
-                    CellValue::Date(_) | CellValue::DateTime(_) | CellValue::Time(_) => {
-                        Self::value_date_time(value, format.date_time)
-                    }
-                    _ => value.to_display(),
-                };
-                JsRenderCell {
-                    x,
-                    y,
-                    value,
-                    language,
-                    align: format.align.or(align),
-                    wrap: format.wrap,
-                    bold: format.bold,
-                    italic: format.italic,
-                    text_color: format.text_color,
-                    vertical_align: format.vertical_align,
-                    special,
-                    number,
-                    underline: format.underline,
-                    strike_through: format.strike_through,
-                }
+            CellValue::Date(_) | CellValue::DateTime(_) | CellValue::Time(_) => {
+                Self::value_date_time(value, format.date_time)
             }
+            _ => value.to_display(),
+        };
+        JsRenderCell {
+            x,
+            y,
+            value,
+            language,
+            align: format.align.or(align),
+            wrap: format.wrap,
+            bold: format.bold,
+            italic: format.italic,
+            text_color: format.text_color,
+            vertical_align: format.vertical_align,
+            special,
+            number,
+            underline: format.underline,
+            strike_through: format.strike_through,
         }
     }
 
@@ -166,7 +123,6 @@ impl Sheet {
                 cells.push(self.get_render_cell(
                     code_rect.min.x,
                     code_rect.min.y,
-                    None,
                     &CellValue::Error(Box::new(RunError {
                         span: None,
                         msg: RunErrorMsg::Spill,
@@ -177,7 +133,6 @@ impl Sheet {
                 cells.push(self.get_render_cell(
                     code_rect.min.x,
                     code_rect.min.y,
-                    None,
                     &CellValue::Error(Box::new(error)),
                     Some(code.language.to_owned()),
                 ));
@@ -204,7 +159,6 @@ impl Sheet {
                     code_rect.max.y
                 };
                 for x in x_start..=x_end {
-                    let column = self.get_column(x);
                     for y in y_start..=y_end {
                         let value = run.cell_value_at(
                             (x - code_rect.min.x) as u32,
@@ -216,7 +170,7 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            cells.push(self.get_render_cell(x, y, column, &value, language));
+                            cells.push(self.get_render_cell(x, y, &value, language));
                         }
                     }
                 }
@@ -237,7 +191,7 @@ impl Sheet {
                 column.values.range(rect.y_range()).for_each(|(y, value)| {
                     // ignore code cells when rendering since they will be taken care in the next part
                     if !matches!(value, CellValue::Code(_)) {
-                        render_cells.push(self.get_render_cell(x, *y, Some(column), value, None));
+                        render_cells.push(self.get_render_cell(x, *y, value, None));
                     }
                 });
             });
@@ -333,46 +287,50 @@ impl Sheet {
 
     /// Returns all data for rendering cell fill color.
     pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
-        let mut ret = vec![];
-        for (&x, column) in self.columns.iter() {
-            for block in column.fill_color.blocks() {
-                ret.push(JsRenderFill {
-                    x,
-                    y: block.y,
-                    w: 1,
-                    h: block.len() as u32,
-                    color: block.content().value.clone(),
-                });
-            }
-        }
-        ret
+        todo!("this can return ALL fills, infinite and finite")
+
+        // let mut ret = vec![];
+        // for (&x, column) in self.columns.iter() {
+        //     for block in column.fill_color.blocks() {
+        //         ret.push(JsRenderFill {
+        //             x,
+        //             y: block.y,
+        //             w: 1,
+        //             h: block.len() as u32,
+        //             color: block.content().value.clone(),
+        //         });
+        //     }
+        // }
+        // ret
     }
 
     /// Returns all fills for the rows, columns, and sheet. This does not return
     /// individual cell formats.
     pub fn get_sheet_fills(&self) -> JsSheetFill {
-        let columns = self
-            .formats_columns
-            .iter()
-            .filter_map(|(x, (format, timestamp))| {
-                format
-                    .fill_color
-                    .as_ref()
-                    .map(|color| (*x, (color.clone(), *timestamp)))
-            })
-            .collect();
-        let rows = self
-            .formats_rows
-            .iter()
-            .filter_map(|(y, (format, timestamp))| {
-                format
-                    .fill_color
-                    .as_ref()
-                    .map(|color| (*y, (color.clone(), *timestamp)))
-            })
-            .collect();
-        let all = self.format_all().fill_color.clone();
-        JsSheetFill { columns, rows, all }
+        todo!("can probably be combined with get_all_render_fills()")
+
+        // let columns = self
+        //     .infinite_column_formats
+        //     .iter()
+        //     .filter_map(|(x, (format, timestamp))| {
+        //         format
+        //             .fill_color
+        //             .as_ref()
+        //             .map(|color| (*x, (color.clone(), *timestamp)))
+        //     })
+        //     .collect();
+        // let rows = self
+        //     .infinite_row_formats
+        //     .iter()
+        //     .filter_map(|(y, (format, timestamp))| {
+        //         format
+        //             .fill_color
+        //             .as_ref()
+        //             .map(|color| (*y, (color.clone(), *timestamp)))
+        //     })
+        //     .collect();
+        // let all = self.format_all().fill_color.clone();
+        // JsSheetFill { columns, rows, all }
     }
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
@@ -601,10 +559,9 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            formats::{format::Format, format_update::FormatUpdate, Formats},
             js_types::{
                 JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-                JsSheetFill, JsValidationWarning,
+                JsValidationWarning,
             },
             sheet::validations::{
                 validation::{Validation, ValidationStyle},
@@ -1152,52 +1109,54 @@ mod tests {
     #[test]
     #[parallel]
     fn get_sheet_fills() {
-        let mut sheet = Sheet::test();
-        assert_eq!(sheet.get_sheet_fills(), JsSheetFill::default());
+        todo!("update, remove, or replace this test");
 
-        sheet.format_all = Some(Format {
-            fill_color: Some("red".to_string()),
-            ..Default::default()
-        });
-        assert_eq!(
-            sheet.get_sheet_fills(),
-            JsSheetFill {
-                all: Some("red".to_string()),
-                ..Default::default()
-            }
-        );
+        // let mut sheet = Sheet::test();
+        // assert_eq!(sheet.get_sheet_fills(), JsSheetFill::default());
 
-        let mut sheet = Sheet::test();
-        sheet.set_formats_columns(
-            &[1],
-            &Formats::repeat(
-                FormatUpdate {
-                    fill_color: Some(Some("blue".to_string())),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
-        let fills = sheet.get_sheet_fills();
-        assert_eq!(fills.columns.len(), 1);
-        assert_eq!(fills.columns[0].1 .0, "blue".to_string());
+        // sheet.infinite_sheet_format = Some(Format {
+        //     fill_color: Some("red".to_string()),
+        //     ..Default::default()
+        // });
+        // assert_eq!(
+        //     sheet.get_sheet_fills(),
+        //     JsSheetFill {
+        //         all: Some("red".to_string()),
+        //         ..Default::default()
+        //     }
+        // );
 
-        sheet.set_formats_rows(
-            &[-5],
-            &Formats::repeat(
-                FormatUpdate {
-                    fill_color: Some(Some("red".to_string())),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
+        // let mut sheet = Sheet::test();
+        // sheet.set_formats_columns(
+        //     &[1],
+        //     &Formats::repeat(
+        //         FormatUpdate {
+        //             fill_color: Some(Some("blue".to_string())),
+        //             ..Default::default()
+        //         },
+        //         1,
+        //     ),
+        // );
+        // let fills = sheet.get_sheet_fills();
+        // assert_eq!(fills.columns.len(), 1);
+        // assert_eq!(fills.columns[0].1 .0, "blue".to_string());
 
-        let fills = sheet.get_sheet_fills();
-        assert_eq!(fills.columns.len(), 1);
-        assert_eq!(fills.columns[0].1 .0, "blue".to_string());
-        assert_eq!(fills.rows.len(), 1);
-        assert_eq!(fills.rows[0].1 .0, "red".to_string());
+        // sheet.set_formats_rows(
+        //     &[-5],
+        //     &Formats::repeat(
+        //         FormatUpdate {
+        //             fill_color: Some(Some("red".to_string())),
+        //             ..Default::default()
+        //         },
+        //         1,
+        //     ),
+        // );
+
+        // let fills = sheet.get_sheet_fills();
+        // assert_eq!(fills.columns.len(), 1);
+        // assert_eq!(fills.columns[0].1 .0, "blue".to_string());
+        // assert_eq!(fills.rows.len(), 1);
+        // assert_eq!(fills.rows[0].1 .0, "red".to_string());
     }
 
     #[test]

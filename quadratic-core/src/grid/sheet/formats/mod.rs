@@ -1,15 +1,20 @@
-use super::Sheet;
+#![allow(unused_imports)] // TODO: remove this
+
+use super::{Sheet, SheetId};
 use crate::{
     controller::operations::{
         clipboard::{ClipboardOrigin, ClipboardSheetFormats},
         operation::Operation,
     },
-    grid::formats::{format::Format, format_update::FormatUpdate, Formats},
-    grid::SheetId,
+    grid::formats::{
+        format::Format,
+        format_update::{FormatUpdate, SheetFormatUpdates},
+        Formats,
+    },
     selection::OldSelection,
-    A1Subspaces, Pos,
+    Pos,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 pub mod format_all;
 pub mod format_cell;
@@ -18,49 +23,6 @@ pub mod format_rects;
 pub mod format_rows;
 
 impl Sheet {
-    /// This returns a FormatUpdate to undo a change to Format from a FormatUpdate.
-    pub(crate) fn undo_format_update(
-        update: &FormatUpdate,
-        format: &Format,
-    ) -> Option<FormatUpdate> {
-        let mut undo = FormatUpdate::default();
-        if update.align.is_some() {
-            undo.align = Some(format.align);
-        }
-        if update.wrap.is_some() {
-            undo.wrap = Some(format.wrap);
-        }
-        if update.numeric_format.is_some() {
-            undo.numeric_format = Some(format.numeric_format.clone());
-        }
-        if update.numeric_decimals.is_some() {
-            undo.numeric_decimals = Some(format.numeric_decimals);
-        }
-        if update.numeric_commas.is_some() {
-            undo.numeric_commas = Some(format.numeric_commas);
-        }
-        if update.bold.is_some() {
-            undo.bold = Some(format.bold);
-        }
-        if update.italic.is_some() {
-            undo.italic = Some(format.italic);
-        }
-        if update.text_color.is_some() {
-            undo.text_color = Some(format.text_color.clone());
-        }
-        if update.fill_color.is_some() {
-            undo.fill_color = Some(format.fill_color.clone());
-        }
-        if update.render_size.is_some() {
-            undo.render_size = Some(format.render_size.clone());
-        }
-        if undo.is_default() {
-            None
-        } else {
-            Some(undo)
-        }
-    }
-
     pub fn set_formats_selection(
         &mut self,
         selection: &OldSelection,
@@ -97,9 +59,13 @@ impl Sheet {
     pub fn set_formats_a1(
         &mut self,
         _sheet_id: SheetId,
-        _subspaces: &A1Subspaces,
-        _formats: &Formats,
+        _formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
+        // let mut reverse_op = Operation::SetCellFormatsA1 {
+        //     sheet_id,
+        //     formats: todo!(),
+        // };
+
         // if selection.all {
         //     self.set_format_all(formats)
         // } else {
@@ -132,41 +98,42 @@ impl Sheet {
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.
     pub fn sheet_formats(
         &self,
-        selection: &OldSelection,
-        clipboard_origin: &ClipboardOrigin,
+        _selection: &OldSelection,
+        _clipboard_origin: &ClipboardOrigin,
     ) -> ClipboardSheetFormats {
-        if selection.all {
-            ClipboardSheetFormats {
-                all: self.format_all.clone(),
-                ..Default::default()
-            }
-        } else {
-            let columns: HashMap<i64, Format> = match selection.columns.as_ref() {
-                None => HashMap::new(),
-                Some(columns) => columns
-                    .iter()
-                    .filter_map(|column| {
-                        self.try_format_column(*column)
-                            .map(|format| (*column - clipboard_origin.x, format.clone()))
-                    })
-                    .collect(),
-            };
-            let rows = match selection.rows.as_ref() {
-                None => HashMap::new(),
-                Some(rows) => rows
-                    .iter()
-                    .filter_map(|row| {
-                        self.try_format_row(*row)
-                            .map(|format| (*row - clipboard_origin.y, format.clone()))
-                    })
-                    .collect(),
-            };
-            ClipboardSheetFormats {
-                columns,
-                rows,
-                ..Default::default()
-            }
-        }
+        todo!("this can use A1Selection instead, right?")
+        // if selection.all {
+        //     ClipboardSheetFormats {
+        //         all: self.format_all.clone(),
+        //         ..Default::default()
+        //     }
+        // } else {
+        //     let columns: HashMap<i64, Format> = match selection.columns.as_ref() {
+        //         None => HashMap::new(),
+        //         Some(columns) => columns
+        //             .iter()
+        //             .filter_map(|column| {
+        //                 self.try_format_column(*column)
+        //                     .map(|format| (*column - clipboard_origin.x, format.clone()))
+        //             })
+        //             .collect(),
+        //     };
+        //     let rows = match selection.rows.as_ref() {
+        //         None => HashMap::new(),
+        //         Some(rows) => rows
+        //             .iter()
+        //             .filter_map(|row| {
+        //                 self.try_format_row(*row)
+        //                     .map(|format| (*row - clipboard_origin.y, format.clone()))
+        //             })
+        //             .collect(),
+        //     };
+        //     ClipboardSheetFormats {
+        //         columns,
+        //         rows,
+        //         ..Default::default()
+        //     }
+        // }
     }
 }
 

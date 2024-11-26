@@ -2,11 +2,11 @@ use crate::{
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::{CopyFormats, Operation},
+        operations::operation::Operation,
     },
     grid::{formats::Formats, Sheet},
     selection::OldSelection,
-    Pos, Rect, SheetPos,
+    CopyFormats, Pos, Rect, SheetPos,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
@@ -144,12 +144,11 @@ impl Sheet {
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         // remove the column's data from the sheet
-        if let Some(c) = self.columns.get(&column) {
-            if !c.fill_color.is_empty() {
-                transaction.fill_cells.insert(self.id);
-            }
-            self.columns.remove(&column);
+        self.format.remove_column(column as u64);
+        if true {
+            todo!("actually save the column formatting and update transaction appropriately")
         }
+        self.columns.remove(&column);
 
         // remove the column's code runs from the sheet
         self.code_runs.retain(|pos, code_run| {
@@ -168,14 +167,6 @@ impl Sheet {
             }
         });
 
-        // remove the column's formats from the sheet
-        if let Some((format, _)) = self.formats_columns.get(&column) {
-            if format.fill_color.is_some() {
-                transaction.fill_cells.insert(self.id);
-            }
-            self.formats_columns.remove(&column);
-        }
-
         // remove the column's borders from the sheet
         if self.borders.remove_column(column) {
             transaction.sheet_borders.insert(self.id);
@@ -191,9 +182,6 @@ impl Sheet {
         for col in columns_to_update {
             if let Some(mut column_data) = self.columns.remove(&col) {
                 column_data.x -= 1;
-                if !column_data.fill_color.is_empty() {
-                    transaction.fill_cells.insert(self.id);
-                }
                 self.columns.insert(col - 1, column_data);
             }
         }
@@ -226,19 +214,6 @@ impl Sheet {
                 // signal client to update the code runs
                 transaction.add_code_cell(self.id, old_pos);
                 transaction.add_code_cell(self.id, new_pos);
-            }
-        }
-
-        // update the indices of all column-based formats impacted by the deletion
-        let mut formats_to_update = Vec::new();
-        for col in self.formats_columns.keys() {
-            if *col >= column {
-                formats_to_update.push(*col);
-            }
-        }
-        for col in formats_to_update {
-            if let Some(format) = self.formats_columns.remove(&col) {
-                self.formats_columns.insert(col - 1, format);
             }
         }
 
@@ -349,19 +324,7 @@ impl Sheet {
             }
         }
 
-        // update the indices of all column-based formats impacted by the deletion
-        let mut formats_to_update = Vec::new();
-        for col in self.formats_columns.keys() {
-            if *col >= column {
-                formats_to_update.push(*col);
-            }
-        }
-        formats_to_update.reverse();
-        for col in formats_to_update {
-            if let Some(format) = self.formats_columns.remove(&col) {
-                self.formats_columns.insert(col + 1, format);
-            }
-        }
+        self.format.insert_column(column as u64, copy_formats);
 
         // signal client ot update the borders for changed columns
         if self.borders.insert_column(column) {

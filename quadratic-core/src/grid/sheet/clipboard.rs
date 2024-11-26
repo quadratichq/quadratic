@@ -81,7 +81,7 @@ impl Sheet {
                     // add styling for html (only used for pasting to other spreadsheets)
                     let mut style = String::new();
 
-                    let summary = self.cell_format_summary(pos, true);
+                    let summary = self.cell_format_summary(pos);
                     let bold = summary.bold.unwrap_or(false);
                     let italic = summary.italic.unwrap_or(false);
                     let text_color = summary.text_color;

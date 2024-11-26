@@ -128,13 +128,20 @@ impl CellRefRangeEnd {
         }
     }
 
-    pub fn is_multi_range(&self) -> bool {
+    /// Returns whether the range end is missing a row or column number.
+    pub fn is_multi_range(self) -> bool {
         self.col.is_none() || self.row.is_none()
     }
 
-    pub fn is_pos(&self, pos: Pos) -> bool {
+    // TODO: `impl PartialEq<Pos> for CellRefRangeEnd`
+    pub fn is_pos(self, pos: Pos) -> bool {
         self.col.map_or(false, |col| col.coord == pos.x as u64)
             && self.row.map_or(false, |row| row.coord == pos.y as u64)
+    }
+
+    /// Returns the XY coordinates of the range end.
+    pub fn unpack_xy(self) -> [Option<u64>; 2] {
+        [self.col.map(|c| c.coord), self.row.map(|c| c.coord)]
     }
 }
 

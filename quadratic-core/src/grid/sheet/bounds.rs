@@ -21,13 +21,13 @@ impl Sheet {
         self.format_bounds.clear();
 
         for (&x, column) in &self.columns {
-            if let Some(data_range) = column.range(true) {
+            if let Some(data_range) = column.range() {
                 let y = data_range.start;
                 self.data_bounds.add(Pos { x, y });
                 let y = data_range.end - 1;
                 self.data_bounds.add(Pos { x, y });
             }
-            if let Some(format_range) = column.range(false) {
+            if let Some(format_range) = column.range() {
                 let y = format_range.start;
                 self.format_bounds.add(Pos { x, y });
                 let y = format_range.end - 1;
@@ -130,9 +130,10 @@ impl Sheet {
     ///
     /// If `ignore_formatting` is `true`, only data is considered; if it is
     /// `false`, then data and formatting are both considered.
-    pub fn column_bounds(&self, column: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
+    pub fn column_bounds(&self, column: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
+        // TODO: currently this method assumes `ignore_formatting` is `true`
         let range = if let Some(column_data) = self.columns.get(&column) {
-            column_data.range(ignore_formatting)
+            column_data.range()
         } else {
             None
         };
@@ -194,7 +195,7 @@ impl Sheet {
     pub fn row_bounds(&self, row: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
             true => column.has_data_in_row(row),
-            false => column.has_anything_in_row(row),
+            false => todo!("has data or format in row"),
         };
         let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
             Some(*index)
@@ -222,8 +223,9 @@ impl Sheet {
 
     /// Returns the lower and upper bounds of formatting in a row, or `None` if
     /// the row has no formatting.
-    pub fn row_bounds_formats(&self, row: i64) -> Option<(i64, i64)> {
-        let column_has_row = |(_x, column): &(&i64, &Column)| column.has_format_in_row(row);
+    pub fn row_bounds_formats(&self, _row: i64) -> Option<(i64, i64)> {
+        let column_has_row =
+            |(_x, _column): &(&i64, &Column)| todo!("column.has_format_in_row(row)");
         let min = self
             .columns
             .iter()

@@ -2,8 +2,6 @@
 //! 1. if selection includes all, then all cells are returned
 //! 2. otherwise, the selection iterates over columns, rows, and then rects
 
-use std::collections::HashMap;
-
 use indexmap::IndexMap;
 
 use crate::{
@@ -330,64 +328,65 @@ impl Sheet {
     /// Gets a list of cells with formatting for a selection. Only cells with a
     /// format are returned.
     /// TODO: return &Format when we change how formats are stored internally.
-    pub fn format_selection(&self, selection: &OldSelection) -> Vec<(Pos, Format)> {
-        let mut cells = HashMap::new();
-        if selection.all {
-            if let GridBounds::NonEmpty(bounds) = self.format_bounds {
-                for x in bounds.min.x..=bounds.max.x {
-                    if let Some(column) = self.columns.get(&x) {
-                        for y in bounds.min.y..=bounds.max.y {
-                            if let Some(format) = column.format(y) {
-                                cells.insert(Pos { x, y }, format);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    pub fn format_selection(&self, _selection: &OldSelection) -> Vec<(Pos, Format)> {
+        todo!("probably remove this; otherwise update it")
+        // let mut cells = HashMap::new();
+        // if selection.all {
+        //     if let GridBounds::NonEmpty(bounds) = self.format_bounds {
+        //         for x in bounds.min.x..=bounds.max.x {
+        //             if let Some(column) = self.columns.get(&x) {
+        //                 for y in bounds.min.y..=bounds.max.y {
+        //                     if let Some(format) = column.format(y) {
+        //                         cells.insert(Pos { x, y }, format);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        if let Some(columns) = selection.columns.as_ref() {
-            columns.iter().for_each(|x| {
-                if let Some(column) = self.get_column(*x) {
-                    if let Some(range) = column.format_range() {
-                        for y in range.start..=range.end {
-                            if let Some(format) = column.format(y) {
-                                cells.insert(Pos { x: *x, y }, format);
-                            }
-                        }
-                    }
-                }
-            });
-        }
+        // if let Some(columns) = selection.columns.as_ref() {
+        //     columns.iter().for_each(|x| {
+        //         if let Some(column) = self.get_column(*x) {
+        //             if let Some(range) = column.format_range() {
+        //                 for y in range.start..=range.end {
+        //                     if let Some(format) = column.format(y) {
+        //                         cells.insert(Pos { x: *x, y }, format);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     });
+        // }
 
-        if let Some(rows) = selection.rows.as_ref() {
-            self.columns.iter().for_each(|(x, column)| {
-                if let Some(range) = column.format_range() {
-                    rows.iter().for_each(|y| {
-                        if range.contains(y) {
-                            if let Some(format) = column.format(*y) {
-                                cells.insert(Pos { x: *x, y: *y }, format);
-                            }
-                        }
-                    });
-                }
-            });
-        }
+        // if let Some(rows) = selection.rows.as_ref() {
+        //     self.columns.iter().for_each(|(x, column)| {
+        //         if let Some(range) = column.format_range() {
+        //             rows.iter().for_each(|y| {
+        //                 if range.contains(y) {
+        //                     if let Some(format) = column.format(*y) {
+        //                         cells.insert(Pos { x: *x, y: *y }, format);
+        //                     }
+        //                 }
+        //             });
+        //         }
+        //     });
+        // }
 
-        if let Some(rects) = selection.rects.as_ref() {
-            for rect in rects {
-                for x in rect.min.x..=rect.max.x {
-                    if let Some(column) = self.columns.get(&x) {
-                        for y in rect.min.y..=rect.max.y {
-                            if let Some(format) = column.format(y) {
-                                cells.insert(Pos { x, y }, format);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        cells.into_iter().collect()
+        // if let Some(rects) = selection.rects.as_ref() {
+        //     for rect in rects {
+        //         for x in rect.min.x..=rect.max.x {
+        //             if let Some(column) = self.columns.get(&x) {
+        //                 for y in rect.min.y..=rect.max.y {
+        //                     if let Some(format) = column.format(y) {
+        //                         cells.insert(Pos { x, y }, format);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        // cells.into_iter().collect()
     }
 
     /// **Deprecated** Nov 2024 in favor of [`Self::selection_to_rects()`].

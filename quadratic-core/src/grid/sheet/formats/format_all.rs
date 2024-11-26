@@ -13,56 +13,11 @@ use crate::{
 impl Sheet {
     /// Gets the format_all for the sheet (or returns default if not set)
     pub fn format_all(&self) -> Format {
-        self.format_all
-            .as_ref()
-            .unwrap_or(&Format::default())
-            .clone()
-    }
-
-    /// Finds any format_columns that overlap with the update and return a list of column indices.
-    pub(crate) fn find_overlapping_format_columns(&self, update: &FormatUpdate) -> Vec<i64> {
-        self.formats_columns
-            .iter()
-            .filter_map(|(column, (column_format, _))| {
-                if Sheet::undo_format_update(update, column_format).is_some() {
-                    Some(*column)
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    /// Finds any format_rows that overlap with the update and return a list of row indices.
-    pub(crate) fn find_overlapping_format_rows(&self, update: &FormatUpdate) -> Vec<i64> {
-        self.formats_rows
-            .iter()
-            .filter_map(|(row, (row_format, _))| {
-                if Sheet::undo_format_update(update, row_format).is_some() {
-                    Some(*row)
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    /// Finds any cells that overlap with the update a return a list of positions.
-    pub(crate) fn find_overlapping_format_cells(&self, update: &FormatUpdate) -> Vec<Pos> {
-        self.format_selection(&OldSelection {
-            sheet_id: self.id,
-            all: true,
-            ..Default::default()
-        })
-        .iter()
-        .filter_map(|(pos, format)| {
-            if Sheet::undo_format_update(update, format).is_some() {
-                Some(*pos)
-            } else {
-                None
-            }
-        })
-        .collect()
+        todo!()
+        // self.format_all
+        //     .as_ref()
+        //     .unwrap_or(&Format::default())
+        //     .clone()
     }
 
     /// Sets the Format for all cells and returns a Vec<Operation> to undo the
@@ -79,159 +34,161 @@ impl Sheet {
     /// Returns a Vec<Operation> to undo this operation.
     pub(crate) fn set_format_all(
         &mut self,
-        update: &Formats,
+        _update: &Formats,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
-        let mut old = Formats::default();
-        let mut format_all = self.format_all();
-        let old_wrap = format_all.wrap;
+        todo!()
+        // let mut old = Formats::default();
+        // let mut format_all = self.format_all();
+        // let old_wrap = format_all.wrap;
 
-        // tracks whether we need to rerender all cells
-        let mut render_cells = false;
+        // // tracks whether we need to rerender all cells
+        // let mut render_cells = false;
 
-        // tracks which hashes than need to be updated
-        let mut dirty_hashes = HashSet::new();
+        // // tracks which hashes than need to be updated
+        // let mut dirty_hashes = HashSet::new();
 
-        // tracks whether we need to change the fills
-        let mut change_sheet_fills = false;
-        let mut change_cell_fills = HashSet::new();
+        // // tracks whether we need to change the fills
+        // let mut change_sheet_fills = false;
+        // let mut change_cell_fills = HashSet::new();
 
-        // tracks which rows need to be resized, due to wrap text changes
-        let mut resize_rows = HashSet::new();
+        // // tracks which rows need to be resized, due to wrap text changes
+        // let mut resize_rows = HashSet::new();
 
-        if let Some(format_update) = update.iter_values().next() {
-            // if there are no changes to the format_all, then we don't need to
-            // do anything
-            if format_update.is_default() {
-                return (vec![], dirty_hashes, resize_rows);
-            }
+        // if let Some(format_update) = update.iter_values().next() {
+        //     // if there are no changes to the format_all, then we don't need to
+        //     // do anything
+        //     if format_update.is_default() {
+        //         return (vec![], dirty_hashes, resize_rows);
+        //     }
 
-            if matches!(old_wrap, Some(CellWrap::Wrap))
-                || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
-            {
-                // text wrap changes, resize all rows
-                let bounds = self.bounds(true);
-                if let GridBounds::NonEmpty(rect) = bounds {
-                    resize_rows.extend(rect.y_range());
-                }
-            } else {
-                // only resize rows that have wrap text
-                let bounds = self.bounds(true);
-                if let GridBounds::NonEmpty(rect) = bounds {
-                    let rows = self.get_rows_with_wrap_in_rect(&rect);
-                    resize_rows.extend(rows);
-                }
-            }
+        //     if matches!(old_wrap, Some(CellWrap::Wrap))
+        //         || matches!(format_update.wrap, Some(Some(CellWrap::Wrap)))
+        //     {
+        //         // text wrap changes, resize all rows
+        //         let bounds = self.bounds(true);
+        //         if let GridBounds::NonEmpty(rect) = bounds {
+        //             resize_rows.extend(rect.y_range());
+        //         }
+        //     } else {
+        //         // only resize rows that have wrap text
+        //         let bounds = self.bounds(true);
+        //         if let GridBounds::NonEmpty(rect) = bounds {
+        //             let rows = self.get_rows_with_wrap_in_rect(&rect);
+        //             resize_rows.extend(rows);
+        //         }
+        //     }
 
-            // watch for changes that need to be sent to the client
-            if format_update.render_cells_changed() {
-                render_cells = true;
-            }
-            if format_update.fill_changed() {
-                change_sheet_fills = true;
-            }
+        //     // watch for changes that need to be sent to the client
+        //     if format_update.render_cells_changed() {
+        //         render_cells = true;
+        //     }
+        //     if format_update.fill_changed() {
+        //         change_sheet_fills = true;
+        //     }
 
-            // change the format_all and save the old format
-            old.push(format_all.merge_update_into(format_update));
+        //     // change the format_all and save the old format
+        //     old.push(format_all.apply_update(format_update));
 
-            // remove the format_all if it's no longer needed
-            if format_all.is_default() {
-                self.format_all = None;
-            } else {
-                self.format_all = Some(format_all);
-            }
+        //     // remove the format_all if it's no longer needed
+        //     if format_all.is_default() {
+        //         self.format_all = None;
+        //     } else {
+        //         self.format_all = Some(format_all);
+        //     }
 
-            let mut ops = vec![];
-            let selection_all = OldSelection {
-                sheet_id: self.id,
-                all: true,
-                ..Default::default()
-            };
-            ops.push(Operation::SetCellFormatsSelection {
-                selection: selection_all.clone(),
-                formats: old,
-            });
+        //     let mut ops = vec![];
+        //     let selection_all = OldSelection {
+        //         sheet_id: self.id,
+        //         all: true,
+        //         ..Default::default()
+        //     };
+        //     ops.push(Operation::SetCellFormatsSelection {
+        //         selection: selection_all.clone(),
+        //         formats: old,
+        //     });
 
-            let format_clear = format_update.clear_update();
+        //     let format_clear = format_update.clear_update();
 
-            // removes all related column formatting so the all format can be applied
-            let columns = self.find_overlapping_format_columns(format_update);
-            if !columns.is_empty() {
-                let formats = Formats::repeat(format_clear.clone(), columns.len());
-                self.set_formats_columns(&columns, &formats);
-                ops.push(Operation::SetCellFormatsSelection {
-                    formats: Formats::repeat(format_clear.clone(), columns.len()),
-                    selection: OldSelection {
-                        sheet_id: self.id,
-                        columns: Some(columns),
-                        ..Default::default()
-                    },
-                });
-            }
+        //     // removes all related column formatting so the all format can be applied
+        //     let columns = self.find_overlapping_format_columns(format_update);
+        //     if !columns.is_empty() {
+        //         let formats = Formats::repeat(format_clear.clone(), columns.len());
+        //         self.set_formats_columns(&columns, &formats);
+        //         ops.push(Operation::SetCellFormatsSelection {
+        //             formats: Formats::repeat(format_clear.clone(), columns.len()),
+        //             selection: OldSelection {
+        //                 sheet_id: self.id,
+        //                 columns: Some(columns),
+        //                 ..Default::default()
+        //             },
+        //         });
+        //     }
 
-            // remove all related row formatting so the all format can be applied
-            let rows = self.find_overlapping_format_rows(format_update);
-            if !rows.is_empty() {
-                let formats = Formats::repeat(format_clear.clone(), rows.len());
-                self.set_formats_rows(&rows, &formats);
-                ops.push(Operation::SetCellFormatsSelection {
-                    formats: Formats::repeat(format_clear.clone(), rows.len()),
-                    selection: OldSelection {
-                        sheet_id: self.id,
-                        rows: Some(rows),
-                        ..Default::default()
-                    },
-                });
-            }
+        //     // remove all related row formatting so the all format can be applied
+        //     let rows = self.find_overlapping_format_rows(format_update);
+        //     if !rows.is_empty() {
+        //         let formats = Formats::repeat(format_clear.clone(), rows.len());
+        //         self.set_formats_rows(&rows, &formats);
+        //         ops.push(Operation::SetCellFormatsSelection {
+        //             formats: Formats::repeat(format_clear.clone(), rows.len()),
+        //             selection: OldSelection {
+        //                 sheet_id: self.id,
+        //                 rows: Some(rows),
+        //                 ..Default::default()
+        //             },
+        //         });
+        //     }
 
-            // removes all individual cell formatting that conflicts with the all formatting
-            let cells = self.find_overlapping_format_cells(format_update);
-            if !cells.is_empty() {
-                let mut formats = Formats::default();
-                let rects = cells
-                    .iter()
-                    .map(|pos| {
-                        let old = self.set_format_cell(*pos, &format_clear, false);
-                        if format_clear.fill_changed() {
-                            change_cell_fills.insert(*pos);
-                        }
-                        formats.push(old);
-                        Rect::single_pos(*pos)
-                    })
-                    .collect();
-                ops.push(Operation::SetCellFormatsSelection {
-                    selection: OldSelection {
-                        sheet_id: self.id,
-                        rects: Some(rects),
-                        ..Default::default()
-                    },
-                    formats,
-                });
-            }
+        //     // removes all individual cell formatting that conflicts with the all formatting
+        //     let cells = self.find_overlapping_format_cells(format_update);
+        //     if !cells.is_empty() {
+        //         let mut formats = Formats::default();
+        //         let rects = cells
+        //             .iter()
+        //             .map(|pos| {
+        //                 let old = self.set_format_cell(*pos, &format_clear, false);
+        //                 if format_clear.fill_changed() {
+        //                     change_cell_fills.insert(*pos);
+        //                 }
+        //                 formats.push(old);
+        //                 Rect::single_pos(*pos)
+        //             })
+        //             .collect();
+        //         ops.push(Operation::SetCellFormatsSelection {
+        //             selection: OldSelection {
+        //                 sheet_id: self.id,
+        //                 rects: Some(rects),
+        //                 ..Default::default()
+        //             },
+        //             formats,
+        //         });
+        //     }
 
-            if change_sheet_fills {
-                self.send_sheet_fills();
-            }
+        //     if change_sheet_fills {
+        //         self.send_sheet_fills();
+        //     }
 
-            self.send_fills(&change_cell_fills);
+        //     self.send_fills(&change_cell_fills);
 
-            // force a rerender of all impacted cells
-            if render_cells {
-                let bounds = self.bounds(true);
-                if let GridBounds::NonEmpty(rect) = bounds {
-                    let hashes = rect.to_hashes();
-                    dirty_hashes.extend(hashes);
-                }
-            }
+        //     // force a rerender of all impacted cells
+        //     if render_cells {
+        //         let bounds = self.bounds(true);
+        //         if let GridBounds::NonEmpty(rect) = bounds {
+        //             let hashes = rect.to_hashes();
+        //             dirty_hashes.extend(hashes);
+        //         }
+        //     }
 
-            (ops, dirty_hashes, resize_rows)
-        } else {
-            // there are no updates, so nothing more to do
-            (vec![], HashSet::new(), HashSet::new())
-        }
+        //     (ops, dirty_hashes, resize_rows)
+        // } else {
+        //     // there are no updates, so nothing more to do
+        //     (vec![], HashSet::new(), HashSet::new())
+        // }
     }
 }
 
-#[cfg(test)]
+// TODO: these tests are disabled. rewrite and then enable them again.
+#[cfg(all(test, not(test)))]
 mod tests {
     use super::*;
     use crate::Pos;

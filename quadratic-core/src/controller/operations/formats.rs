@@ -2,7 +2,7 @@ use super::operation::Operation;
 use crate::{
     controller::GridController,
     grid::{
-        formats::{format_update::FormatUpdate, Formats},
+        formats::format_update::{FormatUpdate, SheetFormatUpdates},
         sheet::borders::BorderStyleCellUpdate,
     },
     A1Selection, RunLengthEncoding,
@@ -16,15 +16,15 @@ impl GridController {
         let sheet_id = selection.sheet_id;
         let subspaces = selection.subspaces();
         let rle_len = subspaces.rle_len();
+
         vec![
             Operation::SetCellFormatsA1 {
                 sheet_id,
-                subspaces: subspaces.clone(),
-                formats: Formats::repeat(FormatUpdate::cleared(), rle_len),
+                formats: SheetFormatUpdates::from_selection(selection, FormatUpdate::cleared()),
             },
             Operation::SetBordersA1 {
                 sheet_id,
-                subspaces,
+                subspaces, // TODO: this should similarly be a `Contiguous2D` thing
                 borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), rle_len),
             },
         ]
@@ -48,12 +48,14 @@ mod tests {
             vec![
                 Operation::SetCellFormatsA1 {
                     sheet_id,
-                    subspaces: selection.subspaces(),
-                    formats: Formats::repeat(FormatUpdate::cleared(), 1),
+                    formats: SheetFormatUpdates::from_selection(
+                        &selection,
+                        FormatUpdate::cleared()
+                    ),
                 },
                 Operation::SetBordersA1 {
                     sheet_id,
-                    subspaces: selection.subspaces(),
+                    subspaces: selection.subspaces(), // TODO: also use contiguous blocks here
                     borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
                 },
             ]

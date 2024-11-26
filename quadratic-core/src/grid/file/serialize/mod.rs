@@ -1,3 +1,5 @@
+#![allow(unused)] // TODO: remove this
+
 use anyhow::Result;
 use sheets::{export_sheet, import_sheet};
 

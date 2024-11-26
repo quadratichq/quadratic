@@ -168,20 +168,23 @@ pub(crate) fn import_column_builder(
         .into_iter()
         .map(|(x, column)| {
             let mut col = Column::new(x);
-            set_column_format_align(&mut col.align, column.align);
-            set_column_format_vertical_align(&mut col.vertical_align, column.vertical_align);
-            set_column_format_wrap(&mut col.wrap, column.wrap);
-            set_column_format_i16(&mut col.numeric_decimals, column.numeric_decimals);
-            set_column_format_numeric_format(&mut col.numeric_format, column.numeric_format);
-            set_column_format_bool(&mut col.numeric_commas, column.numeric_commas);
-            set_column_format_bool(&mut col.bold, column.bold);
-            set_column_format_bool(&mut col.italic, column.italic);
-            set_column_format_bool(&mut col.underline, column.underline);
-            set_column_format_bool(&mut col.strike_through, column.strike_through);
-            set_column_format_string(&mut col.text_color, column.text_color);
-            set_column_format_string(&mut col.fill_color, column.fill_color);
-            set_column_format_render_size(&mut col.render_size, column.render_size);
-            set_column_format_string(&mut col.date_time, column.date_time);
+            if true {
+                todo!("update this too");
+            }
+            // set_column_format_align(&mut col.align, column.align);
+            // set_column_format_vertical_align(&mut col.vertical_align, column.vertical_align);
+            // set_column_format_wrap(&mut col.wrap, column.wrap);
+            // set_column_format_i16(&mut col.numeric_decimals, column.numeric_decimals);
+            // set_column_format_numeric_format(&mut col.numeric_format, column.numeric_format);
+            // set_column_format_bool(&mut col.numeric_commas, column.numeric_commas);
+            // set_column_format_bool(&mut col.bold, column.bold);
+            // set_column_format_bool(&mut col.italic, column.italic);
+            // set_column_format_bool(&mut col.underline, column.underline);
+            // set_column_format_bool(&mut col.strike_through, column.strike_through);
+            // set_column_format_string(&mut col.text_color, column.text_color);
+            // set_column_format_string(&mut col.fill_color, column.fill_color);
+            // set_column_format_render_size(&mut col.render_size, column.render_size);
+            // set_column_format_string(&mut col.date_time, column.date_time);
 
             // todo: there's probably a better way of doing this
             for (y, value) in column.values.into_iter() {
@@ -378,23 +381,24 @@ pub(crate) fn export_column_builder(
         .map(|(x, column)| {
             (
                 x,
-                current::ColumnSchema {
-                    align: export_column_data_align(column.align),
-                    vertical_align: export_column_data_vertical_align(column.vertical_align),
-                    wrap: export_column_data_wrap(column.wrap),
-                    numeric_decimals: export_column_data_i16(column.numeric_decimals),
-                    numeric_format: export_column_data_numeric_format(column.numeric_format),
-                    numeric_commas: export_column_data_bool(column.numeric_commas),
-                    bold: export_column_data_bool(column.bold),
-                    italic: export_column_data_bool(column.italic),
-                    underline: export_column_data_bool(column.underline),
-                    strike_through: export_column_data_bool(column.strike_through),
-                    text_color: export_column_data_string(column.text_color),
-                    fill_color: export_column_data_string(column.fill_color),
-                    render_size: export_column_data_render_size(column.render_size),
-                    date_time: export_column_data_string(column.date_time),
-                    values: export_values(column.values),
-                },
+                todo!("new column schema with only values, no formatting") as current::ColumnSchema,
+                // current::ColumnSchema {
+                //     align: export_column_data_align(column.align),
+                //     vertical_align: export_column_data_vertical_align(column.vertical_align),
+                //     wrap: export_column_data_wrap(column.wrap),
+                //     numeric_decimals: export_column_data_i16(column.numeric_decimals),
+                //     numeric_format: export_column_data_numeric_format(column.numeric_format),
+                //     numeric_commas: export_column_data_bool(column.numeric_commas),
+                //     bold: export_column_data_bool(column.bold),
+                //     italic: export_column_data_bool(column.italic),
+                //     underline: export_column_data_bool(column.underline),
+                //     strike_through: export_column_data_bool(column.strike_through),
+                //     text_color: export_column_data_string(column.text_color),
+                //     fill_color: export_column_data_string(column.fill_color),
+                //     render_size: export_column_data_render_size(column.render_size),
+                //     date_time: export_column_data_string(column.date_time),
+                //     values: export_values(column.values),
+                // },
             )
         })
         .collect()
