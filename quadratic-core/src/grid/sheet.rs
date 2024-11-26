@@ -199,8 +199,7 @@ impl Sheet {
         {
             return true;
         }
-        // self.has_table_content(pos)
-        false
+        self.has_table_content(pos)
     }
 
     /// Returns the cell_value at a Pos using both column.values and code_runs (i.e., what would be returned if code asked

@@ -71,6 +71,15 @@ impl Sheet {
         }
     }
 
+    /// Returns true if the tables contain any cell at Pos (ie, not blank). Uses
+    /// the DataTable's output_rect for the check to ensure that charts are
+    /// included.
+    pub fn has_table_content(&self, pos: Pos) -> bool {
+        self.code_runs.iter().any(|(code_cell_pos, data_table)| {
+            data_table.output_rect(*code_cell_pos, false).contains(pos)
+        })
+    }
+
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
     ///
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
