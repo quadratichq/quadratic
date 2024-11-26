@@ -164,7 +164,7 @@ function ContextPill({
 }) {
   return (
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
-      <span>{primary}</span>
+      <span className="max-w-32 truncate">{primary}</span>
 
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
 

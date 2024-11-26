@@ -64,12 +64,10 @@ impl Sheet {
                 }
             }
             // if prev cell is not empty, find the next empty cell
-            else {
-                if let Some(prev) = self.find_next_row(y - 2, x, true, false) {
-                    prev_y = Some(prev + 1);
-                } else {
-                    prev_y = Some(y - 1);
-                }
+            else if let Some(prev) = self.find_next_row(y - 2, x, true, false) {
+                prev_y = Some(prev + 1);
+            } else {
+                prev_y = Some(y - 1);
             }
         }
         // otherwise find the next cell with content
@@ -112,19 +110,15 @@ impl Sheet {
                 }
             }
             // if next cell is not empty, find the next empty cell
-            else {
-                if let Some(next) = self.find_next_row(y + 2, x, false, false) {
-                    next_y = Some(next - 1);
-                } else {
-                    next_y = Some(y + 1);
-                }
+            else if let Some(next) = self.find_next_row(y + 2, x, false, false) {
+                next_y = Some(next - 1);
+            } else {
+                next_y = Some(y + 1);
             }
         }
         // otherwise find the next cell with content
-        else {
-            if let Some(next) = self.find_next_row(y + 1, x, false, true) {
-                next_y = Some(next);
-            }
+        else if let Some(next) = self.find_next_row(y + 1, x, false, true) {
+            next_y = Some(next);
         }
 
         y = if let Some(next_y) = next_y {
@@ -168,22 +162,19 @@ impl Sheet {
                 }
             }
             // if next cell is not empty, find the next empty cell
-            else {
-                if let Some(prev) = self.find_next_column(x - 1, y, true, false) {
-                    prev_x = Some(prev + 1);
-                } else {
-                    prev_x = Some(x - 1);
-                }
+            else if let Some(prev) = self.find_next_column(x - 1, y, true, false) {
+                prev_x = Some(prev + 1);
+            } else {
+                prev_x = Some(x - 1);
             }
         }
         // otherwise find the previous cell with content
-        else {
-            if let Some(prev) = self.find_next_column(x - 1, y, true, true) {
-                prev_x = Some(prev);
-            } else {
-                prev_x = Some(1);
-            }
+        else if let Some(prev) = self.find_next_column(x - 1, y, true, true) {
+            prev_x = Some(prev);
+        } else {
+            prev_x = Some(1);
         }
+
         x = if let Some(prev_x) = prev_x {
             prev_x
         } else {
@@ -215,19 +206,15 @@ impl Sheet {
                 }
             }
             // if next cell is not empty, find the next empty cell
-            else {
-                if let Some(next) = self.find_next_column(x + 2, y, false, false) {
-                    next_x = Some(next - 1);
-                } else {
-                    next_x = Some(x + 1);
-                }
+            else if let Some(next) = self.find_next_column(x + 2, y, false, false) {
+                next_x = Some(next - 1);
+            } else {
+                next_x = Some(x + 1);
             }
         }
         // otherwise find the next cell with content
-        else {
-            if let Some(next) = self.find_next_column(x + 1, y, false, true) {
-                next_x = Some(next);
-            }
+        else if let Some(next) = self.find_next_column(x + 1, y, false, true) {
+            next_x = Some(next);
         }
 
         x = if let Some(next_x) = next_x {

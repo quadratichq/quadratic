@@ -472,7 +472,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         update_fn: impl Fn(&mut T) -> Option<R>,
     ) -> ContiguousBlocks<R> {
         let mut ret = ContiguousBlocks::new();
-        for (_, block) in &mut self.0 {
+        for block in self.0.values_mut() {
             if let Some(reverse_value) = update_fn(&mut block.value) {
                 ret.add_block(Block {
                     start: block.start,
