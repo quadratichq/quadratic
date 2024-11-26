@@ -3,7 +3,7 @@ use std::str::FromStr;
 use anyhow::Result;
 
 use crate::{
-    grid::{GridBounds, Sheet, SheetId},
+    grid::{GridBounds, Sheet, SheetFormatting, SheetId},
     sheet_offsets::SheetOffsets,
 };
 
@@ -32,13 +32,14 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         data_bounds: GridBounds::Empty,
         format_bounds: GridBounds::Empty,
 
-        format: todo!("serialize formats"),
+        format: SheetFormatting::default(),
 
         validations: import_validations(sheet.validations),
         rows_resize: import_rows_size(sheet.rows_resize)?,
 
         borders: import_borders(sheet.borders),
     };
+    dbgjs!("TODO: serialize formats");
     new_sheet.recalculate_bounds();
     Ok(new_sheet)
 }

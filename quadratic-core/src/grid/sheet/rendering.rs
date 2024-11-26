@@ -287,7 +287,9 @@ impl Sheet {
 
     /// Returns all data for rendering cell fill color.
     pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
-        todo!("this can return ALL fills, infinite and finite")
+        dbgjs!("get_all_render_fills: this can return ALL fills, infinite and finite");
+        // note: it's easier to keep this separate from sheet fills since
+        // they're rendered and updated differently
 
         // let mut ret = vec![];
         // for (&x, column) in self.columns.iter() {
@@ -302,12 +304,13 @@ impl Sheet {
         //     }
         // }
         // ret
+        vec![]
     }
 
     /// Returns all fills for the rows, columns, and sheet. This does not return
     /// individual cell formats.
     pub fn get_sheet_fills(&self) -> JsSheetFill {
-        todo!("can probably be combined with get_all_render_fills()")
+        dbgjs!("get_sheet_fills: can probably be combined with get_all_render_fills()");
 
         // let columns = self
         //     .infinite_column_formats
@@ -330,7 +333,11 @@ impl Sheet {
         //     })
         //     .collect();
         // let all = self.format_all().fill_color.clone();
-        // JsSheetFill { columns, rows, all }
+        JsSheetFill {
+            columns: vec![],
+            rows: vec![],
+            all: None,
+        }
     }
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
