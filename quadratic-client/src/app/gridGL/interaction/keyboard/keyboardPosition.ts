@@ -35,7 +35,7 @@ async function jumpCursor(direction: JumpDirection, select: boolean) {
   if (!position) return;
 
   if (select) {
-    cursor.selectTo(position.x, position.y, false);
+    cursor.selectTo(position.x, position.y, true);
   } else {
     cursor.moveTo(position.x, position.y);
   }
