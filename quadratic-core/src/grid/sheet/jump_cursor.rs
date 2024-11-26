@@ -145,7 +145,7 @@ impl Sheet {
         //     x = chart_pos.x;
         // }
 
-        let mut prev_x: Option<i64> = None;
+        let mut prev_x: i64 = 1;
 
         // handle case of cell with content
         if self.has_content(Pos { x, y }) {
@@ -158,28 +158,22 @@ impl Sheet {
                     return Pos { x: 1, y };
                 }
                 if let Some(prev) = self.find_next_column(x - 2, y, true, true) {
-                    prev_x = Some(prev);
+                    prev_x = prev;
                 }
             }
             // if next cell is not empty, find the next empty cell
             else if let Some(prev) = self.find_next_column(x - 1, y, true, false) {
-                prev_x = Some(prev + 1);
+                prev_x = prev + 1;
             } else {
-                prev_x = Some(x - 1);
+                prev_x = x - 1;
             }
         }
         // otherwise find the previous cell with content
         else if let Some(prev) = self.find_next_column(x - 1, y, true, true) {
-            prev_x = Some(prev);
-        } else {
-            prev_x = Some(1);
+            prev_x = prev;
         }
 
-        x = if let Some(prev_x) = prev_x {
-            prev_x
-        } else {
-            (x - 1).max(1)
-        };
+        x = prev_x;
 
         Pos { x, y }
     }
@@ -238,8 +232,8 @@ impl Sheet {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
 
     use crate::CellValue;
 
@@ -269,7 +263,6 @@ mod tests {
     // }
 
     #[test]
-    #[parallel]
     fn jump_right_empty() {
         let sheet = Sheet::test();
 
@@ -281,7 +274,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_right_filled() {
         let mut sheet = Sheet::test();
 
@@ -305,7 +297,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_left_empty() {
         let sheet = Sheet::test();
 
@@ -317,7 +308,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_left_filled() {
         let mut sheet = Sheet::test();
 
@@ -346,7 +336,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_left_chart() {
         // let mut sheet = Sheet::test();
 
@@ -356,7 +345,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_up_empty() {
         let sheet = Sheet::test();
 
@@ -368,7 +356,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_up_filled() {
         let mut sheet = Sheet::test();
 
@@ -398,7 +385,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_up_chart() {
         // let mut sheet = Sheet::test();
 
@@ -408,7 +394,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_down_empty() {
         let sheet = Sheet::test();
 
@@ -420,7 +405,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_down_filled() {
         let mut sheet = Sheet::test();
 
@@ -446,7 +430,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_with_consecutive_filled_cells() {
         let mut sheet = Sheet::test();
 
@@ -474,7 +457,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_jump_chart_on_edge() {
         // let mut sheet = Sheet::test();
 
@@ -494,5 +476,15 @@ mod tests {
         // assert_eq!(sheet.jump_down(Pos { x: 1, y: 1 }), Pos { x: 1, y: 4 });
         // assert_eq!(sheet.jump_down(Pos { x: 2, y: 2 }), Pos { x: 2, y: 4 });
         // assert_eq!(sheet.jump_down(Pos { x: 3, y: 4 }), Pos { x: 3, y: 5 });
+    }
+
+    #[test]
+    fn test_jump_left() {
+        let mut sheet = Sheet::test();
+
+        assert_eq!(sheet.jump_left(Pos { x: 3, y: 1 }), Pos { x: 1, y: 1 });
+
+        sheet.set_cell_value(Pos { x: 3, y: 1 }, CellValue::Number(1.into()));
+        assert_eq!(sheet.jump_left(Pos { x: 3, y: 1 }), Pos { x: 1, y: 1 });
     }
 }
