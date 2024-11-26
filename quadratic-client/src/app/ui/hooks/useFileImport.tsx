@@ -190,7 +190,8 @@ export function useFileImport() {
               updateCurrentFileState({ step: 'done', progress: 100, uuid, abortController: undefined });
               if (openImportedFile) {
                 setFilesImportProgressListState({ show: false });
-                window.location.href = ROUTES.FILE(uuid);
+                const params = quadraticCore.receivedClientMessage ? `?negative_offsets` : '';
+                window.location.href = `${ROUTES.FILE(uuid)}${params}`;
               }
             })
             .catch((error) => {

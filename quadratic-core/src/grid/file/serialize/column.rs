@@ -376,29 +376,29 @@ pub(crate) fn export_values(
 pub(crate) fn export_column_builder(
     columns: BTreeMap<i64, Column>,
 ) -> Vec<(i64, current::ColumnSchema)> {
+    dbgjs!("TODO: serialize formats in export_column_builder");
     columns
         .into_iter()
         .map(|(x, column)| {
             (
                 x,
-                todo!("new column schema with only values, no formatting") as current::ColumnSchema,
-                // current::ColumnSchema {
-                //     align: export_column_data_align(column.align),
-                //     vertical_align: export_column_data_vertical_align(column.vertical_align),
-                //     wrap: export_column_data_wrap(column.wrap),
-                //     numeric_decimals: export_column_data_i16(column.numeric_decimals),
-                //     numeric_format: export_column_data_numeric_format(column.numeric_format),
-                //     numeric_commas: export_column_data_bool(column.numeric_commas),
-                //     bold: export_column_data_bool(column.bold),
-                //     italic: export_column_data_bool(column.italic),
-                //     underline: export_column_data_bool(column.underline),
-                //     strike_through: export_column_data_bool(column.strike_through),
-                //     text_color: export_column_data_string(column.text_color),
-                //     fill_color: export_column_data_string(column.fill_color),
-                //     render_size: export_column_data_render_size(column.render_size),
-                //     date_time: export_column_data_string(column.date_time),
-                //     values: export_values(column.values),
-                // },
+                current::ColumnSchema {
+                    align: HashMap::new(),            // export_column_data_align(column.align),
+                    vertical_align: HashMap::new(), // export_column_data_vertical_align(column.vertical_align),
+                    wrap: HashMap::new(),           // export_column_data_wrap(column.wrap),
+                    numeric_decimals: HashMap::new(), // export_column_data_i16(column.numeric_decimals),
+                    numeric_format: HashMap::new(), // export_column_data_numeric_format(column.numeric_format),
+                    numeric_commas: HashMap::new(), // export_column_data_bool(column.numeric_commas),
+                    bold: HashMap::new(),           // export_column_data_bool(column.bold),
+                    italic: HashMap::new(),         // export_column_data_bool(column.italic),
+                    underline: HashMap::new(),      // export_column_data_bool(column.underline),
+                    strike_through: HashMap::new(), // export_column_data_bool(column.strike_through),
+                    text_color: HashMap::new(),     // export_column_data_string(column.text_color),
+                    fill_color: HashMap::new(),     // export_column_data_string(column.fill_color),
+                    render_size: HashMap::new(), // export_column_data_render_size(column.render_size),
+                    date_time: HashMap::new(),   // export_column_data_string(column.date_time),
+                    values: export_values(column.values),
+                },
             )
         })
         .collect()

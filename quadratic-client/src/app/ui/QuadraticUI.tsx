@@ -49,7 +49,7 @@ export default function QuadraticUI() {
   useEffect(() => {
     const url = new URLSearchParams(window.location.search);
     if (url.has('negative_offsets')) {
-      pixiAppSettings.snackbar('negative_offsets', 'error');
+      setTimeout(() => pixiAppSettings.snackbar('negative_offsets', 'error', true));
       url.delete('negative_offsets');
       window.history.replaceState({}, '', `${window.location.pathname}${url.toString() ? `?${url}` : ''}`);
     }

@@ -30,7 +30,8 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: Input;
-  private waitingForSnackbar: { message: JSX.Element | string; severity: 'error' | 'success' }[] = [];
+  private waitingForSnackbar: { message: JSX.Element | string; severity: 'error' | 'success'; stayOpen: boolean }[] =
+    [];
 
   // Keeps track of code editor content. This is used when moving code cells to
   // keep track of any unsaved changes, and keyboardCell.
@@ -226,20 +227,20 @@ class PixiAppSettings {
   setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) {
     this.addGlobalSnackbar = addGlobalSnackbar;
     for (const snackbar of this.waitingForSnackbar) {
-      this.addGlobalSnackbar(snackbar.message, { severity: snackbar.severity });
+      this.addGlobalSnackbar(snackbar.message, { severity: snackbar.severity, stayOpen: snackbar.stayOpen });
     }
     this.waitingForSnackbar = [];
   }
 
-  snackbar(message: string, severity: 'error' | 'success') {
+  snackbar(message: string, severity: 'error' | 'success', stayOpen?: boolean) {
     let display: JSX.Element | string = message;
     if (messages[message]) {
       display = messages[message];
     }
     if (this.addGlobalSnackbar) {
-      this.addGlobalSnackbar(display, { severity });
+      this.addGlobalSnackbar(display, { severity, stayOpen: !!stayOpen });
     } else {
-      this.waitingForSnackbar.push({ message: display, severity });
+      this.waitingForSnackbar.push({ message: display, severity, stayOpen: !!stayOpen });
     }
   }
 }

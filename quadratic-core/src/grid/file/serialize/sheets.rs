@@ -45,6 +45,7 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
 }
 
 pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
+    dbgjs!("TODO: serialize formats");
     current::SheetSchema {
         id: current::IdSchema {
             id: sheet.id.to_string(),
@@ -53,9 +54,9 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
         color: sheet.color,
         order: sheet.order,
         offsets: sheet.offsets.export(),
-        formats_all: todo!("update schema"),
-        formats_columns: todo!("update schema"),
-        formats_rows: todo!("update schema"),
+        formats_all: None,       // todo!("update schema"),
+        formats_columns: vec![], // todo!("update schema"),
+        formats_rows: vec![],    // todo!("update schema"),
         validations: export_validations(sheet.validations),
         rows_resize: export_rows_size(sheet.rows_resize),
         borders: export_borders(sheet.borders),
