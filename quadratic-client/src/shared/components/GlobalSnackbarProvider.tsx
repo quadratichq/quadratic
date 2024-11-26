@@ -81,7 +81,6 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
    */
   const addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] = useCallback(
     (message: string | JSX.Element, options?: SnackbarOptions) => {
-      console.log(options);
       setMessageQueue((prev) => [
         ...prev,
         {
