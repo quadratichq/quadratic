@@ -12,16 +12,7 @@ function setCursorPosition(x: number, y: number) {
   sheets.sheet.cursor.moveTo(x, y);
 }
 
-// todo: The QuadraticCore checks should be a single call within Rust instead of
-// having TS handle the logic (this will reduce the number of calls into
-// quadraticCore)
-
-// handle cases for meta/ctrl keys with algorithm:
-// - if on an empty cell then select to the first cell with a value
-// - if on a filled cell then select to the cell before the next empty cell
-// - if on a filled cell but the next cell is empty then select to the first cell with a value
-// - if there are no more cells then select the next cell over (excel selects to the end of the sheet; we don’t have an end (yet) so right now I select one cell over)
-//   the above checks are always made relative to the original cursor position (the highlighted cell)
+// handle cases for meta/ctrl keys
 async function jumpCursor(direction: JumpDirection, select: boolean) {
   const cursor = sheets.sheet.cursor;
   const sheetId = sheets.sheet.id;

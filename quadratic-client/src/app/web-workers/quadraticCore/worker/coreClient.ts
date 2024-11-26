@@ -440,6 +440,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreJumpCursor':
+        this.send({
+          type: 'coreClientJumpCursor',
+          id: e.data.id,
+          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.direction),
+        });
+        return;
+
       case 'clientCoreFindNextColumn':
         this.send({
           type: 'coreClientFindNextColumn',
