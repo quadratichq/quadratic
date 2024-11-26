@@ -1,6 +1,7 @@
 //! Cloned from pixi-viewport Drag plugin to add clamping only for changes when
 //! dragging (zoom has different clamping).
 
+import { SCALE_OUT_OF_BOUNDS_SCROLL } from '@/app/gridGL/pixiApp/viewport/Wheel';
 import { JsCoordinate } from '@/app/quadratic-core-types';
 import { Decelerate, Plugin, Viewport } from 'pixi-viewport';
 import { InteractionEvent, Point } from 'pixi.js';
@@ -320,6 +321,10 @@ export class Drag extends Plugin {
           (this.yDirection && this.parent.input.checkThreshold(distY))
         ) {
           const newPoint = { x, y };
+          const deltaX = newPoint.x - this.last.x;
+          this.parent.x += deltaX * (deltaX > 1 && this.parent.x > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1);
+          const deltaY = newPoint.y - this.last.y;
+          this.parent.y += deltaY * (deltaY > 1 && this.parent.x > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1);
           this.last = newPoint;
           if (!this.moved) {
             this.parent.emit('drag-start', {

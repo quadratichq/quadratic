@@ -4,6 +4,8 @@ import { isMac } from '@/shared/utils/isMac';
 import { IPointData, Point } from '@pixi/math';
 import { Plugin, Viewport } from 'pixi-viewport';
 
+export const SCALE_OUT_OF_BOUNDS_SCROLL = 0.2;
+
 /** Options for {@link Wheel}. */
 export interface IWheelOptions {
   /**
@@ -327,12 +329,12 @@ export class Wheel extends Plugin {
     } else if (e.ctrlKey && this.options.trackpadPinch) {
       this.pinch(e, adjust);
     } else {
-      const step = 1;
-
       const deltas = [e.deltaX, e.deltaY];
       let [deltaX, deltaY] = deltas;
-      let newX = this.parent.x + (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * step * -1;
-      let newY = this.parent.y + deltaY * step * -1 * (this.horizontalScrollKeyIsPressed && !isMac ? 0 : 1);
+      const stepX = deltaX < 0 && this.parent.x > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1;
+      const stepY = deltaY < 0 && this.parent.y > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1;
+      let newX = this.parent.x + (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * stepX * -1;
+      let newY = this.parent.y + deltaY * stepY * -1 * (this.horizontalScrollKeyIsPressed && !isMac ? 0 : 1);
 
       this.parent.x = newX;
       this.parent.y = newY;
