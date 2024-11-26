@@ -132,12 +132,12 @@ export class Viewport extends PixiViewport {
       const headings = pixiApp.headings.headingSize;
       let x: number;
       let y: number;
-      if (this.x > headings.width) {
+      if (this.x > headings.width / this.scale.x) {
         x = -headings.width / this.scale.x;
       } else {
         x = -this.x;
       }
-      if (this.y > headings.height) {
+      if (this.y > headings.height / this.scale.y) {
         y = -headings.height / this.scale.y;
       } else {
         y = -this.y;
@@ -195,7 +195,7 @@ export class Viewport extends PixiViewport {
       }
     } else if (this.snapState === undefined) {
       const headings = pixiApp.headings.headingSize;
-      if (this.x - headings.width > 0 || this.y - headings.height > 0) {
+      if (this.x - headings.width / this.scale.x > 0 || this.y - headings.height / this.scale.y > 0) {
         this.snapState = 'waiting';
         this.startSnap();
       }
