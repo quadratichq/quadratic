@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{grid::SheetId, Pos, Rect, SheetRect};
 
-use super::{A1Selection, CellRefRange, SheetNameIdMap};
+use super::{A1Selection, SheetNameIdMap};
 
 #[derive(Debug, Clone, TS)]
 #[wasm_bindgen]
@@ -183,8 +183,8 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getRanges")]
-    pub fn get_ranges(&self) -> Result<Vec<CellRefRange>, String> {
-        Ok(self.selection.ranges.clone())
+    pub fn get_ranges(&self) -> Result<JsValue, String> {
+        serde_wasm_bindgen::to_value(&self.selection.ranges).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "isColumnRow")]

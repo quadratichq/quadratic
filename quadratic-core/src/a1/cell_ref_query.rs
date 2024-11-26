@@ -4,60 +4,74 @@ use super::CellRefRange;
 
 impl CellRefRange {
     pub fn only_column(&self, column: u64) -> bool {
-        // if there is no start column, then it's not a single column range
-        let Some(start_col) = self.start.col else {
-            return false;
-        };
+        match self {
+            Self::Sheet { range } => {
+                // if there is no start column, then it's not a single column range
+                let Some(start_col) = range.start.col else {
+                    return false;
+                };
 
-        // if the start column is not the column we're checking for, then it's not a
-        // single column range
-        if start_col.coord != column {
-            return false;
+                // if the start column is not the column we're checking for, then it's not a
+                // single column range
+                if start_col.coord != column {
+                    return false;
+                }
+
+                // if there is no end column, then it's a single column range
+                let Some(end) = range.end.as_ref().and_then(|end| end.col) else {
+                    return true;
+                };
+
+                end.coord == column
+            }
         }
-
-        // if there is no end column, then it's a single column range
-        let Some(end) = self.end.as_ref().and_then(|end| end.col) else {
-            return true;
-        };
-
-        end.coord == column
     }
 
     pub fn only_row(&self, row: u64) -> bool {
-        // if there is not start row, then it's not a single row range
-        let Some(start_row) = self.start.row else {
-            return false;
-        };
+        match self {
+            Self::Sheet { range } => {
+                // if there is not start row, then it's not a single row range
+                let Some(start_row) = range.start.row else {
+                    return false;
+                };
 
-        // if the start row is not the row we're checking for, then it's not a
-        // single row range
-        if start_row.coord != row {
-            return false;
+                // if the start row is not the row we're checking for, then it's not a
+                // single row range
+                if start_row.coord != row {
+                    return false;
+                }
+
+                // if there is no end row, then it's a single row range
+                let Some(end) = range.end.as_ref().and_then(|end| end.row) else {
+                    return true;
+                };
+
+                end.coord == row
+            }
         }
-
-        // if there is no end row, then it's a single row range
-        let Some(end) = self.end.as_ref().and_then(|end| end.row) else {
-            return true;
-        };
-
-        end.coord == row
     }
 
     pub fn is_empty(&self) -> bool {
-        self.start.row.is_none() && self.start.col.is_none()
+        match self {
+            Self::Sheet { range } => range.start.row.is_none() && range.start.col.is_none(),
+        }
     }
 
     pub fn is_pos_range(&self, p1: Pos, p2: Option<Pos>) -> bool {
-        if self.start.is_pos(p1) {
-            if let Some(p2) = p2 {
-                self.end.is_some_and(|end| end.is_pos(p2))
-            } else {
-                p2.is_none() && self.end.is_none()
+        match self {
+            Self::Sheet { range } => {
+                if range.start.is_pos(p1) {
+                    if let Some(p2) = p2 {
+                        range.end.is_some_and(|end| end.is_pos(p2))
+                    } else {
+                        p2.is_none() && range.end.is_none()
+                    }
+                } else if range.end.is_some_and(|end| end.is_pos(p1)) {
+                    p2.is_some_and(|p2| range.start.is_pos(p2))
+                } else {
+                    false
+                }
             }
-        } else if self.end.is_some_and(|end| end.is_pos(p1)) {
-            p2.is_some_and(|p2| self.start.is_pos(p2))
-        } else {
-            false
         }
     }
 }

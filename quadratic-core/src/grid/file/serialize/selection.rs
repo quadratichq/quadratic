@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-use crate::{grid::SheetId, A1Selection, CellRefCoord, CellRefRange, CellRefRangeEnd, Pos};
+use crate::{
+    grid::SheetId, A1Selection, CellRefCoord, CellRefRange, CellRefRangeEnd, Pos, RefRangeBounds,
+};
 
 use super::current;
 
@@ -12,15 +14,19 @@ fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
 }
 
 fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellRefRange {
-    CellRefRange {
-        start: CellRefRangeEnd {
-            col: range.start.col.map(import_cell_ref_coord),
-            row: range.start.row.map(import_cell_ref_coord),
+    match range {
+        current::CellRefRangeSchema::Sheet(range) => CellRefRange::Sheet {
+            range: RefRangeBounds {
+                start: CellRefRangeEnd {
+                    col: range.start.col.map(import_cell_ref_coord),
+                    row: range.start.row.map(import_cell_ref_coord),
+                },
+                end: range.end.map(|end| CellRefRangeEnd {
+                    col: end.col.map(import_cell_ref_coord),
+                    row: end.row.map(import_cell_ref_coord),
+                }),
+            },
         },
-        end: range.end.map(|end| CellRefRangeEnd {
-            col: end.col.map(import_cell_ref_coord),
-            row: end.row.map(import_cell_ref_coord),
-        }),
     }
 }
 
@@ -48,15 +54,19 @@ fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
 }
 
 fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRangeSchema {
-    current::CellRefRangeSchema {
-        start: current::CellRefRangeEndSchema {
-            col: range.start.col.map(export_cell_ref_coord),
-            row: range.start.row.map(export_cell_ref_coord),
-        },
-        end: range.end.map(|end| current::CellRefRangeEndSchema {
-            col: end.col.map(export_cell_ref_coord),
-            row: end.row.map(export_cell_ref_coord),
-        }),
+    match range {
+        CellRefRange::Sheet { range } => {
+            current::CellRefRangeSchema::Sheet(current::RefRangeBoundsSchema {
+                start: current::CellRefRangeEndSchema {
+                    col: range.start.col.map(export_cell_ref_coord),
+                    row: range.start.row.map(export_cell_ref_coord),
+                },
+                end: range.end.map(|end| current::CellRefRangeEndSchema {
+                    col: end.col.map(export_cell_ref_coord),
+                    row: end.row.map(export_cell_ref_coord),
+                }),
+            })
+        }
     }
 }
 

@@ -9,6 +9,7 @@ pub struct SheetCellRefRange {
     pub sheet: SheetId,
     pub cells: CellRefRange,
 }
+
 impl SheetCellRefRange {
     /// Parses a selection from a comma-separated list of ranges.
     ///

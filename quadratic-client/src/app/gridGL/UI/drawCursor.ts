@@ -5,8 +5,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
-import { JsCoordinate } from '@/app/quadratic-core-types';
-import { CellRefRange } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
 import { Graphics } from 'pixi.js';
 
 const SECTION_OUTLINE_WIDTH = 1;
@@ -25,7 +24,7 @@ export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, r
   g.beginFill(color, alpha);
 
   const sheet = sheets.sheet;
-  ranges.forEach((range) => {
+  ranges.forEach(({ range }) => {
     const { col, row } = range.start;
     const end = range.end ? { col: range.end.col, row: range.end.row } : undefined;
 
@@ -66,7 +65,7 @@ export const drawInfiniteSelection = (options: {
   bounds.x = Math.max(bounds.x, 0);
   bounds.y = Math.max(bounds.y, 0);
 
-  ranges.forEach((range) => {
+  ranges.forEach(({ range }) => {
     const { col, row } = range.start;
     const end = range.end ? { col: range.end.col, row: range.end.row } : undefined;
 

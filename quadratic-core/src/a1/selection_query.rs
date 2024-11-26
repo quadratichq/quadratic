@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{grid::Sheet, Pos, Rect};
 
-use super::A1Selection;
+use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
     // Returns whether the selection is one cell or multiple cells (either a
@@ -12,14 +12,12 @@ impl A1Selection {
             return true;
         }
         if let Some(last_range) = self.ranges.last() {
-            if last_range.start.is_multi_range() {
-                return true;
+            match last_range {
+                CellRefRange::Sheet { range } => range.is_multi_cursor(),
             }
-            if let Some(end) = last_range.end {
-                return last_range.start != end;
-            }
+        } else {
+            false
         }
-        false
     }
 
     // Returns whether the selection includes a selected column or row.
@@ -48,20 +46,23 @@ impl A1Selection {
     /// ignoring any ranges that extend infinitely.
     pub fn largest_rect_finite(&self) -> Rect {
         let mut rect = Rect::single_pos(self.cursor);
-        self.ranges.iter().for_each(|range| {
-            if let Some(end) = range.end {
-                let (Some(end_col), Some(end_row)) = (end.col, end.row) else {
-                    return;
-                };
-                let (Some(start_col), Some(start_row)) = (range.start.col, range.start.row) else {
-                    return;
-                };
-                rect = rect.union(&Rect::new(
-                    start_col.coord as i64,
-                    start_row.coord as i64,
-                    end_col.coord as i64,
-                    end_row.coord as i64,
-                ));
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                if let Some(end) = range.end {
+                    let (Some(end_col), Some(end_row)) = (end.col, end.row) else {
+                        return;
+                    };
+                    let (Some(start_col), Some(start_row)) = (range.start.col, range.start.row)
+                    else {
+                        return;
+                    };
+                    rect = rect.union(&Rect::new(
+                        start_col.coord as i64,
+                        start_row.coord as i64,
+                        end_col.coord as i64,
+                        end_row.coord as i64,
+                    ));
+                }
             }
         });
         rect
@@ -70,23 +71,25 @@ impl A1Selection {
     /// Returns the largest rectangle that can be formed by the selection.
     pub fn largest_rect(&self) -> Rect {
         let mut rect = Rect::single_pos(self.cursor);
-        self.ranges.iter().for_each(|range| {
-            if let Some(col) = range.start.col {
-                rect.min.x = rect.min.x.min(col.coord as i64);
-                rect.max.x = rect.max.x.max(col.coord as i64);
-            }
-            if let Some(row) = range.start.row {
-                rect.min.y = rect.min.y.min(row.coord as i64);
-                rect.max.y = rect.max.y.max(row.coord as i64);
-            }
-            if let Some(end) = range.end {
-                if let Some(end_col) = end.col {
-                    rect.min.x = rect.min.x.min(end_col.coord as i64);
-                    rect.max.x = rect.max.x.max(end_col.coord as i64);
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                if let Some(col) = range.start.col {
+                    rect.min.x = rect.min.x.min(col.coord as i64);
+                    rect.max.x = rect.max.x.max(col.coord as i64);
                 }
-                if let Some(end_row) = end.row {
-                    rect.min.y = rect.min.y.min(end_row.coord as i64);
-                    rect.max.y = rect.max.y.max(end_row.coord as i64);
+                if let Some(row) = range.start.row {
+                    rect.min.y = rect.min.y.min(row.coord as i64);
+                    rect.max.y = rect.max.y.max(row.coord as i64);
+                }
+                if let Some(end) = range.end {
+                    if let Some(end_col) = end.col {
+                        rect.min.x = rect.min.x.min(end_col.coord as i64);
+                        rect.max.x = rect.max.x.max(end_col.coord as i64);
+                    }
+                    if let Some(end_row) = end.row {
+                        rect.min.y = rect.min.y.min(end_row.coord as i64);
+                        rect.max.y = rect.max.y.max(end_row.coord as i64);
+                    }
                 }
             }
         });
@@ -138,29 +141,33 @@ impl A1Selection {
     /// a non-finite range.
     pub fn bottom_right_cell(&self) -> Pos {
         if let Some(range) = self.ranges.last() {
-            // Get the start coordinates
-            let mut max_x = range
-                .start
-                .col
-                .map(|col| col.coord as i64)
-                .unwrap_or(self.cursor.x);
-            let mut max_y = range
-                .start
-                .row
-                .map(|row| row.coord as i64)
-                .unwrap_or(self.cursor.y);
+            match range {
+                CellRefRange::Sheet { range } => {
+                    // Get the start coordinates
+                    let mut max_x = range
+                        .start
+                        .col
+                        .map(|col| col.coord as i64)
+                        .unwrap_or(self.cursor.x);
+                    let mut max_y = range
+                        .start
+                        .row
+                        .map(|row| row.coord as i64)
+                        .unwrap_or(self.cursor.y);
 
-            // If there's an end position, compare with start to find max
-            if let Some(end) = &range.end {
-                if let Some(col) = &end.col {
-                    max_x = max_x.max(col.coord as i64);
-                }
-                if let Some(row) = &end.row {
-                    max_y = max_y.max(row.coord as i64);
+                    // If there's an end position, compare with start to find max
+                    if let Some(end) = &range.end {
+                        if let Some(col) = &end.col {
+                            max_x = max_x.max(col.coord as i64);
+                        }
+                        if let Some(row) = &end.row {
+                            max_y = max_y.max(row.coord as i64);
+                        }
+                    }
+
+                    Pos { x: max_x, y: max_y }
                 }
             }
-
-            Pos { x: max_x, y: max_y }
         } else {
             self.cursor
         }
@@ -170,16 +177,20 @@ impl A1Selection {
     /// a non-finite range.
     pub fn last_selection_end(&self) -> Pos {
         if let Some(range) = self.ranges.last() {
-            let end_or_start = range.end.unwrap_or(range.start);
-            let x = end_or_start
-                .col
-                .map(|col| col.coord as i64)
-                .unwrap_or(self.cursor.x);
-            let y = end_or_start
-                .row
-                .map(|row| row.coord as i64)
-                .unwrap_or(self.cursor.y);
-            Pos { x, y }
+            match range {
+                CellRefRange::Sheet { range } => {
+                    let end_or_start = range.end.unwrap_or(range.start);
+                    let x = end_or_start
+                        .col
+                        .map(|col| col.coord as i64)
+                        .unwrap_or(self.cursor.x);
+                    let y = end_or_start
+                        .row
+                        .map(|row| row.coord as i64)
+                        .unwrap_or(self.cursor.y);
+                    Pos { x, y }
+                }
+            }
         } else {
             self.cursor
         }

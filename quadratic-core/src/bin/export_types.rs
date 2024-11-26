@@ -1,50 +1,56 @@
 use std::fs::create_dir_all;
 
-use crate::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
-use controller::execution::run_code::get_cells::CellA1Response;
-use controller::operations::clipboard::PasteSpecial;
-use grid::formats::format::Format;
-use grid::js_types::{
+use quadratic_core::color::Rgba;
+use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
+use quadratic_core::controller::execution::run_code::get_cells::CellA1Response;
+use quadratic_core::controller::execution::run_code::get_cells::JsGetCellResponse;
+use quadratic_core::controller::operations::clipboard::PasteSpecial;
+use quadratic_core::controller::transaction_types::JsCodeResult;
+use quadratic_core::grid::formats::format::Format;
+use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
     JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
     JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
     JsSummarizeSelectionResult, JsValidationWarning,
 };
-use grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
-use grid::sheet::validations::validation::{
+use quadratic_core::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
+use quadratic_core::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
+use quadratic_core::grid::sheet::search::SearchOptions;
+use quadratic_core::grid::sheet::validations::validation::{
     Validation, ValidationError, ValidationMessage, ValidationStyle,
 };
-use grid::sheet::validations::validation_rules::validation_date_time::{
+use quadratic_core::grid::sheet::validations::validation_rules::validation_date_time::{
     DateTimeRange, ValidationDateTime,
 };
-use grid::sheet::validations::validation_rules::validation_list::{
+use quadratic_core::grid::sheet::validations::validation_rules::validation_list::{
     ValidationList, ValidationListSource,
 };
-use grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
-use grid::sheet::validations::validation_rules::validation_number::{
+use quadratic_core::grid::sheet::validations::validation_rules::validation_logical::ValidationLogical;
+use quadratic_core::grid::sheet::validations::validation_rules::validation_number::{
     NumberRange, ValidationNumber,
 };
-use grid::sheet::validations::validation_rules::validation_text::{
+use quadratic_core::grid::sheet::validations::validation_rules::validation_text::{
     TextCase, TextMatch, ValidationText,
 };
-use grid::sheet::validations::validation_rules::ValidationRule;
-use grid::{
-    CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
-};
-use grid::{JsCellsAccessed, RenderSize};
-use quadratic_core::color::Rgba;
-use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
-use quadratic_core::controller::execution::run_code::get_cells::JsGetCellResponse;
-use quadratic_core::controller::transaction_types::JsCodeResult;
-use quadratic_core::grid::sheet::search::SearchOptions;
+use quadratic_core::grid::sheet::validations::validation_rules::ValidationRule;
 use quadratic_core::grid::{
     BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
 };
+use quadratic_core::grid::{
+    CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
+};
+use quadratic_core::grid::{JsCellsAccessed, RenderSize};
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
+use quadratic_core::small_timestamp::SmallTimestamp;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
-use quadratic_core::{Rect, *};
-use small_timestamp::SmallTimestamp;
+use quadratic_core::CellRefCoord;
+use quadratic_core::CellRefRangeEnd;
+use quadratic_core::RefRangeBounds;
+use quadratic_core::{
+    ArraySize, Axis, CellRefRange, JsCoordinate, Pos, Rect, RunError, RunErrorMsg, SheetPos,
+    SheetRect, Span,
+};
 use ts_rs::TS;
 
 macro_rules! generate_type_declarations {
@@ -73,6 +79,9 @@ fn main() {
         CellAlign,
         CellBorderLine,
         CellFormatSummary,
+        CellRefCoord,
+        CellRefRange,
+        CellRefRangeEnd,
         CellVerticalAlign,
         CellWrap,
         CodeCellLanguage,
@@ -111,6 +120,7 @@ fn main() {
         NumericFormatKind,
         PasteSpecial,
         Pos,
+        RefRangeBounds,
         Rect,
         RenderSize,
         Rgba,

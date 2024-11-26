@@ -6,8 +6,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
-import { JsCoordinate } from '@/app/quadratic-core-types';
-import { CellRefRange } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
@@ -282,7 +281,7 @@ export class Cursor extends Container {
       this.drawInlineCursorModeIndicator();
 
       if (!pixiAppSettings.input.show) {
-        const ranges = cursor.jsSelection.getRanges();
+        const ranges: CellRefRange[] = cursor.jsSelection.getRanges();
         this.drawFiniteCursor(ranges);
         if (columnRow) {
           drawInfiniteSelection({

@@ -4,10 +4,9 @@ use std::ops::RangeInclusive;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use super::{A1Subspaces, SheetCellRefRange};
+use super::{A1Subspaces, CellRefRange, SheetCellRefRange};
 use crate::{
-    grid::SheetId, selection::OldSelection, A1Error, CellRefRange, Pos, Rect, SheetNameIdMap,
-    SheetPos, SheetRect,
+    grid::SheetId, selection::OldSelection, A1Error, Pos, Rect, SheetNameIdMap, SheetPos, SheetRect,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -88,7 +87,7 @@ impl A1Selection {
     pub fn from_range(range: CellRefRange, sheet: SheetId) -> Self {
         Self {
             sheet_id: sheet,
-            cursor: cursor_pos_from_last_range(range),
+            cursor: cursor_pos_from_last_range(&range),
             ranges: vec![range],
         }
     }
@@ -148,10 +147,7 @@ impl A1Selection {
     pub fn from_ranges(ranges: impl Iterator<Item = CellRefRange>, sheet: SheetId) -> Self {
         let ranges = ranges.collect::<Vec<_>>();
         let last_range = ranges.last().expect("empty selection is invalid");
-        let cursor = Pos {
-            x: last_range.start.col.map_or(1, |col| col.coord as i64),
-            y: last_range.start.row.map_or(1, |row| row.coord as i64),
-        };
+        let cursor = cursor_pos_from_last_range(last_range);
         Self {
             sheet_id: sheet,
             cursor,
@@ -201,7 +197,7 @@ impl A1Selection {
 
         Ok(Self {
             sheet_id: sheet.unwrap_or(default_sheet_id.to_owned()),
-            cursor: cursor_pos_from_last_range(last_range),
+            cursor: cursor_pos_from_last_range(&last_range),
             ranges,
         })
     }
@@ -241,51 +237,55 @@ impl A1Selection {
         let mut ret = A1Subspaces::default();
 
         for range in &self.ranges {
-            let start = range.start;
-            match range.end {
-                None => match (start.col, start.row) {
-                    (None, None) => (), // TODO(sentry): empty range
-                    (Some(col), None) => {
-                        ret.add_column(col.coord, 1..);
-                    }
-                    (None, Some(row)) => {
-                        ret.add_row(row.coord, 1..);
-                    }
-                    (Some(col), Some(row)) => {
-                        let pos = Pos::new(col.coord as i64, row.coord as i64);
-                        ret.add_rect(Rect::single_pos(pos));
-                    }
-                },
-                Some(end) => {
-                    let start_col = start.col.map_or(1, |c| c.coord);
-                    let start_row = start.row.map_or(1, |c| c.coord);
-                    match (end.col, end.row) {
-                        (None, None) => {
-                            // Include whole sheet after `start`
-                            ret.add_all(Pos::new(start_col as i64, start_row as i64)..);
-                        }
-                        (Some(end_col), None) => {
-                            let (lo, hi) = crate::util::minmax(start_col, end_col.coord);
-                            for c in lo..=hi {
-                                // Include whole column after `start_row`
-                                ret.add_column(c, start_row..);
+            match range {
+                CellRefRange::Sheet { range } => {
+                    let start = range.start;
+                    match range.end {
+                        None => match (start.col, start.row) {
+                            (None, None) => (), // TODO(sentry): empty range
+                            (Some(col), None) => {
+                                ret.add_column(col.coord, 1..);
                             }
-                        }
-                        (None, Some(end_row)) => {
-                            let (lo, hi) = crate::util::minmax(start_row, end_row.coord);
-                            for r in lo..=hi {
-                                // Include whole row after `start_col`
-                                ret.add_row(r, start_col..);
+                            (None, Some(row)) => {
+                                ret.add_row(row.coord, 1..);
                             }
-                        }
-                        (Some(end_col), Some(end_row)) => {
-                            // Include rectangle
-                            ret.add_rect(Rect::new(
-                                start_col as i64,
-                                start_row as i64,
-                                end_col.coord as i64,
-                                end_row.coord as i64,
-                            ));
+                            (Some(col), Some(row)) => {
+                                let pos = Pos::new(col.coord as i64, row.coord as i64);
+                                ret.add_rect(Rect::single_pos(pos));
+                            }
+                        },
+                        Some(end) => {
+                            let start_col = start.col.map_or(1, |c| c.coord);
+                            let start_row = start.row.map_or(1, |c| c.coord);
+                            match (end.col, end.row) {
+                                (None, None) => {
+                                    // Include whole sheet after `start`
+                                    ret.add_all(Pos::new(start_col as i64, start_row as i64)..);
+                                }
+                                (Some(end_col), None) => {
+                                    let (lo, hi) = crate::util::minmax(start_col, end_col.coord);
+                                    for c in lo..=hi {
+                                        // Include whole column after `start_row`
+                                        ret.add_column(c, start_row..);
+                                    }
+                                }
+                                (None, Some(end_row)) => {
+                                    let (lo, hi) = crate::util::minmax(start_row, end_row.coord);
+                                    for r in lo..=hi {
+                                        // Include whole row after `start_col`
+                                        ret.add_row(r, start_col..);
+                                    }
+                                }
+                                (Some(end_col), Some(end_row)) => {
+                                    // Include rectangle
+                                    ret.add_rect(Rect::new(
+                                        start_col as i64,
+                                        start_row as i64,
+                                        end_col.coord as i64,
+                                        end_row.coord as i64,
+                                    ));
+                                }
+                            }
                         }
                     }
                 }
@@ -319,19 +319,23 @@ impl A1Selection {
 
 /// Returns the position from the last range (either the end, or if not defined,
 /// the start).
-fn cursor_pos_from_last_range(last_range: CellRefRange) -> Pos {
-    let default_coord = 1;
-    let x = last_range
-        .start
-        .col
-        .or_else(|| last_range.end.and_then(|end| end.col))
-        .map_or(default_coord, |col| col.coord) as i64;
-    let y = last_range
-        .start
-        .row
-        .or_else(|| last_range.end.and_then(|end| end.row))
-        .map_or(default_coord, |row| row.coord) as i64;
-    Pos { x, y }
+fn cursor_pos_from_last_range(last_range: &CellRefRange) -> Pos {
+    match last_range {
+        CellRefRange::Sheet { range } => {
+            let default_coord = 1;
+            let x = range
+                .start
+                .col
+                .or_else(|| range.end.and_then(|end| end.col))
+                .map_or(default_coord, |col| col.coord) as i64;
+            let y = range
+                .start
+                .row
+                .or_else(|| range.end.and_then(|end| end.row))
+                .map_or(default_coord, |row| row.coord) as i64;
+            Pos { x, y }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -339,17 +343,18 @@ fn cursor_pos_from_last_range(last_range: CellRefRange) -> Pos {
 mod tests {
     use std::collections::HashMap;
 
+    use crate::{CellRefRangeEnd, RefRangeBounds};
+
     use super::*;
-    use crate::CellRefRangeEnd;
 
     #[test]
     fn test_cursor_pos_from_last_range() {
         assert_eq!(
-            cursor_pos_from_last_range(CellRefRange::test("A1")),
+            cursor_pos_from_last_range(&CellRefRange::test("A1")),
             pos![A1]
         );
         assert_eq!(
-            cursor_pos_from_last_range(CellRefRange::test("A1:C3")),
+            cursor_pos_from_last_range(&CellRefRange::test("A1:C3")),
             pos![A1]
         );
     }
@@ -393,7 +398,7 @@ mod tests {
     #[test]
     fn test_from_a1_rect() {
         let sheet_id = SheetId::test();
-        let d1a5 = CellRefRange {
+        let d1a5 = RefRangeBounds {
             start: CellRefRangeEnd::new_relative_xy(4, 1),
             end: Some(CellRefRangeEnd::new_relative_xy(1, 5)),
         };
@@ -403,12 +408,19 @@ mod tests {
         );
         assert_eq!(
             A1Selection::from_str("D1:A5", &sheet_id, &HashMap::new()),
-            Ok(A1Selection::from_range(d1a5, sheet_id)),
+            Ok(A1Selection::from_range(
+                CellRefRange::Sheet { range: d1a5 },
+                sheet_id,
+            )),
         );
         assert_eq!(
             A1Selection::from_str("A1:B2,D1:A5", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_ranges(
-                [CellRefRange::new_relative_rect(Rect::new(1, 1, 2, 2)), d1a5].into_iter(),
+                [
+                    CellRefRange::new_relative_rect(Rect::new(1, 1, 2, 2)),
+                    CellRefRange::Sheet { range: d1a5 }
+                ]
+                .into_iter(),
                 sheet_id,
             )),
         );
@@ -456,9 +468,11 @@ mod tests {
         assert_eq!(
             A1Selection::from_str("1:", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_range(
-                CellRefRange {
-                    start: CellRefRangeEnd::new_relative_row(1),
-                    end: Some(CellRefRangeEnd::UNBOUNDED),
+                CellRefRange::Sheet {
+                    range: RefRangeBounds {
+                        start: CellRefRangeEnd::new_relative_row(1),
+                        end: Some(CellRefRangeEnd::UNBOUNDED),
+                    }
                 },
                 sheet_id,
             )),

@@ -92,50 +92,54 @@ impl CellRefRange {
     pub fn removed_row(&mut self, row: u64) -> bool {
         let mut changed = false;
 
-        // Check if the start row needs to be adjusted
-        if let Some(start_row) = self.start.row.as_mut() {
-            // handle the case where the row being removed is the same as the start row
-            match start_row.coord.cmp(&row) {
-                std::cmp::Ordering::Equal => {
-                    if let Some(end) = self.end.as_mut() {
-                        if end.row.is_some_and(|r| r.coord == row) {
-                            self.end = None;
-                        } else {
-                            start_row.coord -= 1;
+        match self {
+            Self::Sheet { range } => {
+                // Check if the start row needs to be adjusted
+                if let Some(start_row) = range.start.row.as_mut() {
+                    // handle the case where the row being removed is the same as the start row
+                    match start_row.coord.cmp(&row) {
+                        std::cmp::Ordering::Equal => {
+                            if let Some(end) = range.end.as_mut() {
+                                if end.row.is_some_and(|r| r.coord == row) {
+                                    range.end = None;
+                                } else {
+                                    start_row.coord -= 1;
+                                }
+                            } else {
+                                range.start.row = None;
+                            }
                         }
-                    } else {
-                        self.start.row = None;
+                        std::cmp::Ordering::Greater => {
+                            // this should not happen
+                            if start_row.coord <= 1 {
+                                range.start.row = None;
+                            } else {
+                                start_row.coord -= 1;
+                            }
+                            changed = true;
+                        }
+                        std::cmp::Ordering::Less => {}
                     }
                 }
-                std::cmp::Ordering::Greater => {
-                    // this should not happen
-                    if start_row.coord <= 1 {
-                        self.start.row = None;
-                    } else {
-                        start_row.coord -= 1;
-                    }
-                    changed = true;
-                }
-                std::cmp::Ordering::Less => {}
-            }
-        }
 
-        // Check if the end row needs to be adjusted
-        if let Some(end) = self.end.as_mut() {
-            if let Some(end_row) = end.row.as_mut() {
-                if end_row.coord >= row {
-                    if end_row.coord <= 1 {
-                        end.row = None;
-                    } else {
-                        end_row.coord -= 1;
+                // Check if the end row needs to be adjusted
+                if let Some(end) = range.end.as_mut() {
+                    if let Some(end_row) = end.row.as_mut() {
+                        if end_row.coord >= row {
+                            if end_row.coord <= 1 {
+                                end.row = None;
+                            } else {
+                                end_row.coord -= 1;
+                            }
+                            changed = true;
+                        }
                     }
-                    changed = true;
+                }
+                // clean up end if it's the same as start
+                if range.end.is_some_and(|end| end == range.start) {
+                    range.end = None;
                 }
             }
-        }
-        // clean up end if it's the same as start
-        if self.end.is_some_and(|end| end == self.start) {
-            self.end = None;
         }
 
         changed

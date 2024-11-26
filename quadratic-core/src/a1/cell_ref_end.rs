@@ -112,6 +112,15 @@ impl CellRefRangeEnd {
         CellRefRangeEnd { col: None, row }
     }
 
+    pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) {
+        if let Some(c) = self.col.as_mut() {
+            c.translate_in_place(delta_x);
+        }
+        if let Some(r) = self.row.as_mut() {
+            r.translate_in_place(delta_y);
+        }
+    }
+
     pub fn translate(self, delta_x: i64, delta_y: i64) -> Self {
         CellRefRangeEnd {
             col: self.col.map(|c| c.translate(delta_x)),
@@ -203,6 +212,17 @@ mod tests {
         );
         assert_eq!(CellRefRangeEnd::new_relative_column(1).to_string(), "A");
         assert_eq!(CellRefRangeEnd::new_relative_row(1).to_string(), "1");
+    }
+
+    #[test]
+    fn test_translate_in_place() {
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(1, 1);
+        ref_end.translate_in_place(1, 2);
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
+
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        ref_end.translate_in_place(-1, -1);
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 2));
     }
 
     #[test]

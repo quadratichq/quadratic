@@ -1,18 +1,23 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
-use super::A1Selection;
+use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
     /// Potentially shrinks a selection after the removal of a column.
     pub fn removed_column(&mut self, column: u64) -> bool {
         let mut changed = false;
         let mut ranges_to_delete = Vec::new();
-        self.ranges.iter_mut().for_each(|range| {
-            // if the range is only in the deleted column, then mark it for deletion
-            if range.end.is_none() && range.start.col.is_some_and(|col| col.coord == column) {
-                ranges_to_delete.push(*range);
-            } else {
-                changed |= range.removed_column(column);
+        self.ranges.iter_mut().for_each(|cell_ref_range| {
+            match cell_ref_range {
+                CellRefRange::Sheet { range } => {
+                    // if the range is only in the deleted column, then mark it for deletion
+                    if range.end.is_none() && range.start.col.is_some_and(|col| col.coord == column)
+                    {
+                        ranges_to_delete.push(*cell_ref_range);
+                    } else {
+                        changed |= cell_ref_range.removed_column(column);
+                    }
+                }
             }
         });
 

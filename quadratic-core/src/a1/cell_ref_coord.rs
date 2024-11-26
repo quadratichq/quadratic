@@ -37,6 +37,10 @@ impl CellRefCoord {
         Self { coord, is_absolute }
     }
 
+    pub fn translate_in_place(&mut self, delta: i64) {
+        self.coord = (self.coord as i64 + delta).max(1) as u64;
+    }
+
     pub fn translate(self, delta: i64) -> Self {
         let coord = (self.coord as i64 + delta).max(1) as u64;
         Self {
@@ -79,6 +83,17 @@ pub(crate) fn range_might_contain_coord(
 #[serial_test::parallel]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_translate_in_place() {
+        let mut coord = CellRefCoord::new_rel(1);
+        coord.translate_in_place(-1);
+        assert_eq!(coord, CellRefCoord::new_rel(1));
+
+        let mut coord = CellRefCoord::new_rel(1);
+        coord.translate_in_place(1);
+        assert_eq!(coord, CellRefCoord::new_rel(2));
+    }
 
     #[test]
     fn test_translate() {

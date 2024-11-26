@@ -16,28 +16,30 @@ fn upgrade_cells_accessed(
         let vec = new_cells_accessed
             .entry(v1_7_1::IdSchema::from(cell_access.sheet_id.id))
             .or_default();
-        vec.push(v1_7_1::CellRefRangeSchema {
-            start: v1_7_1::CellRefRangeEndSchema {
-                col: Some(v1_7_1::CellRefCoordSchema {
-                    coord: cell_access.min.x as u64,
-                    is_absolute: false,
-                }),
-                row: Some(v1_7_1::CellRefCoordSchema {
-                    coord: cell_access.min.y as u64,
-                    is_absolute: false,
+        vec.push(v1_7_1::CellRefRangeSchema::Sheet(
+            v1_7_1::RefRangeBoundsSchema {
+                start: v1_7_1::CellRefRangeEndSchema {
+                    col: Some(v1_7_1::CellRefCoordSchema {
+                        coord: cell_access.min.x as u64,
+                        is_absolute: false,
+                    }),
+                    row: Some(v1_7_1::CellRefCoordSchema {
+                        coord: cell_access.min.y as u64,
+                        is_absolute: false,
+                    }),
+                },
+                end: Some(v1_7_1::CellRefRangeEndSchema {
+                    col: Some(v1_7_1::CellRefCoordSchema {
+                        coord: cell_access.max.x as u64,
+                        is_absolute: false,
+                    }),
+                    row: Some(v1_7_1::CellRefCoordSchema {
+                        coord: cell_access.max.y as u64,
+                        is_absolute: false,
+                    }),
                 }),
             },
-            end: Some(v1_7_1::CellRefRangeEndSchema {
-                col: Some(v1_7_1::CellRefCoordSchema {
-                    coord: cell_access.max.x as u64,
-                    is_absolute: false,
-                }),
-                row: Some(v1_7_1::CellRefCoordSchema {
-                    coord: cell_access.max.y as u64,
-                    is_absolute: false,
-                }),
-            }),
-        });
+        ));
     }
     new_cells_accessed.into_iter().collect()
 }
@@ -69,92 +71,103 @@ fn upgrade_code_runs(
 // todo - translate validation selections by the grid shifting
 fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1SelectionSchema {
     let mut ranges = vec![];
+
     if selection.all {
-        ranges.push(v1_7_1::CellRefRangeSchema {
-            start: v1_7_1::CellRefRangeEndSchema {
-                col: None,
-                row: None,
+        ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
+            v1_7_1::RefRangeBoundsSchema {
+                start: v1_7_1::CellRefRangeEndSchema {
+                    col: None,
+                    row: None,
+                },
+                end: Some(v1_7_1::CellRefRangeEndSchema {
+                    col: None,
+                    row: None,
+                }),
             },
-            end: Some(v1_7_1::CellRefRangeEndSchema {
-                col: None,
-                row: None,
-            }),
-        });
+        ));
     } else {
         selection.rows.iter().for_each(|rows| {
             rows.iter().for_each(|row| {
-                ranges.push(v1_7_1::CellRefRangeSchema {
-                    start: v1_7_1::CellRefRangeEndSchema {
-                        row: Some(v1_7_1::CellRefCoordSchema {
-                            coord: *row as u64,
-                            is_absolute: false,
-                        }),
-                        col: None,
+                ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
+                    v1_7_1::RefRangeBoundsSchema {
+                        start: v1_7_1::CellRefRangeEndSchema {
+                            row: Some(v1_7_1::CellRefCoordSchema {
+                                coord: *row as u64,
+                                is_absolute: false,
+                            }),
+                            col: None,
+                        },
+                        end: None,
                     },
-                    end: None,
-                });
+                ));
             });
         });
 
         selection.columns.iter().for_each(|columns| {
             columns.iter().for_each(|column| {
-                ranges.push(v1_7_1::CellRefRangeSchema {
-                    start: v1_7_1::CellRefRangeEndSchema {
-                        col: Some(v1_7_1::CellRefCoordSchema {
-                            coord: *column as u64,
-                            is_absolute: false,
-                        }),
-                        row: None,
+                ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
+                    v1_7_1::RefRangeBoundsSchema {
+                        start: v1_7_1::CellRefRangeEndSchema {
+                            col: Some(v1_7_1::CellRefCoordSchema {
+                                coord: *column as u64,
+                                is_absolute: false,
+                            }),
+                            row: None,
+                        },
+                        end: None,
                     },
-                    end: None,
-                });
+                ));
             });
         });
 
         selection.rects.iter().for_each(|rects| {
             rects.iter().for_each(|rect| {
-                ranges.push(v1_7_1::CellRefRangeSchema {
-                    start: v1_7_1::CellRefRangeEndSchema {
-                        col: Some(v1_7_1::CellRefCoordSchema {
-                            coord: rect.min.x as u64,
-                            is_absolute: false,
-                        }),
-                        row: Some(v1_7_1::CellRefCoordSchema {
-                            coord: rect.min.y as u64,
-                            is_absolute: false,
-                        }),
-                    },
-                    end: (rect.max.x != rect.min.x || rect.max.y != rect.min.y).then_some(
-                        v1_7_1::CellRefRangeEndSchema {
+                ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
+                    v1_7_1::RefRangeBoundsSchema {
+                        start: v1_7_1::CellRefRangeEndSchema {
                             col: Some(v1_7_1::CellRefCoordSchema {
-                                coord: rect.max.x as u64,
+                                coord: rect.min.x as u64,
                                 is_absolute: false,
                             }),
                             row: Some(v1_7_1::CellRefCoordSchema {
-                                coord: rect.max.y as u64,
+                                coord: rect.min.y as u64,
                                 is_absolute: false,
                             }),
                         },
-                    ),
-                });
+                        end: (rect.max.x != rect.min.x || rect.max.y != rect.min.y).then_some(
+                            v1_7_1::CellRefRangeEndSchema {
+                                col: Some(v1_7_1::CellRefCoordSchema {
+                                    coord: rect.max.x as u64,
+                                    is_absolute: false,
+                                }),
+                                row: Some(v1_7_1::CellRefCoordSchema {
+                                    coord: rect.max.y as u64,
+                                    is_absolute: false,
+                                }),
+                            },
+                        ),
+                    },
+                ));
             });
         });
     }
 
     if ranges.is_empty() {
-        ranges.push(v1_7_1::CellRefRangeSchema {
-            start: v1_7_1::CellRefRangeEndSchema {
-                col: Some(v1_7_1::CellRefCoordSchema {
-                    coord: selection.x as u64,
-                    is_absolute: false,
-                }),
-                row: Some(v1_7_1::CellRefCoordSchema {
-                    coord: selection.y as u64,
-                    is_absolute: false,
-                }),
+        ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
+            v1_7_1::RefRangeBoundsSchema {
+                start: v1_7_1::CellRefRangeEndSchema {
+                    col: Some(v1_7_1::CellRefCoordSchema {
+                        coord: selection.x as u64,
+                        is_absolute: false,
+                    }),
+                    row: Some(v1_7_1::CellRefCoordSchema {
+                        coord: selection.y as u64,
+                        is_absolute: false,
+                    }),
+                },
+                end: None,
             },
-            end: None,
-        });
+        ));
     }
 
     v1_7_1::A1SelectionSchema {
