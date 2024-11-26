@@ -59,7 +59,9 @@ export function Console() {
             <span style={{ alignItems: 'center', gap: '8px', color: colors.error }}>
               ERROR:{' '}
               <Linkify>
-                <div contentEditable="false">{consoleOutput?.stdErr}</div>
+                <div contentEditable="false" suppressContentEditableWarning={true}>
+                  {consoleOutput?.stdErr}
+                </div>
               </Linkify>
             </span>
           )}
