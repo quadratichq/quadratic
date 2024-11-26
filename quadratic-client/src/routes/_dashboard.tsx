@@ -15,6 +15,7 @@ import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons'
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import {
   Link,
   LoaderFunctionArgs,
@@ -91,10 +92,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   } else if (teams.length > 0) {
     initialActiveTeamUuid = teams[0].team.uuid;
 
-    // 4) there's no teams in the API, so create one, then send the user to a new file
+    // 4) there's no teams in the API, so create one
   } else if (teams.length === 0) {
     const newTeam = await apiClient.teams.create({ name: 'My Team' });
-    return redirect(ROUTES.CREATE_FILE(newTeam.uuid));
+    // Send user to team dashboard if mobile, otherwise to a new file
+    return isMobile ? redirect(ROUTES.TEAM(newTeam.uuid)) : redirect(ROUTES.CREATE_FILE(newTeam.uuid));
   }
 
   // This should never happen, but if it does, we'll log it to sentry
