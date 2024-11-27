@@ -16,6 +16,6 @@ impl GridController {
             .try_sheet_from_string_id(sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
         let text = sheet.neighbor_text(Pos { x, y });
-        Ok(serde_wasm_bindgen::to_value(&text).map_err(|_| JsValue::UNDEFINED)?)
+        serde_wasm_bindgen::to_value(&text).map_err(|_| JsValue::UNDEFINED)
     }
 }
