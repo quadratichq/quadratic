@@ -4,7 +4,7 @@ import { isMac } from '@/shared/utils/isMac';
 import { IPointData, Point } from '@pixi/math';
 import { Plugin, Viewport } from 'pixi-viewport';
 
-export const SCALE_OUT_OF_BOUNDS_SCROLL = 0.2;
+export const SCALE_OUT_OF_BOUNDS_SCROLL = 0.1;
 
 /** Options for {@link Wheel}. */
 export interface IWheelOptions {
