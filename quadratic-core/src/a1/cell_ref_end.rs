@@ -93,6 +93,20 @@ impl CellRefRangeEnd {
         row: None,
     };
 
+    pub fn new_infinite_row(row: u64) -> Self {
+        CellRefRangeEnd {
+            col: None,
+            row: Some(CellRefCoord::new_rel(row)),
+        }
+    }
+
+    pub fn new_infinite_column(col: u64) -> Self {
+        CellRefRangeEnd {
+            col: Some(CellRefCoord::new_rel(col)),
+            row: None,
+        }
+    }
+
     pub fn new_relative_xy(x: u64, y: u64) -> Self {
         let col = Some(CellRefCoord::new_rel(x));
         let row = Some(CellRefCoord::new_rel(y));

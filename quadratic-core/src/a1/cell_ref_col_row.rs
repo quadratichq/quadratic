@@ -5,84 +5,44 @@ impl CellRefRange {
     ///
     /// Note: this does not handle the case where the deleted column is the same
     /// as self's column(s). That has to be handled one step above this call.
-    pub fn removed_column(&mut self, _column: u64) -> bool {
-        todo!()
-        // let mut changed = false;
+    pub fn removed_column(&mut self, column: u64) -> bool {
+        let mut changed = false;
 
-        // if let Some(start_col) = self.start.col.as_mut() {
-        //     if start_col.coord == column {
-        //         if let Some(end_col) = self.end.as_mut() {
-        //             if end_col.col.is_some_and(|col| col.coord > column) {
-        //                 start_col.coord = end_col.coord;
-        //             } else {
-        //                 start_col.coord -= 1;
-        //             }
-        //         } else {
-        //             start_col = None;
-        //         }
-        //     } else if start_col.coord > column {
-        //         start_col.coord -= 1;
-        //     }
-        // }
+        match self {
+            Self::Sheet { range } => {
+                // Check if the start column needs to be adjusted
+                if let Some(start_col) = range.start.col.as_mut() {
+                    if start_col.coord >= column {
+                        if start_col.coord <= 1 {
+                            start_col.coord = 1;
+                        } else {
+                            start_col.coord -= 1;
+                        }
+                        changed = true;
+                    }
+                }
 
-        // if let Some(end_col) = self.end.and_then(|end| end.col.as_mut()) {
-        //     if end_col.coord == column {
-        //         end_col = None;
-        //     } else if end_col.coord > column {
-        //         end_col.coord -= 1;
-        //     }
-        // }
+                // Check if the end column needs to be adjusted
+                if let Some(end) = range.end.as_mut() {
+                    if let Some(end_col) = end.col.as_mut() {
+                        if end_col.coord >= column {
+                            if end_col.coord <= 1 {
+                                end_col.coord = 1;
+                            } else {
+                                end_col.coord -= 1;
+                            }
+                            changed = true;
+                        }
+                    }
+                }
+                // clean up end if it's the same as start
+                if range.end.is_some_and(|end| end == range.start) {
+                    range.end = None;
+                }
+            }
+        }
 
-        // // unpack the end_col if it exists
-        // let end_col = self
-        //     .end
-        //     .as_ref()
-        //     .and_then(|end| end.col.as_ref().map(|col| col.coord));
-
-        // let mut new_end_col: Option<u64> = None;
-
-        // // Check if the start column needs to be adjusted
-        // if let Some(start_col) = self.start.col.as_mut() {
-        //     // handle the case where the column being removed is the same as the start column
-        //     if start_col.coord == column {
-        //         if let Some(end_col) = end_col {
-        //             if start_col.coord == end_col {
-        //                 start_col.col = None;
-        //                 start_col.row = None;
-        //                 new_end_col = None;
-        //             }
-        //         } else {
-        //             // this should not happen since it's handled a level above
-        //             // (see note above)
-        //         }
-        //     } else if start_col.coord > column {
-        //         start_col.coord -= 1;
-        //         if let Some(end_col) = end_col {
-        //             new_end_col = Some(end_col - 1);
-        //         }
-        //     } else {
-        //         if let Some(end_col) = end_col {
-        //             if end_col > column {
-        //                 new_end_col = Some(end_col - 1);
-        //             }
-        //         }
-        //     }
-        // }
-
-        // if let Some(new_end_col) = new_end_col {
-        //     self.end.as_mut().map(|end| end.col = Some(CellRefCoord { coord: new_end_col }));
-        // } else {
-        //     self.end = None;
-        // }
-
-        // // clean up end if it's the same as start
-        // if self.end.is_some_and(|end| end == self.start) {
-        //     self.end = None;
-        // } else if self.start.col == None {
-        //     if let Some(end_col) = self.end
-        // }
-
-        // changed
+        changed
     }
 
     /// Handle the removal of a row. Returns whether the range was changed.
@@ -96,29 +56,13 @@ impl CellRefRange {
             Self::Sheet { range } => {
                 // Check if the start row needs to be adjusted
                 if let Some(start_row) = range.start.row.as_mut() {
-                    // handle the case where the row being removed is the same as the start row
-                    match start_row.coord.cmp(&row) {
-                        std::cmp::Ordering::Equal => {
-                            if let Some(end) = range.end.as_mut() {
-                                if end.row.is_some_and(|r| r.coord == row) {
-                                    range.end = None;
-                                } else {
-                                    start_row.coord -= 1;
-                                }
-                            } else {
-                                range.start.row = None;
-                            }
+                    if start_row.coord >= row {
+                        if start_row.coord <= 1 {
+                            start_row.coord = 1;
+                        } else {
+                            start_row.coord -= 1;
                         }
-                        std::cmp::Ordering::Greater => {
-                            // this should not happen
-                            if start_row.coord <= 1 {
-                                range.start.row = None;
-                            } else {
-                                start_row.coord -= 1;
-                            }
-                            changed = true;
-                        }
-                        std::cmp::Ordering::Less => {}
+                        changed = true;
                     }
                 }
 
@@ -127,7 +71,7 @@ impl CellRefRange {
                     if let Some(end_row) = end.row.as_mut() {
                         if end_row.coord >= row {
                             if end_row.coord <= 1 {
-                                end.row = None;
+                                end_row.coord = 1;
                             } else {
                                 end_row.coord -= 1;
                             }
@@ -145,12 +89,60 @@ impl CellRefRange {
         changed
     }
 
-    pub fn inserted_column(&mut self, _column: u64) -> bool {
-        false
+    pub fn inserted_column(&mut self, column: u64) -> bool {
+        let mut changed = false;
+
+        match self {
+            Self::Sheet { range } => {
+                // Check if the start column needs to be adjusted
+                if let Some(start_col) = range.start.col.as_mut() {
+                    if start_col.coord >= column {
+                        start_col.coord += 1;
+                        changed = true;
+                    }
+                }
+
+                // Check if the end column needs to be adjusted
+                if let Some(end) = range.end.as_mut() {
+                    if let Some(end_col) = end.col.as_mut() {
+                        if end_col.coord >= column {
+                            end_col.coord += 1;
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        changed
     }
 
-    pub fn inserted_row(&mut self, _row: u64) -> bool {
-        false
+    pub fn inserted_row(&mut self, row: u64) -> bool {
+        let mut changed = false;
+
+        match self {
+            Self::Sheet { range } => {
+                // Check if the start row needs to be adjusted
+                if let Some(start_row) = range.start.row.as_mut() {
+                    if start_row.coord >= row {
+                        start_row.coord += 1;
+                        changed = true;
+                    }
+                }
+
+                // Check if the end row needs to be adjusted
+                if let Some(end) = range.end.as_mut() {
+                    if let Some(end_row) = end.row.as_mut() {
+                        if end_row.coord >= row {
+                            end_row.coord += 1;
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        changed
     }
 }
 
@@ -168,5 +160,144 @@ mod tests {
         range = CellRefRange::test("D2:E5");
         assert!(range.removed_column(1));
         assert_eq!(range, CellRefRange::test("C2:D5"));
+
+        // Removing a column not in the range
+        range = CellRefRange::test("C1:D2");
+        assert!(range.removed_column(1));
+        assert_eq!(range, CellRefRange::test("B1:C2"));
+
+        // Removing the start column
+        range = CellRefRange::test("B1:D2");
+        assert!(range.removed_column(2));
+        assert_eq!(range, CellRefRange::test("A1:C2"));
+
+        // Removing the end column
+        range = CellRefRange::test("B1:D2");
+        assert!(range.removed_column(4));
+        assert_eq!(range, CellRefRange::test("B1:C2"));
+    }
+
+    #[test]
+    fn test_removed_row() {
+        // Basic case - removing a row in range
+        let mut range = CellRefRange::test("A1:B2");
+        assert!(range.removed_row(1));
+        assert_eq!(range, CellRefRange::test("A1:B1"));
+
+        // Removing row affects coordinates above it
+        range = CellRefRange::test("D2:E5");
+        assert!(range.removed_row(1));
+        assert_eq!(range, CellRefRange::test("D1:E4"));
+
+        // Removing a row not in the range
+        range = CellRefRange::test("C3:D4");
+        assert!(range.removed_row(1));
+        assert_eq!(range, CellRefRange::test("C2:D3"));
+
+        // Removing the start row
+        range = CellRefRange::test("B2:D4");
+        assert!(range.removed_row(2));
+        assert_eq!(range, CellRefRange::test("B1:D3"));
+
+        // Removing the end row
+        range = CellRefRange::test("B2:D4");
+        assert!(range.removed_row(4));
+        assert_eq!(range, CellRefRange::test("B2:D3"));
+
+        // Test minimum row boundary
+        range = CellRefRange::test("A1:B1");
+        assert!(range.removed_row(1));
+        assert_eq!(range, CellRefRange::test("A1:B1"));
+
+        // Test when start and end become equal
+        range = CellRefRange::test("A1:A2");
+        assert!(range.removed_row(2));
+        assert_eq!(range, CellRefRange::test("A1"));
+    }
+
+    #[test]
+    fn test_inserted_column() {
+        // Basic case - inserting a column before range
+        let mut range = CellRefRange::test("B1:C2");
+        assert!(range.inserted_column(1));
+        assert_eq!(range, CellRefRange::test("C1:D2"));
+
+        // Inserting column at start of range
+        range = CellRefRange::test("B1:D2");
+        assert!(range.inserted_column(2));
+        assert_eq!(range, CellRefRange::test("C1:E2"));
+
+        // Inserting column in middle of range
+        range = CellRefRange::test("B1:D2");
+        assert!(range.inserted_column(3));
+        assert_eq!(range, CellRefRange::test("B1:E2"));
+
+        // Inserting column at end of range
+        range = CellRefRange::test("B1:D2");
+        assert!(range.inserted_column(4));
+        assert_eq!(range, CellRefRange::test("B1:E2"));
+
+        // Inserting column after range - should not affect range
+        range = CellRefRange::test("B1:D2");
+        assert!(!range.inserted_column(5));
+        assert_eq!(range, CellRefRange::test("B1:D2"));
+
+        // Single cell reference
+        range = CellRefRange::test("B1");
+        assert!(range.inserted_column(2));
+        assert_eq!(range, CellRefRange::test("C1"));
+
+        // Single cell reference - insert after
+        range = CellRefRange::test("B1");
+        assert!(!range.inserted_column(3));
+        assert_eq!(range, CellRefRange::test("B1"));
+
+        // Testing with column-only references
+        range = CellRefRange::test("B:D");
+        assert!(range.inserted_column(2));
+        assert_eq!(range, CellRefRange::test("C:E"));
+    }
+
+    #[test]
+    fn test_inserted_row() {
+        // Basic case - inserting a row before range
+        let mut range = CellRefRange::test("A2:B3");
+        assert!(range.inserted_row(1));
+        assert_eq!(range, CellRefRange::test("A3:B4"));
+
+        // Inserting row at start of range
+        range = CellRefRange::test("A2:B4");
+        assert!(range.inserted_row(2));
+        assert_eq!(range, CellRefRange::test("A3:B5"));
+
+        // Inserting row in middle of range
+        range = CellRefRange::test("A2:B4");
+        assert!(range.inserted_row(3));
+        assert_eq!(range, CellRefRange::test("A2:B5"));
+
+        // Inserting row at end of range
+        range = CellRefRange::test("A2:B4");
+        assert!(range.inserted_row(4));
+        assert_eq!(range, CellRefRange::test("A2:B5"));
+
+        // Inserting row after range - should not affect range
+        range = CellRefRange::test("A2:B4");
+        assert!(!range.inserted_row(5));
+        assert_eq!(range, CellRefRange::test("A2:B4"));
+
+        // Single cell reference
+        range = CellRefRange::test("A2");
+        assert!(range.inserted_row(2));
+        assert_eq!(range, CellRefRange::test("A3"));
+
+        // Single cell reference - insert after
+        range = CellRefRange::test("A2");
+        assert!(!range.inserted_row(3));
+        assert_eq!(range, CellRefRange::test("A2"));
+
+        // Testing with row-only references
+        range = CellRefRange::test("2:4");
+        assert!(range.inserted_row(2));
+        assert_eq!(range, CellRefRange::test("3:5"));
     }
 }

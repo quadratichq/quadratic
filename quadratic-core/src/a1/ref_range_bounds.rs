@@ -88,6 +88,14 @@ impl RefRangeBounds {
         self.start.col.is_some() || self.start.row.is_some() || self.end.is_some()
     }
 
+    pub fn new_relative_all_from(pos: Pos) -> Self {
+        let start = CellRefRangeEnd::new_relative_pos(pos);
+        RefRangeBounds {
+            start,
+            end: Some(CellRefRangeEnd::UNBOUNDED),
+        }
+    }
+
     pub fn new_relative_xy(x: u64, y: u64) -> Self {
         let start = CellRefRangeEnd::new_relative_xy(x, y);
         RefRangeBounds { start, end: None }
@@ -338,14 +346,14 @@ impl RefRangeBounds {
 
     /// Translates the range in place by the given delta.
     pub fn translate_in_place(&mut self, x: i64, y: i64) {
-        dbgjs!("todo(ayush): add tests for this");
         self.start.translate_in_place(x, y);
-        self.end.as_mut().map(|end| end.translate(x, y));
+        if let Some(end) = self.end.as_mut() {
+            end.translate_in_place(x, y);
+        }
     }
 
     /// Returns a new range translated by the given delta.
     pub fn translate(&self, x: i64, y: i64) -> Self {
-        dbgjs!("todo(ayush): add tests for this");
         let mut range = *self;
         range.translate_in_place(x, y);
         range
@@ -378,6 +386,12 @@ mod tests {
                 assert_eq!(ref_range_bounds, ref_range_bounds.to_string().parse().unwrap());
             }
         }
+    }
+
+    #[test]
+    fn test_new_relative_all_from() {
+        let range = RefRangeBounds::new_relative_all_from(Pos { x: 1, y: 2 });
+        assert_eq!(range.to_string(), "A2:");
     }
 
     #[test]
@@ -588,5 +602,99 @@ mod tests {
             .is_empty());
         assert!(RefRangeBounds::test("*").selected_rows_finite().is_empty());
         assert!(RefRangeBounds::test(":3").selected_rows_finite().is_empty());
+    }
+
+    #[test]
+    fn test_translate_in_place() {
+        // Test single cell translation
+        let mut range = RefRangeBounds::test("A1");
+        range.translate_in_place(1, 1);
+        assert_eq!(range.to_string(), "B2");
+
+        // Test range translation
+        let mut range = RefRangeBounds::test("A1:C3");
+        range.translate_in_place(1, 1);
+        assert_eq!(range.to_string(), "B2:D4");
+
+        // Test column range translation
+        let mut range = RefRangeBounds::test("A:C");
+        range.translate_in_place(1, 0);
+        assert_eq!(range.to_string(), "B:D");
+
+        // Test row range translation
+        let mut range = RefRangeBounds::test("1:3");
+        range.translate_in_place(0, 1);
+        assert_eq!(range.to_string(), "2:4");
+
+        // Test negative translation
+        let mut range = RefRangeBounds::test("B2:D4");
+        range.translate_in_place(-1, -1);
+        assert_eq!(range.to_string(), "A1:C3");
+
+        // Test zero translation
+        let mut range = RefRangeBounds::test("A1:C3");
+        range.translate_in_place(0, 0);
+        assert_eq!(range.to_string(), "A1:C3");
+
+        // Test that * remains unchanged
+        let mut range = RefRangeBounds::test("*");
+        range.translate_in_place(1, 1);
+        assert_eq!(range.to_string(), "*");
+
+        // Test negative translation capping
+        let mut range = RefRangeBounds::test("A1");
+        range.translate_in_place(-10, -10);
+        assert_eq!(range.to_string(), "A1");
+    }
+
+    #[test]
+    fn test_translate() {
+        // Test single cell translation
+        let range = RefRangeBounds::test("A1");
+        let translated = range.translate(1, 1);
+        assert_eq!(translated.to_string(), "B2");
+        assert_eq!(range.to_string(), "A1");
+
+        // Test range translation
+        let range = RefRangeBounds::test("A1:C3");
+        let translated = range.translate(1, 1);
+        assert_eq!(translated.to_string(), "B2:D4");
+        assert_eq!(range.to_string(), "A1:C3");
+
+        // Test column range translation
+        let range = RefRangeBounds::test("A:C");
+        let translated = range.translate(1, 0);
+        assert_eq!(translated.to_string(), "B:D");
+        assert_eq!(range.to_string(), "A:C");
+
+        // Test row range translation
+        let range = RefRangeBounds::test("1:3");
+        let translated = range.translate(0, 1);
+        assert_eq!(translated.to_string(), "2:4");
+        assert_eq!(range.to_string(), "1:3");
+
+        // Test negative translation
+        let range = RefRangeBounds::test("B2:D4");
+        let translated = range.translate(-1, -1);
+        assert_eq!(translated.to_string(), "A1:C3");
+        assert_eq!(range.to_string(), "B2:D4");
+
+        // Test zero translation
+        let range = RefRangeBounds::test("A1:C3");
+        let translated = range.translate(0, 0);
+        assert_eq!(translated.to_string(), "A1:C3");
+        assert_eq!(range.to_string(), "A1:C3");
+
+        // Test that * remains unchanged
+        let range = RefRangeBounds::test("*");
+        let translated = range.translate(1, 1);
+        assert_eq!(translated.to_string(), "*");
+        assert_eq!(range.to_string(), "*");
+
+        // Test negative translation capping
+        let range = RefRangeBounds::test("A1");
+        let translated = range.translate(-10, -10);
+        assert_eq!(translated.to_string(), "A1");
+        assert_eq!(range.to_string(), "A1");
     }
 }

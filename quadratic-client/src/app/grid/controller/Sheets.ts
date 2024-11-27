@@ -305,21 +305,14 @@ class Sheets {
   };
 
   /// Gets a stringified SheetIdNameMap for Rust's A1 functions
-  getSheetIdNameMap(): string {
-    const sheetMap: Record<string, { id: string }> = {};
-    sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
-    return JSON.stringify(sheetMap);
-  }
-
-  // Gets a stringified sheet name to id map for Rust's A1 functions
-  getRustSheetMap(): string {
+  getSheetIdNameMap = (): string => {
     const sheetMap: Record<string, { id: string }> = {};
     this.sheets.forEach((sheet) => (sheetMap[sheet.name] = { id: sheet.id }));
     return JSON.stringify(sheetMap);
-  }
+  };
 
   // Changes the cursor to the incoming selection
-  changeSelection(jsSelection: JsSelection, ensureVisible = true) {
+  changeSelection = (jsSelection: JsSelection, ensureVisible = true) => {
     // change the sheet id if needed
     const sheetId = jsSelection.getSheetId();
     if (sheetId !== this.current) {
@@ -328,10 +321,10 @@ class Sheets {
       }
     }
 
-    const cursor = sheets.sheet.cursor;
+    const cursor = this.sheet.cursor;
     cursor.loadFromSelection(jsSelection);
     cursor.updatePosition(true);
-  }
+  };
 
   getRustSelection = (): string => {
     return this.sheet.cursor.save();

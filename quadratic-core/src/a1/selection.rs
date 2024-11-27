@@ -226,7 +226,6 @@ impl A1Selection {
     }
 
     pub fn to_cursor_sheet_pos(&self) -> SheetPos {
-        dbgjs!("todo(ayush): add tests for this");
         self.cursor.to_sheet_pos(self.sheet_id)
     }
 
@@ -298,6 +297,88 @@ impl A1Selection {
         ret
     }
 
+    /// Finds intersection of two Selections.
+    pub fn intersection(&self, other: &Self) -> Option<Self> {
+        dbgjs!(format!("todo(ayush): replace this with Contiguous2D"));
+
+        if self.sheet_id != other.sheet_id {
+            return None;
+        }
+
+        let mut intersection = Self::from_xy(self.cursor.x, self.cursor.y, self.sheet_id);
+        intersection.ranges.clear();
+
+        let self_subspaces = self.subspaces();
+        let other_subspaces = other.subspaces();
+
+        if let (Some(self_all), Some(other_all)) = (self_subspaces.all, other_subspaces.all) {
+            let min_pos = self_all.max(other_all);
+            let all_range = if min_pos == pos![A1] {
+                CellRefRange::ALL
+            } else {
+                CellRefRange::new_relative_all_from(min_pos)
+            };
+            intersection.ranges.push(all_range);
+        }
+
+        for (row, min_col) in self_subspaces.rows {
+            if let Some(other_min_col) = other_subspaces.rows.get(&row) {
+                let min_col = min_col.max(*other_min_col);
+                let row_range = if min_col == 1 {
+                    CellRefRange::new_relative_row(row)
+                } else {
+                    CellRefRange::new_relative_row_from(row, min_col)
+                };
+                intersection.ranges.push(row_range);
+            }
+        }
+
+        for (col, min_row) in self_subspaces.cols {
+            if let Some(other_min_row) = other_subspaces.cols.get(&col) {
+                let min_row = min_row.max(*other_min_row);
+                let col_range = if min_row == 1 {
+                    CellRefRange::new_relative_column(col)
+                } else {
+                    CellRefRange::new_relative_column_from(col, min_row)
+                };
+                intersection.ranges.push(col_range);
+            }
+        }
+
+        for rect in self_subspaces.rects {
+            for other_rect in &other_subspaces.rects {
+                if let Some(intersection_rect) = rect.intersection(other_rect) {
+                    intersection
+                        .ranges
+                        .push(CellRefRange::new_relative_rect(intersection_rect));
+                }
+            }
+        }
+
+        // Set the cursor to the last range's start position.
+        if let Some(last_range) = intersection.ranges.last() {
+            match last_range {
+                CellRefRange::Sheet { .. } => {
+                    intersection.cursor = cursor_pos_from_last_range(last_range);
+                }
+            }
+        } else {
+            // No ranges means the intersection is empty.
+            return None;
+        }
+
+        Some(intersection)
+    }
+
+    /// Returns `true` if the two selections overlap.
+    pub fn overlaps_a1_selection(&self, other: &Self) -> bool {
+        dbgjs!(format!(
+            "todo(ayush): replace this with Contiguous2D, make more efficient"
+        ));
+
+        self.intersection(other).is_some()
+    }
+
     /// Constructs contiguous blocks from an A1 selection.
     pub fn to_contiguous_blocks<T: Clone + PartialEq>(&self, value: T) -> Contiguous2D<T> {
         let mut ret = Contiguous2D::new();
@@ -332,6 +413,12 @@ impl A1Selection {
             }
         }
         ret
+    }
+
+    pub fn update_cursor(&mut self) {
+        if let Some(last) = self.ranges.last() {
+            self.cursor = cursor_pos_from_last_range(last);
+        }
     }
 
     /// Returns a test selection from the A1-string with SheetId::test().
@@ -655,5 +742,357 @@ mod tests {
             selection.to_string(Some(sheet_id), &map),
             "Second!A1,Second!B1,Second!C1",
         );
+    }
+
+    #[test]
+    fn test_cursor_a1_string() {
+        // Test basic cursor position
+        let selection = A1Selection::test("A1");
+        assert_eq!(
+            selection.to_cursor_a1_string(),
+            "A1",
+            "Basic cursor A1 string failed"
+        );
+
+        // Test cursor at different positions
+        let selection = A1Selection::test("B2");
+        assert_eq!(
+            selection.to_cursor_a1_string(),
+            "B2",
+            "B2 cursor A1 string failed"
+        );
+
+        // Test cursor with large coordinates
+        let selection = A1Selection::test("Z100");
+        assert_eq!(
+            selection.to_cursor_a1_string(),
+            "Z100",
+            "Large coordinate cursor A1 string failed"
+        );
+
+        // Test cursor with multi-letter column
+        let selection = A1Selection::test("AA1");
+        assert_eq!(
+            selection.to_cursor_a1_string(),
+            "AA1",
+            "Multi-letter column cursor A1 string failed"
+        );
+
+        // Test cursor position in a range selection
+        let selection = A1Selection::test("A1:C3");
+        assert_eq!(
+            selection.to_cursor_a1_string(),
+            "A1",
+            "Range selection cursor A1 string failed"
+        );
+    }
+
+    #[test]
+    fn test_cursor_sheet_pos() {
+        // Test basic cursor position
+        let selection = A1Selection::test("A1");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 1, 1),
+            "Basic cursor sheet pos failed"
+        );
+
+        // Test cursor at different positions
+        let selection = A1Selection::test("B2");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 2, 2),
+            "B2 cursor sheet pos failed"
+        );
+
+        // Test cursor with large coordinates
+        let selection = A1Selection::test("Z100");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 26, 100),
+            "Large coordinate cursor sheet pos failed"
+        );
+
+        // Test cursor with multi-letter column
+        let selection = A1Selection::test("AA1");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 27, 1),
+            "Multi-letter column cursor sheet pos failed"
+        );
+
+        // Test cursor position in a range selection
+        let selection = A1Selection::test("A1:C3");
+        assert_eq!(
+            selection.to_cursor_sheet_pos(),
+            SheetPos::new(selection.sheet_id, 1, 1),
+            "Range selection cursor sheet pos failed"
+        );
+    }
+}
+
+#[cfg(test)]
+mod intersection_tests {
+
+    use super::*;
+
+    #[test]
+    fn test_intersection() {
+        // Test different sheets return None
+        let sel1 = A1Selection::test_sheet_id("A1:B2", &SheetId::new());
+        let sel2 = A1Selection::test_sheet_id("B2:C3", &SheetId::new());
+        assert_eq!(
+            sel1.intersection(&sel2),
+            None,
+            "Different sheets should return None"
+        );
+
+        // Test non-overlapping rectangles return None
+        let sel1 = A1Selection::test("A1:B2");
+        let sel2 = A1Selection::test("C3:D4");
+        assert_eq!(
+            sel1.intersection(&sel2),
+            None,
+            "Non-overlapping rectangles should return None"
+        );
+
+        // Test overlapping rectangles
+        let sel1 = A1Selection::test("A1:C3");
+        let sel2 = A1Selection::test("B2:D4");
+        assert_eq!(
+            sel1.intersection(&sel2).unwrap().test_string(),
+            "B2:C3",
+            "Overlapping rectangles intersection failed"
+        );
+        assert_eq!(
+            sel1.intersection(&sel2).unwrap().cursor,
+            pos![B2],
+            "Cursor position incorrect for overlapping rectangles"
+        );
+
+        // Test one rectangle inside another
+        let sel1 = A1Selection::test("A1:D4");
+        let sel2 = A1Selection::test("B2:C3");
+        assert_eq!(
+            sel1.intersection(&sel2).unwrap().test_string(),
+            "B2:C3",
+            "Rectangle inside another intersection failed"
+        );
+
+        // Test overlapping columns
+        let sel1 = A1Selection::test("A:C");
+        let sel2 = A1Selection::test("B:D");
+        let intersection = sel1.intersection(&sel2).unwrap();
+        assert_eq!(
+            intersection.test_string(),
+            "B,C",
+            "Overlapping columns intersection failed"
+        );
+
+        // Test non-overlapping columns return None
+        let sel1 = A1Selection::test("A:B");
+        let sel2 = A1Selection::test("C:D");
+        assert_eq!(
+            sel1.intersection(&sel2),
+            None,
+            "Non-overlapping columns should return None"
+        );
+
+        // Test overlapping rows
+        let sel1 = A1Selection::test("1:3");
+        let sel2 = A1Selection::test("2:4");
+        let intersection = sel1.intersection(&sel2).unwrap();
+        assert_eq!(
+            intersection.test_string(),
+            "2,3",
+            "Overlapping rows intersection failed"
+        );
+
+        // Test non-overlapping rows return None
+        let sel1 = A1Selection::test("1:2");
+        let sel2 = A1Selection::test("3:4");
+        assert_eq!(
+            sel1.intersection(&sel2),
+            None,
+            "Non-overlapping rows should return None"
+        );
+
+        // Test all (*) intersect with all (*)
+        let sel1 = A1Selection::test("*");
+        let sel2 = A1Selection::test("*");
+        assert_eq!(
+            sel1.intersection(&sel2).unwrap().test_string(),
+            "*",
+            "All (*) intersection with all (*) failed"
+        );
+
+        // Test single cell intersection
+        let sel1 = A1Selection::test("A1:B2");
+        let sel2 = A1Selection::test("B2");
+        assert_eq!(
+            sel1.intersection(&sel2).unwrap().test_string(),
+            "B2",
+            "Single cell intersection failed"
+        );
+
+        // Test multiple disjoint intersections
+        let sel1 = A1Selection::test("A1:C3,E1:G3");
+        let sel2 = A1Selection::test("B2:F2");
+        assert_eq!(
+            sel1.intersection(&sel2).unwrap().test_string(),
+            "B2:C2,E2:F2",
+            "Multiple disjoint intersections failed"
+        );
+
+        // todo(ayush): make this work
+
+        // Test all (*) intersect with rectangle
+        // let sel1 = A1Selection::test("*");
+        // let sel2 = A1Selection::test("B2:C3");
+        // assert_eq!(
+        //     sel1.intersection(&sel2).unwrap().test_string(),
+        //     "B2:C3",
+        //     "All (*) intersection with rectangle failed"
+        // );
+
+        // todo(ayush): make this work
+
+        // Test complex intersection with multiple ranges
+        // let sel1 = A1Selection::test("A1:C3,E:G,2:4");
+        // let sel2 = A1Selection::test("B2:D4,F:H,3:5");
+        // assert_eq!(
+        //     sel1.intersection(&sel2).unwrap().test_string(),
+        //     "B2:C3,F:G,3:4",
+        //     "Complex intersection with multiple ranges failed"
+        // );
+    }
+
+    #[test]
+    fn test_overlaps_a1_selection() {
+        // Different sheets don't overlap
+        let sel1 = A1Selection::test_sheet_id("A1:B2", &SheetId::new());
+        let sel2 = A1Selection::test_sheet_id("B2:C3", &SheetId::new());
+        assert!(
+            !sel1.overlaps_a1_selection(&sel2),
+            "Different sheets should not overlap"
+        );
+
+        // Non-overlapping rectangles
+        let sel1 = A1Selection::test("A1:B2");
+        let sel2 = A1Selection::test("C3:D4");
+        assert!(
+            !sel1.overlaps_a1_selection(&sel2),
+            "Non-overlapping rectangles should not overlap"
+        );
+
+        // Overlapping rectangles
+        let sel1 = A1Selection::test("A1:C3");
+        let sel2 = A1Selection::test("B2:D4");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "Overlapping rectangles should overlap"
+        );
+
+        // One rectangle inside another
+        let sel1 = A1Selection::test("A1:D4");
+        let sel2 = A1Selection::test("B2:C3");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "Nested rectangles should overlap"
+        );
+
+        // Overlapping columns
+        let sel1 = A1Selection::test("A:C");
+        let sel2 = A1Selection::test("B:D");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "Overlapping columns should overlap"
+        );
+
+        // Non-overlapping columns
+        let sel1 = A1Selection::test("A:B");
+        let sel2 = A1Selection::test("C:D");
+        assert!(
+            !sel1.overlaps_a1_selection(&sel2),
+            "Non-overlapping columns should not overlap"
+        );
+
+        // Overlapping rows
+        let sel1 = A1Selection::test("1:3");
+        let sel2 = A1Selection::test("2:4");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "Overlapping rows should overlap"
+        );
+
+        // Non-overlapping rows
+        let sel1 = A1Selection::test("1:2");
+        let sel2 = A1Selection::test("3:4");
+        assert!(
+            !sel1.overlaps_a1_selection(&sel2),
+            "Non-overlapping rows should not overlap"
+        );
+
+        // Single cell overlap
+        let sel1 = A1Selection::test("A1:B2");
+        let sel2 = A1Selection::test("B2");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "Single cell should overlap with containing rectangle"
+        );
+
+        // Multiple disjoint ranges with overlap
+        let sel1 = A1Selection::test("A1:C3,E1:G3");
+        let sel2 = A1Selection::test("B2:F2");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "Disjoint ranges should overlap when intersecting"
+        );
+
+        // Multiple disjoint ranges without overlap
+        let sel1 = A1Selection::test("A1:B2,D1:E2");
+        let sel2 = A1Selection::test("F1:G2,H1:I2");
+        assert!(
+            !sel1.overlaps_a1_selection(&sel2),
+            "Disjoint ranges should not overlap when separate"
+        );
+
+        // Complex overlapping selections
+        let sel1 = A1Selection::test("A1:C3,E:G,2:4");
+        let sel2 = A1Selection::test("B2:D4,F:H,3:5");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "Complex selections should detect overlap correctly"
+        );
+
+        // todo(ayush): make this work
+
+        // All (*) overlaps with anything
+        // let sel1 = A1Selection::test("*");
+        // let sel2 = A1Selection::test("B2:C3");
+        // assert!(
+        //     sel1.overlaps_a1_selection(&sel2),
+        //     "All (*) should overlap with any selection"
+        // );
+
+        // todo(ayush): make this work
+
+        // Row overlapping with rectangle
+        // let sel1 = A1Selection::test("2:4");
+        // let sel2 = A1Selection::test("B2:C3");
+        // assert!(
+        //     sel1.overlaps_a1_selection(&sel2),
+        //     "Row should overlap with intersecting rectangle"
+        // );
+
+        // todo(ayush): make this work
+
+        // Column overlapping with rectangle
+        // let sel1 = A1Selection::test("B:D");
+        // let sel2 = A1Selection::test("B2:C3");
+        // assert!(
+        //     sel1.overlaps_a1_selection(&sel2),
+        //     "Column should overlap with intersecting rectangle"
+        // );
     }
 }

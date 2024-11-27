@@ -18,7 +18,7 @@ import {
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { v4 as uuid } from 'uuid';
+import { v4 } from 'uuid';
 
 export type SetState<T> = Dispatch<SetStateAction<T>>;
 
@@ -105,7 +105,7 @@ export const useValidationData = (): ValidationData => {
       if ('source' in validation.rule.List) {
         if ('Selection' in validation.rule.List.source) {
           const selection = validation.rule.List.source.Selection;
-          if (!selection.columns?.length && !selection.rows?.length && !selection.rects?.length && !selection.all) {
+          if (!selection.ranges?.length) {
             setTriggerError(true);
             return false;
           }
@@ -132,6 +132,7 @@ export const useValidationData = (): ValidationData => {
   const changeRule = useCallback(
     (type: ValidationRuleSimple) => {
       let rule: ValidationRule;
+      console.log(type);
       switch (type) {
         case 'none':
           rule = 'None';
@@ -155,12 +156,11 @@ export const useValidationData = (): ValidationData => {
               source: {
                 Selection: {
                   sheet_id: { id: sheetId },
-                  x: BigInt(0),
-                  y: BigInt(0),
-                  rects: null,
-                  rows: null,
-                  columns: null,
-                  all: false,
+                  cursor: {
+                    x: BigInt(0),
+                    y: BigInt(0),
+                  },
+                  ranges: [],
                 },
               },
               ignore_blank: true,
@@ -294,12 +294,11 @@ export const useValidationData = (): ValidationData => {
             ...old,
             selection: {
               sheet_id: { id: sheets.sheet.id },
-              x: BigInt(0),
-              y: BigInt(0),
-              all: false,
-              columns: null,
-              rows: null,
-              rects: null,
+              cursor: {
+                x: BigInt(0),
+                y: BigInt(0),
+              },
+              ranges: [],
             },
           };
         }
@@ -307,7 +306,7 @@ export const useValidationData = (): ValidationData => {
     } else {
       setValidation((old) => {
         if (old) {
-          return { ...old, selection: jsSelection };
+          return { ...old, selection: jsSelection.selection() };
         }
       });
     }
@@ -330,9 +329,9 @@ export const useValidationData = (): ValidationData => {
         setOriginalValidation(v);
       } else {
         v = {
-          id: uuid(),
-          selection: sheets.getRustSelection(),
-          rule: undefined,
+          id: v4(),
+          selection: sheets.sheet.cursor.selection(),
+          rule: 'None',
           message: {
             show: true,
             title: '',

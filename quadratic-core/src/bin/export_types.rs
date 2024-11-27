@@ -45,6 +45,7 @@ use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::small_timestamp::SmallTimestamp;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
+use quadratic_core::A1Selection;
 use quadratic_core::CellRefCoord;
 use quadratic_core::CellRefRangeEnd;
 use quadratic_core::RefRangeBounds;
@@ -69,7 +70,7 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        // A1Selection,
+        A1Selection,
         ArraySize,
         Axis,
         BorderSelection,

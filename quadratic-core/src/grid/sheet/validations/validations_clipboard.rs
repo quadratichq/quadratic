@@ -9,32 +9,30 @@ impl Validations {
     /// Copies validations to the clipboard for the Selection and translates them to the clipboard origin.
     pub fn to_clipboard(
         &self,
-        _selection: &A1Selection,
-        _clipboard_origin: &ClipboardOrigin,
+        selection: &A1Selection,
+        clipboard_origin: &ClipboardOrigin,
     ) -> Option<ClipboardValidations> {
-        dbgjs!("todo(ayush): implement validations for clipboard");
-        None
-        // let validations = self
-        //     .validations
-        //     .iter()
-        //     .filter_map(|validation| {
-        //         if let Some(intersection) = selection.intersection(&validation.selection) {
-        //             let mut v = validation.clone();
-        //             v.selection = intersection;
-        //             v.selection
-        //                 .translate_in_place(-clipboard_origin.x, -clipboard_origin.y);
-        //             Some(v)
-        //         } else {
-        //             None
-        //         }
-        //     })
-        //     .collect::<Vec<_>>();
+        let validations = self
+            .validations
+            .iter()
+            .filter_map(|validation| {
+                if let Some(intersection) = selection.intersection(&validation.selection) {
+                    let mut v = validation.clone();
+                    v.selection = intersection;
+                    v.selection
+                        .translate_in_place(-clipboard_origin.x, -clipboard_origin.y);
+                    Some(v)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
 
-        // if validations.is_empty() {
-        //     None
-        // } else {
-        //     Some(ClipboardValidations { validations })
-        // }
+        if validations.is_empty() {
+            None
+        } else {
+            Some(ClipboardValidations { validations })
+        }
     }
 }
 

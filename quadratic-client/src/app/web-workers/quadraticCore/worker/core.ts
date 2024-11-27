@@ -1116,8 +1116,7 @@ class Core {
 
   getValidations(sheetId: string): Validation[] {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const validationsStringified = this.gridController.getValidations(sheetId);
-    const validations = JSON.parse(validationsStringified) as Validation[];
+    const validations: Validation[] = this.gridController.getValidations(sheetId);
     return validations;
   }
 
@@ -1144,11 +1143,8 @@ class Core {
 
   getValidationFromPos(sheetId: string, x: number, y: number): Validation | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const validationStringified = this.gridController.getValidationFromPos(sheetId, posToPos(x, y));
-    if (validationStringified) {
-      const validation = JSON.parse(validationStringified) as Validation;
-      return validation;
-    }
+    const validation: Validation | undefined = this.gridController.getValidationFromPos(sheetId, posToPos(x, y));
+    return validation;
   }
 
   receiveRowHeights(transactionId: string, sheetId: string, rowHeights: string) {
@@ -1165,10 +1161,9 @@ class Core {
     });
   }
 
-  getValidationList(sheetId: string, x: number, y: number): string[] | undefined {
+  getValidationList(sheetId: string, x: number, y: number): string[] {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const listStringified = this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
-    const list = JSON.parse(listStringified) as string[] | undefined;
+    const list: string[] = this.gridController.getValidationList(sheetId, BigInt(x), BigInt(y));
     return list;
   }
 
@@ -1179,11 +1174,8 @@ class Core {
 
   validateInput(sheetId: string, x: number, y: number, input: string): string | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const validationIdStringified = this.gridController.validateInput(sheetId, posToPos(x, y), input);
-    if (validationIdStringified) {
-      const validationId = JSON.parse(validationIdStringified) as string;
-      return validationId;
-    }
+    const validationId = this.gridController.validateInput(sheetId, posToPos(x, y), input);
+    return validationId;
   }
 
   getCellValue(sheetId: string, x: number, y: number): JsCellValue | undefined {

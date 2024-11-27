@@ -72,17 +72,31 @@ impl Pos {
 
     /// Translates the pos in place by the given delta, clamping the result to the given min.
     pub fn translate_in_place(&mut self, x: i64, y: i64, min_x: i64, min_y: i64) {
-        dbgjs!("todo(ayush): add tests for this");
         self.x = (self.x + x).max(min_x);
         self.y = (self.y + y).max(min_y);
     }
 
     /// Returns a new Pos translated by the given delta, clamping the result to the given min.
     pub fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
-        dbgjs!("todo(ayush): add tests for this");
         let mut pos = *self;
         pos.translate_in_place(x, y, min_x, min_y);
         pos
+    }
+
+    /// Returns a new Pos with the minimum x and y values.
+    pub fn min(self, other: Self) -> Self {
+        Pos {
+            x: self.x.min(other.x),
+            y: self.y.min(other.y),
+        }
+    }
+
+    /// Returns a new Pos with the maximum x and y values.
+    pub fn max(self, other: Self) -> Self {
+        Pos {
+            x: self.x.max(other.x),
+            y: self.y.max(other.y),
+        }
     }
 }
 
@@ -156,16 +170,15 @@ impl SheetPos {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use crate::{
         grid::SheetId,
         renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         Pos, SheetPos, SheetRect,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_to_sheet_pos() {
         let pos = Pos { x: 1, y: 2 };
         let sheet_id = SheetId::new();
@@ -180,7 +193,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_quadrant_size() {
         assert_eq!(Pos { x: 1, y: 2 }.quadrant(), (0, 0));
         assert_eq!(Pos { x: -1, y: -2 }.quadrant(), (-1, -1));
@@ -203,7 +215,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_a1_string() {
         let pos = Pos { x: 2, y: 2 };
         assert_eq!(pos.a1_string(), "B2");
@@ -218,7 +229,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_pos_into() {
         let pos: Pos = (1, 2).into();
         assert_eq!(pos, Pos { x: 1, y: 2 });
@@ -245,7 +255,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_sheet_rect_new_pos_span() {
         let pos1 = SheetPos {
             x: 1,
@@ -263,7 +272,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn sheet_pos_from_str() {
         let sheet_id = SheetId::new();
         let sheet_pos = SheetPos {
@@ -277,7 +285,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn to_quadrant() {
         let mut pos = Pos { x: 1, y: 2 };
         pos.to_quadrant();
@@ -299,18 +306,112 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn pos_new() {
         let pos = Pos::new(1, 2);
         assert_eq!(pos, Pos { x: 1, y: 2 });
     }
 
     #[test]
-    #[parallel]
     fn try_a1_string() {
         assert_eq!(Pos::try_a1_string("A1"), Some(Pos { x: 1, y: 1 }));
         assert_eq!(Pos::try_a1_string("d5"), Some(Pos { x: 4, y: 5 }));
         assert_eq!(Pos::try_a1_string("A"), None);
         assert_eq!(Pos::try_a1_string("1"), None);
+    }
+
+    #[test]
+    fn test_translate_in_place() {
+        // Basic positive translation
+        let mut pos = Pos::new(5, 5);
+        pos.translate_in_place(2, 3, 0, 0);
+        assert_eq!(pos, Pos::new(7, 8));
+
+        // Negative translation
+        let mut pos = Pos::new(5, 5);
+        pos.translate_in_place(-2, -3, 0, 0);
+        assert_eq!(pos, Pos::new(3, 2));
+
+        // Translation with clamping
+        let mut pos = Pos::new(5, 5);
+        pos.translate_in_place(-10, -10, 2, 3);
+        assert_eq!(pos, Pos::new(2, 3));
+
+        // Translation with no effect due to clamping
+        let mut pos = Pos::new(2, 3);
+        pos.translate_in_place(-5, -5, 2, 3);
+        assert_eq!(pos, Pos::new(2, 3));
+    }
+
+    #[test]
+    fn test_translate() {
+        // Basic positive translation
+        let pos = Pos::new(5, 5);
+        let translated = pos.translate(2, 3, 0, 0);
+        assert_eq!(translated, Pos::new(7, 8));
+        assert_eq!(pos, Pos::new(5, 5)); // Original unchanged
+
+        // Negative translation
+        let pos = Pos::new(5, 5);
+        let translated = pos.translate(-2, -3, 0, 0);
+        assert_eq!(translated, Pos::new(3, 2));
+        assert_eq!(pos, Pos::new(5, 5)); // Original unchanged
+
+        // Translation with clamping
+        let pos = Pos::new(5, 5);
+        let translated = pos.translate(-10, -10, 2, 3);
+        assert_eq!(translated, Pos::new(2, 3));
+        assert_eq!(pos, Pos::new(5, 5)); // Original unchanged
+
+        // Translation with no effect due to clamping
+        let pos = Pos::new(2, 3);
+        let translated = pos.translate(-5, -5, 2, 3);
+        assert_eq!(translated, Pos::new(2, 3));
+        assert_eq!(pos, Pos::new(2, 3)); // Original unchanged
+    }
+
+    #[test]
+    fn test_min() {
+        // Basic case where first pos has smaller values
+        let pos1 = Pos::new(1, 2);
+        let pos2 = Pos::new(3, 4);
+        assert_eq!(pos1.min(pos2), Pos::new(1, 2));
+
+        // Mixed cases where each pos has one smaller value
+        let pos1 = Pos::new(1, 5);
+        let pos2 = Pos::new(3, 2);
+        assert_eq!(pos1.min(pos2), Pos::new(1, 2));
+
+        // Negative numbers
+        let pos1 = Pos::new(-5, -2);
+        let pos2 = Pos::new(-3, -4);
+        assert_eq!(pos1.min(pos2), Pos::new(-5, -4));
+
+        // Equal values
+        let pos1 = Pos::new(3, 3);
+        let pos2 = Pos::new(3, 3);
+        assert_eq!(pos1.min(pos2), Pos::new(3, 3));
+    }
+
+    #[test]
+    fn test_max() {
+        // Basic case where second pos has larger values
+        let pos1 = Pos::new(1, 2);
+        let pos2 = Pos::new(3, 4);
+        assert_eq!(pos1.max(pos2), Pos::new(3, 4));
+
+        // Mixed cases where each pos has one larger value
+        let pos1 = Pos::new(5, 2);
+        let pos2 = Pos::new(3, 4);
+        assert_eq!(pos1.max(pos2), Pos::new(5, 4));
+
+        // Negative numbers
+        let pos1 = Pos::new(-5, -2);
+        let pos2 = Pos::new(-3, -4);
+        assert_eq!(pos1.max(pos2), Pos::new(-3, -2));
+
+        // Equal values
+        let pos1 = Pos::new(3, 3);
+        let pos2 = Pos::new(3, 3);
+        assert_eq!(pos1.max(pos2), Pos::new(3, 3));
     }
 }

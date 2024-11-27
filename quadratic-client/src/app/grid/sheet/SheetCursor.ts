@@ -6,7 +6,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import { A1Selection, JsCoordinate } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -59,6 +59,10 @@ export class SheetCursor {
       return { x: heading.width, y: heading.height, scaleX: 1, scaleY: 1 };
     }
     return this._viewport;
+  }
+
+  selection(): A1Selection {
+    return this.jsSelection.selection();
   }
 
   save(): string {
@@ -216,7 +220,7 @@ export class SheetCursor {
   }
 
   toA1String(sheetId = sheets.current): string {
-    return this.jsSelection.toA1String(sheetId, sheets.getRustSheetMap());
+    return this.jsSelection.toA1String(sheetId, sheets.getSheetIdNameMap());
   }
 
   toCursorA1String(): string {
@@ -233,6 +237,6 @@ export class SheetCursor {
   }
 
   a1String(): string {
-    return this.jsSelection.toA1String(sheets.sheet.id, sheets.getRustSheetMap());
+    return this.jsSelection.toA1String(sheets.sheet.id, sheets.getSheetIdNameMap());
   }
 }

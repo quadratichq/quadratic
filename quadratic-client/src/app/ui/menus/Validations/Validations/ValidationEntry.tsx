@@ -50,7 +50,7 @@ export const ValidationEntry = (props: Props) => {
 
   const selection = useMemo(() => {
     const selection = A1SelectionStringToSelection(JSON.stringify(validation.selection, bigIntReplacer));
-    return selection.toA1String(sheets.current, sheets.getRustSheetMap());
+    return selection.toA1String(sheets.current, sheets.getSheetIdNameMap());
   }, [validation.selection]);
 
   const selectValidation = useCallback(() => {

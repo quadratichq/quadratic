@@ -26,7 +26,7 @@ export const GoTo = () => {
       );
     }
     try {
-      const map = sheets.getRustSheetMap();
+      const map = sheets.getSheetIdNameMap();
       const selection = stringToSelection(value, sheets.current, map);
       return (
         <span>
@@ -59,7 +59,7 @@ export const GoTo = () => {
       pixiApp.viewport.reset();
     } else {
       try {
-        const map = sheets.getRustSheetMap();
+        const map = sheets.getSheetIdNameMap();
         const selection = stringToSelection(value, sheets.sheet.id, map);
         sheets.changeSelection(selection);
       } catch (_) {

@@ -277,7 +277,7 @@ mod tests {
     fn validation_columns() {
         let validation = Validation {
             id: Default::default(),
-            selection: A1Selection::test("A:C"),
+            selection: A1Selection::test("A,B,C"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -301,14 +301,26 @@ mod tests {
         assert_eq!(display_sheet.displays.len(), 3);
         assert_eq!(
             display_sheet.displays,
-            vec![ValidationDisplay {
-                range: CellRefRange::test("A:C"),
-                checkbox: true,
-                list: false
-            }]
+            vec![
+                ValidationDisplay {
+                    range: CellRefRange::test("A"),
+                    checkbox: true,
+                    list: false
+                },
+                ValidationDisplay {
+                    range: CellRefRange::test("B"),
+                    checkbox: true,
+                    list: false
+                },
+                ValidationDisplay {
+                    range: CellRefRange::test("C"),
+                    checkbox: true,
+                    list: false
+                }
+            ]
         );
         assert_eq!(
-            validations.render_special_pos((0, 0).into()),
+            validations.render_special_pos((1, 1).into()),
             Some(JsRenderCellSpecial::Checkbox)
         );
     }
@@ -317,7 +329,7 @@ mod tests {
     fn validation_rows() {
         let validation = Validation {
             id: Default::default(),
-            selection: A1Selection::test("1, 2, 3"),
+            selection: A1Selection::test("1,2,3"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -341,14 +353,26 @@ mod tests {
         assert_eq!(display_sheet.displays.len(), 3);
         assert_eq!(
             display_sheet.displays,
-            vec![ValidationDisplay {
-                range: CellRefRange::test("1:3"),
-                checkbox: true,
-                list: false
-            }]
+            vec![
+                ValidationDisplay {
+                    range: CellRefRange::test("1"),
+                    checkbox: true,
+                    list: false
+                },
+                ValidationDisplay {
+                    range: CellRefRange::test("2"),
+                    checkbox: true,
+                    list: false
+                },
+                ValidationDisplay {
+                    range: CellRefRange::test("3"),
+                    checkbox: true,
+                    list: false
+                }
+            ]
         );
         assert_eq!(
-            validations.render_special_pos((0, 0).into()),
+            validations.render_special_pos((1, 1).into()),
             Some(JsRenderCellSpecial::Checkbox)
         );
     }

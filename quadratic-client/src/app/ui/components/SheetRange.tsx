@@ -1,6 +1,11 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsSelection, stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1Selection } from '@/app/quadratic-core-types';
+import {
+  A1SelectionStringToSelection,
+  JsSelection,
+  stringToSelection,
+} from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
@@ -11,7 +16,7 @@ import { FocusEvent, useCallback, useEffect, useMemo, useRef, useState } from 'r
 
 interface Props {
   label?: string;
-  initial?: JsSelection;
+  initial?: A1Selection;
   onChangeSelection: (jsSelection: JsSelection | undefined) => void;
 
   // used to trigger an error if the range is empty
@@ -45,10 +50,10 @@ export const SheetRange = (props: Props) => {
 
   const a1SheetId = useMemo((): string => {
     if (onlyCurrentSheet) {
-      return JSON.stringify({ id: onlyCurrentSheet });
+      return onlyCurrentSheet;
     }
     const id = changeCursor === true ? sheets.sheet.id : changeCursor ?? sheets.sheet.id;
-    return JSON.stringify({ id });
+    return id;
   }, [changeCursor, onlyCurrentSheet]);
 
   // insert the range of the current selection
@@ -64,8 +69,8 @@ export const SheetRange = (props: Props) => {
   const updateValue = useCallback(
     (value: string) => {
       try {
-        const selection = stringToSelection(value, a1SheetId, onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap());
-        onChangeRange(selection);
+        const jsSelection = stringToSelection(value, a1SheetId, onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap());
+        onChangeRange(jsSelection?.selection());
         setRangeError(undefined);
       } catch (e: any) {
         try {
@@ -91,7 +96,9 @@ export const SheetRange = (props: Props) => {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.value = initial ? initial.toA1String(a1SheetId, sheets.getRustSheetMap()) : '';
+      ref.current.value = initial
+        ? A1SelectionStringToSelection(JSON.stringify(initial)).toA1String(a1SheetId, sheets.getSheetIdNameMap())
+        : '';
     }
   }, [changeCursor, a1SheetId, initial]);
 

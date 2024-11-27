@@ -5,7 +5,7 @@ use ts_rs::TS;
 
 use crate::{Pos, Rect, RefRangeBounds};
 
-use super::A1Error;
+use super::{A1Error, CellRefRangeEnd};
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -51,6 +51,30 @@ impl CellRefRange {
     pub fn is_valid(self) -> bool {
         match self {
             Self::Sheet { range } => range.is_valid(),
+        }
+    }
+
+    pub fn new_relative_all_from(pos: Pos) -> Self {
+        Self::Sheet {
+            range: RefRangeBounds::new_relative_all_from(pos),
+        }
+    }
+
+    pub fn new_relative_row_from(row: u64, min_col: u64) -> Self {
+        Self::Sheet {
+            range: RefRangeBounds {
+                start: CellRefRangeEnd::new_relative_xy(min_col, row),
+                end: Some(CellRefRangeEnd::new_infinite_row(row)),
+            },
+        }
+    }
+
+    pub fn new_relative_column_from(col: u64, min_row: u64) -> Self {
+        Self::Sheet {
+            range: RefRangeBounds {
+                start: CellRefRangeEnd::new_relative_xy(col, min_row),
+                end: Some(CellRefRangeEnd::new_infinite_column(col)),
+            },
         }
     }
 
@@ -414,5 +438,66 @@ mod tests {
         assert!(CellRefRange::test("A1:").selected_rows_finite().is_empty());
         assert!(CellRefRange::test("*").selected_rows_finite().is_empty());
         assert!(CellRefRange::test(":3").selected_rows_finite().is_empty());
+    }
+
+    #[test]
+    fn test_translate_in_place() {
+        // Test single cell translation
+        let mut cell = CellRefRange::test("A1");
+        cell.translate_in_place(1, 2);
+        assert_eq!(cell.to_string(), "B3");
+
+        // Test range translation
+        let mut range = CellRefRange::test("A1:B2");
+        range.translate_in_place(2, 1);
+        assert_eq!(range.to_string(), "C2:D3");
+
+        // Test column range translation
+        let mut col_range = CellRefRange::test("A:B");
+        col_range.translate_in_place(1, 0);
+        assert_eq!(col_range.to_string(), "B:C");
+
+        // Test row range translation
+        let mut row_range = CellRefRange::test("1:2");
+        row_range.translate_in_place(0, 2);
+        assert_eq!(row_range.to_string(), "3:4");
+
+        // Test negative translation capping
+        let mut cell = CellRefRange::test("A1");
+        cell.translate_in_place(-10, -10);
+        assert_eq!(cell.to_string(), "A1");
+    }
+
+    #[test]
+    fn test_translate() {
+        // Test single cell translation
+        let cell = CellRefRange::test("A1");
+        let translated = cell.translate(1, 2);
+        assert_eq!(translated.to_string(), "B3");
+        assert_eq!(cell, CellRefRange::test("A1"));
+
+        // Test range translation
+        let range = CellRefRange::test("A1:B2");
+        let translated = range.translate(2, 1);
+        assert_eq!(translated.to_string(), "C2:D3");
+        assert_eq!(range, CellRefRange::test("A1:B2"));
+
+        // Test column range translation
+        let col_range = CellRefRange::test("A:B");
+        let translated = col_range.translate(1, 0);
+        assert_eq!(translated.to_string(), "B:C");
+        assert_eq!(col_range, CellRefRange::test("A:B"));
+
+        // Test row range translation
+        let row_range = CellRefRange::test("1:2");
+        let translated = row_range.translate(0, 2);
+        assert_eq!(translated.to_string(), "3:4");
+        assert_eq!(row_range, CellRefRange::test("1:2"));
+
+        // Test negative translation capping
+        let cell = CellRefRange::test("A1");
+        let translated = cell.translate(-10, -10);
+        assert_eq!(translated.to_string(), "A1");
+        assert_eq!(cell, CellRefRange::test("A1"));
     }
 }

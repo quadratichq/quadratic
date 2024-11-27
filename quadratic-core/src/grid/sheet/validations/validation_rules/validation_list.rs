@@ -84,7 +84,7 @@ mod tests {
     #[test]
     fn validate_list_selection() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((0, 0).into(), "test");
+        sheet.set_cell_value((1, 1).into(), "test");
         let selection = A1Selection::test("A1");
 
         assert!(ValidationList::validate_selection(
@@ -128,9 +128,8 @@ mod tests {
     #[test]
     fn to_drop_down_values() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((0, 0).into(), "test");
-        sheet.set_cell_value((0, 1).into(), "test");
-        sheet.set_cell_value((0, 2).into(), "test2");
+        sheet.set_cell_value((1, 1).into(), "test");
+        sheet.set_cell_value((1, 2).into(), "test2");
         let selection = A1Selection::test("A1:A2");
 
         let list = ValidationList {

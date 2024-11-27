@@ -49,6 +49,12 @@ impl JsSelection {
         serde_json::to_string(&self.selection).map_err(|e| e.to_string())
     }
 
+    /// Get A1Selection as a JsValue.
+    #[wasm_bindgen]
+    pub fn selection(&self) -> Result<JsValue, String> {
+        serde_wasm_bindgen::to_value(&self.selection).map_err(|e| e.to_string())
+    }
+
     /// Loads the selection from a JSON string.
     #[wasm_bindgen]
     pub fn load(selection: String) -> Result<JsSelection, String> {
@@ -193,9 +199,10 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "overlapsA1Selection")]
-    pub fn overlaps_a1_selection(&self, _a1_selection: String) -> bool {
-        todo!()
-        // self.selection.overlaps_a1_selection(&a1_selection)
+    pub fn overlaps_a1_selection(&self, selection: String) -> Result<bool, String> {
+        let selection =
+            serde_json::from_str::<A1Selection>(&selection).map_err(|e| e.to_string())?;
+        Ok(self.selection.overlaps_a1_selection(&selection))
     }
 
     #[wasm_bindgen(js_name = "bottomRightCell")]
