@@ -191,7 +191,7 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
 
   // Fill right
   // Disabled in debug mode, to allow page reload
-  if (!debug && matchShortcut(Action.FillRight, event)) {
+  if ((!debug && matchShortcut(Action.FillRight, event)) || (debug && event.ctrlKey && event.key === 'r')) {
     const cursor = sheets.sheet.cursor;
     const rect = cursor.getSingleRectangleOrCursor();
     if (rect) {
