@@ -87,8 +87,8 @@ export const drawInfiniteSelection = (options: {
     }
 
     // the entire sheet is selected starting from the start location
-    else if (col && row && end && !end.col && !end.row) {
-      const rect = sheet.getCellOffsets(col.coord, row.coord);
+    else if ((col || row) && end && !end.col && !end.row) {
+      const rect = sheet.getCellOffsets(col?.coord ?? 1, row?.coord ?? 1);
       rect.x = Math.max(rect.x, bounds.x);
       rect.y = Math.max(rect.y, bounds.y);
       rect.width = bounds.right - rect.x;
@@ -104,8 +104,8 @@ export const drawInfiniteSelection = (options: {
     }
 
     // the entire sheet is selected ending at the end location
-    else if (!col && !row && end?.col && end.row) {
-      const rect = sheet.getCellOffsets(end.col.coord, end.row.coord);
+    else if (!col && !row && end && (end.col || end.row)) {
+      const rect = sheet.getCellOffsets(end.col?.coord ?? 1, end.row?.coord ?? 1);
       rect.x = Math.max(rect.x, bounds.x);
       rect.y = Math.max(rect.y, bounds.y);
       rect.width = bounds.right - rect.x;

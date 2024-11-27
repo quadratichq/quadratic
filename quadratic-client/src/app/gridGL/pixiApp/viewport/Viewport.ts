@@ -5,6 +5,7 @@ import { Viewport as PixiViewport } from 'pixi-viewport';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { pixiApp } from '../PixiApp';
+import { Decelerate } from './Decelerate';
 import { Drag } from './Drag';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from './Wheel';
 
@@ -40,7 +41,8 @@ export class Viewport extends PixiViewport {
         keyToPress: ['Space'],
       })
     );
-    this.decelerate().pinch().clampZoom({
+    this.plugins.add('decelerate', new Decelerate(this));
+    this.pinch().clampZoom({
       minScale: MINIMUM_VIEWPORT_SCALE,
       maxScale: MAXIMUM_VIEWPORT_SCALE,
     });
