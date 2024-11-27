@@ -49,7 +49,7 @@ export function javascriptConvertOutputType(
     return { output: [image, 'image'], displayType: 'OffscreenCanvas' };
   } else if (typeof value === 'string') {
     return { output: [value, 'text'], displayType: 'string' };
-  } else if (value === undefined) {
+  } else if (value === undefined || value === null) {
     return null;
   } else if (typeof value === 'boolean') {
     return { output: [value ? 'true' : 'false', 'logical'], displayType: 'boolean' };

@@ -4,8 +4,8 @@ self['fetch'] = new Proxy(fetch, {
   apply: function (target, thisArg, args) {
     const [url, config] = args;
 
-    const newConfig = config || {};
-    const headers = newConfig.headers || {};
+    const newConfig = { ...config } || {};
+    const headers = config?.headers ? { ...config.headers } : {};
     const newHeaders = {};
 
     // Prefix all original request headers with X-Proxy-
