@@ -160,7 +160,6 @@ export interface ClientCoreGetCellFormatSummary {
   sheetId: string;
   x: number;
   y: number;
-  withSheetInfo: boolean;
 }
 
 export interface CoreClientGetCellFormatSummary {

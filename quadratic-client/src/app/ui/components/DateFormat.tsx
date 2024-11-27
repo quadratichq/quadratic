@@ -69,7 +69,7 @@ export const DateFormat = (props: DateFormatProps) => {
     } else {
       setOriginal(defaultDate);
     }
-    const summary = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursorPosition.x, cursorPosition.y, true);
+    const summary = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
     let updatedDate = DATE_FORMATS[0].value;
     let updatedTime = TIME_FORMATS[0].value;
 

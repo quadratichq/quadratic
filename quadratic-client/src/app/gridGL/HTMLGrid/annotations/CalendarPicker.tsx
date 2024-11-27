@@ -56,7 +56,7 @@ export const CalendarPicker = () => {
         }
         setValue(value);
       }
-      const summary = await quadraticCore.getCellFormatSummary(sheets.sheet.id, position.x, position.y, true);
+      const summary = await quadraticCore.getCellFormatSummary(sheets.sheet.id, position.x, position.y);
       if (summary.dateTime) {
         setDateFormat(summary.dateTime);
       } else {

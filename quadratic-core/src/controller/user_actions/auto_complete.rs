@@ -14,11 +14,11 @@ impl GridController {
     pub fn autocomplete(
         &mut self,
         sheet_id: SheetId,
-        selection: Rect,
-        range: Rect,
+        initial_range: Rect,
+        final_range: Rect,
         cursor: Option<String>,
     ) -> Result<()> {
-        let ops = self.autocomplete_operations(sheet_id, selection, range)?;
+        let ops = self.autocomplete_operations(sheet_id, initial_range, final_range)?;
         self.start_user_transaction(ops, cursor, TransactionName::Autocomplete);
         Ok(())
     }

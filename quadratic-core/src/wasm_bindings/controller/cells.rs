@@ -124,14 +124,13 @@ impl GridController {
     /// gets the value and type for a cell
     /// returns a stringified JsCellValue
     #[wasm_bindgen(js_name = "getCellValue")]
-    pub fn js_get_cell_value(&self, sheet_id: String, pos: String) -> String {
+    pub fn js_get_cell_value(&self, sheet_id: String, pos: String) -> Result<JsValue, JsValue> {
         let pos = serde_json::from_str(&pos).unwrap_or_default();
-        if let Some(sheet) = self.try_sheet_from_string_id(sheet_id) {
-            if let Some(cv) = sheet.js_cell_value(pos) {
-                return serde_json::to_string(&cv).unwrap_or_default();
-            }
-        }
-        String::new()
+        let sheet = self
+            .try_sheet_from_string_id(sheet_id)
+            .ok_or(JsValue::UNDEFINED)?;
+        let cell_value = sheet.js_cell_value(pos);
+        Ok(serde_wasm_bindgen::to_value(&cell_value).map_err(|_| JsValue::UNDEFINED)?)
     }
 
     /// Deletes a region of cells.
@@ -154,7 +153,7 @@ impl GridController {
         &self,
         selections: Vec<String>,
         max_rects: Option<usize>,
-    ) -> Result<String, JsValue> {
+    ) -> Result<JsValue, JsValue> {
         let selections = selections
             .iter()
             .map(|selection| serde_json::from_str::<A1Selection>(selection))
@@ -168,7 +167,7 @@ impl GridController {
                 all_ai_context_rects.push(ai_context_rects);
             }
         }
-        Ok(serde_json::to_string(&all_ai_context_rects).unwrap_or_default())
+        Ok(serde_wasm_bindgen::to_value(&all_ai_context_rects).map_err(|_| JsValue::UNDEFINED)?)
     }
 
     /// gets JsCodeCell for all cells in sheet_rects that have errors
@@ -177,7 +176,7 @@ impl GridController {
     pub fn js_errored_code_cells_in_selections(
         &self,
         selections: Vec<String>,
-    ) -> Result<String, JsValue> {
+    ) -> Result<JsValue, JsValue> {
         let selections = selections
             .iter()
             .map(|selection| serde_json::from_str::<A1Selection>(selection))
@@ -190,6 +189,9 @@ impl GridController {
                 all_errored_code_cells.push(errored_code_cells);
             }
         }
-        Ok(serde_json::to_string(&all_errored_code_cells).unwrap_or_default())
+        Ok(
+            serde_wasm_bindgen::to_value(&all_errored_code_cells)
+                .map_err(|_| JsValue::UNDEFINED)?,
+        )
     }
 }

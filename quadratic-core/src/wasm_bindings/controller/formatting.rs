@@ -9,7 +9,6 @@ impl GridController {
         &self,
         sheet_id: String,
         pos: String,
-        _include_sheet_info: bool, // TODO: remove this parameter
     ) -> Result<JsValue, JsValue> {
         let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
@@ -263,31 +262,37 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "getFormatAll")]
-    pub fn js_get_format_all(&self, sheet_id: String) -> Result<String, JsValue> {
+    pub fn js_get_format_all(&self, sheet_id: String) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_json::to_string(&sheet.format_all()).map_err(|_| JsValue::UNDEFINED)
+        Ok(serde_wasm_bindgen::to_value(&sheet.format_all()).map_err(|_| JsValue::UNDEFINED)?)
     }
 
     #[wasm_bindgen(js_name = "getFormatColumn")]
-    pub fn js_get_format_column(&self, sheet_id: String, column: i32) -> Result<String, JsValue> {
+    pub fn js_get_format_column(&self, sheet_id: String, column: i32) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_json::to_string(&sheet.format_column(column as _)).map_err(|_| JsValue::UNDEFINED)
+        Ok(
+            serde_wasm_bindgen::to_value(&sheet.format_column(column as _))
+                .map_err(|_| JsValue::UNDEFINED)?,
+        )
     }
 
     #[wasm_bindgen(js_name = "getFormatRow")]
-    pub fn js_get_format_row(&self, sheet_id: String, row: i32) -> Result<String, JsValue> {
+    pub fn js_get_format_row(&self, sheet_id: String, row: i32) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_json::to_string(&sheet.format_row(row as _)).map_err(|_| JsValue::UNDEFINED)
+        Ok(serde_wasm_bindgen::to_value(&sheet.format_row(row as _))
+            .map_err(|_| JsValue::UNDEFINED)?)
     }
 
     #[wasm_bindgen(js_name = "getFormatCell")]
-    pub fn js_get_format_cell(&self, sheet_id: String, x: i32, y: i32) -> Result<String, JsValue> {
+    pub fn js_get_format_cell(&self, sheet_id: String, x: i32, y: i32) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_json::to_string(&sheet.format_cell(x as i64, y as i64, false))
-            .map_err(|_| JsValue::UNDEFINED)
+        Ok(
+            serde_wasm_bindgen::to_value(&sheet.format_cell(x as i64, y as i64, false))
+                .map_err(|_| JsValue::UNDEFINED)?,
+        )
     }
 }

@@ -20,7 +20,7 @@ impl Validations {
                     let mut v = validation.clone();
                     v.selection = intersection;
                     v.selection
-                        .translate_in_place(-clipboard_origin.x, -clipboard_origin.y);
+                        .translate_in_place(1 + -clipboard_origin.x, 1 + -clipboard_origin.y);
                     Some(v)
                 } else {
                     None
@@ -68,17 +68,17 @@ mod tests {
 
         let validation_to_copy = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::from_rect(SheetRect::new(1, 1, 3, 3, sheet_id)),
+            selection: A1Selection::from_rect(SheetRect::new(2, 2, 4, 4, sheet_id)),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
         };
         validations.set(validation_to_copy.clone());
 
-        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let selection = A1Selection::from_rect(SheetRect::new(2, 2, 3, 3, sheet_id));
         let clipboard_origin = ClipboardOrigin {
-            x: 0,
-            y: 0,
+            x: 2,
+            y: 2,
             ..Default::default()
         };
         let clipboard_validations = validations
@@ -87,7 +87,7 @@ mod tests {
         assert_eq!(clipboard_validations.validations.len(), 1);
         assert_eq!(
             clipboard_validations.validations[0].selection,
-            selection.translate(0, 0)
+            selection.translate(-1, -1)
         );
     }
 }

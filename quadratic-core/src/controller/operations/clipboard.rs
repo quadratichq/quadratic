@@ -196,7 +196,7 @@ impl GridController {
                     validation.selection.sheet_id = start_pos.sheet_id;
                     validation
                         .selection
-                        .translate_in_place(start_pos.x, start_pos.y);
+                        .translate_in_place(start_pos.x - 1, start_pos.y - 1);
                     Operation::SetValidation { validation }
                 })
                 .collect()

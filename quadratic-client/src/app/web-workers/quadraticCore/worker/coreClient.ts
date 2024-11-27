@@ -192,7 +192,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetCellFormatSummary',
           id: e.data.id,
-          formatSummary: await core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y, e.data.withSheetInfo),
+          formatSummary: await core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y),
         });
         return;
 
@@ -713,10 +713,12 @@ class CoreClient {
   };
 
   sendSetCursor = (cursor: string) => {
+    console.log('sendSetCursor', cursor);
     this.send({ type: 'coreClientSetCursor', cursor });
   };
 
   sendSetCursorSelection = (selection: string) => {
+    console.log('sendSetCursorSelection', selection);
     this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 

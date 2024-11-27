@@ -182,12 +182,11 @@ class Core {
     return new Promise((resolve) => {
       this.renderQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getRenderCells');
-        const cellsStringified = this.gridController.getRenderCells(
+        const renderCells: JsRenderCell[] = this.gridController.getRenderCells(
           data.sheetId,
           numbersToRectStringified(data.x, data.y, data.width, data.height)
         );
-        const cells = JSON.parse(cellsStringified) as JsRenderCell[];
-        resolve(cells);
+        resolve(renderCells);
       });
     });
   }
@@ -251,11 +250,11 @@ class Core {
     });
   }
 
-  getCellFormatSummary(sheetId: string, x: number, y: number, withSheetInfo: boolean): Promise<CellFormatSummary> {
+  getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.getCellFormatSummary(sheetId, posToPos(x, y), withSheetInfo));
+        resolve(this.gridController.getCellFormatSummary(sheetId, posToPos(x, y)));
       });
     });
   }

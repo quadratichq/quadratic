@@ -224,8 +224,7 @@ class InlineEditorHandler {
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
-        this.location.y,
-        true
+        this.location.y
       );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;

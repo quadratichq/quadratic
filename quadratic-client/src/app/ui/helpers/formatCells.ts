@@ -75,7 +75,7 @@ export const textFormatDecreaseDecimalPlaces = () => {
 
 export const setCellCommas = async () => {
   const cursor = sheets.sheet.cursor.position;
-  const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y, true);
+  const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y);
   const commas = !(formatCell ? formatCell.commas === true : true);
   quadraticCore.setCommas(sheets.getRustSelection(), commas, sheets.getCursorPosition());
 };

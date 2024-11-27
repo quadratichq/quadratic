@@ -111,7 +111,8 @@ impl Sheet {
         _update: &FormatUpdate,
         _send_client: bool,
     ) -> FormatUpdate {
-        todo!()
+        dbgjs!("todo: set_format_cell");
+        FormatUpdate::default()
         // let mut old_format = FormatUpdate::default();
         // let column = self.get_or_create_column(pos.x);
         // let y = pos.y;
