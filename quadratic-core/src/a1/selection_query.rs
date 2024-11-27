@@ -491,4 +491,16 @@ mod tests {
         assert!(!A1Selection::test("A:B").is_selected_rows_finite());
         assert!(!A1Selection::test("*").is_selected_rows_finite());
     }
+
+    #[test]
+    fn test_single_rect_or_cursor() {
+        assert_eq!(A1Selection::test("A1,B2,C3").single_rect_or_cursor(), None);
+        assert_eq!(
+            A1Selection::test("A1:D5").single_rect_or_cursor(),
+            Some(Rect::new(1, 1, 4, 5))
+        );
+        assert_eq!(A1Selection::test("A1:D5, A1").single_rect_or_cursor(), None);
+        assert_eq!(A1Selection::test("A").single_rect_or_cursor(), None);
+        assert_eq!(A1Selection::test("2:5").single_rect_or_cursor(), None);
+    }
 }
