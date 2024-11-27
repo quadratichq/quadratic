@@ -145,8 +145,9 @@ class InlineEditorHandler {
     }
 
     if (x || y) {
-      pixiApp.viewport.x += x * scale;
-      pixiApp.viewport.y += y * scale;
+      const { width, height } = pixiApp.headings.headingSize;
+      pixiApp.viewport.x = Math.min(pixiApp.viewport.x + x * scale, width * scale);
+      pixiApp.viewport.y = Math.min(pixiApp.viewport.y + y * scale, height * scale);
       pixiApp.setViewportDirty();
     }
   };

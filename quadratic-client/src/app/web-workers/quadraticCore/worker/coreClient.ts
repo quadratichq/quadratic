@@ -713,12 +713,10 @@ class CoreClient {
   };
 
   sendSetCursor = (cursor: string) => {
-    console.log('sendSetCursor', cursor);
     this.send({ type: 'coreClientSetCursor', cursor });
   };
 
   sendSetCursorSelection = (selection: string) => {
-    console.log('sendSetCursorSelection', selection);
     this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 

@@ -61,6 +61,8 @@ impl Sheet {
         _sheet_id: SheetId,
         _formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
+        dbgjs!("implement set_formats_a1");
+        (vec![], HashSet::new(), HashSet::new())
         // let mut reverse_op = Operation::SetCellFormatsA1 {
         //     sheet_id,
         //     formats: todo!(),
@@ -92,7 +94,6 @@ impl Sheet {
         //     }
         //     (ops, dirty_hashes, resize)
         // }
-        todo!("todo todo todo")
     }
 
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.
