@@ -107,6 +107,15 @@ export class Decelerate extends Plugin {
 
     this.reset();
     this.parent.on('moved', (data) => this.handleMoved(data));
+
+    this.x = null;
+    this.y = null;
+  }
+
+  public wheel(): boolean {
+    this.saved = [];
+    this.x = this.y = null;
+    return false;
   }
 
   public down(): boolean {
@@ -209,17 +218,16 @@ export class Decelerate extends Plugin {
      * to calculate the displacement.
      */
 
-    const moved = this.x || this.y;
+    const moved = this.x !== null || this.y !== null;
 
     const ti = this.timeSinceRelease;
     const tf = this.timeSinceRelease + elapsed;
 
-    if (this.x) {
+    if (this.x !== null) {
       // add additional percent change if we're in the negative direction
       let percentChangeX = this.percentChangeX;
       if (this.parent.x > 0) {
         percentChangeX = DECELERATE_OUT_OF_BOUNDS_FACTOR;
-        console.log('here');
       }
 
       const k = this.percentChangeX;
@@ -231,7 +239,7 @@ export class Decelerate extends Plugin {
       // Apply decay on x-component of velocity
       this.x *= Math.pow(percentChangeX, elapsed / TP);
     }
-    if (this.y) {
+    if (this.y !== null) {
       // add additional percent change if we're in the negative direction
       let percentChangeY = this.percentChangeY;
       if (this.parent.y > 0) {
@@ -251,22 +259,24 @@ export class Decelerate extends Plugin {
     this.timeSinceRelease += elapsed;
 
     // End decelerate velocity once it goes under a certain amount of precision.
-    if (this.x && this.y) {
-      if (Math.abs(this.x) < this.options.minSpeed && Math.abs(this.y) < this.options.minSpeed) {
-        this.x = 0;
-        this.y = 0;
+    if (this.x !== null && this.y !== null) {
+      if (this.x && this.y) {
+        if (Math.abs(this.x) < this.options.minSpeed && Math.abs(this.y) < this.options.minSpeed) {
+          this.x = 0;
+          this.y = 0;
+        }
+      } else {
+        if (Math.abs(this.x || 0) < this.options.minSpeed) {
+          this.x = 0;
+        }
+        if (Math.abs(this.y || 0) < this.options.minSpeed) {
+          this.y = 0;
+        }
       }
-    } else {
-      if (Math.abs(this.x || 0) < this.options.minSpeed) {
-        this.x = 0;
-      }
-      if (Math.abs(this.y || 0) < this.options.minSpeed) {
-        this.y = 0;
-      }
-    }
 
-    if (moved) {
-      this.parent.emit('moved', { viewport: this.parent, type: 'decelerate' });
+      if (moved) {
+        this.parent.emit('moved', { viewport: this.parent, type: 'decelerate' });
+      }
     }
   }
 
