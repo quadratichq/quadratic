@@ -34,7 +34,7 @@ impl FromStr for CellRefRangeEnd {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         lazy_static! {
             static ref A1_REGEX: Regex =
-                Regex::new(r#"(\$?)([A-Z]*)(\$?)(\d*)"#).expect("bad regex");
+                Regex::new(r#"(\$?)([A-Za-z]*)(\$?)(\d*)"#).expect("bad regex");
         }
 
         let captures = A1_REGEX
