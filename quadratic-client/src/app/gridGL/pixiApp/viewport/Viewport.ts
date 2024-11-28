@@ -81,9 +81,6 @@ export class Viewport extends PixiViewport {
   };
 
   destroy() {
-    if (this.snapTimeout) {
-      clearTimeout(this.snapTimeout);
-    }
     this.off('snap-end', this.handleSnapEnd);
     this.off('moved', this.viewportChanged);
     this.off('zoomed', this.viewportChanged);
@@ -138,40 +135,34 @@ export class Viewport extends PixiViewport {
   }
 
   private startSnap = () => {
-    if (this.snapTimeout) {
-      clearTimeout(this.snapTimeout);
+    const headings = pixiApp.headings.headingSize;
+    let x: number;
+    let y: number;
+    let snap = false;
+    if (this.x > headings.width) {
+      x = -headings.width / this.scaled;
+      snap = true;
+    } else {
+      x = -this.x / this.scaled;
     }
-    this.snapState = 'waiting';
-    this.snapTimeout = window.setTimeout(() => {
-      const headings = pixiApp.headings.headingSize;
-      let x: number;
-      let y: number;
-      let snap = false;
-      if (this.x > headings.width) {
-        x = -headings.width / this.scaled;
-        snap = true;
-      } else {
-        x = -this.x;
-      }
-      if (this.y > headings.height) {
-        y = -headings.height / this.scaled;
-        snap = true;
-      } else {
-        y = -this.y;
-      }
-      if (snap) {
-        this.snap(x, y, {
-          topLeft: true,
-          time: SNAPPING_TIME,
-          ease: 'easeOutSine',
-          removeOnComplete: true,
-          interrupt: true,
-        });
-        this.snapState = 'snapping';
-      } else {
-        this.snapState = undefined;
-      }
-    }, WAIT_TO_SNAP_TIME);
+    if (this.y > headings.height) {
+      y = -headings.height / this.scaled;
+      snap = true;
+    } else {
+      y = -this.y / this.scaled;
+    }
+    if (snap) {
+      this.snap(x, y, {
+        topLeft: true,
+        time: SNAPPING_TIME,
+        ease: 'easeOutSine',
+        removeOnComplete: true,
+        interrupt: true,
+      });
+      this.snapState = 'snapping';
+    } else {
+      this.snapState = undefined;
+    }
   };
 
   updateViewport(): void {
@@ -206,16 +197,16 @@ export class Viewport extends PixiViewport {
       events.emit('viewportChangedReady');
 
       // Clear both timeout and state when interrupting a waiting snap
-      if (this.snapState === 'waiting') {
-        if (this.snapTimeout) {
-          clearTimeout(this.snapTimeout);
-          this.snapTimeout = undefined;
-        }
-        this.snapState = undefined;
-      }
+      this.snapTimeout = undefined;
+      this.snapState = undefined;
     } else if (!this.snapState) {
       const headings = pixiApp.headings.headingSize;
-      if (this.x - headings.width > 0 || this.y - headings.height > 0) {
+      if (this.x > headings.width || this.y > headings.height) {
+        this.snapTimeout = Date.now();
+        this.snapState = 'waiting';
+      }
+    } else if (this.snapState === 'waiting' && this.snapTimeout) {
+      if (Date.now() - this.snapTimeout > WAIT_TO_SNAP_TIME) {
         this.startSnap();
       }
     }
