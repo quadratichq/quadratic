@@ -6,7 +6,7 @@ import { Graphics } from 'pixi.js';
 
 export const CURSOR_THICKNESS = 1;
 const ALPHA = 0.5;
-const FILL_ALPHA = 0.01 / ALPHA;
+const FILL_ALPHA = 0.05;
 
 // outside border when editing the cell
 const CURSOR_INPUT_ALPHA = 0.333 / ALPHA;
@@ -87,18 +87,13 @@ export class UIMultiPlayerCursor extends Graphics {
           });
 
           const ranges: CellRefRange[] = player.parsedSelection.getRanges();
-
-          const columnRow = player.parsedSelection.isColumnRow();
-          if (columnRow) {
-            drawInfiniteSelection({
-              g: this,
-              color,
-              alpha: FILL_ALPHA,
-              ranges,
-            });
-          } else if (player.parsedSelection.isMultiCursor()) {
-            drawFiniteSelection(this, color, FILL_ALPHA, ranges);
-          }
+          drawFiniteSelection(this, color, FILL_ALPHA, ranges);
+          drawInfiniteSelection({
+            g: this,
+            color,
+            alpha: FILL_ALPHA,
+            ranges,
+          });
         }
       });
     }
