@@ -187,6 +187,11 @@ impl RefRangeBounds {
         false
     }
 
+    /// Returns whether `self` is the entire range.
+    pub fn is_all(&self) -> bool {
+        self == &Self::ALL
+    }
+
     /// Returns whether `self` contains the column `col` in its column range.
     pub fn has_column(&self, col: u64) -> bool {
         if self.start.row.is_some() || self.end.map_or(false, |end| end.row.is_some()) {
@@ -696,5 +701,12 @@ mod tests {
         let translated = range.translate(-10, -10);
         assert_eq!(translated.to_string(), "A1");
         assert_eq!(range.to_string(), "A1");
+    }
+
+    #[test]
+    fn test_is_all() {
+        assert!(RefRangeBounds::test("*").is_all());
+        assert!(!RefRangeBounds::test("A1").is_all());
+        assert!(!RefRangeBounds::test("A1:B2").is_all());
     }
 }
