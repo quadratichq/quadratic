@@ -22,6 +22,19 @@ impl<T> Default for Contiguous2D<T> {
         Self(ContiguousBlocks::default())
     }
 }
+impl<T> IntoIterator for Contiguous2D<T> {
+    type Item = (u64, Block<ContiguousBlocks<T>>);
+    type IntoIter = btree_map::IntoIter<u64, Block<ContiguousBlocks<T>>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+impl<T> FromIterator<(u64, Block<ContiguousBlocks<T>>)> for Contiguous2D<T> {
+    fn from_iter<I: IntoIterator<Item = (u64, Block<ContiguousBlocks<T>>)>>(iter: I) -> Self {
+        Self(ContiguousBlocks::from_iter(iter))
+    }
+}
 impl<T: Clone + PartialEq> Contiguous2D<T> {
     /// Constructs an empty map.
     pub fn new() -> Self {
@@ -50,9 +63,11 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
         .0
         .into_iter()
         .next()?
+        .1
         .value
         .into_iter()
         .next()?
+        .1
         .value
     }
 
@@ -214,17 +229,31 @@ impl<T> Default for ContiguousBlocks<T> {
     }
 }
 impl<T> IntoIterator for ContiguousBlocks<T> {
-    type Item = Block<T>;
-    type IntoIter = btree_map::IntoValues<u64, Block<T>>;
+    type Item = (u64, Block<T>);
+    type IntoIter = btree_map::IntoIter<u64, Block<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.into_values()
+        self.0.into_iter()
+    }
+}
+impl<T> FromIterator<Block<T>> for ContiguousBlocks<T> {
+    fn from_iter<I: IntoIterator<Item = Block<T>>>(iter: I) -> Self {
+        Self(iter.into_iter().map(|block| (block.start, block)).collect())
+    }
+}
+impl<T> FromIterator<(u64, Block<T>)> for ContiguousBlocks<T> {
+    fn from_iter<I: IntoIterator<Item = (u64, Block<T>)>>(iter: I) -> Self {
+        Self(BTreeMap::from_iter(iter))
     }
 }
 impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Constructs an empty map.
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn into_values(self) -> impl Iterator<Item = Block<T>> {
+        self.0.into_values()
     }
 
     /// Constructs a map with only a single block.
@@ -414,7 +443,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Sets a value and returns the old value at `coordinate`.
     pub fn set(&mut self, coordinate: u64, value: T) -> Option<T> {
         self.set_range(coordinate, coordinate.saturating_add(1), value)
-            .into_iter()
+            .into_values()
             .next()?
             .value
     }
@@ -452,11 +481,11 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// - `R` is the data required to perform the reverse operation.
     pub fn update_from_blocks<U, R: Clone + PartialEq>(
         &mut self,
-        other: impl IntoIterator<Item = Block<U>>,
+        other: impl IntoIterator<Item = (u64, Block<U>)>,
         update_fn: impl Fn(Option<T>, &U) -> (Option<T>, R),
     ) -> ContiguousBlocks<R> {
         let mut ret = ContiguousBlocks::new();
-        for block in other {
+        for (_, block) in other {
             let returned_blocks =
                 self.update_range(block.start, block.end, |v| update_fn(v, &block.value));
             ret.add_blocks(returned_blocks);
@@ -750,7 +779,8 @@ mod tests {
                         // Before we update `bytes`, check that undo works
                         // correctly.
                         let mut test_blocks = blocks.clone();
-                        test_blocks.set_blocks(reverse_blocks);
+                        test_blocks.set_blocks(reverse_blocks.into_iter().map(|(
+                          _,block)| block));
                         assert_matches_bytes(bytes, test_blocks, shift_inserted);
 
                         let start = start as usize;

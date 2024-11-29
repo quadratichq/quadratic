@@ -340,7 +340,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -372,7 +372,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -404,7 +404,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -436,7 +436,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -457,7 +457,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 1, y: 1 })
                 .cloned()
                 .unwrap_or_default()
@@ -493,7 +493,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -529,7 +529,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -563,7 +563,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -588,7 +588,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -620,7 +620,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -652,7 +652,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -684,7 +684,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -718,7 +718,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()
@@ -804,7 +804,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 1, y: 1 })
                 .cloned()
                 .unwrap_or_default()
@@ -818,7 +818,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 1, y: 1 })
                 .cloned()
                 .unwrap_or_default()
@@ -905,7 +905,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .format
+                .formats
                 .get(Pos { x: 0, y: 0 })
                 .cloned()
                 .unwrap_or_default()

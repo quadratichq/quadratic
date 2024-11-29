@@ -144,7 +144,7 @@ impl Sheet {
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         // remove the column's data from the sheet
-        self.format.remove_column(column as u64);
+        self.formats.remove_column(column as u64);
         if true {
             todo!("actually save the column formatting and update transaction appropriately")
         }
@@ -324,7 +324,7 @@ impl Sheet {
             }
         }
 
-        self.format.insert_column(column as u64, copy_formats);
+        self.formats.insert_column(column as u64, copy_formats);
 
         // signal client ot update the borders for changed columns
         if self.borders.insert_column(column) {

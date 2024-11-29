@@ -1,6 +1,8 @@
 mod a1_selection_schema;
 mod cells_accessed_schema;
 
+use std::collections::HashMap;
+
 use crate::grid::file::v1_7::schema as v1_7;
 
 pub use a1_selection_schema::*;
@@ -14,14 +16,12 @@ pub type RectSchema = v1_7::RectSchema;
 pub type SheetRectSchema = v1_7::SheetRectSchema;
 pub type OffsetsSchema = v1_7::OffsetsSchema;
 pub type RunErrorSchema = v1_7::RunErrorSchema;
-pub type FormatSchema = v1_7::FormatSchema;
 pub type ResizeSchema = v1_7::ResizeSchema;
 pub type CodeRunResultSchema = v1_7::CodeRunResultSchema;
 pub type OutputValueSchema = v1_7::OutputValueSchema;
 pub type OutputArraySchema = v1_7::OutputArraySchema;
 pub type OutputSizeSchema = v1_7::OutputSizeSchema;
 pub type OutputValueValueSchema = v1_7::OutputValueValueSchema;
-pub type ColumnSchema = v1_7::ColumnSchema;
 pub type NumericFormatKindSchema = v1_7::NumericFormatKindSchema;
 pub type NumericFormatSchema = v1_7::NumericFormatSchema;
 pub type CellValueSchema = v1_7::CellValueSchema;
@@ -90,6 +90,65 @@ pub struct ValidationsSchema {
     pub warnings: Vec<(PosSchema, Uuid)>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct FormatSchema {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub align: Option<CellAlignSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vertical_align: Option<CellVerticalAlignSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub wrap: Option<CellWrapSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub numeric_format: Option<NumericFormatSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub numeric_decimals: Option<i16>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub numeric_commas: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bold: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub italic: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_color: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fill_color: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub render_size: Option<RenderSizeSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub date_time: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub underline: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strike_through: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct BlockSchema<T> {
+    pub start: u64,
+    pub end: u64,
+    pub value: T,
+}
+
+pub type SheetFormattingSchema = Vec<(u64, BlockSchema<Vec<(u64, BlockSchema<FormatSchema>)>>)>;
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ColumnSchema {
+    pub values: HashMap<String, CellValueSchema>,
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SheetSchema {
     pub id: IdSchema,
@@ -97,14 +156,12 @@ pub struct SheetSchema {
     pub color: Option<String>,
     pub order: String,
     pub offsets: OffsetsSchema,
-    pub columns: Vec<(i64, ColumnSchema)>,
-    pub code_runs: Vec<(PosSchema, CodeRunSchema)>,
-    pub formats_all: Option<FormatSchema>,
-    pub formats_columns: Vec<(i64, (FormatSchema, i64))>,
-    pub formats_rows: Vec<(i64, (FormatSchema, i64))>,
-    pub rows_resize: Vec<(i64, ResizeSchema)>,
     pub validations: ValidationsSchema,
+    pub rows_resize: Vec<(i64, ResizeSchema)>,
     pub borders: BordersSchema,
+    pub formats: SheetFormattingSchema,
+    pub code_runs: Vec<(PosSchema, CodeRunSchema)>,
+    pub columns: Vec<(i64, ColumnSchema)>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

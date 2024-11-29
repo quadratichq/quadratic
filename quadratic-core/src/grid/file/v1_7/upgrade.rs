@@ -235,21 +235,33 @@ fn upgrade_validations(validations: current::ValidationsSchema) -> v1_7_1::Valid
     }
 }
 
+fn upgrade_column(column: current::ColumnSchema) -> v1_7_1::ColumnSchema {
+    v1_7_1::ColumnSchema {
+        values: column.values,
+    }
+}
+
+fn upgrade_columns(columns: Vec<(i64, current::ColumnSchema)>) -> Vec<(i64, v1_7_1::ColumnSchema)> {
+    columns
+        .into_iter()
+        .map(|(index, column)| (index, upgrade_column(column)))
+        .collect()
+}
+
 pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
+    dbgjs!("todo(ayush): upgrade formats");
     v1_7_1::SheetSchema {
         id: sheet.id,
         name: sheet.name,
         color: sheet.color,
         order: sheet.order,
         offsets: sheet.offsets,
-        columns: sheet.columns,
-        code_runs: upgrade_code_runs(sheet.code_runs),
-        formats_all: sheet.formats_all,
-        formats_columns: sheet.formats_columns,
-        formats_rows: sheet.formats_rows,
         rows_resize: sheet.rows_resize,
         validations: upgrade_validations(sheet.validations),
         borders: sheet.borders,
+        formats: vec![],
+        code_runs: upgrade_code_runs(sheet.code_runs),
+        columns: upgrade_columns(sheet.columns),
     }
 }
 
