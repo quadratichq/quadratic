@@ -57,6 +57,7 @@ impl CellRefRange {
         }
     }
 
+    /// Returns true if the range is a single position or a range that contains the given position.
     pub fn is_pos_range(&self, p1: Pos, p2: Option<Pos>) -> bool {
         match self {
             Self::Sheet { range } => {

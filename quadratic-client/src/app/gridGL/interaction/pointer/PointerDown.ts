@@ -111,7 +111,11 @@ export class PointerDown {
     if (column === this.previousPosition?.x && row === this.previousPosition?.y) {
       return;
     }
-    if (event.shiftKey) {
+    // If the user is holding cmd/ctrl and the cell is already selected, then we start the un-selection.
+    if ((event.ctrlKey || event.metaKey) && cursor.contains(column, row)) {
+      // todo: we should start an exclusion rectangle instead of un-selecting
+      cursor.excludeCells(column, row, column, row);
+    } else if (event.shiftKey) {
       cursor.selectTo(column, row, event.metaKey || event.ctrlKey);
     } else {
       // If the input is rejected, we cannot move the cursor
