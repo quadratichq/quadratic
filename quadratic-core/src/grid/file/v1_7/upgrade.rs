@@ -241,27 +241,58 @@ fn upgrade_column(column: current::ColumnSchema) -> v1_7_1::ColumnSchema {
     }
 }
 
-fn upgrade_columns(columns: Vec<(i64, current::ColumnSchema)>) -> Vec<(i64, v1_7_1::ColumnSchema)> {
-    columns
-        .into_iter()
-        .map(|(index, column)| (index, upgrade_column(column)))
-        .collect()
+fn upgrade_columns_formats(
+    columns: Vec<(i64, current::ColumnSchema)>,
+    _format_all: Option<current::FormatSchema>,
+    _format_columns: Vec<(i64, (current::FormatSchema, i64))>,
+    _format_rows: Vec<(i64, (current::FormatSchema, i64))>,
+) -> (
+    Vec<(i64, v1_7_1::ColumnSchema)>,
+    v1_7_1::SheetFormattingSchema,
+) {
+    dbgjs!("todo(ayush): upgrade formats");
+
+    (
+        columns
+            .into_iter()
+            .map(|(index, column)| (index, upgrade_column(column)))
+            .collect(),
+        vec![],
+    )
 }
 
 pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
-    dbgjs!("todo(ayush): upgrade formats");
+    let current::SheetSchema {
+        id,
+        name,
+        color,
+        order,
+        offsets,
+        rows_resize,
+        formats_all,
+        formats_columns,
+        formats_rows,
+        validations,
+        borders,
+        code_runs,
+        columns,
+    } = sheet;
+
+    let (columns, formats) =
+        upgrade_columns_formats(columns, formats_all, formats_columns, formats_rows);
+
     v1_7_1::SheetSchema {
-        id: sheet.id,
-        name: sheet.name,
-        color: sheet.color,
-        order: sheet.order,
-        offsets: sheet.offsets,
-        rows_resize: sheet.rows_resize,
-        validations: upgrade_validations(sheet.validations),
-        borders: sheet.borders,
-        formats: vec![],
-        code_runs: upgrade_code_runs(sheet.code_runs),
-        columns: upgrade_columns(sheet.columns),
+        id,
+        name,
+        color,
+        order,
+        offsets,
+        rows_resize,
+        validations: upgrade_validations(validations),
+        borders,
+        formats,
+        code_runs: upgrade_code_runs(code_runs),
+        columns,
     }
 }
 
