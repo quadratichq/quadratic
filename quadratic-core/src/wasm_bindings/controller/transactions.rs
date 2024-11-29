@@ -48,18 +48,15 @@ impl GridController {
     #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
     pub fn js_receive_multiplayer_transactions(
         &mut self,
-        transactions: String,
+        transactions: JsValue,
     ) -> Result<JsValue, JsValue> {
-        match serde_json::from_str::<Vec<TransactionServer>>(&transactions) {
+        match serde_wasm_bindgen::from_value::<Vec<TransactionServer>>(transactions) {
             Ok(transactions) => Ok(serde_wasm_bindgen::to_value(
                 &self.received_transactions(transactions),
             )?),
-            Err(e) => {
-                dbgjs!(format!("{transactions}"));
-                Err(JsValue::from_str(&format!(
-                    "Invalid transactions received in receiveMultiplayerTransactions: {e}"
-                )))
-            }
+            Err(e) => Err(JsValue::from_str(&format!(
+                "Invalid transactions received in receiveMultiplayerTransactions: {e}"
+            ))),
         }
     }
 
