@@ -40,30 +40,28 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
 
     use super::*;
-    use serial_test::parallel;
+
+    use crate::Array;
 
     #[test]
-    #[parallel]
     fn exports_a_csv() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selected = A1Selection::test("A1:E4");
+        let selected = A1Selection::test("A1:D4");
         let vals = vec![
-            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16",
+            vec!["1", "2", "3", "4"],
+            vec!["5", "6", "7", "8"],
+            vec!["9", "10", "11", "12"],
+            vec!["13", "14", "15", "16"],
         ];
-        let mut count = 0;
 
         let sheet = gc.sheet_mut(sheet_id);
-        for y in 0..4 {
-            for x in 0..4 {
-                sheet.test_set_value_number(x, y, vals[count]);
-                count += 1;
-            }
-        }
+        sheet.set_cell_values(crate::Rect::new(1, 1, 4, 4), &Array::from(vals));
 
         let result = gc.export_csv_selection(&selected).unwrap();
         let expected = "1,2,3,4\n5,6,7,8\n9,10,11,12\n13,14,15,16\n";
