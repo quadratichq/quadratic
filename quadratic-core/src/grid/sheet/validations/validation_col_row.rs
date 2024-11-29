@@ -22,7 +22,7 @@ impl Validations {
         let mut changed_selections = vec![];
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_column(column as u64) {
+            if validation.selection.removed_column(column) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -57,7 +57,7 @@ impl Validations {
         let mut reverse_operations = Vec::new();
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.removed_row(row as u64) {
+            if validation.selection.removed_row(row) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -92,7 +92,7 @@ impl Validations {
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_column(column as u64) {
+            if validation.selection.inserted_column(column) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,
@@ -125,7 +125,7 @@ impl Validations {
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
-            if validation.selection.inserted_row(row as u64) {
+            if validation.selection.inserted_row(row) {
                 changed_selections.extend(transaction.validation_changed(
                     sheet_id,
                     validation,

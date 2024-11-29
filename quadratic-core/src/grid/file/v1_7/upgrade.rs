@@ -68,7 +68,6 @@ fn upgrade_code_runs(
         .collect()
 }
 
-// todo - translate validation selections by the grid shifting
 fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1SelectionSchema {
     let mut ranges = vec![];
 

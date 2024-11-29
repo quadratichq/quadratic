@@ -3,7 +3,7 @@ use crate::Pos;
 use super::CellRefRange;
 
 impl CellRefRange {
-    pub fn only_column(&self, column: u64) -> bool {
+    pub fn only_column(&self, column: i64) -> bool {
         match self {
             Self::Sheet { range } => {
                 // if there is no start column, then it's not a single column range
@@ -13,7 +13,7 @@ impl CellRefRange {
 
                 // if the start column is not the column we're checking for, then it's not a
                 // single column range
-                if start_col.coord != column {
+                if start_col.coord as i64 != column {
                     return false;
                 }
 
@@ -22,12 +22,12 @@ impl CellRefRange {
                     return true;
                 };
 
-                end.coord == column
+                end.coord as i64 == column
             }
         }
     }
 
-    pub fn only_row(&self, row: u64) -> bool {
+    pub fn only_row(&self, row: i64) -> bool {
         match self {
             Self::Sheet { range } => {
                 // if there is not start row, then it's not a single row range
@@ -37,7 +37,7 @@ impl CellRefRange {
 
                 // if the start row is not the row we're checking for, then it's not a
                 // single row range
-                if start_row.coord != row {
+                if start_row.coord as i64 != row {
                     return false;
                 }
 
@@ -46,7 +46,7 @@ impl CellRefRange {
                     return true;
                 };
 
-                end.coord == row
+                end.coord as i64 == row
             }
         }
     }

@@ -5,14 +5,14 @@ impl CellRefRange {
     ///
     /// Note: this does not handle the case where the deleted column is the same
     /// as self's column(s). That has to be handled one step above this call.
-    pub fn removed_column(&mut self, column: u64) -> bool {
+    pub fn removed_column(&mut self, column: i64) -> bool {
         let mut changed = false;
 
         match self {
             Self::Sheet { range } => {
                 // Check if the start column needs to be adjusted
                 if let Some(start_col) = range.start.col.as_mut() {
-                    if start_col.coord >= column {
+                    if start_col.coord as i64 >= column {
                         if start_col.coord <= 1 {
                             start_col.coord = 1;
                         } else {
@@ -25,7 +25,7 @@ impl CellRefRange {
                 // Check if the end column needs to be adjusted
                 if let Some(end) = range.end.as_mut() {
                     if let Some(end_col) = end.col.as_mut() {
-                        if end_col.coord >= column {
+                        if end_col.coord as i64 >= column {
                             if end_col.coord <= 1 {
                                 end_col.coord = 1;
                             } else {
@@ -49,14 +49,14 @@ impl CellRefRange {
     ///
     /// Note: this does not handle the case where the deleted row is the same as
     /// self's row(s). That has to be handled one step above this call.
-    pub fn removed_row(&mut self, row: u64) -> bool {
+    pub fn removed_row(&mut self, row: i64) -> bool {
         let mut changed = false;
 
         match self {
             Self::Sheet { range } => {
                 // Check if the start row needs to be adjusted
                 if let Some(start_row) = range.start.row.as_mut() {
-                    if start_row.coord >= row {
+                    if start_row.coord as i64 >= row {
                         if start_row.coord <= 1 {
                             start_row.coord = 1;
                         } else {
@@ -69,7 +69,7 @@ impl CellRefRange {
                 // Check if the end row needs to be adjusted
                 if let Some(end) = range.end.as_mut() {
                     if let Some(end_row) = end.row.as_mut() {
-                        if end_row.coord >= row {
+                        if end_row.coord as i64 >= row {
                             if end_row.coord <= 1 {
                                 end_row.coord = 1;
                             } else {
@@ -89,14 +89,14 @@ impl CellRefRange {
         changed
     }
 
-    pub fn inserted_column(&mut self, column: u64) -> bool {
+    pub fn inserted_column(&mut self, column: i64) -> bool {
         let mut changed = false;
 
         match self {
             Self::Sheet { range } => {
                 // Check if the start column needs to be adjusted
                 if let Some(start_col) = range.start.col.as_mut() {
-                    if start_col.coord >= column {
+                    if start_col.coord as i64 >= column {
                         start_col.coord += 1;
                         changed = true;
                     }
@@ -105,7 +105,7 @@ impl CellRefRange {
                 // Check if the end column needs to be adjusted
                 if let Some(end) = range.end.as_mut() {
                     if let Some(end_col) = end.col.as_mut() {
-                        if end_col.coord >= column {
+                        if end_col.coord as i64 >= column {
                             end_col.coord += 1;
                             changed = true;
                         }
@@ -117,14 +117,14 @@ impl CellRefRange {
         changed
     }
 
-    pub fn inserted_row(&mut self, row: u64) -> bool {
+    pub fn inserted_row(&mut self, row: i64) -> bool {
         let mut changed = false;
 
         match self {
             Self::Sheet { range } => {
                 // Check if the start row needs to be adjusted
                 if let Some(start_row) = range.start.row.as_mut() {
-                    if start_row.coord >= row {
+                    if start_row.coord as i64 >= row {
                         start_row.coord += 1;
                         changed = true;
                     }
@@ -133,7 +133,7 @@ impl CellRefRange {
                 // Check if the end row needs to be adjusted
                 if let Some(end) = range.end.as_mut() {
                     if let Some(end_row) = end.row.as_mut() {
-                        if end_row.coord >= row {
+                        if end_row.coord as i64 >= row {
                             end_row.coord += 1;
                             changed = true;
                         }
