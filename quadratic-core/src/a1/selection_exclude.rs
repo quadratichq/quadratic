@@ -50,12 +50,10 @@ impl A1Selection {
             top = Some(exclude.min.y as u64);
             let end = if exclude.min.y - 1 == 1 {
                 None
+            } else if exclude.min.y - 1 != 1 {
+                Some(CellRefRangeEnd::new_infinite_row(exclude.min.y as u64 - 1))
             } else {
-                if exclude.min.y - 1 != 1 {
-                    Some(CellRefRangeEnd::new_infinite_row(exclude.min.y as u64 - 1))
-                } else {
-                    None
-                }
+                None
             };
             ranges.push(RefRangeBounds {
                 start: CellRefRangeEnd::new_infinite_row(1),
@@ -68,7 +66,7 @@ impl A1Selection {
         if end_row.is_some_and(|r| r.coord > exclude.max.y as u64) {
             bottom = Some(exclude.max.y as u64);
             let start = CellRefRangeEnd::new_relative_xy(
-                start_col.map_or(1, |c| c.coord as u64),
+                start_col.map_or(1, |c| c.coord),
                 exclude.max.y as u64 + 1,
             );
             let end = CellRefRangeEnd {
@@ -91,12 +89,12 @@ impl A1Selection {
         if start_col.is_some_and(|c| c.coord < exclude.min.x as u64) {
             let start = CellRefRangeEnd::new_relative_xy(
                 exclude.max.x as u64 - 1,
-                top.unwrap_or(start_row.map_or(1, |r| r.coord as u64)),
+                top.unwrap_or(start_row.map_or(1, |r| r.coord)),
             );
             let end = CellRefRangeEnd {
                 col: Some(CellRefCoord::new_rel(exclude.min.x as u64 - 1)),
                 row: Some(CellRefCoord::new_rel(
-                    bottom.unwrap_or(end_row.map_or(1, |r| r.coord as u64)),
+                    bottom.unwrap_or(end_row.map_or(1, |r| r.coord)),
                 )),
             };
             ranges.push(RefRangeBounds {
@@ -126,12 +124,12 @@ impl A1Selection {
         if end_col.is_some_and(|c| c.coord > exclude.max.x as u64) {
             let start = CellRefRangeEnd::new_relative_xy(
                 exclude.max.x as u64 + 1,
-                top.unwrap_or(start_row.map_or(1, |r| r.coord as u64)),
+                top.unwrap_or(start_row.map_or(1, |r| r.coord)),
             );
             let end = CellRefRangeEnd {
                 col: end_col,
                 row: Some(CellRefCoord::new_rel(
-                    bottom.unwrap_or(end_row.map_or(1, |r| r.coord as u64)),
+                    bottom.unwrap_or(end_row.map_or(1, |r| r.coord)),
                 )),
             };
             ranges.push(RefRangeBounds {
@@ -144,11 +142,11 @@ impl A1Selection {
             ranges.push(RefRangeBounds {
                 start: CellRefRangeEnd::new_relative_xy(
                     exclude.max.x as u64 + 1,
-                    top.unwrap_or(start_row.map_or(1, |r| r.coord as u64)),
+                    top.unwrap_or(start_row.map_or(1, |r| r.coord)),
                 ),
                 end: Some(CellRefRangeEnd {
                     col: None,
-                    row: bottom.map(|b| CellRefCoord::new_rel(b)),
+                    row: bottom.map(CellRefCoord::new_rel),
                 }),
             });
         }
