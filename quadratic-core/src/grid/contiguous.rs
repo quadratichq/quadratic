@@ -61,13 +61,11 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
             value,
         )
         .0
-        .into_iter()
+        .into_values()
         .next()?
-        .1
         .value
-        .into_iter()
+        .into_values()
         .next()?
-        .1
         .value
     }
 
@@ -234,11 +232,6 @@ impl<T> IntoIterator for ContiguousBlocks<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
-    }
-}
-impl<T> FromIterator<Block<T>> for ContiguousBlocks<T> {
-    fn from_iter<I: IntoIterator<Item = Block<T>>>(iter: I) -> Self {
-        Self(iter.into_iter().map(|block| (block.start, block)).collect())
     }
 }
 impl<T> FromIterator<(u64, Block<T>)> for ContiguousBlocks<T> {

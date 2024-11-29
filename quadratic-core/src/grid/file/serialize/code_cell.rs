@@ -56,7 +56,7 @@ fn import_cells_accessed(
 }
 
 pub(crate) fn import_code_cell_builder(
-    code_runs: Vec<(current::PosSchema, current::CodeRunSchema)>,
+    code_runs: current::CodeRunsSchema,
 ) -> Result<IndexMap<Pos, CodeRun>> {
     let mut new_code_runs = IndexMap::new();
 
@@ -139,9 +139,7 @@ fn export_cells_accessed(
         .collect()
 }
 
-pub(crate) fn export_rows_code_runs(
-    code_runs: IndexMap<Pos, CodeRun>,
-) -> Vec<(current::PosSchema, current::CodeRunSchema)> {
+pub(crate) fn export_rows_code_runs(code_runs: IndexMap<Pos, CodeRun>) -> current::CodeRunsSchema {
     code_runs
         .into_iter()
         .map(|(pos, code_run)| {
