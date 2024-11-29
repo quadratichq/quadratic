@@ -1,8 +1,6 @@
 mod a1_selection_schema;
 mod cells_accessed_schema;
 
-use std::collections::HashMap;
-
 use crate::grid::file::v1_7::schema as v1_7;
 
 pub use a1_selection_schema::*;
@@ -75,7 +73,7 @@ pub enum ValidationListSourceSchema {
     List(Vec<String>),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ValidationSchema {
     pub selection: A1SelectionSchema,
     pub id: Uuid,
@@ -84,7 +82,7 @@ pub struct ValidationSchema {
     pub error: ValidationErrorSchema,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct ValidationsSchema {
     pub validations: Vec<ValidationSchema>,
     pub warnings: Vec<(PosSchema, Uuid)>,
@@ -144,12 +142,11 @@ pub struct BlockSchema<T> {
 
 pub type SheetFormattingSchema = Vec<(u64, BlockSchema<Vec<(u64, BlockSchema<FormatSchema>)>>)>;
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ColumnSchema {
-    pub values: HashMap<String, CellValueSchema>,
-}
+pub type ColumnSchema = Vec<(i64, CellValueSchema)>;
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub type ColumnsSchema = Vec<(i64, ColumnSchema)>;
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct SheetSchema {
     pub id: IdSchema,
     pub name: String,
@@ -161,10 +158,10 @@ pub struct SheetSchema {
     pub borders: BordersSchema,
     pub formats: SheetFormattingSchema,
     pub code_runs: Vec<(PosSchema, CodeRunSchema)>,
-    pub columns: Vec<(i64, ColumnSchema)>,
+    pub columns: ColumnsSchema,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct GridSchema {
     pub version: String,
     pub sheets: Vec<SheetSchema>,

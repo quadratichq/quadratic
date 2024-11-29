@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
 use anyhow::Result;
 
@@ -18,11 +18,9 @@ pub(crate) fn import_column_builder(
             let mut col = Column::new(x);
 
             // todo: there's probably a better way of doing this
-            for (y, value) in column.values.into_iter() {
+            for (y, value) in column.into_iter() {
                 let cell_value = import_cell_value(value);
-                if let Ok(y) = y.parse::<i64>() {
-                    col.values.insert(y, cell_value);
-                }
+                col.values.insert(y, cell_value);
             }
 
             Ok((x, col))
@@ -30,27 +28,16 @@ pub(crate) fn import_column_builder(
         .collect::<Result<BTreeMap<i64, Column>>>()
 }
 
-pub(crate) fn export_values(
-    values: BTreeMap<i64, CellValue>,
-) -> HashMap<String, current::CellValueSchema> {
+pub(crate) fn export_values(values: BTreeMap<i64, CellValue>) -> current::ColumnSchema {
     values
         .into_iter()
-        .map(|(y, value)| (y.to_string(), export_cell_value(value)))
+        .map(|(y, value)| (y, export_cell_value(value)))
         .collect()
 }
 
-pub(crate) fn export_column_builder(
-    columns: BTreeMap<i64, Column>,
-) -> Vec<(i64, current::ColumnSchema)> {
+pub(crate) fn export_column_builder(columns: BTreeMap<i64, Column>) -> current::ColumnsSchema {
     columns
         .into_iter()
-        .map(|(x, column)| {
-            (
-                x,
-                current::ColumnSchema {
-                    values: export_values(column.values),
-                },
-            )
-        })
+        .map(|(x, column)| (x, export_values(column.values)))
         .collect()
 }

@@ -235,10 +235,11 @@ fn upgrade_validations(validations: current::ValidationsSchema) -> v1_7_1::Valid
     }
 }
 
-fn upgrade_column(column: current::ColumnSchema) -> v1_7_1::ColumnSchema {
-    v1_7_1::ColumnSchema {
-        values: column.values,
-    }
+fn upgrade_column(values: HashMap<String, v1_7_1::CellValueSchema>) -> v1_7_1::ColumnSchema {
+    values
+        .into_iter()
+        .filter_map(|(index, value)| index.parse::<i64>().ok().map(|idx| (idx, value)))
+        .collect()
 }
 
 fn upgrade_columns_formats(
@@ -246,16 +247,13 @@ fn upgrade_columns_formats(
     _format_all: Option<current::FormatSchema>,
     _format_columns: Vec<(i64, (current::FormatSchema, i64))>,
     _format_rows: Vec<(i64, (current::FormatSchema, i64))>,
-) -> (
-    Vec<(i64, v1_7_1::ColumnSchema)>,
-    v1_7_1::SheetFormattingSchema,
-) {
+) -> (v1_7_1::ColumnsSchema, v1_7_1::SheetFormattingSchema) {
     dbgjs!("todo(ayush): upgrade formats");
 
     (
         columns
             .into_iter()
-            .map(|(index, column)| (index, upgrade_column(column)))
+            .map(|(index, column)| (index, upgrade_column(column.values)))
             .collect(),
         vec![],
     )
