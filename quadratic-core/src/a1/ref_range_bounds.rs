@@ -171,6 +171,46 @@ impl RefRangeBounds {
         self.might_intersect_rect(Rect::single_pos(pos))
     }
 
+    /// Returns whether `self` contains `pos` regardless of data bounds.
+    pub fn contains_pos(self, pos: Pos) -> bool {
+        let start = self.start;
+        match self.end {
+            Some(end) => {
+                // For columns: if col is None, it matches any x coordinate
+                let x_in_range = match (start.col, end.col) {
+                    (None, None) => true,
+                    (Some(start_col), None) => (pos.x as u64) >= start_col.coord,
+                    (None, Some(end_col)) => (pos.x as u64) <= end_col.coord,
+                    (Some(start_col), Some(end_col)) => {
+                        let min = start_col.coord.min(end_col.coord);
+                        let max = start_col.coord.max(end_col.coord);
+                        (pos.x as u64) >= min && (pos.x as u64) <= max
+                    }
+                };
+
+                // For rows: if row is None, it matches any y coordinate
+                let y_in_range = match (start.row, end.row) {
+                    (None, None) => true,
+                    (Some(start_row), None) => (pos.y as u64) >= start_row.coord,
+                    (None, Some(end_row)) => (pos.y as u64) <= end_row.coord,
+                    (Some(start_row), Some(end_row)) => {
+                        let min = start_row.coord.min(end_row.coord);
+                        let max = start_row.coord.max(end_row.coord);
+                        (pos.y as u64) >= min && (pos.y as u64) <= max
+                    }
+                };
+
+                x_in_range && y_in_range
+            }
+            None => {
+                // Without an end range, both coordinates must match if specified
+                let x_matches = start.col.map_or(true, |col| (pos.x as u64) == col.coord);
+                let y_matches = start.row.map_or(true, |row| (pos.y as u64) == row.coord);
+                x_matches && y_matches
+            }
+        }
+    }
+
     /// Returns whether `self` is a column range.
     pub fn is_column_range(&self) -> bool {
         self.start.row.is_none() || self.end.map_or(false, |end| end.row.is_none())
@@ -708,5 +748,29 @@ mod tests {
         assert!(RefRangeBounds::test("*").is_all());
         assert!(!RefRangeBounds::test("A1").is_all());
         assert!(!RefRangeBounds::test("A1:B2").is_all());
+    }
+
+    #[test]
+    fn test_contains_pos() {
+        assert!(RefRangeBounds::test("A1").contains_pos(Pos::new(1, 1)));
+        assert!(!RefRangeBounds::test("A1").contains_pos(Pos::new(2, 1)));
+        assert!(RefRangeBounds::test("A1:B2").contains_pos(Pos::new(1, 1)));
+        assert!(RefRangeBounds::test("A1:B2").contains_pos(Pos::new(2, 2)));
+        assert!(!RefRangeBounds::test("A1:B2").contains_pos(Pos::new(3, 3)));
+
+        assert!(RefRangeBounds::test("A").contains_pos(Pos::new(1, 1)));
+        assert!(RefRangeBounds::test("A").contains_pos(Pos::new(1, 5)));
+        assert!(!RefRangeBounds::test("A").contains_pos(Pos::new(2, 1)));
+
+        assert!(RefRangeBounds::test("1").contains_pos(Pos::new(1, 1)));
+        assert!(RefRangeBounds::test("1").contains_pos(Pos::new(5, 1)));
+        assert!(!RefRangeBounds::test("1").contains_pos(Pos::new(1, 2)));
+
+        assert!(RefRangeBounds::test("*").contains_pos(Pos::new(10, 145)));
+
+        assert!(RefRangeBounds::test("A1:D10").contains_pos(Pos::new(3, 3)));
+        assert!(!RefRangeBounds::test("A1:D10").contains_pos(Pos::new(11, 1)));
+
+        assert!(RefRangeBounds::test("B7:G7").contains_pos(Pos::new(2, 7)));
     }
 }

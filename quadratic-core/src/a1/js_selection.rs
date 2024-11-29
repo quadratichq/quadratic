@@ -268,6 +268,14 @@ impl JsSelection {
     pub fn is_single_selection(&self) -> bool {
         self.selection.is_single_selection()
     }
+
+    #[wasm_bindgen(js_name = "excludeCells")]
+    pub fn exclude_cells(&mut self, x0: i32, y0: i32, x1: i32, y1: i32) {
+        self.selection.exclude_cells(
+            Pos::new(x0 as i64, y0 as i64),
+            Some(Pos::new(x1 as i64, y1 as i64)),
+        );
+    }
 }
 
 #[wasm_bindgen(js_name = "stringToSelection")]

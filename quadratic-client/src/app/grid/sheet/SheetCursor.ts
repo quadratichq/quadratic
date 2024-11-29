@@ -239,4 +239,9 @@ export class SheetCursor {
   a1String(): string {
     return this.jsSelection.toA1String(sheets.sheet.id, sheets.getSheetIdNameMap());
   }
+
+  excludeCells(x0: number, y0: number, x1: number, y1: number, ensureVisible = true) {
+    this.jsSelection.excludeCells(x0, y0, x1, y1);
+    this.updatePosition(ensureVisible);
+  }
 }

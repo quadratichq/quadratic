@@ -42,6 +42,12 @@ impl A1Selection {
         self.ranges.iter().any(|range| range.might_contain_pos(pos))
     }
 
+    /// Returns whether any range in `self` contains `pos` regardless of data
+    /// bounds. (Use might_contains_pos for that.)
+    pub fn contains_pos(&self, pos: Pos) -> bool {
+        self.ranges.iter().any(|range| range.contains_pos(pos))
+    }
+
     /// Returns the largest rectangle that can be formed by the selection,
     /// ignoring any ranges that extend infinitely.
     pub fn largest_rect_finite(&self) -> Rect {
@@ -335,9 +341,9 @@ mod tests {
 
     #[test]
     fn test_contains_pos() {
-        let selection = A1Selection::test("A1,B2,C3");
-        assert!(selection.might_contain_pos(pos![A1]));
-        assert!(!selection.might_contain_pos(pos![D1]));
+        let selection = A1Selection::test("B7:G7");
+        assert!(selection.contains_pos(pos![B7]));
+        assert!(!selection.contains_pos(pos![A1]));
     }
 
     #[test]

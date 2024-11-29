@@ -175,6 +175,8 @@ impl A1Selection {
 
     /// Excludes the given cells from the selection.
     pub fn exclude_cells(&mut self, p1: Pos, p2: Option<Pos>) {
+        dbgjs!(&p1);
+        dbgjs!(&p2);
         let mut ranges = Vec::new();
         while let Some(range) = self.ranges.drain(..).next() {
             // skip range if it's the entire range or the reverse of the entire range
@@ -200,15 +202,20 @@ impl A1Selection {
                 range: RefRangeBounds::new_relative_xy(self.cursor.x as u64, self.cursor.y as u64),
             });
         }
+        self.ranges = ranges;
+
         // if the cursor is no longer in the range, then set the cursor to the last range
-        else if !self.might_contain_pos(self.cursor) {
-            if let Some(cursor) = ranges.iter().rev().find_map(|range| match range {
+        if !self.contains_pos(self.cursor) {
+            // we find a finite range to se the cursor to, starting at the end and working backwards
+            if let Some(cursor) = self.ranges.iter().rev().find_map(|range| match range {
                 CellRefRange::Sheet { range } => {
+                    // first we check if end is finite
                     if let Some(end) = range.end {
                         if let (Some(end_col), Some(end_row)) = (end.col, end.row) {
                             return Some(Pos::new(end_col.coord as i64, end_row.coord as i64));
                         }
                     }
+                    // otherwise we use the start if it is finite
                     if let (Some(start_col), Some(start_row)) = (range.start.col, range.start.row) {
                         return Some(Pos::new(start_col.coord as i64, start_row.coord as i64));
                     }
@@ -221,7 +228,6 @@ impl A1Selection {
                 self.cursor = Pos::new(1, 1);
             }
         }
-        self.ranges = ranges;
     }
 }
 

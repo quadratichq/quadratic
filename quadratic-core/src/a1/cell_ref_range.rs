@@ -132,6 +132,12 @@ impl CellRefRange {
         }
     }
 
+    pub fn contains_pos(self, pos: Pos) -> bool {
+        match self {
+            Self::Sheet { range } => range.contains_pos(pos),
+        }
+    }
+
     pub fn is_column_range(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_column_range(),
