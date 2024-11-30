@@ -28,25 +28,13 @@ def error_result(
 
 async def run_python(code: str, pos: Tuple[int, int]):
     globals = {
-        "getCells": getCells,
-        "getCell": getCell,
-        "c": getCell,
         "result": None,
-        "cell": getCell,
-        "cells": getCells,
-        "rel_cell": rel_cell,
-        "rel_cells": rel_cells,
-        "rc": rc,
         "q": q,
     }
 
     sout = StringIO()
     serr = StringIO()
     output_value = None
-    globals['pos'] = lambda: (pos.x, pos.y)
-    globals['rel_cell'] = lambda x, y: rel_cell(x + pos.x, y + pos.y)
-    globals['rel_cells'] = lambda first, second, sheet=None, first_row_header=False: rel_cells((first[0] + pos.x, first[1] + pos.y), (second[0] + pos.x, second[1] + pos.y), sheet, first_row_header)
-    globals['rc'] = lambda x, y: rc(x + pos.x, y + pos.y)
     globals['q'] = q(pos)
 
     try:
