@@ -76,7 +76,7 @@ impl CellRefRange {
         Self::Sheet {
             range: RefRangeBounds {
                 start: CellRefRangeEnd::new_relative_xy(col, min_row),
-                end: Some(CellRefRangeEnd::new_infinite_column(col)),
+                end: Some(CellRefRangeEnd::new_infinite_col(col)),
             },
         }
     }

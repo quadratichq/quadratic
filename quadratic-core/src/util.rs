@@ -87,11 +87,13 @@ macro_rules! col {
 /// Parses a cell position in A1 notation.
 #[allow(unused)]
 macro_rules! pos {
-    [$s:ident] => {
-        $crate::formulas::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
+    [$s:ident] => {{
+        #[allow(unused_assignments, unused_variables)]
+        let pos = $crate::formulas::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
             .expect("invalid cell reference")
-            .resolve_from(crate::Pos::ORIGIN)
-    };
+            .resolve_from(crate::Pos::ORIGIN);
+        pos
+    }};
 }
 
 /// Returns a human-friendly list of things, joined at the end by the given

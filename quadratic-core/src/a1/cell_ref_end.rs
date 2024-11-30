@@ -103,7 +103,7 @@ impl CellRefRangeEnd {
         }
     }
 
-    pub fn new_infinite_column(col: u64) -> Self {
+    pub fn new_infinite_col(col: u64) -> Self {
         CellRefRangeEnd {
             col: Some(CellRefCoord::new_rel(col)),
             row: None,
