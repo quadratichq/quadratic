@@ -1,11 +1,26 @@
+use std::collections::btree_map;
+
 use serde::{Deserialize, Serialize};
 
-use super::{Contiguous2D, ContiguousBlocks, Format};
+use super::{Block, Contiguous2D, ContiguousBlocks, Format};
 use crate::{CopyFormats, Pos};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 #[serde(default)]
 pub struct SheetFormatting(Contiguous2D<Format>);
+impl IntoIterator for SheetFormatting {
+    type Item = (u64, Block<ContiguousBlocks<Format>>);
+    type IntoIter = btree_map::IntoIter<u64, Block<ContiguousBlocks<Format>>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+impl FromIterator<(u64, Block<ContiguousBlocks<Format>>)> for SheetFormatting {
+    fn from_iter<I: IntoIterator<Item = (u64, Block<ContiguousBlocks<Format>>)>>(iter: I) -> Self {
+        Self(Contiguous2D::from_iter(iter))
+    }
+}
 impl SheetFormatting {
     /// Returns the maximum value in the column for which formatting exists.
     pub fn column_max(&self, column: u64) -> Option<u64> {

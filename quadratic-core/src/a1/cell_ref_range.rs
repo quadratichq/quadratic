@@ -1,3 +1,6 @@
+// todo: fix this
+#![allow(non_local_definitions)]
+
 use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
@@ -73,7 +76,7 @@ impl CellRefRange {
         Self::Sheet {
             range: RefRangeBounds {
                 start: CellRefRangeEnd::new_relative_xy(col, min_row),
-                end: Some(CellRefRangeEnd::new_infinite_column(col)),
+                end: Some(CellRefRangeEnd::new_infinite_col(col)),
             },
         }
     }
@@ -129,6 +132,12 @@ impl CellRefRange {
     pub fn might_contain_pos(self, pos: Pos) -> bool {
         match self {
             Self::Sheet { range } => range.might_contain_pos(pos),
+        }
+    }
+
+    pub fn contains_pos(self, pos: Pos) -> bool {
+        match self {
+            Self::Sheet { range } => range.contains_pos(pos),
         }
     }
 

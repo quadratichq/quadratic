@@ -335,7 +335,7 @@ class Core {
       this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
 
-        let formattedTransactions = receive_transactions.transactions.map((transaction) => ({
+        const formattedTransactions = receive_transactions.transactions.map((transaction) => ({
           id: transaction.id,
           file_id: transaction.file_id,
           sequence_num: transaction.sequence_num,
@@ -346,11 +346,7 @@ class Core {
         }));
         receive_transactions.transactions = [];
 
-        // TODO(ayush): find a better way to do this, avoid JSON.stringify and pass the buffer directly
-        const transactionsBuffer = JSON.stringify(formattedTransactions);
-        formattedTransactions = [];
-
-        this.gridController.receiveMultiplayerTransactions(transactionsBuffer);
+        this.gridController.receiveMultiplayerTransactions(formattedTransactions);
 
         // sends multiplayer synced to the client, to proceed from file loading screen
         coreClient.sendMultiplayerSynced();

@@ -64,7 +64,7 @@ export class GridHeadings extends Container {
 
   private findIntervalX(i: number): number {
     if (i > 100) return 50;
-    if (i > 20) return 25;
+    if (i > 20) return 26;
     if (i > 5) return 10;
     return 5;
   }

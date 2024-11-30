@@ -1,3 +1,6 @@
+// todo: fix this
+#![allow(non_local_definitions)]
+
 use std::fmt;
 use std::str::FromStr;
 
@@ -34,7 +37,7 @@ impl FromStr for CellRefRangeEnd {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         lazy_static! {
             static ref A1_REGEX: Regex =
-                Regex::new(r#"(\$?)([A-Z]*)(\$?)(\d*)"#).expect("bad regex");
+                Regex::new(r#"(\$?)([A-Za-z]*)(\$?)(\d*)"#).expect("bad regex");
         }
 
         let captures = A1_REGEX
@@ -100,7 +103,7 @@ impl CellRefRangeEnd {
         }
     }
 
-    pub fn new_infinite_column(col: u64) -> Self {
+    pub fn new_infinite_col(col: u64) -> Self {
         CellRefRangeEnd {
             col: Some(CellRefCoord::new_rel(col)),
             row: None,

@@ -266,8 +266,8 @@ impl A1Selection {
                 },
             });
         }
-        self.cursor.x = right as i64;
-        self.cursor.y = bottom as i64;
+        self.cursor.x = left as i64;
+        self.cursor.y = top as i64;
     }
 
     /// Moves the cursor to the given position and clears the selection.
@@ -474,6 +474,8 @@ mod tests {
         let mut selection = A1Selection::test("A1,B2,C3");
         selection.select_rect(1, 1, 2, 2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A1:B2")]);
+        assert_eq!(selection.cursor.x, 1);
+        assert_eq!(selection.cursor.y, 1);
 
         selection = A1Selection::test("A1:C3");
         selection.select_rect(3, 3, 5, 5, true);
@@ -481,6 +483,8 @@ mod tests {
             selection.ranges,
             vec![CellRefRange::test("A1:C3"), CellRefRange::test("C3:E5"),]
         );
+        assert_eq!(selection.cursor.x, 3);
+        assert_eq!(selection.cursor.y, 3);
     }
 
     #[test]

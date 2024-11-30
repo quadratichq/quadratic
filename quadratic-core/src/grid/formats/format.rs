@@ -1,3 +1,6 @@
+// todo: fix this
+#![allow(non_local_definitions)]
+
 //! This stores a format for Operations and eventually for the entire sheet.
 
 use std::fmt::Display;

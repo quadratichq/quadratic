@@ -161,10 +161,10 @@ impl Borders {
         _subspaces: &A1Subspaces,
         _borders: &BorderStyleCellUpdates,
     ) -> Vec<Operation> {
+        dbgjs!("implement set_borders_a1");
+        vec![]
         // let mut undo = vec![];
         // let mut undo_borders = RunLengthEncoding::new();
-
-        todo!("todo todo todo")
     }
 
     /// Sets the border for a cell. This is used in the upgrade_border for going

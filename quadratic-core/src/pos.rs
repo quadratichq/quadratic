@@ -1,7 +1,10 @@
+// todo: fix this
+#![allow(non_local_definitions)]
+
 use crate::{
-    formulas::CellRef,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+    CellRefRangeEnd,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -66,8 +69,15 @@ impl Pos {
 
     // TODO: rename this method (`from_str`?)
     pub fn try_a1_string(a1: &str) -> Option<Self> {
-        let base = pos![A1];
-        Some(CellRef::parse_a1(a1, base)?.resolve_from(base))
+        if let Ok(end) = CellRefRangeEnd::from_str(a1) {
+            if let (Some(col), Some(row)) = (end.col, end.row) {
+                return Some(Pos {
+                    x: col.coord as i64,
+                    y: row.coord as i64,
+                });
+            }
+        }
+        None
     }
 
     /// Translates the pos in place by the given delta, clamping the result to the given min.
@@ -312,7 +322,7 @@ mod test {
     }
 
     #[test]
-    fn try_a1_string() {
+    fn test_try_a1_string() {
         assert_eq!(Pos::try_a1_string("A1"), Some(Pos { x: 1, y: 1 }));
         assert_eq!(Pos::try_a1_string("d5"), Some(Pos { x: 4, y: 5 }));
         assert_eq!(Pos::try_a1_string("A"), None);

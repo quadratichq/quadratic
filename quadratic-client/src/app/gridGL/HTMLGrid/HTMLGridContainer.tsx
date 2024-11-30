@@ -74,6 +74,11 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
 
   if (!parent) return null;
 
+  if (isNaN(leftHeading) || isNaN(topHeading)) {
+    console.log('todo in HTMLGridContainer', { leftHeading, topHeading });
+    return null;
+  }
+
   return (
     <>
       {/* This is positioned on the grid inside the headings and zoomed */}

@@ -15,9 +15,7 @@ pub type SheetNameIdMap = HashMap<String, SheetId>;
 /// not contain `!`, then this function returns `Ok((None, _))`. If the string
 /// does contain `!`, then the left side is parsed as a sheet name that may be
 /// quoted or unquoted.
-pub(crate) fn parse_optional_sheet_name(
-    a1: &str,
-) -> Result<(Option<String>, &str), A1Error> {
+pub(crate) fn parse_optional_sheet_name(a1: &str) -> Result<(Option<String>, &str), A1Error> {
     let Some((sheet_name, rest)) = a1.rsplit_once('!') else {
         return Ok((None, a1));
     };
@@ -47,9 +45,15 @@ pub(crate) fn parse_optional_sheet_name_to_id<'a>(
 ) -> Result<(SheetId, &'a str), A1Error> {
     let (sheet_name, rest) = parse_optional_sheet_name(a1)?;
     let sheet_id = match sheet_name {
-        Some(sheet_name) => *sheet_map
-            .get(&sheet_name)
-            .ok_or(A1Error::InvalidSheetName(sheet_name))?,
+        Some(sheet_name) => {
+            let folded_name = sheet_name.to_lowercase();
+            **sheet_map
+                .iter()
+                .map(|(k, v)| (k.to_lowercase(), v))
+                .collect::<HashMap<_, _>>()
+                .get(&folded_name)
+                .ok_or(A1Error::InvalidSheetName(sheet_name))?
+        }
         None => default_sheet_id.to_owned(),
     };
     Ok((sheet_id, rest))
@@ -82,6 +86,10 @@ mod tests {
         assert_eq!(
             parse_optional_sheet_name("Sheet1!A1"),
             Ok((Some("Sheet1".to_string()), "A1"))
+        );
+        assert_eq!(
+            parse_optional_sheet_name("sheet1!A1"),
+            Ok((Some("sheet1".to_string()), "A1"))
         );
         assert_eq!(
             parse_optional_sheet_name("'Sheet 1'!A1"),
@@ -119,15 +127,15 @@ mod tests {
         let sheet_1 = SheetId::new();
         let sheet_2 = SheetId::new();
         let map = HashMap::from([
-            ("Sheet1".to_string(), sheet_1),
-            ("Sheet 2".to_string(), sheet_2),
+            ("sheet1".to_string(), sheet_1),
+            ("sheet 2".to_string(), sheet_2),
         ]);
         assert_eq!(
-            parse_optional_sheet_name_to_id("Sheet1!A1", &sheet_1, &map),
+            parse_optional_sheet_name_to_id("SHEET1!A1", &sheet_1, &map),
             Ok((sheet_1, "A1"))
         );
         assert_eq!(
-            parse_optional_sheet_name_to_id("'Sheet 2'!A1", &sheet_1, &map),
+            parse_optional_sheet_name_to_id("'SHEET 2'!A1", &sheet_1, &map),
             Ok((sheet_2, "A1"))
         );
         assert_eq!(
@@ -147,6 +155,10 @@ mod tests {
             Err(A1Error::InvalidSheetNameMissingQuotes(
                 "Sheet 1".to_string()
             ))
+        );
+        assert_eq!(
+            parse_optional_sheet_name_to_id("sheet1!A1", &sheet_1, &map),
+            Ok((sheet_1, "A1"))
         );
     }
 }

@@ -35,9 +35,10 @@ impl GridController {
     pub fn autocomplete_operations(
         &mut self,
         sheet_id: SheetId,
-        mut initial_range: Rect,
+        initial_range: Rect,
         final_range: Rect,
     ) -> Result<Vec<Operation>> {
+        let mut initial_range = initial_range;
         let mut operations = vec![];
         let mut initial_down_range: Option<Rect> = None;
         let mut initial_up_range: Option<Rect> = None;

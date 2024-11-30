@@ -1,27 +1,30 @@
 mod a1_selection_schema;
 mod cells_accessed_schema;
+mod sheet_formatting;
+mod sheet_formatting_upgrade;
 
 use crate::grid::file::v1_7::schema as v1_7;
 
 pub use a1_selection_schema::*;
 pub use cells_accessed_schema::*;
+pub use sheet_formatting::*;
+pub use sheet_formatting_upgrade::*;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
 pub type IdSchema = v1_7::IdSchema;
 pub type PosSchema = v1_7::PosSchema;
 pub type RectSchema = v1_7::RectSchema;
 pub type SheetRectSchema = v1_7::SheetRectSchema;
 pub type OffsetsSchema = v1_7::OffsetsSchema;
 pub type RunErrorSchema = v1_7::RunErrorSchema;
-pub type FormatSchema = v1_7::FormatSchema;
 pub type ResizeSchema = v1_7::ResizeSchema;
 pub type CodeRunResultSchema = v1_7::CodeRunResultSchema;
 pub type OutputValueSchema = v1_7::OutputValueSchema;
 pub type OutputArraySchema = v1_7::OutputArraySchema;
 pub type OutputSizeSchema = v1_7::OutputSizeSchema;
 pub type OutputValueValueSchema = v1_7::OutputValueValueSchema;
-pub type ColumnSchema = v1_7::ColumnSchema;
 pub type NumericFormatKindSchema = v1_7::NumericFormatKindSchema;
 pub type NumericFormatSchema = v1_7::NumericFormatSchema;
 pub type CellValueSchema = v1_7::CellValueSchema;
@@ -75,7 +78,7 @@ pub enum ValidationListSourceSchema {
     List(Vec<String>),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ValidationSchema {
     pub selection: A1SelectionSchema,
     pub id: Uuid,
@@ -84,30 +87,39 @@ pub struct ValidationSchema {
     pub error: ValidationErrorSchema,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct ValidationsSchema {
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub validations: Vec<ValidationSchema>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub warnings: Vec<(PosSchema, Uuid)>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub type RowsResizeSchema = Vec<(i64, ResizeSchema)>;
+
+pub type CodeRunsSchema = Vec<(PosSchema, CodeRunSchema)>;
+
+pub type ColumnSchema = Vec<(i64, CellValueSchema)>;
+
+pub type ColumnsSchema = Vec<(i64, ColumnSchema)>;
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct SheetSchema {
     pub id: IdSchema,
     pub name: String,
     pub color: Option<String>,
     pub order: String,
     pub offsets: OffsetsSchema,
-    pub columns: Vec<(i64, ColumnSchema)>,
-    pub code_runs: Vec<(PosSchema, CodeRunSchema)>,
-    pub formats_all: Option<FormatSchema>,
-    pub formats_columns: Vec<(i64, (FormatSchema, i64))>,
-    pub formats_rows: Vec<(i64, (FormatSchema, i64))>,
-    pub rows_resize: Vec<(i64, ResizeSchema)>,
     pub validations: ValidationsSchema,
+    pub rows_resize: RowsResizeSchema,
     pub borders: BordersSchema,
+    pub formats: SheetFormattingSchema,
+    pub code_runs: CodeRunsSchema,
+    pub columns: ColumnsSchema,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct GridSchema {
     pub version: String,
     pub sheets: Vec<SheetSchema>,

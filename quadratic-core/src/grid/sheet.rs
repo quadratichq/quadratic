@@ -64,7 +64,7 @@ pub struct Sheet {
     pub code_runs: IndexMap<Pos, CodeRun>,
 
     /// Formatting for the entire sheet.
-    pub format: SheetFormatting,
+    pub formats: SheetFormatting,
 
     #[serde(default)]
     pub validations: Validations,
@@ -94,7 +94,7 @@ impl Sheet {
 
             code_runs: IndexMap::new(),
 
-            format: SheetFormatting::default(),
+            formats: SheetFormatting::default(),
 
             data_bounds: GridBounds::Empty,
 
@@ -303,7 +303,7 @@ impl Sheet {
     ///
     /// TODO: move this onto [`SheetFormatting`] as `get_value()`.
     pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
-        A::get_from_format(self.format.get(pos)?).clone()
+        A::get_from_format(self.formats.get(pos)?).clone()
     }
 
     /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
@@ -316,7 +316,7 @@ impl Sheet {
 
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.format.get(pos).cloned().unwrap_or_default();
+        let format = self.formats.get(pos).cloned().unwrap_or_default();
         let cell_type = self
             .display_value(pos)
             .and_then(|cell_value| match cell_value {
@@ -347,9 +347,9 @@ impl Sheet {
         value: Option<A::Value>,
     ) -> Option<A::Value> {
         // TODO(perf): avoid double lookup
-        let mut cell_format = self.format.get(pos).cloned().unwrap_or_default();
+        let mut cell_format = self.formats.get(pos).cloned().unwrap_or_default();
         *A::get_from_format_mut(&mut cell_format) = value;
-        A::get_from_format(&self.format.set(pos, Some(cell_format))?).clone()
+        A::get_from_format(&self.formats.set(pos, Some(cell_format))?).clone()
     }
 
     /// Returns a column of a sheet from the column index.

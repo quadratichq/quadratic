@@ -4,7 +4,7 @@ use super::A1Selection;
 
 impl A1Selection {
     /// Potentially shrinks a selection after the removal of a column.
-    pub fn removed_column(&mut self, column: u64) -> bool {
+    pub fn removed_column(&mut self, column: i64) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
@@ -23,7 +23,7 @@ impl A1Selection {
     }
 
     /// Potentially shrinks a selection after the removal of a row.
-    pub fn removed_row(&mut self, row: u64) -> bool {
+    pub fn removed_row(&mut self, row: i64) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
@@ -42,7 +42,7 @@ impl A1Selection {
     }
 
     /// Potentially shifts / grows a selection after the insertion of a column.
-    pub fn inserted_column(&mut self, column: u64) -> bool {
+    pub fn inserted_column(&mut self, column: i64) -> bool {
         let mut changed = false;
 
         self.ranges.iter_mut().for_each(|range| {
@@ -55,7 +55,7 @@ impl A1Selection {
     }
 
     /// Potentially shifts / grows a selection after the insertion of a row.
-    pub fn inserted_row(&mut self, row: u64) -> bool {
+    pub fn inserted_row(&mut self, row: i64) -> bool {
         let mut changed = false;
 
         self.ranges.iter_mut().for_each(|range| {

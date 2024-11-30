@@ -17,6 +17,8 @@ const WHEEL_ZOOM_PERCENT = 1.5;
 const WAIT_TO_SNAP_TIME = 200;
 const SNAPPING_TIME = 150;
 
+type SnapState = 'waiting' | 'snapping' | undefined;
+
 export class Viewport extends PixiViewport {
   private lastViewportPosition: Point = new Point();
 
@@ -28,7 +30,7 @@ export class Viewport extends PixiViewport {
 
   private lastSheetId = '';
 
-  private snapState?: 'waiting' | 'snapping' | undefined;
+  private snapState?: SnapState;
   private snapTimeout?: number;
 
   constructor() {
@@ -69,16 +71,19 @@ export class Viewport extends PixiViewport {
     // hack to ensure pointermove works outside of canvas
     this.off('pointerout');
 
-    this.on('moved', () => events.emit('viewportChanged'));
-    this.on('zoomed', () => events.emit('viewportChanged'));
+    this.on('moved', this.viewportChanged);
+    this.on('zoomed', this.viewportChanged);
     this.on('snap-end', this.handleSnapEnd);
   }
 
+  private viewportChanged = () => {
+    events.emit('viewportChanged');
+  };
+
   destroy() {
-    if (this.snapTimeout) {
-      clearTimeout(this.snapTimeout);
-    }
     this.off('snap-end', this.handleSnapEnd);
+    this.off('moved', this.viewportChanged);
+    this.off('zoomed', this.viewportChanged);
   }
 
   loadViewport() {
@@ -124,57 +129,59 @@ export class Viewport extends PixiViewport {
   }
 
   sendRenderViewport() {
-    const bounds = pixiApp.viewport.getVisibleBounds();
-    const scale = pixiApp.viewport.scale.x;
+    const bounds = this.getVisibleBounds();
+    const scale = this.scale.x;
     renderWebWorker.updateViewport(sheets.sheet.id, bounds, scale);
   }
 
   private startSnap = () => {
-    this.snapTimeout = window.setTimeout(() => {
-      const headings = pixiApp.headings.headingSize;
-      let x: number;
-      let y: number;
-      if (this.x > headings.width / this.scale.x) {
-        x = -headings.width / this.scale.x;
-      } else {
-        x = -this.x;
-      }
-      if (this.y > headings.height / this.scale.y) {
-        y = -headings.height / this.scale.y;
-      } else {
-        y = -this.y;
-      }
+    const headings = pixiApp.headings.headingSize;
+    let x: number;
+    let y: number;
+    let snap = false;
+    if (this.x > headings.width) {
+      x = -headings.width / this.scaled;
+      snap = true;
+    } else {
+      x = -this.x / this.scaled;
+    }
+    if (this.y > headings.height) {
+      y = -headings.height / this.scaled;
+      snap = true;
+    } else {
+      y = -this.y / this.scaled;
+    }
+    if (snap) {
       this.snap(x, y, {
         topLeft: true,
         time: SNAPPING_TIME,
-        ease: 'easeInSine',
+        ease: 'easeOutSine',
         removeOnComplete: true,
         interrupt: true,
-        friction: 1,
       });
       this.snapState = 'snapping';
-    }, WAIT_TO_SNAP_TIME);
+    } else {
+      this.snapState = undefined;
+    }
   };
 
   updateViewport(): void {
-    const { viewport } = pixiApp;
-
     let dirty = false;
-    if (this.lastViewportScale !== viewport.scale.x) {
-      this.lastViewportScale = viewport.scale.x;
+    if (this.lastViewportScale !== this.scale.x) {
+      this.lastViewportScale = this.scale.x;
       dirty = true;
 
       // this is used to trigger changes to ZoomDropdown
-      events.emit('zoom', viewport.scale.x);
+      events.emit('zoom', this.scale.x);
     }
-    if (this.lastViewportPosition.x !== viewport.x || this.lastViewportPosition.y !== viewport.y) {
-      this.lastViewportPosition.x = viewport.x;
-      this.lastViewportPosition.y = viewport.y;
+    if (this.lastViewportPosition.x !== this.x || this.lastViewportPosition.y !== this.y) {
+      this.lastViewportPosition.x = this.x;
+      this.lastViewportPosition.y = this.y;
       dirty = true;
     }
-    if (this.lastScreenWidth !== viewport.screenWidth || this.lastScreenHeight !== viewport.screenHeight) {
-      this.lastScreenWidth = viewport.screenWidth;
-      this.lastScreenHeight = viewport.screenHeight;
+    if (this.lastScreenWidth !== this.screenWidth || this.lastScreenHeight !== this.screenHeight) {
+      this.lastScreenWidth = this.screenWidth;
+      this.lastScreenHeight = this.screenHeight;
       dirty = true;
     }
     if (this.lastSheetId !== sheets.sheet.id) {
@@ -189,16 +196,17 @@ export class Viewport extends PixiViewport {
       // related positioning)
       events.emit('viewportChangedReady');
 
-      // if we're already waiting to snap, then cancel the timeout
-      if (this.snapState === 'waiting') {
-        clearTimeout(this.snapTimeout);
-        this.snapTimeout = undefined;
-        this.snapState = undefined;
-      }
-    } else if (this.snapState === undefined) {
+      // Clear both timeout and state when interrupting a waiting snap
+      this.snapTimeout = undefined;
+      this.snapState = undefined;
+    } else if (!this.snapState) {
       const headings = pixiApp.headings.headingSize;
-      if (this.x - headings.width / this.scale.x > 0 || this.y - headings.height / this.scale.y > 0) {
+      if (this.x > headings.width || this.y > headings.height) {
+        this.snapTimeout = Date.now();
         this.snapState = 'waiting';
+      }
+    } else if (this.snapState === 'waiting' && this.snapTimeout) {
+      if (Date.now() - this.snapTimeout > WAIT_TO_SNAP_TIME) {
         this.startSnap();
       }
     }

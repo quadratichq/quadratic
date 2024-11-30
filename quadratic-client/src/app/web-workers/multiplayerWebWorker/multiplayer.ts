@@ -6,6 +6,7 @@ import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGr
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { User, authClient, parseDomain } from '@/auth/auth';
@@ -322,7 +323,7 @@ export class Multiplayer {
 
     if (update.selection) {
       player.selection = update.selection;
-      player.parsedSelection = player.selection ? JSON.parse(player.selection) : undefined;
+      player.parsedSelection = player.selection ? JsSelection.load(player.selection) : undefined;
       if (player.sheet_id === sheets.sheet.id) {
         pixiApp.multiplayerCursor.dirty = true;
       }
@@ -382,7 +383,7 @@ export class Multiplayer {
           player.image = user.image;
           player.sheet_id = user.sheet_id;
           player.selection = user.selection;
-          player.parsedSelection = user.selection ? JSON.parse(user.selection) : undefined;
+          player.parsedSelection = user.selection ? JsSelection.load(user.selection) : undefined;
           remaining.delete(user.session_id);
           if (debugShowMultiplayer) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
         } else {
@@ -396,7 +397,7 @@ export class Multiplayer {
             image: user.image,
             sheet_id: user.sheet_id,
             selection: user.selection,
-            parsedSelection: user.selection ? JSON.parse(user.selection) : undefined,
+            parsedSelection: user.selection ? JsSelection.load(user.selection) : undefined,
             cell_edit: user.cell_edit,
             x: 0,
             y: 0,

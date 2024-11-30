@@ -19,12 +19,17 @@ pub enum CellRefRangeSchema {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RefRangeBoundsSchema {
     pub start: CellRefRangeEndSchema,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub end: Option<CellRefRangeEndSchema>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CellRefRangeEndSchema {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub col: Option<CellRefCoordSchema>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub row: Option<CellRefCoordSchema>,
 }
 
