@@ -1,4 +1,11 @@
-//! Handles the logic for removing a rect from the selection.
+//! Handles the logic for removing a rect from the selection. This is used when
+//! a user excludes a Rect from the current selection.
+//!
+//! The logic iterates through each range, and if there is an overlap between
+//! the range and the excluded rect, it changes the ranges to remove the
+//! excluded rect. The one range may turn into between 0 and 4 ranges: the
+//! remaining Top, Bottom, left, and right rects. Note: only the Bottom and
+//! Right rects may include an infinite range.
 
 use std::mem::swap;
 
@@ -672,6 +679,9 @@ mod test {
     fn test_exclude_cells_rows_single_middle() {
         let mut selection = A1Selection::test("2");
         selection.exclude_cells(pos![D2], None);
-        assert_eq!(selection.ranges, vec![CellRefRange::test("A2:C2"), CellRefRange::test("E2:2")]);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test("A2:C2"), CellRefRange::test("E2:2")]
+        );
     }
 }
