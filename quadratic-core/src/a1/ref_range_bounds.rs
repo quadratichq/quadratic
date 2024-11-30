@@ -414,7 +414,7 @@ impl RefRangeBounds {
 
     /// Returns a test range from the A1-string.
     #[cfg(test)]
-    pub fn test(a1: &str) -> Self {
+    pub fn test_a1(a1: &str) -> Self {
         Self::from_str(a1).unwrap()
     }
 }
@@ -444,253 +444,272 @@ mod tests {
 
     #[test]
     fn test_is_finite() {
-        assert!(RefRangeBounds::test("A1").is_finite());
-        assert!(!RefRangeBounds::test("A").is_finite());
-        assert!(!RefRangeBounds::test("1").is_finite());
+        assert!(RefRangeBounds::test_a1("A1").is_finite());
+        assert!(!RefRangeBounds::test_a1("A").is_finite());
+        assert!(!RefRangeBounds::test_a1("1").is_finite());
     }
 
     #[test]
     fn test_to_rect() {
         assert_eq!(
-            RefRangeBounds::test("A1").to_rect(),
+            RefRangeBounds::test_a1("A1").to_rect(),
             Some(Rect::new(1, 1, 1, 1))
         );
         assert_eq!(
-            RefRangeBounds::test("A1:B2").to_rect(),
+            RefRangeBounds::test_a1("A1:B2").to_rect(),
             Some(Rect::new(1, 1, 2, 2))
         );
-        assert_eq!(RefRangeBounds::test("A:B").to_rect(), None);
-        assert_eq!(RefRangeBounds::test("1:2").to_rect(), None);
-        assert_eq!(RefRangeBounds::test("A1:C").to_rect(), None);
-        assert_eq!(RefRangeBounds::test("A:C3").to_rect(), None);
-        assert_eq!(RefRangeBounds::test("*").to_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("A:B").to_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("1:2").to_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("A1:C").to_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("A:C3").to_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("*").to_rect(), None);
     }
 
     #[test]
     fn test_is_column_row() {
-        assert!(!RefRangeBounds::test("A1").is_column_range());
-        assert!(RefRangeBounds::test("A").is_column_range());
-        assert!(!RefRangeBounds::test("A1:C3").is_column_range());
-        assert!(RefRangeBounds::test("A:C").is_column_range());
-        assert!(RefRangeBounds::test("A1:C").is_column_range());
-        assert!(RefRangeBounds::test("A:C1").is_column_range());
+        assert!(!RefRangeBounds::test_a1("A1").is_column_range());
+        assert!(RefRangeBounds::test_a1("A").is_column_range());
+        assert!(!RefRangeBounds::test_a1("A1:C3").is_column_range());
+        assert!(RefRangeBounds::test_a1("A:C").is_column_range());
+        assert!(RefRangeBounds::test_a1("A1:C").is_column_range());
+        assert!(RefRangeBounds::test_a1("A:C1").is_column_range());
     }
 
     #[test]
     fn test_is_row_range() {
-        assert!(!RefRangeBounds::test("A1").is_row_range());
-        assert!(!RefRangeBounds::test("A").is_row_range());
-        assert!(!RefRangeBounds::test("A1:C3").is_row_range());
-        assert!(RefRangeBounds::test("1").is_row_range());
-        assert!(RefRangeBounds::test("1:3").is_row_range());
-        assert!(RefRangeBounds::test("A1:3").is_row_range());
-        assert!(RefRangeBounds::test("1:C3").is_row_range());
+        assert!(!RefRangeBounds::test_a1("A1").is_row_range());
+        assert!(!RefRangeBounds::test_a1("A").is_row_range());
+        assert!(!RefRangeBounds::test_a1("A1:C3").is_row_range());
+        assert!(RefRangeBounds::test_a1("1").is_row_range());
+        assert!(RefRangeBounds::test_a1("1:3").is_row_range());
+        assert!(RefRangeBounds::test_a1("A1:3").is_row_range());
+        assert!(RefRangeBounds::test_a1("1:C3").is_row_range());
     }
 
     #[test]
     fn test_has_column() {
-        assert!(RefRangeBounds::test("A").has_column(1));
-        assert!(!RefRangeBounds::test("A").has_column(2));
-        assert!(RefRangeBounds::test("A:B").has_column(1));
-        assert!(RefRangeBounds::test("A:B").has_column(2));
-        assert!(!RefRangeBounds::test("A:B").has_column(3));
+        assert!(RefRangeBounds::test_a1("A").has_column(1));
+        assert!(!RefRangeBounds::test_a1("A").has_column(2));
+        assert!(RefRangeBounds::test_a1("A:B").has_column(1));
+        assert!(RefRangeBounds::test_a1("A:B").has_column(2));
+        assert!(!RefRangeBounds::test_a1("A:B").has_column(3));
 
-        assert!(!RefRangeBounds::test("A1").has_column(1));
-        assert!(!RefRangeBounds::test("1").has_column(1));
-        assert!(!RefRangeBounds::test("A1:C3").has_column(2));
+        assert!(!RefRangeBounds::test_a1("A1").has_column(1));
+        assert!(!RefRangeBounds::test_a1("1").has_column(1));
+        assert!(!RefRangeBounds::test_a1("A1:C3").has_column(2));
     }
 
     #[test]
     fn test_has_row() {
-        assert!(RefRangeBounds::test("1").has_row(1));
-        assert!(!RefRangeBounds::test("1").has_row(2));
-        assert!(RefRangeBounds::test("1:3").has_row(1));
-        assert!(RefRangeBounds::test("1:3").has_row(2));
-        assert!(RefRangeBounds::test("1:3").has_row(3));
-        assert!(!RefRangeBounds::test("1:3").has_row(4));
+        assert!(RefRangeBounds::test_a1("1").has_row(1));
+        assert!(!RefRangeBounds::test_a1("1").has_row(2));
+        assert!(RefRangeBounds::test_a1("1:3").has_row(1));
+        assert!(RefRangeBounds::test_a1("1:3").has_row(2));
+        assert!(RefRangeBounds::test_a1("1:3").has_row(3));
+        assert!(!RefRangeBounds::test_a1("1:3").has_row(4));
 
-        assert!(!RefRangeBounds::test("A1").has_row(1));
-        assert!(!RefRangeBounds::test("A").has_row(1));
-        assert!(!RefRangeBounds::test("A1:C3").has_row(2));
+        assert!(!RefRangeBounds::test_a1("A1").has_row(1));
+        assert!(!RefRangeBounds::test_a1("A").has_row(1));
+        assert!(!RefRangeBounds::test_a1("A1:C3").has_row(2));
     }
 
     #[test]
     fn test_selected_columns() {
-        assert_eq!(RefRangeBounds::test("A1").selected_columns(1, 10), vec![1]);
-        assert_eq!(RefRangeBounds::test("A").selected_columns(1, 10), vec![1]);
         assert_eq!(
-            RefRangeBounds::test("A:B").selected_columns(1, 10),
+            RefRangeBounds::test_a1("A1").selected_columns(1, 10),
+            vec![1]
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("A").selected_columns(1, 10),
+            vec![1]
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("A:B").selected_columns(1, 10),
             vec![1, 2]
         );
         assert_eq!(
-            RefRangeBounds::test("A1:B2").selected_columns(1, 10),
+            RefRangeBounds::test_a1("A1:B2").selected_columns(1, 10),
             vec![1, 2]
         );
         assert_eq!(
-            RefRangeBounds::test("A1:D1").selected_columns(1, 10),
+            RefRangeBounds::test_a1("A1:D1").selected_columns(1, 10),
             vec![1, 2, 3, 4]
         );
         assert_eq!(
-            RefRangeBounds::test("1:D").selected_columns(1, 10),
+            RefRangeBounds::test_a1("1:D").selected_columns(1, 10),
             vec![4, 5, 6, 7, 8, 9, 10]
         );
         assert_eq!(
-            RefRangeBounds::test("A1:C3").selected_columns(1, 10),
+            RefRangeBounds::test_a1("A1:C3").selected_columns(1, 10),
             vec![1, 2, 3]
         );
         assert_eq!(
-            RefRangeBounds::test("A1:").selected_columns(1, 10),
+            RefRangeBounds::test_a1("A1:").selected_columns(1, 10),
             vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         );
         assert_eq!(
-            RefRangeBounds::test("*").selected_columns(2, 5),
+            RefRangeBounds::test_a1("*").selected_columns(2, 5),
             vec![2, 3, 4, 5]
         );
         assert_eq!(
-            RefRangeBounds::test(":D").selected_columns(2, 5),
+            RefRangeBounds::test_a1(":D").selected_columns(2, 5),
             vec![4, 5]
         );
         assert_eq!(
-            RefRangeBounds::test("10").selected_columns(2, 5),
+            RefRangeBounds::test_a1("10").selected_columns(2, 5),
             vec![2, 3, 4, 5]
         );
-        assert_eq!(RefRangeBounds::test("4:E").selected_columns(2, 5), vec![5]);
+        assert_eq!(
+            RefRangeBounds::test_a1("4:E").selected_columns(2, 5),
+            vec![5]
+        );
     }
 
     #[test]
     fn test_selected_rows() {
-        assert_eq!(RefRangeBounds::test("A1").selected_rows(1, 10), vec![1]);
-        assert_eq!(RefRangeBounds::test("1").selected_rows(1, 10), vec![1]);
+        assert_eq!(RefRangeBounds::test_a1("A1").selected_rows(1, 10), vec![1]);
+        assert_eq!(RefRangeBounds::test_a1("1").selected_rows(1, 10), vec![1]);
         assert_eq!(
-            RefRangeBounds::test("1:3").selected_rows(1, 10),
+            RefRangeBounds::test_a1("1:3").selected_rows(1, 10),
             vec![1, 2, 3]
         );
         assert_eq!(
-            RefRangeBounds::test("A1:B2").selected_rows(1, 10),
+            RefRangeBounds::test_a1("A1:B2").selected_rows(1, 10),
             vec![1, 2]
         );
         assert_eq!(
-            RefRangeBounds::test("A1:A4").selected_rows(1, 10),
+            RefRangeBounds::test_a1("A1:A4").selected_rows(1, 10),
             vec![1, 2, 3, 4]
         );
         assert_eq!(
-            RefRangeBounds::test("1:4").selected_rows(1, 10),
+            RefRangeBounds::test_a1("1:4").selected_rows(1, 10),
             vec![1, 2, 3, 4]
         );
         assert_eq!(
-            RefRangeBounds::test("A1:C3").selected_rows(1, 10),
+            RefRangeBounds::test_a1("A1:C3").selected_rows(1, 10),
             vec![1, 2, 3]
         );
         assert_eq!(
-            RefRangeBounds::test("A1:").selected_rows(1, 10),
+            RefRangeBounds::test_a1("A1:").selected_rows(1, 10),
             vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         );
         assert_eq!(
-            RefRangeBounds::test(":4").selected_rows(2, 10),
+            RefRangeBounds::test_a1(":4").selected_rows(2, 10),
             vec![4, 5, 6, 7, 8, 9, 10]
         );
         assert_eq!(
-            RefRangeBounds::test("*").selected_rows(2, 5),
+            RefRangeBounds::test_a1("*").selected_rows(2, 5),
             vec![2, 3, 4, 5]
         );
         assert_eq!(
-            RefRangeBounds::test("A").selected_rows(2, 5),
+            RefRangeBounds::test_a1("A").selected_rows(2, 5),
             vec![2, 3, 4, 5]
         );
         assert_eq!(
-            RefRangeBounds::test("C:E5").selected_rows(1, 10),
+            RefRangeBounds::test_a1("C:E5").selected_rows(1, 10),
             vec![5, 6, 7, 8, 9, 10]
         );
         assert_eq!(
-            RefRangeBounds::test("E5:C").selected_rows(1, 10),
+            RefRangeBounds::test_a1("E5:C").selected_rows(1, 10),
             vec![5, 6, 7, 8, 9, 10]
         );
     }
 
     #[test]
     fn test_is_single_cell() {
-        assert!(RefRangeBounds::test("A1").is_single_cell());
-        assert!(!RefRangeBounds::test("A").is_single_cell());
-        assert!(!RefRangeBounds::test("3").is_single_cell());
-        assert!(!RefRangeBounds::test("A1:B2").is_single_cell());
+        assert!(RefRangeBounds::test_a1("A1").is_single_cell());
+        assert!(!RefRangeBounds::test_a1("A").is_single_cell());
+        assert!(!RefRangeBounds::test_a1("3").is_single_cell());
+        assert!(!RefRangeBounds::test_a1("A1:B2").is_single_cell());
     }
 
     #[test]
     fn test_selected_columns_finite() {
         assert_eq!(
-            RefRangeBounds::test("A1").selected_columns_finite(),
+            RefRangeBounds::test_a1("A1").selected_columns_finite(),
             vec![1]
         );
-        assert_eq!(RefRangeBounds::test("A").selected_columns_finite(), vec![1]);
         assert_eq!(
-            RefRangeBounds::test("A:B").selected_columns_finite(),
+            RefRangeBounds::test_a1("A").selected_columns_finite(),
+            vec![1]
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("A:B").selected_columns_finite(),
             vec![1, 2]
         );
-        assert!(RefRangeBounds::test("A1:")
+        assert!(RefRangeBounds::test_a1("A1:")
             .selected_columns_finite()
             .is_empty());
-        assert!(RefRangeBounds::test("*")
+        assert!(RefRangeBounds::test_a1("*")
             .selected_columns_finite()
             .is_empty());
-        assert!(RefRangeBounds::test(":B")
+        assert!(RefRangeBounds::test_a1(":B")
             .selected_columns_finite()
             .is_empty());
     }
 
     #[test]
     fn test_selected_rows_finite() {
-        assert_eq!(RefRangeBounds::test("A1").selected_rows_finite(), vec![1]);
-        assert_eq!(RefRangeBounds::test("1").selected_rows_finite(), vec![1]);
         assert_eq!(
-            RefRangeBounds::test("1:3").selected_rows_finite(),
+            RefRangeBounds::test_a1("A1").selected_rows_finite(),
+            vec![1]
+        );
+        assert_eq!(RefRangeBounds::test_a1("1").selected_rows_finite(), vec![1]);
+        assert_eq!(
+            RefRangeBounds::test_a1("1:3").selected_rows_finite(),
             vec![1, 2, 3]
         );
-        assert!(RefRangeBounds::test("A1:")
+        assert!(RefRangeBounds::test_a1("A1:")
             .selected_rows_finite()
             .is_empty());
-        assert!(RefRangeBounds::test("*").selected_rows_finite().is_empty());
-        assert!(RefRangeBounds::test(":3").selected_rows_finite().is_empty());
+        assert!(RefRangeBounds::test_a1("*")
+            .selected_rows_finite()
+            .is_empty());
+        assert!(RefRangeBounds::test_a1(":3")
+            .selected_rows_finite()
+            .is_empty());
     }
 
     #[test]
     fn test_translate_in_place() {
         // Test single cell translation
-        let mut range = RefRangeBounds::test("A1");
+        let mut range = RefRangeBounds::test_a1("A1");
         range.translate_in_place(1, 1);
         assert_eq!(range.to_string(), "B2");
 
         // Test range translation
-        let mut range = RefRangeBounds::test("A1:C3");
+        let mut range = RefRangeBounds::test_a1("A1:C3");
         range.translate_in_place(1, 1);
         assert_eq!(range.to_string(), "B2:D4");
 
         // Test column range translation
-        let mut range = RefRangeBounds::test("A:C");
+        let mut range = RefRangeBounds::test_a1("A:C");
         range.translate_in_place(1, 0);
         assert_eq!(range.to_string(), "B:D");
 
         // Test row range translation
-        let mut range = RefRangeBounds::test("1:3");
+        let mut range = RefRangeBounds::test_a1("1:3");
         range.translate_in_place(0, 1);
         assert_eq!(range.to_string(), "2:4");
 
         // Test negative translation
-        let mut range = RefRangeBounds::test("B2:D4");
+        let mut range = RefRangeBounds::test_a1("B2:D4");
         range.translate_in_place(-1, -1);
         assert_eq!(range.to_string(), "A1:C3");
 
         // Test zero translation
-        let mut range = RefRangeBounds::test("A1:C3");
+        let mut range = RefRangeBounds::test_a1("A1:C3");
         range.translate_in_place(0, 0);
         assert_eq!(range.to_string(), "A1:C3");
 
         // Test that * remains unchanged
-        let mut range = RefRangeBounds::test("*");
+        let mut range = RefRangeBounds::test_a1("*");
         range.translate_in_place(1, 1);
         assert_eq!(range.to_string(), "*");
 
         // Test negative translation capping
-        let mut range = RefRangeBounds::test("A1");
+        let mut range = RefRangeBounds::test_a1("A1");
         range.translate_in_place(-10, -10);
         assert_eq!(range.to_string(), "A1");
     }
@@ -698,49 +717,49 @@ mod tests {
     #[test]
     fn test_translate() {
         // Test single cell translation
-        let range = RefRangeBounds::test("A1");
+        let range = RefRangeBounds::test_a1("A1");
         let translated = range.translate(1, 1);
         assert_eq!(translated.to_string(), "B2");
         assert_eq!(range.to_string(), "A1");
 
         // Test range translation
-        let range = RefRangeBounds::test("A1:C3");
+        let range = RefRangeBounds::test_a1("A1:C3");
         let translated = range.translate(1, 1);
         assert_eq!(translated.to_string(), "B2:D4");
         assert_eq!(range.to_string(), "A1:C3");
 
         // Test column range translation
-        let range = RefRangeBounds::test("A:C");
+        let range = RefRangeBounds::test_a1("A:C");
         let translated = range.translate(1, 0);
         assert_eq!(translated.to_string(), "B:D");
         assert_eq!(range.to_string(), "A:C");
 
         // Test row range translation
-        let range = RefRangeBounds::test("1:3");
+        let range = RefRangeBounds::test_a1("1:3");
         let translated = range.translate(0, 1);
         assert_eq!(translated.to_string(), "2:4");
         assert_eq!(range.to_string(), "1:3");
 
         // Test negative translation
-        let range = RefRangeBounds::test("B2:D4");
+        let range = RefRangeBounds::test_a1("B2:D4");
         let translated = range.translate(-1, -1);
         assert_eq!(translated.to_string(), "A1:C3");
         assert_eq!(range.to_string(), "B2:D4");
 
         // Test zero translation
-        let range = RefRangeBounds::test("A1:C3");
+        let range = RefRangeBounds::test_a1("A1:C3");
         let translated = range.translate(0, 0);
         assert_eq!(translated.to_string(), "A1:C3");
         assert_eq!(range.to_string(), "A1:C3");
 
         // Test that * remains unchanged
-        let range = RefRangeBounds::test("*");
+        let range = RefRangeBounds::test_a1("*");
         let translated = range.translate(1, 1);
         assert_eq!(translated.to_string(), "*");
         assert_eq!(range.to_string(), "*");
 
         // Test negative translation capping
-        let range = RefRangeBounds::test("A1");
+        let range = RefRangeBounds::test_a1("A1");
         let translated = range.translate(-10, -10);
         assert_eq!(translated.to_string(), "A1");
         assert_eq!(range.to_string(), "A1");
@@ -748,32 +767,32 @@ mod tests {
 
     #[test]
     fn test_is_all() {
-        assert!(RefRangeBounds::test("*").is_all());
-        assert!(!RefRangeBounds::test("A1").is_all());
-        assert!(!RefRangeBounds::test("A1:B2").is_all());
+        assert!(RefRangeBounds::test_a1("*").is_all());
+        assert!(!RefRangeBounds::test_a1("A1").is_all());
+        assert!(!RefRangeBounds::test_a1("A1:B2").is_all());
     }
 
     #[test]
     fn test_contains_pos() {
-        assert!(RefRangeBounds::test("A1").contains_pos(Pos::new(1, 1)));
-        assert!(!RefRangeBounds::test("A1").contains_pos(Pos::new(2, 1)));
-        assert!(RefRangeBounds::test("A1:B2").contains_pos(Pos::new(1, 1)));
-        assert!(RefRangeBounds::test("A1:B2").contains_pos(Pos::new(2, 2)));
-        assert!(!RefRangeBounds::test("A1:B2").contains_pos(Pos::new(3, 3)));
+        assert!(RefRangeBounds::test_a1("A1").contains_pos(Pos::new(1, 1)));
+        assert!(!RefRangeBounds::test_a1("A1").contains_pos(Pos::new(2, 1)));
+        assert!(RefRangeBounds::test_a1("A1:B2").contains_pos(Pos::new(1, 1)));
+        assert!(RefRangeBounds::test_a1("A1:B2").contains_pos(Pos::new(2, 2)));
+        assert!(!RefRangeBounds::test_a1("A1:B2").contains_pos(Pos::new(3, 3)));
 
-        assert!(RefRangeBounds::test("A").contains_pos(Pos::new(1, 1)));
-        assert!(RefRangeBounds::test("A").contains_pos(Pos::new(1, 5)));
-        assert!(!RefRangeBounds::test("A").contains_pos(Pos::new(2, 1)));
+        assert!(RefRangeBounds::test_a1("A").contains_pos(Pos::new(1, 1)));
+        assert!(RefRangeBounds::test_a1("A").contains_pos(Pos::new(1, 5)));
+        assert!(!RefRangeBounds::test_a1("A").contains_pos(Pos::new(2, 1)));
 
-        assert!(RefRangeBounds::test("1").contains_pos(Pos::new(1, 1)));
-        assert!(RefRangeBounds::test("1").contains_pos(Pos::new(5, 1)));
-        assert!(!RefRangeBounds::test("1").contains_pos(Pos::new(1, 2)));
+        assert!(RefRangeBounds::test_a1("1").contains_pos(Pos::new(1, 1)));
+        assert!(RefRangeBounds::test_a1("1").contains_pos(Pos::new(5, 1)));
+        assert!(!RefRangeBounds::test_a1("1").contains_pos(Pos::new(1, 2)));
 
-        assert!(RefRangeBounds::test("*").contains_pos(Pos::new(10, 145)));
+        assert!(RefRangeBounds::test_a1("*").contains_pos(Pos::new(10, 145)));
 
-        assert!(RefRangeBounds::test("A1:D10").contains_pos(Pos::new(3, 3)));
-        assert!(!RefRangeBounds::test("A1:D10").contains_pos(Pos::new(11, 1)));
+        assert!(RefRangeBounds::test_a1("A1:D10").contains_pos(Pos::new(3, 3)));
+        assert!(!RefRangeBounds::test_a1("A1:D10").contains_pos(Pos::new(11, 1)));
 
-        assert!(RefRangeBounds::test("B7:G7").contains_pos(Pos::new(2, 7)));
+        assert!(RefRangeBounds::test_a1("B7:G7").contains_pos(Pos::new(2, 7)));
     }
 }

@@ -319,6 +319,12 @@ impl Rect {
     pub fn contains_row(&self, row: i64) -> bool {
         row >= self.min.y && row <= self.max.y
     }
+
+    #[cfg(test)]
+    /// Creates a rectangle from a string like "A1:B2".
+    pub fn test_a1(s: &str) -> Self {
+        crate::CellRefRange::test(s).to_rect().unwrap()
+    }
 }
 
 impl From<Pos> for Rect {
@@ -655,5 +661,12 @@ mod test {
         let mut rect = Rect::new(0, 0, 1, 1);
         rect.union_in_place(&Rect::new(1, 1, 2, 2));
         assert_eq!(rect, Rect::new(0, 0, 2, 2));
+    }
+
+    #[test]
+    fn test_test() {
+        let rect = Rect::test_a1("B2:D4");
+        assert_eq!(rect.min, Pos { x: 2, y: 2 });
+        assert_eq!(rect.max, Pos { x: 4, y: 4 });
     }
 }

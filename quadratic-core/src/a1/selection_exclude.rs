@@ -76,10 +76,10 @@ impl A1Selection {
         let mut bottom: Option<u64> = None;
         if end_row.is_some_and(|r| r.coord > exclude.max.y as u64) {
             bottom = Some(exclude.max.y as u64);
-            let start = CellRefRangeEnd::new_relative_xy(
-                start_col.map_or(1, |c| c.coord),
-                exclude.max.y as u64 + 1,
-            );
+            let start = CellRefRangeEnd {
+                col: start_col,
+                row: Some(CellRefCoord::new_rel(exclude.max.y as u64 + 1)),
+            };
             let end = CellRefRangeEnd {
                 col: end_col,
                 row: end_row,
@@ -118,14 +118,12 @@ impl A1Selection {
 
         // Left rectangle - only add if there's space to the left of the exclude rect
         if start_col.is_some_and(|c| c.coord < exclude.min.x as u64) {
-            let start = CellRefRangeEnd::new_relative_xy(
-                start_col.map_or(1, |c| c.coord),
-                top.unwrap_or(start_row.map_or(1, |r| r.coord)),
-            );
+            let start_row = start_col.map_or(1, |c| c.coord);
+            let start = CellRefRangeEnd::new_relative_xy(start_row, top.unwrap_or(start_row));
             let end = CellRefRangeEnd {
                 col: Some(CellRefCoord::new_rel(exclude.min.x as u64 - 1)),
                 row: Some(CellRefCoord::new_rel(
-                    bottom.unwrap_or(end_row.map_or(1, |r| r.coord)),
+                    bottom.unwrap_or(end_row.map_or(start_row, |r| r.coord)),
                 )),
             };
             ranges.push(RefRangeBounds {
@@ -133,22 +131,20 @@ impl A1Selection {
                 end: if start != end { Some(end) } else { None },
             });
         }
-        // also add a left rectangle if the there is no start_col and the
-        // excluded rect is to the right of 1
+        // also add a left rectangle if the there is no start_col
         else if start_col.is_none() && exclude.min.x > 1 {
-            let left_end_x = exclude.min.x as u64;
-            if left_end_x >= start_col.map_or(1, |c| c.coord as i64) as u64 {
-                let start =
-                    CellRefRangeEnd::new_relative_xy(1, top.unwrap_or(exclude.min.y as u64));
-                let end = CellRefRangeEnd::new_relative_xy(
-                    left_end_x - 1,
-                    bottom.unwrap_or(exclude.max.y as u64),
-                );
-                ranges.push(RefRangeBounds {
-                    start,
-                    end: if start != end { Some(end) } else { None },
-                });
-            }
+            let start = CellRefRangeEnd::new_relative_xy(
+                1,
+                top.unwrap_or(start_row.map_or(1, |r| r.coord)),
+            );
+            let end = CellRefRangeEnd::new_relative_xy(
+                exclude.min.x as u64 - 1,
+                bottom.unwrap_or(end_row.map_or(start_row.map_or(1, |r| r.coord), |r| r.coord)),
+            );
+            ranges.push(RefRangeBounds {
+                start,
+                end: if start != end { Some(end) } else { None },
+            });
         }
 
         // Right rectangle - only add if there's space to the right of the exclude rect
@@ -177,8 +173,21 @@ impl A1Selection {
                 ),
                 end: Some(CellRefRangeEnd {
                     col: None,
-                    row: bottom.map(CellRefCoord::new_rel),
+                    row: Some(CellRefCoord::new_rel(
+                        bottom.unwrap_or(range.end.unwrap().row.map_or(1, |r| r.coord)),
+                    )),
                 }),
+            });
+        } else if range.end.is_none() && range.start.col.is_none() {
+            // handle an infinite column that's broken by the excluded rect
+            ranges.push(RefRangeBounds {
+                start: CellRefRangeEnd::new_relative_xy(
+                    exclude.max.x as u64 + 1,
+                    start_row.map_or(1, |r| r.coord),
+                ),
+                end: Some(CellRefRangeEnd::new_infinite_row(
+                    start_row.map_or(1, |r| r.coord),
+                )),
             });
         }
 
@@ -393,40 +402,25 @@ mod test {
 
     #[test]
     fn test_exclude_all() {
-        let rects = A1Selection::find_excluded_rects(RefRangeBounds::ALL, Rect::new(2, 2, 4, 4));
+        let rects = A1Selection::find_excluded_rects(RefRangeBounds::ALL, Rect::test_a1("B2:D4"));
         assert_eq!(
             rects,
             vec![
                 // top
                 CellRefRange::Sheet {
-                    range: RefRangeBounds {
-                        start: CellRefRangeEnd::new_infinite_row(1),
-                        end: None
-                    }
+                    range: RefRangeBounds::test_a1("1")
                 },
                 // bottom
                 CellRefRange::Sheet {
-                    range: RefRangeBounds {
-                        start: CellRefRangeEnd::new_infinite_row(5),
-                        end: Some(CellRefRangeEnd::UNBOUNDED)
-                    }
+                    range: RefRangeBounds::test_a1("5:")
                 },
                 // left
                 CellRefRange::Sheet {
-                    range: RefRangeBounds {
-                        start: CellRefRangeEnd::new_relative_xy(1, 2),
-                        end: Some(CellRefRangeEnd::new_relative_xy(1, 4))
-                    }
+                    range: RefRangeBounds::test_a1("A2:A4")
                 },
                 // right
                 CellRefRange::Sheet {
-                    range: RefRangeBounds {
-                        start: CellRefRangeEnd::new_relative_xy(5, 2),
-                        end: Some(CellRefRangeEnd {
-                            col: None,
-                            row: Some(CellRefCoord::new_rel(4)),
-                        })
-                    }
+                    range: RefRangeBounds::test_a1("E2:4"),
                 },
             ]
         );
@@ -609,5 +603,56 @@ mod test {
                 CellRefRange::test("F2:F3")
             ]
         )
+    }
+
+    #[test]
+    fn test_exclude_cells_row() {
+        let mut selection = A1Selection::test("1");
+        selection.exclude_cells(pos![A1], None);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("B1:1")]);
+
+        let mut selection = A1Selection::test("2");
+        selection.exclude_cells(pos![B1], Some(pos![C5]));
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test("A2"), CellRefRange::test("D2:2")]
+        );
+    }
+
+    #[test]
+    fn test_exclude_cells_rows() {
+        let mut selection = A1Selection::test("2:5");
+        selection.exclude_cells(pos![B2], None);
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::test("3:5"),
+                CellRefRange::test("A2"),
+                CellRefRange::test("C2:2")
+            ]
+        );
+
+        let mut selection = A1Selection::test("2:5");
+        selection.exclude_cells(pos![B3], Some(pos![C4]));
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::test("2"),
+                CellRefRange::test("5"),
+                CellRefRange::test("A3:A4"),
+                CellRefRange::test("D3:4")
+            ]
+        );
+
+        let mut selection = A1Selection::test("2:5");
+        selection.exclude_cells(pos![B3], Some(pos![C5]));
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::test("2"),
+                CellRefRange::test("A3:A5"),
+                CellRefRange::test("D3:5"),
+            ]
+        );
     }
 }
