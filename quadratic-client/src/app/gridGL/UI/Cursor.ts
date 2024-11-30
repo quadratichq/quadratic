@@ -6,6 +6,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
@@ -261,6 +262,23 @@ export class Cursor extends Container {
     this.graphics.endFill();
   }
 
+  private drawUnselectDown() {
+    const { unselectDown } = pixiApp.pointer.pointerDown;
+    if (!unselectDown) return;
+    const foreground = pixiApp.accentColor;
+    this.graphics.lineStyle({ color: foreground, width: 1 });
+    const background = getCSSVariableTint('background');
+    this.graphics.beginFill(background, 0.5);
+    const rectangle = sheets.sheet.getScreenRectangle(
+      unselectDown.x,
+      unselectDown.y,
+      unselectDown.width + 1,
+      unselectDown.height + 1
+    );
+    this.graphics.drawShape(rectangle);
+    this.graphics.endFill();
+  }
+
   // Besides the dirty flag, we also need to update the cursor when the viewport
   // is dirty and columnRow is set because the columnRow selection is drawn to
   // visible bounds on the screen, not to the selection size.
@@ -294,6 +312,10 @@ export class Cursor extends Container {
         if (!columnRow) {
           this.drawCursorIndicator();
         }
+      }
+
+      if (pixiApp.pointer.pointerDown.unselectDown) {
+        this.drawUnselectDown();
       }
 
       pixiApp.setViewportDirty();

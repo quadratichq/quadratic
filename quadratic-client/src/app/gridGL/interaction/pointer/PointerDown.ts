@@ -5,7 +5,7 @@ import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeybo
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isLinux } from '@/shared/utils/isLinux';
 import { isMac } from '@/shared/utils/isMac';
-import { Point } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
 import { inlineEditorMonaco } from '../../HTMLGrid/inlineEditor/inlineEditorMonaco';
@@ -24,6 +24,9 @@ export class PointerDown {
   private previousPosition?: Point;
   private pointerMoved = false;
   private doubleClickTimeout?: number;
+
+  // used to track the unselect rectangle
+  unselectDown?: Rectangle;
 
   // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
   private afterShowInput?: boolean;
@@ -114,7 +117,9 @@ export class PointerDown {
     // If the user is holding cmd/ctrl and the cell is already selected, then we start the un-selection.
     if ((event.ctrlKey || event.metaKey) && cursor.contains(column, row)) {
       // todo: we should start an exclusion rectangle instead of un-selecting
-      cursor.excludeCells(column, row, column, row);
+      this.unselectDown = new Rectangle(column, row, 0, 0);
+      pixiApp.cursor.dirty = true;
+      return;
     } else if (event.shiftKey) {
       cursor.selectTo(column, row, event.metaKey || event.ctrlKey);
     } else {
@@ -135,10 +140,18 @@ export class PointerDown {
   pointerMove(world: Point, event: PointerEvent): void {
     if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
-    if (!this.active) return;
-
     const { viewport } = pixiApp;
     const sheet = sheets.sheet;
+
+    if (this.unselectDown) {
+      const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
+      this.unselectDown.width = column - this.unselectDown.left;
+      this.unselectDown.height = row - this.unselectDown.top;
+      pixiApp.cursor.dirty = true;
+      return;
+    }
+
+    if (!this.active) return;
 
     if (!this.pointerMoved && this.positionRaw) {
       if (
@@ -176,6 +189,18 @@ export class PointerDown {
     if (isLinux && isMiddleClick) {
       event.preventDefault();
       event.stopPropagation();
+    }
+
+    if (this.unselectDown) {
+      sheets.sheet.cursor.excludeCells(
+        this.unselectDown.left,
+        this.unselectDown.top,
+        this.unselectDown.right,
+        this.unselectDown.bottom
+      );
+      this.unselectDown = undefined;
+      pixiApp.cursor.dirty = true;
+      return;
     }
 
     if (this.afterShowInput) {
