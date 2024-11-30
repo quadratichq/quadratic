@@ -1,3 +1,6 @@
+// todo: fix this
+#![allow(non_local_definitions)]
+
 use crate::{
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},

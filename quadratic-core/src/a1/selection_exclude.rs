@@ -173,8 +173,6 @@ impl A1Selection {
 
     /// Excludes the given cells from the selection.
     pub fn exclude_cells(&mut self, p1: Pos, p2: Option<Pos>) {
-        dbgjs!(&p1);
-        dbgjs!(&p2);
         let mut ranges = Vec::new();
         while let Some(range) = self.ranges.drain(..).next() {
             // skip range if it's the entire range or the reverse of the entire range
@@ -496,5 +494,22 @@ mod test {
                 CellRefRange::test("C2"),
             ]
         );
+    }
+
+    #[test]
+    fn test_exclude_cells_multiple() {
+        let mut selection = A1Selection::test("A1:C3,E5:F7");
+        selection.exclude_cells(pos![B2], None);
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::test("A1:C1"),
+                CellRefRange::test("A3:C3"),
+                CellRefRange::test("A2"),
+                CellRefRange::test("C2")
+            ]
+        );
+        selection.exclude_cells(pos![A3], Some(pos![C2]));
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A1:C1")]);
     }
 }

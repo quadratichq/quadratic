@@ -1,3 +1,6 @@
+// todo: fix this
+#![allow(non_local_definitions)]
+
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;

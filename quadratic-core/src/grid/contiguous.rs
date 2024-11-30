@@ -1,3 +1,6 @@
+// todo: fix this
+#![allow(non_local_definitions)]
+
 use std::collections::{btree_map, BTreeMap};
 use std::fmt;
 

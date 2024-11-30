@@ -228,7 +228,6 @@ mod tests {
         let sheet_id = SheetId::new();
         let sheet_name_id = HashMap::new();
         let mut range = A1Range::from_a1("B", sheet_id, &sheet_name_id).unwrap();
-        dbg!(&range);
         range.translate(1, 0).unwrap();
         assert_eq!(range.range, A1RangeType::Column(RelColRow::new(3, true)));
     }

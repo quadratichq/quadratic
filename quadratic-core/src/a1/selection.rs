@@ -1,3 +1,6 @@
+// todo: fix this
+#![allow(non_local_definitions)]
+
 #[cfg(test)]
 use std::ops::RangeInclusive;
 
