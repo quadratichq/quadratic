@@ -58,8 +58,10 @@ impl A1Selection {
                 row: Some(CellRefCoord::new_rel(1)),
             };
             let end = if range.end.is_none() {
-                // if there's no end, then we use the start so it'll be removed
-                start
+                CellRefRangeEnd {
+                    col: start_col,
+                    row: Some(CellRefCoord::new_rel(exclude.min.y as u64 - 1)),
+                }
             } else {
                 CellRefRangeEnd {
                     col: end_col,
@@ -654,5 +656,22 @@ mod test {
                 CellRefRange::test("D3:5"),
             ]
         );
+    }
+
+    #[test]
+    fn test_exclude_cells_column_single_middle() {
+        let mut selection = A1Selection::test("C");
+        selection.exclude_cells(pos![C4], None);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test("C1:C3"), CellRefRange::test("C5:C")]
+        );
+    }
+
+    #[test]
+    fn test_exclude_cells_rows_single_middle() {
+        let mut selection = A1Selection::test("2");
+        selection.exclude_cells(pos![D2], None);
+        assert_eq!(selection.ranges, vec![CellRefRange::test("A2:C2"), CellRefRange::test("E2:2")]);
     }
 }
