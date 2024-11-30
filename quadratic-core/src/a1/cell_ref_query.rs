@@ -13,7 +13,7 @@ impl CellRefRange {
 
                 // if the start column is not the column we're checking for, then it's not a
                 // single column range
-                if start_col.coord as i64 != column {
+                if start_col.coord != column {
                     return false;
                 }
 
@@ -22,7 +22,7 @@ impl CellRefRange {
                     return true;
                 };
 
-                end.coord as i64 == column
+                end.coord == column
             }
         }
     }
@@ -37,7 +37,7 @@ impl CellRefRange {
 
                 // if the start row is not the row we're checking for, then it's not a
                 // single row range
-                if start_row.coord as i64 != row {
+                if start_row.coord != row {
                     return false;
                 }
 
@@ -46,7 +46,7 @@ impl CellRefRange {
                     return true;
                 };
 
-                end.coord as i64 == row
+                end.coord == row
             }
         }
     }

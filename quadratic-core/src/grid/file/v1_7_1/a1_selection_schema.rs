@@ -35,6 +35,6 @@ pub struct CellRefRangeEndSchema {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CellRefCoordSchema {
-    pub coord: u64,
+    pub coord: i64,
     pub is_absolute: bool,
 }

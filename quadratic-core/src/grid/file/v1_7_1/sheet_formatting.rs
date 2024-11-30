@@ -4,12 +4,12 @@ use super::{
     CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, NumericFormatSchema, RenderSizeSchema,
 };
 
-pub type SheetFormattingSchema = Vec<(u64, BlockSchema<Vec<(u64, BlockSchema<FormatSchema>)>>)>;
+pub type SheetFormattingSchema = Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<FormatSchema>)>>)>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct BlockSchema<T> {
-    pub start: u64,
-    pub end: u64,
+    pub start: i64,
+    pub end: i64,
     pub value: T,
 }
 

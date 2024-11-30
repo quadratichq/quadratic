@@ -11,8 +11,8 @@ use wasm_bindgen::prelude::*;
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct CellRefCoord {
-    #[cfg_attr(test, proptest(strategy = "super::PROPTEST_COORDINATE_U64"))]
-    pub coord: u64,
+    #[cfg_attr(test, proptest(strategy = "super::PROPTEST_COORDINATE_I64"))]
+    pub coord: i64,
     pub is_absolute: bool,
 }
 impl CellRefCoord {
@@ -20,7 +20,7 @@ impl CellRefCoord {
         if self.is_absolute {
             write!(f, "$")?;
         }
-        write!(f, "{}", super::column_name(self.coord))
+        write!(f, "{}", super::column_name(self.coord as u64))
     }
 
     pub(crate) fn fmt_as_row(self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -30,32 +30,30 @@ impl CellRefCoord {
         write!(f, "{}", self.coord)
     }
 
-    pub fn new_rel(coord: u64) -> Self {
+    pub fn new_rel(coord: i64) -> Self {
         let is_absolute = false;
         Self { coord, is_absolute }
     }
 
-    pub fn new_abs(coord: u64) -> Self {
+    pub fn new_abs(coord: i64) -> Self {
         let is_absolute = true;
         Self { coord, is_absolute }
     }
 
     pub fn translate_in_place(&mut self, delta: i64) {
-        self.coord = (self.coord as i64 + delta).max(1) as u64;
+        self.coord = self.coord.saturating_add(delta).max(1);
     }
 
-    pub fn translate(self, delta: i64) -> Self {
-        let coord = (self.coord as i64 + delta).max(1) as u64;
-        Self {
-            coord,
-            is_absolute: self.is_absolute,
-        }
+    pub fn translate(&self, delta: i64) -> Self {
+        let mut coord = *self;
+        coord.translate_in_place(delta);
+        coord
     }
 }
 
 /// Returns whether `range` might intersect the region from `start` to `end`.
 pub(crate) fn range_might_intersect(
-    range: RangeInclusive<u64>,
+    range: RangeInclusive<i64>,
     mut start: Option<CellRefCoord>,
     mut end: Option<CellRefCoord>,
 ) -> bool {
@@ -73,7 +71,7 @@ pub(crate) fn range_might_intersect(
 ///
 /// If `coord` is `None`, returns `true`.
 pub(crate) fn range_might_contain_coord(
-    range: RangeInclusive<u64>,
+    range: RangeInclusive<i64>,
     coord: Option<CellRefCoord>,
 ) -> bool {
     match coord {

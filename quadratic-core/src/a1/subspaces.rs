@@ -21,16 +21,16 @@ pub struct A1Subspaces {
     pub all: Option<Pos>,
     /// Within each column, the (inclusive) Y coordinate after which all cells
     /// should be included.
-    pub cols: BTreeMap<u64, u64>,
+    pub cols: BTreeMap<i64, i64>,
     /// Within each row, the (inclusive) X coordinate after which all cells
     /// should be included.
-    pub rows: BTreeMap<u64, u64>,
+    pub rows: BTreeMap<i64, i64>,
     /// Rectangles which should be included.
     pub rects: Vec<Rect>,
 }
 impl A1Subspaces {
     pub fn contains_pos(&self, pos: Pos) -> bool {
-        let (px, py) = (pos.x as u64, pos.y as u64);
+        let (px, py) = (pos.x, pos.y);
         self.all.is_some_and(|q| q.x <= pos.x && q.y <= pos.y)
             || self.cols.get(&px).is_some_and(|y| y <= &py)
             || self.rows.get(&py).is_some_and(|x| x <= &px)
@@ -41,7 +41,7 @@ impl A1Subspaces {
     /// regions at `pos`.
     #[cfg(test)]
     fn contains_pos_disjoint(&self, pos: Pos) -> bool {
-        let (px, py) = (pos.x as u64, pos.y as u64);
+        let (px, py) = (pos.x, pos.y);
         let count = self.all.is_some_and(|q| q.x <= pos.x && q.y <= pos.y) as usize
             + self.cols.get(&px).is_some_and(|y| y <= &py) as usize
             + self.rows.get(&py).is_some_and(|x| x <= &px) as usize
@@ -72,10 +72,10 @@ impl A1Subspaces {
                     // If `old_all` completely contains `new_all`, then these
                     // loops will have zero iterations.
                     for col in new_all.x..old_all.x {
-                        self.add_column(col as u64, new_all.y as u64..);
+                        self.add_column(col, new_all.y..);
                     }
                     for row in new_all.y..old_all.y {
-                        self.add_row(row as u64, new_all.x as u64..);
+                        self.add_row(row, new_all.x..);
                     }
                     old_all
                 }
@@ -84,7 +84,7 @@ impl A1Subspaces {
         });
     }
 
-    pub fn add_row(&mut self, row: u64, x_range: std::ops::RangeFrom<u64>) {
+    pub fn add_row(&mut self, row: i64, x_range: std::ops::RangeFrom<i64>) {
         match self.rows.entry(row) {
             btree_map::Entry::Vacant(e) => {
                 e.insert(x_range.start);
@@ -97,7 +97,7 @@ impl A1Subspaces {
         }
     }
 
-    pub fn add_column(&mut self, col: u64, y_range: std::ops::RangeFrom<u64>) {
+    pub fn add_column(&mut self, col: i64, y_range: std::ops::RangeFrom<i64>) {
         match self.cols.entry(col) {
             btree_map::Entry::Vacant(e) => {
                 e.insert(y_range.start);
@@ -114,12 +114,14 @@ impl A1Subspaces {
     pub fn intersects_rect(&self, rect: Rect) -> bool {
         self.all
             .is_some_and(|all| all.x <= rect.max.x && all.y <= rect.max.y)
-            || self.cols.iter().any(|(&col, &y_start)| {
-                rect.x_range().contains(&(col as i64)) && y_start <= rect.max.y as u64
-            })
-            || self.rows.iter().any(|(&row, &x_start)| {
-                rect.y_range().contains(&(row as i64)) && x_start <= rect.max.x as u64
-            })
+            || self
+                .cols
+                .iter()
+                .any(|(&col, &y_start)| rect.x_range().contains(&col) && y_start <= rect.max.y)
+            || self
+                .rows
+                .iter()
+                .any(|(&row, &x_start)| rect.y_range().contains(&row) && x_start <= rect.max.x)
             || self.rects.iter().any(|r| r.intersects(rect))
     }
 
@@ -138,10 +140,10 @@ impl A1Subspaces {
         for (col, y_start) in cols {
             // Check for overlap between the new column and `all`.
             if let Some(all) = self.all {
-                if col >= all.x as u64 {
-                    if y_start < all.y as u64 {
+                if col >= all.x {
+                    if y_start < all.y {
                         // Deal with the finite new region later.
-                        rects.push(Rect::new(col as i64, y_start as i64, col as i64, all.y - 1));
+                        rects.push(Rect::new(col, y_start, col, all.y - 1));
                     }
                     continue; // The infinite region is completely contained by `all`.
                 }
@@ -153,10 +155,10 @@ impl A1Subspaces {
         for (row, mut x_start) in rows {
             // Check for overlap between the new row and `all`.
             if let Some(all) = self.all {
-                if row >= all.y as u64 {
-                    if x_start < all.x as u64 {
+                if row >= all.y {
+                    if x_start < all.x {
                         // Deal with the finite new region later.
-                        rects.push(Rect::new(x_start as i64, row as i64, all.x - 1, row as i64));
+                        rects.push(Rect::new(x_start, row, all.x - 1, row));
                     }
                     continue; // The infinite region is completely contained by `all`.
                 }
@@ -169,12 +171,7 @@ impl A1Subspaces {
                 .find(|(_col, &y_start)| y_start <= row)
             {
                 // Deal with the finite partially-overlapping region later.
-                rects.push(Rect::new(
-                    x_start as i64,
-                    row as i64,
-                    last_overlapping_col as i64,
-                    row as i64,
-                ));
+                rects.push(Rect::new(x_start, row, last_overlapping_col, row));
                 x_start = last_overlapping_col + 1;
             }
 
@@ -194,22 +191,20 @@ impl A1Subspaces {
                 }
             }
 
-            for (&col, &y_start) in self.cols.range(new_rect.x_range_u64()) {
-                if y_start <= new_rect.max.y as u64 {
+            for (&col, &y_start) in self.cols.range(new_rect.x_range()) {
+                if y_start <= new_rect.max.y {
                     // TODO: if this runs for many columns, the result could be
                     // very very inefficient (one rectangle per column).
-                    let rect_of_col =
-                        Rect::new(col as i64, y_start as i64, col as i64, new_rect.max.y);
+                    let rect_of_col = Rect::new(col, y_start, col, new_rect.max.y);
                     new_rects = subtract_from_each(&new_rects, rect_of_col);
                 }
             }
 
-            for (&row, &x_start) in self.rows.range(new_rect.y_range_u64()) {
-                if x_start <= new_rect.max.x as u64 {
+            for (&row, &x_start) in self.rows.range(new_rect.y_range()) {
+                if x_start <= new_rect.max.x {
                     // TODO: if this runs for many rows, the result could be
                     // very very inefficient (one rectangle per row).
-                    let rect_of_row =
-                        Rect::new(x_start as i64, row as i64, new_rect.max.x, row as i64);
+                    let rect_of_row = Rect::new(x_start, row, new_rect.max.x, row);
                     new_rects = subtract_from_each(&new_rects, rect_of_row);
                 }
             }
@@ -226,12 +221,10 @@ impl A1Subspaces {
         let mut ret = A1Subspaces::default();
         for (x1, y1, x2, y2) in contiguous.to_rects() {
             match (x2, y2) {
-                (None, None) => ret.all = Some(Pos::new(x1 as i64, y1 as i64)),
+                (None, None) => ret.all = Some(Pos::new(x1, y1)),
                 (None, Some(y2)) => ret.rows.extend((y1..=y2).map(|y| (y, x1))),
                 (Some(x2), None) => ret.cols.extend((x1..=x2).map(|x| (x, y1))),
-                (Some(x2), Some(y2)) => ret
-                    .rects
-                    .push(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64)),
+                (Some(x2), Some(y2)) => ret.rects.push(Rect::new(x1, y1, x2, y2)),
             }
         }
         ret

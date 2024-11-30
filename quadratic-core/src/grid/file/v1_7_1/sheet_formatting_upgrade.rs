@@ -8,8 +8,8 @@ use super::{BlockSchema, FormatSchema};
 #[derive(Default)]
 pub struct SheetFormattingUpgrade(Contiguous2D<FormatSchema>);
 impl IntoIterator for SheetFormattingUpgrade {
-    type Item = (u64, BlockSchema<ContiguousBlocks<FormatSchema>>);
-    type IntoIter = btree_map::IntoIter<u64, BlockSchema<ContiguousBlocks<FormatSchema>>>;
+    type Item = (i64, BlockSchema<ContiguousBlocks<FormatSchema>>);
+    type IntoIter = btree_map::IntoIter<i64, BlockSchema<ContiguousBlocks<FormatSchema>>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -20,17 +20,17 @@ impl SheetFormattingUpgrade {
         self.0.set_rect(0, 0, None, None, values);
     }
 
-    pub fn set_column(&mut self, column: u64, values: Option<FormatSchema>) {
+    pub fn set_column(&mut self, column: i64, values: Option<FormatSchema>) {
         self.0.set_column(column, values);
     }
 
-    pub fn set_row(&mut self, row: u64, values: Option<FormatSchema>) {
+    pub fn set_row(&mut self, row: i64, values: Option<FormatSchema>) {
         self.0.set_row(row, values);
     }
 
-    pub fn set_column_repeat(&mut self, x: u64, y: u64, len: u32, values: Option<FormatSchema>) {
+    pub fn set_column_repeat(&mut self, x: i64, y: i64, len: u32, values: Option<FormatSchema>) {
         self.0
-            .set_rect(x, y, Some(x), Some(y + len as u64 - 1), values);
+            .set_rect(x, y, Some(x), Some(y + len as i64 - 1), values);
     }
 }
 
@@ -46,8 +46,8 @@ impl<T> Default for Contiguous2D<T> {
     }
 }
 impl<T> IntoIterator for Contiguous2D<T> {
-    type Item = (u64, BlockSchema<ContiguousBlocks<T>>);
-    type IntoIter = btree_map::IntoIter<u64, BlockSchema<ContiguousBlocks<T>>>;
+    type Item = (i64, BlockSchema<ContiguousBlocks<T>>);
+    type IntoIter = btree_map::IntoIter<i64, BlockSchema<ContiguousBlocks<T>>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -76,28 +76,28 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     /// All coordinates are inclusive.
     fn set_rect(
         &mut self,
-        x1: u64,
-        y1: u64,
-        x2: Option<u64>,
-        y2: Option<u64>,
+        x1: i64,
+        y1: i64,
+        x2: Option<i64>,
+        y2: Option<i64>,
         value: Option<T>,
     ) -> Contiguous2D<Option<T>> {
         self.set_from(Contiguous2D(ContiguousBlocks::from_block(BlockSchema {
             start: x1,
-            end: x2.unwrap_or(u64::MAX).saturating_add(1),
+            end: x2.unwrap_or(i64::MAX).saturating_add(1),
             value: ContiguousBlocks::from_block(BlockSchema {
                 start: y1,
-                end: y2.unwrap_or(u64::MAX).saturating_add(1),
+                end: y2.unwrap_or(i64::MAX).saturating_add(1),
                 value,
             }),
         })))
     }
 
-    fn set_column(&mut self, column: u64, value: Option<T>) -> Contiguous2D<Option<T>> {
+    fn set_column(&mut self, column: i64, value: Option<T>) -> Contiguous2D<Option<T>> {
         self.set_rect(column, 1, Some(column), None, value)
     }
 
-    fn set_row(&mut self, row: u64, value: Option<T>) -> Contiguous2D<Option<T>> {
+    fn set_row(&mut self, row: i64, value: Option<T>) -> Contiguous2D<Option<T>> {
         self.set_rect(1, row, None, Some(row), value)
     }
 }
@@ -108,15 +108,15 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
 ///
 /// Supports a single infinite block of the same value at the end.
 #[derive(Clone, PartialEq)]
-pub struct ContiguousBlocks<T>(BTreeMap<u64, BlockSchema<T>>);
+pub struct ContiguousBlocks<T>(BTreeMap<i64, BlockSchema<T>>);
 impl<T> Default for ContiguousBlocks<T> {
     fn default() -> Self {
         Self(BTreeMap::default())
     }
 }
 impl<T> IntoIterator for ContiguousBlocks<T> {
-    type Item = (u64, BlockSchema<T>);
-    type IntoIter = btree_map::IntoIter<u64, BlockSchema<T>>;
+    type Item = (i64, BlockSchema<T>);
+    type IntoIter = btree_map::IntoIter<i64, BlockSchema<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -140,7 +140,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         self.0.is_empty()
     }
 
-    fn get_block_containing(&self, coordinate: u64) -> Option<&BlockSchema<T>> {
+    fn get_block_containing(&self, coordinate: i64) -> Option<&BlockSchema<T>> {
         self.0
             .range(..=coordinate)
             .next_back()
@@ -148,7 +148,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
             .filter(|block| block.contains(coordinate))
     }
 
-    fn remove_block_containing(&mut self, coordinate: u64) -> Option<BlockSchema<T>> {
+    fn remove_block_containing(&mut self, coordinate: i64) -> Option<BlockSchema<T>> {
         let key = self.get_block_containing(coordinate)?.start;
         self.0.remove(&key)
     }
@@ -174,12 +174,12 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
 
     /// Returns whether `self` has any values in the range from `start` to `end`.
-    fn has_any_in_range(&self, start: u64, end: u64) -> bool {
+    fn has_any_in_range(&self, start: i64, end: i64) -> bool {
         self.blocks_touching_range(start, end).next().is_some()
     }
 
     /// Iterates over blocks that touch the range from `start` to `end`.
-    fn blocks_touching_range(&self, start: u64, end: u64) -> impl Iterator<Item = &BlockSchema<T>> {
+    fn blocks_touching_range(&self, start: i64, end: i64) -> impl Iterator<Item = &BlockSchema<T>> {
         let first_block = self
             .get_block_containing(start)
             .filter(|block| block.start != start);
@@ -203,8 +203,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Removes all blocks that touch the range from `start` to `end`, in order.
     fn remove_blocks_touching_range(
         &mut self,
-        start: u64,
-        end: u64,
+        start: i64,
+        end: i64,
     ) -> impl '_ + Iterator<Item = BlockSchema<T>> {
         let block_starts = self
             .blocks_touching_range(start, end)
@@ -214,14 +214,14 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
 
     /// Returns the value at `coordinate`, or `None` if it is default.
-    fn get(&self, coordinate: u64) -> Option<&T> {
+    fn get(&self, coordinate: i64) -> Option<&T> {
         self.get_block_containing(coordinate)
             .map(|block| &block.value)
     }
 
     /// Removes all values in the range from `start` to `end` and returns a list
     /// of blocks that can be added to restore them.
-    fn remove_range(&mut self, start: u64, end: u64) -> Vec<BlockSchema<T>> {
+    fn remove_range(&mut self, start: i64, end: i64) -> Vec<BlockSchema<T>> {
         let mut to_return = vec![];
         let mut to_put_back: SmallVec<[BlockSchema<T>; 2]> = smallvec![];
 
@@ -239,7 +239,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
     /// Removes all values in the range from `start` to `end` and returns a list
     /// of blocks containing the old values that completely covers the region.
-    fn remove_range_complete(&mut self, start: u64, end: u64) -> Vec<BlockSchema<Option<T>>> {
+    fn remove_range_complete(&mut self, start: i64, end: i64) -> Vec<BlockSchema<Option<T>>> {
         let mut ret = vec![];
         let mut index = start;
         for block in self.remove_range(start, end) {
@@ -269,8 +269,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// - `R` is the data required to perform the reverse operation.
     fn update_range<R>(
         &mut self,
-        start: u64,
-        end: u64,
+        start: i64,
+        end: i64,
         update_fn: impl Fn(Option<T>) -> (Option<T>, R),
     ) -> Vec<BlockSchema<R>> {
         let mut return_blocks = vec![];
@@ -289,7 +289,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// - `R` is the data required to perform the reverse operation.
     fn update_from_blocks<U, R: Clone + PartialEq>(
         &mut self,
-        other: impl IntoIterator<Item = (u64, BlockSchema<U>)>,
+        other: impl IntoIterator<Item = (i64, BlockSchema<U>)>,
         update_fn: impl Fn(Option<T>, &U) -> (Option<T>, R),
     ) -> ContiguousBlocks<R> {
         let mut ret = ContiguousBlocks::new();
@@ -301,7 +301,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         ret
     }
 
-    fn try_merge_at(&mut self, coordinate: u64) {
+    fn try_merge_at(&mut self, coordinate: i64) {
         let Some(coordinate_before) = coordinate.checked_sub(1) else {
             return;
         };
@@ -321,8 +321,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
 impl<T: Clone + PartialEq> BlockSchema<T> {
     /// Returns the length of the block, or `None` if it is unbounded.
-    fn len(&self) -> Option<u64> {
-        (self.end < u64::MAX || self.start == self.end)
+    fn len(&self) -> Option<i64> {
+        (self.end < i64::MAX || self.start == self.end)
             .then_some(self.end.saturating_sub(self.start))
     }
 
@@ -337,12 +337,12 @@ impl<T: Clone + PartialEq> BlockSchema<T> {
     }
 
     /// Returns whether the block contains the key `coordinate`.
-    fn contains(&self, coordinate: u64) -> bool {
-        self.start <= coordinate && (coordinate < self.end || self.end == u64::MAX)
+    fn contains(&self, coordinate: i64) -> bool {
+        self.start <= coordinate && (coordinate < self.end || self.end == i64::MAX)
     }
 
     /// Clamps a coordinate to `self`. Both endpoints are allowed.
-    fn clamp(&self, coordinate: u64) -> u64 {
+    fn clamp(&self, coordinate: i64) -> i64 {
         coordinate.clamp(self.start, self.end)
     }
 
@@ -374,7 +374,7 @@ impl<T: Clone + PartialEq> BlockSchema<T> {
     }
 
     /// Splits the block at `coordinate`, returning the halves before and after.
-    fn split(self, coordinate: u64) -> [Option<Self>; 2] {
+    fn split(self, coordinate: i64) -> [Option<Self>; 2] {
         let clamped_coordinate = self.clamp(coordinate);
         [
             BlockSchema {
@@ -396,7 +396,7 @@ impl<T: Clone + PartialEq> BlockSchema<T> {
     /// - the portion of the block before `start` (if any)
     /// - and the portion of the block between `start` and `end` (if any).
     /// - the portion of the block after `end` (if any)
-    fn split_twice(self, start: u64, end: u64) -> [Option<Self>; 3] {
+    fn split_twice(self, start: i64, end: i64) -> [Option<Self>; 3] {
         let [before, middle_after] = self.split(start);
         let [middle, after] = match middle_after {
             Some(block) => block.split(end),

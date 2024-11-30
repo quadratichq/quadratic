@@ -20,21 +20,21 @@ fn upgrade_cells_accessed(
             v1_7_1::RefRangeBoundsSchema {
                 start: v1_7_1::CellRefRangeEndSchema {
                     col: Some(v1_7_1::CellRefCoordSchema {
-                        coord: cell_access.min.x as u64,
+                        coord: cell_access.min.x,
                         is_absolute: false,
                     }),
                     row: Some(v1_7_1::CellRefCoordSchema {
-                        coord: cell_access.min.y as u64,
+                        coord: cell_access.min.y,
                         is_absolute: false,
                     }),
                 },
                 end: Some(v1_7_1::CellRefRangeEndSchema {
                     col: Some(v1_7_1::CellRefCoordSchema {
-                        coord: cell_access.max.x as u64,
+                        coord: cell_access.max.x,
                         is_absolute: false,
                     }),
                     row: Some(v1_7_1::CellRefCoordSchema {
-                        coord: cell_access.max.y as u64,
+                        coord: cell_access.max.y,
                         is_absolute: false,
                     }),
                 }),
@@ -85,13 +85,13 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
             },
         ));
     } else {
-        selection.rows.iter().for_each(|rows| {
-            rows.iter().for_each(|row| {
+        selection.rows.into_iter().for_each(|rows| {
+            rows.into_iter().for_each(|row| {
                 ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
                     v1_7_1::RefRangeBoundsSchema {
                         start: v1_7_1::CellRefRangeEndSchema {
                             row: Some(v1_7_1::CellRefCoordSchema {
-                                coord: *row as u64,
+                                coord: row,
                                 is_absolute: false,
                             }),
                             col: None,
@@ -102,13 +102,13 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
             });
         });
 
-        selection.columns.iter().for_each(|columns| {
-            columns.iter().for_each(|column| {
+        selection.columns.into_iter().for_each(|columns| {
+            columns.into_iter().for_each(|column| {
                 ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
                     v1_7_1::RefRangeBoundsSchema {
                         start: v1_7_1::CellRefRangeEndSchema {
                             col: Some(v1_7_1::CellRefCoordSchema {
-                                coord: *column as u64,
+                                coord: column,
                                 is_absolute: false,
                             }),
                             row: None,
@@ -119,28 +119,28 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
             });
         });
 
-        selection.rects.iter().for_each(|rects| {
-            rects.iter().for_each(|rect| {
+        selection.rects.into_iter().for_each(|rects| {
+            rects.into_iter().for_each(|rect| {
                 ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
                     v1_7_1::RefRangeBoundsSchema {
                         start: v1_7_1::CellRefRangeEndSchema {
                             col: Some(v1_7_1::CellRefCoordSchema {
-                                coord: rect.min.x as u64,
+                                coord: rect.min.x,
                                 is_absolute: false,
                             }),
                             row: Some(v1_7_1::CellRefCoordSchema {
-                                coord: rect.min.y as u64,
+                                coord: rect.min.y,
                                 is_absolute: false,
                             }),
                         },
                         end: (rect.max.x != rect.min.x || rect.max.y != rect.min.y).then_some(
                             v1_7_1::CellRefRangeEndSchema {
                                 col: Some(v1_7_1::CellRefCoordSchema {
-                                    coord: rect.max.x as u64,
+                                    coord: rect.max.x,
                                     is_absolute: false,
                                 }),
                                 row: Some(v1_7_1::CellRefCoordSchema {
-                                    coord: rect.max.y as u64,
+                                    coord: rect.max.y,
                                     is_absolute: false,
                                 }),
                             },
@@ -156,11 +156,11 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
             v1_7_1::RefRangeBoundsSchema {
                 start: v1_7_1::CellRefRangeEndSchema {
                     col: Some(v1_7_1::CellRefCoordSchema {
-                        coord: selection.x as u64,
+                        coord: selection.x,
                         is_absolute: false,
                     }),
                     row: Some(v1_7_1::CellRefCoordSchema {
-                        coord: selection.y as u64,
+                        coord: selection.y,
                         is_absolute: false,
                     }),
                 },
@@ -290,11 +290,9 @@ fn upgrade_formats_all_col_row(
     // apply column / row formats
     for (_, (format, col, row)) in format_col_row {
         if let Some(col) = col {
-            dbgjs!("todo(ayush): fix type casting as u64, this needs to support negative indices");
-            formats.set_column(col as u64, format);
+            formats.set_column(col, format);
         } else if let Some(row) = row {
-            dbgjs!("todo(ayush): fix type casting as u64, this needs to support negative indices");
-            formats.set_row(row as u64, format);
+            formats.set_row(row, format);
         }
     }
 
@@ -309,13 +307,7 @@ fn upgrade_column_formats_property<T>(
 ) {
     for (y, prop) in property_iter {
         if let Ok(y) = y.parse::<i64>() {
-            dbgjs!("todo(ayush): fix type casting as u64, this needs to support negative indices");
-            formats.set_column_repeat(
-                x as u64,
-                y as u64,
-                prop.len,
-                Some(format_setter(prop.value)),
-            );
+            formats.set_column_repeat(x, y, prop.len, Some(format_setter(prop.value)));
         }
     }
 }

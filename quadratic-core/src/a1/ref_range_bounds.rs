@@ -99,26 +99,26 @@ impl RefRangeBounds {
         }
     }
 
-    pub fn new_relative_xy(x: u64, y: u64) -> Self {
+    pub fn new_relative_xy(x: i64, y: i64) -> Self {
         let start = CellRefRangeEnd::new_relative_xy(x, y);
         RefRangeBounds { start, end: None }
     }
 
     pub fn new_relative_pos(pos: Pos) -> Self {
-        Self::new_relative_xy(pos.x as u64, pos.y as u64)
+        Self::new_relative_xy(pos.x, pos.y)
     }
 
-    pub fn new_relative_column(x: u64) -> Self {
+    pub fn new_relative_column(x: i64) -> Self {
         let start = CellRefRangeEnd::new_relative_column(x);
         Self { start, end: None }
     }
 
-    pub fn new_relative_row(y: u64) -> Self {
+    pub fn new_relative_row(y: i64) -> Self {
         let start = CellRefRangeEnd::new_relative_row(y);
         Self { start, end: None }
     }
 
-    pub fn new_relative_column_range(x1: u64, x2: u64) -> Self {
+    pub fn new_relative_column_range(x1: i64, x2: i64) -> Self {
         if x1 == x2 {
             return Self::new_relative_column(x1);
         }
@@ -128,7 +128,7 @@ impl RefRangeBounds {
         }
     }
 
-    pub fn new_relative_row_range(y1: u64, y2: u64) -> Self {
+    pub fn new_relative_row_range(y1: i64, y2: i64) -> Self {
         if y1 == y2 {
             return Self::new_relative_row(y1);
         }
@@ -156,12 +156,12 @@ impl RefRangeBounds {
         let start = self.start;
         match self.end {
             Some(end) => {
-                range_might_intersect(rect.x_range_u64(), start.col, end.col)
-                    && range_might_intersect(rect.y_range_u64(), start.row, end.row)
+                range_might_intersect(rect.x_range(), start.col, end.col)
+                    && range_might_intersect(rect.y_range(), start.row, end.row)
             }
             None => {
-                range_might_contain_coord(rect.x_range_u64(), start.col)
-                    && range_might_contain_coord(rect.y_range_u64(), start.row)
+                range_might_contain_coord(rect.x_range(), start.col)
+                    && range_might_contain_coord(rect.y_range(), start.row)
             }
         }
     }
@@ -182,24 +182,24 @@ impl RefRangeBounds {
                 // For columns: if col is None, it matches any x coordinate
                 let x_in_range = match (start.col, end.col) {
                     (None, None) => true,
-                    (Some(start_col), None) => (pos.x as u64) >= start_col.coord,
-                    (None, Some(end_col)) => (pos.x as u64) <= end_col.coord,
+                    (Some(start_col), None) => pos.x >= start_col.coord,
+                    (None, Some(end_col)) => pos.x <= end_col.coord,
                     (Some(start_col), Some(end_col)) => {
                         let min = start_col.coord.min(end_col.coord);
                         let max = start_col.coord.max(end_col.coord);
-                        (pos.x as u64) >= min && (pos.x as u64) <= max
+                        pos.x >= min && pos.x <= max
                     }
                 };
 
                 // For rows: if row is None, it matches any y coordinate
                 let y_in_range = match (start.row, end.row) {
                     (None, None) => true,
-                    (Some(start_row), None) => (pos.y as u64) >= start_row.coord,
-                    (None, Some(end_row)) => (pos.y as u64) <= end_row.coord,
+                    (Some(start_row), None) => pos.y >= start_row.coord,
+                    (None, Some(end_row)) => pos.y <= end_row.coord,
                     (Some(start_row), Some(end_row)) => {
                         let min = start_row.coord.min(end_row.coord);
                         let max = start_row.coord.max(end_row.coord);
-                        (pos.y as u64) >= min && (pos.y as u64) <= max
+                        pos.y >= min && pos.y <= max
                     }
                 };
 
@@ -207,8 +207,8 @@ impl RefRangeBounds {
             }
             None => {
                 // Without an end range, both coordinates must match if specified
-                let x_matches = start.col.map_or(true, |col| (pos.x as u64) == col.coord);
-                let y_matches = start.row.map_or(true, |row| (pos.y as u64) == row.coord);
+                let x_matches = start.col.map_or(true, |col| pos.x == col.coord);
+                let y_matches = start.row.map_or(true, |row| pos.y == row.coord);
                 x_matches && y_matches
             }
         }
@@ -236,7 +236,7 @@ impl RefRangeBounds {
     }
 
     /// Returns whether `self` contains the column `col` in its column range.
-    pub fn has_column(&self, col: u64) -> bool {
+    pub fn has_column(&self, col: i64) -> bool {
         if self.start.row.is_some() || self.end.map_or(false, |end| end.row.is_some()) {
             return false;
         }
@@ -260,7 +260,7 @@ impl RefRangeBounds {
     }
 
     /// Returns whether `self` contains the row `row` in its row range.
-    pub fn has_row(&self, row: u64) -> bool {
+    pub fn has_row(&self, row: i64) -> bool {
         if self.start.col.is_some() || self.end.map_or(false, |end| end.col.is_some()) {
             return false;
         }
@@ -293,18 +293,18 @@ impl RefRangeBounds {
             if let Some(end) = self.end {
                 if let (Some(end_col), Some(end_row)) = (end.col, end.row) {
                     Some(Rect::new(
-                        start_col.coord as i64,
-                        start_row.coord as i64,
-                        end_col.coord as i64,
-                        end_row.coord as i64,
+                        start_col.coord,
+                        start_row.coord,
+                        end_col.coord,
+                        end_row.coord,
                     ))
                 } else {
                     None
                 }
             } else {
                 Some(Rect::single_pos(Pos {
-                    x: start_col.coord as i64,
-                    y: start_row.coord as i64,
+                    x: start_col.coord,
+                    y: start_row.coord,
                 }))
             }
         } else {
@@ -313,7 +313,7 @@ impl RefRangeBounds {
     }
 
     /// Returns only the finite columns in the range.
-    pub fn selected_columns_finite(&self) -> Vec<u64> {
+    pub fn selected_columns_finite(&self) -> Vec<i64> {
         let mut columns = vec![];
         if let Some(start_col) = self.start.col {
             if let Some(end) = self.end {
@@ -328,7 +328,7 @@ impl RefRangeBounds {
     }
 
     /// Returns the selected columns in the range that fall between `from` and `to`.
-    pub fn selected_columns(&self, from: u64, to: u64) -> Vec<u64> {
+    pub fn selected_columns(&self, from: i64, to: i64) -> Vec<i64> {
         let mut columns = vec![];
         if let Some(start_col) = self.start.col {
             if let Some(end) = self.end {
@@ -353,7 +353,7 @@ impl RefRangeBounds {
     }
 
     /// Returns only the finite rows in the range.
-    pub fn selected_rows_finite(&self) -> Vec<u64> {
+    pub fn selected_rows_finite(&self) -> Vec<i64> {
         let mut rows = vec![];
         if let Some(start_row) = self.start.row {
             if let Some(end) = self.end {
@@ -368,7 +368,7 @@ impl RefRangeBounds {
     }
 
     /// Returns the selected rows in the range that fall between `from` and `to`.
-    pub fn selected_rows(&self, from: u64, to: u64) -> Vec<u64> {
+    pub fn selected_rows(&self, from: i64, to: i64) -> Vec<i64> {
         let mut rows = vec![];
         if let Some(start_row) = self.start.row {
             if let Some(end) = self.end {

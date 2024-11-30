@@ -127,16 +127,14 @@ impl Sheet {
 
         if !subspaces.cols.is_empty() {
             for (col, min_row) in subspaces.cols.iter() {
-                let col = *col as i64;
-                let min_row = *min_row as i64;
-                if let Some(column) = self.columns.get(&col) {
+                if let Some(column) = self.columns.get(col) {
                     count += column.values.range(min_row..).count() as u64;
                     if count >= max_count {
                         return None;
                     }
                     cells.extend(column.values.range(min_row..).filter_map(|(y, entry)| {
                         if !matches!(entry, &CellValue::Blank) && check_code(entry) {
-                            Some((Pos { x: col, y: *y }, entry))
+                            Some((Pos { x: *col, y: *y }, entry))
                         } else {
                             None
                         }
@@ -147,13 +145,10 @@ impl Sheet {
                 for (pos, code_run) in self.code_runs.iter() {
                     let rect = code_run.output_rect(*pos, false);
                     for (col, min_row) in subspaces.cols.iter() {
-                        if *col >= rect.min.x as u64
-                            && *col <= rect.max.x as u64
-                            && *min_row <= rect.max.y as u64
-                        {
-                            let min_row = *min_row as i64;
+                        if *col >= rect.min.x && *col <= rect.max.x && *min_row <= rect.max.y {
+                            let min_row = *min_row;
                             for x in rect.min.x..=rect.max.x {
-                                if subspaces.cols.contains_key(&(x as u64)) {
+                                if subspaces.cols.contains_key(&x) {
                                     for y in rect.min.y..=rect.max.y {
                                         if y < min_row {
                                             continue;
@@ -182,9 +177,8 @@ impl Sheet {
         if !subspaces.rows.is_empty() {
             for (&x, column) in self.columns.iter() {
                 for (&y, entry) in column.values.iter() {
-                    if let Some(min_col) = subspaces.rows.get(&(y as u64)) {
-                        let min_col = *min_col as i64;
-                        if x < min_col {
+                    if let Some(min_col) = subspaces.rows.get(&y) {
+                        if x < *min_col {
                             continue;
                         }
                         if !matches!(entry, &CellValue::Blank) && check_code(entry) {
@@ -201,10 +195,9 @@ impl Sheet {
                 for (pos, code_run) in self.code_runs.iter() {
                     let rect = code_run.output_rect(*pos, false);
                     for y in rect.min.y..=rect.max.y {
-                        if let Some(min_col) = subspaces.rows.get(&(y as u64)) {
+                        if let Some(min_col) = subspaces.rows.get(&y) {
                             for x in rect.min.x..=rect.max.x {
-                                let min_col = *min_col as i64;
-                                if x < min_col {
+                                if x < *min_col {
                                     continue;
                                 }
                                 if let Some(entry) = code_run
@@ -374,8 +367,8 @@ impl Sheet {
                 let RefRangeBounds { start, end } = range;
 
                 let rect_start = Pos {
-                    x: start.col.map_or(1, |c| c.coord) as i64,
-                    y: start.row.map_or(1, |r| r.coord) as i64,
+                    x: start.col.map_or(1, |c| c.coord),
+                    y: start.row.map_or(1, |r| r.coord),
                 };
 
                 let ignore_formatting = false;
@@ -387,8 +380,8 @@ impl Sheet {
                 let rect_end = match end {
                     // if there is an end, then calculate the end, goes up to bounds.max if infinite
                     Some(end) => {
-                        let end_col = end.col.map(|c| c.coord as i64);
-                        let end_row = end.row.map(|r| r.coord as i64);
+                        let end_col = end.col.map(|c| c.coord);
+                        let end_row = end.row.map(|r| r.coord);
                         Pos {
                             x: end_col.unwrap_or_else(|| {
                                 let a = rect_start.y;

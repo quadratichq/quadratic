@@ -72,8 +72,8 @@ impl Pos {
         if let Ok(end) = CellRefRangeEnd::from_str(a1) {
             if let (Some(col), Some(row)) = (end.col, end.row) {
                 return Some(Pos {
-                    x: col.coord as i64,
-                    y: row.coord as i64,
+                    x: col.coord,
+                    y: row.coord,
                 });
             }
         }

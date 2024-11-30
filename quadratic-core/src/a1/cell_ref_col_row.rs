@@ -12,12 +12,8 @@ impl CellRefRange {
             Self::Sheet { range } => {
                 // Check if the start column needs to be adjusted
                 if let Some(start_col) = range.start.col.as_mut() {
-                    if start_col.coord as i64 >= column {
-                        if start_col.coord <= 1 {
-                            start_col.coord = 1;
-                        } else {
-                            start_col.coord -= 1;
-                        }
+                    if start_col.coord > column {
+                        start_col.coord = start_col.coord.saturating_sub(1).max(1);
                         changed = true;
                     }
                 }
@@ -25,12 +21,8 @@ impl CellRefRange {
                 // Check if the end column needs to be adjusted
                 if let Some(end) = range.end.as_mut() {
                     if let Some(end_col) = end.col.as_mut() {
-                        if end_col.coord as i64 >= column {
-                            if end_col.coord <= 1 {
-                                end_col.coord = 1;
-                            } else {
-                                end_col.coord -= 1;
-                            }
+                        if end_col.coord >= column {
+                            end_col.coord = end_col.coord.saturating_sub(1).max(1);
                             changed = true;
                         }
                     }
@@ -56,12 +48,8 @@ impl CellRefRange {
             Self::Sheet { range } => {
                 // Check if the start row needs to be adjusted
                 if let Some(start_row) = range.start.row.as_mut() {
-                    if start_row.coord as i64 >= row {
-                        if start_row.coord <= 1 {
-                            start_row.coord = 1;
-                        } else {
-                            start_row.coord -= 1;
-                        }
+                    if start_row.coord > row {
+                        start_row.coord = start_row.coord.saturating_sub(1).max(1);
                         changed = true;
                     }
                 }
@@ -69,12 +57,8 @@ impl CellRefRange {
                 // Check if the end row needs to be adjusted
                 if let Some(end) = range.end.as_mut() {
                     if let Some(end_row) = end.row.as_mut() {
-                        if end_row.coord as i64 >= row {
-                            if end_row.coord <= 1 {
-                                end_row.coord = 1;
-                            } else {
-                                end_row.coord -= 1;
-                            }
+                        if end_row.coord >= row {
+                            end_row.coord = end_row.coord.saturating_sub(1).max(1);
                             changed = true;
                         }
                     }
@@ -96,8 +80,8 @@ impl CellRefRange {
             Self::Sheet { range } => {
                 // Check if the start column needs to be adjusted
                 if let Some(start_col) = range.start.col.as_mut() {
-                    if start_col.coord as i64 >= column {
-                        start_col.coord += 1;
+                    if start_col.coord >= column {
+                        start_col.coord = start_col.coord.saturating_add(1);
                         changed = true;
                     }
                 }
@@ -105,8 +89,8 @@ impl CellRefRange {
                 // Check if the end column needs to be adjusted
                 if let Some(end) = range.end.as_mut() {
                     if let Some(end_col) = end.col.as_mut() {
-                        if end_col.coord as i64 >= column {
-                            end_col.coord += 1;
+                        if end_col.coord >= column {
+                            end_col.coord = end_col.coord.saturating_add(1);
                             changed = true;
                         }
                     }
@@ -124,8 +108,8 @@ impl CellRefRange {
             Self::Sheet { range } => {
                 // Check if the start row needs to be adjusted
                 if let Some(start_row) = range.start.row.as_mut() {
-                    if start_row.coord as i64 >= row {
-                        start_row.coord += 1;
+                    if start_row.coord >= row {
+                        start_row.coord = start_row.coord.saturating_add(1);
                         changed = true;
                     }
                 }
@@ -133,8 +117,8 @@ impl CellRefRange {
                 // Check if the end row needs to be adjusted
                 if let Some(end) = range.end.as_mut() {
                     if let Some(end_row) = end.row.as_mut() {
-                        if end_row.coord as i64 >= row {
-                            end_row.coord += 1;
+                        if end_row.coord >= row {
+                            end_row.coord = end_row.coord.saturating_add(1);
                             changed = true;
                         }
                     }
@@ -153,10 +137,12 @@ mod tests {
 
     #[test]
     fn test_removed_column() {
+        // Basic case - removing a column in range
         let mut range = CellRefRange::test("A1:B2");
         assert!(range.removed_column(1));
         assert_eq!(range, CellRefRange::test("A1:A2"));
 
+        // Removing column affects coordinates above it
         range = CellRefRange::test("D2:E5");
         assert!(range.removed_column(1));
         assert_eq!(range, CellRefRange::test("C2:D5"));
@@ -169,12 +155,22 @@ mod tests {
         // Removing the start column
         range = CellRefRange::test("B1:D2");
         assert!(range.removed_column(2));
-        assert_eq!(range, CellRefRange::test("A1:C2"));
+        assert_eq!(range, CellRefRange::test("B1:C2"));
 
         // Removing the end column
         range = CellRefRange::test("B1:D2");
         assert!(range.removed_column(4));
         assert_eq!(range, CellRefRange::test("B1:C2"));
+
+        // Test minimum column boundary
+        range = CellRefRange::test("A1:A2");
+        assert!(range.removed_column(1));
+        assert_eq!(range, CellRefRange::test("A1:A2"));
+
+        // Test when start and end become equal
+        range = CellRefRange::test("A1:B1");
+        assert!(range.removed_column(2));
+        assert_eq!(range, CellRefRange::test("A1"));
     }
 
     #[test]
@@ -197,7 +193,7 @@ mod tests {
         // Removing the start row
         range = CellRefRange::test("B2:D4");
         assert!(range.removed_row(2));
-        assert_eq!(range, CellRefRange::test("B1:D3"));
+        assert_eq!(range, CellRefRange::test("B2:D3"));
 
         // Removing the end row
         range = CellRefRange::test("B2:D4");

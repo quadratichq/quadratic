@@ -63,7 +63,7 @@ impl CellRefRange {
         }
     }
 
-    pub fn new_relative_row_from(row: u64, min_col: u64) -> Self {
+    pub fn new_relative_row_from(row: i64, min_col: i64) -> Self {
         Self::Sheet {
             range: RefRangeBounds {
                 start: CellRefRangeEnd::new_relative_xy(min_col, row),
@@ -72,7 +72,7 @@ impl CellRefRange {
         }
     }
 
-    pub fn new_relative_column_from(col: u64, min_row: u64) -> Self {
+    pub fn new_relative_column_from(col: i64, min_row: i64) -> Self {
         Self::Sheet {
             range: RefRangeBounds {
                 start: CellRefRangeEnd::new_relative_xy(col, min_row),
@@ -81,7 +81,7 @@ impl CellRefRange {
         }
     }
 
-    pub fn new_relative_xy(x: u64, y: u64) -> Self {
+    pub fn new_relative_xy(x: i64, y: i64) -> Self {
         Self::Sheet {
             range: RefRangeBounds::new_relative_xy(x, y),
         }
@@ -93,25 +93,25 @@ impl CellRefRange {
         }
     }
 
-    pub fn new_relative_column(x: u64) -> Self {
+    pub fn new_relative_column(x: i64) -> Self {
         Self::Sheet {
             range: RefRangeBounds::new_relative_column(x),
         }
     }
 
-    pub fn new_relative_row(y: u64) -> Self {
+    pub fn new_relative_row(y: i64) -> Self {
         Self::Sheet {
             range: RefRangeBounds::new_relative_row(y),
         }
     }
 
-    pub fn new_relative_column_range(x1: u64, x2: u64) -> Self {
+    pub fn new_relative_column_range(x1: i64, x2: i64) -> Self {
         Self::Sheet {
             range: RefRangeBounds::new_relative_column_range(x1, x2),
         }
     }
 
-    pub fn new_relative_row_range(y1: u64, y2: u64) -> Self {
+    pub fn new_relative_row_range(y1: i64, y2: i64) -> Self {
         Self::Sheet {
             range: RefRangeBounds::new_relative_row_range(y1, y2),
         }
@@ -147,7 +147,7 @@ impl CellRefRange {
         }
     }
 
-    pub fn has_column(&self, col: u64) -> bool {
+    pub fn has_column(&self, col: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_column(col),
         }
@@ -159,7 +159,7 @@ impl CellRefRange {
         }
     }
 
-    pub fn has_row(&self, row: u64) -> bool {
+    pub fn has_row(&self, row: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_row(row),
         }
@@ -177,25 +177,25 @@ impl CellRefRange {
         }
     }
 
-    pub fn selected_columns_finite(&self) -> Vec<u64> {
+    pub fn selected_columns_finite(&self) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns_finite(),
         }
     }
 
-    pub fn selected_columns(&self, from: u64, to: u64) -> Vec<u64> {
+    pub fn selected_columns(&self, from: i64, to: i64) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns(from, to),
         }
     }
 
-    pub fn selected_rows_finite(&self) -> Vec<u64> {
+    pub fn selected_rows_finite(&self) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows_finite(),
         }
     }
 
-    pub fn selected_rows(&self, from: u64, to: u64) -> Vec<u64> {
+    pub fn selected_rows(&self, from: i64, to: i64) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows(from, to),
         }

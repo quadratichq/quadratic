@@ -28,10 +28,10 @@ impl A1Selection {
     }
 
     /// Returns whether the selection contains the given position.
-    pub fn might_contain_xy(&self, x: u64, y: u64) -> bool {
+    pub fn might_contain_xy(&self, x: i64, y: i64) -> bool {
         self.ranges
             .iter()
-            .any(|range| range.might_contain_pos(Pos::new(x as i64, y as i64)))
+            .any(|range| range.might_contain_pos(Pos::new(x, y)))
     }
 
     /// Returns whether any range in `self` might contain `pos`.
@@ -63,10 +63,10 @@ impl A1Selection {
                         return;
                     };
                     rect = rect.union(&Rect::new(
-                        start_col.coord as i64,
-                        start_row.coord as i64,
-                        end_col.coord as i64,
-                        end_row.coord as i64,
+                        start_col.coord,
+                        start_row.coord,
+                        end_col.coord,
+                        end_row.coord,
                     ));
                 }
             }
@@ -80,21 +80,21 @@ impl A1Selection {
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 if let Some(col) = range.start.col {
-                    rect.min.x = rect.min.x.min(col.coord as i64);
-                    rect.max.x = rect.max.x.max(col.coord as i64);
+                    rect.min.x = rect.min.x.min(col.coord);
+                    rect.max.x = rect.max.x.max(col.coord);
                 }
                 if let Some(row) = range.start.row {
-                    rect.min.y = rect.min.y.min(row.coord as i64);
-                    rect.max.y = rect.max.y.max(row.coord as i64);
+                    rect.min.y = rect.min.y.min(row.coord);
+                    rect.max.y = rect.max.y.max(row.coord);
                 }
                 if let Some(end) = range.end {
                     if let Some(end_col) = end.col {
-                        rect.min.x = rect.min.x.min(end_col.coord as i64);
-                        rect.max.x = rect.max.x.max(end_col.coord as i64);
+                        rect.min.x = rect.min.x.min(end_col.coord);
+                        rect.max.x = rect.max.x.max(end_col.coord);
                     }
                     if let Some(end_row) = end.row {
-                        rect.min.y = rect.min.y.min(end_row.coord as i64);
-                        rect.max.y = rect.max.y.max(end_row.coord as i64);
+                        rect.min.y = rect.min.y.min(end_row.coord);
+                        rect.max.y = rect.max.y.max(end_row.coord);
                     }
                 }
             }
@@ -153,21 +153,21 @@ impl A1Selection {
                     let mut max_x = range
                         .start
                         .col
-                        .map(|col| col.coord as i64)
+                        .map(|col| col.coord)
                         .unwrap_or(self.cursor.x);
                     let mut max_y = range
                         .start
                         .row
-                        .map(|row| row.coord as i64)
+                        .map(|row| row.coord)
                         .unwrap_or(self.cursor.y);
 
                     // If there's an end position, compare with start to find max
                     if let Some(end) = &range.end {
                         if let Some(col) = &end.col {
-                            max_x = max_x.max(col.coord as i64);
+                            max_x = max_x.max(col.coord);
                         }
                         if let Some(row) = &end.row {
-                            max_y = max_y.max(row.coord as i64);
+                            max_y = max_y.max(row.coord);
                         }
                     }
 
@@ -188,11 +188,11 @@ impl A1Selection {
                     let end_or_start = range.end.unwrap_or(range.start);
                     let x = end_or_start
                         .col
-                        .map(|col| col.coord as i64)
+                        .map(|col| col.coord)
                         .unwrap_or(self.cursor.x);
                     let y = end_or_start
                         .row
-                        .map(|row| row.coord as i64)
+                        .map(|row| row.coord)
                         .unwrap_or(self.cursor.y);
                     Pos { x, y }
                 }
@@ -210,7 +210,7 @@ impl A1Selection {
     }
 
     /// Returns the selected columns as a list of column numbers.
-    pub fn selected_columns_finite(&self) -> Vec<u64> {
+    pub fn selected_columns_finite(&self) -> Vec<i64> {
         let mut columns = HashSet::new();
         self.ranges.iter().for_each(|range| {
             columns.extend(range.selected_columns_finite());
@@ -219,7 +219,7 @@ impl A1Selection {
     }
 
     /// Returns the selected column ranges as a list of [start, end] pairs between two coordinates.
-    pub fn selected_column_ranges(&self, from: u64, to: u64) -> Vec<u64> {
+    pub fn selected_column_ranges(&self, from: i64, to: i64) -> Vec<i64> {
         let mut columns = HashSet::new();
         self.ranges.iter().for_each(|range| {
             columns.extend(
@@ -262,7 +262,7 @@ impl A1Selection {
     }
 
     /// Returns the selected rows as a list of row numbers.
-    pub fn selected_rows_finite(&self) -> Vec<u64> {
+    pub fn selected_rows_finite(&self) -> Vec<i64> {
         let mut rows = HashSet::new();
         self.ranges.iter().for_each(|range| {
             rows.extend(range.selected_rows_finite());
@@ -271,7 +271,7 @@ impl A1Selection {
     }
 
     /// Returns the selected row ranges as a list of [start, end] pairs between two coordinates.
-    pub fn selected_row_ranges(&self, from: u64, to: u64) -> Vec<u64> {
+    pub fn selected_row_ranges(&self, from: i64, to: i64) -> Vec<i64> {
         let mut rows = HashSet::new();
         self.ranges
             .iter()

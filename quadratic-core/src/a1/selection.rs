@@ -59,12 +59,10 @@ impl From<OldSelection> for A1Selection {
             itertools::chain!(
                 rows.into_iter()
                     .flatten()
-                    .filter_map(|x| u64::try_from(x).ok())
                     .map(CellRefRange::new_relative_row),
                 columns
                     .into_iter()
                     .flatten()
-                    .filter_map(|x| u64::try_from(x).ok())
                     .map(CellRefRange::new_relative_column),
                 rects
                     .into_iter()
@@ -125,7 +123,7 @@ impl A1Selection {
 
     /// Constructs a selection containing a set of columns.
     #[cfg(test)]
-    pub fn from_column_ranges(column_ranges: &[RangeInclusive<u64>], sheet: SheetId) -> Self {
+    pub fn from_column_ranges(column_ranges: &[RangeInclusive<i64>], sheet: SheetId) -> Self {
         let ranges = column_ranges.iter().map(|range| {
             if range.start() == range.end() {
                 CellRefRange::new_relative_column(*range.start())
@@ -137,7 +135,7 @@ impl A1Selection {
     }
     /// Constructs a selection containing a set of rows.
     #[cfg(test)]
-    pub fn from_row_ranges(row_ranges: &[RangeInclusive<u64>], sheet: SheetId) -> Self {
+    pub fn from_row_ranges(row_ranges: &[RangeInclusive<i64>], sheet: SheetId) -> Self {
         let ranges = row_ranges.iter().map(|range| {
             if range.start() == range.end() {
                 CellRefRange::new_relative_row(*range.start())
@@ -253,7 +251,7 @@ impl A1Selection {
                                 ret.add_row(row.coord, 1..);
                             }
                             (Some(col), Some(row)) => {
-                                let pos = Pos::new(col.coord as i64, row.coord as i64);
+                                let pos = Pos::new(col.coord, row.coord);
                                 ret.add_rect(Rect::single_pos(pos));
                             }
                         },
@@ -263,7 +261,7 @@ impl A1Selection {
                             match (end.col, end.row) {
                                 (None, None) => {
                                     // Include whole sheet after `start`
-                                    ret.add_all(Pos::new(start_col as i64, start_row as i64)..);
+                                    ret.add_all(Pos::new(start_col, start_row)..);
                                 }
                                 (Some(end_col), None) => {
                                     let (lo, hi) = crate::util::minmax(start_col, end_col.coord);
@@ -282,10 +280,10 @@ impl A1Selection {
                                 (Some(end_col), Some(end_row)) => {
                                     // Include rectangle
                                     ret.add_rect(Rect::new(
-                                        start_col as i64,
-                                        start_row as i64,
-                                        end_col.coord as i64,
-                                        end_row.coord as i64,
+                                        start_col,
+                                        start_row,
+                                        end_col.coord,
+                                        end_row.coord,
                                     ));
                                 }
                             }
@@ -399,7 +397,7 @@ impl A1Selection {
                                 ret.set_row(row, Some(value.clone()));
                             }
                             (Some(col), Some(row)) => {
-                                let pos = Pos::new(col as i64, row as i64);
+                                let pos = Pos::new(col, row);
                                 ret.set(pos, Some(value.clone()));
                             }
                         },
@@ -454,12 +452,12 @@ fn cursor_pos_from_last_range(last_range: &CellRefRange) -> Pos {
                 .start
                 .col
                 .or_else(|| range.end.and_then(|end| end.col))
-                .map_or(default_coord, |col| col.coord) as i64;
+                .map_or(default_coord, |col| col.coord);
             let y = range
                 .start
                 .row
                 .or_else(|| range.end.and_then(|end| end.row))
-                .map_or(default_coord, |row| row.coord) as i64;
+                .map_or(default_coord, |row| row.coord);
             Pos { x, y }
         }
     }
