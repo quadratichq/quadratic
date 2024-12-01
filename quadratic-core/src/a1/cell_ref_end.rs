@@ -55,11 +55,13 @@ impl FromStr for CellRefRangeEnd {
             std::mem::swap(&mut row_is_absolute, &mut col_is_absolute);
         }
 
-        let col = match col_str {
+        let col: Option<i64> = match col_str {
             "" => None,
             _ => Some(
                 super::column_from_name(col_str)
-                    .ok_or_else(|| A1Error::InvalidColumn(col_str.to_owned()))?,
+                    .ok_or_else(|| A1Error::InvalidColumn(col_str.to_owned()))?
+                    .try_into()
+                    .map_err(|_| A1Error::InvalidColumn(col_str.to_owned()))?,
             ),
         };
         let row = match row_str {
@@ -96,35 +98,35 @@ impl CellRefRangeEnd {
         row: None,
     };
 
-    pub fn new_infinite_row(row: u64) -> Self {
+    pub fn new_infinite_row(row: i64) -> Self {
         CellRefRangeEnd {
             col: None,
             row: Some(CellRefCoord::new_rel(row)),
         }
     }
 
-    pub fn new_infinite_col(col: u64) -> Self {
+    pub fn new_infinite_col(col: i64) -> Self {
         CellRefRangeEnd {
             col: Some(CellRefCoord::new_rel(col)),
             row: None,
         }
     }
 
-    pub fn new_relative_xy(x: u64, y: u64) -> Self {
+    pub fn new_relative_xy(x: i64, y: i64) -> Self {
         let col = Some(CellRefCoord::new_rel(x));
         let row = Some(CellRefCoord::new_rel(y));
         CellRefRangeEnd { col, row }
     }
     pub fn new_relative_pos(pos: Pos) -> Self {
-        Self::new_relative_xy(pos.x as u64, pos.y as u64)
+        Self::new_relative_xy(pos.x, pos.y)
     }
 
-    pub fn new_relative_column(x: u64) -> Self {
+    pub fn new_relative_column(x: i64) -> Self {
         let col = Some(CellRefCoord::new_rel(x));
         CellRefRangeEnd { col, row: None }
     }
 
-    pub fn new_relative_row(y: u64) -> Self {
+    pub fn new_relative_row(y: i64) -> Self {
         let row = Some(CellRefCoord::new_rel(y));
         CellRefRangeEnd { col: None, row }
     }
@@ -152,12 +154,12 @@ impl CellRefRangeEnd {
 
     // TODO: `impl PartialEq<Pos> for CellRefRangeEnd`
     pub fn is_pos(self, pos: Pos) -> bool {
-        self.col.map_or(false, |col| col.coord == pos.x as u64)
-            && self.row.map_or(false, |row| row.coord == pos.y as u64)
+        self.col.map_or(false, |col| col.coord == pos.x)
+            && self.row.map_or(false, |row| row.coord == pos.y)
     }
 
     /// Returns the XY coordinates of the range end.
-    pub fn unpack_xy(self) -> [Option<u64>; 2] {
+    pub fn unpack_xy(self) -> [Option<i64>; 2] {
         [self.col.map(|c| c.coord), self.row.map(|c| c.coord)]
     }
 }

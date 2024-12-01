@@ -45,7 +45,9 @@ impl Column {
 
     /// Returns the range for format values within the column.
     pub fn format_range(&self) -> Option<Range<i64>> {
-        Some(0..i64::MAX) // TODO: this is nonsense and very dangerous
+        dbgjs!("todo: implement format_range");
+        None
+        // Some(0..i64::MAX) // TODO: this is nonsense and very dangerous
     }
 
     pub fn has_data_in_row(&self, y: i64) -> bool {

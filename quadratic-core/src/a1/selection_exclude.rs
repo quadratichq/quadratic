@@ -37,9 +37,9 @@ impl A1Selection {
         }
 
         // Top rectangle - only add if it doesn't overlap with exclude rect horizontally
-        let mut top: Option<u64> = None;
-        if start_row.is_some_and(|r| r.coord < exclude.min.y as u64) {
-            top = Some(exclude.min.y as u64);
+        let mut top: Option<i64> = None;
+        if start_row.is_some_and(|r| r.coord < exclude.min.y) {
+            top = Some(exclude.min.y);
             let start = CellRefRangeEnd {
                 col: start_col,
                 row: start_row,
@@ -50,7 +50,7 @@ impl A1Selection {
             } else {
                 CellRefRangeEnd {
                     col: end_col,
-                    row: Some(CellRefCoord::new_rel(exclude.min.y as u64 - 1)),
+                    row: Some(CellRefCoord::new_rel(exclude.min.y - 1)),
                 }
             };
             ranges.push(RefRangeBounds {
@@ -58,7 +58,7 @@ impl A1Selection {
                 end: if start != end { Some(end) } else { None },
             });
         } else if start_row.is_none() && exclude.min.y > 1 {
-            top = Some(exclude.min.y as u64);
+            top = Some(exclude.min.y);
             let start = CellRefRangeEnd {
                 col: start_col,
                 row: Some(CellRefCoord::new_rel(1)),
@@ -66,12 +66,12 @@ impl A1Selection {
             let end = if range.end.is_none() {
                 CellRefRangeEnd {
                     col: start_col,
-                    row: Some(CellRefCoord::new_rel(exclude.min.y as u64 - 1)),
+                    row: Some(CellRefCoord::new_rel(exclude.min.y - 1)),
                 }
             } else {
                 CellRefRangeEnd {
                     col: end_col,
-                    row: Some(CellRefCoord::new_rel(exclude.min.y as u64 - 1)),
+                    row: Some(CellRefCoord::new_rel(exclude.min.y - 1)),
                 }
             };
             ranges.push(RefRangeBounds {
@@ -81,12 +81,12 @@ impl A1Selection {
         }
 
         // Bottom rectangle - only add if it doesn't overlap with exclude rect horizontally
-        let mut bottom: Option<u64> = None;
-        if end_row.is_some_and(|r| r.coord > exclude.max.y as u64) {
-            bottom = Some(exclude.max.y as u64);
+        let mut bottom: Option<i64> = None;
+        if end_row.is_some_and(|r| r.coord > exclude.max.y) {
+            bottom = Some(exclude.max.y);
             let start = CellRefRangeEnd {
                 col: start_col,
-                row: Some(CellRefCoord::new_rel(exclude.max.y as u64 + 1)),
+                row: Some(CellRefCoord::new_rel(exclude.max.y + 1)),
             };
             let end = CellRefRangeEnd {
                 col: end_col,
@@ -97,11 +97,11 @@ impl A1Selection {
                 end: if start != end { Some(end) } else { None },
             });
         } else if range.end.is_some() && end_row.is_none() {
-            bottom = Some(exclude.max.y as u64);
+            bottom = Some(exclude.max.y);
             ranges.push(RefRangeBounds {
                 start: CellRefRangeEnd {
                     col: start_col,
-                    row: Some(CellRefCoord::new_rel(exclude.max.y as u64 + 1)),
+                    row: Some(CellRefCoord::new_rel(exclude.max.y + 1)),
                 },
                 end: Some(CellRefRangeEnd {
                     col: range.end.unwrap().col,
@@ -111,11 +111,11 @@ impl A1Selection {
         }
         // handle special case where an infinite column is broken by the excluded rect
         else if range.end.is_none() && range.start.row.is_none() {
-            bottom = Some(exclude.max.y as u64);
+            bottom = Some(exclude.max.y);
             ranges.push(RefRangeBounds {
                 start: CellRefRangeEnd {
                     col: start_col,
-                    row: Some(CellRefCoord::new_rel(exclude.max.y as u64 + 1)),
+                    row: Some(CellRefCoord::new_rel(exclude.max.y + 1)),
                 },
                 end: Some(CellRefRangeEnd {
                     col: start_col,
@@ -125,11 +125,11 @@ impl A1Selection {
         }
 
         // Left rectangle - only add if there's space to the left of the exclude rect
-        if start_col.is_some_and(|c| c.coord < exclude.min.x as u64) {
+        if start_col.is_some_and(|c| c.coord < exclude.min.x) {
             let start_row = start_col.map_or(1, |c| c.coord);
             let start = CellRefRangeEnd::new_relative_xy(start_row, top.unwrap_or(start_row));
             let end = CellRefRangeEnd {
-                col: Some(CellRefCoord::new_rel(exclude.min.x as u64 - 1)),
+                col: Some(CellRefCoord::new_rel(exclude.min.x - 1)),
                 row: Some(CellRefCoord::new_rel(
                     bottom.unwrap_or(end_row.map_or(start_row, |r| r.coord)),
                 )),
@@ -146,7 +146,7 @@ impl A1Selection {
                 top.unwrap_or(start_row.map_or(1, |r| r.coord)),
             );
             let end = CellRefRangeEnd::new_relative_xy(
-                exclude.min.x as u64 - 1,
+                exclude.min.x - 1,
                 bottom.unwrap_or(end_row.map_or(start_row.map_or(1, |r| r.coord), |r| r.coord)),
             );
             ranges.push(RefRangeBounds {
@@ -156,9 +156,9 @@ impl A1Selection {
         }
 
         // Right rectangle - only add if there's space to the right of the exclude rect
-        if end_col.is_some_and(|c| c.coord > exclude.max.x as u64) {
+        if end_col.is_some_and(|c| c.coord > exclude.max.x) {
             let start = CellRefRangeEnd::new_relative_xy(
-                exclude.max.x as u64 + 1,
+                exclude.max.x + 1,
                 top.unwrap_or(start_row.map_or(1, |r| r.coord)),
             );
             let end = CellRefRangeEnd {
@@ -176,7 +176,7 @@ impl A1Selection {
         else if range.end.is_some() && end_col.is_none() {
             ranges.push(RefRangeBounds {
                 start: CellRefRangeEnd::new_relative_xy(
-                    exclude.max.x as u64 + 1,
+                    exclude.max.x + 1,
                     top.unwrap_or(start_row.map_or(1, |r| r.coord)),
                 ),
                 end: Some(CellRefRangeEnd {
@@ -190,7 +190,7 @@ impl A1Selection {
             // handle an infinite column that's broken by the excluded rect
             ranges.push(RefRangeBounds {
                 start: CellRefRangeEnd::new_relative_xy(
-                    exclude.max.x as u64 + 1,
+                    exclude.max.x + 1,
                     start_row.map_or(1, |r| r.coord),
                 ),
                 end: Some(CellRefRangeEnd::new_infinite_row(
@@ -260,7 +260,7 @@ impl A1Selection {
         if ranges.is_empty() {
             ranges.push(CellRefRange::Sheet {
                 // if range is empty, then we set a range with the start of the excluded rect
-                range: RefRangeBounds::new_relative_xy(p1.x as u64, p1.y as u64),
+                range: RefRangeBounds::new_relative_xy(p1.x, p1.y),
             });
         }
         self.ranges = ranges;
@@ -273,12 +273,12 @@ impl A1Selection {
                     // first we check if end is finite
                     if let Some(end) = range.end {
                         if let (Some(end_col), Some(end_row)) = (end.col, end.row) {
-                            return Some(Pos::new(end_col.coord as i64, end_row.coord as i64));
+                            return Some(Pos::new(end_col.coord, end_row.coord));
                         }
                     }
                     // otherwise we use the start if it is finite
                     if let (Some(start_col), Some(start_row)) = (range.start.col, range.start.row) {
-                        return Some(Pos::new(start_col.coord as i64, start_row.coord as i64));
+                        return Some(Pos::new(start_col.coord, start_row.coord));
                     }
                     None
                 }
@@ -610,7 +610,7 @@ mod test {
                 CellRefRange::test("C2:C3"),
                 CellRefRange::test("F2:F3")
             ]
-        )
+        );
     }
 
     #[test]

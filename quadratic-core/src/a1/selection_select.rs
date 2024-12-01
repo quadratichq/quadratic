@@ -18,7 +18,7 @@ impl A1Selection {
     }
 
     /// Removes a column if it is in any column ranges, or adds it if it is not.
-    fn add_or_remove_column(&mut self, col: u64, top: i64) {
+    fn add_or_remove_column(&mut self, col: i64, top: i64) {
         // Find the index of the first range that contains this column
         let i = self.ranges.iter().position(|range| range.has_column(col));
 
@@ -74,10 +74,8 @@ impl A1Selection {
                     // if we deleted the last range, then we use the cursor + top as the
                     // new range
                     if self.ranges.is_empty() {
-                        self.ranges.push(CellRefRange::new_relative_xy(
-                            self.cursor.x as u64,
-                            top as u64,
-                        ));
+                        self.ranges
+                            .push(CellRefRange::new_relative_xy(self.cursor.x, top));
                         self.cursor.y = top;
                     }
                 }
@@ -85,13 +83,13 @@ impl A1Selection {
         } else {
             // Add the column if it wasn't found and set the cursor position
             self.ranges.push(CellRefRange::new_relative_column(col));
-            self.cursor.x = col as i64;
+            self.cursor.x = col;
             self.cursor.y = top;
         }
     }
 
     /// Extends the last column range or creates a new one.
-    pub fn extend_column(&mut self, col: u64, top: i64) {
+    pub fn extend_column(&mut self, col: i64, top: i64) {
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Sheet { range } => {
@@ -99,19 +97,19 @@ impl A1Selection {
                         range.end = Some(CellRefRangeEnd::new_relative_column(col));
                     } else {
                         range.end = Some(CellRefRangeEnd::new_relative_column(col));
-                        self.cursor.y = range.start.row.map_or(top, |r| r.coord as i64);
+                        self.cursor.y = range.start.row.map_or(top, |r| r.coord);
                     }
                 }
             }
         } else {
             self.ranges.push(CellRefRange::new_relative_column(col));
-            self.cursor.x = col as i64;
+            self.cursor.x = col;
             self.cursor.y = top;
         }
     }
 
     /// Removes a row if it is in any row ranges, or adds it if it is not.
-    fn add_or_remove_row(&mut self, row: u64, left: u64) {
+    fn add_or_remove_row(&mut self, row: i64, left: i64) {
         // Find the index of the first range that contains this row
         let i = self.ranges.iter().position(|range| range.has_row(row));
 
@@ -168,23 +166,23 @@ impl A1Selection {
                     // new range
                     if self.ranges.is_empty() {
                         self.ranges
-                            .push(CellRefRange::new_relative_xy(left, self.cursor.y as u64));
-                        self.cursor.x = left as i64;
+                            .push(CellRefRange::new_relative_xy(left, self.cursor.y));
+                        self.cursor.x = left;
                     }
                 }
             }
         } else {
             // Add the row if it wasn't found and set the cursor position
             self.ranges.push(CellRefRange::new_relative_row(row));
-            self.cursor.x = left as i64;
-            self.cursor.y = row as i64;
+            self.cursor.x = left;
+            self.cursor.y = row;
         }
     }
 
     /// Selects a single column based on keyboard modifiers.
     pub fn select_column(
         &mut self,
-        col: u64,
+        col: i64,
         ctrl_key: bool,
         shift_key: bool,
         is_right_click: bool,
@@ -195,7 +193,7 @@ impl A1Selection {
         if is_right_click || (!ctrl_key && !shift_key) {
             self.ranges.clear();
             self.ranges.push(CellRefRange::new_relative_column(col));
-            self.cursor.x = col as i64;
+            self.cursor.x = col;
             self.cursor.y = top;
         } else if ctrl_key && !shift_key {
             self.add_or_remove_column(col, top);
@@ -205,7 +203,7 @@ impl A1Selection {
     }
 
     /// Extends the last row range or creates a new one.
-    pub fn extend_row(&mut self, row: u64, left: u64) {
+    pub fn extend_row(&mut self, row: i64, left: i64) {
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Sheet { range } => {
@@ -213,14 +211,14 @@ impl A1Selection {
                         range.end = Some(CellRefRangeEnd::new_relative_row(row));
                     } else {
                         range.end = Some(CellRefRangeEnd::new_relative_row(row));
-                        self.cursor.x = range.start.col.map_or(left as i64, |c| c.coord as i64);
+                        self.cursor.x = range.start.col.map_or(left, |c| c.coord);
                     }
                 }
             }
         } else {
             self.ranges.push(CellRefRange::new_relative_row(row));
-            self.cursor.x = left as i64;
-            self.cursor.y = row as i64;
+            self.cursor.x = left;
+            self.cursor.y = row;
         }
     }
 
@@ -229,30 +227,30 @@ impl A1Selection {
     /// that row is extended).
     pub fn select_row(
         &mut self,
-        row: u32,
+        row: i64,
         ctrl_key: bool,
         shift_key: bool,
         is_right_click: bool,
 
         // left of the screen to change the cursor position when selecting a row
-        left: u64,
+        left: i64,
     ) {
         if is_right_click || (!ctrl_key && !shift_key) {
             self.ranges.clear();
-            self.ranges.push(CellRefRange::new_relative_row(row as u64));
-            self.cursor.x = left as i64;
-            self.cursor.y = row as i64;
+            self.ranges.push(CellRefRange::new_relative_row(row));
+            self.cursor.x = left;
+            self.cursor.y = row;
         } else if ctrl_key && !shift_key {
-            self.add_or_remove_row(row as u64, left);
+            self.add_or_remove_row(row, left);
         } else if shift_key {
-            self.extend_row(row as u64, left);
+            self.extend_row(row, left);
         }
     }
 
     /// Selects a rectangular range. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of
     /// that range is extended).
-    pub fn select_rect(&mut self, left: u64, top: u64, right: u64, bottom: u64, append: bool) {
+    pub fn select_rect(&mut self, left: i64, top: i64, right: i64, bottom: i64, append: bool) {
         if !append {
             self.ranges.clear();
         }
@@ -266,8 +264,8 @@ impl A1Selection {
                 },
             });
         }
-        self.cursor.x = left as i64;
-        self.cursor.y = top as i64;
+        self.cursor.x = left;
+        self.cursor.y = top;
     }
 
     /// Moves the cursor to the given position and clears the selection.
@@ -283,7 +281,7 @@ impl A1Selection {
 
     /// Extends the last selection to the given position. If append is true, then the range is appended
     /// to the ranges (or, if the last selection was a range, then the end of that range is extended).
-    pub(crate) fn select_to(&mut self, column: u64, row: u64, append: bool) {
+    pub(crate) fn select_to(&mut self, column: i64, row: i64, append: bool) {
         // if the selection is empty, then we use the cursor as the starting point
         if self.ranges.is_empty() {
             self.ranges
@@ -294,10 +292,10 @@ impl A1Selection {
                 CellRefRange::Sheet { range } => {
                     range.end = Some(CellRefRangeEnd::new_relative_xy(column, row));
                     if range.start.row.is_none() {
-                        self.cursor.y = row as i64;
+                        self.cursor.y = row;
                     }
                     if range.start.col.is_none() {
-                        self.cursor.x = column as i64;
+                        self.cursor.x = column;
                     }
                     // we don't need an end if it's the same as the start
                     if range.start.col.is_some_and(|start| start.coord == column)
@@ -316,8 +314,8 @@ impl A1Selection {
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
     /// checks the last range (the same as Excel and Sheets)
     pub fn set_columns_selected(&mut self) {
-        let start: u64;
-        let mut end: Option<u64> = None;
+        let start: i64;
+        let mut end: Option<i64> = None;
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Sheet { range } => {
@@ -331,12 +329,12 @@ impl A1Selection {
                     } else if let Some(col) = range.start.col {
                         start = col.coord;
                     } else {
-                        start = self.cursor.x as u64;
+                        start = self.cursor.x;
                     }
                 }
             }
         } else {
-            start = self.cursor.x as u64;
+            start = self.cursor.x;
         }
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
@@ -350,8 +348,8 @@ impl A1Selection {
     /// Changes the selection to select all rows that have a selection (used by shift+space). It only
     /// checks the last range (the same as Excel and Sheets)
     pub fn set_rows_selected(&mut self) {
-        let start: u64;
-        let mut end: Option<u64> = None;
+        let start: i64;
+        let mut end: Option<i64> = None;
         if let Some(last) = self.ranges.last() {
             match last {
                 CellRefRange::Sheet { range } => {
@@ -365,12 +363,12 @@ impl A1Selection {
                     } else if let Some(row) = range.start.row {
                         start = row.coord;
                     } else {
-                        start = self.cursor.y as u64;
+                        start = self.cursor.y;
                     }
                 }
             }
         } else {
-            start = self.cursor.y as u64;
+            start = self.cursor.y;
         }
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {

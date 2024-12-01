@@ -26,15 +26,15 @@ impl<T> Default for Contiguous2D<T> {
     }
 }
 impl<T> IntoIterator for Contiguous2D<T> {
-    type Item = (u64, Block<ContiguousBlocks<T>>);
-    type IntoIter = btree_map::IntoIter<u64, Block<ContiguousBlocks<T>>>;
+    type Item = (i64, Block<ContiguousBlocks<T>>);
+    type IntoIter = btree_map::IntoIter<i64, Block<ContiguousBlocks<T>>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
     }
 }
-impl<T> FromIterator<(u64, Block<ContiguousBlocks<T>>)> for Contiguous2D<T> {
-    fn from_iter<I: IntoIterator<Item = (u64, Block<ContiguousBlocks<T>>)>>(iter: I) -> Self {
+impl<T> FromIterator<(i64, Block<ContiguousBlocks<T>>)> for Contiguous2D<T> {
+    fn from_iter<I: IntoIterator<Item = (i64, Block<ContiguousBlocks<T>>)>>(iter: I) -> Self {
         Self(ContiguousBlocks::from_iter(iter))
     }
 }
@@ -51,25 +51,19 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
 
     /// Returns a single formatting value.
     pub fn get(&self, pos: Pos) -> Option<&T> {
-        self.0.get(pos.x as u64)?.get(pos.y as u64)
+        self.0.get(pos.x)?.get(pos.y)
     }
 
     /// Sets a single formatting value and returns the old one.
     pub fn set(&mut self, pos: Pos, value: Option<T>) -> Option<T> {
-        self.set_rect(
-            pos.x as u64,
-            pos.y as u64,
-            Some(pos.x as u64),
-            Some(pos.y as u64),
-            value,
-        )
-        .0
-        .into_values()
-        .next()?
-        .value
-        .into_values()
-        .next()?
-        .value
+        self.set_rect(pos.x, pos.y, Some(pos.x), Some(pos.y), value)
+            .0
+            .into_values()
+            .next()?
+            .value
+            .into_values()
+            .next()?
+            .value
     }
 
     /// Sets values from `other`, and returns the blocks to set to undo it.
@@ -94,34 +88,34 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     /// All coordinates are inclusive.
     pub fn set_rect(
         &mut self,
-        x1: u64,
-        y1: u64,
-        x2: Option<u64>,
-        y2: Option<u64>,
+        x1: i64,
+        y1: i64,
+        x2: Option<i64>,
+        y2: Option<i64>,
         value: Option<T>,
     ) -> Contiguous2D<Option<T>> {
         self.set_from(Contiguous2D(ContiguousBlocks::from_block(Block {
             start: x1,
-            end: x2.unwrap_or(u64::MAX).saturating_add(1),
+            end: x2.unwrap_or(i64::MAX).saturating_add(1),
             value: ContiguousBlocks::from_block(Block {
                 start: y1,
-                end: y2.unwrap_or(u64::MAX).saturating_add(1),
+                end: y2.unwrap_or(i64::MAX).saturating_add(1),
                 value,
             }),
         })))
     }
     /// Sets an entire column to a single value, starting at coordinate 1.
-    pub fn set_column(&mut self, column: u64, value: Option<T>) -> Contiguous2D<Option<T>> {
-        self.set_rect(column, 1, Some(column), None, value)
+    pub fn set_column(&mut self, column: i64, value: Option<T>) -> Contiguous2D<Option<T>> {
+        self.set_rect(column, i64::MIN, Some(column), None, value)
     }
     /// Sets an entire column to a single value, starting at coordinate 1.
-    pub fn set_row(&mut self, row: u64, value: Option<T>) -> Contiguous2D<Option<T>> {
-        self.set_rect(1, row, None, Some(row), value)
+    pub fn set_row(&mut self, row: i64, value: Option<T>) -> Contiguous2D<Option<T>> {
+        self.set_rect(i64::MIN, row, None, Some(row), value)
     }
 
     /// Returns the upper bound on the values in the given column, or `None` if
     /// it is unbounded. Returns 0 if there are no values.
-    pub fn column_max(&self, column: u64) -> Option<u64> {
+    pub fn column_max(&self, column: i64) -> Option<i64> {
         match self.0.get(column) {
             Some(column_data) => column_data.max(),
             None => Some(0),
@@ -129,18 +123,18 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     }
 
     /// Removes a column and returns the values that used to inhabit it.
-    pub fn remove_column(&mut self, column: u64) -> ContiguousBlocks<T> {
+    pub fn remove_column(&mut self, column: i64) -> ContiguousBlocks<T> {
         self.0.shift_remove(column).unwrap_or_default()
     }
 
     /// Inserts a column and populates it with values.
-    pub fn restore_column(&mut self, column: u64, values: Option<ContiguousBlocks<T>>) {
+    pub fn restore_column(&mut self, column: i64, values: Option<ContiguousBlocks<T>>) {
         self.0.shift_insert(column, values);
     }
 
     /// Inserts a column and optionally populates it based on the column before
     /// or after it.
-    pub fn insert_column(&mut self, column: u64, copy_formats: CopyFormats) {
+    pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
         let values = match copy_formats {
             CopyFormats::Before => column.checked_sub(1).and_then(|i| self.0.get(i).cloned()),
             CopyFormats::After => self.0.get(column).cloned(),
@@ -151,12 +145,12 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     }
 
     /// Removes a row and returns the values that used to inhabit it.
-    pub fn remove_row(&mut self, row: u64) -> ContiguousBlocks<T> {
+    pub fn remove_row(&mut self, row: i64) -> ContiguousBlocks<T> {
         self.0.update_all_blocks(|column| column.shift_remove(row))
     }
 
     /// Inserts a row and populates it with values.
-    pub fn restore_row(&mut self, row: u64, values: Option<ContiguousBlocks<T>>) {
+    pub fn restore_row(&mut self, row: i64, values: Option<ContiguousBlocks<T>>) {
         self.0.update_all_blocks(|column| {
             column.shift_insert(row, None);
             None::<()> // no return value needed
@@ -176,7 +170,7 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
 
     /// Inserts a row and optionally populates it based on the row before
     /// or after it.
-    pub fn insert_row(&mut self, row: u64, copy_formats: CopyFormats) {
+    pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
         self.0.update_all_blocks(|column| {
             let value = match copy_formats {
                 CopyFormats::Before => row.checked_sub(1).and_then(|i| column.get(i).cloned()),
@@ -197,14 +191,14 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     /// Returns the set of (potentially infinite) rectangles that have values.
     /// Each rectangle is `(x1, y1, x2, y2)`, where `None` is unbounded. All
     /// coordinates are inclusive.
-    pub fn to_rects(&self) -> impl '_ + Iterator<Item = (u64, u64, Option<u64>, Option<u64>)> {
+    pub fn to_rects(&self) -> impl '_ + Iterator<Item = (i64, i64, Option<i64>, Option<i64>)> {
         self.0 .0.values().flat_map(|x_block| {
             let column = &x_block.value;
             let x1 = x_block.start;
-            let x2 = (x_block.end < u64::MAX).then_some(x_block.end.saturating_sub(1));
+            let x2 = (x_block.end < i64::MAX).then_some(x_block.end.saturating_sub(1));
             column.0.values().map(move |y_block| {
                 let y1 = y_block.start;
-                let y2 = (y_block.end < u64::MAX).then_some(y_block.end.saturating_sub(1));
+                let y2 = (y_block.end < i64::MAX).then_some(y_block.end.saturating_sub(1));
                 (x1, y1, x2, y2)
             })
         })
@@ -222,7 +216,7 @@ pub struct ContiguousBlocks<T>(
         bound = "T: Serialize + for<'a> Deserialize<'a>", // shouldn't serde infer this?
         with = "crate::util::btreemap_serde"
     )]
-    BTreeMap<u64, Block<T>>,
+    BTreeMap<i64, Block<T>>,
 );
 impl<T> Default for ContiguousBlocks<T> {
     fn default() -> Self {
@@ -230,15 +224,15 @@ impl<T> Default for ContiguousBlocks<T> {
     }
 }
 impl<T> IntoIterator for ContiguousBlocks<T> {
-    type Item = (u64, Block<T>);
-    type IntoIter = btree_map::IntoIter<u64, Block<T>>;
+    type Item = (i64, Block<T>);
+    type IntoIter = btree_map::IntoIter<i64, Block<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
     }
 }
-impl<T> FromIterator<(u64, Block<T>)> for ContiguousBlocks<T> {
-    fn from_iter<I: IntoIterator<Item = (u64, Block<T>)>>(iter: I) -> Self {
+impl<T> FromIterator<(i64, Block<T>)> for ContiguousBlocks<T> {
+    fn from_iter<I: IntoIterator<Item = (i64, Block<T>)>>(iter: I) -> Self {
         Self(BTreeMap::from_iter(iter))
     }
 }
@@ -277,21 +271,21 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
     /// Returns the maximum coordinate with a value, or `None` if there is an
     /// infinite block. Returns 0 if there are no values.
-    pub fn max(&self) -> Option<u64> {
+    pub fn max(&self) -> Option<i64> {
         match self.0.last_key_value() {
-            Some((_, block)) => (block.end < u64::MAX).then_some(block.end.saturating_sub(1)),
+            Some((_, block)) => (block.end < i64::MAX).then_some(block.end.saturating_sub(1)),
             None => Some(0), // no values
         }
     }
 
-    fn get_block_containing(&self, coordinate: u64) -> Option<&Block<T>> {
+    fn get_block_containing(&self, coordinate: i64) -> Option<&Block<T>> {
         self.0
             .range(..=coordinate)
             .next_back()
             .map(|(_, block)| block)
             .filter(|block| block.contains(coordinate))
     }
-    fn remove_block_containing(&mut self, coordinate: u64) -> Option<Block<T>> {
+    fn remove_block_containing(&mut self, coordinate: i64) -> Option<Block<T>> {
         let key = self.get_block_containing(coordinate)?.start;
         self.0.remove(&key)
     }
@@ -315,12 +309,12 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
 
     /// Returns whether `self` has any values in the range from `start` to `end`.
-    fn has_any_in_range(&self, start: u64, end: u64) -> bool {
+    fn has_any_in_range(&self, start: i64, end: i64) -> bool {
         self.blocks_touching_range(start, end).next().is_some()
     }
 
     /// Iterates over blocks that touch the range from `start` to `end`.
-    fn blocks_touching_range(&self, start: u64, end: u64) -> impl Iterator<Item = &Block<T>> {
+    fn blocks_touching_range(&self, start: i64, end: i64) -> impl Iterator<Item = &Block<T>> {
         // There may be a block starting above `y_range.start` that contains
         // `y_range`, so find that.
         let first_block = self
@@ -347,8 +341,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Removes all blocks that touch the range from `start` to `end`, in order.
     fn remove_blocks_touching_range(
         &mut self,
-        start: u64,
-        end: u64,
+        start: i64,
+        end: i64,
     ) -> impl '_ + Iterator<Item = Block<T>> {
         let block_starts = self
             .blocks_touching_range(start, end)
@@ -357,13 +351,13 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         block_starts.into_iter().filter_map(|y| self.0.remove(&y))
     }
     /// Returns the value at `coordinate`, or `None` if it is default.
-    pub fn get(&self, coordinate: u64) -> Option<&T> {
+    pub fn get(&self, coordinate: i64) -> Option<&T> {
         self.get_block_containing(coordinate)
             .map(|block| &block.value)
     }
     /// Removes all values in the range from `start` to `end` and returns a list
     /// of blocks that can be added to restore them.
-    pub fn remove_range(&mut self, start: u64, end: u64) -> Vec<Block<T>> {
+    pub fn remove_range(&mut self, start: i64, end: i64) -> Vec<Block<T>> {
         let mut to_return = vec![];
         let mut to_put_back: SmallVec<[Block<T>; 2]> = smallvec![];
 
@@ -380,7 +374,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
     /// Removes all values in the range from `start` to `end` and returns a list
     /// of blocks containing the old values that completely covers the region.
-    pub fn remove_range_complete(&mut self, start: u64, end: u64) -> Vec<Block<Option<T>>> {
+    pub fn remove_range_complete(&mut self, start: i64, end: i64) -> Vec<Block<Option<T>>> {
         let mut ret = vec![];
         let mut index = start;
         for block in self.remove_range(start, end) {
@@ -428,7 +422,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
     /// Sets all values in the range from `start` to `end` and returns a list of
     /// changes to apply for undo.
-    pub fn set_range(&mut self, start: u64, end: u64, value: T) -> ContiguousBlocks<Option<T>> {
+    pub fn set_range(&mut self, start: i64, end: i64, value: T) -> ContiguousBlocks<Option<T>> {
         self.set_blocks([Block {
             start,
             end,
@@ -437,14 +431,14 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
 
     /// Sets a value and returns the old value at `coordinate`.
-    pub fn set(&mut self, coordinate: u64, value: T) -> Option<T> {
+    pub fn set(&mut self, coordinate: i64, value: T) -> Option<T> {
         self.set_range(coordinate, coordinate.saturating_add(1), value)
             .into_values()
             .next()?
             .value
     }
     /// Removes the value at `coordinate`, returning it.
-    pub fn remove(&mut self, coordinate: u64) -> Option<T> {
+    pub fn remove(&mut self, coordinate: i64) -> Option<T> {
         self.remove_range(coordinate, coordinate.saturating_add(1))
             .into_iter()
             .next()
@@ -457,8 +451,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// - `R` is the data required to perform the reverse operation.
     pub fn update_range<R>(
         &mut self,
-        start: u64,
-        end: u64,
+        start: i64,
+        end: i64,
         update_fn: impl Fn(Option<T>) -> (Option<T>, R),
     ) -> Vec<Block<R>> {
         let mut return_blocks = vec![];
@@ -477,7 +471,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// - `R` is the data required to perform the reverse operation.
     pub fn update_from_blocks<U, R: Clone + PartialEq>(
         &mut self,
-        other: impl IntoIterator<Item = (u64, Block<U>)>,
+        other: impl IntoIterator<Item = (i64, Block<U>)>,
         update_fn: impl Fn(Option<T>, &U) -> (Option<T>, R),
     ) -> ContiguousBlocks<R> {
         let mut ret = ContiguousBlocks::new();
@@ -513,7 +507,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         ret
     }
 
-    fn try_merge_at(&mut self, coordinate: u64) {
+    fn try_merge_at(&mut self, coordinate: i64) {
         let Some(coordinate_before) = coordinate.checked_sub(1) else {
             return;
         };
@@ -531,9 +525,9 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
 
     /// Inserts a value at `coordinate`, shifting everything after it by 1.
-    pub fn shift_insert(&mut self, coordinate: u64, value: Option<T>) {
+    pub fn shift_insert(&mut self, coordinate: i64, value: Option<T>) {
         let shifted_blocks = self
-            .remove_range(coordinate, u64::MAX)
+            .remove_range(coordinate, i64::MAX)
             .into_iter()
             .map(|block| block.add_offset(1));
         self.add_blocks(shifted_blocks);
@@ -546,10 +540,10 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         }
     }
     /// Removes the value at `coordinate`, shifting everything after it by -1.
-    pub fn shift_remove(&mut self, coordinate: u64) -> Option<T> {
+    pub fn shift_remove(&mut self, coordinate: i64) -> Option<T> {
         let old_value = self.remove(coordinate);
         let shifted_blocks = self
-            .remove_range(coordinate.saturating_add(1), u64::MAX)
+            .remove_range(coordinate.saturating_add(1), i64::MAX)
             .into_iter()
             .map(|block| block.subtract_offset(1));
         self.add_blocks(shifted_blocks);
@@ -559,29 +553,29 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
 /// Block of contiguous values in a specific range.
 ///
-/// `start` is always a reasonable value, but `end` may be `u64::MAX` to
+/// `start` is always a reasonable value, but `end` may be `i64::MAX` to
 /// indicate an unbounded range.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Block<T> {
     /// Start of the block.
-    pub start: u64,
-    /// End of the block, which is `u64::MAX` if unbounded.
-    pub end: u64,
+    pub start: i64,
+    /// End of the block, which is `i64::MAX` if unbounded.
+    pub end: i64,
     /// Value for every value between `start` (inclusive) and `end` (exclusive).
     pub value: T,
 }
 impl<T: fmt::Debug> fmt::Debug for Block<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.end {
-            u64::MAX => write!(f, "({:?}, {:?})", self.start.., self.value),
+            i64::MAX => write!(f, "({:?}, {:?})", self.start.., self.value),
             _ => write!(f, "({:?}, {:?})", self.start..self.end, self.value),
         }
     }
 }
 impl<T: Clone + PartialEq> Block<T> {
     /// Returns the length of the block, or `None` if it is unbounded.
-    pub fn len(&self) -> Option<u64> {
-        (self.end < u64::MAX || self.start == self.end)
+    pub fn len(&self) -> Option<i64> {
+        (self.end < i64::MAX || self.start == self.end)
             .then_some(self.end.saturating_sub(self.start))
     }
     /// Returns whether the block is empty (length 0).
@@ -594,11 +588,11 @@ impl<T: Clone + PartialEq> Block<T> {
     }
 
     /// Returns whether the block contains the key `coordinate`.
-    pub fn contains(&self, coordinate: u64) -> bool {
-        self.start <= coordinate && (coordinate < self.end || self.end == u64::MAX)
+    pub fn contains(&self, coordinate: i64) -> bool {
+        self.start <= coordinate && (coordinate < self.end || self.end == i64::MAX)
     }
     /// Clamps a coordinate to `self`. Both endpoints are allowed.
-    fn clamp(&self, coordinate: u64) -> u64 {
+    fn clamp(&self, coordinate: i64) -> i64 {
         coordinate.clamp(self.start, self.end)
     }
 
@@ -637,7 +631,7 @@ impl<T: Clone + PartialEq> Block<T> {
     }
 
     /// Splits the block at `coordinate`, returning the halves before and after.
-    pub fn split(self, coordinate: u64) -> [Option<Self>; 2] {
+    pub fn split(self, coordinate: i64) -> [Option<Self>; 2] {
         let clamped_coordinate = self.clamp(coordinate);
         [
             Block {
@@ -658,7 +652,7 @@ impl<T: Clone + PartialEq> Block<T> {
     /// - the portion of the block before `start` (if any)
     /// - and the portion of the block between `start` and `end` (if any).
     /// - the portion of the block after `end` (if any)
-    pub fn split_twice(self, start: u64, end: u64) -> [Option<Self>; 3] {
+    pub fn split_twice(self, start: i64, end: i64) -> [Option<Self>; 3] {
         let [before, middle_after] = self.split(start);
         let [middle, after] = match middle_after {
             Some(block) => block.split(end),
@@ -673,11 +667,11 @@ impl<T: Clone + PartialEq> Block<T> {
     /// # Panics
     ///
     /// Panics if `self.start + delta` or `self.end + delta` exceeds
-    /// [`u64::MAX`].
+    /// [`i64::MAX`].
     pub fn add_offset(self, delta: u64) -> Self {
         Block {
-            start: self.start + delta,
-            end: self.end.saturating_add(delta),
+            start: self.start.saturating_add(delta as i64),
+            end: self.end.saturating_add(delta as i64),
             value: self.value,
         }
     }
@@ -685,11 +679,15 @@ impl<T: Clone + PartialEq> Block<T> {
     /// goes below 0.
     pub fn subtract_offset(self, delta: u64) -> Self {
         Block {
-            start: self.start.saturating_sub(delta),
-            end: if self.end == u64::MAX {
+            start: if self.start == i64::MIN {
+                self.start
+            } else {
+                self.start.saturating_sub(delta as i64)
+            },
+            end: if self.end == i64::MAX {
                 self.end
             } else {
-                self.end.saturating_sub(delta)
+                self.end.saturating_sub(delta as i64)
             },
             value: self.value,
         }
@@ -770,7 +768,7 @@ mod tests {
                 match op {
                     TestOp::SetRange { start, end, value } => {
                         let reverse_blocks =
-                            blocks.set_range(start as u64, end.map(|i| i as u64).unwrap_or(u64::MAX), value);
+                            blocks.set_range(start as i64, end.map(|i| i as i64).unwrap_or(i64::MAX), value);
 
                         // Before we update `bytes`, check that undo works
                         // correctly.
@@ -789,23 +787,23 @@ mod tests {
                         }
                     }
                     TestOp::Set { index, value } => {
-                        let old_value = blocks.set(index as u64, value);
+                        let old_value = blocks.set(index as i64, value);
                         assert_eq!(bytes[index as usize], old_value, "wrong old value");
                         bytes[index as usize] = Some(value);
                     }
                     TestOp::Remove { index } => {
-                        let old_value = blocks.remove(index as u64);
+                        let old_value = blocks.remove(index as i64);
                         assert_eq!(bytes[index as usize], old_value, "wrong old value");
                         bytes[index as usize] = None;
                     }
                     TestOp::ShiftInsert { index, value } => {
-                        blocks.shift_insert(index as u64, value);
+                        blocks.shift_insert(index as i64, value);
                         bytes[index as usize..].rotate_right(1);
                         bytes[index as usize] = value;
                         shift_inserted = true;
                     }
                     TestOp::ShiftRemove { index } => {
-                        blocks.shift_remove(index as u64);
+                        blocks.shift_remove(index as i64);
                         bytes[index as usize..].rotate_left(1);
                         // Oops, we actually don't know what index 256 is supposed to be
                         bytes[256] = blocks.get(256).copied();
@@ -827,7 +825,7 @@ mod tests {
 
         for i in 0..u8::MAX {
             assert_eq!(
-                blocks.get(i as u64),
+                blocks.get(i as i64),
                 bytes[i as usize].as_ref(),
                 "wrong value at {i}",
             );
@@ -839,7 +837,7 @@ mod tests {
             assert_eq!(bytes_is_empty, blocks.is_empty(), "wrong `is_empty()`");
 
             assert_eq!(
-                bytes.iter().positions(|&v| v.is_some()).last().unwrap_or(0) as u64,
+                bytes.iter().positions(|&v| v.is_some()).last().unwrap_or(0) as i64,
                 blocks.max().unwrap_or(256),
                 "wrong `max()`",
             );
@@ -851,11 +849,11 @@ mod tests {
         }
 
         // Make sure we didn't lose any `u64::MAX` coordinates
-        const FINITE_LIMIT: u64 = u64::MAX / 2; // doesn't matter exactly what this is
+        const FINITE_LIMIT: i64 = i64::MAX / 2; // doesn't matter exactly what this is
         for block in blocks.0.values() {
             assert!(block.start < FINITE_LIMIT);
             if block.end > FINITE_LIMIT {
-                assert_eq!(block.end, u64::MAX);
+                assert_eq!(block.end, i64::MAX);
             }
         }
     }

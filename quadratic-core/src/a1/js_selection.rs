@@ -98,7 +98,7 @@ impl JsSelection {
         top: u32,
     ) {
         self.selection.select_column(
-            column as u64,
+            column as i64,
             ctrl_key || shift_key,
             shift_key,
             is_right_click,
@@ -116,23 +116,23 @@ impl JsSelection {
         left: u32,
     ) {
         self.selection.select_row(
-            row,
+            row as i64,
             ctrl_key || shift_key,
             shift_key,
             is_right_click,
-            left as u64,
+            left as i64,
         );
     }
 
     #[wasm_bindgen(js_name = "selectRect")]
     pub fn select_rect(&mut self, left: u32, top: u32, right: u32, bottom: u32, append: bool) {
         self.selection
-            .select_rect(left as u64, top as u64, right as u64, bottom as u64, append);
+            .select_rect(left as i64, top as i64, right as i64, bottom as i64, append);
     }
 
     #[wasm_bindgen(js_name = "selectTo")]
     pub fn select_to(&mut self, x: u32, y: u32, append: bool) {
-        self.selection.select_to(x as u64, y as u64, append);
+        self.selection.select_to(x as i64, y as i64, append);
     }
 
     #[wasm_bindgen(js_name = "toA1String")]
@@ -149,7 +149,7 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "moveTo")]
-    pub fn move_to(&mut self, x: i32, y: i32, append: bool) {
+    pub fn move_to(&mut self, x: u32, y: u32, append: bool) {
         self.selection.move_to(x as i64, y as i64, append);
     }
 
@@ -185,7 +185,7 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "contains")]
     pub fn contains(&self, x: u32, y: u32) -> bool {
-        self.selection.might_contain_xy(x as u64, y as u64)
+        self.selection.might_contain_xy(x as i64, y as i64)
     }
 
     #[wasm_bindgen(js_name = "getRanges")]
@@ -244,7 +244,7 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "getSelectedColumnRanges")]
     pub fn get_selected_column_ranges(&self, from: u32, to: u32) -> Vec<u32> {
         self.selection
-            .selected_column_ranges(from as u64, to as u64)
+            .selected_column_ranges(from as i64, to as i64)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -253,7 +253,7 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "getSelectedRowRanges")]
     pub fn get_selected_row_ranges(&self, from: u32, to: u32) -> Vec<u32> {
         self.selection
-            .selected_row_ranges(from as u64, to as u64)
+            .selected_row_ranges(from as i64, to as i64)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -270,7 +270,7 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "excludeCells")]
-    pub fn exclude_cells(&mut self, x0: i32, y0: i32, x1: i32, y1: i32) {
+    pub fn exclude_cells(&mut self, x0: u32, y0: u32, x1: u32, y1: u32) {
         self.selection.exclude_cells(
             Pos::new(x0 as i64, y0 as i64),
             Some(Pos::new(x1 as i64, y1 as i64)),

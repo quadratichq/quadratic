@@ -40,8 +40,8 @@ pub(crate) const UNKNOWN_SHEET_NAME: &str = "UnknownSheet";
 // TODO(perf): raise or remove upper bound on proptest to test larger ranges.
 #[cfg(test)]
 pub(crate) const PROPTEST_COORDINATE_I64: std::ops::RangeInclusive<i64> = 1..=16_i64;
-#[cfg(test)]
-pub(crate) const PROPTEST_COORDINATE_U64: std::ops::RangeInclusive<u64> = 1..=16_u64;
+// #[cfg(test)]
+// pub(crate) const PROPTEST_COORDINATE_U64: std::ops::RangeInclusive<u64> = 1..=16_u64;
 #[cfg(test)]
 pub(crate) fn proptest_positions_iter() -> impl Iterator<Item = crate::Pos> {
     itertools::iproduct!(PROPTEST_COORDINATE_I64, PROPTEST_COORDINATE_I64)

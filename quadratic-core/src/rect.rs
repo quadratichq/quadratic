@@ -134,24 +134,13 @@ impl Rect {
     }
 
     /// Returns the range of X values in the rectangle.
-    ///
-    /// TODO: delete this and rename `x_range_u64()` to `x_range()`.
     pub fn x_range(self) -> RangeInclusive<i64> {
         self.min.x..=self.max.x
     }
-    /// Returns the range of X values in the rectangle.
-    pub fn x_range_u64(self) -> RangeInclusive<u64> {
-        self.min.x as u64..=self.max.x as u64
-    }
+
     /// Returns the range of Y values in the rectangle.
-    ///
-    /// TODO: delete this and rename `y_range_u64()` to `y_range()`.
     pub fn y_range(self) -> RangeInclusive<i64> {
         self.min.y..=self.max.y
-    }
-    /// Returns the range of X values in the rectangle.
-    pub fn y_range_u64(self) -> RangeInclusive<u64> {
-        self.min.y as u64..=self.max.y as u64
     }
 
     /// Returns the width of the region.
