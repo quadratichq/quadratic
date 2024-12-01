@@ -1063,7 +1063,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.data_bounds,
-            GridBounds::NonEmpty(Rect::new(0, 0, 0, 0))
+            GridBounds::NonEmpty(Rect::new(1, 1, 1, 1))
         );
     }
 
