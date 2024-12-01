@@ -221,6 +221,7 @@ impl Sheet {
 
         // update the indices of all column-based formats impacted by the deletion
         self.formats.remove_row(row); // TODO: save formats returned here
+        dbgjs!("actually save the row formatting and update transaction appropriately");
 
         // mark hashes of new rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);

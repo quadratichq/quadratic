@@ -23,7 +23,8 @@ impl Sheet {
 
     /// Tries to get a format for a row, returning None if not set.
     pub fn try_format_row(&self, _row: i64) -> Option<Format> {
-        todo!()
+        dbgjs!("todo: try_format_row");
+        None
         // self.formats_rows.get(&row).map(|f| f.0.clone())
     }
 

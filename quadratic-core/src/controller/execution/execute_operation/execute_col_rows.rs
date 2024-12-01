@@ -23,136 +23,136 @@ impl GridController {
         _row: Option<i64>,
         _delta: i64,
     ) {
-        self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_runs.iter().for_each(|(_pos, _code_run)| {
-                todo!("adjust formulas")
-                // if let Some(column) = column {
-                //     if code_run.cells_accessed.sheet_iter(sheet_id).any(|range| {
-                //         // if the cells accessed is beyond the column that was deleted
-                //         match range {
-                //             &A1RangeType::Pos(pos) => pos.x.index as i64 >= column,
-                //             A1RangeType::Rect(rect) => {
-                //                 rect.min.x.index as i64 >= column
-                //                     || rect.max.x.index as i64 >= column
-                //             }
-                //             A1RangeType::Column(col) => col.index as i64 >= column,
-                //             A1RangeType::ColumnRange(col_range) => {
-                //                 col_range.min.index as i64 >= column
-                //                     || col_range.max.index as i64 >= column
-                //             }
-                //             A1RangeType::All | A1RangeType::Row(_) | A1RangeType::RowRange(_) => {
-                //                 false
-                //             }
-                //         }
-                //     }) {
-                //         // only update formulas (for now)
-                //         if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {
-                //             let new_code = replace_cell_references_with(
-                //                 &code.code,
-                //                 *pos,
-                //                 |coord_sheet_name, cell_ref| {
-                //                     let coord_sheet_name =
-                //                         coord_sheet_name.as_ref().unwrap_or(&sheet.name);
-                //                     if *coord_sheet_name == sheet_name {
-                //                         match cell_ref {
-                //                             CellRefCoord::Relative(x) => {
-                //                                 if x + pos.x >= column {
-                //                                     CellRefCoord::Relative(x + delta)
-                //                                 } else {
-                //                                     CellRefCoord::Relative(x)
-                //                                 }
-                //                             }
-                //                             CellRefCoord::Absolute(x) => {
-                //                                 if x >= column {
-                //                                     CellRefCoord::Absolute(x + delta)
-                //                                 } else {
-                //                                     CellRefCoord::Absolute(x)
-                //                                 }
-                //                             }
-                //                         }
-                //                     } else {
-                //                         cell_ref
-                //                     }
-                //                 },
-                //                 |_, cell_ref| cell_ref,
-                //             );
-                //             if new_code != code.code {
-                //                 let code_cell_value = CellValue::Code(CodeCellValue {
-                //                     code: new_code,
-                //                     ..code.clone()
-                //                 });
-                //                 transaction.operations.push_back(Operation::SetCellValues {
-                //                     sheet_pos: pos.to_sheet_pos(sheet_id),
-                //                     values: code_cell_value.into(),
-                //                 });
-                //             }
-                //         }
-                //     }
-                // } else if let Some(row) = row {
-                //     if code_run.cells_accessed.sheet_iter(sheet_id).any(|range| {
-                //         // if the cells accessed is beyond the row that was deleted
-                //         match range {
-                //             A1RangeType::Pos(pos) => pos.y.index as i64 >= row,
-                //             A1RangeType::Rect(rect) => {
-                //                 rect.min.y.index as i64 >= row || rect.max.y.index as i64 >= row
-                //             }
-                //             A1RangeType::Row(rel_row) => rel_row.index as i64 >= row,
-                //             A1RangeType::RowRange(row_range) => {
-                //                 row_range.min.index as i64 >= row
-                //                     || row_range.max.index as i64 >= row
-                //             }
-                //             A1RangeType::All
-                //             | A1RangeType::Column(_)
-                //             | A1RangeType::ColumnRange(_) => false,
-                //         }
-                //     }) {
-                //         // only update formulas (for now)
-                //         if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {
-                //             let new_code = replace_cell_references_with(
-                //                 &code.code,
-                //                 *pos,
-                //                 |_, cell_ref| cell_ref,
-                //                 |coord_sheet_name, cell_ref| {
-                //                     let coord_sheet_name =
-                //                         coord_sheet_name.as_ref().unwrap_or(&sheet.name);
-                //                     if *coord_sheet_name == sheet_name {
-                //                         match cell_ref {
-                //                             CellRefCoord::Relative(y) => {
-                //                                 if y + pos.y >= row {
-                //                                     CellRefCoord::Relative(y + delta)
-                //                                 } else {
-                //                                     CellRefCoord::Relative(y)
-                //                                 }
-                //                             }
-                //                             CellRefCoord::Absolute(y) => {
-                //                                 if y >= row {
-                //                                     CellRefCoord::Absolute(y + delta)
-                //                                 } else {
-                //                                     CellRefCoord::Absolute(y)
-                //                                 }
-                //                             }
-                //                         }
-                //                     } else {
-                //                         cell_ref
-                //                     }
-                //                 },
-                //             );
-                //             if new_code != code.code {
-                //                 let code_cell_value = CellValue::Code(CodeCellValue {
-                //                     code: new_code,
-                //                     ..code.clone()
-                //                 });
-                //                 let sheet_pos = pos.to_sheet_pos(sheet_id);
-                //                 transaction.operations.push_back(Operation::SetCellValues {
-                //                     sheet_pos,
-                //                     values: code_cell_value.into(),
-                //                 });
-                //             }
-                //         }
-                //     }
-                // }
-            });
-        });
+        dbgjs!("todo: implement adjust_formulas");
+        // self.grid.sheets().iter().for_each(|sheet| {
+        //     sheet.code_runs.iter().for_each(|(_pos, _code_run)| {
+        //         if let Some(column) = column {
+        //             if code_run.cells_accessed.sheet_iter(sheet_id).any(|range| {
+        //                 // if the cells accessed is beyond the column that was deleted
+        //                 match range {
+        //                     &A1RangeType::Pos(pos) => pos.x.index as i64 >= column,
+        //                     A1RangeType::Rect(rect) => {
+        //                         rect.min.x.index as i64 >= column
+        //                             || rect.max.x.index as i64 >= column
+        //                     }
+        //                     A1RangeType::Column(col) => col.index as i64 >= column,
+        //                     A1RangeType::ColumnRange(col_range) => {
+        //                         col_range.min.index as i64 >= column
+        //                             || col_range.max.index as i64 >= column
+        //                     }
+        //                     A1RangeType::All | A1RangeType::Row(_) | A1RangeType::RowRange(_) => {
+        //                         false
+        //                     }
+        //                 }
+        //             }) {
+        //                 // only update formulas (for now)
+        //                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {
+        //                     let new_code = replace_cell_references_with(
+        //                         &code.code,
+        //                         *pos,
+        //                         |coord_sheet_name, cell_ref| {
+        //                             let coord_sheet_name =
+        //                                 coord_sheet_name.as_ref().unwrap_or(&sheet.name);
+        //                             if *coord_sheet_name == sheet_name {
+        //                                 match cell_ref {
+        //                                     CellRefCoord::Relative(x) => {
+        //                                         if x + pos.x >= column {
+        //                                             CellRefCoord::Relative(x + delta)
+        //                                         } else {
+        //                                             CellRefCoord::Relative(x)
+        //                                         }
+        //                                     }
+        //                                     CellRefCoord::Absolute(x) => {
+        //                                         if x >= column {
+        //                                             CellRefCoord::Absolute(x + delta)
+        //                                         } else {
+        //                                             CellRefCoord::Absolute(x)
+        //                                         }
+        //                                     }
+        //                                 }
+        //                             } else {
+        //                                 cell_ref
+        //                             }
+        //                         },
+        //                         |_, cell_ref| cell_ref,
+        //                     );
+        //                     if new_code != code.code {
+        //                         let code_cell_value = CellValue::Code(CodeCellValue {
+        //                             code: new_code,
+        //                             ..code.clone()
+        //                         });
+        //                         transaction.operations.push_back(Operation::SetCellValues {
+        //                             sheet_pos: pos.to_sheet_pos(sheet_id),
+        //                             values: code_cell_value.into(),
+        //                         });
+        //                     }
+        //                 }
+        //             }
+        //         } else if let Some(row) = row {
+        //             if code_run.cells_accessed.sheet_iter(sheet_id).any(|range| {
+        //                 // if the cells accessed is beyond the row that was deleted
+        //                 match range {
+        //                     A1RangeType::Pos(pos) => pos.y.index as i64 >= row,
+        //                     A1RangeType::Rect(rect) => {
+        //                         rect.min.y.index as i64 >= row || rect.max.y.index as i64 >= row
+        //                     }
+        //                     A1RangeType::Row(rel_row) => rel_row.index as i64 >= row,
+        //                     A1RangeType::RowRange(row_range) => {
+        //                         row_range.min.index as i64 >= row
+        //                             || row_range.max.index as i64 >= row
+        //                     }
+        //                     A1RangeType::All
+        //                     | A1RangeType::Column(_)
+        //                     | A1RangeType::ColumnRange(_) => false,
+        //                 }
+        //             }) {
+        //                 // only update formulas (for now)
+        //                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {
+        //                     let new_code = replace_cell_references_with(
+        //                         &code.code,
+        //                         *pos,
+        //                         |_, cell_ref| cell_ref,
+        //                         |coord_sheet_name, cell_ref| {
+        //                             let coord_sheet_name =
+        //                                 coord_sheet_name.as_ref().unwrap_or(&sheet.name);
+        //                             if *coord_sheet_name == sheet_name {
+        //                                 match cell_ref {
+        //                                     CellRefCoord::Relative(y) => {
+        //                                         if y + pos.y >= row {
+        //                                             CellRefCoord::Relative(y + delta)
+        //                                         } else {
+        //                                             CellRefCoord::Relative(y)
+        //                                         }
+        //                                     }
+        //                                     CellRefCoord::Absolute(y) => {
+        //                                         if y >= row {
+        //                                             CellRefCoord::Absolute(y + delta)
+        //                                         } else {
+        //                                             CellRefCoord::Absolute(y)
+        //                                         }
+        //                                     }
+        //                                 }
+        //                             } else {
+        //                                 cell_ref
+        //                             }
+        //                         },
+        //                     );
+        //                     if new_code != code.code {
+        //                         let code_cell_value = CellValue::Code(CodeCellValue {
+        //                             code: new_code,
+        //                             ..code.clone()
+        //                         });
+        //                         let sheet_pos = pos.to_sheet_pos(sheet_id);
+        //                         transaction.operations.push_back(Operation::SetCellValues {
+        //                             sheet_pos,
+        //                             values: code_cell_value.into(),
+        //                         });
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     });
+        // });
     }
 
     pub fn execute_delete_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
@@ -319,11 +319,16 @@ mod tests {
     use std::collections::HashMap;
 
     use serial_test::{parallel, serial};
+    use uuid::Uuid;
 
     use crate::{
-        grid::CodeCellLanguage,
+        grid::{
+            sheet::validations::{validation::Validation, validation_rules::ValidationRule},
+            CodeCellLanguage,
+        },
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
-        CellValue, CodeCellValue, Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT,
+        A1Selection, CellValue, CodeCellValue, Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH,
+        DEFAULT_ROW_HEIGHT,
     };
 
     use super::*;
@@ -363,8 +368,8 @@ mod tests {
         gc.set_cell_value(
             SheetPos {
                 sheet_id,
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
             },
             "1".into(),
             None,
@@ -372,17 +377,17 @@ mod tests {
         gc.set_code_cell(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
             },
             CodeCellLanguage::Formula,
-            "B0".into(),
+            "B1".into(),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.rendered_value(Pos { x: 0, y: 0 }).unwrap(),
+            sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
             "1".to_string()
         );
 
@@ -402,8 +407,8 @@ mod tests {
             Operation::SetCellValues {
                 sheet_pos: SheetPos {
                     sheet_id,
-                    x: 0,
-                    y: 0
+                    x: 1,
+                    y: 1
                 },
                 values: CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Formula,
@@ -497,7 +502,7 @@ mod tests {
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "D1".into(),
+            "C1".into(),
             None,
         );
 
@@ -551,7 +556,7 @@ mod tests {
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "B3".into(),
+            "A3".into(),
             None,
         );
 
@@ -582,143 +587,109 @@ mod tests {
         );
     }
 
-    // #[test]
-    // #[parallel]
-    // fn insert_column_validation() {
-    //     let mut gc = GridController::test();
-    //     let sheet_id = gc.sheet_ids()[0];
-    //     gc.update_validation(
-    //         Validation {
-    //             id: Uuid::new_v4(),
-    //             selection: OldSelection {
-    //                 sheet_id,
-    //                 rects: Some(vec![Rect::new(1, 1, 3, 3)]),
-    //                 columns: Some(vec![2]),
-    //                 ..Default::default()
-    //             },
-    //             rule: ValidationRule::Logical(Default::default()),
-    //             message: Default::default(),
-    //             error: Default::default(),
-    //         },
-    //         None,
-    //     );
+    #[test]
+    #[parallel]
+    fn insert_column_validation() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: A1Selection::test_a1("A1:C3,B"),
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
 
-    //     gc.insert_column(sheet_id, 2, true, None);
+        gc.insert_column(sheet_id, 2, true, None);
 
-    //     let sheet = gc.sheet(sheet_id);
-    //     assert_eq!(sheet.validations.validations.len(), 1);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
+        assert_eq!(
+            sheet.validations.validations[0].selection,
+            A1Selection::test_a1("A1:D3,C")
+        );
+    }
 
-    //     assert_eq!(
-    //         sheet.validations.validations[0].selection.columns,
-    //         Some(vec![3])
-    //     );
-    //     assert_eq!(
-    //         sheet.validations.validations[0].selection.rects,
-    //         Some(vec![Rect::new(1, 1, 4, 3)])
-    //     );
-    // }
+    #[test]
+    #[parallel]
+    fn insert_row_validation() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: A1Selection::test_a1("A1:C3,2"),
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
 
-    // #[test]
-    // #[parallel]
-    // fn insert_row_validation() {
-    //     let mut gc = GridController::test();
-    //     let sheet_id = gc.sheet_ids()[0];
-    //     gc.update_validation(
-    //         Validation {
-    //             id: Uuid::new_v4(),
-    //             selection: OldSelection {
-    //                 sheet_id,
-    //                 rects: Some(vec![Rect::new(1, 1, 3, 3)]),
-    //                 rows: Some(vec![2]),
-    //                 ..Default::default()
-    //             },
-    //             rule: ValidationRule::Logical(Default::default()),
-    //             message: Default::default(),
-    //             error: Default::default(),
-    //         },
-    //         None,
-    //     );
+        gc.insert_row(sheet_id, 2, true, None);
 
-    //     gc.insert_row(sheet_id, 2, true, None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
+        assert_eq!(
+            sheet.validations.validations[0].selection,
+            A1Selection::test_a1("A1:C4,3")
+        );
+    }
 
-    //     let sheet = gc.sheet(sheet_id);
-    //     assert_eq!(sheet.validations.validations.len(), 1);
+    #[test]
+    #[parallel]
+    fn delete_column_validation() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: A1Selection::test_a1("A1:C3,B"),
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
 
-    //     assert_eq!(
-    //         sheet.validations.validations[0].selection.rows,
-    //         Some(vec![3])
-    //     );
-    //     assert_eq!(
-    //         sheet.validations.validations[0].selection.rects,
-    //         Some(vec![Rect::new(1, 1, 3, 4)])
-    //     );
-    // }
+        gc.delete_columns(sheet_id, vec![2], None);
 
-    // #[test]
-    // #[parallel]
-    // fn delete_column_validation() {
-    //     let mut gc = GridController::test();
-    //     let sheet_id = gc.sheet_ids()[0];
-    //     gc.update_validation(
-    //         Validation {
-    //             id: Uuid::new_v4(),
-    //             selection: OldSelection {
-    //                 sheet_id,
-    //                 rects: Some(vec![Rect::new(1, 1, 3, 3)]),
-    //                 columns: Some(vec![2]),
-    //                 ..Default::default()
-    //             },
-    //             rule: ValidationRule::Logical(Default::default()),
-    //             message: Default::default(),
-    //             error: Default::default(),
-    //         },
-    //         None,
-    //     );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
+        assert_eq!(
+            sheet.validations.validations[0].selection,
+            A1Selection::test_a1("A1:B3")
+        );
+    }
 
-    //     gc.delete_columns(sheet_id, vec![2], None);
+    #[test]
+    #[parallel]
+    fn delete_row_validation() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.update_validation(
+            Validation {
+                id: Uuid::new_v4(),
+                selection: A1Selection::test_a1("A1:C3,2"),
+                rule: ValidationRule::Logical(Default::default()),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
 
-    //     let sheet = gc.sheet(sheet_id);
-    //     assert_eq!(sheet.validations.validations.len(), 1);
+        gc.delete_rows(sheet_id, vec![2], None);
 
-    //     assert_eq!(sheet.validations.validations[0].selection.columns, None);
-    //     assert_eq!(
-    //         sheet.validations.validations[0].selection.rects,
-    //         Some(vec![Rect::new(1, 1, 2, 3)])
-    //     );
-    // }
-
-    // #[test]
-    // #[parallel]
-    // fn delete_row_validation() {
-    //     let mut gc = GridController::test();
-    //     let sheet_id = gc.sheet_ids()[0];
-    //     gc.update_validation(
-    //         Validation {
-    //             id: Uuid::new_v4(),
-    //             selection: OldSelection {
-    //                 sheet_id,
-    //                 rects: Some(vec![Rect::new(1, 1, 3, 3)]),
-    //                 rows: Some(vec![2]),
-    //                 ..Default::default()
-    //             },
-    //             rule: ValidationRule::Logical(Default::default()),
-    //             message: Default::default(),
-    //             error: Default::default(),
-    //         },
-    //         None,
-    //     );
-
-    //     gc.delete_rows(sheet_id, vec![2], None);
-
-    //     let sheet = gc.sheet(sheet_id);
-    //     assert_eq!(sheet.validations.validations.len(), 1);
-
-    //     assert_eq!(sheet.validations.validations[0].selection.rows, None);
-    //     assert_eq!(
-    //         sheet.validations.validations[0].selection.rects,
-    //         Some(vec![Rect::new(1, 1, 3, 2)])
-    //     );
-    // }
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
+        assert_eq!(
+            sheet.validations.validations[0].selection,
+            A1Selection::test_a1("A1:C2")
+        );
+    }
 
     #[test]
     #[parallel]
