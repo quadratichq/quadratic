@@ -696,4 +696,14 @@ mod test {
             vec![CellRefRange::test("B8:C8"), CellRefRange::test("B7")]
         );
     }
+
+    #[test]
+    fn test_bottom_right_cell_failure() {
+        let mut selection = A1Selection::test("B7:C8");
+        selection.exclude_cells(pos![C8], None);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test("B7:C7"), CellRefRange::test("B8")]
+        );
+    }
 }

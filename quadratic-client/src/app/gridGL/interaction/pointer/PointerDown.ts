@@ -107,20 +107,20 @@ export class PointerDown {
         return;
       }
     }
-
     // do nothing if we have text is invalid in the input
     if (!(await this.isInputValid())) return;
+
+    if ((event.ctrlKey || event.metaKey) && cursor.contains(column, row)) {
+      this.unselectDown = new Rectangle(column, row, 0, 0);
+      pixiApp.cursor.dirty = true;
+      return;
+    }
 
     if (column === this.previousPosition?.x && row === this.previousPosition?.y) {
       return;
     }
     // If the user is holding cmd/ctrl and the cell is already selected, then we start the un-selection.
-    if ((event.ctrlKey || event.metaKey) && cursor.contains(column, row)) {
-      // todo: we should start an exclusion rectangle instead of un-selecting
-      this.unselectDown = new Rectangle(column, row, 0, 0);
-      pixiApp.cursor.dirty = true;
-      return;
-    } else if (event.shiftKey) {
+    if (event.shiftKey) {
       cursor.selectTo(column, row, event.metaKey || event.ctrlKey);
     } else {
       // If the input is rejected, we cannot move the cursor

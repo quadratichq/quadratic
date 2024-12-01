@@ -244,4 +244,8 @@ export class SheetCursor {
     this.jsSelection.excludeCells(x0, y0, x1, y1);
     this.updatePosition(ensureVisible);
   }
+
+  rangeCount(): number {
+    return this.jsSelection.getRanges().length;
+  }
 }

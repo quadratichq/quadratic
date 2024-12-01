@@ -309,7 +309,7 @@ export class Cursor extends Container {
             ranges,
           });
         }
-        if (!columnRow) {
+        if (!columnRow && cursor.rangeCount() === 1) {
           this.drawCursorIndicator();
         }
       }
