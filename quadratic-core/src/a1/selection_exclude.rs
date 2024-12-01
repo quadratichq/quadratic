@@ -532,11 +532,11 @@ mod test {
         // selection.exclude_cells(Pos { x: 2, y: 2 }, Some(Pos { x: 3, y: 3 }));
         // assert_eq!(selection.ranges, vec![CellRefRange::test("A1")]);
 
-        let mut selection = A1Selection::test("B2:C3");
+        let mut selection = A1Selection::test_a1("B2:C3");
         selection.exclude_cells(pos![B2], Some(pos![C3]));
         assert_eq!(selection.cursor, Pos { x: 2, y: 2 });
 
-        selection = A1Selection::test("A1:C3");
+        selection = A1Selection::test_a1("A1:C3");
         selection.exclude_cells(pos![B2], None);
         assert_eq!(
             selection.ranges,
@@ -550,14 +550,14 @@ mod test {
     }
     #[test]
     fn test_exclude_cells_from_top_left() {
-        let mut selection = A1Selection::test("A1:C3");
+        let mut selection = A1Selection::test_a1("A1:C3");
         selection.exclude_cells(pos![A1], Some(pos![C2]));
         assert_eq!(selection.ranges, vec![CellRefRange::test("A3:C3")]);
     }
 
     #[test]
     fn test_exclude_cells_multiple() {
-        let mut selection = A1Selection::test("A1:C3,E5:F7");
+        let mut selection = A1Selection::test_a1("A1:C3,E5:F7");
         selection.exclude_cells("B2".into(), None);
         assert_eq!(
             selection.ranges,
@@ -578,15 +578,15 @@ mod test {
 
     #[test]
     fn test_exclude_cells_column() {
-        let mut selection = A1Selection::test("C");
+        let mut selection = A1Selection::test_a1("C");
         selection.exclude_cells(pos![C1], None);
         assert_eq!(selection.ranges, vec![CellRefRange::test("C2:C")]);
 
-        let mut selection = A1Selection::test("C");
+        let mut selection = A1Selection::test_a1("C");
         selection.exclude_cells(pos![C1], Some(pos![D5]));
         assert_eq!(selection.ranges, vec![CellRefRange::test("C6:C")]);
 
-        let mut selection = A1Selection::test("C");
+        let mut selection = A1Selection::test_a1("C");
         selection.exclude_cells(pos![C2], Some(pos![E5]));
         assert_eq!(
             selection.ranges,
@@ -596,14 +596,14 @@ mod test {
 
     #[test]
     fn test_exclude_cells_column_range() {
-        let mut selection = A1Selection::test("C:E");
+        let mut selection = A1Selection::test_a1("C:E");
         selection.exclude_cells(pos![C1], None);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test("C2:E"), CellRefRange::test("D1:E1")]
         );
 
-        let mut selection = A1Selection::test("C:F");
+        let mut selection = A1Selection::test_a1("C:F");
         selection.exclude_cells(pos![D2], Some(pos![E3]));
         assert_eq!(
             selection.ranges,
@@ -618,11 +618,11 @@ mod test {
 
     #[test]
     fn test_exclude_cells_row() {
-        let mut selection = A1Selection::test("1");
+        let mut selection = A1Selection::test_a1("1");
         selection.exclude_cells(pos![A1], None);
         assert_eq!(selection.ranges, vec![CellRefRange::test("B1:1")]);
 
-        let mut selection = A1Selection::test("2");
+        let mut selection = A1Selection::test_a1("2");
         selection.exclude_cells(pos![B1], Some(pos![C5]));
         assert_eq!(
             selection.ranges,
@@ -632,7 +632,7 @@ mod test {
 
     #[test]
     fn test_exclude_cells_rows() {
-        let mut selection = A1Selection::test("2:5");
+        let mut selection = A1Selection::test_a1("2:5");
         selection.exclude_cells(pos![B2], None);
         assert_eq!(
             selection.ranges,
@@ -643,7 +643,7 @@ mod test {
             ]
         );
 
-        let mut selection = A1Selection::test("2:5");
+        let mut selection = A1Selection::test_a1("2:5");
         selection.exclude_cells(pos![B3], Some(pos![C4]));
         assert_eq!(
             selection.ranges,
@@ -655,7 +655,7 @@ mod test {
             ]
         );
 
-        let mut selection = A1Selection::test("2:5");
+        let mut selection = A1Selection::test_a1("2:5");
         selection.exclude_cells(pos![B3], Some(pos![C5]));
         assert_eq!(
             selection.ranges,
@@ -669,7 +669,7 @@ mod test {
 
     #[test]
     fn test_exclude_cells_column_single_middle() {
-        let mut selection = A1Selection::test("C");
+        let mut selection = A1Selection::test_a1("C");
         selection.exclude_cells(pos![C4], None);
         assert_eq!(
             selection.ranges,
@@ -679,7 +679,7 @@ mod test {
 
     #[test]
     fn test_exclude_cells_rows_single_middle() {
-        let mut selection = A1Selection::test("2");
+        let mut selection = A1Selection::test_a1("2");
         selection.exclude_cells(pos![D2], None);
         assert_eq!(
             selection.ranges,
@@ -689,7 +689,7 @@ mod test {
 
     #[test]
     fn test_top_right_cell_failure() {
-        let mut selection = A1Selection::test("B7:C8");
+        let mut selection = A1Selection::test_a1("B7:C8");
         selection.exclude_cells(pos![C7], None);
         assert_eq!(
             selection.ranges,
@@ -699,7 +699,7 @@ mod test {
 
     #[test]
     fn test_bottom_right_cell_failure() {
-        let mut selection = A1Selection::test("B7:C8");
+        let mut selection = A1Selection::test_a1("B7:C8");
         selection.exclude_cells(pos![C8], None);
         assert_eq!(
             selection.ranges,

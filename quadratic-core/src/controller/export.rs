@@ -52,7 +52,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selected = A1Selection::test("A1:D4");
+        let selected = A1Selection::test_a1("A1:D4");
         let vals = vec![
             vec!["1", "2", "3", "4"],
             vec!["5", "6", "7", "8"],

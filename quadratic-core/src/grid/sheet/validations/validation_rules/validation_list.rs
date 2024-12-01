@@ -85,7 +85,7 @@ mod tests {
     fn validate_list_selection() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value((1, 1).into(), "test");
-        let selection = A1Selection::test("A1");
+        let selection = A1Selection::test_a1("A1");
 
         assert!(ValidationList::validate_selection(
             &sheet,
@@ -130,7 +130,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.set_cell_value((1, 1).into(), "test");
         sheet.set_cell_value((1, 2).into(), "test2");
-        let selection = A1Selection::test("A1:A2");
+        let selection = A1Selection::test_a1("A1:A2");
 
         let list = ValidationList {
             source: ValidationListSource::Selection(selection),

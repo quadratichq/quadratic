@@ -116,9 +116,6 @@ export class PointerDown {
       return;
     }
 
-    if (column === this.previousPosition?.x && row === this.previousPosition?.y) {
-      return;
-    }
     // If the user is holding cmd/ctrl and the cell is already selected, then we start the un-selection.
     if (event.shiftKey) {
       cursor.selectTo(column, row, event.metaKey || event.ctrlKey);

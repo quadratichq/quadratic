@@ -152,7 +152,7 @@ mod tests {
     fn validation_render_special() {
         let v = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test("A1"),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -164,7 +164,7 @@ mod tests {
 
         let v = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test("A1"),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::List(ValidationList {
                 source: ValidationListSource::List(vec!["test".to_string()]),
                 ignore_blank: true,
@@ -177,7 +177,7 @@ mod tests {
 
         let v = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test("A1"),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::None,
             message: Default::default(),
             error: Default::default(),

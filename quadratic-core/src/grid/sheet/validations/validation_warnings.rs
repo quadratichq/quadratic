@@ -48,7 +48,7 @@ mod tests {
 
     fn create_validation() -> Validation {
         Validation {
-            selection: A1Selection::test("A1"),
+            selection: A1Selection::test_a1("A1"),
             id: Uuid::new_v4(),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,

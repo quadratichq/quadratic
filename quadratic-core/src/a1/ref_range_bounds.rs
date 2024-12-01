@@ -412,6 +412,19 @@ impl RefRangeBounds {
         self.start.col.is_some() && self.start.row.is_some() && self.end.is_none()
     }
 
+    /// Tries to convert the range to a single cell position. This will only
+    /// return Some if the range is a single cell.
+    pub fn try_to_pos(&self) -> Option<Pos> {
+        if self.is_single_cell() {
+            Some(Pos {
+                x: self.start.col.unwrap().coord,
+                y: self.start.row.unwrap().coord,
+            })
+        } else {
+            None
+        }
+    }
+
     /// Returns a test range from the A1-string.
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
@@ -794,5 +807,17 @@ mod tests {
         assert!(!RefRangeBounds::test_a1("A1:D10").contains_pos(Pos::new(11, 1)));
 
         assert!(RefRangeBounds::test_a1("B7:G7").contains_pos(Pos::new(2, 7)));
+    }
+
+    #[test]
+    fn test_try_to_pos() {
+        assert_eq!(
+            RefRangeBounds::test_a1("A1").try_to_pos(),
+            Some(Pos::new(1, 1))
+        );
+        assert_eq!(RefRangeBounds::test_a1("A1:B2").try_to_pos(), None);
+        assert_eq!(RefRangeBounds::test_a1("A").try_to_pos(), None);
+        assert_eq!(RefRangeBounds::test_a1("1:5").try_to_pos(), None);
+        assert_eq!(RefRangeBounds::test_a1("*").try_to_pos(), None);
     }
 }

@@ -237,7 +237,7 @@ mod tests {
     fn validation_all() {
         let validation = Validation {
             id: Default::default(),
-            selection: A1Selection::test("*"),
+            selection: A1Selection::test_a1("*"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -277,7 +277,7 @@ mod tests {
     fn validation_columns() {
         let validation = Validation {
             id: Default::default(),
-            selection: A1Selection::test("A,B,C"),
+            selection: A1Selection::test_a1("A,B,C"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -329,7 +329,7 @@ mod tests {
     fn validation_rows() {
         let validation = Validation {
             id: Default::default(),
-            selection: A1Selection::test("1,2,3"),
+            selection: A1Selection::test_a1("1,2,3"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -405,7 +405,7 @@ mod tests {
             Some(&v)
         );
         assert_eq!(
-            validations.validation_selection(A1Selection::test("*")),
+            validations.validation_selection(A1Selection::test_a1("*")),
             None
         );
     }

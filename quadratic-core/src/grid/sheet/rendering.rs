@@ -1172,7 +1172,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.validations.set(Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test("A1:B2"),
+            selection: A1Selection::test_a1("A1:B2"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -1192,7 +1192,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.validations.set(Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test("A1:B2"),
+            selection: A1Selection::test_a1("A1:B2"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -1216,7 +1216,7 @@ mod tests {
         let validation_id = Uuid::new_v4();
         sheet.validations.set(Validation {
             id: validation_id,
-            selection: A1Selection::test("A1:B2"),
+            selection: A1Selection::test_a1("A1:B2"),
             rule: ValidationRule::Logical(ValidationLogical {
                 ignore_blank: false,
                 ..Default::default()

@@ -17,6 +17,7 @@ pub enum A1Error {
     WrongCellCount(String),
     InvalidExclusion(String),
     TranslateInvalid(String),
+    SheetNotFound,
 }
 
 impl From<A1Error> for String {
@@ -44,6 +45,7 @@ impl std::fmt::Display for A1Error {
             A1Error::WrongCellCount(msg) => write!(f, "Wrong Cell Count: {msg}"),
             A1Error::InvalidExclusion(msg) => write!(f, "Invalid Exclusion: {msg}"),
             A1Error::TranslateInvalid(msg) => write!(f, "Translate Invalid: {msg}"),
+            A1Error::SheetNotFound => write!(f, "Sheet Not Found"),
         }
     }
 }

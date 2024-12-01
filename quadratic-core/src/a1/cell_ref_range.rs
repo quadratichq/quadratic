@@ -215,6 +215,12 @@ impl CellRefRange {
         }
     }
 
+    pub fn try_to_pos(&self) -> Option<Pos> {
+        match self {
+            Self::Sheet { range } => range.try_to_pos(),
+        }
+    }
+
     pub fn is_single_cell(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_single_cell(),

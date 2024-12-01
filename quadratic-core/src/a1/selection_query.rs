@@ -334,179 +334,185 @@ mod tests {
 
     #[test]
     fn test_contains() {
-        let selection = A1Selection::test("A1,B2,C3");
+        let selection = A1Selection::test_a1("A1,B2,C3");
         assert!(selection.might_contain_xy(1, 1));
         assert!(!selection.might_contain_xy(4, 1));
     }
 
     #[test]
     fn test_contains_pos() {
-        let selection = A1Selection::test("B7:G7");
+        let selection = A1Selection::test_a1("B7:G7");
         assert!(selection.contains_pos(pos![B7]));
         assert!(!selection.contains_pos(pos![A1]));
     }
 
     #[test]
     fn test_might_contain_pos() {
-        let selection = A1Selection::test("A1,B2,C3");
+        let selection = A1Selection::test_a1("A1,B2,C3");
         assert!(selection.might_contain_pos(pos![A1]));
         assert!(!selection.might_contain_pos(pos![D1]));
     }
 
     #[test]
     fn test_largest_rect() {
-        let selection = A1Selection::test("A1,B1:D2,E:G,2:3,5:7,F6:G8,4");
+        let selection = A1Selection::test_a1("A1,B1:D2,E:G,2:3,5:7,F6:G8,4");
         assert_eq!(selection.largest_rect(), Rect::new(1, 1, 7, 8));
     }
 
     #[test]
     fn test_largest_rect_finite() {
-        let selection = A1Selection::test("A1,B1:D2,E:G,2:3,5:7,F6:G8,4");
+        let selection = A1Selection::test_a1("A1,B1:D2,E:G,2:3,5:7,F6:G8,4");
         assert_eq!(selection.largest_rect_finite(), Rect::new(1, 1, 7, 8));
     }
 
     #[test]
     fn test_is_multi_cursor() {
-        let selection = A1Selection::test("A1,B2,C3");
+        let selection = A1Selection::test_a1("A1,B2,C3");
         assert!(selection.is_multi_cursor());
 
-        let selection = A1Selection::test("A1,B1:C2");
+        let selection = A1Selection::test_a1("A1,B1:C2");
         assert!(selection.is_multi_cursor());
 
-        let selection = A1Selection::test("A");
+        let selection = A1Selection::test_a1("A");
         assert!(selection.is_multi_cursor());
 
-        let selection = A1Selection::test("1");
+        let selection = A1Selection::test_a1("1");
         assert!(selection.is_multi_cursor());
 
-        let selection = A1Selection::test("A1");
+        let selection = A1Selection::test_a1("A1");
         assert!(!selection.is_multi_cursor());
     }
 
     #[test]
     fn test_is_column_row() {
-        let selection = A1Selection::test("A1,B2,C3");
+        let selection = A1Selection::test_a1("A1,B2,C3");
         assert!(!selection.is_column_row());
 
-        let selection = A1Selection::test("D");
+        let selection = A1Selection::test_a1("D");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::test("A:C");
+        let selection = A1Selection::test_a1("A:C");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::test("10");
+        let selection = A1Selection::test_a1("10");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::test("1:3");
+        let selection = A1Selection::test_a1("1:3");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::test("A1:3");
+        let selection = A1Selection::test_a1("A1:3");
         assert!(selection.is_column_row());
 
-        let selection = A1Selection::test("1:C3");
+        let selection = A1Selection::test_a1("1:C3");
         assert!(selection.is_column_row());
     }
 
     #[test]
     fn test_selection_end() {
-        let selection = A1Selection::test("A1,B2,C3");
+        let selection = A1Selection::test_a1("A1,B2,C3");
         assert_eq!(selection.last_selection_end(), pos![C3]);
 
-        let selection = A1Selection::test("A1,B1:C2");
+        let selection = A1Selection::test_a1("A1,B1:C2");
         assert_eq!(selection.last_selection_end(), pos![C2]);
 
-        let selection = A1Selection::test("C2:B1");
+        let selection = A1Selection::test_a1("C2:B1");
         assert_eq!(selection.last_selection_end(), pos![B1]);
     }
 
     #[test]
     fn test_bottom_right_cell() {
-        let selection = A1Selection::test("A1,B2,C3");
+        let selection = A1Selection::test_a1("A1,B2,C3");
         assert_eq!(selection.bottom_right_cell(), pos![C3]);
 
-        let selection = A1Selection::test("A1,B1:C2");
+        let selection = A1Selection::test_a1("A1,B1:C2");
         assert_eq!(selection.bottom_right_cell(), pos![C2]);
 
-        let selection = A1Selection::test("C2:B1");
+        let selection = A1Selection::test_a1("C2:B1");
         assert_eq!(selection.bottom_right_cell(), pos![C2]);
     }
 
     #[test]
     fn test_selected_column_ranges() {
-        let selection = A1Selection::test("A1,B2,C3,D4:E5,F6:G7,H8");
+        let selection = A1Selection::test_a1("A1,B2,C3,D4:E5,F6:G7,H8");
         assert_eq!(selection.selected_column_ranges(1, 10), vec![1, 8]);
 
-        let selection = A1Selection::test("A1,B2,D4:E5,F6:G7,H8");
+        let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(selection.selected_column_ranges(1, 10), vec![1, 2, 4, 8]);
 
-        let selection = A1Selection::test("A1,B2,D4:E5,F6:G7,H8");
+        let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(selection.selected_column_ranges(2, 5), vec![2, 2, 4, 5]);
     }
 
     #[test]
     fn test_selected_row_ranges() {
-        let selection = A1Selection::test("A1,B2,C3,D4:E5,F6:G7,H8");
+        let selection = A1Selection::test_a1("A1,B2,C3,D4:E5,F6:G7,H8");
         assert_eq!(selection.selected_row_ranges(1, 10), vec![1, 8]);
 
-        let selection = A1Selection::test("A1,B2,D4:E5,F6:G7,H8");
+        let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(selection.selected_row_ranges(1, 10), vec![1, 2, 4, 8]);
 
-        let selection = A1Selection::test("A1,B2,D4:E5,F6:G7,H8");
+        let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(selection.selected_row_ranges(2, 5), vec![2, 2, 4, 5]);
     }
 
     #[test]
     fn has_one_column_row_selection() {
-        assert!(A1Selection::test("A").has_one_column_row_selection(false));
-        assert!(A1Selection::test("1").has_one_column_row_selection(false));
-        assert!(!A1Selection::test("A,B").has_one_column_row_selection(false));
-        assert!(!A1Selection::test("A1").has_one_column_row_selection(false));
-        assert!(!A1Selection::test("A1:B2").has_one_column_row_selection(false));
+        assert!(A1Selection::test_a1("A").has_one_column_row_selection(false));
+        assert!(A1Selection::test_a1("1").has_one_column_row_selection(false));
+        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(false));
+        assert!(!A1Selection::test_a1("A1").has_one_column_row_selection(false));
+        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(false));
 
-        assert!(A1Selection::test("A").has_one_column_row_selection(true));
-        assert!(A1Selection::test("1").has_one_column_row_selection(true));
-        assert!(A1Selection::test("A1").has_one_column_row_selection(true));
-        assert!(!A1Selection::test("A,B").has_one_column_row_selection(true));
-        assert!(!A1Selection::test("A1:B2").has_one_column_row_selection(true));
+        assert!(A1Selection::test_a1("A").has_one_column_row_selection(true));
+        assert!(A1Selection::test_a1("1").has_one_column_row_selection(true));
+        assert!(A1Selection::test_a1("A1").has_one_column_row_selection(true));
+        assert!(!A1Selection::test_a1("A,B").has_one_column_row_selection(true));
+        assert!(!A1Selection::test_a1("A1:B2").has_one_column_row_selection(true));
     }
 
     #[test]
     fn is_single_selection() {
-        assert!(A1Selection::test("A1").is_single_selection());
-        assert!(!A1Selection::test("A1:B4").is_single_selection());
-        assert!(!A1Selection::test("A").is_single_selection());
-        assert!(!A1Selection::test("3").is_single_selection());
-        assert!(!A1Selection::test("A1,B2").is_single_selection());
+        assert!(A1Selection::test_a1("A1").is_single_selection());
+        assert!(!A1Selection::test_a1("A1:B4").is_single_selection());
+        assert!(!A1Selection::test_a1("A").is_single_selection());
+        assert!(!A1Selection::test_a1("3").is_single_selection());
+        assert!(!A1Selection::test_a1("A1,B2").is_single_selection());
     }
 
     #[test]
     fn test_is_selected_columns_finite() {
-        assert!(A1Selection::test("A1,B2,C3").is_selected_columns_finite());
-        assert!(A1Selection::test("A1,B2,C3,D:E").is_selected_columns_finite());
-        assert!(A1Selection::test("A:B").is_selected_columns_finite());
-        assert!(!A1Selection::test("*").is_selected_columns_finite());
-        assert!(!A1Selection::test("1:2").is_selected_columns_finite());
-        assert!(!A1Selection::test("A1:2").is_selected_columns_finite());
+        assert!(A1Selection::test_a1("A1,B2,C3").is_selected_columns_finite());
+        assert!(A1Selection::test_a1("A1,B2,C3,D:E").is_selected_columns_finite());
+        assert!(A1Selection::test_a1("A:B").is_selected_columns_finite());
+        assert!(!A1Selection::test_a1("*").is_selected_columns_finite());
+        assert!(!A1Selection::test_a1("1:2").is_selected_columns_finite());
+        assert!(!A1Selection::test_a1("A1:2").is_selected_columns_finite());
     }
 
     #[test]
     fn test_is_selected_rows_finite() {
-        assert!(A1Selection::test("A1,B2,C3").is_selected_rows_finite());
-        assert!(A1Selection::test("1:2").is_selected_rows_finite());
-        assert!(!A1Selection::test("A1,B2,C3,D:E").is_selected_rows_finite());
-        assert!(!A1Selection::test("A:B").is_selected_rows_finite());
-        assert!(!A1Selection::test("*").is_selected_rows_finite());
+        assert!(A1Selection::test_a1("A1,B2,C3").is_selected_rows_finite());
+        assert!(A1Selection::test_a1("1:2").is_selected_rows_finite());
+        assert!(!A1Selection::test_a1("A1,B2,C3,D:E").is_selected_rows_finite());
+        assert!(!A1Selection::test_a1("A:B").is_selected_rows_finite());
+        assert!(!A1Selection::test_a1("*").is_selected_rows_finite());
     }
 
     #[test]
     fn test_single_rect_or_cursor() {
-        assert_eq!(A1Selection::test("A1,B2,C3").single_rect_or_cursor(), None);
         assert_eq!(
-            A1Selection::test("A1:D5").single_rect_or_cursor(),
+            A1Selection::test_a1("A1,B2,C3").single_rect_or_cursor(),
+            None
+        );
+        assert_eq!(
+            A1Selection::test_a1("A1:D5").single_rect_or_cursor(),
             Some(Rect::new(1, 1, 4, 5))
         );
-        assert_eq!(A1Selection::test("A1:D5, A1").single_rect_or_cursor(), None);
-        assert_eq!(A1Selection::test("A").single_rect_or_cursor(), None);
-        assert_eq!(A1Selection::test("2:5").single_rect_or_cursor(), None);
+        assert_eq!(
+            A1Selection::test_a1("A1:D5, A1").single_rect_or_cursor(),
+            None
+        );
+        assert_eq!(A1Selection::test_a1("A").single_rect_or_cursor(), None);
+        assert_eq!(A1Selection::test_a1("2:5").single_rect_or_cursor(), None);
     }
 }

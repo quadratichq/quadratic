@@ -387,95 +387,95 @@ mod tests {
 
     #[test]
     fn test_select_all() {
-        let mut selection = A1Selection::test("A1,B1,C1");
+        let mut selection = A1Selection::test_a1("A1,B1,C1");
         selection.select_all(false);
-        assert_eq!(selection.test_string(), "*");
+        assert_eq!(selection.test_to_string(), "*");
 
-        selection = A1Selection::test("B1");
+        selection = A1Selection::test_a1("B1");
         selection.select_all(true);
-        assert_eq!(selection.test_string(), "B1:");
+        assert_eq!(selection.test_to_string(), "B1:");
     }
 
     #[test]
     fn test_select_column() {
-        let mut selection = A1Selection::test("A1");
+        let mut selection = A1Selection::test_a1("A1");
         selection.select_column(2, false, false, false, 1);
-        assert_eq!(selection.test_string(), "B");
+        assert_eq!(selection.test_to_string(), "B");
     }
 
     #[test]
     fn test_move_to() {
-        let mut selection = A1Selection::test("A1,B1,C1");
+        let mut selection = A1Selection::test_a1("A1,B1,C1");
         selection.move_to(2, 2, false);
-        assert_eq!(selection.test_string(), "B2");
+        assert_eq!(selection.test_to_string(), "B2");
     }
 
     #[test]
     fn test_columns_selected() {
-        let mut selection = A1Selection::test("A1,B1,C1");
+        let mut selection = A1Selection::test_a1("A1,B1,C1");
         selection.set_columns_selected();
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_column(3)]);
 
-        let mut selection = A1Selection::test("A1:C1");
+        let mut selection = A1Selection::test_a1("A1:C1");
         selection.set_columns_selected();
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_column_range(1, 3)]
         );
 
-        let mut selection = A1Selection::test("A:C");
+        let mut selection = A1Selection::test_a1("A:C");
         selection.set_columns_selected();
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_column_range(1, 3)]
         );
 
-        let mut selection = A1Selection::test("2:3");
+        let mut selection = A1Selection::test_a1("2:3");
         selection.set_columns_selected();
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_column(1)]);
     }
 
     #[test]
     fn test_rows_selected() {
-        let mut selection = A1Selection::test("A1,B2,C3");
+        let mut selection = A1Selection::test_a1("A1,B2,C3");
         selection.set_rows_selected();
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(3)]);
 
-        let mut selection = A1Selection::test("A1:C3");
+        let mut selection = A1Selection::test_a1("A1:C3");
         selection.set_rows_selected();
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_row_range(1, 3)]
         );
 
-        let mut selection = A1Selection::test("1:3");
+        let mut selection = A1Selection::test_a1("1:3");
         selection.set_rows_selected();
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::new_relative_row_range(1, 3)]
         );
 
-        let mut selection = A1Selection::test("C:D");
+        let mut selection = A1Selection::test_a1("C:D");
         selection.set_rows_selected();
         assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(1)]);
     }
 
     #[test]
     fn test_select_row() {
-        let mut selection = A1Selection::test("A1");
+        let mut selection = A1Selection::test_a1("A1");
         selection.select_row(2, false, false, false, 1);
-        assert_eq!(selection.test_string(), "2");
+        assert_eq!(selection.test_to_string(), "2");
     }
 
     #[test]
     fn test_select_rect() {
-        let mut selection = A1Selection::test("A1,B2,C3");
+        let mut selection = A1Selection::test_a1("A1,B2,C3");
         selection.select_rect(1, 1, 2, 2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A1:B2")]);
         assert_eq!(selection.cursor.x, 1);
         assert_eq!(selection.cursor.y, 1);
 
-        selection = A1Selection::test("A1:C3");
+        selection = A1Selection::test_a1("A1:C3");
         selection.select_rect(3, 3, 5, 5, true);
         assert_eq!(
             selection.ranges,
@@ -487,27 +487,27 @@ mod tests {
 
     #[test]
     fn test_select_to() {
-        let mut selection = A1Selection::test("A1");
+        let mut selection = A1Selection::test_a1("A1");
         selection.select_to(2, 2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A1:B2")]);
 
-        selection = A1Selection::test("A:B");
+        selection = A1Selection::test_a1("A:B");
         selection.select_to(2, 2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A:B2")]);
 
-        selection = A1Selection::test("A1");
+        selection = A1Selection::test_a1("A1");
         selection.select_to(3, 3, false);
         selection.select_to(1, 1, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A1")]);
 
-        let mut selection = A1Selection::test("A1,B2,C3");
+        let mut selection = A1Selection::test_a1("A1,B2,C3");
         selection.select_to(2, 2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test("C3:B2")]);
     }
 
     #[test]
     fn test_add_or_remove_column() {
-        let mut selection = A1Selection::test("A1,B1,C1");
+        let mut selection = A1Selection::test_a1("A1,B1,C1");
         selection.add_or_remove_column(4, 2);
         assert_eq!(
             selection.ranges,
@@ -521,7 +521,7 @@ mod tests {
         assert_eq!(selection.cursor.x, 4);
         assert_eq!(selection.cursor.y, 2);
 
-        let mut selection = A1Selection::test("A:D,B1,A");
+        let mut selection = A1Selection::test_a1("A:D,B1,A");
         selection.add_or_remove_column(1, 2);
         assert_eq!(
             selection.ranges,
@@ -534,7 +534,7 @@ mod tests {
         assert_eq!(selection.cursor.x, 1);
         assert_eq!(selection.cursor.y, 1);
 
-        let mut selection = A1Selection::test("A");
+        let mut selection = A1Selection::test_a1("A");
         selection.add_or_remove_column(1, 2);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A2")]);
         assert_eq!(selection.cursor.x, 1);
@@ -543,7 +543,7 @@ mod tests {
 
     #[test]
     fn test_extend_column() {
-        let mut selection = A1Selection::test("A1,B");
+        let mut selection = A1Selection::test_a1("A1,B");
         selection.extend_column(4, 2);
         assert_eq!(
             selection.ranges,
@@ -555,7 +555,7 @@ mod tests {
 
     #[test]
     fn test_add_or_remove_row() {
-        let mut selection = A1Selection::test("A1,B2,3");
+        let mut selection = A1Selection::test_a1("A1,B2,3");
         selection.add_or_remove_row(4, 2);
         assert_eq!(
             selection.ranges,
@@ -570,7 +570,7 @@ mod tests {
         assert_eq!(selection.cursor.y, 4);
 
         // Test removing a row from a range
-        let mut selection = A1Selection::test("1:4");
+        let mut selection = A1Selection::test_a1("1:4");
         selection.add_or_remove_row(2, 1);
         assert_eq!(
             selection.ranges,
@@ -578,14 +578,14 @@ mod tests {
         );
 
         // Test removing the only selected row
-        let mut selection = A1Selection::test("3");
+        let mut selection = A1Selection::test_a1("3");
         selection.add_or_remove_row(3, 1);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A3")]);
     }
 
     #[test]
     fn test_extend_row() {
-        let mut selection = A1Selection::test("A2,1");
+        let mut selection = A1Selection::test_a1("A2,1");
         selection.extend_row(4, 2);
         assert_eq!(
             selection.ranges,
@@ -595,14 +595,14 @@ mod tests {
         assert_eq!(selection.cursor.y, 1);
 
         // Test extending an empty selection
-        let mut selection = A1Selection::test("A1");
+        let mut selection = A1Selection::test_a1("A1");
         selection.extend_row(3, 1);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A1:3")]);
     }
 
     #[test]
     fn test_select_rect_single_cell() {
-        let mut selection = A1Selection::test("A1");
+        let mut selection = A1Selection::test_a1("A1");
         selection.select_rect(2, 2, 2, 2, false);
         assert_eq!(selection.ranges, vec![CellRefRange::test("B2")]);
         assert_eq!(selection.cursor.x, 2);
@@ -611,7 +611,7 @@ mod tests {
 
     #[test]
     fn test_select_to_with_append() {
-        let mut selection = A1Selection::test("A1");
+        let mut selection = A1Selection::test_a1("A1");
         selection.select_to(2, 2, true);
         assert_eq!(selection.ranges, vec![CellRefRange::test("A1:B2")]);
 

@@ -331,9 +331,9 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: A1Selection::test("A2,C4:D6,F7:H9"),
+                selection: A1Selection::test_a1("A2,C4:D6,F7:H9"),
                 rule: ValidationRule::List(ValidationList {
-                    source: ValidationListSource::Selection(A1Selection::test("A2,C4:D6,F7:H9")),
+                    source: ValidationListSource::Selection(A1Selection::test_a1("A2,C4:D6,F7:H9")),
                     ignore_blank: true,
                     drop_down: true,
                 }),
@@ -365,7 +365,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: A1Selection::test("A2,C4:D6,F7:H9"),
+                selection: A1Selection::test_a1("A2,C4:D6,F7:H9"),
                 rule: ValidationRule::Number(ValidationNumber {
                     ignore_blank: true,
                     ranges: vec![
@@ -401,7 +401,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: A1Selection::test("A2,C4:D6,F7:H9"),
+                selection: A1Selection::test_a1("A2,C4:D6,F7:H9"),
                 rule: ValidationRule::Text(ValidationText {
                     ignore_blank: true,
                     text_match: vec![
@@ -451,7 +451,7 @@ mod tests {
         let validations = Validations {
             validations: vec![Validation {
                 id: validation_id,
-                selection: A1Selection::test("A2,C4:D6,F7:H9"),
+                selection: A1Selection::test_a1("A2,C4:D6,F7:H9"),
                 rule: ValidationRule::DateTime(ValidationDateTime {
                     ignore_blank: true,
                     require_date: true,

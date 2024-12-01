@@ -616,7 +616,7 @@ mod test {
         let validations = ClipboardValidations {
             validations: vec![Validation {
                 id: Uuid::new_v4(),
-                selection: A1Selection::test("A1:B2"),
+                selection: A1Selection::test_a1("A1:B2"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
                 error: Default::default(),
@@ -632,7 +632,7 @@ mod test {
         );
         assert_eq!(operations.len(), 1);
         if let Operation::SetValidation { validation } = &operations[0] {
-            assert_eq!(validation.selection, A1Selection::test("B2:C3"));
+            assert_eq!(validation.selection, A1Selection::test_a1("B2:C3"));
         } else {
             panic!("Expected SetValidation operation");
         }
