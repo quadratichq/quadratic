@@ -165,7 +165,15 @@ fn test_formula_array_op() {
         }
     }
 
-    assert_eq!((11 * 31).to_string(), eval_to_string(&g, "B1 * D1"));
+    // Array of values from above:
+    // [
+    //     [11, 21, 31, 41],
+    //     [12, 22, 32, 42],
+    //     [13, 23, 33, 43],
+    //     [14, 24, 34, 44]
+    // ]
+
+    assert_eq!((11 * 31).to_string(), eval_to_string(&g, "A1 * C1"));
     assert_eq!(
         Value::from(array![
             11 * 31, 21 * 31;
@@ -173,7 +181,7 @@ fn test_formula_array_op() {
             13 * 31, 23 * 31;
             14 * 31, 24 * 31;
         ]),
-        eval(&g, "B1:C4 * D1"),
+        eval(&g, "A1:B4 * C1"),
     );
     assert_eq!(
         Value::from(array![
@@ -182,7 +190,7 @@ fn test_formula_array_op() {
             11 * 33, 11 * 43;
             11 * 34, 11 * 44;
         ]),
-        eval(&g, "B1 * D1:E4"),
+        eval(&g, "A1 * C1:D4"),
     );
     assert_eq!(
         Value::from(array![
@@ -191,11 +199,11 @@ fn test_formula_array_op() {
             13 * 33, 23 * 43;
             14 * 34, 24 * 44;
         ]),
-        eval(&g, "B1:C4 * D1:E4"),
+        eval(&g, "A1:B4 * C1:D4"),
     );
     assert_eq!(
         "Array height mismatch: expected value with 1 row or 4 rows, got 5 rows",
-        eval_to_err(&g, "B1:C4 * D1:E5").msg.to_string(),
+        eval_to_err(&g, "A1:B4 * C1:D5").msg.to_string(),
     );
 }
 
