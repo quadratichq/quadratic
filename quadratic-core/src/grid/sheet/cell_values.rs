@@ -234,15 +234,15 @@ mod test {
             CellValue::Logical(true),
         ]]);
         let mut transaction = PendingTransaction::default();
-        sheet.merge_cell_values(&mut transaction, Pos { x: 0, y: 0 }, &cell_values, true);
+        sheet.merge_cell_values(&mut transaction, Pos { x: 1, y: 1 }, &cell_values, true);
 
         assert_eq!(
-            sheet.cell_value(Pos { x: 2, y: 0 }),
+            sheet.cell_value(Pos { x: 3, y: 1 }),
             Some(CellValue::Logical(true))
         );
 
         assert_eq!(sheet.validations.warnings.len(), 2);
-        let warnings = vec![(0, 0, validation.id, false), (1, 0, validation.id, false)];
+        let warnings = vec![(1, 1, validation.id, false), (2, 1, validation.id, false)];
         expect_js_call(
             "jsValidationWarning",
             format!("{},{}", sheet.id, serde_json::to_string(&warnings).unwrap()),
