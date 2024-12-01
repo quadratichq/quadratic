@@ -45,11 +45,11 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
-    use serial_test::parallel;
     use uuid::Uuid;
 
     use crate::{
@@ -67,22 +67,21 @@ mod test {
     };
 
     #[test]
-    #[parallel]
     fn test_execute_operation_set_cell_values_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(BigDecimal::from(10)));
         let sheet_pos = SheetPos {
-            x: 1,
-            y: 0,
+            x: 2,
+            y: 1,
             sheet_id,
         };
 
         let code_cell = CellValue::Code(CodeCellValue {
             language: CodeCellLanguage::Formula,
-            code: "A0 + 1".to_string(),
+            code: "A1 + 1".to_string(),
         });
         gc.start_user_transaction(
             vec![
@@ -98,63 +97,62 @@ mod test {
 
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(11.into()))
         );
-        assert_eq!(sheet.cell_value(Pos { x: 1, y: 0 }), Some(code_cell));
+        assert_eq!(sheet.cell_value(Pos { x: 2, y: 1 }), Some(code_cell));
     }
 
     #[test]
-    #[parallel]
     fn test_multiple_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(BigDecimal::from(10)));
         let sheet_pos = SheetPos {
-            x: 1,
-            y: 0,
+            x: 2,
+            y: 1,
             sheet_id,
         };
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Formula,
-            "A0 + 1".to_string(),
+            "A1 + 1".to_string(),
             None,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(11.into()))
         );
 
         gc.set_code_cell(
             SheetPos {
-                x: 2,
-                y: 0,
+                x: 3,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "B0 + 1".to_string(),
+            "B1 + 1".to_string(),
             None,
         );
 
         let sheet = gc.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(11.into()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 0 }),
+            sheet.display_value(Pos { x: 3, y: 1 }),
             Some(CellValue::Number(12.into()))
         );
 
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "1".into(),
@@ -163,25 +161,24 @@ mod test {
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(2.into()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 0 }),
+            sheet.display_value(Pos { x: 3, y: 1 }),
             Some(CellValue::Number(3.into()))
         );
     }
 
     #[test]
-    #[parallel]
     fn test_deleting_to_trigger_compute() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "10".into(),
@@ -189,40 +186,39 @@ mod test {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 0,
-                y: 1,
+                x: 1,
+                y: 2,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "A0 + 1".into(),
+            "A1 + 1".into(),
             None,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Number(11.into()))
         );
 
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "".into(),
             None,
         );
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Number(1.into()))
         );
     }
 
     #[test]
-    #[parallel]
     fn test_js_code_result_to_code_cell_value_single() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -264,7 +260,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_js_code_result_to_code_cell_value_array() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -329,14 +324,13 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_undo_redo_spill_change() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_values(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             vec![vec!["1", "2", "3"]],
@@ -346,24 +340,24 @@ mod test {
         // create code that will later have a spill error
         gc.set_code_cell(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "A0:A3".into(),
+            "A1:A4".into(),
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 0 }),
+            gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(1.into()))
         );
 
         // create a spill error for the code
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 1,
+                x: 2,
+                y: 2,
                 sheet_id,
             },
             "create spill error".into(),
@@ -371,20 +365,20 @@ mod test {
         );
         assert!(
             gc.sheet(sheet_id)
-                .code_run(Pos { x: 1, y: 0 })
+                .code_run(Pos { x: 2, y: 1 })
                 .unwrap()
                 .spill_error
         );
         assert!(gc
             .sheet(sheet_id)
-            .display_value(Pos { x: 1, y: 0 })
+            .display_value(Pos { x: 2, y: 1 })
             .unwrap()
             .is_blank_or_empty_string());
 
         // undo the spill error
         gc.undo(None);
         assert_eq!(
-            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 0 }),
+            gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(1.into()))
         );
 
@@ -392,7 +386,7 @@ mod test {
         gc.redo(None);
         assert!(
             gc.sheet(sheet_id)
-                .code_run(Pos { x: 1, y: 0 })
+                .code_run(Pos { x: 2, y: 1 })
                 .unwrap()
                 .spill_error
         );
@@ -400,13 +394,12 @@ mod test {
         // undo the spill error
         gc.undo(None);
         assert_eq!(
-            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 0 }),
+            gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(1.into()))
         );
     }
 
     #[test]
-    #[parallel]
     fn test_formula_error() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

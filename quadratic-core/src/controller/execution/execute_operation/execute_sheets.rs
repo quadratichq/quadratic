@@ -317,8 +317,8 @@ mod tests {
         gc.set_cell_value(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
             },
             "1".to_string(),
             None,
@@ -326,25 +326,25 @@ mod tests {
         gc.set_cell_value(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 1,
+                x: 1,
+                y: 2,
             },
             "1".to_string(),
             None,
         );
         let sheet_pos = SheetPos {
             sheet_id,
-            x: 1,
-            y: 0,
+            x: 2,
+            y: 1,
         };
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Formula,
-            "A0 + A1".to_string(),
+            "A1 + A2".to_string(),
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         gc.delete_sheet(sheet_id, None);
