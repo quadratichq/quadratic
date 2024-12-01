@@ -70,6 +70,10 @@ fn upgrade_code_runs(
 
 fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1SelectionSchema {
     let mut ranges = vec![];
+    let mut cursor = v1_7_1::PosSchema {
+        x: selection.x,
+        y: selection.y,
+    };
 
     if selection.all {
         ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
@@ -99,6 +103,8 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
                         end: None,
                     },
                 ));
+                cursor.x = 1;
+                cursor.y = row;
             });
         });
 
@@ -116,6 +122,8 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
                         end: None,
                     },
                 ));
+                cursor.x = column;
+                cursor.y = 1;
             });
         });
 
@@ -147,6 +155,8 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
                         ),
                     },
                 ));
+                cursor.x = rect.min.x;
+                cursor.y = rect.min.y;
             });
         });
     }
@@ -171,10 +181,7 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
 
     v1_7_1::A1SelectionSchema {
         sheet_id: v1_7_1::IdSchema::from(selection.sheet_id.to_string()),
-        cursor: v1_7_1::PosSchema {
-            x: selection.x,
-            y: selection.y,
-        },
+        cursor,
         ranges,
     }
 }
