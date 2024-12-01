@@ -28,6 +28,7 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use chrono::Utc;
 
@@ -36,10 +37,8 @@ mod test {
         grid::{CellsAccessed, CodeCellLanguage, CodeRun, CodeRunResult},
         CellValue, Pos, SheetPos, SheetRect, Value,
     };
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_graph() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -108,14 +107,13 @@ mod test {
     }
 
     #[test]
-    #[parallel]
-    fn dependencies_near_input() {
+    fn test_dependencies_near_input() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "1".to_string(),
@@ -123,24 +121,24 @@ mod test {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "A0 + 5".to_string(),
+            "A1 + 5".to_string(),
             None,
         );
         assert_eq!(
             gc.get_dependent_code_cells(&SheetRect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 0 },
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 1, y: 1 },
                 sheet_id
             }),
             Some(
                 vec![SheetPos {
-                    x: 1,
-                    y: 0,
+                    x: 2,
+                    y: 1,
                     sheet_id
                 }]
                 .into_iter()

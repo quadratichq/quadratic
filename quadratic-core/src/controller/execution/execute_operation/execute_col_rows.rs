@@ -754,7 +754,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn delete_row() {
+    fn test_delete_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
