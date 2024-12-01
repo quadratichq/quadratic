@@ -250,7 +250,7 @@ impl PendingTransaction {
         col_start: i64,
         col_end: Option<i64>,
     ) {
-        let col_end = col_end.unwrap_or(sheet.bounds(false).last_column().unwrap_or(col_start));
+        let col_end = col_end.unwrap_or(sheet.bounds(true).last_column().unwrap_or(col_start));
         let dirty_hashes = self.dirty_hashes.entry(sheet.id).or_default();
         for col in col_start..=col_end {
             if let Some((start, end)) = sheet.column_bounds(col, false) {
@@ -270,10 +270,10 @@ impl PendingTransaction {
         row_start: i64,
         row_end: Option<i64>,
     ) {
-        let row_end = row_end.unwrap_or(sheet.bounds(false).last_row().unwrap_or(row_start));
+        let row_end = row_end.unwrap_or(sheet.bounds(true).last_row().unwrap_or(row_start));
         let dirty_hashes = self.dirty_hashes.entry(sheet.id).or_default();
         for row in row_start..=row_end {
-            if let Some((start, end)) = sheet.row_bounds(row, false) {
+            if let Some((start, end)) = sheet.row_bounds(row, true) {
                 for x in start..=end {
                     let mut pos = Pos { x, y: row };
                     pos.to_quadrant();
@@ -413,6 +413,7 @@ impl PendingTransaction {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use crate::{
         controller::operations::operation::Operation,
@@ -422,10 +423,8 @@ mod tests {
 
     use super::*;
     use chrono::Utc;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_to_transaction() {
         let sheet_id = SheetId::new();
         let name = "Sheet 1".to_string();
@@ -467,7 +466,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn is_user() {
         let transaction = PendingTransaction {
             source: TransactionSource::User,
@@ -489,7 +487,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_dirty_hashes_from_sheet_cell_positions() {
         let sheet_id = SheetId::new();
         let positions: HashSet<Pos> = vec![Pos { x: 1, y: 1 }, Pos { x: 16, y: 2 }]
@@ -512,7 +509,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_dirty_hashes_from_sheet_rect() {
         let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, SheetId::new());
         let mut transaction = PendingTransaction::default();
@@ -534,7 +530,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_from_code_run() {
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
@@ -581,7 +576,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_code_cell() {
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
@@ -593,7 +587,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_html_cell() {
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
@@ -605,7 +598,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_image_cell() {
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
@@ -616,7 +608,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_offsets_modified() {
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
@@ -636,14 +627,13 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_dirty_hashes_from_sheet_columns() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
         sheet.recalculate_bounds();
 
         let mut transaction = PendingTransaction::default();
-        transaction.add_dirty_hashes_from_sheet_columns(&sheet, 0, None);
+        transaction.add_dirty_hashes_from_sheet_columns(&sheet, 1, None);
 
         let dirty_hashes = transaction.dirty_hashes.get(&sheet.id).unwrap();
         assert!(dirty_hashes.contains(&Pos { x: 0, y: 0 }));
@@ -651,14 +641,13 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_add_dirty_hashes_from_sheet_rows() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos::new(1, 1), "A1".to_string());
         sheet.recalculate_bounds();
 
         let mut transaction = PendingTransaction::default();
-        transaction.add_dirty_hashes_from_sheet_rows(&sheet, 0, None);
+        transaction.add_dirty_hashes_from_sheet_rows(&sheet, 1, None);
 
         let dirty_hashes = transaction.dirty_hashes.get(&sheet.id).unwrap();
         assert!(dirty_hashes.contains(&Pos { x: 0, y: 0 }));
