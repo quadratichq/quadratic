@@ -362,8 +362,8 @@ mod tests {
         // values to copy: column: 0-2, rows: 0="1", 1="2", 2="3"
         gc.set_cell_values(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             vec![
@@ -377,36 +377,36 @@ mod tests {
         // copies values to copy to 10,10: column: 10-12, rows: 10="1", 11="2", 12="3"
         gc.set_code_cell(
             SheetPos {
-                x: 10,
-                y: 10,
+                x: 11,
+                y: 11,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "A0:C2".into(),
+            "A1:C3".into(),
             None,
         );
 
         // output that is spilled column: 11, row: 9 creates a spill (since it's inside the other code_cell)
         gc.set_code_cell(
             SheetPos {
-                x: 11,
-                y: 9,
+                x: 12,
+                y: 10,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "A0:A2".into(),
+            "A1:A3".into(),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 11, y: 9 }));
-        assert_eq!(render_cells, output_spill_error(11, 9));
+        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }));
+        assert_eq!(render_cells, output_spill_error(12, 10));
 
         // delete the code_cell that caused the spill
         gc.set_cell_value(
             SheetPos {
-                x: 10,
-                y: 10,
+                x: 11,
+                y: 11,
                 sheet_id,
             },
             "".into(),
@@ -414,10 +414,10 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 11, y: 9 }));
+        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 12, y: 10 }));
         assert_eq!(
             render_cells,
-            output_number(11, 9, "1", Some(CodeCellLanguage::Formula))
+            output_number(12, 10, "1", Some(CodeCellLanguage::Formula))
         );
     }
 
