@@ -147,6 +147,11 @@ export class PointerDown {
       const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
       this.unselectDown.width = column - this.unselectDown.left;
       this.unselectDown.height = row - this.unselectDown.top;
+
+      // this is necessary to ensure the rectangle always has width/height
+      if (this.unselectDown.width < 0) this.unselectDown.width -= 1;
+      if (this.unselectDown.height < 0) this.unselectDown.height -= 1;
+
       pixiApp.cursor.dirty = true;
       return;
     }

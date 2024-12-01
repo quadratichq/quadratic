@@ -126,12 +126,15 @@ impl A1Selection {
 
         // Left rectangle - only add if there's space to the left of the exclude rect
         if start_col.is_some_and(|c| c.coord < exclude.min.x) {
-            let start_row = start_col.map_or(1, |c| c.coord);
-            let start = CellRefRangeEnd::new_relative_xy(start_row, top.unwrap_or(start_row));
+            let start_col = start_col.map_or(1, |c| c.coord);
+            let start = CellRefRangeEnd::new_relative_xy(
+                start_col,
+                top.unwrap_or(range.start.row.map_or(1, |r| r.coord)),
+            );
             let end = CellRefRangeEnd {
                 col: Some(CellRefCoord::new_rel(exclude.min.x - 1)),
                 row: Some(CellRefCoord::new_rel(
-                    bottom.unwrap_or(end_row.map_or(start_row, |r| r.coord)),
+                    bottom.unwrap_or(end_row.map_or(start_col, |r| r.coord)),
                 )),
             };
             ranges.push(RefRangeBounds {
@@ -685,12 +688,12 @@ mod test {
     }
 
     #[test]
-    fn test_top_right_cell() {
-        let mut selection = A1Selection::test("B2:D5");
-        selection.exclude_cells(pos![B5], None);
+    fn test_top_right_cell_failure() {
+        let mut selection = A1Selection::test("B7:C8");
+        selection.exclude_cells(pos![C7], None);
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test("B3:D5"), CellRefRange::test("B3:D5")]
+            vec![CellRefRange::test("B8:C8"), CellRefRange::test("B7")]
         );
     }
 }
