@@ -4,8 +4,7 @@
 //! The logic iterates through each range, and if there is an overlap between
 //! the range and the excluded rect, it changes the ranges to remove the
 //! excluded rect. The one range may turn into between 0 and 4 ranges: the
-//! remaining Top, Bottom, left, and right rects. Note: only the Bottom and
-//! Right rects may include an infinite range.
+//! remaining Top, Bottom, Left, and Right rects (calculated in that order).
 
 use std::mem::swap;
 
@@ -682,6 +681,16 @@ mod test {
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test("A2:C2"), CellRefRange::test("E2:2")]
+        );
+    }
+
+    #[test]
+    fn test_top_right_cell() {
+        let mut selection = A1Selection::test("B2:D5");
+        selection.exclude_cells(pos![B5], None);
+        assert_eq!(
+            selection.ranges,
+            vec![CellRefRange::test("B3:D5"), CellRefRange::test("B3:D5")]
         );
     }
 }
