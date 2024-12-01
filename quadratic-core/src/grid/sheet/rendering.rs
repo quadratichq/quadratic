@@ -215,25 +215,30 @@ impl Sheet {
             .rev() // we need to reverse to ensure that later rules overwrite earlier ones
             .for_each(|validation| {
                 if let Some(special) = validation.render_special() {
-                    validation.selection.ranges.iter().for_each(|r| {
-                        if let Some(rect) = r.to_rect() {
-                            rect.iter()
-                                .filter(|pos| rect.contains(*pos))
-                                .for_each(|pos| {
-                                    if !render_cells
-                                        .iter()
-                                        .any(|cell| cell.x == pos.x && cell.y == pos.y)
-                                    {
-                                        render_cells.push(JsRenderCell {
-                                            x: pos.x,
-                                            y: pos.y,
-                                            special: Some(special.clone()),
-                                            ..Default::default()
-                                        });
-                                    }
-                                });
-                        }
-                    });
+                    validation
+                        .selection
+                        .ranges
+                        .iter()
+                        .for_each(|validations_range| {
+                            if let Some(validation_rect) = validations_range.to_rect() {
+                                validation_rect
+                                    .iter()
+                                    .filter(|pos| rect.contains(*pos))
+                                    .for_each(|pos| {
+                                        if !render_cells
+                                            .iter()
+                                            .any(|cell| cell.x == pos.x && cell.y == pos.y)
+                                        {
+                                            render_cells.push(JsRenderCell {
+                                                x: pos.x,
+                                                y: pos.y,
+                                                special: Some(special.clone()),
+                                                ..Default::default()
+                                            });
+                                        }
+                                    });
+                            }
+                        });
                 }
             });
         render_cells
@@ -1180,7 +1185,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         });
-        let render = sheet.get_render_cells(Rect::single_pos((0, 0).into()));
+        let render = sheet.get_render_cells(Rect::single_pos((1, 1).into()));
         assert_eq!(render.len(), 1);
     }
 
