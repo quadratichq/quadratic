@@ -64,11 +64,13 @@ impl GridController {
     }
 
     /// Creates a grid controller for testing purposes in both Rust and TS
+    #[cfg(test)]
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
     }
 
     // create a new gc for testing purposes with a viewport buffer
+    #[cfg(test)]
     pub fn test_with_viewport_buffer() -> Self {
         let mut gc = Self::from_grid(Grid::test(), 0);
         gc.viewport_buffer = Some(ViewportBuffer::default());
@@ -76,6 +78,7 @@ impl GridController {
     }
 
     // get the last active transaction for testing purposes
+    #[cfg(test)]
     pub fn last_transaction(&self) -> Option<&Transaction> {
         self.active_transactions()
             .unsaved_transactions

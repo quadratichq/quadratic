@@ -239,8 +239,8 @@ mod tests {
         // values to copy
         gc.set_cell_values(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             vec![vec!["1"], vec!["2"], vec!["3"]],
@@ -249,35 +249,35 @@ mod tests {
 
         gc.set_code_cell(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "B0:B3".into(),
+            "B1:B4".into(),
             None,
         );
 
         // cause a spill error
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Text("hello".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("hello".into()));
 
         let transaction = &mut PendingTransaction::default();
         gc.check_all_spills(transaction, sheet_id, false);
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.code_run(Pos { x: 0, y: 0 }).unwrap();
+        let code_run = sheet.code_run(Pos { x: 1, y: 1 }).unwrap();
         assert!(code_run.spill_error);
 
-        // should be a spill caused by 0,1
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
-        assert_eq!(render_cells, output_spill_error(0, 0));
+        // should be a spill caused by 1,2
+        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        assert_eq!(render_cells, output_spill_error(1, 1));
 
         // remove 'hello' that caused spill
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 1,
+                x: 1,
+                y: 2,
                 sheet_id,
             },
             "".into(),
@@ -285,16 +285,16 @@ mod tests {
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let code_run = sheet.code_run(Pos { x: 0, y: 0 });
+        let code_run = sheet.code_run(Pos { x: 1, y: 1 });
         assert!(code_run.is_some());
         assert!(!code_run.unwrap().spill_error);
 
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
+        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
 
         // should be B0: "1" since spill was removed
         assert_eq!(
             render_cells,
-            output_number(0, 0, "1", Some(CodeCellLanguage::Formula)),
+            output_number(1, 1, "1", Some(CodeCellLanguage::Formula)),
         );
     }
 
@@ -307,8 +307,8 @@ mod tests {
         // values to copy
         gc.set_cell_values(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             vec![vec!["1"], vec!["2"], vec!["3"]],
@@ -318,28 +318,28 @@ mod tests {
         // value to cause the spill
         gc.set_code_cell(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "B0:B3".into(),
+            "B1:B4".into(),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
+        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
         assert_eq!(
             render_cells,
-            output_number(0, 0, "1", Some(CodeCellLanguage::Formula))
+            output_number(1, 1, "1", Some(CodeCellLanguage::Formula))
         );
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 1 }));
-        assert_eq!(render_cells, output_number(0, 1, "2", None),);
+        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }));
+        assert_eq!(render_cells, output_number(1, 2, "2", None),);
 
         gc.set_code_cell(
             SheetPos {
-                x: 0,
-                y: 1,
+                x: 1,
+                y: 2,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
@@ -349,8 +349,8 @@ mod tests {
 
         // should be spilled because of the code_cell
         let sheet = gc.sheet(sheet_id);
-        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
-        assert_eq!(render_cells, output_spill_error(0, 0),);
+        let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
+        assert_eq!(render_cells, output_spill_error(1, 1),);
     }
 
     #[test]
