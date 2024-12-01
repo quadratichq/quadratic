@@ -174,6 +174,7 @@ impl PendingTransaction {
                     crate::wasm_bindings::js::jsSendTransaction(transaction_id, ops);
                 }
                 Err(e) => {
+                    dbgjs!(&self.forward_operations);
                     dbgjs!(format!("Failed to serialize forward operations: {}", e));
                 }
             };

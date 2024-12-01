@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    str::FromStr,
+};
 use ts_rs::TS;
 
 use super::SheetId;
@@ -10,9 +13,50 @@ pub struct JsCellsAccessed {
     pub cells: HashMap<String, Vec<String>>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct CellsAccessed {
-    pub cells: HashMap<SheetId, HashSet<CellRefRange>>, // TODO: change `CellRefRange` to `A1Selection`
+    pub cells: HashMap<SheetId, HashSet<CellRefRange>>,
+}
+
+// This custom serialization is needed because PendingTransaction::forward_operations
+// may contain CellsAccessed and is serialized via serde_json.
+impl Serialize for CellsAccessed {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeMap;
+        let mut map = serializer.serialize_map(Some(self.cells.len()))?;
+        for (sheet_id, ranges) in &self.cells {
+            map.serialize_entry(
+                &sheet_id.to_string(),
+                &ranges.iter().map(|r| r.to_string()).collect::<Vec<_>>(),
+            )?;
+        }
+        map.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for CellsAccessed {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let js_cells = HashMap::<String, Vec<String>>::deserialize(deserializer)?;
+        let mut cells = HashMap::new();
+
+        for (sheet_id_str, ranges) in js_cells {
+            if let Ok(sheet_id) = SheetId::from_str(&sheet_id_str) {
+                let ranges: HashSet<CellRefRange> =
+                    ranges.into_iter().filter_map(|r| r.parse().ok()).collect();
+                if !ranges.is_empty() {
+                    cells.insert(sheet_id, ranges);
+                }
+            }
+        }
+
+        Ok(CellsAccessed { cells })
+    }
 }
 
 impl From<CellsAccessed> for JsCellsAccessed {
@@ -190,5 +234,23 @@ mod tests {
         let js_cells: JsCellsAccessed = cells.into();
         assert_eq!(js_cells.cells.len(), 1);
         assert_eq!(js_cells.cells[&sheet_id.to_string()], vec!["*".to_string()]);
+    }
+
+    #[test]
+    fn test_serialize_deserialize() {
+        let mut cells = CellsAccessed::default();
+        let sheet_id = SheetId::new();
+        cells.add(sheet_id, CellRefRange::ALL);
+        cells.add(sheet_id, CellRefRange::new_relative_xy(1, 1));
+
+        // Test serialization
+        let serialized = serde_json::to_string(&cells).unwrap();
+
+        // Test deserialization
+        let deserialized: CellsAccessed = serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(cells, deserialized);
+        assert_eq!(deserialized.cells.len(), 1);
+        assert_eq!(deserialized.cells[&sheet_id].len(), 2);
     }
 }
