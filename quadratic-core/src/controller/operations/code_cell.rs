@@ -132,15 +132,14 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use bigdecimal::BigDecimal;
 
     use super::*;
     use crate::Pos;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_set_code_cell_operations() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -173,28 +172,12 @@ mod test {
     }
 
     #[test]
-    #[parallel]
-    fn rerun_all_code_cells_operations() {
+    fn test_rerun_all_code_cells_operations() {
         let mut gc = GridController::default();
         gc.add_sheet(None);
 
-        // (0, 0) = 1 + 1
+        // (1, 1) = 1 + 1
         let first = |gc: &mut GridController| {
-            let sheet_id = gc.sheet_ids()[0];
-            gc.set_code_cell(
-                SheetPos {
-                    x: 0,
-                    y: 0,
-                    sheet_id,
-                },
-                CodeCellLanguage::Formula,
-                "1 + 1".to_string(),
-                None,
-            );
-        };
-
-        // (1, 1) = A0
-        let second = |gc: &mut GridController| {
             let sheet_id = gc.sheet_ids()[0];
             gc.set_code_cell(
                 SheetPos {
@@ -203,22 +186,37 @@ mod test {
                     sheet_id,
                 },
                 CodeCellLanguage::Formula,
-                "A0".to_string(),
+                "1 + 1".to_string(),
                 None,
             );
         };
 
-        // (0, 0, sheet 2) = sheet 1:A1
+        // (2, 2) = A1
+        let second = |gc: &mut GridController| {
+            let sheet_id = gc.sheet_ids()[0];
+            gc.set_code_cell(
+                SheetPos {
+                    x: 2,
+                    y: 2,
+                    sheet_id,
+                },
+                CodeCellLanguage::Formula,
+                "A1".to_string(),
+                None,
+            );
+        };
+
+        // (1, 1, sheet 2) = sheet 1:A1
         let third = |gc: &mut GridController| {
             let sheet_id_2 = gc.sheet_ids()[1];
             gc.set_code_cell(
                 SheetPos {
-                    x: 0,
-                    y: 0,
+                    x: 1,
+                    y: 1,
                     sheet_id: sheet_id_2,
                 },
                 CodeCellLanguage::Formula,
-                "'Sheet 1'!A0".to_string(),
+                "'Sheet 1'!A1".to_string(),
                 None,
             );
         };
@@ -232,8 +230,8 @@ mod test {
                 operations[0],
                 Operation::ComputeCode {
                     sheet_pos: SheetPos {
-                        x: 0,
-                        y: 0,
+                        x: 1,
+                        y: 1,
                         sheet_id,
                     },
                 }
@@ -242,8 +240,8 @@ mod test {
                 operations[1],
                 Operation::ComputeCode {
                     sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
+                        x: 2,
+                        y: 2,
                         sheet_id,
                     },
                 }
@@ -252,8 +250,8 @@ mod test {
                 operations[2],
                 Operation::ComputeCode {
                     sheet_pos: SheetPos {
-                        x: 0,
-                        y: 0,
+                        x: 1,
+                        y: 1,
                         sheet_id: sheet_id_2,
                     },
                 }
@@ -271,15 +269,15 @@ mod test {
         let sheet_2 = gc.sheet(sheet_id_2);
 
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
-        );
-        assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet_2.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 2 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet_2.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
 
@@ -326,8 +324,8 @@ mod test {
                 operations[0],
                 Operation::ComputeCode {
                     sheet_pos: SheetPos {
-                        x: 0,
-                        y: 0,
+                        x: 1,
+                        y: 1,
                         sheet_id,
                     },
                 }
@@ -336,8 +334,8 @@ mod test {
                 operations[1],
                 Operation::ComputeCode {
                     sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
+                        x: 2,
+                        y: 2,
                         sheet_id,
                     },
                 }
@@ -358,7 +356,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn rerun_all_code_cells_one() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
