@@ -115,12 +115,12 @@ mod tests {
     #[test]
     fn summarize_columns() {
         let mut sheet = Sheet::test();
-        for i in 0..10 {
-            sheet.test_set_value_number(1, i, "2");
-            sheet.test_set_value_number(-1, i, "2");
+        for y in 1..11 {
+            sheet.test_set_value_number(1, y, "2");
+            sheet.test_set_value_number(2, y, "2");
         }
-        sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "", "3"], true);
-        let selection = A1Selection::from_column_ranges(&[0..=2], sheet.id);
+        sheet.test_set_code_run_array(1, 20, vec!["1", "2", "", "3"], true);
+        let selection = A1Selection::from_column_ranges(&[1..=2], sheet.id);
         let result = sheet.summarize_selection(selection, 9).unwrap();
         assert_eq!(result.count, 23);
         assert_eq!(result.sum, Some(46.0));
@@ -130,12 +130,12 @@ mod tests {
     #[test]
     fn summarize_rows() {
         let mut sheet = Sheet::test();
-        for i in 0..10 {
-            sheet.test_set_value_number(i, 1, "2");
-            sheet.test_set_value_number(i, -1, "2");
+        for y in 1..11 {
+            sheet.test_set_value_number(y, 1, "2");
+            sheet.test_set_value_number(y, 2, "2");
         }
-        sheet.test_set_code_run_array(-10, -1, vec!["1", "2", "", "3"], true);
-        let selection = A1Selection::from_row_ranges(&[0..=2], sheet.id);
+        sheet.test_set_code_run_array(20, 1, vec!["1", "2", "", "3"], false);
+        let selection = A1Selection::from_row_ranges(&[1..=2], sheet.id);
         let result = sheet.summarize_selection(selection, 9).unwrap();
         assert_eq!(result.count, 23);
         assert_eq!(result.sum, Some(46.0));
