@@ -52,7 +52,7 @@ export const SheetRange = (props: Props) => {
     if (onlyCurrentSheet) {
       return onlyCurrentSheet;
     }
-    const id = changeCursor === true ? sheets.sheet.id : changeCursor ?? sheets.sheet.id;
+    const id = changeCursor === true ? sheets.current : changeCursor ?? sheets.current;
     return id;
   }, [changeCursor, onlyCurrentSheet]);
 
@@ -70,7 +70,7 @@ export const SheetRange = (props: Props) => {
     (value: string) => {
       try {
         const jsSelection = stringToSelection(value, a1SheetId, onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap());
-        onChangeRange(jsSelection?.selection());
+        onChangeRange(jsSelection);
         setRangeError(undefined);
       } catch (e: any) {
         try {
