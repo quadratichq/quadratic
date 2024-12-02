@@ -57,32 +57,33 @@ pub(crate) fn import_format(format: current::FormatSchema) -> Format {
 }
 
 pub(crate) fn import_formats(formats: SheetFormattingSchema) -> SheetFormatting {
-    formats
-        .into_iter()
-        .map(|(x, block)| {
-            (
-                x,
-                Block {
-                    start: block.start,
-                    end: block.end,
-                    value: block
-                        .value
-                        .into_iter()
-                        .map(|(y, block)| {
-                            (
-                                y,
-                                Block {
-                                    start: block.start,
-                                    end: block.end,
-                                    value: import_format(block.value),
-                                },
-                            )
-                        })
-                        .collect(),
-                },
-            )
-        })
-        .collect()
+    todo!()
+    // formats
+    //     .into_iter()
+    //     .map(|(x, block)| {
+    //         (
+    //             x,
+    //             Block {
+    //                 start: block.start,
+    //                 end: block.end,
+    //                 value: block
+    //                     .value
+    //                     .into_iter()
+    //                     .map(|(y, block)| {
+    //                         (
+    //                             y,
+    //                             Block {
+    //                                 start: block.start,
+    //                                 end: block.end,
+    //                                 value: import_format(block.value),
+    //                             },
+    //                         )
+    //                     })
+    //                     .collect(),
+    //             },
+    //         )
+    //     })
+    //     .collect()
 }
 
 pub(crate) fn export_format(format: Format) -> current::FormatSchema {
@@ -134,30 +135,31 @@ pub(crate) fn export_format(format: Format) -> current::FormatSchema {
 }
 
 pub(crate) fn export_formats(formats: SheetFormatting) -> SheetFormattingSchema {
-    formats
-        .into_iter()
-        .map(|(x, block)| {
-            (
-                x,
-                BlockSchema {
-                    start: block.start,
-                    end: block.end,
-                    value: block
-                        .value
-                        .into_iter()
-                        .map(|(y, format)| {
-                            (
-                                y,
-                                BlockSchema {
-                                    start: format.start,
-                                    end: format.end,
-                                    value: export_format(format.value),
-                                },
-                            )
-                        })
-                        .collect(),
-                },
-            )
-        })
-        .collect()
+    todo!()
+    // formats
+    //     .into_iter()
+    //     .map(|(x, block)| {
+    //         (
+    //             x,
+    //             BlockSchema {
+    //                 start: block.start,
+    //                 end: block.end,
+    //                 value: block
+    //                     .value
+    //                     .into_iter()
+    //                     .map(|(y, format)| {
+    //                         (
+    //                             y,
+    //                             BlockSchema {
+    //                                 start: format.start,
+    //                                 end: format.end,
+    //                                 value: export_format(format.value),
+    //                             },
+    //                         )
+    //                     })
+    //                     .collect(),
+    //             },
+    //         )
+    //     })
+    //     .collect()
 }

@@ -76,7 +76,7 @@ impl Sheet {
             }
         });
 
-        let mut format = self.formats.get(Pos { x, y }).cloned().unwrap_or_default();
+        let mut format = self.formats.get(Pos { x, y }).unwrap_or_default();
         let mut number: Option<JsNumber> = None;
         let value = match &value {
             CellValue::Number(_) => {

@@ -3,7 +3,7 @@
 
 use std::collections::btree_map;
 
-use crate::{CopyFormats, Pos};
+use crate::{CopyFormats, Pos, Rect};
 
 use serde::{Deserialize, Serialize};
 
@@ -105,28 +105,6 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
             }),
         })))
     }
-    /// Helper fn to set a range of columns to a single value.
-    pub fn set_columns(
-        &mut self,
-        column_start: i64,
-        column_end: i64,
-        value: Option<T>,
-    ) -> Contiguous2D<Option<T>> {
-        self.set_rect(column_start, 1, Some(column_end), None, value)
-    }
-    /// Helper fn to set a range of rows to a single value.
-    pub fn set_rows(
-        &mut self,
-        row_start: i64,
-        row_end: i64,
-        value: Option<T>,
-    ) -> Contiguous2D<Option<T>> {
-        self.set_rect(1, row_start, None, Some(row_end), value)
-    }
-    /// Helper fn to set the whole sheet to a single value.
-    pub fn set_sheet(&mut self, value: Option<T>) -> Contiguous2D<Option<T>> {
-        self.set_rect(1, 1, None, None, value)
-    }
     /// Returns the upper bound on the values in the given column, or `None` if
     /// it is unbounded. Returns 0 if there are no values.
     pub fn column_max(&self, column: i64) -> Option<i64> {
@@ -216,6 +194,22 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
                 (x1, y1, x2, y2)
             })
         })
+    }
+
+    /// Returns the values in a Rect as a Vec of values, organized by y then x.
+    pub fn rect_values(&self, rect: Rect) -> Vec<Option<T>> {
+        let mut values = vec![None; rect.height() as usize];
+        for x in rect.x_range() {
+            if let Some(column) = self.0.get(x) {
+                for y in rect.y_range() {
+                    if let Some(value) = column.get(y) {
+                        values[y as usize * rect.width() as usize + x as usize] =
+                            Some(value.clone());
+                    }
+                }
+            }
+        }
+        values
     }
 }
 
@@ -402,8 +396,8 @@ mod tests {
     fn test_set_column() {
         let mut c = Contiguous2D::<bool>::new();
         let mut undo = Contiguous2D::<Option<bool>>::new();
-        undo.set_columns(2, 2, Some(None));
-        assert_eq!(c.set_columns(2, 2, Some(true)), undo);
+        undo.set_rect(2, 1, Some(2), None, Some(None));
+        assert_eq!(c.set_rect(2, 1, Some(2), None, Some(true)), undo);
 
         assert_eq!(c.get(pos![B2]), Some(&true));
         assert_eq!(c.get(pos![B100000]), Some(&true));
@@ -418,8 +412,8 @@ mod tests {
     fn test_set_row() {
         let mut c = Contiguous2D::<bool>::new();
         let mut undo = Contiguous2D::<Option<bool>>::new();
-        undo.set_rows(2, 2, Some(None));
-        assert_eq!(c.set_rows(2, 2, Some(true)), undo);
+        undo.set_rect(1, 2, None, Some(2), Some(None));
+        assert_eq!(c.set_rect(1, 2, None, Some(2), Some(true)), undo);
 
         assert_eq!(c.get(pos![A2]), Some(&true));
         assert_eq!(c.get(pos![ZZZZ2]), Some(&true));
@@ -488,5 +482,15 @@ mod tests {
         c.remove_row(3);
         assert_eq!(c.get(Pos { x: 2, y: 10 }), None);
         assert_eq!(c.get(Pos { x: 2, y: 9 }), Some(&true));
+    }
+
+    #[test]
+    fn test_rect_values() {
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        assert_eq!(
+            c.rect_values(Rect::test_a1("A1:J10")),
+            vec![Some(true); 10 * 10]
+        );
     }
 }

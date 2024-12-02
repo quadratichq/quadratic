@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use super::{A1Subspaces, CellRefRange, SheetCellRefRange};
-use crate::grid::Contiguous2D;
 use crate::{
     grid::SheetId, selection::OldSelection, A1Error, Pos, Rect, SheetNameIdMap, SheetPos, SheetRect,
 };
@@ -380,42 +379,42 @@ impl A1Selection {
         self.intersection(other).is_some()
     }
 
-    /// Constructs contiguous blocks from an A1 selection.
-    /// todo: this doesn't look right -- how do you select multiple columns or rows?
-    pub fn to_contiguous_blocks<T: Clone + PartialEq>(&self, value: T) -> Contiguous2D<T> {
-        let mut ret = Contiguous2D::new();
-        for range in &self.ranges {
-            match range {
-                CellRefRange::Sheet { range } => {
-                    let [x1, y1] = range.start.unpack_xy();
-                    match range.end {
-                        None => match (x1, y1) {
-                            (None, None) => (), // TODO(sentry): empty range
-                            (Some(column), None) => {
-                                ret.set_columns(column, column, Some(value.clone()));
-                            }
-                            (None, Some(row)) => {
-                                ret.set_rows(row, row, Some(value.clone()));
-                            }
-                            (Some(col), Some(row)) => {
-                                let pos = Pos::new(col, row);
-                                ret.set(pos, Some(value.clone()));
-                            }
-                        },
-                        Some(end) => {
-                            let [x2, y2] = end.unpack_xy();
+    // /// Constructs contiguous blocks from an A1 selection.
+    // /// todo: this doesn't look right -- how do you select multiple columns or rows?
+    // pub fn to_contiguous_blocks<T: Clone + PartialEq>(&self, value: T) -> Contiguous2D<T> {
+    //     let mut ret = Contiguous2D::new();
+    //     for range in &self.ranges {
+    //         match range {
+    //             CellRefRange::Sheet { range } => {
+    //                 let [x1, y1] = range.start.unpack_xy();
+    //                 match range.end {
+    //                     None => match (x1, y1) {
+    //                         (None, None) => (), // TODO(sentry): empty range
+    //                         (Some(column), None) => {
+    //                             ret.set_columns(column, column, Some(value.clone()));
+    //                         }
+    //                         (None, Some(row)) => {
+    //                             ret.set_rows(row, row, Some(value.clone()));
+    //                         }
+    //                         (Some(col), Some(row)) => {
+    //                             let pos = Pos::new(col, row);
+    //                             ret.set(pos, Some(value.clone()));
+    //                         }
+    //                     },
+    //                     Some(end) => {
+    //                         let [x2, y2] = end.unpack_xy();
 
-                            let (x1, x2) = crate::util::minmax_opt(x1.unwrap_or(1), x2.or(x1));
-                            let (y1, y2) = crate::util::minmax_opt(y1.unwrap_or(1), y2.or(y2));
+    //                         let (x1, x2) = crate::util::minmax_opt(x1.unwrap_or(1), x2.or(x1));
+    //                         let (y1, y2) = crate::util::minmax_opt(y1.unwrap_or(1), y2.or(y2));
 
-                            ret.set_rect(x1, y1, x2, y2, Some(value.clone()));
-                        }
-                    }
-                }
-            }
-        }
-        ret
-    }
+    //                         ret.set_rect(x1, y1, x2, y2, Some(value.clone()));
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     ret
+    // }
 
     pub fn update_cursor(&mut self) {
         if let Some(last) = self.ranges.last() {

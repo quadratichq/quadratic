@@ -653,7 +653,7 @@ mod test {
     }
 
     #[test]
-    fn test_test() {
+    fn test_test_a1() {
         let rect = Rect::test_a1("B2:D4");
         assert_eq!(rect.min, Pos { x: 2, y: 2 });
         assert_eq!(rect.max, Pos { x: 4, y: 4 });

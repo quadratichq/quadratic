@@ -564,8 +564,9 @@ mod test {
         assert_eq!(sheet.bounds(false), GridBounds::Empty);
 
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
-        let _ =
-            sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
+        let _ = sheet
+            .formats
+            .set_align(1, 1, Some(1), Some(1), Some(CellAlign::Center));
         assert!(sheet.recalculate_bounds());
 
         assert_eq!(
@@ -594,8 +595,9 @@ mod test {
             CellValue::Text(String::from("test")),
         );
         let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
-        let _ =
-            sheet.set_formatting_value::<CellWrap>(Pos { x: 100, y: 200 }, Some(CellWrap::Wrap));
+        sheet
+            .formats
+            .set_wrap(100, 200, Some(100), Some(200), Some(CellWrap::Wrap));
         assert!(sheet.recalculate_bounds());
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
@@ -620,7 +622,9 @@ mod test {
             CellValue::Text(String::from("test")),
         );
         sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
+        sheet
+            .formats
+            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.row_bounds(100, true), Some((-50, 80)));
@@ -647,7 +651,8 @@ mod test {
         );
         let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
         let _ = sheet
-            .set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
+            .formats
+            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
 
         // set negative values
         let _ = sheet.set_cell_value(
@@ -659,7 +664,8 @@ mod test {
             CellValue::Text(String::from("test")),
         );
         let _ = sheet
-            .set_formatting_value::<CellAlign>(Pos { x: -100, y: -200 }, Some(CellAlign::Center));
+            .formats
+            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.columns_bounds(0, 100, true), Some((-50, 80)));
@@ -686,7 +692,8 @@ mod test {
         );
         let _ = sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
         let _ = sheet
-            .set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
+            .formats
+            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
 
         // set negative values
         let _ = sheet.set_cell_value(
@@ -698,7 +705,8 @@ mod test {
             CellValue::Text(String::from("test")),
         );
         let _ = sheet
-            .set_formatting_value::<CellAlign>(Pos { y: -100, x: -200 }, Some(CellAlign::Center));
+            .formats
+            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.rows_bounds(0, 100, true), Some((-50, 80)));

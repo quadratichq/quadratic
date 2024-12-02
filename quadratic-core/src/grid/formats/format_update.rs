@@ -66,7 +66,8 @@ impl SheetFormatUpdates {
     /// Constructs a format update that applies the same formatting to every
     /// affected cell in a selection.
     pub fn from_selection(selection: &A1Selection, update: FormatUpdate) -> Self {
-        Self::new_uniform(selection.to_contiguous_blocks(()), update)
+        todo!()
+        // Self::new_uniform(selection.to_contiguous_blocks(()), update)
     }
 
     pub fn subspaces(&self) -> A1Subspaces {
