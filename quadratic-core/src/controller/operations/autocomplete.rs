@@ -16,6 +16,9 @@ use itertools::Itertools;
 
 use super::operation::Operation;
 
+type AutoCompleteOperationsValuesPosResult =
+    Result<(Vec<Operation>, Vec<(CellValue, Option<Pos>)>)>;
+
 #[derive(PartialEq)]
 pub enum ExpandDirection {
     Up,
@@ -568,7 +571,7 @@ impl GridController {
         sheet_id: SheetId,
         initial_range: &Rect,
         final_range: &Rect,
-        values: &[CellValue],
+        values: &[(CellValue, Option<Pos>)],
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
@@ -591,7 +594,7 @@ impl GridController {
                         let array_index = (index as i64 + (i * width)) as usize;
                         values
                             .get(array_index)
-                            .unwrap_or(&CellValue::Blank)
+                            .unwrap_or(&(CellValue::Blank, None))
                             .to_owned()
                     })
                     .collect::<Vec<_>>();
@@ -677,7 +680,7 @@ impl GridController {
         sheet_id: SheetId,
         initial_range: &Rect,
         final_range: &Rect,
-        values: &[CellValue],
+        values: &[(CellValue, Option<Pos>)],
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
@@ -708,7 +711,7 @@ impl GridController {
                         let array_index = (i * width) + width - index as i64 - 1;
                         values
                             .get(array_index as usize)
-                            .unwrap_or(&CellValue::Blank)
+                            .unwrap_or(&(CellValue::Blank, None))
                             .to_owned()
                     })
                     .collect::<Vec<_>>();
@@ -795,22 +798,18 @@ impl GridController {
         negative: bool,
         initial_range: &Rect,
         final_range: &Rect,
-        cell_values: Option<Vec<CellValue>>,
-    ) -> Result<(Vec<Operation>, Vec<CellValue>)> {
+        cell_values: Option<Vec<(CellValue, Option<Pos>)>>,
+    ) -> AutoCompleteOperationsValuesPosResult {
         let Some(sheet) = self.try_sheet(sheet_id) else {
             return Err(Error::msg("Sheet not found"));
         };
         let values = if let Some(cell_values) = cell_values {
             cell_values
         } else {
-            sheet
-                .cell_values_in_rect(initial_range, true)?
-                .into_cell_values_vec()
-                .into_iter()
-                .collect::<Vec<CellValue>>()
+            sheet.cell_values_pos_in_rect(initial_range, true)
         };
 
-        let series = find_auto_complete(SeriesOptions {
+        let mut series = find_auto_complete(SeriesOptions {
             series: values,
             spaces: (final_range.width() * final_range.height()) as i32,
             negative,
@@ -820,17 +819,23 @@ impl GridController {
         let compute_code_ops = final_range
             .iter()
             .enumerate()
-            .filter(|(i, _)| matches!(series.get(*i), Some(CellValue::Code(_))))
-            .map(|(_, Pos { x, y })| {
-                let sheet_pos = SheetPos::new(sheet_id, x, y);
-                Operation::ComputeCode { sheet_pos }
+            .filter_map(|(i, Pos { x, y })| {
+                if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
+                    if let Some(original_pos) = original_pos {
+                        code_cell.update_cell_references(x - original_pos.x, y - original_pos.y);
+                    }
+                    let sheet_pos = SheetPos::new(sheet_id, x, y);
+                    Some(Operation::ComputeCode { sheet_pos })
+                } else {
+                    None
+                }
             })
             .collect::<Vec<Operation>>();
 
         let values = CellValues::from_flat_array(
             final_range.width(),
             final_range.height(),
-            series.to_owned(),
+            series.iter().map(|(v, _)| v.to_owned()).collect(),
         );
         let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
         let mut ops = vec![Operation::SetCellValues { sheet_pos, values }];

@@ -516,9 +516,9 @@ mod test {
     use crate::controller::GridController;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::formats::Formats;
-    use crate::grid::{Bold, CodeCellLanguage, Italic};
+    use crate::grid::{Bold, CodeCellLanguage, CodeCellValue, Italic};
     use crate::test_util::print_table;
-    use crate::{A1Selection, CodeCellValue, SheetPos, SheetRect};
+    use crate::{A1Selection, SheetPos, SheetRect};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();

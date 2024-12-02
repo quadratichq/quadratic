@@ -181,9 +181,9 @@ mod tests {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{BorderSelection, BorderStyle, CodeCellLanguage},
+        grid::{BorderSelection, BorderStyle, CodeCellLanguage, CodeCellValue},
         selection::OldSelection,
-        ArraySize, CellValue, CodeCellValue, Pos, SheetPos,
+        ArraySize, CellValue, Pos, SheetPos,
     };
     use serial_test::parallel;
 

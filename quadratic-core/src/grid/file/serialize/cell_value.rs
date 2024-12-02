@@ -1,7 +1,7 @@
 use super::current;
 use crate::{
-    grid::{CodeCellLanguage, ConnectionKind},
-    CellValue, CodeCellValue,
+    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind},
+    CellValue,
 };
 use bigdecimal::BigDecimal;
 use std::str::FromStr;

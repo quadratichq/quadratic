@@ -213,8 +213,11 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRunResult, RenderSize},
-        Array, CodeCellValue, SheetPos, Value,
+        grid::{
+            js_types::JsRenderCellSpecial, CodeCellLanguage, CodeCellValue, CodeRunResult,
+            RenderSize,
+        },
+        Array, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
     use chrono::Utc;

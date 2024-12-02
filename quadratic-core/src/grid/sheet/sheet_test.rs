@@ -52,10 +52,12 @@ impl Sheet {
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
     #[cfg(test)]
     pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: crate::grid::CellValue) {
+        use crate::grid::{CodeCellLanguage, CodeCellValue};
+
         self.set_cell_value(
             crate::Pos { x, y },
-            crate::CellValue::Code(crate::CodeCellValue {
-                language: crate::grid::CodeCellLanguage::Formula,
+            crate::CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
                 code: "".to_string(),
             }),
         );
@@ -93,8 +95,8 @@ impl Sheet {
     #[cfg(test)]
     pub fn test_set_code_run_array(&mut self, x: i64, y: i64, n: Vec<&str>, vertical: bool) {
         use crate::{
-            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
-            Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
+            grid::{CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult},
+            Array, ArraySize, CellValue, Pos, Value,
         };
         use bigdecimal::BigDecimal;
         use chrono::Utc;
@@ -147,8 +149,8 @@ impl Sheet {
     #[cfg(test)]
     pub fn test_set_code_run_array_2d(&mut self, x: i64, y: i64, w: u32, h: u32, n: Vec<&str>) {
         use crate::{
-            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
-            Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
+            grid::{CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult},
+            Array, ArraySize, CellValue, Pos, Value,
         };
         use bigdecimal::BigDecimal;
         use chrono::Utc;

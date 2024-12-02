@@ -324,11 +324,10 @@ mod tests {
     use crate::{
         grid::{
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
-            CodeCellLanguage,
+            CodeCellLanguage, CodeCellValue,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
-        A1Selection, CellValue, CodeCellValue, Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH,
-        DEFAULT_ROW_HEIGHT,
+        A1Selection, CellValue, Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT,
     };
 
     use super::*;

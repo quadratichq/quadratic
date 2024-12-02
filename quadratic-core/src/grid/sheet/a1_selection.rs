@@ -490,10 +490,10 @@ mod tests {
     use crate::{
         grid::{
             js_types::{JsCellValuePosAIContext, JsCodeCell, JsReturnInfo},
-            CodeCellLanguage, CodeRun, CodeRunResult,
+            CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult,
         },
-        A1Selection, Array, CellRefRange, CellValue, CodeCellValue, Pos, Rect, RunError,
-        RunErrorMsg, SheetRect, Value,
+        A1Selection, Array, CellRefRange, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect,
+        Value,
     };
 
     use super::Sheet;

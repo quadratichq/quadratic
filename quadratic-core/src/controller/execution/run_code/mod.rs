@@ -331,8 +331,8 @@ mod test {
     use serial_test::{parallel, serial};
 
     use super::*;
+    use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::expect_js_call_count;
-    use crate::CodeCellValue;
 
     #[test]
     #[parallel]

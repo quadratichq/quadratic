@@ -223,8 +223,9 @@ mod test {
     use serial_test::serial;
 
     use super::*;
+    use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::expect_js_call;
-    use crate::{CellValue, CodeCellValue, Pos, SheetRect, Value};
+    use crate::{CellValue, Pos, SheetRect, Value};
 
     #[test]
     #[serial]
