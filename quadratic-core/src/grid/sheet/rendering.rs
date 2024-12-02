@@ -76,7 +76,7 @@ impl Sheet {
             }
         });
 
-        let mut format = self.formats.get(Pos { x, y }).unwrap_or_default();
+        let mut format = self.formats.get_format(Pos { x, y }).unwrap_or_default();
         let mut number: Option<JsNumber> = None;
         let value = match &value {
             CellValue::Number(_) => {
@@ -579,7 +579,7 @@ mod tests {
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellVerticalAlign, CellWrap, CodeCellValue, Italic, RenderSize,
+            CellVerticalAlign, CellWrap, CodeCellValue, RenderSize,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
         A1Selection, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
@@ -641,20 +641,25 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.sheet_mut(sheet_id);
-        let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
-        let _ = sheet.set_formatting_value::<Bold>(Pos { x: 1, y: 2 }, Some(true));
-        let _ =
-            sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
-        let _ = sheet.set_formatting_value::<CellVerticalAlign>(
-            Pos { x: 1, y: 2 },
-            Some(CellVerticalAlign::Middle),
-        );
-        let _ = sheet.set_formatting_value::<CellWrap>(Pos { x: 1, y: 2 }, Some(CellWrap::Wrap));
-        let _ = sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
-        let _ = sheet.set_formatting_value::<Italic>(Pos { x: 1, y: 3 }, Some(true));
-        let _ = sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
-        let _ = sheet.set_cell_value(Pos { x: 2, y: 5 }, CellValue::Logical(true));
-        let _ = sheet.set_cell_value(
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
+        sheet.formats.bold.set(Pos { x: 1, y: 2 }, Some(true));
+        sheet
+            .formats
+            .align
+            .set(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
+        sheet
+            .formats
+            .vertical_align
+            .set(Pos { x: 1, y: 2 }, Some(CellVerticalAlign::Middle));
+        sheet
+            .formats
+            .wrap
+            .set(Pos { x: 1, y: 2 }, Some(CellWrap::Wrap));
+        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
+        sheet.formats.italic.set(Pos { x: 1, y: 3 }, Some(true));
+        sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
+        sheet.set_cell_value(Pos { x: 2, y: 5 }, CellValue::Logical(true));
+        sheet.set_cell_value(
             Pos { x: 2, y: 6 },
             CellValue::Error(Box::new(RunError {
                 span: None,

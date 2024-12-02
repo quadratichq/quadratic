@@ -5,7 +5,7 @@ use itertools::Itertools;
 use crate::{
     grid::{
         js_types::{JsOffset, JsRenderFill},
-        RenderSize, SheetId,
+        SheetId,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::OldSelection,
@@ -372,13 +372,12 @@ impl GridController {
                             _ => None,
                         })
                 });
-                let (w, h) = if let Some(size) =
-                    sheet.get_formatting_value::<RenderSize>(sheet_pos.into())
-                {
-                    (Some(size.w), Some(size.h))
-                } else {
-                    (None, None)
-                };
+                let (w, h) =
+                    if let Some(size) = sheet.formats.render_size.get(sheet_pos.into()).cloned() {
+                        (Some(size.w), Some(size.h))
+                    } else {
+                        (None, None)
+                    };
 
                 crate::wasm_bindings::js::jsSendImage(
                     sheet_pos.sheet_id.to_string(),

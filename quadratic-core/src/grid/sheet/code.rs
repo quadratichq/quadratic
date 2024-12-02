@@ -109,11 +109,7 @@ impl Sheet {
 
     /// returns the render-size for a html-like cell
     pub fn render_size(&self, pos: Pos) -> Option<RenderSize> {
-        self.formats
-            .get_render_size(pos.into())
-            .into_iter()
-            .next()
-            .flatten()
+        self.formats.render_size.get(pos.into()).cloned()
     }
 
     /// Returns whether a rect overlaps the output of a code cell.

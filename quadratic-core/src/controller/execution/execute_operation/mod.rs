@@ -48,7 +48,7 @@ impl GridController {
                 self.execute_set_code_run_version(transaction, op);
             }
             Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
-            Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
+            Operation::SetCellFormats { .. } => (), //self.execute_set_cell_formats(transaction, op)),
             Operation::SetCellFormatsSelection { .. } => {
                 self.execute_set_cell_formats_selection(transaction, op);
             }
