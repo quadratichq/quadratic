@@ -184,9 +184,9 @@ mod test {
     }
 
     #[test]
-    fn rendered_value() {
+    fn test_rendered_value() {
         let mut sheet = Sheet::test();
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 1, y: 1 };
         sheet.set_cell_value(
             pos,
             CellValue::Number(BigDecimal::from_str("123.456").unwrap()),
