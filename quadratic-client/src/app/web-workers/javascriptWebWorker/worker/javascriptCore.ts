@@ -58,22 +58,6 @@ class JavascriptCore {
     );
   }
 
-  sendGetCells(
-    transactionId: string,
-    x: number,
-    y: number,
-    w: number,
-    h?: number,
-    sheet?: string,
-    lineNumber?: number
-  ): Promise<JsGetCellResponse[] | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreJavascriptGetCells) => resolve(message.cells);
-      this.send({ type: 'javascriptCoreGetCells', transactionId, id, x, y, w, h, sheet, lineNumber });
-    });
-  }
-
   sendGetCellsA1(
     transactionId: string,
     a1: string,

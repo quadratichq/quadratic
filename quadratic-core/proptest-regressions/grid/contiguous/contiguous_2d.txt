@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc c3470c4f8739f172fde702ec2bb74bcd88f7fec770140ffb9ec3bb7158f36acb # shrinks to ops = [SetRange { start: 101, end: Some(0), value: 0 }]

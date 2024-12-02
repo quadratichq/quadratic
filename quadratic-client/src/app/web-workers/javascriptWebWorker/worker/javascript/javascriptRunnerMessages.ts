@@ -5,16 +5,6 @@ import { CellType } from './javascriptAPI';
 
 export type JavascriptRunnerGetCells = CellType[][] | undefined;
 
-export interface RunnerJavascriptGetCellsLength {
-  type: 'getCellsLength';
-  sharedBuffer: SharedArrayBuffer;
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
-  sheetName?: string;
-}
-
 export interface RunnerJavascriptGetCellsA1Length {
   type: 'getCellsA1Length';
   sharedBuffer: SharedArrayBuffer;
@@ -42,7 +32,6 @@ export interface RunnerJavascriptError {
 }
 
 export type RunnerJavascriptMessage =
-  | RunnerJavascriptGetCellsLength
   | RunnerJavascriptGetCellsA1Length
   | RunnerJavascriptGetCellsData
   | RunnerJavascriptResults
