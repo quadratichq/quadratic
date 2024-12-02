@@ -1,4 +1,7 @@
-use crate::{selection::OldSelection, A1Selection, Rect, SheetPos, SheetRect};
+use crate::{
+    grid::formats::format_update::SheetFormatUpdates, selection::OldSelection, A1Selection, Rect,
+    SheetPos, SheetRect,
+};
 
 use super::GridController;
 
@@ -65,6 +68,19 @@ impl GridController {
                 .cell_ref_range_to_rect(range)
                 .intersects(sheet.offsets.thumbnail())
         })
+    }
+
+    /// Returns whether the thumbnail contains any intersection with
+    /// `formats`. If this method returns `true`, then updates in `formats`
+    /// must force the thumbnail to update.
+    pub fn thumbnail_dirty_formats(&self, formats: &SheetFormatUpdates) -> bool {
+        if formats.sheet_id != self.grid().first_sheet_id() {
+            return false;
+        }
+        let Some(sheet) = self.try_sheet(formats.sheet_id) else {
+            return false;
+        };
+        formats.intersects(sheet.offsets.thumbnail())
     }
 }
 
@@ -335,5 +351,10 @@ mod test {
             columns: None,
             all: false,
         }));
+    }
+
+    #[test]
+    fn test_thumbnail_dirty_formats() {
+        todo!()
     }
 }

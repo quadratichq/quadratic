@@ -78,7 +78,6 @@ impl GridController {
     }
 
     // get the last active transaction for testing purposes
-    #[cfg(test)]
     pub fn last_transaction(&self) -> Option<&Transaction> {
         self.active_transactions()
             .unsaved_transactions

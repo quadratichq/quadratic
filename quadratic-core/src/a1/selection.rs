@@ -159,8 +159,6 @@ impl A1Selection {
     /// Constructs a selection containing multiple rectangles.
     #[cfg(test)]
     pub fn from_rects(rects: &[crate::Rect], sheet: SheetId) -> Self {
-        use crate::Rect;
-
         Self::from_ranges(
             rects.iter().copied().map(CellRefRange::new_relative_rect),
             sheet,

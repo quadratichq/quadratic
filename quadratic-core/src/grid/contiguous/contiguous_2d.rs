@@ -3,7 +3,7 @@
 
 use std::collections::btree_map;
 
-use crate::{CopyFormats, Pos, Rect};
+use crate::{A1Selection, CellRefRange, CopyFormats, Pos, Rect};
 
 use serde::{Deserialize, Serialize};
 
@@ -41,6 +41,32 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     /// Constructs an empty map.
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Constructs an update Contiguous2D from a selection and a value set
+    /// across the selection.
+    pub fn new_from_selection(
+        selection: &A1Selection,
+        value: Option<T>,
+    ) -> Contiguous2D<Option<T>> {
+        let mut c: Contiguous2D<Option<T>> = Contiguous2D::new();
+        selection.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                if let Some(end) = range.end {
+                    c.set_rect(
+                        range.start.col.map_or(1, |col| col.coord),
+                        range.start.row.map_or(1, |row| row.coord),
+                        end.col.map_or(None, |col| Some(col.coord)),
+                        end.row.map_or(None, |row| Some(row.coord)),
+                        Some(value.clone()),
+                    );
+                } else {
+                    let xy = range.start.unpack_xy_default(1);
+                    c.set(Pos { x: xy[0], y: xy[1] }, Some(value.clone()));
+                }
+            }
+        });
+        c
     }
 
     /// Returns whether the whole sheet is default.
@@ -210,6 +236,20 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
             }
         }
         values
+    }
+
+    /// Returns whether any of the values in `self` intersects `rect`.
+    pub fn intersects(&self, rect: Rect) -> bool {
+        for x in rect.x_range() {
+            if let Some(column) = self.0.get(x) {
+                for y in rect.y_range() {
+                    if column.get(y).is_some() {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
     }
 }
 
@@ -492,5 +532,24 @@ mod tests {
             c.rect_values(Rect::test_a1("A1:J10")),
             vec![Some(true); 10 * 10]
         );
+    }
+
+    #[test]
+    fn test_intersects() {
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        assert!(c.intersects(Rect::test_a1("A1:J10")));
+        assert!(!c.intersects(Rect::test_a1("A1")))
+    }
+
+    #[test]
+    fn test_new_from_selection() {
+        let c =
+            Contiguous2D::<bool>::new_from_selection(&A1Selection::test_a1("A1:B2"), Some(true));
+        assert_eq!(c.get(pos![A1]), Some(&Some(true)));
+        assert_eq!(c.get(pos![A2]), Some(&Some(true)));
+        assert_eq!(c.get(pos![B1]), Some(&Some(true)));
+        assert_eq!(c.get(pos![B2]), Some(&Some(true)));
+        assert_eq!(c.get(pos![C1]), None);
     }
 }

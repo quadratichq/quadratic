@@ -178,8 +178,7 @@ impl GridController {
     ) {
         unwrap_op!(let SetCellFormatsA1 { sheet_id, formats } = op);
 
-        // todo...
-        // transaction.generate_thumbnail |= self.thumbnail_dirty_subspaces(sheet_id, &subspaces);
+        transaction.generate_thumbnail |= self.thumbnail_dirty_formats(&formats);
 
         let Some(sheet) = self.try_sheet_mut(sheet_id) else {
             return; // sheet may have been deleted
