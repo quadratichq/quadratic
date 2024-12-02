@@ -476,4 +476,26 @@ mod tests {
         assert_eq!(c.get(pos![B2]), None);
         assert_eq!(c.get(pos![D2]), None);
     }
+
+    #[test]
+    fn test_remove_column() {
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        assert_eq!(c.get(Pos { x: 10, y: 2 }), Some(&true));
+
+        c.remove_column(3);
+        assert_eq!(c.get(Pos { x: 10, y: 2 }), None);
+        assert_eq!(c.get(Pos { x: 9, y: 2 }), Some(&true));
+    }
+
+    #[test]
+    fn test_remove_row() {
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        assert_eq!(c.get(Pos { x: 2, y: 10 }), Some(&true));
+
+        c.remove_row(3);
+        assert_eq!(c.get(Pos { x: 2, y: 10 }), None);
+        assert_eq!(c.get(Pos { x: 2, y: 9 }), Some(&true));
+    }
 }
