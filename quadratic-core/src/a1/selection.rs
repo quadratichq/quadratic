@@ -436,7 +436,7 @@ impl A1Selection {
     /// Returns a test selection from the A1-string with SheetId::test().
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        Self::from_str(a1, &SheetId::test(), &std::collections::HashMap::new()).unwrap()
+        Self::from_str(a1, &SheetId::TEST, &std::collections::HashMap::new()).unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
@@ -449,7 +449,7 @@ impl A1Selection {
     /// SheetId.
     #[cfg(test)]
     pub fn test_to_string(&self) -> String {
-        self.to_string(Some(SheetId::test()), &std::collections::HashMap::new())
+        self.to_string(Some(SheetId::TEST), &std::collections::HashMap::new())
     }
 }
 

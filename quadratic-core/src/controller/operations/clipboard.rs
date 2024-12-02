@@ -460,15 +460,11 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.test_set_values(0, 5, 1, 5, vec!["1", "2", "3", "4", "5"]);
-        let selection = A1Selection::from_column_ranges(&[0..=0], sheet_id);
+        sheet.test_set_values(1, 5, 1, 5, vec!["1", "2", "3", "4", "5"]);
+        let selection = A1Selection::test_a1("A");
         let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
         let operations = gc
-            .paste_html_operations(
-                &A1Selection::from_column_ranges(&[5..=5], sheet_id),
-                html,
-                PasteSpecial::None,
-            )
+            .paste_html_operations(&A1Selection::test_a1("E"), html, PasteSpecial::None)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
@@ -486,20 +482,16 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(5, 2, 5, 1, vec!["1", "2", "3", "4", "5"]);
-        let selection = A1Selection::from_column_ranges(&[2..=2], sheet_id);
+        let selection: A1Selection = A1Selection::test_a1("2");
         let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
         let operations = gc
-            .paste_html_operations(
-                &A1Selection::from_row_ranges(&[5..=5], sheet_id),
-                html,
-                PasteSpecial::None,
-            )
+            .paste_html_operations(&A1Selection::test_a1("5"), html, PasteSpecial::None)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.cell_value_ref((10, 5).into()),
+            sheet.cell_value_ref((9, 5).into()),
             Some(&CellValue::Number(5.into()))
         );
     }
@@ -625,8 +617,8 @@ mod test {
         let operations = gc.set_clipboard_validations(
             Some(validations),
             SheetPos {
-                x: 1,
-                y: 1,
+                x: 2,
+                y: 2,
                 sheet_id: SheetId::test(),
             },
         );
@@ -646,7 +638,7 @@ mod test {
 
         gc.set_cell_values(
             SheetPos {
-                x: 1,
+                x: 2,
                 y: 1,
                 sheet_id,
             },
@@ -670,11 +662,11 @@ mod test {
             Some(CellValue::Number(BigDecimal::from(6)))
         );
 
-        let selection = A1Selection::from_rect(SheetRect::new(0, 0, 2, 5, sheet_id));
+        let selection = A1Selection::test_a1("A1:B5");
         let JsClipboard { html, .. } = gc.sheet(sheet_id).copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::from_xy(5, 5, sheet_id),
+            &A1Selection::test_a1("E6"),
             None,
             Some(html),
             PasteSpecial::None,
@@ -682,7 +674,7 @@ mod test {
         );
 
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((6, 9).into()),
+            gc.sheet(sheet_id).get_code_cell_value((5, 9).into()),
             Some(CellValue::Number(BigDecimal::from(6)))
         );
     }

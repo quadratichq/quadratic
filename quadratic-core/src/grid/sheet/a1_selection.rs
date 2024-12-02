@@ -384,7 +384,7 @@ impl Sheet {
                         let end_row = end.row.map(|r| r.coord);
                         Pos {
                             x: end_col.unwrap_or_else(|| {
-                                let a = rect_start.y;
+                                let a = start.row.map_or(bounds.min.y, |c| c.coord);
                                 let b = end_row.unwrap_or(bounds.max.y);
                                 // get max column for the range of rows
                                 self.rows_bounds(
@@ -395,8 +395,8 @@ impl Sheet {
                                 .map_or(rect_start.x, |(_, hi)| hi)
                             }),
                             y: end_row.unwrap_or_else(|| {
-                                let a = rect_start.x;
-                                let b = end_col.unwrap_or(bounds.max.y);
+                                let a = start.col.map_or(bounds.min.x, |c| c.coord);
+                                let b = end_col.unwrap_or(bounds.max.x);
                                 // get max row for the range of columns
                                 self.columns_bounds(
                                     std::cmp::min(a, b),
@@ -723,7 +723,7 @@ mod tests {
         // Test unbounded end
         let range = CellRefRange::test("B2:");
         let rect = sheet.cell_ref_range_to_rect(range);
-        assert_eq!(rect, Rect::new(2, 2, 2, 5)); // Should extend to sheet bounds
+        assert_eq!(rect, Rect::new(2, 2, 5, 5)); // Should extend to sheet bounds
     }
 
     #[test]
@@ -746,12 +746,17 @@ mod tests {
         // Test unbounded range
         let range = CellRefRange::test("B2:");
         let finite_range = sheet.finitize_cell_ref_range(range);
-        assert_eq!(finite_range, CellRefRange::test("B2:B10"));
+        assert_eq!(finite_range, CellRefRange::test("B2:J10"));
 
         // Test already bounded range (should remain unchanged)
         let range = CellRefRange::test("C3:E5");
         let finite_range = sheet.finitize_cell_ref_range(range);
         assert_eq!(finite_range, CellRefRange::test("C3:E5"));
+
+        // Test select all
+        let range = CellRefRange::test("*");
+        let finite_range = sheet.finitize_cell_ref_range(range);
+        assert_eq!(finite_range, CellRefRange::test("A1:J10"));
     }
 
     #[test]
@@ -766,7 +771,12 @@ mod tests {
         let finite_selection = sheet.finitize_selection(&selection);
         assert_eq!(
             finite_selection.ranges,
-            vec![CellRefRange::test("A1:C3"), CellRefRange::test("E5:E10"),]
+            vec![CellRefRange::test("A1:C3"), CellRefRange::test("E5:J10"),]
         );
+
+        // Test select all
+        let selection = A1Selection::test_a1("*");
+        let finite_selection = sheet.finitize_selection(&selection);
+        assert_eq!(finite_selection.ranges, vec![CellRefRange::test("A1:J10")]);
     }
 }

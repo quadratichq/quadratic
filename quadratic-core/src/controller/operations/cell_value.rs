@@ -377,7 +377,7 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
-        let selection = A1Selection::from_column_ranges(&[1..=2], sheet_id);
+        let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection);
         assert_eq!(operations.len(), 2);
         assert_eq!(
@@ -389,15 +389,15 @@ mod test {
                         y: 2,
                         sheet_id
                     },
-                    values: CellValues::new(1, 1)
+                    values: CellValues::new(2, 1)
                 },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos {
                         x: 2,
-                        y: 2,
+                        y: 1,
                         sheet_id
                     },
-                    values: CellValues::new(1, 1)
+                    values: CellValues::new(1, 2)
                 }
             ]
         );
