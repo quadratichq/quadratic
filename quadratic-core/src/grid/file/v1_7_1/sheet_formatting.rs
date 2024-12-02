@@ -4,55 +4,51 @@ use super::{
     CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, NumericFormatSchema, RenderSizeSchema,
 };
 
+pub type Continuous2DSchema<T> = Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<T>)>>)>;
+
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct SheetFormattingSchema {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub align: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<CellAlignSchema>)>>)>,
+    pub align: Continuous2DSchema<CellAlignSchema>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub vertical_align: Vec<(
-        i64,
-        BlockSchema<Vec<(i64, BlockSchema<CellVerticalAlignSchema>)>>,
-    )>,
+    pub vertical_align: Continuous2DSchema<CellVerticalAlignSchema>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub wrap: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<CellWrapSchema>)>>)>,
+    pub wrap: Continuous2DSchema<CellWrapSchema>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub numeric_format: Vec<(
-        i64,
-        BlockSchema<Vec<(i64, BlockSchema<NumericFormatSchema>)>>,
-    )>,
+    pub numeric_format: Continuous2DSchema<NumericFormatSchema>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub numeric_decimals: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<i16>)>>)>,
+    pub numeric_decimals: Continuous2DSchema<i16>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub numeric_commas: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<bool>)>>)>,
+    pub numeric_commas: Continuous2DSchema<bool>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub bold: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<bool>)>>)>,
+    pub bold: Continuous2DSchema<bool>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub italic: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<bool>)>>)>,
+    pub italic: Continuous2DSchema<bool>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub text_color: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<String>)>>)>,
+    pub text_color: Continuous2DSchema<String>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub fill_color: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<String>)>>)>,
+    pub fill_color: Continuous2DSchema<String>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub render_size: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<RenderSizeSchema>)>>)>,
+    pub render_size: Continuous2DSchema<RenderSizeSchema>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub date_time: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<String>)>>)>,
+    pub date_time: Continuous2DSchema<String>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub underline: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<bool>)>>)>,
+    pub underline: Continuous2DSchema<bool>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub strike_through: Vec<(i64, BlockSchema<Vec<(i64, BlockSchema<bool>)>>)>,
+    pub strike_through: Continuous2DSchema<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

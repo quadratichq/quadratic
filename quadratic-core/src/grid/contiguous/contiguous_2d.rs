@@ -56,8 +56,8 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
                     c.set_rect(
                         range.start.col.map_or(1, |col| col.coord),
                         range.start.row.map_or(1, |row| row.coord),
-                        end.col.map_or(None, |col| Some(col.coord)),
-                        end.row.map_or(None, |row| Some(row.coord)),
+                        end.col.map(|col| col.coord),
+                        end.row.map(|row| row.coord),
                         Some(value.clone()),
                     );
                 } else {
@@ -539,7 +539,7 @@ mod tests {
         let mut c = Contiguous2D::<bool>::new();
         c.set_rect(2, 2, Some(10), Some(10), Some(true));
         assert!(c.intersects(Rect::test_a1("A1:J10")));
-        assert!(!c.intersects(Rect::test_a1("A1")))
+        assert!(!c.intersects(Rect::test_a1("A1")));
     }
 
     #[test]
