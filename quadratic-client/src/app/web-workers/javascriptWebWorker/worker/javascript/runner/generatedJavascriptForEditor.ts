@@ -118,7 +118,19 @@ function lineNumber(): number | undefined {
   }
 }
 
-
+const createConversionError = (
+  funcName: string,
+  a1Params: string,
+  oldFuncParams: string,
+  sheetName?: string
+) => {
+  const oldFunc = funcName + '(' + oldFuncParams + ')';
+  let params = a1Params;
+  if (sheetName) params = sheetName + ':' + params;
+  const newFunc = "q.cells('" + params + "')";
+  
+  q.conversionError(oldFunc, newFunc);
+};
 
 const getCellsConversionError = (funcName: string, x0: number, y0: number, x1: number, y1?: number, sheetName?: string) => {
   const a1_0 = q.toA1(x0, y0, true);
@@ -127,13 +139,16 @@ const getCellsConversionError = (funcName: string, x0: number, y0: number, x1: n
   let oldFuncParams = x0 + ', ' + y0 + ', ' + x1;
   if (y1) oldFuncParams += ', ' + y1;
   if (sheetName) oldFuncParams += ', ' + sheetName;
-  const oldFunc = funcName + '(' + oldFuncParams + ')';
 
-  let params = a1_0 + ':' + a1_1;
-  if (sheetName) params = sheetName + ':' + params;
-  const newFunc = "q.cells('" + params + "')";
-  
-  q.conversionError(oldFunc, newFunc);
+  createConversionError(funcName, a1_0 + ':' + a1_1, oldFuncParams, sheetName);
+};
+
+const getCellConversionError = (funcName: string, x: number, y: number, sheetName?: string) => {
+  const a1 = q.toA1(x, y, true);
+  let oldFuncParams = x + ', ' + y;
+  if (sheetName) oldFuncParams += ', ' + sheetName;
+
+  createConversionError(funcName, a1, oldFuncParams, sheetName);
 };
 
 export const getCells = (
@@ -167,20 +182,6 @@ export const getCellsWithHeadings = (
   getCellsConversionError('getCellsWithHeadings', x0, y0, x1, y1, sheetName);
 };
 
-const getCellConversionError = (funcName: string, x: number, y: number, sheetName?: string) => {
-    const a1 = q.toA1(x, y, true);
-
-    let oldFuncParams = x + ', ' + y;
-    if (sheetName) oldFuncParams += ', ' + sheetName;
-    const oldFunc = funcName + '(' + oldFuncParams + ')';
-
-    let params = a1;    
-    if (sheetName) params = sheetName + ':' + params;
-    const newFunc = "q.cells('" + params + "')";
-    
-    q.conversionError(oldFunc, newFunc);
-};
-
 export const getCell = (x: number, y: number, sheetName?: string) => {
     getCellConversionError('getCell', x, y, sheetName);
 };
@@ -193,46 +194,26 @@ export const c = (x: number, y: number, sheetName?: string) => {
     getCellConversionError('c', x, y, sheetName);
 };
 
+// This is hard coded here, but is replaced with the correct x,y coordinates elsewhere
 export const pos = (): { x: number; y: number } => {
   return { x: 0, y: 0 };
 };
 
 export const relCell = (deltaX: number, deltaY: number) => {
   const p = pos();
-  if (isNaN(deltaX) || isNaN(deltaY)) {
-    const line = lineNumber();
-    throw new Error(
-      'relCell requires at least 2 arguments, received relCell(' +
-        deltaX +
-        ', ' +
-        deltaY +
-        ')' +
-        (line !== undefined ? ' at line ' + (line - 1) : '')
-    );
-  }
+  const a1 = q.toA1(p.x + deltaX, p.y + deltaY, true);
+  let oldFuncParams = deltaX + ', ' + deltaY;
 
-  return getCell(deltaX + p.x, deltaY + p.y);
+  createConversionError('relCell', a1, oldFuncParams);
 };
 
 export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, deltaY1: number) => {
   const p = pos();
-  if (isNaN(deltaX0) || isNaN(deltaY0) || isNaN(deltaX1) || isNaN(deltaY1)) {
-    const line = lineNumber();
-    throw new Error(
-      'relCells requires at least 4 arguments, received relCells(' +
-        deltaX0 +
-        ', ' +
-        deltaY0 +
-        ', ' +
-        deltaX1 +
-        ', ' +
-        deltaY1 +
-        ')' +
-        (line !== undefined ? ' at line ' + (line - 1) : '')
-    );
-  }
+  const a1_0 = q.toA1(p.x + deltaX0, p.y + deltaY0, true);
+  const a1_1 = q.toA1(p.x + deltaX1, p.y + deltaY1, true);
+  const oldFuncParams = deltaX0 + ', ' + deltaY0 + ', ' + deltaX1 + ', ' + deltaY1;
 
-  return getCells(deltaX0 + p.x, deltaY0 + p.y, deltaX1 + p.x, deltaY1 + p.y);
+  createConversionError('relCells', a1_0 + ':' + a1_1, oldFuncParams);
 };
 
 export const rc = relCell;
@@ -303,7 +284,7 @@ export class q {
     return [];
   }
 
-  static toA1(x: number, y?: number, absolute: boolean = false): string {
+  static toA1(x: number, y?: number, _absolute: boolean = false): string {
     let column = "";
     
     while (x > 0) {
@@ -317,7 +298,7 @@ export class q {
 
   static conversionError(oldFunc: string, newFunc: string): void {
     const message = oldFunc + ' functionality is no longer supported. Use ' + newFunc + ' instead.';
-    console.warn(message);
+    // console.warn(message);
     throw new Error(message);
   }
 }
