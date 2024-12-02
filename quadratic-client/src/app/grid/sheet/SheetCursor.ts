@@ -215,6 +215,10 @@ export class SheetCursor {
     return this.jsSelection.isMultiCursor();
   }
 
+  isMultiRange(): boolean {
+    return this.jsSelection.getRanges().length > 1;
+  }
+
   isColumnRow(): boolean {
     return this.jsSelection.isColumnRow();
   }
