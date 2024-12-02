@@ -6,10 +6,13 @@ use crate::{
         clipboard::{ClipboardOrigin, ClipboardSheetFormats},
         operation::Operation,
     },
-    grid::formats::{
-        format::Format,
-        format_update::{FormatUpdate, SheetFormatUpdates},
-        Formats,
+    grid::{
+        formats::{
+            format::Format,
+            format_update::{FormatUpdate, SheetFormatUpdates},
+            Formats,
+        },
+        GridBounds,
     },
     selection::OldSelection,
     Pos,
@@ -54,6 +57,33 @@ impl Sheet {
             }
             (ops, dirty_hashes, resize)
         }
+    }
+
+    /// Returns the dirty hashes and rows changed for the formats
+    fn formats_transaction_changes(
+        &self,
+        formats: &SheetFormatUpdates,
+    ) -> (HashSet<Pos>, HashSet<i64>) {
+        let mut dirty_hashes = HashSet::new();
+        let mut rows_changed = HashSet::new();
+
+        if let GridBounds::NonEmpty(bounds) = self.bounds(true) {
+            if let Some(align) = formats.align.as_ref() {
+                align.to_rects().for_each(|(x1, y1, x2, y2, _)| {
+                    let x2 = x2.unwrap_or(bounds.max.x);
+                    let y2 = y2.unwrap_or(bounds.max.y);
+                    for y in y1..=y2 {
+                        rows_changed.insert(y);
+                        for x in x1..=x2 {
+                            let mut quadrant = Pos { x, y };
+                            quadrant.to_quadrant();
+                            dirty_hashes.insert(quadrant);
+                        }
+                    }
+                });
+            }
+        }
+        (dirty_hashes, rows_changed)
     }
 
     /// Sets formats using SheetFormatUpdates.
@@ -127,7 +157,9 @@ impl Sheet {
             formats: reverse_formats,
         };
 
-        (vec![reverse_op], HashSet::new(), HashSet::new())
+        let (dirty_hashes, rows_changed) = self.formats_transaction_changes(formats);
+
+        (vec![reverse_op], dirty_hashes, rows_changed)
     }
 
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.
@@ -245,5 +277,10 @@ mod tests {
         );
         assert_eq!(formats.columns.len(), 0);
         assert_eq!(formats.rows.len(), 0);
+    }
+
+    #[test]
+    fn test_formats_transaction_changes() {
+        todo!()
     }
 }
