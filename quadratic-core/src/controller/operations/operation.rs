@@ -65,10 +65,7 @@ pub enum Operation {
         formats: Formats,
     },
     /// Updates cell formats for all cells in a selection.
-    SetCellFormatsA1 {
-        sheet_id: SheetId,
-        formats: SheetFormatUpdates,
-    },
+    SetCellFormatsA1 { formats: SheetFormatUpdates },
 
     /// **Deprecated** Nov 2024 in favor of `SetBordersA1`.
     SetBorders {
@@ -215,12 +212,8 @@ impl fmt::Display for Operation {
                     selection, formats
                 )
             }
-            Operation::SetCellFormatsA1 { sheet_id, formats } => {
-                write!(
-                    fmt,
-                    "SetCellFormatsA1 {{ sheet_id: {:?}, formats: {:?} }}",
-                    sheet_id, formats
-                )
+            Operation::SetCellFormatsA1 { formats } => {
+                write!(fmt, "SetCellFormatsA1 {{ formats: {:?} }}", formats)
             }
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),
             Operation::DeleteSheet { sheet_id } => {

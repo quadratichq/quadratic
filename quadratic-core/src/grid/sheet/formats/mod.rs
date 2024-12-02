@@ -61,54 +61,73 @@ impl Sheet {
     /// Returns (reverse_operations, dirty_hashes, resize_rows)
     pub fn set_formats_a1(
         &mut self,
-        _sheet_id: SheetId,
-        _formats: &SheetFormatUpdates,
+        formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
-        // let mut reverse_formats = SheetFormatUpdates::default();
-        dbgjs!("implement set_formats_a1");
+        let reverse_formats = SheetFormatUpdates {
+            sheet_id: formats.sheet_id,
+            align: formats
+                .align
+                .clone()
+                .map(|value| self.formats.align.set_from(value)),
+            vertical_align: formats
+                .vertical_align
+                .clone()
+                .map(|value| self.formats.vertical_align.set_from(value)),
+            wrap: formats
+                .wrap
+                .clone()
+                .map(|value| self.formats.wrap.set_from(value)),
+            numeric_format: formats
+                .numeric_format
+                .clone()
+                .map(|value| self.formats.numeric_format.set_from(value)),
+            numeric_decimals: formats
+                .numeric_decimals
+                .clone()
+                .map(|value| self.formats.numeric_decimals.set_from(value)),
+            numeric_commas: formats
+                .numeric_commas
+                .clone()
+                .map(|value| self.formats.numeric_commas.set_from(value)),
+            bold: formats
+                .bold
+                .clone()
+                .map(|value| self.formats.bold.set_from(value)),
+            italic: formats
+                .italic
+                .clone()
+                .map(|value| self.formats.italic.set_from(value)),
+            underline: formats
+                .underline
+                .clone()
+                .map(|value| self.formats.underline.set_from(value)),
+            text_color: formats
+                .text_color
+                .clone()
+                .map(|value| self.formats.text_color.set_from(value)),
+            date_time: formats
+                .date_time
+                .clone()
+                .map(|value| self.formats.date_time.set_from(value)),
+            fill_color: formats
+                .fill_color
+                .clone()
+                .map(|value| self.formats.fill_color.set_from(value)),
+            render_size: formats
+                .render_size
+                .clone()
+                .map(|value| self.formats.render_size.set_from(value)),
+            strike_through: formats
+                .strike_through
+                .clone()
+                .map(|value| self.formats.strike_through.set_from(value)),
+        };
 
-        todo!()
+        let reverse_op = Operation::SetCellFormatsA1 {
+            formats: reverse_formats,
+        };
 
-        // let mut reverse_op = Operation::SetCellFormatsA1 {
-        //     sheet_id,
-        //     formats: todo!(),
-        // };
-
-        // if selection.all {
-        //     self.set_format_all(formats)
-        // } else {
-        //     let mut ops = vec![];
-        //     let mut dirty_hashes = HashSet::new();
-        //     let mut resize = HashSet::new();
-        //     if let Some(columns) = selection.columns.as_ref() {
-        //         let (operations, hashes, resize_rows) = self.set_formats_columns(columns, formats);
-        //         ops.extend(operations);
-        //         dirty_hashes.extend(hashes);
-        //         resize.extend(resize_rows);
-        //     }
-        //     if let Some(rows) = selection.rows.as_ref() {
-        //         let (operations, hashes, resize_rows) = self.set_formats_rows(rows, formats);
-        //         ops.extend(operations);
-        //         dirty_hashes.extend(hashes);
-        //         resize.extend(resize_rows);
-        //     }
-        //     if let Some(rects) = selection.rects.as_ref() {
-        //         let (operations, hashes, resize_rows) = self.set_formats_rects(rects, formats);
-        //         ops.extend(operations);
-        //         dirty_hashes.extend(hashes);
-        //         resize.extend(resize_rows);
-        //     }
-        //     (ops, dirty_hashes, resize)
-        // }
-
-        // (
-        //     vec![Operation::SetCellFormatsA1 {
-        //         sheet_id,
-        //         formats: reverse_formats,
-        //     }],
-        //     HashSet::new(),
-        //     HashSet::new(),
-        // )
+        (vec![reverse_op], HashSet::new(), HashSet::new())
     }
 
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.
