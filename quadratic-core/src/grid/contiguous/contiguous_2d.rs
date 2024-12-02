@@ -344,9 +344,9 @@ mod tests {
     #[test]
     fn test_is_empty() {
         let mut c = Contiguous2D::<bool>::new();
-        assert_eq!(c.is_empty(), true);
+        assert!(c.is_empty());
         c.set(pos![A1], Some(true));
-        assert_eq!(c.is_empty(), false);
+        assert!(!c.is_empty());
     }
 
     #[test]
