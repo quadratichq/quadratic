@@ -1,7 +1,7 @@
 use crate::{
     controller::GridController,
     formulas::replace_internal_cell_references,
-    grid::{Bold, CodeCellLanguage, FillColor, GridBounds, Sheet, SheetId},
+    grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
     CellValue, Pos, Rect,
 };
 use std::collections::HashMap;
@@ -104,7 +104,7 @@ pub fn assert_cell_format_bold(
     expect_bold: bool,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
-    let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
+    let has_bold = sheet.formats.bold.get(Pos { x, y }).is_some();
     assert!(
         has_bold == expect_bold,
         "Cell at ({}, {}) should be bold={}, but is actually bold={}",
@@ -145,9 +145,9 @@ pub fn assert_cell_format_fill_color(
     expect_fill_color: &str,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
-    let fill_color = sheet.get_formatting_value::<FillColor>(Pos { x, y });
+    let fill_color = sheet.formats.fill_color.get(Pos { x, y });
     assert!(
-        fill_color == Some(expect_fill_color.to_string()),
+        fill_color == Some(&expect_fill_color.to_string()),
         "Cell at ({}, {}) should be fill_color={:?}, but is actually fill_color={:?}",
         x,
         y,
@@ -196,11 +196,11 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
         rect.x_range().for_each(|x| {
             let pos: Pos = Pos { x, y };
 
-            if sheet.get_formatting_value::<Bold>(pos).is_some() {
+            if sheet.formats.bold.get(pos).is_some() {
                 bolds.push((count_y + 1, count_x + 1));
             }
 
-            if let Some(fill_color) = sheet.get_formatting_value::<FillColor>(pos) {
+            if let Some(fill_color) = sheet.formats.fill_color.get(pos) {
                 fill_colors.push((count_y + 1, count_x + 1, fill_color));
             }
 

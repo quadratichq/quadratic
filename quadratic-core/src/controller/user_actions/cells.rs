@@ -64,7 +64,7 @@ impl GridController {
 mod test {
     use crate::{
         controller::GridController,
-        grid::{NumericCommas, NumericDecimals, NumericFormat, SheetId},
+        grid::{NumericFormat, SheetId},
         A1Selection, CellValue, Pos, Rect, SheetPos,
     };
     use std::str::FromStr;
@@ -168,15 +168,24 @@ mod test {
         };
         let get_cell_numeric_commas = |g: &GridController| {
             g.sheet(sheet_id)
-                .get_formatting_value::<NumericCommas>(sheet_pos.into())
+                .formats
+                .numeric_commas
+                .get(sheet_pos.into())
+                .cloned()
         };
         let get_cell_numeric_format = |g: &GridController| {
             g.sheet(sheet_id)
-                .get_formatting_value::<NumericFormat>(sheet_pos.into())
+                .formats
+                .numeric_format
+                .get(sheet_pos.into())
+                .cloned()
         };
         let get_cell_numeric_decimals = |g: &GridController| {
             g.sheet(sheet_id)
-                .get_formatting_value::<NumericDecimals>(sheet_pos.into())
+                .formats
+                .numeric_decimals
+                .get(sheet_pos.into())
+                .cloned()
         };
 
         // empty string converts to blank cell value

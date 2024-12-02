@@ -41,7 +41,9 @@ impl CellRefCoord {
     }
 
     pub fn translate_in_place(&mut self, delta: i64) {
-        self.coord = self.coord.saturating_add(delta).max(1);
+        if !self.is_absolute {
+            self.coord = self.coord.saturating_add(delta).max(1);
+        }
     }
 
     pub fn translate(&self, delta: i64) -> Self {

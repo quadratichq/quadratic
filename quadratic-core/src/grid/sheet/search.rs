@@ -234,8 +234,8 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRun},
-        Array, CodeCellValue,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun},
+        Array,
     };
 
     use super::*;

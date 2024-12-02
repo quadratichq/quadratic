@@ -108,10 +108,8 @@ impl Sheet {
     }
 
     /// returns the render-size for a html-like cell
-    ///
-    /// TODO: inline this method everywhere it's used
     pub fn render_size(&self, pos: Pos) -> Option<RenderSize> {
-        self.get_formatting_value::<RenderSize>(pos)
+        self.formats.render_size.get(pos.into()).cloned()
     }
 
     /// Returns whether a rect overlaps the output of a code cell.
@@ -211,8 +209,11 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRunResult, RenderSize},
-        Array, CodeCellValue, SheetPos, Value,
+        grid::{
+            js_types::JsRenderCellSpecial, CodeCellLanguage, CodeCellValue, CodeRunResult,
+            RenderSize,
+        },
+        Array, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
     use chrono::Utc;

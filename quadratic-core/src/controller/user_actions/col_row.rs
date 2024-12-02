@@ -78,9 +78,9 @@ mod tests {
     use crate::{
         grid::{
             formats::{format::Format, format_update::FormatUpdate, Formats},
-            CodeCellLanguage,
+            CodeCellLanguage, CodeCellValue,
         },
-        CellValue, CodeCellValue, Pos, SheetPos,
+        CellValue, Pos, SheetPos,
     };
 
     use super::*;

@@ -1,6 +1,4 @@
-use crate::{
-    grid::SheetId, selection::OldSelection, A1Selection, A1Subspaces, Rect, SheetPos, SheetRect,
-};
+use crate::{selection::OldSelection, A1Selection, Rect, SheetPos, SheetRect};
 
 use super::GridController;
 
@@ -67,20 +65,6 @@ impl GridController {
                 .cell_ref_range_to_rect(range)
                 .intersects(sheet.offsets.thumbnail())
         })
-    }
-
-    /// Returns whether the thumbnail contains any intersection with
-    /// `subspaces`. If this method returns `true`, then updates in `subspaces`
-    /// must force the thumbnail to update.
-    pub fn thumbnail_dirty_subspaces(&self, sheet_id: SheetId, subspaces: &A1Subspaces) -> bool {
-        if sheet_id != self.grid().first_sheet_id() {
-            return false;
-        }
-        let Some(sheet) = self.try_sheet(sheet_id) else {
-            return false;
-        };
-
-        subspaces.intersects_rect(sheet.offsets.thumbnail())
     }
 }
 

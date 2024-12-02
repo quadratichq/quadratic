@@ -6,8 +6,8 @@ use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::grid::formatting::CellFmtArray;
-use crate::grid::{CodeCellLanguage, NumericFormat, NumericFormatKind};
-use crate::{A1Selection, CellValue, CodeCellValue, RunLengthEncoding, SheetPos, SheetRect};
+use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
+use crate::{A1Selection, CellValue, RunLengthEncoding, SheetPos, SheetRect};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -155,8 +155,8 @@ mod test {
     use crate::cell_values::CellValues;
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, SheetId};
-    use crate::{A1Selection, CellValue, CodeCellValue, SheetPos, SheetRect};
+    use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
+    use crate::{A1Selection, CellValue, SheetPos, SheetRect};
 
     #[test]
     #[parallel]

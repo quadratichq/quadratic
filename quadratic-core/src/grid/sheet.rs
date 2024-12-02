@@ -10,7 +10,6 @@ use validations::Validations;
 
 use super::bounds::GridBounds;
 use super::column::Column;
-use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
@@ -299,16 +298,9 @@ impl Sheet {
         }
     }
 
-    /// Returns a formatting property of a cell.
-    ///
-    /// TODO: move this onto [`SheetFormatting`] as `get_value()`.
-    pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
-        A::get_from_format(self.formats.get(pos)?).clone()
-    }
-
     /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
-        match self.get_formatting_value::<super::NumericFormat>(pos) {
+        match self.formats.numeric_format.get(pos) {
             Some(format) => format.kind,
             None => NumericFormatKind::Number,
         }
@@ -316,7 +308,7 @@ impl Sheet {
 
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.formats.get(pos).cloned().unwrap_or_default();
+        let format = self.formats.get_format(pos).unwrap_or_default();
         let cell_type = self
             .display_value(pos)
             .and_then(|cell_value| match cell_value {
@@ -340,17 +332,17 @@ impl Sheet {
         }
     }
 
-    /// Sets a formatting property for a cell.
-    pub fn set_formatting_value<A: CellFmtAttr>(
-        &mut self,
-        pos: Pos,
-        value: Option<A::Value>,
-    ) -> Option<A::Value> {
-        // TODO(perf): avoid double lookup
-        let mut cell_format = self.formats.get(pos).cloned().unwrap_or_default();
-        *A::get_from_format_mut(&mut cell_format) = value;
-        A::get_from_format(&self.formats.set(pos, Some(cell_format))?).clone()
-    }
+    // /// Sets a formatting property for a cell.
+    // pub fn set_formatting_value<A: CellFmtAttr>(
+    //     &mut self,
+    //     pos: Pos,
+    //     value: Option<A::Value>,
+    // ) -> Option<A::Value> {
+    //     // TODO(perf): avoid double lookup
+    //     let mut cell_format = self.formats.get(pos).cloned().unwrap_or_default();
+    //     *A::get_from_format_mut(&mut cell_format) = value;
+    //     A::get_from_format(&self.formats.set(pos, Some(cell_format))?).clone()
+    // }
 
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
@@ -517,9 +509,9 @@ mod test {
     use crate::controller::GridController;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::formats::Formats;
-    use crate::grid::{Bold, CodeCellLanguage, Italic};
+    use crate::grid::{CodeCellLanguage, CodeCellValue};
     use crate::test_util::print_table;
-    use crate::{A1Selection, CodeCellValue, SheetPos, SheetRect};
+    use crate::{A1Selection, SheetPos, SheetRect};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -807,18 +799,18 @@ mod test {
         assert_eq!(value, Some(CellValue::Number(BigDecimal::from(1))));
     }
 
-    #[test]
-    fn test_get_set_formatting_value() {
-        let (grid, sheet_id, _) = test_setup_basic();
-        let mut sheet = grid.sheet(sheet_id).clone();
-        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-        let bold: Option<bool> = sheet.get_formatting_value::<Bold>((2, 1).into());
-        assert_eq!(bold, Some(true));
+    // #[test]
+    // fn test_get_set_formatting_value() {
+    //     let (grid, sheet_id, _) = test_setup_basic();
+    //     let mut sheet = grid.sheet(sheet_id).clone();
+    //     let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+    //     let bold: Option<bool> = sheet.get_formatting_value::<Bold>((2, 1).into());
+    //     assert_eq!(bold, Some(true));
 
-        let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
-        let italic = sheet.get_formatting_value::<Italic>((2, 1).into());
-        assert_eq!(italic, Some(true));
-    }
+    //     let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
+    //     let italic = sheet.get_formatting_value::<Italic>((2, 1).into());
+    //     assert_eq!(italic, Some(true));
+    // }
 
     #[test]
     fn cell_format_summary() {
@@ -829,7 +821,7 @@ mod test {
         assert_eq!(format_summary, CellFormatSummary::default());
 
         // just set a bold value
-        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        sheet.formats.bold.set(Pos { x: 2, y: 1 }, Some(true));
         let value = sheet.cell_format_summary((2, 1).into());
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
@@ -841,7 +833,7 @@ mod test {
         assert_eq!(cell_format_summary.clone(), format_summary);
 
         // now set a italic value
-        let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
+        let _ = sheet.formats.italic.set(Pos { x: 2, y: 1 }, Some(true));
         let value = sheet.cell_format_summary((2, 1).into());
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);

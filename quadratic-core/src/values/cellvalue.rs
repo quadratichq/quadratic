@@ -13,19 +13,13 @@ use serde::{Deserialize, Serialize};
 use super::{Duration, Instant, IsBlank};
 use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{js_types::JsCellValuePos, CodeCellLanguage, NumericFormat, NumericFormatKind},
+    grid::{js_types::JsCellValuePos, CodeCellValue, NumericFormat, NumericFormatKind},
     CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
 };
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CodeCellValue {
-    pub language: CodeCellLanguage,
-    pub code: String,
-}
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]

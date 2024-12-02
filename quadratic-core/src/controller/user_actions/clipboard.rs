@@ -150,9 +150,9 @@ mod test {
         controller::GridController,
         grid::{
             formats::format_update::FormatUpdate, js_types::CellFormatSummary, BorderSelection,
-            BorderStyle, CellBorderLine, CodeCellLanguage, SheetId,
+            BorderStyle, CellBorderLine, CodeCellLanguage, CodeCellValue, SheetId,
         },
-        CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
+        CellValue, Pos, Rect, SheetPos, SheetRect,
     };
 
     fn set_cell_value(gc: &mut GridController, sheet_id: SheetId, value: &str, x: i64, y: i64) {

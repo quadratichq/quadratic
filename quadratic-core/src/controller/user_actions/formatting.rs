@@ -9,19 +9,19 @@ use crate::grid::{
 use crate::{RunLengthEncoding, SheetPos, SheetRect};
 
 impl GridController {
-    pub fn set_cell_formats_for_type<A: CellFmtAttr>(
-        &mut self,
-        sheet_rect: &SheetRect,
-        values: RunLengthEncoding<Option<A::Value>>,
-    ) -> RunLengthEncoding<Option<A::Value>> {
-        // todo: add better error handling for sheet removal
-        let result = if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
-            sheet.set_cell_formats_for_type::<A>(sheet_rect, values)
-        } else {
-            RunLengthEncoding::new()
-        };
-        result
-    }
+    // pub fn set_cell_formats_for_type<A: CellFmtAttr>(
+    //     &mut self,
+    //     sheet_rect: &SheetRect,
+    //     values: RunLengthEncoding<Option<A::Value>>,
+    // ) -> RunLengthEncoding<Option<A::Value>> {
+    //     // todo: add better error handling for sheet removal
+    //     let result = if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
+    //         sheet.set_cell_formats_for_type::<A>(sheet_rect, values)
+    //     } else {
+    //         RunLengthEncoding::new()
+    //     };
+    //     result
+    // }
 
     /// set currency type for a region
     /// this also resets NumericDecimals to 2
@@ -115,7 +115,7 @@ mod test {
     use crate::grid::formats::format::Format;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::js_types::{JsNumber, JsRenderCell};
-    use crate::grid::{CellAlign, RenderSize, SheetId, TextColor};
+    use crate::grid::{CellAlign, RenderSize, SheetId};
     use crate::{Pos, Rect, SheetPos, SheetRect};
 
     #[test]
@@ -131,7 +131,10 @@ mod test {
 
         let get = |g: &GridController, pos: crate::Pos| {
             g.sheet(sheet_id)
-                .get_formatting_value::<TextColor>(pos)
+                .formats
+                .text_color
+                .get(pos)
+                .cloned()
                 .unwrap_or_default()
         };
 
@@ -468,8 +471,8 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_formatting_value::<RenderSize>(Pos { x: 0, y: 0 }),
-            Some(RenderSize {
+            sheet.formats.render_size.get(Pos { x: 0, y: 0 }),
+            Some(&RenderSize {
                 w: "1".to_string(),
                 h: "2".to_string()
             })

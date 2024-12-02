@@ -62,8 +62,8 @@ mod test {
             transaction_types::JsCodeResult,
             GridController,
         },
-        grid::{CodeCellLanguage, CodeRun, CodeRunResult},
-        Array, ArraySize, CellValue, CodeCellValue, Pos, SheetPos, Value,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult},
+        Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
 
     #[test]
