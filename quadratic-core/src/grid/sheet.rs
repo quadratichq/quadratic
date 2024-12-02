@@ -36,7 +36,6 @@ pub mod row_resize;
 pub mod search;
 pub mod selection;
 pub mod send_render;
-pub mod sheet_a1;
 pub mod sheet_test;
 pub mod summarize;
 pub mod validations;

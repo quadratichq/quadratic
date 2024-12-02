@@ -384,7 +384,7 @@ impl Sheet {
                         let end_row = end.row.map(|r| r.coord);
                         Pos {
                             x: end_col.unwrap_or_else(|| {
-                                let a = rect_start.y;
+                                let a = start.row.map_or(bounds.min.y, |c| c.coord);
                                 let b = end_row.unwrap_or(bounds.max.y);
                                 // get max column for the range of rows
                                 self.rows_bounds(
@@ -395,8 +395,8 @@ impl Sheet {
                                 .map_or(rect_start.x, |(_, hi)| hi)
                             }),
                             y: end_row.unwrap_or_else(|| {
-                                let a = rect_start.x;
-                                let b = end_col.unwrap_or(bounds.max.y);
+                                let a = start.col.map_or(bounds.min.x, |c| c.coord);
+                                let b = end_col.unwrap_or(bounds.max.x);
                                 // get max row for the range of columns
                                 self.columns_bounds(
                                     std::cmp::min(a, b),
@@ -711,8 +711,8 @@ mod tests {
     fn test_cell_ref_range_to_rect() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A1".into()));
-        sheet.set_cell_value(Pos { x: 5, y: 5 }, CellValue::Text("E5".into()));
+        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
+        sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
         sheet.recalculate_bounds();
 
         // Test fully specified range
@@ -729,11 +729,7 @@ mod tests {
     #[test]
     fn test_selection_to_rects() {
         let sheet = Sheet::test();
-        let selection = A1Selection {
-            sheet_id: sheet.id,
-            cursor: Pos { x: 1, y: 1 },
-            ranges: vec![CellRefRange::test("A1:C3"), CellRefRange::test("E5:G7")],
-        };
+        let selection = A1Selection::test_a1("A1:C3,E5:G7");
 
         let rects = sheet.selection_to_rects(&selection);
         assert_eq!(rects, vec![Rect::new(1, 1, 3, 3), Rect::new(5, 5, 7, 7)]);
@@ -743,8 +739,8 @@ mod tests {
     fn test_finitize_cell_ref_range() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A1".into()));
-        sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text("J10".into()));
+        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
+        sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
         sheet.recalculate_bounds();
 
         // Test unbounded range
@@ -756,29 +752,31 @@ mod tests {
         let range = CellRefRange::test("C3:E5");
         let finite_range = sheet.finitize_cell_ref_range(range);
         assert_eq!(finite_range, CellRefRange::test("C3:E5"));
+
+        // Test select all
+        let range = CellRefRange::test("*");
+        let finite_range = sheet.finitize_cell_ref_range(range);
+        assert_eq!(finite_range, CellRefRange::test("A1:J10"));
     }
 
     #[test]
     fn test_finitize_selection() {
         let mut sheet = Sheet::test();
         // Add some data to create bounds
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("A1".into()));
-        sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text("J10".into()));
+        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
+        sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
         sheet.recalculate_bounds();
 
-        let selection = A1Selection {
-            sheet_id: sheet.id,
-            cursor: Pos { x: 1, y: 1 },
-            ranges: vec![
-                CellRefRange::test("A1:C3"), // bounded
-                CellRefRange::test("E5:"),   // unbounded
-            ],
-        };
-
+        let selection = A1Selection::test_a1("A1:C3,E5:");
         let finite_selection = sheet.finitize_selection(&selection);
         assert_eq!(
             finite_selection.ranges,
             vec![CellRefRange::test("A1:C3"), CellRefRange::test("E5:J10"),]
         );
+
+        // Test select all
+        let selection = A1Selection::test_a1("*");
+        let finite_selection = sheet.finitize_selection(&selection);
+        assert_eq!(finite_selection.ranges, vec![CellRefRange::test("A1:J10")]);
     }
 }

@@ -498,8 +498,8 @@ mod tests {
         gc.set_code_cell(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
             },
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),

@@ -145,9 +145,8 @@ impl Sheet {
 
         // remove the column's data from the sheet
         self.formats.remove_column(column);
-        if true {
-            todo!("actually save the column formatting and update transaction appropriately")
-        }
+        dbgjs!("actually save the column formatting and update transaction appropriately");
+
         self.columns.remove(&column);
 
         // remove the column's code runs from the sheet

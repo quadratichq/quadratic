@@ -159,11 +159,12 @@ impl Validations {
     pub fn in_rect(&self, rect: Rect) -> Vec<&Validation> {
         self.validations
             .iter()
-            .filter(|v| {
-                v.selection
+            .filter(|validation| {
+                validation
+                    .selection
                     .ranges
                     .iter()
-                    .any(|r| r.is_finite() && r.might_intersect_rect(rect))
+                    .any(|range| range.is_finite() && range.might_intersect_rect(rect))
             })
             .collect()
     }

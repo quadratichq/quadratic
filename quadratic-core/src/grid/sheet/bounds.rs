@@ -196,8 +196,8 @@ impl Sheet {
         let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
             true => column.has_data_in_row(row),
             false => {
-                // dbgjs!("TODO: row_bounds - has data or format in row");
-                false
+                dbgjs!("todo: row_bounds - has data or format in row");
+                column.has_data_in_row(row)
             }
         };
         let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
@@ -1063,7 +1063,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.data_bounds,
-            GridBounds::NonEmpty(Rect::new(0, 0, 0, 0))
+            GridBounds::NonEmpty(Rect::new(1, 1, 1, 1))
         );
     }
 

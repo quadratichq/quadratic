@@ -130,10 +130,6 @@ impl ViewportBuffer {
     }
 
     pub fn get_viewport(&self) -> Option<(Pos, Pos, SheetId)> {
-        Some((
-            Pos { x: -10, y: -10 },
-            Pos { x: 10, y: 10 },
-            SheetId::test(),
-        ))
+        Some((Pos { x: 1, y: 1 }, Pos { x: 10, y: 10 }, SheetId::TEST))
     }
 }

@@ -690,22 +690,22 @@ mod test {
         assert_eq!(cell21.unwrap(), CellValue::Number(BigDecimal::from(12)));
     }
 
-    // | 1 | A0           |
+    // | 1 | A1           |
     // | 2 | [paste here] |
     //
-    // paste the code cell (0,1) => A0 from the clipboard to (1,1),
+    // paste the code cell (2,1) => A1 from the clipboard to (2,2),
     // expect value to change to 2
     #[test]
     #[parallel]
     fn test_paste_relative_code_from_quadratic_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let src_pos: Pos = (3, 2).into();
+        let src_pos: Pos = (2, 1).into();
 
-        set_formula_code_cell(&mut gc, sheet_id, "SUM( C2)", src_pos.x, src_pos.y);
-        set_cell_value(&mut gc, sheet_id, "1", 2, 2);
-        set_cell_value(&mut gc, sheet_id, "2", 2, 3);
-        set_cell_value(&mut gc, sheet_id, "3", 2, 4);
+        set_formula_code_cell(&mut gc, sheet_id, "SUM(A1)", src_pos.x, src_pos.y);
+        set_cell_value(&mut gc, sheet_id, "1", 1, 1);
+        set_cell_value(&mut gc, sheet_id, "2", 1, 2);
+        set_cell_value(&mut gc, sheet_id, "3", 1, 3);
 
         // generate the html from the values above
         let sheet = gc.sheet(sheet_id);
@@ -739,13 +739,13 @@ mod test {
                 assert_eq!(cell_value, (expected_cell_value, expected_display_value));
             };
 
-        // paste code cell (3,2) from the clipboard to (3,3)
-        let dest_pos: SheetPos = (3, 3, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM( C3)", 2);
+        // paste code cell (2,1) from the clipboard to (2,2)
+        let dest_pos: SheetPos = (2, 2, sheet_id).into();
+        assert_code_cell(&mut gc, dest_pos, "SUM(A2)", 2);
 
-        // paste code cell (3,2) from the clipboard to (3,4)
-        let dest_pos: SheetPos = (3, 4, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM( C4)", 3);
+        // paste code cell (2,1) from the clipboard to (2,3)
+        let dest_pos: SheetPos = (2, 3, sheet_id).into();
+        assert_code_cell(&mut gc, dest_pos, "SUM(A3)", 3);
     }
 
     #[test]

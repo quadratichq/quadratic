@@ -381,6 +381,7 @@ impl A1Selection {
     }
 
     /// Constructs contiguous blocks from an A1 selection.
+    /// todo: this doesn't look right -- how do you select multiple columns or rows?
     pub fn to_contiguous_blocks<T: Clone + PartialEq>(&self, value: T) -> Contiguous2D<T> {
         let mut ret = Contiguous2D::new();
         for range in &self.ranges {
@@ -391,10 +392,10 @@ impl A1Selection {
                         None => match (x1, y1) {
                             (None, None) => (), // TODO(sentry): empty range
                             (Some(column), None) => {
-                                ret.set_column(column, Some(value.clone()));
+                                ret.set_columns(column, column, Some(value.clone()));
                             }
                             (None, Some(row)) => {
-                                ret.set_row(row, Some(value.clone()));
+                                ret.set_rows(row, row, Some(value.clone()));
                             }
                             (Some(col), Some(row)) => {
                                 let pos = Pos::new(col, row);
@@ -436,7 +437,7 @@ impl A1Selection {
     /// Returns a test selection from the A1-string with SheetId::test().
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        Self::from_str(a1, &SheetId::test(), &std::collections::HashMap::new()).unwrap()
+        Self::from_str(a1, &SheetId::TEST, &std::collections::HashMap::new()).unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
@@ -449,7 +450,7 @@ impl A1Selection {
     /// SheetId.
     #[cfg(test)]
     pub fn test_to_string(&self) -> String {
-        self.to_string(Some(SheetId::test()), &std::collections::HashMap::new())
+        self.to_string(Some(SheetId::TEST), &std::collections::HashMap::new())
     }
 }
 

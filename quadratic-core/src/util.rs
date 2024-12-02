@@ -84,6 +84,14 @@ macro_rules! col {
     };
 }
 
+/// Converts a row name to a number.
+#[allow(unused)]
+macro_rules! row {
+    [$row_name:ident] => {
+        $crate::a1::row_from_name(stringify!($row_name)).expect("invalid row name")
+    };
+}
+
 /// Parses a cell position in A1 notation.
 #[allow(unused)]
 macro_rules! pos {

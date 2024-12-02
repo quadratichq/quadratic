@@ -239,7 +239,7 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("test".to_string()));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("test".to_string()));
 
         let validation = Validation {
             id: Uuid::new_v4(),
@@ -258,8 +258,8 @@ mod tests {
 
         expect_js_call_count("jsRenderCellSheets", 1, false);
         let warnings = vec![JsValidationWarning {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             validation: Some(validation.id),
             style: Some(validation.error.style.clone()),
         }];
@@ -279,7 +279,7 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("test".to_string()));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("test".to_string()));
 
         let validation = Validation {
             id: Uuid::new_v4(),
@@ -304,8 +304,8 @@ mod tests {
 
         expect_js_call_count("jsRenderCellSheets", 2, false);
         let warnings = vec![JsValidationWarning {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             validation: None,
             style: None,
         }];
