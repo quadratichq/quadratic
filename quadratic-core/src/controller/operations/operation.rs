@@ -14,7 +14,7 @@ use crate::{
         CodeRun, CodeRunOld, Sheet, SheetBorders, SheetId,
     },
     selection::OldSelection,
-    A1Selection, A1Subspaces, CopyFormats, SheetPos, SheetRect,
+    A1Selection, CopyFormats, SheetPos, SheetRect,
 };
 
 /// Description of changes to make to a file.
@@ -24,7 +24,7 @@ use crate::{
 ///
 /// We must maintain compatibility with past versions of `Operation` (since
 /// users may want to sync offline changes from a previous version), so be very
-/// careful when making serailization-breaking changes.
+/// careful when making serialization-breaking changes.
 #[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Operation {
@@ -65,10 +65,7 @@ pub enum Operation {
         formats: Formats,
     },
     /// Updates cell formats for all cells in a selection.
-    SetCellFormatsA1 {
-        sheet_id: SheetId,
-        formats: SheetFormatUpdates,
-    },
+    SetCellFormatsA1 { formats: SheetFormatUpdates },
 
     /// **Deprecated** Nov 2024 in favor of `SetBordersA1`.
     SetBorders {
@@ -83,7 +80,6 @@ pub enum Operation {
     /// Updates borders for all cells in a selection.
     SetBordersA1 {
         sheet_id: SheetId,
-        subspaces: A1Subspaces,
         borders: BorderStyleCellUpdates,
     },
 
@@ -216,12 +212,8 @@ impl fmt::Display for Operation {
                     selection, formats
                 )
             }
-            Operation::SetCellFormatsA1 { sheet_id, formats } => {
-                write!(
-                    fmt,
-                    "SetCellFormatsA1 {{ sheet_id: {:?}, formats: {:?} }}",
-                    sheet_id, formats
-                )
+            Operation::SetCellFormatsA1 { formats } => {
+                write!(fmt, "SetCellFormatsA1 {{ formats: {:?} }}", formats)
             }
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),
             Operation::DeleteSheet { sheet_id } => {
@@ -278,14 +270,10 @@ impl fmt::Display for Operation {
                 "SetBordersSelection {{ selection: {:?}, borders: {:?} }}",
                 selection, borders
             ),
-            Operation::SetBordersA1 {
-                sheet_id,
-                subspaces,
-                borders,
-            } => write!(
+            Operation::SetBordersA1 { sheet_id, borders } => write!(
                 fmt,
-                "SetBordersA1 {{ sheet_id: {:?}, subspaces: {:?}, borders: {:?} }}",
-                sheet_id, subspaces, borders
+                "SetBordersA1 {{ sheet_id: {:?}, borders: {:?} }}",
+                sheet_id, borders
             ),
             Operation::SetCursor { sheet_rect } => {
                 write!(fmt, "SetCursor {{ sheet_rect: {} }}", sheet_rect)

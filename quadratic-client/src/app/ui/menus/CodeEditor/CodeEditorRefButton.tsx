@@ -20,7 +20,7 @@ export const CodeEditorRefButton = () => {
   useEffect(() => {
     const checkDisabled = () => {
       if (
-        sheets.sheet.cursor.isMultiCursor() ||
+        sheets.sheet.cursor.isMultiRange() ||
         (codeCell.sheetId === sheets.sheet.id &&
           codeCell.pos.x === sheets.sheet.cursor.position.x &&
           codeCell.pos.y === sheets.sheet.cursor.position.y)

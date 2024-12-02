@@ -5,13 +5,13 @@ use itertools::Itertools;
 use crate::{
     grid::{
         js_types::{JsOffset, JsRenderFill},
-        RenderSize, SheetId,
+        SheetId,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::OldSelection,
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    A1Selection, A1Subspaces, CellValue, Pos, Rect, SheetPos, SheetRect,
+    A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
@@ -254,15 +254,6 @@ impl GridController {
         };
     }
 
-    pub fn send_updated_bounds_a1_subspaces(
-        &mut self,
-        _sheet_id: SheetId,
-        _subspaces: &A1Subspaces,
-        _format: bool,
-    ) {
-        todo!("todo todo todo")
-    }
-
     /// Recalculates sheet bounds, and if changed then sends to TS.
     pub fn send_updated_bounds(&mut self, sheet_id: SheetId) {
         let recalculated = if let Some(sheet) = self.try_sheet_mut(sheet_id) {
@@ -372,13 +363,12 @@ impl GridController {
                             _ => None,
                         })
                 });
-                let (w, h) = if let Some(size) =
-                    sheet.get_formatting_value::<RenderSize>(sheet_pos.into())
-                {
-                    (Some(size.w), Some(size.h))
-                } else {
-                    (None, None)
-                };
+                let (w, h) =
+                    if let Some(size) = sheet.formats.render_size.get(sheet_pos.into()).cloned() {
+                        (Some(size.w), Some(size.h))
+                    } else {
+                        (None, None)
+                    };
 
                 crate::wasm_bindings::js::jsSendImage(
                     sheet_pos.sheet_id.to_string(),

@@ -1,5 +1,6 @@
 //! Calculates all bounds for the sheet: data, formatting, and borders. We cache
 //! this value and only recalculate when necessary.
+
 use std::cmp::Reverse;
 
 use crate::{
@@ -563,10 +564,11 @@ mod test {
         assert_eq!(sheet.bounds(true), GridBounds::Empty);
         assert_eq!(sheet.bounds(false), GridBounds::Empty);
 
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
-        let _ = sheet
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        sheet
             .formats
-            .set_align(1, 1, Some(1), Some(1), Some(CellAlign::Center));
+            .align
+            .set(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
         assert!(sheet.recalculate_bounds());
 
         assert_eq!(
@@ -597,7 +599,8 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
         sheet
             .formats
-            .set_wrap(100, 200, Some(100), Some(200), Some(CellWrap::Wrap));
+            .wrap
+            .set(Pos { x: 100, y: 200 }, Some(CellWrap::Wrap));
         assert!(sheet.recalculate_bounds());
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
@@ -624,7 +627,8 @@ mod test {
         sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
         sheet
             .formats
-            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.row_bounds(100, true), Some((-50, 80)));
@@ -652,7 +656,8 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
         let _ = sheet
             .formats
-            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
 
         // set negative values
         let _ = sheet.set_cell_value(
@@ -665,7 +670,8 @@ mod test {
         );
         let _ = sheet
             .formats
-            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.columns_bounds(0, 100, true), Some((-50, 80)));
@@ -686,27 +692,29 @@ mod test {
     fn test_rows_bounds() {
         let mut sheet = Sheet::test();
 
-        let _ = sheet.set_cell_value(
+        sheet.set_cell_value(
             Pos { y: 100, x: -50 },
             CellValue::Text(String::from("test")),
         );
-        let _ = sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
-        let _ = sheet
+        sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
+        sheet
             .formats
-            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
 
         // set negative values
-        let _ = sheet.set_cell_value(
+        sheet.set_cell_value(
             Pos { y: -100, x: -50 },
             CellValue::Text(String::from("test")),
         );
-        let _ = sheet.set_cell_value(
+        sheet.set_cell_value(
             Pos { y: -100, x: -80 },
             CellValue::Text(String::from("test")),
         );
-        let _ = sheet
+        sheet
             .formats
-            .set_align(100, 200, Some(100), Some(200), Some(CellAlign::Center));
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.rows_bounds(0, 100, true), Some((-50, 80)));

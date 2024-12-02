@@ -1,5 +1,6 @@
 use crate::{
-    grid::SheetId, selection::OldSelection, A1Selection, A1Subspaces, Rect, SheetPos, SheetRect,
+    grid::formats::format_update::SheetFormatUpdates, selection::OldSelection, A1Selection, Rect,
+    SheetPos, SheetRect,
 };
 
 use super::GridController;
@@ -70,17 +71,16 @@ impl GridController {
     }
 
     /// Returns whether the thumbnail contains any intersection with
-    /// `subspaces`. If this method returns `true`, then updates in `subspaces`
+    /// `formats`. If this method returns `true`, then updates in `formats`
     /// must force the thumbnail to update.
-    pub fn thumbnail_dirty_subspaces(&self, sheet_id: SheetId, subspaces: &A1Subspaces) -> bool {
-        if sheet_id != self.grid().first_sheet_id() {
+    pub fn thumbnail_dirty_formats(&self, formats: &SheetFormatUpdates) -> bool {
+        if formats.sheet_id != self.grid().first_sheet_id() {
             return false;
         }
-        let Some(sheet) = self.try_sheet(sheet_id) else {
+        let Some(sheet) = self.try_sheet(formats.sheet_id) else {
             return false;
         };
-
-        subspaces.intersects_rect(sheet.offsets.thumbnail())
+        formats.intersects(sheet.offsets.thumbnail())
     }
 }
 
@@ -351,5 +351,10 @@ mod test {
             columns: None,
             all: false,
         }));
+    }
+
+    #[test]
+    fn test_thumbnail_dirty_formats() {
+        todo!()
     }
 }

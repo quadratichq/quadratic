@@ -131,7 +131,6 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -313,7 +312,7 @@ mod test {
     use serial_test::parallel;
 
     use crate::controller::GridController;
-    use crate::grid::{CellWrap, StrikeThrough, Underline};
+    use crate::grid::CellWrap;
     use crate::selection::OldSelection;
     use crate::{A1Selection, Pos, Rect};
 
@@ -341,8 +340,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .align,
             Some(crate::grid::CellAlign::Center)
@@ -373,8 +371,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .vertical_align,
             Some(crate::grid::CellVerticalAlign::Middle)
@@ -405,8 +402,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .bold,
             Some(true)
@@ -437,8 +433,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .wrap,
             Some(CellWrap::Clip)
@@ -458,8 +453,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 1, y: 1 })
-                .cloned()
+                .get_format(Pos { x: 1, y: 1 })
                 .unwrap_or_default()
                 .numeric_format,
             Some(crate::grid::NumericFormat {
@@ -494,8 +488,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .numeric_format,
             Some(crate::grid::NumericFormat {
@@ -530,8 +523,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .numeric_format,
             Some(crate::grid::NumericFormat {
@@ -564,8 +556,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .numeric_commas,
             Some(true)
@@ -589,8 +580,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .numeric_commas,
             Some(false)
@@ -621,8 +611,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .italic,
             Some(true)
@@ -653,8 +642,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .text_color,
             Some("red".to_string())
@@ -685,8 +673,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .fill_color,
             Some("blue".to_string())
@@ -719,8 +706,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .numeric_decimals,
             Some(2)
@@ -748,10 +734,7 @@ mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.get_formatting_value::<Underline>(Pos { x: 0, y: 0 }),
-            Some(true)
-        );
+        assert_eq!(sheet.formats.underline.get(Pos { x: 0, y: 0 }), Some(&true));
     }
 
     #[test]
@@ -776,8 +759,8 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_formatting_value::<StrikeThrough>(Pos { x: 0, y: 0 }),
-            Some(true)
+            sheet.formats.strike_through.get(Pos { x: 0, y: 0 }),
+            Some(&true)
         );
     }
 
@@ -805,8 +788,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 1, y: 1 })
-                .cloned()
+                .get_format(Pos { x: 1, y: 1 })
                 .unwrap_or_default()
                 .text_color,
             Some("red".to_string())
@@ -819,8 +801,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 1, y: 1 })
-                .cloned()
+                .get_format(Pos { x: 1, y: 1 })
                 .unwrap_or_default()
                 .text_color,
             None
@@ -906,8 +887,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get(Pos { x: 0, y: 0 })
-                .cloned()
+                .get_format(Pos { x: 0, y: 0 })
                 .unwrap_or_default()
                 .date_time,
             Some("yyyy-mm-dd".to_string())

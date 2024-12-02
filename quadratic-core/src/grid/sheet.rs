@@ -298,24 +298,17 @@ impl Sheet {
         }
     }
 
-    // /// Returns a formatting property of a cell.
-    // ///
-    // /// TODO: move this onto [`SheetFormatting`] as `get_value()`.
-    // pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
-    //     A::get_from_format(self.formats.get(pos)?).clone()
-    // }
-
-    // /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
-    // pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
-    //     match self.get_formatting_value::<super::NumericFormat>(pos) {
-    //         Some(format) => format.kind,
-    //         None => NumericFormatKind::Number,
-    //     }
-    // }
+    /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
+    pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
+        match self.formats.numeric_format.get(pos) {
+            Some(format) => format.kind,
+            None => NumericFormatKind::Number,
+        }
+    }
 
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.formats.get(pos).unwrap_or_default();
+        let format = self.formats.get_format(pos).unwrap_or_default();
         let cell_type = self
             .display_value(pos)
             .and_then(|cell_value| match cell_value {
@@ -516,7 +509,7 @@ mod test {
     use crate::controller::GridController;
     use crate::grid::formats::format_update::FormatUpdate;
     use crate::grid::formats::Formats;
-    use crate::grid::{Bold, CodeCellLanguage, CodeCellValue, Italic};
+    use crate::grid::{CodeCellLanguage, CodeCellValue};
     use crate::test_util::print_table;
     use crate::{A1Selection, SheetPos, SheetRect};
 
@@ -828,7 +821,7 @@ mod test {
         assert_eq!(format_summary, CellFormatSummary::default());
 
         // just set a bold value
-        sheet.formats.set_bold(2, 1, Some(2), Some(1), Some(true));
+        sheet.formats.bold.set(Pos { x: 2, y: 1 }, Some(true));
         let value = sheet.cell_format_summary((2, 1).into());
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
@@ -840,7 +833,7 @@ mod test {
         assert_eq!(cell_format_summary.clone(), format_summary);
 
         // now set a italic value
-        let _ = sheet.formats.set_italic(2, 1, Some(2), Some(1), Some(true));
+        let _ = sheet.formats.italic.set(Pos { x: 2, y: 1 }, Some(true));
         let value = sheet.cell_format_summary((2, 1).into());
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);

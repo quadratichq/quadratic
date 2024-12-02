@@ -158,9 +158,16 @@ impl CellRefRangeEnd {
             && self.row.map_or(false, |row| row.coord == pos.y)
     }
 
-    /// Returns the XY coordinates of the range end.
+    /// Returns the XY coordinates of a range.
     pub fn unpack_xy(self) -> [Option<i64>; 2] {
         [self.col.map(|c| c.coord), self.row.map(|c| c.coord)]
+    }
+
+    pub fn unpack_xy_default(self, default: i64) -> [i64; 2] {
+        [
+            self.col.map_or(default, |c| c.coord),
+            self.row.map_or(default, |c| c.coord),
+        ]
     }
 }
 
@@ -270,5 +277,32 @@ mod tests {
         assert_eq!(CellRefRangeEnd::UNBOUNDED.col, None);
         assert_eq!(CellRefRangeEnd::UNBOUNDED.row, None);
         assert!(CellRefRangeEnd::UNBOUNDED.is_multi_range());
+    }
+
+    #[test]
+    fn test_unpack_xy() {
+        assert_eq!(
+            CellRefRangeEnd::new_relative_xy(2, 2).unpack_xy(),
+            [Some(2), Some(2)]
+        );
+        assert_eq!(CellRefRangeEnd::UNBOUNDED.unpack_xy(), [None, None]);
+    }
+
+    #[test]
+    fn test_unpack_xy_default() {
+        assert_eq!(
+            CellRefRangeEnd::new_relative_xy(2, 2).unpack_xy_default(1),
+            [2, 2]
+        );
+        assert_eq!(CellRefRangeEnd::UNBOUNDED.unpack_xy_default(1), [1, 1]);
+
+        assert_eq!(
+            CellRefRangeEnd::new_relative_column(2).unpack_xy_default(1),
+            [2, 1]
+        );
+        assert_eq!(
+            CellRefRangeEnd::new_relative_row(2).unpack_xy_default(1),
+            [1, 2]
+        );
     }
 }
