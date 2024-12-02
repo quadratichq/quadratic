@@ -248,198 +248,200 @@ fn upgrade_column(values: HashMap<String, v1_7_1::CellValueSchema>) -> v1_7_1::C
         .collect()
 }
 
-fn upgrade_format(format: current::FormatSchema) -> Option<v1_7_1::FormatSchema> {
-    Some(v1_7_1::FormatSchema {
-        align: format.align,
-        vertical_align: format.vertical_align,
-        wrap: format.wrap,
-        numeric_format: format.numeric_format,
-        numeric_decimals: format.numeric_decimals,
-        numeric_commas: format.numeric_commas,
-        bold: format.bold,
-        italic: format.italic,
-        text_color: format.text_color,
-        fill_color: format.fill_color,
-        render_size: format.render_size,
-        date_time: format.date_time,
-        underline: format.underline,
-        strike_through: format.strike_through,
-    })
-}
+// fn upgrade_format(format: current::FormatSchema) -> Option<v1_7_1::FormatSchema> {
+//     Some(v1_7_1::FormatSchema {
+//         align: format.align,
+//         vertical_align: format.vertical_align,
+//         wrap: format.wrap,
+//         numeric_format: format.numeric_format,
+//         numeric_decimals: format.numeric_decimals,
+//         numeric_commas: format.numeric_commas,
+//         bold: format.bold,
+//         italic: format.italic,
+//         text_color: format.text_color,
+//         fill_color: format.fill_color,
+//         render_size: format.render_size,
+//         date_time: format.date_time,
+//         underline: format.underline,
+//         strike_through: format.strike_through,
+//     })
+// }
 
-type FormatColumnRow = (Option<v1_7_1::FormatSchema>, Option<i64>, Option<i64>);
+// type FormatColumnRow = (Option<v1_7_1::FormatSchema>, Option<i64>, Option<i64>);
 
-fn upgrade_formats_all_col_row(
-    format_all: Option<current::FormatSchema>,
-    format_columns: Vec<(i64, (current::FormatSchema, i64))>,
-    format_rows: Vec<(i64, (current::FormatSchema, i64))>,
-) -> v1_7_1::SheetFormattingUpgrade {
-    let mut formats = v1_7_1::SheetFormattingUpgrade::default();
+// fn upgrade_formats_all_col_row(
+//     format_all: Option<current::FormatSchema>,
+//     format_columns: Vec<(i64, (current::FormatSchema, i64))>,
+//     format_rows: Vec<(i64, (current::FormatSchema, i64))>,
+// ) -> v1_7_1::SheetFormattingUpgrade {
+//     let mut formats = v1_7_1::SheetFormattingUpgrade::default();
 
-    // apply format all
-    if let Some(format_all) = format_all {
-        formats.set_all(upgrade_format(format_all));
-    }
+//     // apply format all
+//     if let Some(format_all) = format_all {
+//         formats.set_all(upgrade_format(format_all));
+//     }
 
-    // collect column / row formats and sort by timestamp
-    let mut format_col_row: Vec<(i64, FormatColumnRow)> = vec![]; // Vec<(timestamp, (format, column, row))>
+//     // collect column / row formats and sort by timestamp
+//     let mut format_col_row: Vec<(i64, FormatColumnRow)> = vec![]; // Vec<(timestamp, (format, column, row))>
 
-    for (column, (format, timestamp)) in format_columns {
-        format_col_row.push((timestamp, (upgrade_format(format), Some(column), None)));
-    }
+//     for (column, (format, timestamp)) in format_columns {
+//         format_col_row.push((timestamp, (upgrade_format(format), Some(column), None)));
+//     }
 
-    for (row, (format, timestamp)) in format_rows {
-        format_col_row.push((timestamp, (upgrade_format(format), None, Some(row))));
-    }
+//     for (row, (format, timestamp)) in format_rows {
+//         format_col_row.push((timestamp, (upgrade_format(format), None, Some(row))));
+//     }
 
-    format_col_row.sort_by_key(|(timestamp, _)| *timestamp);
+//     format_col_row.sort_by_key(|(timestamp, _)| *timestamp);
 
-    // apply column / row formats
-    for (_, (format, col, row)) in format_col_row {
-        if let Some(col) = col {
-            formats.set_column(col, format);
-        } else if let Some(row) = row {
-            formats.set_row(row, format);
-        }
-    }
+//     // apply column / row formats
+//     for (_, (format, col, row)) in format_col_row {
+//         if let Some(col) = col {
+//             formats.set_column(col, format);
+//         } else if let Some(row) = row {
+//             formats.set_row(row, format);
+//         }
+//     }
 
-    formats
-}
+//     formats
+// }
 
-fn upgrade_column_formats_property<T>(
-    formats: &mut v1_7_1::SheetFormattingUpgrade,
-    x: i64,
-    property_iter: impl IntoIterator<Item = (String, current::ColumnRepeatSchema<T>)>,
-    format_setter: impl Fn(T) -> v1_7_1::FormatSchema,
-) {
-    for (y, prop) in property_iter {
-        if let Ok(y) = y.parse::<i64>() {
-            formats.set_column_repeat(x, y, prop.len, Some(format_setter(prop.value)));
-        }
-    }
-}
+// fn upgrade_column_formats_property<T>(
+//     formats: &mut v1_7_1::SheetFormattingUpgrade,
+//     x: i64,
+//     property_iter: impl IntoIterator<Item = (String, current::ColumnRepeatSchema<T>)>,
+//     format_setter: impl Fn(T) -> v1_7_1::FormatSchema,
+// ) {
+//     for (y, prop) in property_iter {
+//         if let Ok(y) = y.parse::<i64>() {
+//             formats.set_column_repeat(x, y, prop.len, Some(format_setter(prop.value)));
+//         }
+//     }
+// }
 
 fn upgrade_columns_formats(
     current_columns: Vec<(i64, current::ColumnSchema)>,
-    mut formats: v1_7_1::SheetFormattingUpgrade,
+    // mut formats: v1_7_1::SheetFormattingUpgrade,
 ) -> (v1_7_1::ColumnsSchema, v1_7_1::SheetFormattingSchema) {
     let mut columns: v1_7_1::ColumnsSchema = vec![];
 
     for (x, column) in current_columns {
-        upgrade_column_formats_property(&mut formats, x, column.align, |value| {
-            v1_7_1::FormatSchema {
-                align: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.align, |value| {
+        //         v1_7_1::FormatSchema {
+        //             align: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.vertical_align, |value| {
-            v1_7_1::FormatSchema {
-                vertical_align: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.vertical_align, |value| {
+        //         v1_7_1::FormatSchema {
+        //             vertical_align: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.wrap, |value| {
-            v1_7_1::FormatSchema {
-                wrap: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.wrap, |value| {
+        //         v1_7_1::FormatSchema {
+        //             wrap: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.numeric_format, |value| {
-            v1_7_1::FormatSchema {
-                numeric_format: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.numeric_format, |value| {
+        //         v1_7_1::FormatSchema {
+        //             numeric_format: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.numeric_decimals, |value| {
-            v1_7_1::FormatSchema {
-                numeric_decimals: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.numeric_decimals, |value| {
+        //         v1_7_1::FormatSchema {
+        //             numeric_decimals: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.numeric_commas, |value| {
-            v1_7_1::FormatSchema {
-                numeric_commas: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.numeric_commas, |value| {
+        //         v1_7_1::FormatSchema {
+        //             numeric_commas: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.bold, |value| {
-            v1_7_1::FormatSchema {
-                bold: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.bold, |value| {
+        //         v1_7_1::FormatSchema {
+        //             bold: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.italic, |value| {
-            v1_7_1::FormatSchema {
-                italic: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.italic, |value| {
+        //         v1_7_1::FormatSchema {
+        //             italic: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.text_color, |value| {
-            v1_7_1::FormatSchema {
-                text_color: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.text_color, |value| {
+        //         v1_7_1::FormatSchema {
+        //             text_color: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.fill_color, |value| {
-            v1_7_1::FormatSchema {
-                fill_color: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.fill_color, |value| {
+        //         v1_7_1::FormatSchema {
+        //             fill_color: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.render_size, |value| {
-            v1_7_1::FormatSchema {
-                render_size: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.render_size, |value| {
+        //         v1_7_1::FormatSchema {
+        //             render_size: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.date_time, |value| {
-            v1_7_1::FormatSchema {
-                date_time: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.date_time, |value| {
+        //         v1_7_1::FormatSchema {
+        //             date_time: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.underline, |value| {
-            v1_7_1::FormatSchema {
-                underline: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.underline, |value| {
+        //         v1_7_1::FormatSchema {
+        //             underline: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
-        upgrade_column_formats_property(&mut formats, x, column.strike_through, |value| {
-            v1_7_1::FormatSchema {
-                strike_through: Some(value),
-                ..Default::default()
-            }
-        });
+        //     upgrade_column_formats_property(&mut formats, x, column.strike_through, |value| {
+        //         v1_7_1::FormatSchema {
+        //             strike_through: Some(value),
+        //             ..Default::default()
+        //         }
+        //     });
 
         columns.push((x, upgrade_column(column.values)));
     }
 
-    let formats = formats
-        .into_iter()
-        .map(|(x, block)| {
-            (
-                x,
-                v1_7_1::BlockSchema {
-                    start: block.start,
-                    end: block.end,
-                    value: block.value.into_iter().collect(),
-                },
-            )
-        })
-        .collect();
+    let formats = v1_7_1::SheetFormattingSchema::default();
+
+    // formats
+    //     .into_iter()
+    //     .map(|(x, block)| {
+    //         (
+    //             x,
+    //             v1_7_1::BlockSchema {
+    //                 start: block.start,
+    //                 end: block.end,
+    //                 value: block.value.into_iter().collect(),
+    //             },
+    //         )
+    //     })
+    //     .collect();
 
     (columns, formats)
 }
@@ -452,18 +454,19 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
         order,
         offsets,
         rows_resize,
-        formats_all,
-        formats_columns,
-        formats_rows,
+        // formats_all,
+        // formats_columns,
+        // formats_rows,
         validations,
         borders,
         code_runs,
         columns,
+        ..
     } = sheet;
 
-    let formats = upgrade_formats_all_col_row(formats_all, formats_columns, formats_rows);
+    // let formats = upgrade_formats_all_col_row(formats_all, formats_columns, formats_rows);
 
-    let (columns, formats) = upgrade_columns_formats(columns, formats);
+    let (columns, formats) = upgrade_columns_formats(columns);
 
     v1_7_1::SheetSchema {
         id,

@@ -1,165 +1,213 @@
-use anyhow::Result;
-use std::collections::BTreeMap;
-
 use crate::grid::{
     contiguous::Block,
-    file::v1_7_1::BlockSchema,
     formats::format::Format,
     resize::{Resize, ResizeMap},
-    CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind, RenderSize,
-    SheetFormatting,
+    CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, NumericFormatKind,
+    RenderSize, SheetFormatting,
 };
 
-use super::current::{self, FormatSchema, SheetFormattingSchema};
+use super::current;
 
-pub(crate) fn import_format(format: current::FormatSchema) -> Format {
-    Format {
-        align: format.align.map(|align| match align {
-            current::CellAlignSchema::Left => CellAlign::Left,
-            current::CellAlignSchema::Center => CellAlign::Center,
-            current::CellAlignSchema::Right => CellAlign::Right,
-        }),
-        vertical_align: format
-            .vertical_align
-            .map(|vertical_align| match vertical_align {
-                current::CellVerticalAlignSchema::Top => CellVerticalAlign::Top,
-                current::CellVerticalAlignSchema::Middle => CellVerticalAlign::Middle,
-                current::CellVerticalAlignSchema::Bottom => CellVerticalAlign::Bottom,
-            }),
-        wrap: format.wrap.map(|wrap| match wrap {
-            current::CellWrapSchema::Wrap => CellWrap::Wrap,
-            current::CellWrapSchema::Overflow => CellWrap::Overflow,
-            current::CellWrapSchema::Clip => CellWrap::Clip,
-        }),
-        numeric_format: format.numeric_format.map(|numeric_format| NumericFormat {
-            kind: match numeric_format.kind {
-                current::NumericFormatKindSchema::Number => NumericFormatKind::Number,
-                current::NumericFormatKindSchema::Currency => NumericFormatKind::Currency,
-                current::NumericFormatKindSchema::Percentage => NumericFormatKind::Percentage,
-                current::NumericFormatKindSchema::Exponential => NumericFormatKind::Exponential,
-            },
-            symbol: numeric_format.symbol,
-        }),
-        numeric_decimals: format.numeric_decimals,
-        numeric_commas: format.numeric_commas,
-        bold: format.bold,
-        italic: format.italic,
-        text_color: format.text_color,
-        fill_color: format.fill_color,
-        render_size: format.render_size.map(|render_size| RenderSize {
-            w: render_size.w,
-            h: render_size.h,
-        }),
-        date_time: format.date_time,
-        underline: format.underline,
-        strike_through: format.strike_through,
+fn import_cell_align(align: current::CellAlignSchema) -> CellAlign {
+    match align {
+        current::CellAlignSchema::Left => CellAlign::Left,
+        current::CellAlignSchema::Center => CellAlign::Center,
+        current::CellAlignSchema::Right => CellAlign::Right,
     }
 }
 
-pub(crate) fn import_formats(formats: SheetFormattingSchema) -> SheetFormatting {
-    todo!()
-    // formats
-    //     .into_iter()
-    //     .map(|(x, block)| {
-    //         (
-    //             x,
-    //             Block {
-    //                 start: block.start,
-    //                 end: block.end,
-    //                 value: block
-    //                     .value
-    //                     .into_iter()
-    //                     .map(|(y, block)| {
-    //                         (
-    //                             y,
-    //                             Block {
-    //                                 start: block.start,
-    //                                 end: block.end,
-    //                                 value: import_format(block.value),
-    //                             },
-    //                         )
-    //                     })
-    //                     .collect(),
-    //             },
-    //         )
-    //     })
-    //     .collect()
+fn import_cell_vertical_align(
+    vertical_align: current::CellVerticalAlignSchema,
+) -> CellVerticalAlign {
+    match vertical_align {
+        current::CellVerticalAlignSchema::Top => CellVerticalAlign::Top,
+        current::CellVerticalAlignSchema::Middle => CellVerticalAlign::Middle,
+        current::CellVerticalAlignSchema::Bottom => CellVerticalAlign::Bottom,
+    }
 }
 
-pub(crate) fn export_format(format: Format) -> current::FormatSchema {
-    current::FormatSchema {
-        align: format.align.map(|align| match align {
-            CellAlign::Left => current::CellAlignSchema::Left,
-            CellAlign::Center => current::CellAlignSchema::Center,
-            CellAlign::Right => current::CellAlignSchema::Right,
-        }),
-        vertical_align: format
-            .vertical_align
-            .map(|vertical_align| match vertical_align {
-                CellVerticalAlign::Top => current::CellVerticalAlignSchema::Top,
-                CellVerticalAlign::Middle => current::CellVerticalAlignSchema::Middle,
-                CellVerticalAlign::Bottom => current::CellVerticalAlignSchema::Bottom,
-            }),
-        wrap: format.wrap.map(|wrap| match wrap {
-            CellWrap::Wrap => current::CellWrapSchema::Wrap,
-            CellWrap::Overflow => current::CellWrapSchema::Overflow,
-            CellWrap::Clip => current::CellWrapSchema::Clip,
-        }),
-        numeric_format: format
-            .numeric_format
-            .map(|numeric_format| current::NumericFormatSchema {
-                kind: match numeric_format.kind {
-                    NumericFormatKind::Number => current::NumericFormatKindSchema::Number,
-                    NumericFormatKind::Currency => current::NumericFormatKindSchema::Currency,
-                    NumericFormatKind::Percentage => current::NumericFormatKindSchema::Percentage,
-                    NumericFormatKind::Exponential => current::NumericFormatKindSchema::Exponential,
+fn import_cell_wrap(wrap: current::CellWrapSchema) -> CellWrap {
+    match wrap {
+        current::CellWrapSchema::Wrap => CellWrap::Wrap,
+        current::CellWrapSchema::Overflow => CellWrap::Overflow,
+        current::CellWrapSchema::Clip => CellWrap::Clip,
+    }
+}
+
+fn import_numeric_format(numeric_format: current::NumericFormatSchema) -> NumericFormat {
+    NumericFormat {
+        kind: match numeric_format.kind {
+            current::NumericFormatKindSchema::Number => NumericFormatKind::Number,
+            current::NumericFormatKindSchema::Currency => NumericFormatKind::Currency,
+            current::NumericFormatKindSchema::Percentage => NumericFormatKind::Percentage,
+            current::NumericFormatKindSchema::Exponential => NumericFormatKind::Exponential,
+        },
+        symbol: numeric_format.symbol,
+    }
+}
+
+fn import_render_size(render_size: current::RenderSizeSchema) -> RenderSize {
+    RenderSize {
+        w: render_size.w,
+        h: render_size.h,
+    }
+}
+
+fn import_contiguous_2d<C, F, T>(
+    blocks: Vec<(
+        i64,
+        current::BlockSchema<Vec<(i64, current::BlockSchema<C>)>>,
+    )>,
+    f: F,
+) -> Contiguous2D<T>
+where
+    F: Fn(C) -> T,
+{
+    blocks
+        .into_iter()
+        .map(|(x, block)| {
+            (
+                x,
+                Block {
+                    start: block.start,
+                    end: block.end,
+                    value: block
+                        .value
+                        .into_iter()
+                        .map(|(y, block)| {
+                            (
+                                y,
+                                Block {
+                                    start: block.start,
+                                    end: block.end,
+                                    value: f(block.value),
+                                },
+                            )
+                        })
+                        .collect(),
                 },
-                symbol: numeric_format.symbol,
-            }),
-        numeric_decimals: format.numeric_decimals,
-        numeric_commas: format.numeric_commas,
-        bold: format.bold,
-        italic: format.italic,
-        text_color: format.text_color,
-        fill_color: format.fill_color,
-        render_size: format
-            .render_size
-            .map(|render_size| current::RenderSizeSchema {
-                w: render_size.w,
-                h: render_size.h,
-            }),
-        date_time: format.date_time,
-        underline: format.underline,
-        strike_through: format.strike_through,
+            )
+        })
+        .collect()
+}
+
+pub(crate) fn import_formats(formats: current::SheetFormattingSchema) -> SheetFormatting {
+    SheetFormatting {
+        align: import_contiguous_2d(formats.align, import_cell_align),
+        vertical_align: import_contiguous_2d(formats.vertical_align, import_cell_vertical_align),
+        wrap: import_contiguous_2d(formats.wrap, import_cell_wrap),
+        numeric_format: import_contiguous_2d(formats.numeric_format, import_numeric_format),
+        numeric_decimals: import_contiguous_2d(formats.numeric_decimals, |x| x),
+        numeric_commas: import_contiguous_2d(formats.numeric_commas, |x| x),
+        bold: import_contiguous_2d(formats.bold, |x| x),
+        italic: import_contiguous_2d(formats.italic, |x| x),
+        text_color: import_contiguous_2d(formats.text_color, |x| x),
+        fill_color: import_contiguous_2d(formats.fill_color, |x| x),
+        render_size: import_contiguous_2d(formats.render_size, import_render_size),
+        date_time: import_contiguous_2d(formats.date_time, |x| x),
+        underline: import_contiguous_2d(formats.underline, |x| x),
+        strike_through: import_contiguous_2d(formats.strike_through, |x| x),
     }
 }
 
-pub(crate) fn export_formats(formats: SheetFormatting) -> SheetFormattingSchema {
-    todo!()
-    // formats
-    //     .into_iter()
-    //     .map(|(x, block)| {
-    //         (
-    //             x,
-    //             BlockSchema {
-    //                 start: block.start,
-    //                 end: block.end,
-    //                 value: block
-    //                     .value
-    //                     .into_iter()
-    //                     .map(|(y, format)| {
-    //                         (
-    //                             y,
-    //                             BlockSchema {
-    //                                 start: format.start,
-    //                                 end: format.end,
-    //                                 value: export_format(format.value),
-    //                             },
-    //                         )
-    //                     })
-    //                     .collect(),
-    //             },
-    //         )
-    //     })
-    //     .collect()
+fn export_cell_align(align: CellAlign) -> current::CellAlignSchema {
+    match align {
+        CellAlign::Left => current::CellAlignSchema::Left,
+        CellAlign::Center => current::CellAlignSchema::Center,
+        CellAlign::Right => current::CellAlignSchema::Right,
+    }
+}
+
+fn export_cell_vertical_align(
+    vertical_align: CellVerticalAlign,
+) -> current::CellVerticalAlignSchema {
+    match vertical_align {
+        CellVerticalAlign::Top => current::CellVerticalAlignSchema::Top,
+        CellVerticalAlign::Middle => current::CellVerticalAlignSchema::Middle,
+        CellVerticalAlign::Bottom => current::CellVerticalAlignSchema::Bottom,
+    }
+}
+
+fn export_cell_wrap(wrap: CellWrap) -> current::CellWrapSchema {
+    match wrap {
+        CellWrap::Wrap => current::CellWrapSchema::Wrap,
+        CellWrap::Overflow => current::CellWrapSchema::Overflow,
+        CellWrap::Clip => current::CellWrapSchema::Clip,
+    }
+}
+
+fn export_numeric_format(numeric_format: NumericFormat) -> current::NumericFormatSchema {
+    current::NumericFormatSchema {
+        kind: match numeric_format.kind {
+            NumericFormatKind::Number => current::NumericFormatKindSchema::Number,
+            NumericFormatKind::Currency => current::NumericFormatKindSchema::Currency,
+            NumericFormatKind::Percentage => current::NumericFormatKindSchema::Percentage,
+            NumericFormatKind::Exponential => current::NumericFormatKindSchema::Exponential,
+        },
+        symbol: numeric_format.symbol,
+    }
+}
+
+fn export_render_size(render_size: RenderSize) -> current::RenderSizeSchema {
+    current::RenderSizeSchema {
+        w: render_size.w,
+        h: render_size.h,
+    }
+}
+
+fn export_contiguous_2d<T, F, C>(
+    blocks: Contiguous2D<T>,
+    f: F,
+) -> Vec<(
+    i64,
+    current::BlockSchema<Vec<(i64, current::BlockSchema<C>)>>,
+)>
+where
+    F: Fn(T) -> C,
+{
+    blocks
+        .into_iter()
+        .map(|(x, block)| {
+            (
+                x,
+                current::BlockSchema {
+                    start: block.start,
+                    end: block.end,
+                    value: block
+                        .value
+                        .into_iter()
+                        .map(|(y, block)| {
+                            (
+                                y,
+                                current::BlockSchema {
+                                    start: block.start,
+                                    end: block.end,
+                                    value: f(block.value),
+                                },
+                            )
+                        })
+                        .collect(),
+                },
+            )
+        })
+        .collect()
+}
+
+pub(crate) fn export_formats(formats: SheetFormatting) -> current::SheetFormattingSchema {
+    current::SheetFormattingSchema {
+        align: export_contiguous_2d(formats.align, export_cell_align),
+        vertical_align: export_contiguous_2d(formats.vertical_align, export_cell_vertical_align),
+        wrap: export_contiguous_2d(formats.wrap, export_cell_wrap),
+        numeric_format: export_contiguous_2d(formats.numeric_format, export_numeric_format),
+        numeric_decimals: export_contiguous_2d(formats.numeric_decimals, |x| x),
+        numeric_commas: export_contiguous_2d(formats.numeric_commas, |x| x),
+        bold: export_contiguous_2d(formats.bold, |x| x),
+        italic: export_contiguous_2d(formats.italic, |x| x),
+        text_color: export_contiguous_2d(formats.text_color, |x| x),
+        fill_color: export_contiguous_2d(formats.fill_color, |x| x),
+        render_size: export_contiguous_2d(formats.render_size, export_render_size),
+        date_time: export_contiguous_2d(formats.date_time, |x| x),
+        underline: export_contiguous_2d(formats.underline, |x| x),
+        strike_through: export_contiguous_2d(formats.strike_through, |x| x),
+    }
 }
