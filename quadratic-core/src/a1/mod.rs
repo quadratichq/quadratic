@@ -15,7 +15,6 @@ mod selection_mutate;
 mod selection_query;
 mod selection_select;
 mod sheet_cell_ref_range;
-mod subspaces;
 
 pub use a1_sheet_name::*;
 pub use cell_ref_coord::*;
@@ -28,7 +27,6 @@ pub use js_selection::*;
 pub use ref_range_bounds::*;
 pub use selection::*;
 pub use sheet_cell_ref_range::*;
-pub use subspaces::*;
 
 /// Name to use when a sheet ID has no corresponding name.
 ///

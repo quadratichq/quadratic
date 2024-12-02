@@ -6,7 +6,7 @@ use super::format::Format;
 use crate::grid::{
     CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, RenderSize,
 };
-use crate::{A1Selection, A1Subspaces};
+use crate::A1Selection;
 
 /// Used to store formatting changes to apply to an entire sheet.
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -29,91 +29,92 @@ pub struct SheetFormatUpdates {
 impl SheetFormatUpdates {
     /// Constructs a format update that applies the same formatting to every
     /// affected cell.
-    pub fn new_uniform<T: Clone + PartialEq>(
-        contiguous: Contiguous2D<T>,
-        update: FormatUpdate,
-    ) -> Self {
-        Self {
-            align: update.align.map(|new| contiguous.map_ref(|_| new)),
-            vertical_align: update.vertical_align.map(|new| contiguous.map_ref(|_| new)),
-            wrap: update.wrap.map(|new| contiguous.map_ref(|_| new)),
-            numeric_format: update
-                .numeric_format
-                .map(|new| contiguous.map_ref(|_| new.clone())),
-            numeric_decimals: update
-                .numeric_decimals
-                .map(|new| contiguous.map_ref(|_| new)),
-            numeric_commas: update.numeric_commas.map(|new| contiguous.map_ref(|_| new)),
-            bold: update.bold.map(|new| contiguous.map_ref(|_| new)),
-            italic: update.italic.map(|new| contiguous.map_ref(|_| new)),
-            text_color: update
-                .text_color
-                .map(|new| contiguous.map_ref(|_| new.clone())),
-            fill_color: update
-                .fill_color
-                .map(|new| contiguous.map_ref(|_| new.clone())),
-            render_size: update
-                .render_size
-                .map(|new| contiguous.map_ref(|_| new.clone())),
-            date_time: update
-                .date_time
-                .map(|new| contiguous.map_ref(|_| new.clone())),
-            underline: update.underline.map(|new| contiguous.map_ref(|_| new)),
-            strike_through: update.strike_through.map(|new| contiguous.map_ref(|_| new)),
-        }
-    }
+    // pub fn new_uniform<T: Clone + PartialEq>(
+    //     _contiguous: Contiguous2D<T>,
+    //     _update: FormatUpdate,
+    // ) -> Self {
+    //     todo!()
+
+    //     Self {
+    //         align: update.align.map(|new| contiguous.map_ref(|_| new)),
+    //         vertical_align: update.vertical_align.map(|new| contiguous.map_ref(|_| new)),
+    //         wrap: update.wrap.map(|new| contiguous.map_ref(|_| new)),
+    //         numeric_format: update
+    //             .numeric_format
+    //             .map(|new| contiguous.map_ref(|_| new.clone())),
+    //         numeric_decimals: update
+    //             .numeric_decimals
+    //             .map(|new| contiguous.map_ref(|_| new)),
+    //         numeric_commas: update.numeric_commas.map(|new| contiguous.map_ref(|_| new)),
+    //         bold: update.bold.map(|new| contiguous.map_ref(|_| new)),
+    //         italic: update.italic.map(|new| contiguous.map_ref(|_| new)),
+    //         text_color: update
+    //             .text_color
+    //             .map(|new| contiguous.map_ref(|_| new.clone())),
+    //         fill_color: update
+    //             .fill_color
+    //             .map(|new| contiguous.map_ref(|_| new.clone())),
+    //         render_size: update
+    //             .render_size
+    //             .map(|new| contiguous.map_ref(|_| new.clone())),
+    //         date_time: update
+    //             .date_time
+    //             .map(|new| contiguous.map_ref(|_| new.clone())),
+    //         underline: update.underline.map(|new| contiguous.map_ref(|_| new)),
+    //         strike_through: update.strike_through.map(|new| contiguous.map_ref(|_| new)),
+    //     }
+    // }
 
     /// Constructs a format update that applies the same formatting to every
     /// affected cell in a selection.
     pub fn from_selection(_selection: &A1Selection, _update: FormatUpdate) -> Self {
         todo!()
-        // Self::new_uniform(selection.to_contiguous_blocks(()), update)
     }
 
-    pub fn subspaces(&self) -> A1Subspaces {
-        // destructure because this will compile-error if we add a field
-        let Self {
-            align,
-            vertical_align,
-            wrap,
-            numeric_format,
-            numeric_decimals,
-            numeric_commas,
-            bold,
-            italic,
-            text_color,
-            fill_color,
-            render_size,
-            date_time,
-            underline,
-            strike_through,
-        } = self;
+    // pub fn subspaces(&self) -> A1Subspaces {
+    //     // destructure because this will compile-error if we add a field
+    //     let Self {
+    //         align,
+    //         vertical_align,
+    //         wrap,
+    //         numeric_format,
+    //         numeric_decimals,
+    //         numeric_commas,
+    //         bold,
+    //         italic,
+    //         text_color,
+    //         fill_color,
+    //         render_size,
+    //         date_time,
+    //         underline,
+    //         strike_through,
+    //     } = self;
 
-        fn update_total_from<T: Clone + PartialEq>(
-            total: &mut Contiguous2D<()>,
-            other: &Option<Contiguous2D<T>>,
-        ) {
-            if let Some(other) = other {
-                total.set_from(other.map_ref(|_| Some(())));
-            }
-        }
-        let mut total = Contiguous2D::new();
-        update_total_from(&mut total, align);
-        update_total_from(&mut total, vertical_align);
-        update_total_from(&mut total, wrap);
-        update_total_from(&mut total, numeric_format);
-        update_total_from(&mut total, numeric_decimals);
-        update_total_from(&mut total, numeric_commas);
-        update_total_from(&mut total, bold);
-        update_total_from(&mut total, italic);
-        update_total_from(&mut total, text_color);
-        update_total_from(&mut total, fill_color);
-        update_total_from(&mut total, render_size);
-        update_total_from(&mut total, date_time);
-        update_total_from(&mut total, underline);
-        update_total_from(&mut total, strike_through);
-        A1Subspaces::from_contiguous(total)
-    }
+    //     fn update_total_from<T: Clone + PartialEq>(
+    //         total: &mut Contiguous2D<()>,
+    //         other: &Option<Contiguous2D<T>>,
+    //     ) {
+    //         if let Some(other) = other {
+    //             total.set_from(other.map_ref(|_| Some(())));
+    //         }
+    //     }
+    //     let mut total = Contiguous2D::new();
+    //     update_total_from(&mut total, align);
+    //     update_total_from(&mut total, vertical_align);
+    //     update_total_from(&mut total, wrap);
+    //     update_total_from(&mut total, numeric_format);
+    //     update_total_from(&mut total, numeric_decimals);
+    //     update_total_from(&mut total, numeric_commas);
+    //     update_total_from(&mut total, bold);
+    //     update_total_from(&mut total, italic);
+    //     update_total_from(&mut total, text_color);
+    //     update_total_from(&mut total, fill_color);
+    //     update_total_from(&mut total, render_size);
+    //     update_total_from(&mut total, date_time);
+    //     update_total_from(&mut total, underline);
+    //     update_total_from(&mut total, strike_through);
+    //     // A1Subspaces::from_contiguous(total)
+    // }
 }
 
 /// Used to store changes from a Format to another Format.

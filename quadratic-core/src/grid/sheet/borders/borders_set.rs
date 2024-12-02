@@ -1,8 +1,7 @@
 //! Functionality to set borders on a selection.
 
 use crate::{
-    controller::operations::operation::Operation, selection::OldSelection, A1Subspaces,
-    RunLengthEncoding,
+    controller::operations::operation::Operation, selection::OldSelection, RunLengthEncoding,
 };
 
 use super::{
@@ -156,11 +155,7 @@ impl Borders {
     }
 
     /// Sets the borders for a selection.
-    pub fn set_borders_a1(
-        &mut self,
-        _subspaces: &A1Subspaces,
-        _borders: &BorderStyleCellUpdates,
-    ) -> Vec<Operation> {
+    pub fn set_borders_a1(&mut self, _borders: &BorderStyleCellUpdates) -> Vec<Operation> {
         dbgjs!("implement set_borders_a1");
         vec![]
         // let mut undo = vec![];

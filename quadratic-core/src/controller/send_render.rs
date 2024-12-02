@@ -11,7 +11,7 @@ use crate::{
     selection::OldSelection,
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    A1Selection, A1Subspaces, CellValue, Pos, Rect, SheetPos, SheetRect,
+    A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{active_transactions::pending_transaction::PendingTransaction, GridController};
@@ -252,15 +252,6 @@ impl GridController {
                 }
             }
         };
-    }
-
-    pub fn send_updated_bounds_a1_subspaces(
-        &mut self,
-        _sheet_id: SheetId,
-        _subspaces: &A1Subspaces,
-        _format: bool,
-    ) {
-        todo!("todo todo todo")
     }
 
     /// Recalculates sheet bounds, and if changed then sends to TS.

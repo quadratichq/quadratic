@@ -144,9 +144,16 @@ pub struct JsRenderFill {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsSheetFill {
-    pub columns: Vec<(i64, (String, i64))>,
-    pub rows: Vec<(i64, (String, i64))>,
-    pub all: Option<String>,
+    pub x: u32,
+    pub y: u32,
+    pub w: Option<u32>,
+    pub h: Option<u32>,
+    pub color: String,
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub struct JsSheetFills {
+    pub fills: Vec<JsSheetFill>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]

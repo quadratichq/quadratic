@@ -3,7 +3,7 @@ use code_run::CodeRunResult;
 use super::Sheet;
 use crate::grid::js_types::{
     JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-    JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
+    JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsSheetFills, JsValidationWarning,
 };
 use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun};
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
@@ -292,57 +292,47 @@ impl Sheet {
 
     /// Returns all data for rendering cell fill color.
     pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
-        dbgjs!("get_all_render_fills: this can return ALL fills, infinite and finite");
-        // note: it's easier to keep this separate from sheet fills since
-        // they're rendered and updated differently
-
-        // let mut ret = vec![];
-        // for (&x, column) in self.columns.iter() {
-        //     for block in column.fill_color.blocks() {
-        //         ret.push(JsRenderFill {
-        //             x,
-        //             y: block.y,
-        //             w: 1,
-        //             h: block.len() as u32,
-        //             color: block.content().value.clone(),
-        //         });
-        //     }
-        // }
-        // ret
-        vec![]
+        self.formats
+            .fill_color
+            .to_rects()
+            .filter_map(|(x0, y0, x1, y1, color)| {
+                if let (Some(x1), Some(y1)) = (x1, y1) {
+                    Some(JsRenderFill {
+                        x: x0,
+                        y: y0,
+                        w: (x1 - x0 + 1) as u32,
+                        h: (y1 - y0 + 1) as u32,
+                        color,
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     /// Returns all fills for the rows, columns, and sheet. This does not return
     /// individual cell formats.
-    pub fn get_sheet_fills(&self) -> JsSheetFill {
-        dbgjs!("get_sheet_fills: can probably be combined with get_all_render_fills()");
-
-        // let columns = self
-        //     .infinite_column_formats
-        //     .iter()
-        //     .filter_map(|(x, (format, timestamp))| {
-        //         format
-        //             .fill_color
-        //             .as_ref()
-        //             .map(|color| (*x, (color.clone(), *timestamp)))
-        //     })
-        //     .collect();
-        // let rows = self
-        //     .infinite_row_formats
-        //     .iter()
-        //     .filter_map(|(y, (format, timestamp))| {
-        //         format
-        //             .fill_color
-        //             .as_ref()
-        //             .map(|color| (*y, (color.clone(), *timestamp)))
-        //     })
-        //     .collect();
-        // let all = self.format_all().fill_color.clone();
-        JsSheetFill {
-            columns: vec![],
-            rows: vec![],
-            all: None,
-        }
+    pub fn get_sheet_fills(&self) -> JsSheetFills {
+        let fills = self
+            .formats
+            .fill_color
+            .to_rects()
+            .filter_map(|(x0, y0, x1, y1, color)| {
+                if x1.is_some() && y1.is_some() {
+                    None
+                } else {
+                    Some(JsSheetFill {
+                        x: x0 as u32,
+                        y: y0 as u32,
+                        w: x1.map(|x1| (x1 - x0 + 1) as u32),
+                        h: y1.map(|y1| (y1 - y0 + 1) as u32),
+                        color,
+                    })
+                }
+            })
+            .collect();
+        JsSheetFills { fills }
     }
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
@@ -1125,9 +1115,8 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn get_sheet_fills() {
-        todo!("update, remove, or replace this test");
-
+    fn test_get_sheet_fills() {
+        todo!()
         // let mut sheet = Sheet::test();
         // assert_eq!(sheet.get_sheet_fills(), JsSheetFill::default());
 

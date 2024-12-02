@@ -217,18 +217,18 @@ impl A1Subspaces {
         }
     }
 
-    pub fn from_contiguous<T: Clone + PartialEq>(contiguous: Contiguous2D<T>) -> Self {
-        let mut ret = A1Subspaces::default();
-        for (x1, y1, x2, y2) in contiguous.to_rects() {
-            match (x2, y2) {
-                (None, None) => ret.all = Some(Pos::new(x1, y1)),
-                (None, Some(y2)) => ret.rows.extend((y1..=y2).map(|y| (y, x1))),
-                (Some(x2), None) => ret.cols.extend((x1..=x2).map(|x| (x, y1))),
-                (Some(x2), Some(y2)) => ret.rects.push(Rect::new(x1, y1, x2, y2)),
-            }
-        }
-        ret
-    }
+    // pub fn from_contiguous<T: Clone + PartialEq>(contiguous: Contiguous2D<T>) -> Self {
+    //     let mut ret = A1Subspaces::default();
+    //     for (x1, y1, x2, y2) in contiguous.to_rects() {
+    //         match (x2, y2) {
+    //             (None, None) => ret.all = Some(Pos::new(x1, y1)),
+    //             (None, Some(y2)) => ret.rows.extend((y1..=y2).map(|y| (y, x1))),
+    //             (Some(x2), None) => ret.cols.extend((x1..=x2).map(|x| (x, y1))),
+    //             (Some(x2), Some(y2)) => ret.rects.push(Rect::new(x1, y1, x2, y2)),
+    //         }
+    //     }
+    //     ret
+    // }
 
     /// Returns the length of a corresponding [`RunLengthEncoding`] for a
     /// formatting operation. This is equivalent to the number of cells in the

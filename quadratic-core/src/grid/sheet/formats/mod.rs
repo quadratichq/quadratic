@@ -56,13 +56,19 @@ impl Sheet {
         }
     }
 
+    /// Sets formats using SheetFormatUpdates.
+    ///
+    /// Returns (reverse_operations, dirty_hashes, resize_rows)
     pub fn set_formats_a1(
         &mut self,
         _sheet_id: SheetId,
         _formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
+        // let mut reverse_formats = SheetFormatUpdates::default();
         dbgjs!("implement set_formats_a1");
-        (vec![], HashSet::new(), HashSet::new())
+
+        todo!()
+
         // let mut reverse_op = Operation::SetCellFormatsA1 {
         //     sheet_id,
         //     formats: todo!(),
@@ -94,6 +100,15 @@ impl Sheet {
         //     }
         //     (ops, dirty_hashes, resize)
         // }
+
+        // (
+        //     vec![Operation::SetCellFormatsA1 {
+        //         sheet_id,
+        //         formats: reverse_formats,
+        //     }],
+        //     HashSet::new(),
+        //     HashSet::new(),
+        // )
     }
 
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.

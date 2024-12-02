@@ -183,7 +183,7 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     /// Returns the set of (potentially infinite) rectangles that have values.
     /// Each rectangle is `(x1, y1, x2, y2)`, where `None` is unbounded. All
     /// coordinates are inclusive.
-    pub fn to_rects(&self) -> impl '_ + Iterator<Item = (i64, i64, Option<i64>, Option<i64>)> {
+    pub fn to_rects(&self) -> impl '_ + Iterator<Item = (i64, i64, Option<i64>, Option<i64>, T)> {
         self.0 .0.values().flat_map(|x_block| {
             let column = &x_block.value;
             let x1 = x_block.start;
@@ -191,7 +191,7 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
             column.0.values().map(move |y_block| {
                 let y1 = y_block.start;
                 let y2 = (y_block.end < i64::MAX).then_some(y_block.end.saturating_sub(1));
-                (x1, y1, x2, y2)
+                (x1, y1, x2, y2, y_block.value.clone())
             })
         })
     }

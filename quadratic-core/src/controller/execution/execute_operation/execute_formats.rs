@@ -177,9 +177,9 @@ impl GridController {
         op: Operation,
     ) {
         unwrap_op!(let SetCellFormatsA1 { sheet_id, formats } = op);
-        let subspaces = formats.subspaces();
 
-        transaction.generate_thumbnail |= self.thumbnail_dirty_subspaces(sheet_id, &subspaces);
+        // todo...
+        // transaction.generate_thumbnail |= self.thumbnail_dirty_subspaces(sheet_id, &subspaces);
 
         let Some(sheet) = self.try_sheet_mut(sheet_id) else {
             return; // sheet may have been deleted
@@ -191,7 +191,8 @@ impl GridController {
         }
 
         if !transaction.is_server() {
-            self.send_updated_bounds_a1_subspaces(sheet_id, &subspaces, true);
+            // todo...
+            // self.send_updated_bounds_a1_subspaces(sheet_id, &subspaces, true);
 
             if !rows.is_empty() && transaction.is_user() {
                 let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
