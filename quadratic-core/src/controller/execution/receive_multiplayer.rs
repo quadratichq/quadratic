@@ -310,9 +310,9 @@ mod tests {
     use crate::controller::transaction::Transaction;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, Sheet};
+    use crate::grid::{CodeCellLanguage, CodeCellValue, Sheet};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{CellValue, CodeCellValue, Pos, SheetPos};
+    use crate::{CellValue, Pos, SheetPos};
 
     #[test]
     #[parallel]

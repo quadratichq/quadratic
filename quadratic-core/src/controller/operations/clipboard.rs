@@ -399,6 +399,9 @@ impl GridController {
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
                 drop(decoded);
 
+                let delta_x = insert_at.x - clipboard.origin.x;
+                let delta_y = insert_at.y - clipboard.origin.y;
+
                 // loop through the clipboard and replace cell references in formulas
                 for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                     for (&y, cell) in col.iter_mut() {
@@ -412,6 +415,8 @@ impl GridController {
                                             y: insert_at.y + y as i64,
                                         },
                                     );
+                                } else {
+                                    code_cell.update_cell_references(delta_x, delta_y);
                                 }
                             }
                             _ => { /* noop */ }

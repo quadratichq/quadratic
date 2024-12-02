@@ -579,10 +579,10 @@ mod tests {
                 validation::{Validation, ValidationStyle},
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
-            Bold, CellVerticalAlign, CellWrap, Italic, RenderSize,
+            Bold, CellVerticalAlign, CellWrap, CodeCellValue, Italic, RenderSize,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count, hash_test},
-        A1Selection, CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
+        A1Selection, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 
     #[test]

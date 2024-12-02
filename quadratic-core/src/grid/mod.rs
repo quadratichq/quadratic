@@ -4,6 +4,7 @@ pub use borders::{
 };
 pub use bounds::GridBounds;
 pub use cells_accessed::*;
+pub use code_cell::*;
 pub use code_run::*;
 pub use column::{Column, ColumnData};
 pub use contiguous::{Block, Contiguous2D, ContiguousBlocks};
@@ -29,6 +30,7 @@ mod block;
 mod borders;
 mod bounds;
 mod cells_accessed;
+mod code_cell;
 mod code_run;
 mod column;
 pub mod contiguous;

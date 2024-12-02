@@ -3,8 +3,8 @@ use crate::{
     cell_values::CellValues,
     controller::GridController,
     formulas::replace_a1_notation,
-    grid::{CodeCellLanguage, CodeRun, SheetId},
-    CellValue, CodeCellValue, SheetPos,
+    grid::{CodeCellLanguage, CodeCellValue, CodeRun, SheetId},
+    CellValue, SheetPos,
 };
 
 impl GridController {
