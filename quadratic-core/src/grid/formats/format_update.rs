@@ -36,46 +36,46 @@ impl SheetFormatUpdates {
             sheet_id: selection.sheet_id,
             align: update
                 .align
-                .map(|update| Contiguous2D::<CellAlign>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<CellAlign>::new_from_selection(selection, update)),
             vertical_align: update.vertical_align.map(|update| {
-                Contiguous2D::<CellVerticalAlign>::new_from_selection(&selection, update)
+                Contiguous2D::<CellVerticalAlign>::new_from_selection(selection, update)
             }),
             wrap: update
                 .wrap
-                .map(|update| Contiguous2D::<CellWrap>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<CellWrap>::new_from_selection(selection, update)),
             numeric_format: update.numeric_format.map(|update| {
-                Contiguous2D::<NumericFormat>::new_from_selection(&selection, update)
+                Contiguous2D::<NumericFormat>::new_from_selection(selection, update)
             }),
             numeric_decimals: update
                 .numeric_decimals
-                .map(|update| Contiguous2D::<i16>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<i16>::new_from_selection(selection, update)),
             numeric_commas: update
                 .numeric_commas
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<bool>::new_from_selection(selection, update)),
             bold: update
                 .bold
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<bool>::new_from_selection(selection, update)),
             italic: update
                 .italic
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<bool>::new_from_selection(selection, update)),
             text_color: update
                 .text_color
-                .map(|update| Contiguous2D::<String>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<String>::new_from_selection(selection, update)),
             fill_color: update
                 .fill_color
-                .map(|update| Contiguous2D::<String>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<String>::new_from_selection(selection, update)),
             render_size: update
                 .render_size
-                .map(|update| Contiguous2D::<RenderSize>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<RenderSize>::new_from_selection(selection, update)),
             date_time: update
                 .date_time
-                .map(|update| Contiguous2D::<String>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<String>::new_from_selection(selection, update)),
             underline: update
                 .underline
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<bool>::new_from_selection(selection, update)),
             strike_through: update
                 .strike_through
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
+                .map(|update| Contiguous2D::<bool>::new_from_selection(selection, update)),
         }
     }
 

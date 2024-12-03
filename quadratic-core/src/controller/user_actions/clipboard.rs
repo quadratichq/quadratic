@@ -204,49 +204,17 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
-        gc.set_bold_selection(
-            OldSelection::sheet_rect(SheetRect {
-                min: Pos { x: 1, y: 1 },
-                max: Pos { x: 1, y: 1 },
-                sheet_id,
-            }),
-            true,
-            None,
-        )
-        .unwrap();
+        gc.set_bold_selection(&A1Selection::test_a1("A1"), true, None)
+            .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
-        gc.set_italic_selection(
-            OldSelection::sheet_rect(SheetRect {
-                min: Pos { x: 3, y: 2 },
-                max: Pos { x: 3, y: 2 },
-                sheet_id,
-            }),
-            true,
-            None,
-        )
-        .unwrap();
+        gc.set_italic_selection(&A1Selection::test_a1("C2"), true, None)
+            .unwrap();
         set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
-        gc.set_underline_selection(
-            OldSelection::sheet_rect(SheetRect {
-                min: Pos { x: 5, y: 3 },
-                max: Pos { x: 5, y: 3 },
-                sheet_id,
-            }),
-            true,
-            None,
-        )
-        .unwrap();
+        gc.set_underline_selection(&A1Selection::test_a1("E3"), true, None)
+            .unwrap();
         set_cell_value(&mut gc, sheet_id, "strike through", 7, 4);
-        gc.set_strike_through_selection(
-            OldSelection::sheet_rect(SheetRect {
-                min: Pos { x: 7, y: 4 },
-                max: Pos { x: 7, y: 4 },
-                sheet_id,
-            }),
-            true,
-            None,
-        )
-        .unwrap();
+        gc.set_strike_through_selection(&A1Selection::test_a1("G4"), true, None)
+            .unwrap();
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 7, 4, sheet_id));
         let sheet = gc.sheet(sheet_id);
@@ -645,27 +613,11 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
-        gc.set_bold_selection(
-            OldSelection::sheet_rect(SheetRect {
-                min: Pos { x: 1, y: 1 },
-                max: Pos { x: 1, y: 1 },
-                sheet_id,
-            }),
-            true,
-            None,
-        )
-        .unwrap();
+        gc.set_bold_selection(&A1Selection::test_a1("A1"), true, None)
+            .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
-        gc.set_italic_selection(
-            OldSelection::sheet_rect(SheetRect {
-                min: Pos { x: 3, y: 2 },
-                max: Pos { x: 3, y: 2 },
-                sheet_id,
-            }),
-            true,
-            None,
-        )
-        .unwrap();
+        gc.set_italic_selection(&A1Selection::test_a1("C2"), true, None)
+            .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 3, 2, sheet_id));
@@ -800,28 +752,12 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1", 1, 1);
-        gc.set_bold_selection(
-            OldSelection::sheet_rect(SheetRect {
-                min: Pos { x: 1, y: 1 },
-                max: Pos { x: 1, y: 1 },
-                sheet_id,
-            }),
-            true,
-            None,
-        )
-        .unwrap();
+        gc.set_bold_selection(&A1Selection::test_a1("A1"), true, None)
+            .unwrap();
 
         set_cell_value(&mut gc, sheet_id, "12", 2, 2);
-        gc.set_italic_selection(
-            OldSelection::sheet_rect(SheetRect {
-                min: Pos { x: 2, y: 2 },
-                max: Pos { x: 2, y: 2 },
-                sheet_id,
-            }),
-            true,
-            None,
-        )
-        .unwrap();
+        gc.set_italic_selection(&A1Selection::test_a1("B2"), true, None)
+            .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_rect(SheetRect::new(0, 0, 2, 2, sheet_id));

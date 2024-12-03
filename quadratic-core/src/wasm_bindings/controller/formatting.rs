@@ -1,4 +1,16 @@
-use super::*;
+use std::str::FromStr;
+
+use wasm_bindgen::prelude::*;
+
+use crate::controller::GridController;
+use crate::A1Selection;
+use crate::Pos;
+
+use super::CellFormatSummary;
+use super::NumericFormatKind;
+use super::Rect;
+use super::RenderSize;
+use super::SheetId;
 
 #[wasm_bindgen]
 impl GridController {
@@ -19,60 +31,64 @@ impl GridController {
     }
 
     /// Sets cell align formatting given as an optional [`CellAlign`].
-    #[wasm_bindgen(js_name = "setCellAlign")]
-    pub fn js_set_cell_align(
+    #[wasm_bindgen(js_name = "setAlignSelection")]
+    pub fn js_set_align_selection(
         &mut self,
         selection: String,
         align: JsValue,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
         let align = serde_wasm_bindgen::from_value(align).map_err(|_| "Invalid align")?;
-        self.set_align_selection(selection, align, cursor)
+        self.set_align_selection(&selection, align, cursor)
     }
 
     /// Sets cell vertical align formatting given as an optional [`CellVerticalAlign`].
-    #[wasm_bindgen(js_name = "setCellVerticalAlign")]
-    pub fn js_set_cell_vertical_align(
+    #[wasm_bindgen(js_name = "setVerticalAlignSelection")]
+    pub fn js_set_vertical_align_selection(
         &mut self,
         selection: String,
         vertical_align: JsValue,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
         let vertical_align =
             serde_wasm_bindgen::from_value(vertical_align).map_err(|_| "Invalid vertical align")?;
-        self.set_vertical_align_selection(selection, vertical_align, cursor)
+        self.set_vertical_align_selection(&selection, vertical_align, cursor)
     }
 
     /// Sets cell wrap formatting given as an optional [`CellWrap`].
-    #[wasm_bindgen(js_name = "setCellWrap")]
-    pub fn js_set_cell_wrap(
+    #[wasm_bindgen(js_name = "setWrapSelection")]
+    pub fn js_set_wrap_selection(
         &mut self,
         selection: String,
         wrap: JsValue,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
         let wrap = serde_wasm_bindgen::from_value(wrap).map_err(|_| "Invalid wrap")?;
-        self.set_cell_wrap_selection(selection, wrap, cursor)
+        self.set_cell_wrap_selection(&selection, wrap, cursor)
     }
 
     /// Sets cells numeric_format to normal
-    #[wasm_bindgen(js_name = "removeCellNumericFormat")]
-    pub fn js_remove_numeric_format(
+    #[wasm_bindgen(js_name = "removeNumericFormatSelection")]
+    pub fn js_remove_numeric_format_selection(
         &mut self,
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.remove_number_formatting_selection(selection, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.remove_number_formatting_selection(&selection, cursor)?;
         Ok(())
     }
 
     /// Sets cells numeric_format to currency
-    #[wasm_bindgen(js_name = "setCellCurrency")]
-    pub fn js_set_currency(
+    #[wasm_bindgen(js_name = "setCurrencySelection")]
+    pub fn js_set_currency_selection(
         &mut self,
         selection: String,
         symbol: String,
@@ -85,90 +101,102 @@ impl GridController {
     }
 
     /// Sets cells numeric_format to percentage
-    #[wasm_bindgen(js_name = "setCellPercentage")]
-    pub fn js_set_percentage(
+    #[wasm_bindgen(js_name = "setPercentageSelection")]
+    pub fn js_set_percentage_selection(
         &mut self,
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_numeric_format_selection(selection, NumericFormatKind::Percentage, None, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_numeric_format_selection(&selection, NumericFormatKind::Percentage, None, cursor)?;
         Ok(())
     }
 
     /// Sets cells numeric_format to scientific notation
-    #[wasm_bindgen(js_name = "setCellExponential")]
-    pub fn js_set_exponential(
+    #[wasm_bindgen(js_name = "setExponentialSelection")]
+    pub fn js_set_exponential_selection(
         &mut self,
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_numeric_format_selection(selection, NumericFormatKind::Exponential, None, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_numeric_format_selection(
+            &selection,
+            NumericFormatKind::Exponential,
+            None,
+            cursor,
+        )?;
         Ok(())
     }
 
     /// Sets cells numeric_commas
-    #[wasm_bindgen(js_name = "setCellCommas")]
-    pub fn js_set_commas(
+    #[wasm_bindgen(js_name = "setCommasSelection")]
+    pub fn js_set_commas_selection(
         &mut self,
         selection: String,
         commas: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_commas_selection(selection, commas, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_commas_selection(&selection, commas, cursor)?;
         Ok(())
     }
 
     /// Sets cell bold formatting given as an optional [`bool`].
-    #[wasm_bindgen(js_name = "setCellBold")]
-    pub fn js_set_bold(
+    #[wasm_bindgen(js_name = "setBoldSelection")]
+    pub fn js_set_bold_selection(
         &mut self,
         selection: String,
         bold: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_bold_selection(selection, bold, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_bold_selection(&selection, bold, cursor)?;
         Ok(())
     }
     /// Sets cell italic formatting given as an optional [`bool`].
-    #[wasm_bindgen(js_name = "setCellItalic")]
-    pub fn js_set_italic(
+    #[wasm_bindgen(js_name = "setItalicSelection")]
+    pub fn js_set_italic_selection(
         &mut self,
         selection: String,
         italic: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_italic_selection(selection, italic, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_italic_selection(&selection, italic, cursor)?;
         Ok(())
     }
 
     /// Sets cell text color given as an optional [`String`].
-    #[wasm_bindgen(js_name = "setCellTextColor")]
-    pub fn js_set_text_color(
+    #[wasm_bindgen(js_name = "setTextColorSelection")]
+    pub fn js_set_text_color_selection(
         &mut self,
         selection: String,
         text_color: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_text_color_selection(selection, text_color, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_text_color_selection(&selection, text_color, cursor)?;
         Ok(())
     }
 
     /// Sets cell fill color given as an optional [`String`].
-    #[wasm_bindgen(js_name = "setCellFillColor")]
-    pub fn js_fill_color(
+    #[wasm_bindgen(js_name = "setFillColorSelection")]
+    pub fn js_set_fill_color_selection(
         &mut self,
         selection: String,
         fill_color: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_fill_color_selection(selection, fill_color, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_fill_color_selection(&selection, fill_color, cursor)?;
         Ok(())
     }
 
@@ -199,59 +227,63 @@ impl GridController {
         Ok(())
     }
 
-    #[wasm_bindgen(js_name = "setDateTimeFormat")]
-    pub fn js_set_date_time_format(
+    #[wasm_bindgen(js_name = "setDateTimeFormatSelection")]
+    pub fn js_set_date_time_format_selection(
         &mut self,
         selection: String,
         date_time: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_date_time_format(selection, date_time, cursor)
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_date_time_format(&selection, date_time, cursor)
     }
 
     /// Changes cell numeric decimals.
-    #[wasm_bindgen(js_name = "changeDecimalPlaces")]
-    pub fn js_change_decimal_places(
+    #[wasm_bindgen(js_name = "changeDecimalPlacesSelection")]
+    pub fn js_change_decimal_places_selection(
         &mut self,
         selection: String,
         delta: u32,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.change_decimal_places_selection(selection, delta, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.change_decimal_places_selection(&selection, delta, cursor)?;
         Ok(())
     }
 
     /// Sets cell bold formatting given as an optional [`bool`].
-    #[wasm_bindgen(js_name = "setCellUnderline")]
-    pub fn js_set_underline(
+    #[wasm_bindgen(js_name = "setUnderlineSelection")]
+    pub fn js_set_underline_selection(
         &mut self,
         selection: String,
         underline: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_underline_selection(selection, underline, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_underline_selection(&selection, underline, cursor)?;
         Ok(())
     }
 
     /// Sets cell bold formatting given as an optional [`bool`].
-    #[wasm_bindgen(js_name = "setCellStrikeThrough")]
-    pub fn js_set_strike_through(
+    #[wasm_bindgen(js_name = "setStrikeThroughSelection")]
+    pub fn js_set_strike_through_selection(
         &mut self,
         selection: String,
         strike_through: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = OldSelection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_strike_through_selection(selection, strike_through, cursor)?;
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| "Unable to parse A1Selection")?;
+        self.set_strike_through_selection(&selection, strike_through, cursor)?;
         Ok(())
     }
 
     /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "clearFormatting")]
-    pub fn js_clear_formatting(
+    #[wasm_bindgen(js_name = "clearFormattingSelection")]
+    pub fn js_clear_formatting_selection(
         &mut self,
         selection: String,
         cursor: Option<String>,
