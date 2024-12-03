@@ -226,86 +226,64 @@ impl SheetFormatUpdates {
             align: self
                 .align
                 .as_ref()
-                .map(|align| align.get(pos))
-                .flatten()
+                .and_then(|align| align.get(pos))
                 .cloned(),
             vertical_align: self
                 .vertical_align
                 .as_ref()
-                .map(|vertical_align| vertical_align.get(pos))
-                .flatten()
+                .and_then(|vertical_align| vertical_align.get(pos))
                 .cloned(),
-            wrap: self
-                .wrap
-                .as_ref()
-                .map(|wrap| wrap.get(pos))
-                .flatten()
-                .cloned(),
+            wrap: self.wrap.as_ref().and_then(|wrap| wrap.get(pos)).cloned(),
             numeric_format: self
                 .numeric_format
                 .as_ref()
-                .map(|numeric_format| numeric_format.get(pos))
-                .flatten()
+                .and_then(|numeric_format| numeric_format.get(pos))
                 .cloned(),
             numeric_decimals: self
                 .numeric_decimals
                 .as_ref()
-                .map(|numeric_decimals| numeric_decimals.get(pos))
-                .flatten()
+                .and_then(|numeric_decimals| numeric_decimals.get(pos))
                 .cloned(),
             numeric_commas: self
                 .numeric_commas
                 .as_ref()
-                .map(|numeric_commas| numeric_commas.get(pos))
-                .flatten()
+                .and_then(|numeric_commas| numeric_commas.get(pos))
                 .cloned(),
-            bold: self
-                .bold
-                .as_ref()
-                .map(|bold| bold.get(pos))
-                .flatten()
-                .copied(),
+            bold: self.bold.as_ref().and_then(|bold| bold.get(pos)).copied(),
             italic: self
                 .italic
                 .as_ref()
-                .map(|italic| italic.get(pos))
-                .flatten()
+                .and_then(|italic| italic.get(pos))
                 .copied(),
             text_color: self
                 .text_color
                 .as_ref()
-                .map(|text_color| text_color.get(pos))
-                .flatten()
+                .and_then(|text_color| text_color.get(pos))
                 .cloned(),
             fill_color: self
                 .fill_color
                 .as_ref()
-                .map(|fill_color| fill_color.get(pos))
-                .flatten()
+                .and_then(|fill_color| fill_color.get(pos))
                 .cloned(),
             render_size: self
                 .render_size
                 .as_ref()
-                .map(|render_size| render_size.get(pos))
-                .flatten()
+                .and_then(|render_size| render_size.get(pos))
                 .cloned(),
             date_time: self
                 .date_time
                 .as_ref()
-                .map(|date_time| date_time.get(pos))
-                .flatten()
+                .and_then(|date_time| date_time.get(pos))
                 .cloned(),
             underline: self
                 .underline
                 .as_ref()
-                .map(|underline| underline.get(pos))
-                .flatten()
+                .and_then(|underline| underline.get(pos))
                 .copied(),
             strike_through: self
                 .strike_through
                 .as_ref()
-                .map(|strike_through| strike_through.get(pos))
-                .flatten()
+                .and_then(|strike_through| strike_through.get(pos))
                 .copied(),
         }
     }

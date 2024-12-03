@@ -59,9 +59,7 @@ impl FromStr for CellRefRangeEnd {
             "" => None,
             _ => Some(
                 super::column_from_name(col_str)
-                    .ok_or_else(|| A1Error::InvalidColumn(col_str.to_owned()))?
-                    .try_into()
-                    .map_err(|_| A1Error::InvalidColumn(col_str.to_owned()))?,
+                    .ok_or_else(|| A1Error::InvalidColumn(col_str.to_owned()))?,
             ),
         };
         let row = match row_str {
