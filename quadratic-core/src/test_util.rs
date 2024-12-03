@@ -76,6 +76,7 @@ pub fn assert_cell_value_row(
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_format_bold_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -96,6 +97,7 @@ pub fn assert_cell_format_bold_row(
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_format_bold(
     grid_controller: &GridController,
     sheet_id: SheetId,

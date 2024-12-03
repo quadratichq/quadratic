@@ -2,7 +2,7 @@ use crate::{
     cell_values::CellValues,
     controller::GridController,
     grid::{
-        formats::Formats,
+        formats::SheetFormatUpdates,
         series::{find_auto_complete, SeriesOptions},
         sheet::borders::BorderStyleCellUpdates,
         SheetId,
@@ -179,8 +179,7 @@ impl GridController {
         down_range: Option<Rect>,
         up_range: Option<Rect>,
     ) -> Result<Vec<Operation>> {
-        let mut format_rects = vec![];
-        let mut formats = Formats::default();
+        let mut formats = SheetFormatUpdates::default();
 
         let mut borders = BorderStyleCellUpdates::default();
         let mut border_rects = vec![];
@@ -196,13 +195,7 @@ impl GridController {
                     let new_x = final_range.max.x.min(x + width as i64 - 1);
                     let start_pos = (initial_range.min.x, y).into();
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                    self.apply_formats(
-                        sheet_id,
-                        start_pos,
-                        format_rect,
-                        &mut format_rects,
-                        &mut formats,
-                    );
+                    self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
 
                     self.apply_borders(
                         sheet_id,
@@ -256,14 +249,7 @@ impl GridController {
             )?);
         }
 
-        let formats_op = Operation::SetCellFormatsSelection {
-            selection: OldSelection {
-                sheet_id,
-                rects: format_rects.into(),
-                ..Default::default()
-            },
-            formats,
-        };
+        let formats_op = Operation::SetCellFormatsA1 { sheet_id, formats };
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
@@ -287,8 +273,7 @@ impl GridController {
         down_range: Option<Rect>,
         up_range: Option<Rect>,
     ) -> Result<Vec<Operation>> {
-        let mut format_rects = vec![];
-        let mut formats = Formats::default();
+        let mut formats = SheetFormatUpdates::default();
 
         let mut border_rects = vec![];
         let mut borders = BorderStyleCellUpdates::default();
@@ -310,13 +295,7 @@ impl GridController {
                         (initial_range.min.x, y).into()
                     };
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                    self.apply_formats(
-                        sheet_id,
-                        start_pos,
-                        format_rect,
-                        &mut format_rects,
-                        &mut formats,
-                    );
+                    self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
 
                     self.apply_borders(
                         sheet_id,
@@ -370,14 +349,7 @@ impl GridController {
             )?);
         }
 
-        let formats_op = Operation::SetCellFormatsSelection {
-            selection: OldSelection {
-                sheet_id,
-                rects: format_rects.into(),
-                ..Default::default()
-            },
-            formats,
-        };
+        let formats_op = Operation::SetCellFormatsA1 { sheet_id, formats };
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
@@ -399,8 +371,7 @@ impl GridController {
         initial_range: &Rect,
         final_range: &Rect,
     ) -> Result<Vec<Operation>> {
-        let mut format_rects = vec![];
-        let mut formats = Formats::default();
+        let mut formats = SheetFormatUpdates::default();
 
         let mut border_rects = vec![];
         let mut borders = BorderStyleCellUpdates::default();
@@ -415,13 +386,7 @@ impl GridController {
                     let new_y = final_range.max.y.min(y + height as i64 - 1);
                     let start_pos = (x, initial_range.min.y).into();
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                    self.apply_formats(
-                        sheet_id,
-                        start_pos,
-                        format_rect,
-                        &mut format_rects,
-                        &mut formats,
-                    );
+                    self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
 
                     self.apply_borders(
                         sheet_id,
@@ -454,14 +419,7 @@ impl GridController {
             .flatten_ok()
             .collect::<Result<Vec<Operation>>>()?;
 
-        let formats_op = Operation::SetCellFormatsSelection {
-            selection: OldSelection {
-                sheet_id,
-                rects: format_rects.into(),
-                ..Default::default()
-            },
-            formats,
-        };
+        let formats_op = Operation::SetCellFormatsA1 { sheet_id, formats };
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
@@ -483,8 +441,7 @@ impl GridController {
         initial_range: &Rect,
         final_range: &Rect,
     ) -> Result<Vec<Operation>> {
-        let mut format_rects = vec![];
-        let mut formats = Formats::default();
+        let mut formats = SheetFormatUpdates::default();
 
         let mut border_rects = vec![];
         let mut borders = BorderStyleCellUpdates::default();
@@ -504,13 +461,7 @@ impl GridController {
                         (x, initial_range.min.y).into()
                     };
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                    self.apply_formats(
-                        sheet_id,
-                        start_pos,
-                        format_rect,
-                        &mut format_rects,
-                        &mut formats,
-                    );
+                    self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
 
                     self.apply_borders(
                         sheet_id,
@@ -543,14 +494,7 @@ impl GridController {
             .flatten_ok()
             .collect::<Result<Vec<Operation>>>()?;
 
-        let formats_op = Operation::SetCellFormatsSelection {
-            selection: OldSelection {
-                sheet_id,
-                rects: format_rects.into(),
-                ..Default::default()
-            },
-            formats,
-        };
+        let formats_op = Operation::SetCellFormatsA1 { sheet_id, formats };
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
@@ -575,8 +519,7 @@ impl GridController {
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
-        let mut format_rects = vec![];
-        let mut formats = Formats::default();
+        let mut formats = SheetFormatUpdates::default();
 
         let mut border_rects = vec![];
         let mut borders = BorderStyleCellUpdates::default();
@@ -622,13 +565,7 @@ impl GridController {
                         };
 
                         let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        self.apply_formats(
-                            sheet_id,
-                            start_pos,
-                            format_rect,
-                            &mut format_rects,
-                            &mut formats,
-                        );
+                        self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
 
                         self.apply_borders(
                             sheet_id,
@@ -652,14 +589,7 @@ impl GridController {
             .flatten_ok()
             .collect::<Result<Vec<Operation>>>()?;
 
-        let formats_op = Operation::SetCellFormatsSelection {
-            selection: OldSelection {
-                sheet_id,
-                rects: format_rects.into(),
-                ..Default::default()
-            },
-            formats,
-        };
+        let formats_op = Operation::SetCellFormatsA1 { sheet_id, formats };
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
@@ -684,8 +614,7 @@ impl GridController {
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
-        let mut format_rects = vec![];
-        let mut formats = Formats::default();
+        let mut formats = SheetFormatUpdates::default();
 
         let mut border_rects = vec![];
         let mut borders = BorderStyleCellUpdates::default();
@@ -738,13 +667,7 @@ impl GridController {
                         };
 
                         let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        self.apply_formats(
-                            sheet_id,
-                            start_pos,
-                            format_rect,
-                            &mut format_rects,
-                            &mut formats,
-                        );
+                        self.apply_formats(sheet_id, start_pos, format_rect, &mut formats);
 
                         self.apply_borders(
                             sheet_id,
@@ -768,14 +691,7 @@ impl GridController {
             .flatten_ok()
             .collect::<Result<Vec<Operation>>>()?;
 
-        let formats_op = Operation::SetCellFormatsSelection {
-            selection: OldSelection {
-                sheet_id,
-                rects: format_rects.into(),
-                ..Default::default()
-            },
-            formats,
-        };
+        let formats_op = Operation::SetCellFormatsA1 { sheet_id, formats };
         ops.push(formats_op);
 
         let borders_op = Operation::SetBordersSelection {
@@ -848,25 +764,21 @@ impl GridController {
 
     fn apply_formats(
         &self,
-        _sheet_id: SheetId,
-        _start_pos: Pos,
-        _format_rect: Rect,
-        _format_rects: &mut Vec<Rect>,
-        _formats: &mut Formats,
+        sheet_id: SheetId,
+        start_pos: Pos,
+        format_rect: Rect,
+        formats: &mut SheetFormatUpdates,
     ) {
-        dbgjs!("apply_formats");
-        // if let Some(sheet) = self.try_sheet(sheet_id) {
-        //     format_rects.push(format_rect);
-        //     for x in 0..format_rect.width() as i64 {
-        //         for y in 0..format_rect.height() as i64 {
-        //             formats.push(
-        //                 sheet
-        //                     .format_cell(start_pos.x + x, start_pos.y + y, true)
-        //                     .to_replace(),
-        //             );
-        //         }
-        //     }
-        // }
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            for (x, x_pos) in format_rect.x_range().enumerate() {
+                for (y, y_pos) in format_rect.y_range().enumerate() {
+                    let source_pos = Pos::new(start_pos.x + x as i64, start_pos.y + y as i64);
+                    let target_pos = Pos::new(x_pos, y_pos);
+
+                    formats.set_format_cell(target_pos, sheet.formats.format(source_pos).into());
+                }
+            }
+        }
     }
 
     fn apply_borders(
