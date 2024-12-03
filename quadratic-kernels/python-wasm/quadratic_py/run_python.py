@@ -28,7 +28,15 @@ def error_result(
 
 async def run_python(code: str, pos: Tuple[int, int]):
     globals = {
+        "getCells": getCells,
+        "getCell": getCell,
+        "c": getCell,
         "result": None,
+        "cell": getCell,
+        "cells": getCells,
+        "rel_cell": rel_cell,
+        "rel_cells": rel_cells,
+        "rc": rc,
         "q": q,
     }
 

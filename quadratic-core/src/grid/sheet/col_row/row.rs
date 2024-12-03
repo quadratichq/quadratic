@@ -4,9 +4,8 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{formats::Formats, GridBounds, Sheet},
-    selection::OldSelection,
-    CopyFormats, Pos, Rect, SheetPos,
+    grid::{GridBounds, Sheet},
+    CopyFormats, Pos, SheetPos,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
@@ -39,23 +38,11 @@ impl Sheet {
 
     /// Creates reverse operations for cell formatting within the row.
     fn reverse_formats_ops_for_row(&self, row: i64) -> Vec<Operation> {
-        let mut formats = Formats::new();
-        let mut selection = OldSelection::new(self.id);
-
-        if let Some(format) = self.try_format_row(row) {
-            selection.rows = Some(vec![row]);
-            formats.push(format.to_replace());
-        }
-
-        if let Some((min, max)) = self.row_bounds_formats(row) {
-            for x in min..=max {
-                let format = self.format_cell(x, row, false).to_replace();
-                formats.push(format);
-            }
-            selection.rects = Some(vec![Rect::new(min, row, max, row)]);
-        }
-        if !selection.is_empty() {
-            vec![Operation::SetCellFormatsSelection { selection, formats }]
+        if let Some(formats) = self.formats.copy_row(row) {
+            vec![Operation::SetCellFormatsA1 {
+                sheet_id: self.id,
+                formats,
+            }]
         } else {
             vec![]
         }
@@ -175,8 +162,9 @@ impl Sheet {
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
         // remove the row's formats from the sheet
-        self.formats.remove_row(self.id, row);
+        self.formats.remove_row(row);
         // TODO: only update fill cells if necessary due to removed formatting?
+
         transaction.fill_cells.insert(self.id);
 
         // remove the column's borders from the sheet
@@ -220,7 +208,8 @@ impl Sheet {
         }
 
         // update the indices of all column-based formats impacted by the deletion
-        self.formats.remove_row(self.id, row); // TODO: save formats returned here
+        self.formats.remove_row(row); // TODO: save formats returned here
+
         dbgjs!("actually save the row formatting and update transaction appropriately");
 
         // mark hashes of new rows dirty
@@ -388,10 +377,7 @@ mod test {
 
     use crate::{
         controller::execution::TransactionSource,
-        grid::{
-            formats::{format::Format, format_update::FormatUpdate},
-            BorderStyle, CellBorderLine, CellWrap,
-        },
+        grid::{BorderStyle, CellBorderLine, CellWrap},
         CellValue, DEFAULT_ROW_HEIGHT,
     };
 
@@ -432,56 +418,32 @@ mod test {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.test_set_format(
-            1,
-            2,
-            FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            2,
-            2,
-            FormatUpdate {
-                wrap: Some(Some(CellWrap::Clip)),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            3,
-            2,
-            FormatUpdate {
-                fill_color: Some(Some("blue".to_string())),
-                ..Default::default()
-            },
-        );
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A2], Some("red".to_string()));
+        sheet.formats.wrap.set(pos![B2], Some(CellWrap::Clip));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![C2], Some("blue".to_string()));
         sheet.test_set_code_run_array(1, 3, vec!["=A1", "=A2"], false);
         sheet.test_set_code_run_array(1, 4, vec!["=A1", "=A2"], false);
 
-        sheet.set_formats_rows(
-            &[1],
-            &Formats::repeat(
-                FormatUpdate {
-                    bold: Some(Some(true)),
-                    italic: Some(Some(true)),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
+        sheet.formats.bold.set_rect(1, 1, Some(1), None, Some(true));
+        sheet
+            .formats
+            .italic
+            .set_rect(1, 1, Some(1), None, Some(true));
 
-        sheet.set_formats_rows(
-            &[2],
-            &Formats::repeat(
-                FormatUpdate {
-                    bold: Some(Some(false)),
-                    italic: Some(Some(false)),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
+        sheet
+            .formats
+            .bold
+            .set_rect(2, 1, Some(2), None, Some(false));
+        sheet
+            .formats
+            .italic
+            .set_rect(2, 1, Some(2), None, Some(false));
 
         sheet.recalculate_bounds();
 
@@ -497,12 +459,10 @@ mod test {
             Some(CellValue::Text("E".to_string()))
         );
         assert_eq!(
-            sheet.format_cell(3, 1, false),
-            Format {
-                fill_color: Some("blue".to_string()),
-                ..Default::default()
-            }
+            sheet.formats.fill_color.get(pos![C1]),
+            Some(&"blue".to_string())
         );
+
         assert!(sheet.code_runs.get(&Pos { x: 1, y: 2 }).is_some());
         assert!(sheet.code_runs.get(&Pos { x: 1, y: 3 }).is_some());
     }

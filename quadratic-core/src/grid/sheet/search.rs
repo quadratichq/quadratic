@@ -50,11 +50,13 @@ impl Sheet {
                 if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
                     true
                 } else {
-                    let format = self.format_cell(pos.x, pos.y, true);
+                    let numeric_format = self.formats.numeric_format.get(pos).cloned();
+                    let numeric_decimals = self.formats.numeric_decimals.get(pos).cloned();
+                    let numeric_commas = self.formats.numeric_commas.get(pos).cloned();
                     let display = cell_value.to_number_display(
-                        format.numeric_format,
-                        format.numeric_decimals,
-                        format.numeric_commas,
+                        numeric_format,
+                        numeric_decimals,
+                        numeric_commas,
                     );
                     display == *query || (!whole_cell && display.contains(query))
                 }

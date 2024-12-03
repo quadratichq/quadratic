@@ -1,9 +1,11 @@
+// todo: not sure what if anything to do with this file. maybe delete?
+
 //! These functions return Vec<(Pos, &CellValue)> for a Selection in the Sheet.
 //! 1. if selection includes all, then all cells are returned
 //! 2. otherwise, the selection iterates over columns, rows, and then rects
 
 use crate::{
-    grid::{formats::format::Format, GridBounds},
+    grid::{formats::Format, GridBounds},
     selection::OldSelection,
     Pos, Rect,
 };

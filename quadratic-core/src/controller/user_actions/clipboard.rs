@@ -149,8 +149,8 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            formats::format_update::FormatUpdate, js_types::CellFormatSummary, BorderSelection,
-            BorderStyle, CellBorderLine, CodeCellLanguage, CodeCellValue, SheetId,
+            js_types::CellFormatSummary, BorderSelection, BorderStyle, CellBorderLine,
+            CodeCellLanguage, CodeCellValue, SheetId,
         },
         CellValue, Pos, Rect, SheetPos, SheetRect,
     };
@@ -204,16 +204,16 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
-        gc.set_bold_selection(&A1Selection::test_a1("A1"), true, None)
+        gc.set_bold(&A1Selection::test_a1("A1"), true, None)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
-        gc.set_italic_selection(&A1Selection::test_a1("C2"), true, None)
+        gc.set_italic(&A1Selection::test_a1("C2"), true, None)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "underline", 5, 3);
-        gc.set_underline_selection(&A1Selection::test_a1("E3"), true, None)
+        gc.set_underline(&A1Selection::test_a1("E3"), true, None)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "strike through", 7, 4);
-        gc.set_strike_through_selection(&A1Selection::test_a1("G4"), true, None)
+        gc.set_strike_through(&A1Selection::test_a1("G4"), true, None)
             .unwrap();
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 7, 4, sheet_id));
@@ -613,10 +613,10 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
-        gc.set_bold_selection(&A1Selection::test_a1("A1"), true, None)
+        gc.set_bold(&A1Selection::test_a1("A1"), true, None)
             .unwrap();
         set_cell_value(&mut gc, sheet_id, "12", 3, 2);
-        gc.set_italic_selection(&A1Selection::test_a1("C2"), true, None)
+        gc.set_italic(&A1Selection::test_a1("C2"), true, None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -752,11 +752,11 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1", 1, 1);
-        gc.set_bold_selection(&A1Selection::test_a1("A1"), true, None)
+        gc.set_bold(&A1Selection::test_a1("A1"), true, None)
             .unwrap();
 
         set_cell_value(&mut gc, sheet_id, "12", 2, 2);
-        gc.set_italic_selection(&A1Selection::test_a1("B2"), true, None)
+        gc.set_italic(&A1Selection::test_a1("B2"), true, None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -904,22 +904,11 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_format_cell(
-            Pos { x: 1, y: 2 },
-            &FormatUpdate {
-                bold: Some(Some(true)),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 3, y: 4 },
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
+        sheet.formats.bold.set(Pos { x: 1, y: 2 }, Some(true));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 3, y: 4 }, Some("red".to_string()));
         let selection = A1Selection::from_rect(SheetRect::new(0, 0, 4, 4, sheet_id));
         let JsClipboard { plain_text, html } = sheet.copy_to_clipboard(&selection).unwrap();
 

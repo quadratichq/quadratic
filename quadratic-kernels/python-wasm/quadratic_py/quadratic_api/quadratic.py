@@ -19,7 +19,7 @@ def getCell(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool |
     THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    a1 = q.to_a1(p_x, p_y, absolute=True)
+    a1 = q.to_a1(p_x, p_y, absolute=False)
     old = f"getCell({p_x}, {p_y})"
     new = f"q.cells(\"{a1}\")"
     q.conversion_error(old, new)
@@ -30,7 +30,7 @@ def cell(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | No
     THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    a1 = q.to_a1(p_x, p_y, absolute=True)
+    a1 = q.to_a1(p_x, p_y, absolute=False)
     old = f"cell({p_x}, {p_y})"
     new = f"q.cells(\"{a1}\")"
     q.conversion_error(old, new)
@@ -40,7 +40,7 @@ def c(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
     """
     THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
-    a1 = q.to_a1(p_x, p_y, absolute=True)
+    a1 = q.to_a1(p_x, p_y, absolute=False)
     old = f"c({p_x}, {p_y})"
     new = f"q.cells(\"{a1}\")"
     q.conversion_error(old, new)
@@ -56,8 +56,8 @@ def getCells(
     THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    a1_0 = q.to_a1(p0[0], p0[1], absolute=True)
-    a1_1 = q.to_a1(p1[0], p1[1], absolute=True)
+    a1_0 = q.to_a1(p0[0], p0[1], absolute=False)
+    a1_1 = q.to_a1(p1[0], p1[1], absolute=False)
     old = f"cells({p0[0]},{ p0[1]}, {p1[0]}, {p1[1]})"
     new = f"q.cells(\"{a1_0}:{a1_1}\")"
     q.conversion_error(old, new)
@@ -108,8 +108,8 @@ def cells(
     THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    a1_0 = q.to_a1(p0[0], p0[1], absolute=True)
-    a1_1 = q.to_a1(p1[0], p1[1], absolute=True)
+    a1_0 = q.to_a1(p0[0], p0[1], absolute=False)
+    a1_1 = q.to_a1(p1[0], p1[1], absolute=False)
     old = f"cells({p0[0]},{ p0[1]}, {p1[0]}, {p1[1]})"
     new = f"q.cells(\"{a1_0}:{a1_1}\")"
     q.conversion_error(old, new)
@@ -122,7 +122,7 @@ def rel_cell(x: int, y: int) -> int | float | str | bool | None:
     """
 
     old = f"rel_cell({x}, {y})"
-    a1 = q.to_a1(x, y)
+    a1 = q.to_a1(x, y, absolute=False)
     new = f"q.cells(\"{a1}\")"
     q.conversion_error(old, new)
 
@@ -139,8 +139,8 @@ def rel_cells(
     THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    a1_0 = q.to_a1(first[0], first[1])
-    a1_1 = q.to_a1(second[0], second[1])
+    a1_0 = q.to_a1(first[0], first[1], absolute=False)
+    a1_1 = q.to_a1(second[0], second[1], absolute=False)
     old = f"rel_cells({first[0]},{ first[1]}, {second[0]}, {second[1]})"
     new = f"q.cells(\"{a1_0}:{a1_1}\")"
     q.conversion_error(old, new)
@@ -153,7 +153,7 @@ def rc(x: int, y: int) -> int | float | str | bool | None:
     THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    a1 = q.to_a1(x, y)
+    a1 = q.to_a1(x, y, absolute=False)
     old = f"rc({x}, {y})"
     new = f"q.cells(\"{a1}\")"
     q.conversion_error(old, new)
@@ -216,7 +216,7 @@ class q:
 
         return self.pos
     
-    def to_a1(x: int, y: int, absolute: bool = False) -> str:
+    def to_a1(x: int, y: int, absolute: bool = True) -> str:
         """
         Convert (x, y) coordinates to A1 notation.
         x: Column number (1-based index)

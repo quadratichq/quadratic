@@ -258,36 +258,6 @@ class Core {
     });
   }
 
-  getFormatAll(sheetId: string): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const format: Format | undefined = this.gridController.getFormatAll(sheetId);
-        resolve(format);
-      });
-    });
-  }
-
-  getFormatColumn(sheetId: string, column: number): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const format: Format | undefined = this.gridController.getFormatColumn(sheetId, column);
-        resolve(format);
-      });
-    });
-  }
-
-  getFormatRow(sheetId: string, row: number): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const format: Format | undefined = this.gridController.getFormatRow(sheetId, row);
-        resolve(format);
-      });
-    });
-  }
-
   getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
@@ -375,7 +345,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setBoldSelection(selection, bold, cursor);
+        this.gridController.setBold(selection, bold, cursor);
         resolve(undefined);
       });
     });
@@ -385,7 +355,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setItalicSelection(selection, italic, cursor);
+        this.gridController.setItalic(selection, italic, cursor);
         resolve(undefined);
       });
     });
@@ -395,7 +365,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setTextColorSelection(selection, color, cursor);
+        this.gridController.setTextColor(selection, color, cursor);
         resolve(undefined);
       });
     });
@@ -405,7 +375,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setUnderlineSelection(selection, underline, cursor);
+        this.gridController.setUnderline(selection, underline, cursor);
         resolve(undefined);
       });
     });
@@ -415,7 +385,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setStrikeThroughSelection(selection, strikeThrough, cursor);
+        this.gridController.setStrikeThrough(selection, strikeThrough, cursor);
         resolve(undefined);
       });
     });
@@ -425,7 +395,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setFillColorSelection(selection, fillColor, cursor);
+        this.gridController.setFillColor(selection, fillColor, cursor);
         resolve(undefined);
       });
     });
@@ -435,7 +405,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCommasSelection(selection, commas, cursor);
+        this.gridController.setCommas(selection, commas, cursor);
         resolve(undefined);
       });
     });
@@ -455,7 +425,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCurrencySelection(selection, symbol, cursor);
+        this.gridController.setCurrency(selection, symbol, cursor);
         resolve(undefined);
       });
     });
@@ -701,7 +671,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setAlignSelection(selection, align, cursor);
+        this.gridController.setAlign(selection, align, cursor);
         resolve(undefined);
       });
     });
@@ -711,7 +681,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setVerticalAlignSelection(selection, verticalAlign, cursor);
+        this.gridController.setVerticalAlign(selection, verticalAlign, cursor);
         resolve(undefined);
       });
     });
@@ -721,7 +691,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setWrapSelection(selection, wrap, cursor);
+        this.gridController.setWrap(selection, wrap, cursor);
         resolve(undefined);
       });
     });
@@ -978,7 +948,7 @@ class Core {
   clearFormattingSelection(selection: string, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.clearFormattingSelection(selection, cursor);
+      this.gridController.clearFormatting(selection, cursor);
     });
   }
 
@@ -1012,28 +982,28 @@ class Core {
   changeDecimalPlacesSelection(selection: string, decimals: number, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.changeDecimalPlacesSelection(selection, decimals, cursor);
+      this.gridController.changeDecimalPlaces(selection, decimals, cursor);
     });
   }
 
   setPercentageSelection(selection: string, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setPercentageSelection(selection, cursor);
+      this.gridController.setPercentage(selection, cursor);
     });
   }
 
   setExponentialSelection(selection: string, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setExponentialSelection(selection, cursor);
+      this.gridController.setExponential(selection, cursor);
     });
   }
 
   removeNumericFormatSelection(selection: string, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.removeNumericFormatSelection(selection, cursor);
+      this.gridController.removeNumericFormat(selection, cursor);
     });
   }
 
@@ -1120,7 +1090,7 @@ class Core {
   setDateTimeFormatSelection(selection: string, format: string, cursor: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setDateTimeFormatSelection(selection, format, cursor);
+      this.gridController.setDateTimeFormat(selection, format, cursor);
     });
   }
 

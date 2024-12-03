@@ -131,18 +131,54 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
             }),
         })))
     }
-    /// Returns the upper bound on the values in the given column, or `None` if
-    /// it is unbounded. Returns 0 if there are no values.
-    pub fn column_max(&self, column: i64) -> Option<i64> {
-        match self.0.get(column) {
-            Some(column_data) => column_data.max(),
-            None => Some(0),
+    /// Returns the upper bound on the finite regions in the given column.
+    /// Returns 0 if there are no values.
+    pub fn column_max(&self, column: i64) -> i64 {
+        match self
+            .0
+            .get(column)
+            .and_then(|column_data| column_data.0.last_key_value())
+        {
+            Some((_, last_block)) => last_block.finite_max(),
+            None => 0,
         }
     }
 
+    /// Returns the upper bound on the finite regions in the given row. Returns
+    /// 0 if there are no values.
+    pub fn row_max(&self, row: i64) -> i64 {
+        self.0
+             .0
+            .values()
+            .filter_map(|column_block| {
+                column_block
+                    .value
+                    .get(row)
+                    .map(|_| column_block.finite_max())
+            })
+            .max()
+            .unwrap_or(0)
+    }
+
     /// Removes a column and returns the values that used to inhabit it.
-    pub fn remove_column(&mut self, column: i64) -> ContiguousBlocks<T> {
-        self.0.shift_remove(column).unwrap_or_default()
+    pub fn remove_column(&mut self, column: i64) -> Option<Contiguous2D<Option<T>>> {
+        let mut removed = Contiguous2D::new();
+        if let Some(column_data) = self.0.shift_remove(column) {
+            let column_data_update = column_data.map_ref(|block| Some(block.clone()));
+            removed.restore_column(column, Some(column_data_update));
+            Some(removed)
+        } else {
+            None
+        }
+    }
+
+    /// Copies a column and returns a new Contiguous2D with the column copied.
+    pub fn copy_column(&self, column: i64) -> Option<Contiguous2D<Option<T>>> {
+        let column_data = self.0.get(column)?;
+        let column_data_update = column_data.map_ref(|block| Some(block.clone()));
+        let mut updates = Contiguous2D::new();
+        updates.restore_column(column, Some(column_data_update));
+        Some(updates)
     }
 
     /// Inserts a column and populates it with values.
@@ -163,8 +199,16 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     }
 
     /// Removes a row and returns the values that used to inhabit it.
-    pub fn remove_row(&mut self, row: i64) -> ContiguousBlocks<T> {
-        self.0.update_all_blocks(|column| column.shift_remove(row))
+    pub fn remove_row(&mut self, row: i64) -> Option<Contiguous2D<Option<T>>> {
+        let mut removed = Contiguous2D::new();
+        let row_data = self.0.update_all_blocks(|column| column.shift_remove(row));
+        if !row_data.is_empty() {
+            let row_data_update = row_data.map_ref(|block| Some(block.clone()));
+            removed.restore_row(row, Some(row_data_update));
+            Some(removed)
+        } else {
+            None
+        }
     }
 
     /// Inserts a row and populates it with values.
@@ -184,6 +228,14 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
                 )
             });
         }
+    }
+
+    /// Copies a row and returns a new Contiguous2D with the row copied.
+    pub fn copy_row(&self, row: i64) -> Option<Contiguous2D<Option<T>>> {
+        let row_data = self.0.map_ref(|column| column.get(row).map(|v| v.clone()));
+        let mut updates = Contiguous2D::new();
+        updates.restore_row(row, Some(row_data));
+        Some(updates)
     }
 
     /// Inserts a row and optionally populates it based on the row before
@@ -222,6 +274,33 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
         })
     }
 
+    /// Returns the set of rectangles that have values. Each rectangle is `(x1, y1, x2, y2, value)` with inclusive coordinates.
+    /// Unlike `to_rects()`, this returns concrete coordinates rather than potentially infinite bounds.
+    pub fn to_rects_with_bounds<'a>(
+        &'a self,
+        columns_bounds: impl 'a + Fn(i64, i64, bool) -> Option<(i64, i64)>,
+        rows_bounds: impl 'a + Fn(i64, i64, bool) -> Option<(i64, i64)>,
+        ignore_formatting: bool,
+    ) -> impl 'a + Iterator<Item = (i64, i64, i64, i64, T)> {
+        self.to_rects().filter_map(move |(x1, y1, x2, y2, value)| {
+            let x2 = if let Some(x2) = x2 {
+                x2
+            } else if let Some((_, x2)) = columns_bounds(x1, x2.unwrap_or(x1), ignore_formatting) {
+                x2
+            } else {
+                return None;
+            };
+            let y2 = if let Some(y2) = y2 {
+                y2
+            } else if let Some((_, y2)) = rows_bounds(y1, y2.unwrap_or(y1), ignore_formatting) {
+                y2
+            } else {
+                return None;
+            };
+            Some((x1, y1, x2, y2, value))
+        })
+    }
+
     /// Returns the values in a Rect as a Vec of values, organized by y then x.
     pub fn rect_values(&self, rect: Rect) -> Vec<Option<T>> {
         let mut values = vec![None; rect.height() as usize];
@@ -250,6 +329,37 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
             }
         }
         false
+    }
+
+    /// Returns whether a column is empty
+    pub fn is_column_empty(&self, column: i64) -> bool {
+        match self.0.get(column) {
+            Some(column_data) => column_data.is_empty(),
+            None => true,
+        }
+    }
+
+    /// Returns whether a row is empty
+    pub fn is_row_empty(&self, row: i64) -> bool {
+        self.0
+             .0
+            .values()
+            .all(|column_block| column_block.value.get(row).is_none())
+    }
+
+    /// Returns whether any cell in the column satisfies the predicate
+    pub fn check_col(&self, col: i64, f: impl Fn(&T) -> bool) -> bool {
+        self.0
+            .get(col)
+            .is_some_and(|column| column.0.values().any(|block| f(&block.value)))
+    }
+
+    /// Returns whether any cell in the row satisfies the predicate
+    pub fn check_row(&self, row: i64, f: impl Fn(&T) -> bool) -> bool {
+        self.0
+             .0
+            .values()
+            .any(|col| col.value.get(row).is_some_and(&f))
     }
 }
 
@@ -551,5 +661,34 @@ mod tests {
         assert_eq!(c.get(pos![B1]), Some(&Some(true)));
         assert_eq!(c.get(pos![B2]), Some(&Some(true)));
         assert_eq!(c.get(pos![C1]), None);
+    }
+
+    #[test]
+    fn test_copy_column() {
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        let copy = c.copy_column(3).unwrap();
+        assert_eq!(copy.get(pos![D2]), Some(&Some(true)));
+    }
+
+    #[test]
+    fn test_to_rects_with_bounds() {
+        fn columns_bounds(_start: i64, _end: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
+            Some((1, 10))
+        }
+
+        fn rows_bounds(_start: i64, _end: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
+            Some((1, 10))
+        }
+
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        let mut rects = c.to_rects_with_bounds(columns_bounds, rows_bounds, true);
+        assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
+
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, None, None, Some(true));
+        let mut rects = c.to_rects_with_bounds(columns_bounds, rows_bounds, true);
+        assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
     }
 }

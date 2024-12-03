@@ -83,18 +83,14 @@ mod tests {
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
                         grid_controller
-                            .set_bold_selection(
-                                &A1Selection::from_single_cell(sheet_pos),
-                                true,
-                                None,
-                            )
+                            .set_bold(&A1Selection::from_single_cell(sheet_pos), true, None)
                             .unwrap();
                     }
                 }
 
                 if let Some(fill_color) = fill_colors.get(count) {
                     grid_controller
-                        .set_fill_color_selection(
+                        .set_fill_color(
                             &A1Selection::from_single_cell(sheet_pos),
                             Some(fill_color.to_lowercase()),
                             None,

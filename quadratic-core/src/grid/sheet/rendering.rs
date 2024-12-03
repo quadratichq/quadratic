@@ -76,7 +76,7 @@ impl Sheet {
             }
         });
 
-        let mut format = self.formats.get_format(Pos { x, y }).unwrap_or_default();
+        let mut format = self.formats.try_format(Pos { x, y }).unwrap_or_default();
         let mut number: Option<JsNumber> = None;
         let value = match &value {
             CellValue::Number(_) => {
@@ -782,19 +782,15 @@ mod tests {
                 h: None,
             }
         );
-        gc.set_cell_render_size(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            }
-            .into(),
+        gc.set_render_size(
+            &A1Selection::from_xy(1, 2, sheet_id),
             Some(RenderSize {
                 w: "1".into(),
                 h: "2".into(),
             }),
             None,
-        );
+        )
+        .unwrap();
         let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_html_output();
         assert_eq!(render_cells.len(), 1);

@@ -1,8 +1,6 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::GridController;
-use quadratic_core::grid::formats::format_update::FormatUpdate;
-use quadratic_core::grid::formats::Formats;
 use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::grid::{CellAlign, Grid};
 use quadratic_core::{A1Selection, Pos, Rect, SheetRect};
@@ -210,24 +208,32 @@ fn criterion_benchmark(c: &mut Criterion) {
         let sheet_id = gc.sheet_ids()[0];
 
         let small_selection = Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 10, y: 10 },
+            min: Pos { x: 1, y: 1 },
+            max: Pos { x: 11, y: 11 },
         };
         // add some data
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
         sheet.random_numbers(&small_selection);
-        let formats = Formats::repeat(
-            FormatUpdate {
-                bold: Some(Some(true)),
-                italic: Some(Some(true)),
-                text_color: Some(Some("blue".to_string())),
-                align: Some(Some(CellAlign::Center)),
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            small_selection.len() as usize,
-        );
-        sheet.set_formats_rects(&[small_selection], &formats);
+        sheet
+            .formats
+            .bold
+            .set_rect(1, 1, Some(11), Some(11), Some(true));
+        sheet
+            .formats
+            .italic
+            .set_rect(1, 1, Some(11), Some(11), Some(true));
+        sheet
+            .formats
+            .text_color
+            .set_rect(1, 1, Some(11), Some(11), Some("blue".to_string()));
+        sheet
+            .formats
+            .align
+            .set_rect(1, 1, Some(11), Some(11), Some(CellAlign::Center));
+        sheet
+            .formats
+            .fill_color
+            .set_rect(1, 1, Some(11), Some(11), Some("red".to_string()));
 
         let expand_to = Rect {
             min: Pos { x: 0, y: 0 },

@@ -6,8 +6,7 @@ use crate::{
     cell_values::CellValues,
     grid::{
         file::sheet_schema::SheetSchema,
-        formats::format_update::SheetFormatUpdates,
-        formats::Formats,
+        formats::{Formats, SheetFormatUpdates},
         formatting::CellFmtArray,
         js_types::JsRowHeight,
         sheet::{borders::BorderStyleCellUpdates, validations::validation::Validation},

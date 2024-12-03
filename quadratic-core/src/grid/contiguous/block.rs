@@ -48,6 +48,16 @@ impl<T: Clone + PartialEq> Block<T> {
         coordinate.clamp(self.start, self.end)
     }
 
+    /// Returns the end of the block if it is a finite block, or the start of
+    /// the block if it is infinite.
+    pub fn finite_max(&self) -> i64 {
+        if self.end == i64::MAX {
+            self.start
+        } else {
+            self.end
+        }
+    }
+
     /// Applies a function to the value in the block.
     pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Block<U> {
         Block {

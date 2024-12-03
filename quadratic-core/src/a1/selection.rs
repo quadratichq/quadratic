@@ -229,74 +229,6 @@ impl A1Selection {
         self.cursor.to_sheet_pos(self.sheet_id)
     }
 
-    // /// Returns `true` on exactly the regions/cells that the range includes, and
-    // /// `false` or nothing elsewhere.
-    // pub fn subspaces(&self) -> A1Subspaces {
-    //     // TODO: Consider using interval tree for perf. If iteration order is
-    //     //       the same, then the change would be backwards-compatible.
-    //     let mut ret = A1Subspaces::default();
-
-    //     for range in &self.ranges {
-    //         match range {
-    //             CellRefRange::Sheet { range } => {
-    //                 let start = range.start;
-    //                 match range.end {
-    //                     None => match (start.col, start.row) {
-    //                         (None, None) => (), // TODO(sentry): empty range
-    //                         (Some(col), None) => {
-    //                             ret.add_column(col.coord, 1..);
-    //                         }
-    //                         (None, Some(row)) => {
-    //                             ret.add_row(row.coord, 1..);
-    //                         }
-    //                         (Some(col), Some(row)) => {
-    //                             let pos = Pos::new(col.coord, row.coord);
-    //                             ret.add_rect(Rect::single_pos(pos));
-    //                         }
-    //                     },
-    //                     Some(end) => {
-    //                         let start_col = start.col.map_or(1, |c| c.coord);
-    //                         let start_row = start.row.map_or(1, |c| c.coord);
-    //                         match (end.col, end.row) {
-    //                             (None, None) => {
-    //                                 // Include whole sheet after `start`
-    //                                 ret.add_all(Pos::new(start_col, start_row)..);
-    //                             }
-    //                             (Some(end_col), None) => {
-    //                                 let (lo, hi) = crate::util::minmax(start_col, end_col.coord);
-    //                                 for c in lo..=hi {
-    //                                     // Include whole column after `start_row`
-    //                                     ret.add_column(c, start_row..);
-    //                                 }
-    //                             }
-    //                             (None, Some(end_row)) => {
-    //                                 let (lo, hi) = crate::util::minmax(start_row, end_row.coord);
-    //                                 for r in lo..=hi {
-    //                                     // Include whole row after `start_col`
-    //                                     ret.add_row(r, start_col..);
-    //                                 }
-    //                             }
-    //                             (Some(end_col), Some(end_row)) => {
-    //                                 // Include rectangle
-    //                                 ret.add_rect(Rect::new(
-    //                                     start_col,
-    //                                     start_row,
-    //                                     end_col.coord,
-    //                                     end_row.coord,
-    //                                 ));
-    //                             }
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     ret.make_disjoint();
-
-    //     ret
-    // }
-
     /// Finds intersection of two Selections.
     pub fn intersection(&self, _other: &Self) -> Option<Self> {
         dbgjs!(format!("todo(ayush): replace this with Contiguous2D"));
@@ -380,48 +312,6 @@ impl A1Selection {
 
         self.intersection(other).is_some()
     }
-
-    // /// Constructs contiguous blocks from an A1 selection.
-    // pub fn to_contiguous_blocks<T: Clone + PartialEq>(&self, value: T) -> Contiguous2D<T> {
-    //     let mut ret = Contiguous2D::new();
-    //     for range in &self.ranges {
-    //         match range {
-    //             CellRefRange::Sheet { range } => {
-    //                 let [x1, y1] = range.start.unpack_xy_default(1);
-    //                 match range.end {
-    //                     None => {
-    //                         ret.set(Pos { x: x1, y: y1 }, Some(value.clone()));
-    //                     }
-    //                     Some(end) => {
-    //                         let [x2, y2] = end.unpack_xy();
-
-    //                         // need to swap x1 and x2 if x2 is less than x1
-    //                         let (x1, x2) = if let Some(x2) = x2 {
-    //                             if x2 < x1 {
-    //                                 (x1, Some(x2))
-    //                             } else {
-    //                                 (x2, Some(x1))
-    //                             }
-    //                         } else {
-    //                             (x1, None)
-    //                         };
-    //                         let (y1, y2) = if let Some(y2) = y2 {
-    //                             if y2 < y1 {
-    //                                 (y1, Some(y2))
-    //                             } else {
-    //                                 (y2, Some(y1))
-    //                             }
-    //                         } else {
-    //                             (y1, None)
-    //                         };
-    //                         ret.set_rect(x1, y1, x2, y2, Some(value.clone()));
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     ret
-    // }
 
     pub fn update_cursor(&mut self) {
         if let Some(last) = self.ranges.last() {

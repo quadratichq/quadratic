@@ -526,7 +526,6 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            formats::format_update::FormatUpdate,
             sheet::validations::{
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
@@ -999,11 +998,12 @@ mod test {
             sheet.data_bounds,
             GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
         );
-        gc.set_cell_bold(
-            SheetRect::from_numbers(3, 5, 1, 1, sheet_id),
-            Some(true),
+        gc.set_bold(
+            &A1Selection::from_rect(SheetRect::from_numbers(3, 5, 1, 1, sheet_id)),
+            true,
             None,
-        );
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -1105,22 +1105,14 @@ mod test {
     fn row_bounds_formats() {
         let mut sheet = Sheet::test();
 
-        sheet.set_format_cell(
-            Pos { x: 3, y: 1 },
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 5, y: 1 },
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 3, y: 1 }, Some("red".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 5, y: 1 }, Some("red".to_string()));
 
         // Check that the bounds include the formatted row
         assert_eq!(sheet.row_bounds_formats(1), Some((3, 5)));

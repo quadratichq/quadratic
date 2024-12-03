@@ -196,30 +196,6 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreGetFormatAll':
-        this.send({
-          type: 'coreClientGetFormatAll',
-          id: e.data.id,
-          format: await core.getFormatAll(e.data.sheetId),
-        });
-        return;
-
-      case 'clientCoreGetFormatColumn':
-        this.send({
-          type: 'coreClientGetFormatColumn',
-          id: e.data.id,
-          format: await core.getFormatColumn(e.data.sheetId, e.data.column),
-        });
-        return;
-
-      case 'clientCoreGetFormatRow':
-        this.send({
-          type: 'coreClientGetFormatRow',
-          id: e.data.id,
-          format: await core.getFormatRow(e.data.sheetId, e.data.row),
-        });
-        return;
-
       case 'clientCoreGetFormatCell':
         this.send({
           type: 'coreClientGetFormatCell',
