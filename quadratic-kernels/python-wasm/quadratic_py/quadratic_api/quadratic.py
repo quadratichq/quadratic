@@ -160,7 +160,7 @@ def rc(x: int, y: int) -> int | float | str | bool | None:
 
 class q:
     def __init__(self, pos):
-        self.pos = pos
+        self._pos = pos
 
     def cells(self, a1: str, first_row_header: bool = False):
         """
@@ -214,7 +214,7 @@ class q:
             (x, y) = pos()
         """
 
-        return self.pos
+        return self._pos
     
     def to_a1(x: int, y: int, absolute: bool = True) -> str:
         """
