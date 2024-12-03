@@ -308,6 +308,14 @@ export class q {
   }
 
   /**
+   * Gets the position of the code cell
+   * @returns { x: number, y: number }
+   */
+  static pos(): { x: number; y: number } {
+    return pos();
+  }
+
+  /**
    * Show a conversion error message when the user tries to use an old function.
    */
   static conversionError(oldFunc: string, newFunc: string): void {
