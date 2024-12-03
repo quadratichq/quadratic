@@ -274,6 +274,33 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
         })
     }
 
+    /// Returns the set of rectangles that have values. Each rectangle is `(x1, y1, x2, y2, value)` with inclusive coordinates.
+    /// Unlike `to_rects()`, this returns concrete coordinates rather than potentially infinite bounds.
+    pub fn to_rects_with_bounds<'a>(
+        &'a self,
+        columns_bounds: impl 'a + Fn(i64, i64, bool) -> Option<(i64, i64)>,
+        rows_bounds: impl 'a + Fn(i64, i64, bool) -> Option<(i64, i64)>,
+        ignore_formatting: bool,
+    ) -> impl 'a + Iterator<Item = (i64, i64, i64, i64, T)> {
+        self.to_rects().filter_map(move |(x1, y1, x2, y2, value)| {
+            let x2 = if let Some(x2) = x2 {
+                x2
+            } else if let Some((_, x2)) = columns_bounds(x1, x2.unwrap_or(x1), ignore_formatting) {
+                x2
+            } else {
+                return None;
+            };
+            let y2 = if let Some(y2) = y2 {
+                y2
+            } else if let Some((_, y2)) = rows_bounds(y1, y2.unwrap_or(y1), ignore_formatting) {
+                y2
+            } else {
+                return None;
+            };
+            Some((x1, y1, x2, y2, value))
+        })
+    }
+
     /// Returns the values in a Rect as a Vec of values, organized by y then x.
     pub fn rect_values(&self, rect: Rect) -> Vec<Option<T>> {
         let mut values = vec![None; rect.height() as usize];
@@ -642,5 +669,26 @@ mod tests {
         c.set_rect(2, 2, Some(10), Some(10), Some(true));
         let copy = c.copy_column(3).unwrap();
         assert_eq!(copy.get(pos![D2]), Some(&Some(true)));
+    }
+
+    #[test]
+    fn test_to_rects_with_bounds() {
+        fn columns_bounds(_start: i64, _end: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
+            Some((1, 10))
+        }
+
+        fn rows_bounds(_start: i64, _end: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
+            Some((1, 10))
+        }
+
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        let mut rects = c.to_rects_with_bounds(columns_bounds, rows_bounds, true);
+        assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
+
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, None, None, Some(true));
+        let mut rects = c.to_rects_with_bounds(columns_bounds, rows_bounds, true);
+        assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
     }
 }

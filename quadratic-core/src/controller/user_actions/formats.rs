@@ -375,17 +375,14 @@ mod test {
     }
 
     #[test]
-    fn test_set_bold_selection() {
+    fn test_set_bold() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_bold(&A1Selection::test_a1("A1:B2"), true, None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.formats.try_format(pos![A2]).unwrap_or_default().bold,
-            Some(true)
-        );
+        assert_eq!(sheet.formats.format(pos![A2]).bold, Some(true));
     }
 
     #[test]
