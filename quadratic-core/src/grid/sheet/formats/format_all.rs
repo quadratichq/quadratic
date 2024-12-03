@@ -1,13 +1,14 @@
+// todo: maybe delete this file?
+
 use std::collections::HashSet;
 
 use crate::{
     controller::operations::operation::Operation,
     grid::{
-        formats::{format::Format, format_update::FormatUpdate, Formats},
-        CellWrap, GridBounds, Sheet,
+        formats::{Format, Formats},
+        Sheet,
     },
-    selection::OldSelection,
-    Pos, Rect,
+    Pos,
 };
 
 impl Sheet {

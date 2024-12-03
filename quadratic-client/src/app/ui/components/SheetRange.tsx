@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { A1Selection } from '@/app/quadratic-core-types';
 import {
-  A1SelectionStringToSelection,
+  A1SelectionValueToSelection,
   JsSelection,
   stringToSelection,
 } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -97,7 +97,7 @@ export const SheetRange = (props: Props) => {
   useEffect(() => {
     if (ref.current) {
       ref.current.value = initial
-        ? A1SelectionStringToSelection(JSON.stringify(initial)).toA1String(a1SheetId, sheets.getSheetIdNameMap())
+        ? A1SelectionValueToSelection(initial).toA1String(a1SheetId, sheets.getSheetIdNameMap())
         : '';
     }
   }, [changeCursor, a1SheetId, initial]);

@@ -4,7 +4,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use super::js_types::{JsCellValuePosAIContext, JsCodeCell};
 use crate::A1Selection;
-use crate::{controller::GridController, grid::SheetId, Pos, Rect};
+use crate::{controller::GridController, grid::SheetId, Pos};
 
 #[wasm_bindgen]
 impl GridController {
@@ -72,25 +72,13 @@ impl GridController {
     #[wasm_bindgen(js_name = "setCellNumericDecimals")]
     pub fn js_set_cell_numeric_decimals(
         &mut self,
-        sheet_id: String,
-        pos: String,
-        rect: String,
-        delta: isize,
+        selection: String,
+        delta: i32,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::from_str("Invalid pos"))?;
-        let rect: Rect =
-            serde_json::from_str(&rect).map_err(|_| JsValue::from_str("Invalid rect"))?;
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
-                pos.to_sheet_pos(sheet_id),
-                rect.to_sheet_rect(sheet_id),
-                delta,
-                cursor,
-            ))?)
-        } else {
-            Err(JsValue::from_str("Invalid sheet id"))
-        }
+    ) -> Result<(), JsValue> {
+        let selection = serde_json::from_str::<A1Selection>(&selection)
+            .map_err(|_| JsValue::from_str("Invalid selection"))?;
+        self.change_decimal_places(&selection, delta, cursor)
     }
 
     /// gets an editable string for a cell

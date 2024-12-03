@@ -30,12 +30,11 @@ mod tests {
     use crate::{
         array,
         grid::{BorderSelection, BorderStyle, CodeCellLanguage, CodeCellValue},
-        selection::OldSelection,
         test_util::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        Pos, SheetPos, SheetRect,
+        A1Selection, CellValue, OldSelection, Pos, SheetPos, SheetRect,
     };
     use serial_test::parallel;
 
@@ -84,15 +83,15 @@ mod tests {
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
                         grid_controller
-                            .set_bold_selection(OldSelection::sheet_pos(sheet_pos), true, None)
+                            .set_bold(&A1Selection::from_single_cell(sheet_pos), true, None)
                             .unwrap();
                     }
                 }
 
                 if let Some(fill_color) = fill_colors.get(count) {
                     grid_controller
-                        .set_fill_color_selection(
-                            OldSelection::sheet_pos(sheet_pos),
+                        .set_fill_color(
+                            &A1Selection::from_single_cell(sheet_pos),
                             Some(fill_color.to_lowercase()),
                             None,
                         )
@@ -721,5 +720,55 @@ mod tests {
         // it's +1, +1 because we the bounds is calculated from the top/left of
         // the cell (so bottom/right is +1)
         assert_eq!(sheet.borders.bounds(), Some(Rect::new(1, 1, 2, 7)));
+    }
+
+    #[test]
+    #[parallel]
+    fn update_code_cell_references_python() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![C3].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Python,
+            "q.cells('A1:B2', first_row_header=True)".to_string(),
+            None,
+        );
+
+        gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        match sheet.cell_value(pos![D3]) {
+            Some(CellValue::Code(code_cell)) => {
+                assert_eq!(code_cell.code, "q.cells('B1:C2', first_row_header=True)");
+            }
+            _ => panic!("expected code cell"),
+        }
+    }
+
+    #[test]
+    #[parallel]
+    fn update_code_cell_references_javascript() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![C4].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Javascript,
+            "return q.cells('A1:B2');".to_string(),
+            None,
+        );
+
+        gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
+            .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        match sheet.cell_value(pos![D4]) {
+            Some(CellValue::Code(code_cell)) => {
+                assert_eq!(code_cell.code, "return q.cells('B1:C2');");
+            }
+            _ => panic!("expected code cell"),
+        }
     }
 }

@@ -138,10 +138,9 @@ impl RefRangeBounds {
         }
     }
 
-    // This is not implemented because a Rect is always normalized, but a
-    // SheetCellRefRange is not.
+    // Creates a range from a rectangle. Be careful as this will normalize the
+    // CellRefRange, which is not always what the user wants.
     pub fn new_relative_rect(rect: Rect) -> Self {
-        dbgjs!("[new_relative_rect] temporary implementation to get selection from rect, correct implementation before merge");
         Self {
             start: CellRefRangeEnd::new_relative_pos(rect.min),
             end: Some(CellRefRangeEnd::new_relative_pos(rect.max)),

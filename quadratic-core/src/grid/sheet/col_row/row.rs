@@ -177,6 +177,7 @@ impl Sheet {
         // remove the row's formats from the sheet
         self.formats.remove_row(row);
         // TODO: only update fill cells if necessary due to removed formatting?
+
         transaction.fill_cells.insert(self.id);
 
         // remove the column's borders from the sheet
@@ -221,6 +222,7 @@ impl Sheet {
 
         // update the indices of all column-based formats impacted by the deletion
         self.formats.remove_row(row); // TODO: save formats returned here
+
         dbgjs!("actually save the row formatting and update transaction appropriately");
 
         // mark hashes of new rows dirty
@@ -389,7 +391,7 @@ mod test {
     use crate::{
         controller::execution::TransactionSource,
         grid::{
-            formats::{format::Format, format_update::FormatUpdate},
+            formats::{Format, FormatUpdate},
             BorderStyle, CellBorderLine, CellWrap,
         },
         CellValue, DEFAULT_ROW_HEIGHT,

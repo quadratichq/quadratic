@@ -109,7 +109,7 @@ impl Sheet {
 
     /// returns the render-size for a html-like cell
     pub fn render_size(&self, pos: Pos) -> Option<RenderSize> {
-        self.formats.render_size.get(pos.into()).cloned()
+        self.formats.render_size.get(pos).cloned()
     }
 
     /// Returns whether a rect overlaps the output of a code cell.
@@ -213,7 +213,7 @@ mod test {
             js_types::JsRenderCellSpecial, CodeCellLanguage, CodeCellValue, CodeRunResult,
             RenderSize,
         },
-        Array, SheetPos, Value,
+        A1Selection, Array, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
     use chrono::Utc;
@@ -227,19 +227,15 @@ mod test {
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_render_size(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            }
-            .into(),
-            Some(crate::grid::RenderSize {
+        gc.set_render_size(
+            &A1Selection::from_xy(0, 0, sheet_id),
+            Some(RenderSize {
                 w: "10".to_string(),
                 h: "20".to_string(),
             }),
             None,
-        );
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

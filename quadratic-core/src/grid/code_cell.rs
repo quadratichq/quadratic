@@ -4,9 +4,10 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::CodeCellLanguage, CellRefRange};
+use crate::grid::CodeCellLanguage;
+use crate::CellRefRange;
 
-const Q_CELLS_A1_REGEX: &str = r#"\bq\.cells\(\s*(['"`])([^'"`]+)(['"`])"#;
+const Q_CELLS_A1_REGEX: &str = r#"\bq\.cells\s*\(\s*(['"`])([^'"`]+)(['"`])"#;
 
 lazy_static! {
     static ref Q_CELLS_A1_REGEX_COMPILED: Regex =
@@ -55,5 +56,101 @@ impl CodeCellValue {
                 })
                 .to_string();
         }
+    }
+}
+
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_update_cell_references() {
+        // Basic single reference
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "q.cells('A1:B2')".to_string(),
+        };
+        code.update_cell_references(1, 1);
+        assert_eq!(code.code, "q.cells('B2:C3')", "Basic reference failed");
+
+        // Multiple references in one line
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "x = q.cells('A1:B2') + q.cells('C3:D4')".to_string(),
+        };
+        code.update_cell_references(1, 1);
+        assert_eq!(
+            code.code, "x = q.cells('B2:C3') + q.cells('D4:E5')",
+            "Multiple references failed"
+        );
+
+        // Different quote types
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: r#"q.cells("A1:B2"); q.cells('C3:D4'); q.cells(`E5:F6`);"#.to_string(),
+        };
+        code.update_cell_references(1, 1);
+        assert_eq!(
+            code.code, r#"q.cells("B2:C3"); q.cells('D4:E5'); q.cells(`F6:G7`);"#,
+            "Quote types failed"
+        );
+
+        // Mismatched quotes should remain unchanged
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: r#"q.cells("A1:B2'); q.cells('C3:D4")"#.to_string(),
+        };
+        code.update_cell_references(1, 1);
+        assert_eq!(
+            code.code, r#"q.cells("A1:B2'); q.cells('C3:D4")"#,
+            "Mismatched quotes failed"
+        );
+
+        // Zero delta should not change anything
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "q.cells('A1:B2')".to_string(),
+        };
+        code.update_cell_references(0, 0);
+        assert_eq!(code.code, "q.cells('A1:B2')", "Zero delta failed");
+
+        // Negative delta
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "q.cells('C3:D4')".to_string(),
+        };
+        code.update_cell_references(-1, -1);
+        assert_eq!(code.code, "q.cells('B2:C3')", "Negative delta failed");
+
+        // Whitespace variations
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "q.cells  (  'A1:B2'  )".to_string(),
+        };
+        code.update_cell_references(1, 1);
+        assert_eq!(
+            code.code, "q.cells('B2:C3'  )",
+            "Whitespace variations failed"
+        );
+
+        // Non Python/JS languages should remain unchanged
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "A1".to_string(),
+        };
+        code.update_cell_references(1, 1);
+        assert_eq!(code.code, "A1", "Non Python/JS failed");
+
+        // Python first_row_header=True
+        let mut code = CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "q.cells('A1:B2', first_row_header=True)".to_string(),
+        };
+        code.update_cell_references(1, 1);
+        assert_eq!(
+            code.code, "q.cells('B2:C3', first_row_header=True)",
+            "first_row_header=True failed"
+        );
     }
 }

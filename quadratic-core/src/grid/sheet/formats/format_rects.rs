@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     controller::operations::operation::Operation,
     grid::{
-        formats::{format_update::FormatUpdate, Formats},
+        formats::{FormatUpdate, Formats},
         CellWrap, Sheet,
     },
     selection::OldSelection,
@@ -87,7 +87,7 @@ mod test {
 
     use super::*;
     use crate::{
-        grid::{formats::format::Format, RenderSize},
+        grid::{formats::Format, RenderSize},
         wasm_bindings::js::expect_js_call,
         CellValue,
     };

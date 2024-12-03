@@ -1,15 +1,12 @@
-#![allow(unused_imports)] // TODO: remove this
-
-use super::{Sheet, SheetId};
+use super::Sheet;
 use crate::{
     controller::operations::{
         clipboard::{ClipboardOrigin, ClipboardSheetFormats},
         operation::Operation,
     },
-    grid::formats::{
-        format::Format,
-        format_update::{FormatUpdate, SheetFormatUpdates},
-        Formats,
+    grid::{
+        formats::{Formats, SheetFormatUpdates},
+        GridBounds,
     },
     selection::OldSelection,
     Pos,
@@ -56,6 +53,33 @@ impl Sheet {
         }
     }
 
+    /// Returns the dirty hashes and rows changed for the formats
+    fn formats_transaction_changes(
+        &self,
+        formats: &SheetFormatUpdates,
+    ) -> (HashSet<Pos>, HashSet<i64>) {
+        let mut dirty_hashes = HashSet::new();
+        let mut rows_changed = HashSet::new();
+
+        if let GridBounds::NonEmpty(bounds) = self.bounds(true) {
+            if let Some(align) = formats.align.as_ref() {
+                align.to_rects().for_each(|(x1, y1, x2, y2, _)| {
+                    let x2 = x2.unwrap_or(bounds.max.x);
+                    let y2 = y2.unwrap_or(bounds.max.y);
+                    for y in y1..=y2 {
+                        rows_changed.insert(y);
+                        for x in x1..=x2 {
+                            let mut quadrant = Pos { x, y };
+                            quadrant.to_quadrant();
+                            dirty_hashes.insert(quadrant);
+                        }
+                    }
+                });
+            }
+        }
+        (dirty_hashes, rows_changed)
+    }
+
     /// Sets formats using SheetFormatUpdates.
     ///
     /// Returns (reverse_operations, dirty_hashes, resize_rows)
@@ -63,71 +87,13 @@ impl Sheet {
         &mut self,
         formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
-        let reverse_formats = SheetFormatUpdates {
-            sheet_id: formats.sheet_id,
-            align: formats
-                .align
-                .clone()
-                .map(|value| self.formats.align.set_from(value)),
-            vertical_align: formats
-                .vertical_align
-                .clone()
-                .map(|value| self.formats.vertical_align.set_from(value)),
-            wrap: formats
-                .wrap
-                .clone()
-                .map(|value| self.formats.wrap.set_from(value)),
-            numeric_format: formats
-                .numeric_format
-                .clone()
-                .map(|value| self.formats.numeric_format.set_from(value)),
-            numeric_decimals: formats
-                .numeric_decimals
-                .clone()
-                .map(|value| self.formats.numeric_decimals.set_from(value)),
-            numeric_commas: formats
-                .numeric_commas
-                .clone()
-                .map(|value| self.formats.numeric_commas.set_from(value)),
-            bold: formats
-                .bold
-                .clone()
-                .map(|value| self.formats.bold.set_from(value)),
-            italic: formats
-                .italic
-                .clone()
-                .map(|value| self.formats.italic.set_from(value)),
-            underline: formats
-                .underline
-                .clone()
-                .map(|value| self.formats.underline.set_from(value)),
-            text_color: formats
-                .text_color
-                .clone()
-                .map(|value| self.formats.text_color.set_from(value)),
-            date_time: formats
-                .date_time
-                .clone()
-                .map(|value| self.formats.date_time.set_from(value)),
-            fill_color: formats
-                .fill_color
-                .clone()
-                .map(|value| self.formats.fill_color.set_from(value)),
-            render_size: formats
-                .render_size
-                .clone()
-                .map(|value| self.formats.render_size.set_from(value)),
-            strike_through: formats
-                .strike_through
-                .clone()
-                .map(|value| self.formats.strike_through.set_from(value)),
-        };
-
+        let reverse_formats = self.formats.apply_updates(formats);
         let reverse_op = Operation::SetCellFormatsA1 {
+            sheet_id: self.id,
             formats: reverse_formats,
         };
-
-        (vec![reverse_op], HashSet::new(), HashSet::new())
+        let (dirty_hashes, rows_changed) = self.formats_transaction_changes(formats);
+        (vec![reverse_op], dirty_hashes, rows_changed)
     }
 
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.
@@ -136,7 +102,9 @@ impl Sheet {
         _selection: &OldSelection,
         _clipboard_origin: &ClipboardOrigin,
     ) -> ClipboardSheetFormats {
-        todo!("this can use A1Selection instead, right?")
+        dbgjs!("sheet_formats is not implemented in sheet/formats/mod.rs");
+
+        ClipboardSheetFormats::default()
         // if selection.all {
         //     ClipboardSheetFormats {
         //         all: self.format_all.clone(),
@@ -177,7 +145,7 @@ mod tests {
     use crate::{
         controller::operations::clipboard::ClipboardOrigin,
         grid::{
-            formats::{format::Format, format_update::FormatUpdate, Formats},
+            formats::{Format, FormatUpdate, Formats},
             sheet,
         },
         selection::OldSelection,
@@ -245,5 +213,10 @@ mod tests {
         );
         assert_eq!(formats.columns.len(), 0);
         assert_eq!(formats.rows.len(), 0);
+    }
+
+    #[test]
+    fn test_formats_transaction_changes() {
+        todo!()
     }
 }

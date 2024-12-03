@@ -507,8 +507,7 @@ mod test {
 
     use super::*;
     use crate::controller::GridController;
-    use crate::grid::formats::format_update::FormatUpdate;
-    use crate::grid::formats::Formats;
+    use crate::grid::formats::{FormatUpdate, Formats};
     use crate::grid::{CodeCellLanguage, CodeCellValue};
     use crate::test_util::print_table;
     use crate::{A1Selection, SheetPos, SheetRect};

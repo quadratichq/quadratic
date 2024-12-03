@@ -1,6 +1,6 @@
 use crate::grid::{
     contiguous::Block,
-    formats::format::Format,
+    formats::Format,
     resize::{Resize, ResizeMap},
     CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, NumericFormatKind,
     RenderSize, SheetFormatting,
@@ -53,13 +53,7 @@ fn import_render_size(render_size: current::RenderSizeSchema) -> RenderSize {
     }
 }
 
-fn import_contiguous_2d<C, F, T>(
-    blocks: Vec<(
-        i64,
-        current::BlockSchema<Vec<(i64, current::BlockSchema<C>)>>,
-    )>,
-    f: F,
-) -> Contiguous2D<T>
+fn import_contiguous_2d<C, F, T>(blocks: current::Continuous2DSchema<C>, f: F) -> Contiguous2D<T>
 where
     F: Fn(C) -> T,
 {
@@ -155,13 +149,7 @@ fn export_render_size(render_size: RenderSize) -> current::RenderSizeSchema {
     }
 }
 
-fn export_contiguous_2d<T, F, C>(
-    blocks: Contiguous2D<T>,
-    f: F,
-) -> Vec<(
-    i64,
-    current::BlockSchema<Vec<(i64, current::BlockSchema<C>)>>,
-)>
+fn export_contiguous_2d<T, F, C>(blocks: Contiguous2D<T>, f: F) -> current::Continuous2DSchema<C>
 where
     F: Fn(T) -> C,
 {

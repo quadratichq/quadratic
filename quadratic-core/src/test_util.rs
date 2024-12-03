@@ -296,7 +296,7 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 
 #[cfg(test)]
 mod test {
-    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::formats::FormatUpdate;
 
     use super::*;
     use serial_test::parallel;

@@ -1,15 +1,12 @@
-use std::collections::{HashMap, HashSet};
-
-use chrono::Utc;
+use std::collections::HashSet;
 
 use crate::{
     controller::operations::operation::Operation,
     grid::{
-        formats::{format::Format, format_update::FormatUpdate, Formats},
-        CellWrap, Sheet,
+        formats::{Format, Formats},
+        Sheet,
     },
-    selection::OldSelection,
-    Pos, Rect,
+    Pos,
 };
 
 impl Sheet {
@@ -182,7 +179,7 @@ mod tests {
     use serial_test::{parallel, serial};
 
     use super::*;
-    use crate::{grid::formats::format_update::FormatUpdate, wasm_bindings::js::expect_js_call};
+    use crate::{grid::formats::FormatUpdate, wasm_bindings::js::expect_js_call};
 
     #[test]
     #[parallel]
@@ -283,63 +280,64 @@ mod tests {
     #[test]
     #[parallel]
     fn set_format_rows_remove_cell_formatting() {
-        let mut sheet = Sheet::test();
-        sheet.test_set_format(
-            0,
-            0,
-            FormatUpdate {
-                bold: Some(Some(false)),
-                ..Default::default()
-            },
-        );
-        let formats = Formats::repeat(
-            FormatUpdate {
-                bold: Some(Some(true)),
-                ..FormatUpdate::default()
-            },
-            3,
-        );
-        let rows = vec![0, 1, 2];
-        let reverse = sheet.set_formats_rows(&rows, &formats).0;
-        assert_eq!(sheet.format_cell(0, 0, false), Format::default());
-        assert_eq!(sheet.format_row(0).bold, Some(true));
-        assert_eq!(reverse.len(), 2);
+        todo!("update, remove, or replace this test");
+        // let mut sheet = Sheet::test();
+        // sheet.test_set_format(
+        //     0,
+        //     0,
+        //     FormatUpdate {
+        //         bold: Some(Some(false)),
+        //         ..Default::default()
+        //     },
+        // );
+        // let formats = Formats::repeat(
+        //     FormatUpdate {
+        //         bold: Some(Some(true)),
+        //         ..FormatUpdate::default()
+        //     },
+        //     3,
+        // );
+        // let rows = vec![0, 1, 2];
+        // let reverse = sheet.set_formats_rows(&rows, &formats).0;
+        // assert_eq!(sheet.format_cell(0, 0, false), Format::default());
+        // assert_eq!(sheet.format_row(0).bold, Some(true));
+        // assert_eq!(reverse.len(), 2);
 
-        let (reverse_selection, reverse_formats) = match reverse[1] {
-            Operation::SetCellFormatsSelection {
-                ref formats,
-                ref selection,
-            } => {
-                assert_eq!(
-                    selection,
-                    &OldSelection {
-                        sheet_id: sheet.id,
-                        rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]),
-                        ..Default::default()
-                    }
-                );
-                assert_eq!(
-                    formats,
-                    &Formats::repeat(
-                        FormatUpdate {
-                            bold: Some(Some(false)),
-                            ..FormatUpdate::default()
-                        },
-                        1
-                    )
-                );
-                (selection.clone(), formats.clone())
-            }
-            _ => panic!("Expected SetCellFormatsSelection"),
-        };
-        sheet.set_formats_selection(&reverse_selection, &reverse_formats);
-        assert_eq!(
-            sheet.format_cell(0, 0, false),
-            Format {
-                bold: Some(false),
-                ..Default::default()
-            }
-        );
+        // let (reverse_selection, reverse_formats) = match reverse[1] {
+        //     Operation::SetCellFormatsSelection {
+        //         ref formats,
+        //         ref selection,
+        //     } => {
+        //         assert_eq!(
+        //             selection,
+        //             &OldSelection {
+        //                 sheet_id: sheet.id,
+        //                 rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]),
+        //                 ..Default::default()
+        //             }
+        //         );
+        //         assert_eq!(
+        //             formats,
+        //             &Formats::repeat(
+        //                 FormatUpdate {
+        //                     bold: Some(Some(false)),
+        //                     ..FormatUpdate::default()
+        //                 },
+        //                 1
+        //             )
+        //         );
+        //         (selection.clone(), formats.clone())
+        //     }
+        //     _ => panic!("Expected SetCellFormatsSelection"),
+        // };
+        // sheet.set_formats_selection(&reverse_selection, &reverse_formats);
+        // assert_eq!(
+        //     sheet.format_cell(0, 0, false),
+        //     Format {
+        //         bold: Some(false),
+        //         ..Default::default()
+        //     }
+        // );
     }
 
     #[test]

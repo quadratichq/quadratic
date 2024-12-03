@@ -9,7 +9,7 @@ use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::formulas::replace_internal_cell_references;
-use crate::grid::formats::format::Format;
+use crate::grid::formats::Format;
 use crate::grid::formats::Formats;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::BorderStyleCellUpdates;
@@ -441,7 +441,7 @@ mod test {
 
     use super::{PasteSpecial, *};
     use crate::controller::active_transactions::transaction_name::TransactionName;
-    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::formats::FormatUpdate;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::SheetId;
@@ -682,5 +682,71 @@ mod test {
             gc.sheet(sheet_id).get_code_cell_value((5, 9).into()),
             Some(CellValue::Number(BigDecimal::from(6)))
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn update_code_cell_references_python() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![C3].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Python,
+            "q.cells('A1:B2', first_row_header=True)".to_string(),
+            None,
+        );
+
+        let selection = A1Selection::test_a1("A1:E5");
+        let JsClipboard { html, .. } = gc.sheet(sheet_id).copy_to_clipboard(&selection).unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("E6"),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        match sheet.cell_value(pos![G8]) {
+            Some(CellValue::Code(code_cell)) => {
+                assert_eq!(code_cell.code, "q.cells('E6:F7', first_row_header=True)");
+            }
+            _ => panic!("expected code cell"),
+        }
+    }
+
+    #[test]
+    #[parallel]
+    fn update_code_cell_references_javascript() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            pos![C3].to_sheet_pos(sheet_id),
+            CodeCellLanguage::Javascript,
+            "return q.cells('A1:B2');".to_string(),
+            None,
+        );
+
+        let selection = A1Selection::test_a1("A1:E5");
+        let JsClipboard { html, .. } = gc.sheet(sheet_id).copy_to_clipboard(&selection).unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1("E6"),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        match sheet.cell_value(pos![G8]) {
+            Some(CellValue::Code(code_cell)) => {
+                assert_eq!(code_cell.code, "return q.cells('E6:F7');");
+            }
+            _ => panic!("expected code cell"),
+        }
     }
 }

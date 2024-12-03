@@ -79,19 +79,19 @@ mod tests {
     use crate::controller::operations::operation::Operation;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
-    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::formats::FormatUpdate;
     use crate::grid::formats::Formats;
     use crate::grid::js_types::JsRowHeight;
     use crate::grid::{
         CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, NumericFormat, NumericFormatKind,
         RenderSize, SheetId,
     };
-    use crate::selection::OldSelection;
     use crate::sheet_offsets::resize_transient::TransientResize;
     use crate::wasm_bindings::js::{
         clear_js_calls, expect_js_call, expect_js_call_count, expect_js_offsets,
     };
-    use crate::{CellValue, Pos, SheetPos, SheetRect};
+    use crate::OldSelection;
+    use crate::{A1Selection, CellValue, Pos, SheetPos, SheetRect};
 
     fn mock_auto_resize_row_heights(
         gc: &mut GridController,
@@ -131,7 +131,12 @@ mod tests {
             y: 0,
             sheet_id,
         };
-        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
+        gc.set_cell_wrap(
+            &A1Selection::from_single_cell(sheet_pos),
+            CellWrap::Wrap,
+            None,
+        )
+        .unwrap();
         let ops = gc.set_cell_value_operations(
             sheet_pos,
             "test_auto_resize_row_heights_on_set_cell_value_1".to_string(),
@@ -218,14 +223,15 @@ mod tests {
             None,
         );
         gc.set_cell_wrap(
-            SheetRect {
+            &A1Selection::from_rect(SheetRect {
                 min: Pos { x: 0, y: 0 },
                 max: Pos { x: 0, y: 10 },
                 sheet_id,
-            },
-            Some(CellWrap::Wrap),
+            }),
+            CellWrap::Wrap,
             None,
-        );
+        )
+        .unwrap();
 
         // should trigger auto resize row heights for wrap
         let ops = vec![Operation::SetCellFormatsSelection {
@@ -417,7 +423,12 @@ mod tests {
             y: 0,
             sheet_id,
         };
-        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
+        gc.set_cell_wrap(
+            &A1Selection::from_single_cell(sheet_pos),
+            CellWrap::Wrap,
+            None,
+        )
+        .unwrap();
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Formula,
@@ -463,7 +474,12 @@ mod tests {
             sheet_id,
         };
 
-        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
+        gc.set_cell_wrap(
+            &A1Selection::from_single_cell(sheet_pos),
+            CellWrap::Wrap,
+            None,
+        )
+        .unwrap();
 
         // python code cell
         gc.set_cell_value(
@@ -561,14 +577,15 @@ mod tests {
             None,
         );
         gc.set_cell_wrap(
-            SheetRect {
+            &A1Selection::from_rect(SheetRect {
                 min: Pos { x: 0, y: 0 },
                 max: Pos { x: 0, y: 10 },
                 sheet_id,
-            },
-            Some(CellWrap::Wrap),
+            }),
+            CellWrap::Wrap,
             None,
-        );
+        )
+        .unwrap();
 
         // set row 1 to Manually resized
         gc.commit_offsets_resize(
@@ -638,7 +655,12 @@ mod tests {
             y: 0,
             sheet_id,
         };
-        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
+        gc.set_cell_wrap(
+            &A1Selection::from_single_cell(sheet_pos),
+            CellWrap::Wrap,
+            None,
+        )
+        .unwrap();
         let ops = gc.set_cell_value_operations(
             sheet_pos,
             "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
@@ -698,7 +720,12 @@ mod tests {
             sheet_id,
         };
         // set wrap
-        gc.set_cell_wrap(sheet_pos.into(), Some(CellWrap::Wrap), None);
+        gc.set_cell_wrap(
+            &A1Selection::from_single_cell(sheet_pos),
+            CellWrap::Wrap,
+            None,
+        )
+        .unwrap();
 
         // manually resize row 0
         gc.commit_offsets_resize(

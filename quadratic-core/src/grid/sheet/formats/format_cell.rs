@@ -1,7 +1,6 @@
-use std::collections::HashSet;
+// todo: this should probably be deleted.
 
-use crate::grid::formats::format::Format;
-use crate::grid::formats::format_update::FormatUpdate;
+use crate::grid::formats::{Format, FormatUpdate};
 use crate::grid::Sheet;
 use crate::Pos;
 

@@ -24,6 +24,8 @@ use super::transaction_name::TransactionName;
 // offsets modified ((column, row) -> new_size)
 type SheetOffsets = HashMap<(Option<i64>, Option<i64>), f64>;
 
+// todo: add sheet bounds to this list
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct PendingTransaction {
     pub id: Uuid,

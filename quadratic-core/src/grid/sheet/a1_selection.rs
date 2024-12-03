@@ -37,7 +37,8 @@ impl Sheet {
         _skip_code_runs: bool,
         _include_blanks: bool,
     ) -> Option<IndexMap<Pos, &CellValue>> {
-        todo!()
+        dbgjs!("todo: implement selection_values");
+        None
         // let mut count = 0u64;
         // let max_count = max_count.unwrap_or(i64::MAX) as u64;
 

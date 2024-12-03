@@ -8,11 +8,12 @@ import {
   PercentIcon,
   ScientificIcon,
 } from '@/shared/components/Icons';
+import DateRangeIcon from '@mui/icons-material/DateRange';
 import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import {
   clearFormattingAndBorders,
-  removeCellNumericFormat,
+  removeNumericFormatSelection,
   setCellCommas,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
@@ -21,7 +22,6 @@ import {
   textFormatSetPercentage,
 } from '../../../helpers/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
-import DateRangeIcon from '@mui/icons-material/DateRange';
 
 const commands: CommandGroup = {
   heading: 'Format',
@@ -46,7 +46,11 @@ const commands: CommandGroup = {
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
-          <CommandPaletteListItem {...props} action={removeCellNumericFormat} icon={<FormatNumberAutomaticIcon />} />
+          <CommandPaletteListItem
+            {...props}
+            action={removeNumericFormatSelection}
+            icon={<FormatNumberAutomaticIcon />}
+          />
         );
       },
     },

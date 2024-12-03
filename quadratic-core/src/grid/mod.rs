@@ -8,7 +8,7 @@ pub use code_cell::*;
 pub use code_run::*;
 pub use column::{Column, ColumnData};
 pub use contiguous::{Block, Contiguous2D, ContiguousBlocks};
-pub use formats::format::Format;
+pub use formats::Format;
 pub use formatting::{
     Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap, FillColor, Italic, NumericCommas,
     NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, StrikeThrough, TextColor,

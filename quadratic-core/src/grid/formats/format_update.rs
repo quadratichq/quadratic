@@ -3,140 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::format::Format;
-use crate::grid::{
-    CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, RenderSize, SheetId,
-};
-use crate::{A1Selection, Rect};
-
-/// Used to store formatting changes to apply to an entire sheet.
-#[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
-pub struct SheetFormatUpdates {
-    pub sheet_id: SheetId,
-
-    pub align: Option<Contiguous2D<Option<CellAlign>>>,
-    pub vertical_align: Option<Contiguous2D<Option<CellVerticalAlign>>>,
-    pub wrap: Option<Contiguous2D<Option<CellWrap>>>,
-    pub numeric_format: Option<Contiguous2D<Option<NumericFormat>>>,
-    pub numeric_decimals: Option<Contiguous2D<Option<i16>>>,
-    pub numeric_commas: Option<Contiguous2D<Option<bool>>>,
-    pub bold: Option<Contiguous2D<Option<bool>>>,
-    pub italic: Option<Contiguous2D<Option<bool>>>,
-    pub text_color: Option<Contiguous2D<Option<String>>>,
-    pub fill_color: Option<Contiguous2D<Option<String>>>,
-    pub render_size: Option<Contiguous2D<Option<RenderSize>>>,
-    pub date_time: Option<Contiguous2D<Option<String>>>,
-    pub underline: Option<Contiguous2D<Option<bool>>>,
-    pub strike_through: Option<Contiguous2D<Option<bool>>>,
-}
-impl SheetFormatUpdates {
-    /// Constructs a format update that applies the same formatting to every
-    /// affected cell.
-    pub fn from_selection(selection: &A1Selection, update: FormatUpdate) -> Self {
-        Self {
-            sheet_id: selection.sheet_id,
-            align: update
-                .align
-                .map(|update| Contiguous2D::<CellAlign>::new_from_selection(&selection, update)),
-            vertical_align: update.vertical_align.map(|update| {
-                Contiguous2D::<CellVerticalAlign>::new_from_selection(&selection, update)
-            }),
-            wrap: update
-                .wrap
-                .map(|update| Contiguous2D::<CellWrap>::new_from_selection(&selection, update)),
-            numeric_format: update.numeric_format.map(|update| {
-                Contiguous2D::<NumericFormat>::new_from_selection(&selection, update)
-            }),
-            numeric_decimals: update
-                .numeric_decimals
-                .map(|update| Contiguous2D::<i16>::new_from_selection(&selection, update)),
-            numeric_commas: update
-                .numeric_commas
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
-            bold: update
-                .bold
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
-            italic: update
-                .italic
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
-            text_color: update
-                .text_color
-                .map(|update| Contiguous2D::<String>::new_from_selection(&selection, update)),
-            fill_color: update
-                .fill_color
-                .map(|update| Contiguous2D::<String>::new_from_selection(&selection, update)),
-            render_size: update
-                .render_size
-                .map(|update| Contiguous2D::<RenderSize>::new_from_selection(&selection, update)),
-            date_time: update
-                .date_time
-                .map(|update| Contiguous2D::<String>::new_from_selection(&selection, update)),
-            underline: update
-                .underline
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
-            strike_through: update
-                .strike_through
-                .map(|update| Contiguous2D::<bool>::new_from_selection(&selection, update)),
-        }
-    }
-
-    pub fn intersects(&self, thumbnail: Rect) -> bool {
-        self.align
-            .as_ref()
-            .is_some_and(|align| align.intersects(thumbnail))
-            || self
-                .vertical_align
-                .as_ref()
-                .is_some_and(|vertical_align| vertical_align.intersects(thumbnail))
-            || self
-                .wrap
-                .as_ref()
-                .is_some_and(|wrap| wrap.intersects(thumbnail))
-            || self
-                .numeric_format
-                .as_ref()
-                .is_some_and(|numeric_format| numeric_format.intersects(thumbnail))
-            || self
-                .numeric_decimals
-                .as_ref()
-                .is_some_and(|numeric_decimals| numeric_decimals.intersects(thumbnail))
-            || self
-                .numeric_commas
-                .as_ref()
-                .is_some_and(|numeric_commas| numeric_commas.intersects(thumbnail))
-            || self
-                .bold
-                .as_ref()
-                .is_some_and(|bold| bold.intersects(thumbnail))
-            || self
-                .italic
-                .as_ref()
-                .is_some_and(|italic| italic.intersects(thumbnail))
-            || self
-                .text_color
-                .as_ref()
-                .is_some_and(|text_color| text_color.intersects(thumbnail))
-            || self
-                .fill_color
-                .as_ref()
-                .is_some_and(|fill_color| fill_color.intersects(thumbnail))
-            || self
-                .render_size
-                .as_ref()
-                .is_some_and(|render_size| render_size.intersects(thumbnail))
-            || self
-                .date_time
-                .as_ref()
-                .is_some_and(|date_time| date_time.intersects(thumbnail))
-            || self
-                .underline
-                .as_ref()
-                .is_some_and(|underline| underline.intersects(thumbnail))
-            || self
-                .strike_through
-                .as_ref()
-                .is_some_and(|strike_through| strike_through.intersects(thumbnail))
-    }
-}
+use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, RenderSize};
 
 /// Used to store changes from a Format to another Format.
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
@@ -391,14 +258,12 @@ impl From<&FormatUpdate> for Format {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
-
     use super::*;
     use crate::grid::NumericFormatKind;
 
     #[test]
-    #[parallel]
     fn is_default() {
         let format = FormatUpdate::default();
         assert!(format.is_default());
@@ -411,7 +276,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn cleared() {
         assert_eq!(
             FormatUpdate::cleared(),
@@ -435,7 +299,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn html_changed() {
         let format = FormatUpdate {
             render_size: Some(Some(RenderSize {
@@ -457,7 +320,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn render_cells_changed() {
         let format = FormatUpdate {
             align: Some(None),
@@ -542,7 +404,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn fill_changed() {
         let format = FormatUpdate {
             fill_color: Some(None),
@@ -567,7 +428,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn combine() {
         let format1 = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -649,7 +509,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn clear_update() {
         let format = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -693,7 +552,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn format_update_to_format() {
         let update = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -749,7 +607,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn serialize_format_update() {
         let update = FormatUpdate {
             align: Some(None),

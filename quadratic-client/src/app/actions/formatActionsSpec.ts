@@ -4,7 +4,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
 import {
   clearFormattingAndBorders,
-  removeCellNumericFormat,
+  removeNumericFormatSelection,
   setAlign,
   setBold,
   setCellCommas,
@@ -212,7 +212,7 @@ export const formatActionsSpec: FormatActionSpec = {
     label: 'Automatic',
     Icon: FormatNumberAutomaticIcon,
     run: () => {
-      removeCellNumericFormat();
+      removeNumericFormatSelection();
     },
   },
   [Action.FormatNumberCurrency]: {
