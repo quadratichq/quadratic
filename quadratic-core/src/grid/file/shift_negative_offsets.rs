@@ -4,6 +4,8 @@
 //! this change. quadratic-files will automatically upgrade using this function
 //! before applying any received changes.
 
+use std::collections::HashMap;
+
 use crate::{
     controller::active_transactions::pending_transaction::PendingTransaction,
     grid::{Grid, GridBounds},
@@ -11,7 +13,7 @@ use crate::{
 };
 
 /// Shifts all negative offsets in the grid and signals client.
-pub fn shift_negative_offsets(grid: &mut Grid) {
+pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     // This is a dummy transaction because it happens before the initial
     // render of the grid file, so there's no info to share with the
     // client. Also, we do not send any information to multiplayer, as
@@ -19,7 +21,9 @@ pub fn shift_negative_offsets(grid: &mut Grid) {
     // before applying any changes.
     let mut _transaction = PendingTransaction::default();
     let mut changed = false;
+    let mut shifted_offsets = HashMap::new();
     for sheet in grid.sheets.iter_mut() {
+        let current_sheet_name = sheet.name.clone();
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
             if bounds.min.x <= 0 {
                 changed = true;
@@ -27,6 +31,10 @@ pub fn shift_negative_offsets(grid: &mut Grid) {
                 for _ in bounds.min.x..=0 {
                     sheet.insert_column(&mut _transaction, insert, CopyFormats::None);
                     sheet.recalculate_bounds();
+                    shifted_offsets
+                        .entry(current_sheet_name.clone())
+                        .or_insert((0, 0))
+                        .0 += 1;
                 }
             }
             if bounds.min.y <= 0 {
@@ -35,14 +43,21 @@ pub fn shift_negative_offsets(grid: &mut Grid) {
                 for _ in bounds.min.y..=0 {
                     sheet.insert_row(&mut _transaction, insert, CopyFormats::None);
                     sheet.recalculate_bounds();
+                    shifted_offsets
+                        .entry(current_sheet_name.clone())
+                        .or_insert((0, 0))
+                        .1 += 1;
                 }
             }
         }
     }
+
     // if changed && cfg!(target_family = "wasm") || cfg!(test) {
     if changed {
         crate::wasm_bindings::js::jsClientMessage("negative_offsets".to_string(), false);
     }
+
+    shifted_offsets
 }
 
 #[cfg(test)]

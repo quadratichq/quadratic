@@ -5,12 +5,14 @@ use crate::compression::{
 
 use super::Grid;
 use anyhow::{anyhow, Result};
+use migrate_code_cell_references::migrate_code_cell_references;
 use serde::{Deserialize, Serialize};
 use shift_negative_offsets::shift_negative_offsets;
 use std::fmt::Debug;
 use std::str;
 pub use v1_7_1::GridSchema as current;
 
+mod migrate_code_cell_references;
 pub mod serialize;
 pub mod sheet_schema;
 mod shift_negative_offsets;
@@ -103,7 +105,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
 
     let file_version = deserialize::<FileVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
     let mut check_for_negative_offsets = false;
-    let grid = match file_version.version.as_str() {
+    let mut grid = match file_version.version.as_str() {
         "1.6" => {
             check_for_negative_offsets = true;
             let schema = decompress_and_deserialize::<v1_6::schema::GridSchema>(
@@ -140,15 +142,19 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         )),
     };
 
-    if check_for_negative_offsets {
-        if let Ok(mut grid) = grid {
-            shift_negative_offsets(&mut grid);
-            Ok(grid)
-        } else {
-            grid
-        }
-    } else {
-        grid
+    handle_negative_offsets(&mut grid, check_for_negative_offsets);
+
+    grid
+}
+
+fn handle_negative_offsets(grid: &mut Result<Grid>, check_for_negative_offsets: bool) {
+    if !check_for_negative_offsets {
+        return;
+    }
+
+    if let Ok(grid) = grid {
+        let shifted_offsets = shift_negative_offsets(grid);
+        migrate_code_cell_references(grid, &shifted_offsets);
     }
 }
 
