@@ -1,10 +1,9 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Validation } from '@/app/quadratic-core-types';
-import { A1SelectionStringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionValueToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { ValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
-import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -49,7 +48,7 @@ export const ValidationEntry = (props: Props) => {
   const title = useMemo(() => validationText(validation), [validation]);
 
   const selection = useMemo(() => {
-    const selection = A1SelectionStringToSelection(JSON.stringify(validation.selection, bigIntReplacer));
+    const selection = A1SelectionValueToSelection(validation.selection);
     return selection.toA1String(sheets.current, sheets.getSheetIdNameMap());
   }, [validation.selection]);
 
