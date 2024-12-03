@@ -326,3 +326,10 @@ pub fn a1_selection_string_to_selection(a1_selection: &str) -> Result<JsSelectio
     let selection = serde_json::from_str::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
     Ok(JsSelection { selection })
 }
+
+#[wasm_bindgen(js_name = "A1SelectionValueToSelection")]
+pub fn a1_selection_value_to_selection(a1_selection: JsValue) -> Result<JsSelection, String> {
+    let selection =
+        serde_wasm_bindgen::from_value::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
+    Ok(JsSelection { selection })
+}

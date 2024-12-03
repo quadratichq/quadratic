@@ -711,7 +711,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         match sheet.cell_value(pos![G8]) {
             Some(CellValue::Code(code_cell)) => {
-                assert_eq!(code_cell.code, "q.cells('E6:F7', first_row_header=True)")
+                assert_eq!(code_cell.code, "q.cells('E6:F7', first_row_header=True)");
             }
             _ => panic!("expected code cell"),
         }
@@ -744,7 +744,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         match sheet.cell_value(pos![G8]) {
             Some(CellValue::Code(code_cell)) => {
-                assert_eq!(code_cell.code, "return q.cells('E6:F7');")
+                assert_eq!(code_cell.code, "return q.cells('E6:F7');");
             }
             _ => panic!("expected code cell"),
         }

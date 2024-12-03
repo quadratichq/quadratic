@@ -61,7 +61,11 @@ export class UIValidations extends Container<SpecialSprite> {
       const type = validationUIType(v);
       if (v.selection.sheet_id.id !== sheets.sheet.id || !type) continue;
 
-      // todo...
+      // const jsSelection = A1SelectionValueToSelection(v.selection);
+      // console.log(jsSelection);
+
+      // const ranges = jsSelection.getRanges();
+
       // if (v.selection.all) {
       //   this.drawAll(range, type);
       // }
