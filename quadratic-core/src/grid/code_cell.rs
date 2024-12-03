@@ -40,6 +40,7 @@ impl CodeCellValue {
                     let cell_ref_str = &caps[2]; // Capture the first argument inside quotes
                     let end_quote = &caps[3]; // The quote type used at the end
 
+                    // if the quotes are mismatched, return the original string
                     if start_quote != end_quote {
                         return full_match.to_string();
                     }

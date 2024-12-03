@@ -346,6 +346,12 @@ impl Sheet {
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)
     }
+
+    /// Returns a mutable column of a sheet from the column index.
+    pub(crate) fn get_column_mut(&mut self, index: i64) -> Option<&mut Column> {
+        self.columns.get_mut(&index)
+    }
+
     /// Returns a column of a sheet from its index, or creates a new column at
     /// that index.
     pub(crate) fn get_or_create_column(&mut self, x: i64) -> &mut Column {
