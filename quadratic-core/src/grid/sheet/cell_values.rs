@@ -131,7 +131,7 @@ mod test {
 
     use crate::{
         grid::{
-            formats::format_update::FormatUpdate,
+            formats::FormatUpdate,
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             NumericFormat,
         },

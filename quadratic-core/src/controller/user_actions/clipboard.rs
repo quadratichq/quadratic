@@ -149,8 +149,8 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            formats::format_update::FormatUpdate, js_types::CellFormatSummary, BorderSelection,
-            BorderStyle, CellBorderLine, CodeCellLanguage, CodeCellValue, SheetId,
+            formats::FormatUpdate, js_types::CellFormatSummary, BorderSelection, BorderStyle,
+            CellBorderLine, CodeCellLanguage, CodeCellValue, SheetId,
         },
         CellValue, Pos, Rect, SheetPos, SheetRect,
     };

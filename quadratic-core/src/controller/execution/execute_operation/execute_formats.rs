@@ -190,8 +190,7 @@ impl GridController {
         }
 
         if !transaction.is_server() {
-            // todo...
-            // self.send_updated_bounds_a1_subspaces(sheet_id, &subspaces, true);
+            self.send_updated_bounds(sheet_id);
 
             if !rows.is_empty() && transaction.is_user() {
                 let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();

@@ -9,7 +9,7 @@ use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::formulas::replace_internal_cell_references;
-use crate::grid::formats::format::Format;
+use crate::grid::formats::Format;
 use crate::grid::formats::Formats;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::BorderStyleCellUpdates;
@@ -441,7 +441,7 @@ mod test {
 
     use super::{PasteSpecial, *};
     use crate::controller::active_transactions::transaction_name::TransactionName;
-    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::formats::FormatUpdate;
     use crate::grid::js_types::JsClipboard;
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
     use crate::grid::SheetId;

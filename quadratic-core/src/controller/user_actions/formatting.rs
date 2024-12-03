@@ -112,8 +112,7 @@ mod test {
     use serial_test::parallel;
 
     use crate::controller::GridController;
-    use crate::grid::formats::format::Format;
-    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::formats::{Format, FormatUpdate};
     use crate::grid::js_types::{JsNumber, JsRenderCell};
     use crate::grid::{CellAlign, RenderSize, SheetId};
     use crate::{Pos, Rect, SheetPos, SheetRect};

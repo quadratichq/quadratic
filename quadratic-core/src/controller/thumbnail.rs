@@ -1,5 +1,5 @@
 use crate::{
-    grid::{formats::format_update::SheetFormatUpdates, SheetId},
+    grid::{formats::SheetFormatUpdates, SheetId},
     selection::OldSelection,
     A1Selection, Rect, SheetPos, SheetRect,
 };

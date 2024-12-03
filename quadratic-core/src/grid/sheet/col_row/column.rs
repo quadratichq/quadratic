@@ -5,8 +5,7 @@ use crate::{
         operations::operation::Operation,
     },
     grid::{formats::Formats, Sheet},
-    selection::OldSelection,
-    CopyFormats, Pos, Rect, SheetPos,
+    CopyFormats, Pos, SheetPos,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
@@ -42,23 +41,11 @@ impl Sheet {
 
     /// Creates reverse operations for cell formatting within the column.
     fn reverse_formats_ops_for_column(&self, column: i64) -> Vec<Operation> {
-        let mut formats = Formats::new();
-        let mut selection = OldSelection::new(self.id);
-
-        if let Some(format) = self.try_format_column(column) {
-            selection.columns = Some(vec![column]);
-            formats.push(format.to_replace());
-        }
-
-        if let Some(range) = self.columns.get(&column).and_then(|c| c.format_range()) {
-            for y in range.start..=range.end {
-                let format = self.format_cell(column, y, false).to_replace();
-                formats.push(format);
-            }
-            selection.rects = Some(vec![Rect::new(column, range.start, column, range.end)]);
-        }
-        if !selection.is_empty() {
-            vec![Operation::SetCellFormatsSelection { selection, formats }]
+        if let Some(formats) = self.formats.copy_column(column) {
+            vec![Operation::SetCellFormatsA1 {
+                sheet_id: self.id,
+                formats,
+            }]
         } else {
             vec![]
         }
@@ -144,7 +131,7 @@ impl Sheet {
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         // remove the column's data from the sheet
-        self.formats.remove_column(self.id, column);
+        self.formats.remove_column(column);
         dbgjs!("actually save the column formatting and update transaction appropriately");
 
         self.columns.remove(&column);
@@ -354,7 +341,7 @@ mod tests {
     use crate::{
         controller::execution::TransactionSource,
         grid::{
-            formats::{format::Format, format_update::FormatUpdate},
+            formats::{Format, FormatUpdate},
             BorderStyle, CellBorderLine, CellWrap,
         },
         CellValue, DEFAULT_COLUMN_WIDTH,

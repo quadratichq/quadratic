@@ -1,6 +1,6 @@
 use crate::grid::{
     contiguous::Block,
-    formats::format::Format,
+    formats::Format,
     resize::{Resize, ResizeMap},
     CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, NumericFormatKind,
     RenderSize, SheetFormatting,

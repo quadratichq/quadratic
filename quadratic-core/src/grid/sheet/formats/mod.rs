@@ -1,17 +1,11 @@
-#![allow(unused_imports)] // TODO: remove this
-
-use super::{Sheet, SheetId};
+use super::Sheet;
 use crate::{
     controller::operations::{
         clipboard::{ClipboardOrigin, ClipboardSheetFormats},
         operation::Operation,
     },
     grid::{
-        formats::{
-            format::Format,
-            format_update::{FormatUpdate, SheetFormatUpdates},
-            Formats,
-        },
+        formats::{Formats, SheetFormatUpdates},
         GridBounds,
     },
     selection::OldSelection,
@@ -168,7 +162,9 @@ impl Sheet {
         _selection: &OldSelection,
         _clipboard_origin: &ClipboardOrigin,
     ) -> ClipboardSheetFormats {
-        todo!("this can use A1Selection instead, right?")
+        dbgjs!("sheet_formats is not implemented in sheet/formats/mod.rs");
+
+        ClipboardSheetFormats::default()
         // if selection.all {
         //     ClipboardSheetFormats {
         //         all: self.format_all.clone(),
@@ -209,7 +205,7 @@ mod tests {
     use crate::{
         controller::operations::clipboard::ClipboardOrigin,
         grid::{
-            formats::{format::Format, format_update::FormatUpdate, Formats},
+            formats::{Format, FormatUpdate, Formats},
             sheet,
         },
         selection::OldSelection,

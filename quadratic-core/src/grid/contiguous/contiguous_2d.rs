@@ -141,8 +141,24 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     }
 
     /// Removes a column and returns the values that used to inhabit it.
-    pub fn remove_column(&mut self, column: i64) -> ContiguousBlocks<T> {
-        self.0.shift_remove(column).unwrap_or_default()
+    pub fn remove_column(&mut self, column: i64) -> Option<Contiguous2D<Option<T>>> {
+        let mut removed = Contiguous2D::new();
+        if let Some(column_data) = self.0.shift_remove(column) {
+            let column_data_update = column_data.map_ref(|block| Some(block.clone()));
+            removed.restore_column(column, Some(column_data_update));
+            Some(removed)
+        } else {
+            None
+        }
+    }
+
+    /// Copies a column and returns a new Contiguous2D with the column copied.
+    pub fn copy_column(&self, column: i64) -> Option<Contiguous2D<Option<T>>> {
+        let column_data = self.0.get(column)?;
+        let column_data_update = column_data.map_ref(|block| Some(block.clone()));
+        let mut updates = Contiguous2D::new();
+        updates.restore_column(column, Some(column_data_update));
+        Some(updates)
     }
 
     /// Inserts a column and populates it with values.
@@ -163,8 +179,16 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     }
 
     /// Removes a row and returns the values that used to inhabit it.
-    pub fn remove_row(&mut self, row: i64) -> ContiguousBlocks<T> {
-        self.0.update_all_blocks(|column| column.shift_remove(row))
+    pub fn remove_row(&mut self, row: i64) -> Option<Contiguous2D<Option<T>>> {
+        let mut removed = Contiguous2D::new();
+        let row_data = self.0.update_all_blocks(|column| column.shift_remove(row));
+        if !row_data.is_empty() {
+            let row_data_update = row_data.map_ref(|block| Some(block.clone()));
+            removed.restore_row(row, Some(row_data_update));
+            Some(removed)
+        } else {
+            None
+        }
     }
 
     /// Inserts a row and populates it with values.
@@ -184,6 +208,14 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
                 )
             });
         }
+    }
+
+    /// Copies a row and returns a new Contiguous2D with the row copied.
+    pub fn copy_row(&self, row: i64) -> Option<Contiguous2D<Option<T>>> {
+        let row_data = self.0.map_ref(|column| column.get(row).map(|v| v.clone()));
+        let mut updates = Contiguous2D::new();
+        updates.restore_row(row, Some(row_data));
+        Some(updates)
     }
 
     /// Inserts a row and optionally populates it based on the row before
@@ -551,5 +583,13 @@ mod tests {
         assert_eq!(c.get(pos![B1]), Some(&Some(true)));
         assert_eq!(c.get(pos![B2]), Some(&Some(true)));
         assert_eq!(c.get(pos![C1]), None);
+    }
+
+    #[test]
+    fn test_copy_column() {
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        let copy = c.copy_column(3).unwrap();
+        assert_eq!(copy.get(pos![D2]), Some(&Some(true)));
     }
 }

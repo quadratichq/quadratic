@@ -40,12 +40,7 @@ impl Sheet {
     }
 
     #[cfg(test)]
-    pub fn test_set_format(
-        &mut self,
-        x: i64,
-        y: i64,
-        update: crate::grid::formats::format_update::FormatUpdate,
-    ) {
+    pub fn test_set_format(&mut self, x: i64, y: i64, update: crate::grid::formats::FormatUpdate) {
         self.set_format_cell(crate::grid::Pos { x, y }, &update, true);
     }
 

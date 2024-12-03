@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::GridController;
-use quadratic_core::grid::formats::format_update::FormatUpdate;
+use quadratic_core::grid::formats::FormatUpdate;
 use quadratic_core::grid::formats::Formats;
 use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::grid::{CellAlign, Grid};

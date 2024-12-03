@@ -51,7 +51,7 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{file::import, formats::format::Format, CellBorderLine},
+        grid::{file::import, formats::Format, CellBorderLine},
         CellValue,
     };
 

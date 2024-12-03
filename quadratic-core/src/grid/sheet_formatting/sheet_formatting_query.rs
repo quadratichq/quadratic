@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::{grid::Format, Pos};
+use crate::{grid::formats::Format, Pos};
 
 impl SheetFormatting {
     /// Returns the maximum value in the column for which formatting exists.

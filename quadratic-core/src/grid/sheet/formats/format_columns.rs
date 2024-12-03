@@ -1,15 +1,12 @@
-use chrono::Utc;
-
 use crate::{
     controller::operations::operation::Operation,
     grid::{
-        formats::{format::Format, format_update::FormatUpdate, Formats},
-        CellWrap, Sheet,
+        formats::{Format, Formats},
+        Sheet,
     },
-    selection::OldSelection,
-    Pos, Rect,
+    Pos,
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 impl Sheet {
     /// Gets a format for a column, returning Format::default if not set.

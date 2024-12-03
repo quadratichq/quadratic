@@ -1,3 +1,5 @@
+// todo: maybe delete this file?
+
 // todo: fix this
 #![allow(non_local_definitions)]
 
@@ -8,8 +10,9 @@ use proptest::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
-use super::Format;
 use crate::RunLengthEncoding;
+
+use super::formats::Format;
 
 /// Array of a single cell formatting attribute.
 ///

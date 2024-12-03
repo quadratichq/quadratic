@@ -79,7 +79,7 @@ mod tests {
     use crate::controller::operations::operation::Operation;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
-    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::grid::formats::FormatUpdate;
     use crate::grid::formats::Formats;
     use crate::grid::js_types::JsRowHeight;
     use crate::grid::{

@@ -5,7 +5,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use super::cells_accessed::JsCellsAccessed;
-use super::formats::format::Format;
+use super::formats::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
@@ -300,7 +300,7 @@ mod test {
     use serial_test::parallel;
 
     use super::JsNumber;
-    use crate::grid::formats::format::Format;
+    use crate::grid::formats::Format;
     use crate::grid::NumericFormat;
 
     #[test]
