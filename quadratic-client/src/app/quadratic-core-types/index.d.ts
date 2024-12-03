@@ -45,7 +45,7 @@ export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "S
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
 export interface JsReturnInfo { line_number: number | null, output_type: string | null, }
 export interface JsRowHeight { row: bigint, height: number, }
-export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
+export interface JsSheetFill { x: number, y: number, w: number | null, h: number | null, color: string, }
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
 export type JumpDirection = "Up" | "Down" | "Left" | "Right";

@@ -43,10 +43,10 @@ export class JavascriptAPI {
     const height = results.y + results.h;
     const width = results.x + results.w;
 
-    for (let y = results.y; y < height; y++) {
+    for (let x = results.x; x < width; x++) {
       const row: any[] = [];
 
-      for (let x = results.x; x < width; x++) {
+      for (let y = results.y; y < height; y++) {
         const entry = results.cells?.find((r) => Number(r.x) === x && Number(r.y) === y);
         const typed = entry ? this.convertType(entry) : undefined;
         row.push(typed);
