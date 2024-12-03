@@ -175,7 +175,7 @@ impl Sheet {
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
         // remove the row's formats from the sheet
-        self.formats.remove_row(row);
+        self.formats.remove_row(self.id, row);
         // TODO: only update fill cells if necessary due to removed formatting?
         transaction.fill_cells.insert(self.id);
 
@@ -220,7 +220,7 @@ impl Sheet {
         }
 
         // update the indices of all column-based formats impacted by the deletion
-        self.formats.remove_row(row); // TODO: save formats returned here
+        self.formats.remove_row(self.id, row); // TODO: save formats returned here
         dbgjs!("actually save the row formatting and update transaction appropriately");
 
         // mark hashes of new rows dirty

@@ -144,7 +144,7 @@ impl Sheet {
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         // remove the column's data from the sheet
-        self.formats.remove_column(column);
+        self.formats.remove_column(self.id, column);
         dbgjs!("actually save the column formatting and update transaction appropriately");
 
         self.columns.remove(&column);
