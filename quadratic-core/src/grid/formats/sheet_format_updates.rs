@@ -155,13 +155,13 @@ mod tests {
 
     #[test]
     fn test_is_default() {
-        let format = FormatUpdate::default();
-        assert!(format.is_default());
+        let mut s = SheetFormatUpdates::default();
+        assert!(s.is_default());
 
-        let format = FormatUpdate {
-            align: Some(None),
-            ..Default::default()
-        };
-        assert!(format.is_default());
+        s.align = Some(Contiguous2D::new_from_selection(
+            &A1Selection::test_a1("A1:B2"),
+            Some(CellAlign::Center),
+        ));
+        assert!(!s.is_default());
     }
 }

@@ -87,72 +87,12 @@ impl Sheet {
         &mut self,
         formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
-        let reverse_formats = SheetFormatUpdates {
-            align: formats
-                .align
-                .clone()
-                .map(|value| self.formats.align.set_from(value)),
-            vertical_align: formats
-                .vertical_align
-                .clone()
-                .map(|value| self.formats.vertical_align.set_from(value)),
-            wrap: formats
-                .wrap
-                .clone()
-                .map(|value| self.formats.wrap.set_from(value)),
-            numeric_format: formats
-                .numeric_format
-                .clone()
-                .map(|value| self.formats.numeric_format.set_from(value)),
-            numeric_decimals: formats
-                .numeric_decimals
-                .clone()
-                .map(|value| self.formats.numeric_decimals.set_from(value)),
-            numeric_commas: formats
-                .numeric_commas
-                .clone()
-                .map(|value| self.formats.numeric_commas.set_from(value)),
-            bold: formats
-                .bold
-                .clone()
-                .map(|value| self.formats.bold.set_from(value)),
-            italic: formats
-                .italic
-                .clone()
-                .map(|value| self.formats.italic.set_from(value)),
-            underline: formats
-                .underline
-                .clone()
-                .map(|value| self.formats.underline.set_from(value)),
-            text_color: formats
-                .text_color
-                .clone()
-                .map(|value| self.formats.text_color.set_from(value)),
-            date_time: formats
-                .date_time
-                .clone()
-                .map(|value| self.formats.date_time.set_from(value)),
-            fill_color: formats
-                .fill_color
-                .clone()
-                .map(|value| self.formats.fill_color.set_from(value)),
-            render_size: formats
-                .render_size
-                .clone()
-                .map(|value| self.formats.render_size.set_from(value)),
-            strike_through: formats
-                .strike_through
-                .clone()
-                .map(|value| self.formats.strike_through.set_from(value)),
-        };
-
+        let reverse_formats = self.formats.apply_updates(formats);
         let reverse_op = Operation::SetCellFormatsA1 {
             sheet_id: self.id,
             formats: reverse_formats,
         };
-
         let (dirty_hashes, rows_changed) = self.formats_transaction_changes(formats);
-
         (vec![reverse_op], dirty_hashes, rows_changed)
     }
 
