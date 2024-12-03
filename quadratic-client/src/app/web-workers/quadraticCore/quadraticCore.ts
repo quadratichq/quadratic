@@ -609,7 +609,7 @@ class QuadraticCore {
     });
   }
 
-  setCellBold(selection: string, bold: boolean, cursor?: string) {
+  setBoldSelection(selection: string, bold: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellBold',
       selection,
@@ -618,7 +618,7 @@ class QuadraticCore {
     });
   }
 
-  setCellFillColor(selection: string, fillColor?: string, cursor?: string) {
+  setFillColorSelection(selection: string, fillColor?: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellFillColor',
       selection,
@@ -627,7 +627,7 @@ class QuadraticCore {
     });
   }
 
-  setCellItalic(selection: string, italic: boolean, cursor?: string) {
+  setItalicSelection(selection: string, italic: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellItalic',
       selection,
@@ -636,7 +636,7 @@ class QuadraticCore {
     });
   }
 
-  setCellTextColor(selection: string, color?: string, cursor?: string) {
+  setTextColorSelection(selection: string, color?: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellTextColor',
       selection,
@@ -645,7 +645,7 @@ class QuadraticCore {
     });
   }
 
-  setCellUnderline(selection: string, underline: boolean, cursor?: string) {
+  setUnderlineSelection(selection: string, underline: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellUnderline',
       selection,
@@ -654,7 +654,7 @@ class QuadraticCore {
     });
   }
 
-  setCellStrikeThrough(selection: string, strikeThrough: boolean, cursor?: string) {
+  setStrikeThroughSelection(selection: string, strikeThrough: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellStrikeThrough',
       selection,
@@ -663,7 +663,7 @@ class QuadraticCore {
     });
   }
 
-  setCellAlign(selection: string, align: CellAlign, cursor?: string) {
+  setAlignSelection(selection: string, align: CellAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellAlign',
       selection,
@@ -672,7 +672,7 @@ class QuadraticCore {
     });
   }
 
-  setCellVerticalAlign(selection: string, verticalAlign: CellVerticalAlign, cursor?: string) {
+  setVerticalAlignSelection(selection: string, verticalAlign: CellVerticalAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellVerticalAlign',
       selection,
@@ -681,7 +681,7 @@ class QuadraticCore {
     });
   }
 
-  setCellWrap(selection: string, wrap: CellWrap, cursor?: string) {
+  setWrapSelection(selection: string, wrap: CellWrap, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellWrap',
       selection,
@@ -715,7 +715,7 @@ class QuadraticCore {
     });
   }
 
-  removeCellNumericFormat(selection: string, cursor?: string) {
+  removeNumericFormatSelection(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreRemoveCellNumericFormat',
       selection,
@@ -732,7 +732,7 @@ class QuadraticCore {
     });
   }
 
-  clearFormatting(selection: string, cursor?: string) {
+  clearFormattingSelection(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreClearFormatting',
       selection,
@@ -740,7 +740,7 @@ class QuadraticCore {
     });
   }
 
-  setCommas(selection: string, commas: boolean, cursor?: string) {
+  setCommasSelection(selection: string, commas: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCommas',
       selection,
@@ -749,7 +749,7 @@ class QuadraticCore {
     });
   }
 
-  setDateTimeFormat(selection: string, format: string, cursor: string) {
+  setDateTimeFormatSelection(selection: string, format: string, cursor: string) {
     this.send({
       type: 'clientCoreSetDateTimeFormat',
       selection,

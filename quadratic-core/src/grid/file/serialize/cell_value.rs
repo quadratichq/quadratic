@@ -99,18 +99,14 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::{controller::GridController, grid::file, selection::OldSelection};
+    use crate::{controller::GridController, grid::file, A1Selection};
 
     #[test]
     fn test_import_and_export_date_time() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_date_time_format(
-            OldSelection::pos(0, 0, sheet_id),
-            Some("%H".to_string()),
-            None,
-        )
-        .unwrap();
+        gc.set_date_time_format(&A1Selection::test_a1("A1"), Some("%H".to_string()), None)
+            .unwrap();
         let grid = gc.grid().clone();
         let exported = file::export(grid).unwrap();
         let imported = file::import(exported).unwrap();

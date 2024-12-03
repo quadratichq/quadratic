@@ -30,12 +30,11 @@ mod tests {
     use crate::{
         array,
         grid::{BorderSelection, BorderStyle, CodeCellLanguage, CodeCellValue},
-        selection::OldSelection,
         test_util::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
             assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        CellValue, Pos, SheetPos, SheetRect,
+        A1Selection, CellValue, OldSelection, Pos, SheetPos, SheetRect,
     };
     use serial_test::parallel;
 
@@ -84,7 +83,11 @@ mod tests {
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
                         grid_controller
-                            .set_bold_selection(OldSelection::sheet_pos(sheet_pos), true, None)
+                            .set_bold_selection(
+                                &A1Selection::from_single_cell(sheet_pos),
+                                true,
+                                None,
+                            )
                             .unwrap();
                     }
                 }
@@ -92,7 +95,7 @@ mod tests {
                 if let Some(fill_color) = fill_colors.get(count) {
                     grid_controller
                         .set_fill_color_selection(
-                            OldSelection::sheet_pos(sheet_pos),
+                            &A1Selection::from_single_cell(sheet_pos),
                             Some(fill_color.to_lowercase()),
                             None,
                         )
