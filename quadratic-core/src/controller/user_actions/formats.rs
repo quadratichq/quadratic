@@ -33,6 +33,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -50,6 +51,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -67,6 +69,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -84,6 +87,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -101,6 +105,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -124,6 +129,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -142,6 +148,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -159,6 +166,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -176,6 +184,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -193,6 +202,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -209,6 +219,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -234,6 +245,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -251,6 +263,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -268,6 +281,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
@@ -285,6 +299,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, format_update),
         }];
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);

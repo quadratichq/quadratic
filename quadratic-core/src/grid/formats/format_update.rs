@@ -4,15 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use super::format::Format;
 use crate::grid::{
-    CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, RenderSize, SheetId,
+    CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, RenderSize,
 };
 use crate::{A1Selection, Rect};
 
 /// Used to store formatting changes to apply to an entire sheet.
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
 pub struct SheetFormatUpdates {
-    pub sheet_id: SheetId,
-
     pub align: Option<Contiguous2D<Option<CellAlign>>>,
     pub vertical_align: Option<Contiguous2D<Option<CellVerticalAlign>>>,
     pub wrap: Option<Contiguous2D<Option<CellWrap>>>,
@@ -33,7 +31,6 @@ impl SheetFormatUpdates {
     /// affected cell.
     pub fn from_selection(selection: &A1Selection, update: FormatUpdate) -> Self {
         Self {
-            sheet_id: selection.sheet_id,
             align: update
                 .align
                 .map(|update| Contiguous2D::<CellAlign>::new_from_selection(selection, update)),
@@ -43,9 +40,9 @@ impl SheetFormatUpdates {
             wrap: update
                 .wrap
                 .map(|update| Contiguous2D::<CellWrap>::new_from_selection(selection, update)),
-            numeric_format: update.numeric_format.map(|update| {
-                Contiguous2D::<NumericFormat>::new_from_selection(selection, update)
-            }),
+            numeric_format: update
+                .numeric_format
+                .map(|update| Contiguous2D::<NumericFormat>::new_from_selection(selection, update)),
             numeric_decimals: update
                 .numeric_decimals
                 .map(|update| Contiguous2D::<i16>::new_from_selection(selection, update)),

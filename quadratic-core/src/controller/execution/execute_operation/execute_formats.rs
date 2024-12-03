@@ -176,15 +176,14 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        unwrap_op!(let SetCellFormatsA1 { formats } = op);
+        unwrap_op!(let SetCellFormatsA1 { sheet_id,formats } = op);
 
-        transaction.generate_thumbnail |= self.thumbnail_dirty_formats(&formats);
+        transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
 
-        let Some(sheet) = self.try_sheet_mut(formats.sheet_id) else {
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
             return; // sheet may have been deleted
         };
 
-        let sheet_id = formats.sheet_id;
         let (reverse_operations, hashes, rows) = sheet.set_formats_a1(&formats);
         if reverse_operations.is_empty() {
             return;
@@ -207,7 +206,7 @@ impl GridController {
 
         transaction
             .forward_operations
-            .push(Operation::SetCellFormatsA1 { formats });
+            .push(Operation::SetCellFormatsA1 { sheet_id, formats });
 
         transaction
             .reverse_operations

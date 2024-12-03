@@ -94,7 +94,6 @@ impl Sheet {
         formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
         let reverse_formats = SheetFormatUpdates {
-            sheet_id: formats.sheet_id,
             align: formats
                 .align
                 .clone()
@@ -154,6 +153,7 @@ impl Sheet {
         };
 
         let reverse_op = Operation::SetCellFormatsA1 {
+            sheet_id: self.id,
             formats: reverse_formats,
         };
 
