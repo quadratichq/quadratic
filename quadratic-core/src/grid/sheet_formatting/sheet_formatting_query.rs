@@ -24,7 +24,7 @@ impl SheetFormatting {
             self.strike_through.column_max(column),
         ]
         .iter()
-        .filter_map(|&x| Some(x))
+        .copied()
         .max()
     }
 

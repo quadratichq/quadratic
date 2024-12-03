@@ -232,7 +232,7 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
 
     /// Copies a row and returns a new Contiguous2D with the row copied.
     pub fn copy_row(&self, row: i64) -> Option<Contiguous2D<Option<T>>> {
-        let row_data = self.0.map_ref(|column| column.get(row).map(|v| v.clone()));
+        let row_data = self.0.map_ref(|column| column.get(row).cloned());
         let mut updates = Contiguous2D::new();
         updates.restore_row(row, Some(row_data));
         Some(updates)

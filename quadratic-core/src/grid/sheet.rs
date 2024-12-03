@@ -438,15 +438,14 @@ impl Sheet {
         let mut rows = vec![];
         if let Some((start, end)) = self.column_bounds(x, true) {
             for y in start..=end {
-                if self.cell_value(Pos { x, y }).is_some() {
-                    if self
+                if self.cell_value(Pos { x, y }).is_some()
+                    && self
                         .formats
                         .wrap
                         .get(Pos { x, y })
                         .is_some_and(|wrap| wrap == &CellWrap::Wrap)
-                    {
-                        rows.push(y);
-                    }
+                {
+                    rows.push(y);
                 }
             }
         }
@@ -457,16 +456,15 @@ impl Sheet {
         let mut rows = vec![];
         for y in rect.y_range() {
             for x in rect.x_range() {
-                if self.cell_value(Pos { x, y }).is_some() {
-                    if self
+                if self.cell_value(Pos { x, y }).is_some()
+                    && self
                         .formats
                         .wrap
                         .get(Pos { x, y })
                         .is_some_and(|wrap| wrap == &CellWrap::Wrap)
-                    {
-                        rows.push(y);
-                        break;
-                    }
+                {
+                    rows.push(y);
+                    break;
                 }
             }
         }
