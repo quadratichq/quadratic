@@ -8,7 +8,9 @@ use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
-use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
+use crate::grid::{
+    CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind, RenderSize,
+};
 use crate::A1Selection;
 
 impl GridController {
@@ -22,7 +24,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_align_selection(
+    pub(crate) fn set_align(
         &mut self,
         selection: &A1Selection,
         align: CellAlign,
@@ -40,7 +42,25 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_vertical_align_selection(
+    pub(crate) fn set_render_size(
+        &mut self,
+        selection: &A1Selection,
+        render_size: Option<RenderSize>,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let format_update = FormatUpdate {
+            render_size: Some(render_size),
+            ..Default::default()
+        };
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id: selection.sheet_id,
+            formats: SheetFormatUpdates::from_selection(selection, format_update),
+        }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_vertical_align(
         &mut self,
         selection: &A1Selection,
         vertical_align: CellVerticalAlign,
@@ -58,7 +78,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_bold_selection(
+    pub(crate) fn set_bold(
         &mut self,
         selection: &A1Selection,
         bold: bool,
@@ -76,7 +96,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_italic_selection(
+    pub(crate) fn set_italic(
         &mut self,
         selection: &A1Selection,
         italic: bool,
@@ -94,7 +114,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_cell_wrap_selection(
+    pub(crate) fn set_cell_wrap(
         &mut self,
         selection: &A1Selection,
         wrap: CellWrap,
@@ -114,7 +134,7 @@ impl GridController {
 
     /// Changes the Selection to use a currency format and updates the decimals
     /// to 2.
-    pub(crate) fn set_currency_selection(
+    pub(crate) fn set_currency(
         &mut self,
         selection: &A1Selection,
         symbol: String,
@@ -136,7 +156,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_numeric_format_selection(
+    pub(crate) fn set_numeric_format(
         &mut self,
         selection: &A1Selection,
         kind: NumericFormatKind,
@@ -155,7 +175,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_commas_selection(
+    pub(crate) fn set_commas(
         &mut self,
         selection: &A1Selection,
         commas: bool,
@@ -173,7 +193,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_text_color_selection(
+    pub(crate) fn set_text_color(
         &mut self,
         selection: &A1Selection,
         color: Option<String>,
@@ -191,7 +211,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_fill_color_selection(
+    pub(crate) fn set_fill_color(
         &mut self,
         selection: &A1Selection,
         color: Option<String>,
@@ -209,7 +229,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn remove_number_formatting_selection(
+    pub(crate) fn remove_number_formatting(
         &mut self,
         selection: &A1Selection,
         cursor: Option<String>,
@@ -226,10 +246,10 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn change_decimal_places_selection(
+    pub(crate) fn change_decimal_places(
         &mut self,
         selection: &A1Selection,
-        delta: u32,
+        delta: i32,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let Some(sheet) = self.try_sheet(selection.sheet_id) else {
@@ -270,7 +290,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_underline_selection(
+    pub(crate) fn set_underline(
         &mut self,
         selection: &A1Selection,
         underline: bool,
@@ -288,7 +308,7 @@ impl GridController {
         Ok(())
     }
 
-    pub(crate) fn set_strike_through_selection(
+    pub(crate) fn set_strike_through(
         &mut self,
         selection: &A1Selection,
         strike_through: bool,
@@ -311,14 +331,14 @@ impl GridController {
 #[serial_test::parallel]
 mod test {
     use crate::controller::GridController;
-    use crate::grid::CellWrap;
+    use crate::grid::{CellWrap, RenderSize};
     use crate::{A1Selection, Pos};
 
     #[test]
     fn test_set_align_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_align_selection(
+        gc.set_align(
             &A1Selection::test_a1("A1:B2"),
             crate::grid::CellAlign::Center,
             None,
@@ -336,7 +356,7 @@ mod test {
     fn test_set_vertical_align_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_vertical_align_selection(
+        gc.set_vertical_align(
             &A1Selection::test_a1("A1:B2"),
             crate::grid::CellVerticalAlign::Middle,
             None,
@@ -358,7 +378,7 @@ mod test {
     fn test_set_bold_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_bold_selection(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_bold(&A1Selection::test_a1("A1:B2"), true, None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -372,7 +392,7 @@ mod test {
     fn test_set_cell_wrap_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_wrap_selection(&A1Selection::test_a1("A1:B2"), CellWrap::Clip, None)
+        gc.set_cell_wrap(&A1Selection::test_a1("A1:B2"), CellWrap::Clip, None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -387,8 +407,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let selection = A1Selection::from_xy(1, 1, sheet_id);
-        gc.set_currency_selection(&selection, "€".to_string(), None)
-            .unwrap();
+        gc.set_currency(&selection, "€".to_string(), None).unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -408,7 +427,7 @@ mod test {
     fn test_set_numeric_format_exponential() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_numeric_format_selection(
+        gc.set_numeric_format(
             &A1Selection::test_a1("A1:B2"),
             crate::grid::NumericFormatKind::Exponential,
             None,
@@ -434,7 +453,7 @@ mod test {
     fn test_set_numeric_format_percentage() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_numeric_format_selection(
+        gc.set_numeric_format(
             &A1Selection::test_a1("A1:B2"),
             crate::grid::NumericFormatKind::Percentage,
             None,
@@ -460,7 +479,7 @@ mod test {
     fn test_toggle_commas_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_commas_selection(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_commas(&A1Selection::test_a1("A1:B2"), true, None)
             .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -472,7 +491,7 @@ mod test {
             Some(true)
         );
 
-        gc.set_commas_selection(&A1Selection::test_a1("A1:B2"), false, None)
+        gc.set_commas(&A1Selection::test_a1("A1:B2"), false, None)
             .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -489,7 +508,7 @@ mod test {
     fn test_set_italic_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_italic_selection(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_italic(&A1Selection::test_a1("A1:B2"), true, None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -507,7 +526,7 @@ mod test {
     fn test_set_text_color_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_text_color_selection(
+        gc.set_text_color(
             &A1Selection::test_a1("A1:B2"),
             Some("red".to_string()),
             None,
@@ -529,7 +548,7 @@ mod test {
     fn test_set_fill_color_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_fill_color_selection(
+        gc.set_fill_color(
             &A1Selection::test_a1("A1:B2"),
             Some("blue".to_string()),
             None,
@@ -553,7 +572,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         // normal case
-        gc.change_decimal_places_selection(&A1Selection::test_a1("A1:B2"), 2, None)
+        gc.change_decimal_places(&A1Selection::test_a1("A1:B2"), 2, None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -571,7 +590,7 @@ mod test {
     fn test_set_underline_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_underline_selection(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_underline(&A1Selection::test_a1("A1:B2"), true, None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -582,7 +601,7 @@ mod test {
     fn test_set_strike_through_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_strike_through_selection(&A1Selection::test_a1("A1:B2"), true, None)
+        gc.set_strike_through(&A1Selection::test_a1("A1:B2"), true, None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -593,7 +612,7 @@ mod test {
     fn test_clear_format() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_text_color_selection(
+        gc.set_text_color(
             &A1Selection::test_a1("A1:B2"),
             Some("red".to_string()),
             None,
@@ -628,7 +647,7 @@ mod test {
     fn test_clear_format_column() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_text_color_selection(&A1Selection::test_a1("A"), Some("red".to_string()), None)
+        gc.set_text_color(&A1Selection::test_a1("A"), Some("red".to_string()), None)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -647,7 +666,7 @@ mod test {
     fn test_set_format_column_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_fill_color_selection(
+        gc.set_fill_color(
             &A1Selection::test_a1("1,3,A"),
             Some("red".to_string()),
             None,
@@ -679,6 +698,30 @@ mod test {
                 .unwrap_or_default()
                 .date_time,
             Some("yyyy-mm-dd".to_string())
+        );
+    }
+
+    #[test]
+    fn test_set_render_size_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_render_size(
+            &A1Selection::test_a1("A1:B2"),
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.format_column(1).render_size,
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string()
+            })
         );
     }
 }

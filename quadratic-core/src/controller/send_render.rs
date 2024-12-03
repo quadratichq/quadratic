@@ -538,7 +538,12 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_fill_color((0, 0, 1, 1, sheet_id).into(), Some("red".to_string()), None);
+        gc.set_fill_color(
+            &A1Selection::from_rect(SheetRect::from_numbers(0, 0, 1, 1, sheet_id)),
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
         expect_js_call(
             "jsSheetFills",
             format!(
@@ -548,11 +553,12 @@ mod test {
             true,
         );
 
-        gc.set_cell_fill_color(
-            (100, 100, 1, 1, sheet_id).into(),
+        gc.set_fill_color(
+            &A1Selection::from_rect(SheetRect::from_numbers(100, 100, 1, 1, sheet_id)),
             Some("green".to_string()),
             None,
-        );
+        )
+        .unwrap();
         expect_js_call(
             "jsSheetFills",
             format!(
@@ -617,7 +623,7 @@ mod test {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id.to_string();
-        let _ = gc.calculation_complete(JsCodeResult {
+        gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
             std_err: None,
@@ -627,16 +633,18 @@ mod test {
             line_number: None,
             output_display_type: None,
             cancel_compute: None,
-        });
+        })
+        .unwrap();
 
-        gc.set_cell_render_size(
-            (0, 0, 1, 1, sheet_id).into(),
+        gc.set_render_size(
+            &A1Selection::from_rect((0, 0, 1, 1, sheet_id).into()),
             Some(RenderSize {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
             None,
-        );
+        )
+        .unwrap();
 
         expect_js_call(
             "jsUpdateHtml",

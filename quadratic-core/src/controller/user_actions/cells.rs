@@ -248,7 +248,7 @@ mod test {
         };
         gc.set_cell_value(sheet_pos, String::from("1.12345678"), None);
         let selection = A1Selection::from_single_cell(sheet_pos);
-        let _ = gc.set_currency_selection(&selection, "$".to_string(), None);
+        let _ = gc.set_currency(&selection, "$".to_string(), None);
         gc.clear_formatting(&selection, None);
         let cells = gc
             .sheet(sheet_id)
@@ -273,7 +273,7 @@ mod test {
         };
         gc.set_cell_value(sheet_pos, String::from("1.12345678"), None);
         let selection = A1Selection::from_single_cell(sheet_pos);
-        let _ = gc.set_currency_selection(&selection, "$".to_string(), None);
+        let _ = gc.set_currency(&selection, "$".to_string(), None);
         gc.delete_values_and_formatting(&selection, None);
         let cells = gc
             .sheet(sheet_id)

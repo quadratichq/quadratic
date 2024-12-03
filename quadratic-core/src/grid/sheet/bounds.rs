@@ -999,11 +999,12 @@ mod test {
             sheet.data_bounds,
             GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
         );
-        gc.set_cell_bold(
-            SheetRect::from_numbers(3, 5, 1, 1, sheet_id),
-            Some(true),
+        gc.set_bold(
+            &A1Selection::from_rect(SheetRect::from_numbers(3, 5, 1, 1, sheet_id)),
+            true,
             None,
-        );
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

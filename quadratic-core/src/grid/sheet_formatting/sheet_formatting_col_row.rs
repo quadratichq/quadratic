@@ -1,3 +1,5 @@
+//! Mutating sheet formatting for columns and rows.
+
 use super::*;
 
 use crate::{grid::formats::SheetFormatUpdates, CopyFormats};

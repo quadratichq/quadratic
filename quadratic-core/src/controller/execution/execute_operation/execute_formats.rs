@@ -100,25 +100,25 @@ mod test {
     use super::*;
     use crate::grid::{CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult, RenderSize};
     use crate::wasm_bindings::js::expect_js_call;
-    use crate::{CellValue, Pos, SheetRect, Value};
+    use crate::{A1Selection, CellValue, Pos, SheetRect, Value};
 
     #[test]
     #[serial]
-    fn execute_set_formats_render_size() {
+    fn test_execute_set_formats_render_size() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
 
         sheet.test_set_code_run_single(
-            0,
-            0,
+            1,
+            1,
             crate::CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Javascript,
                 code: "code".to_string(),
             }),
         );
         sheet.set_code_run(
-            Pos { x: 0, y: 0 },
+            Pos { x: 1, y: 1 },
             Some(CodeRun {
                 formatted_code_string: None,
                 spill_error: false,
@@ -133,19 +133,20 @@ mod test {
             }),
         );
 
-        gc.set_cell_render_size(
-            SheetRect::from_numbers(0, 0, 1, 1, sheet_id),
+        gc.set_render_size(
+            &A1Selection::from_rect(SheetRect::from_numbers(1, 1, 2, 2, sheet_id)),
             Some(RenderSize {
                 w: "1".to_string(),
                 h: "2".to_string(),
             }),
             None,
-        );
+        )
+        .unwrap();
         let args = format!(
             "{},{},{},{:?},{:?},{:?}",
             sheet_id,
-            0,
-            0,
+            1,
+            1,
             true,
             Some("1".to_string()),
             Some("2".to_string())

@@ -1,3 +1,5 @@
+//! Updating sheet formatting.
+
 use crate::grid::formats::SheetFormatUpdates;
 
 use super::*;

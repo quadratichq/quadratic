@@ -1,3 +1,5 @@
+//! Querying sheet formatting.
+
 use super::*;
 
 use crate::{grid::formats::Format, Pos};

@@ -246,7 +246,7 @@ mod test {
             "10 + 10".to_string(),
             None,
         );
-        gc.set_fill_color_selection(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
+        gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
             .unwrap();
 
         gc.set_borders_selection(

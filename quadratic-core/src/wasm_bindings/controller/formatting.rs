@@ -41,7 +41,7 @@ impl GridController {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let align = serde_wasm_bindgen::from_value(align).map_err(|_| "Invalid align")?;
-        self.set_align_selection(&selection, align, cursor)
+        self.set_align(&selection, align, cursor)
     }
 
     /// Sets cell vertical align formatting given as an optional [`CellVerticalAlign`].
@@ -56,7 +56,7 @@ impl GridController {
             .map_err(|_| "Unable to parse A1Selection")?;
         let vertical_align =
             serde_wasm_bindgen::from_value(vertical_align).map_err(|_| "Invalid vertical align")?;
-        self.set_vertical_align_selection(&selection, vertical_align, cursor)
+        self.set_vertical_align(&selection, vertical_align, cursor)
     }
 
     /// Sets cell wrap formatting given as an optional [`CellWrap`].
@@ -70,7 +70,7 @@ impl GridController {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let wrap = serde_wasm_bindgen::from_value(wrap).map_err(|_| "Invalid wrap")?;
-        self.set_cell_wrap_selection(&selection, wrap, cursor)
+        self.set_cell_wrap(&selection, wrap, cursor)
     }
 
     /// Sets cells numeric_format to normal
@@ -82,7 +82,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.remove_number_formatting_selection(&selection, cursor)?;
+        self.remove_number_formatting(&selection, cursor)?;
         Ok(())
     }
 
@@ -96,7 +96,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_currency_selection(&selection, symbol, cursor)?;
+        self.set_currency(&selection, symbol, cursor)?;
         Ok(())
     }
 
@@ -109,7 +109,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_numeric_format_selection(&selection, NumericFormatKind::Percentage, None, cursor)?;
+        self.set_numeric_format(&selection, NumericFormatKind::Percentage, None, cursor)?;
         Ok(())
     }
 
@@ -122,12 +122,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_numeric_format_selection(
-            &selection,
-            NumericFormatKind::Exponential,
-            None,
-            cursor,
-        )?;
+        self.set_numeric_format(&selection, NumericFormatKind::Exponential, None, cursor)?;
         Ok(())
     }
 
@@ -141,7 +136,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_commas_selection(&selection, commas, cursor)?;
+        self.set_commas(&selection, commas, cursor)?;
         Ok(())
     }
 
@@ -155,7 +150,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_bold_selection(&selection, bold, cursor)?;
+        self.set_bold(&selection, bold, cursor)?;
         Ok(())
     }
     /// Sets cell italic formatting given as an optional [`bool`].
@@ -168,7 +163,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_italic_selection(&selection, italic, cursor)?;
+        self.set_italic(&selection, italic, cursor)?;
         Ok(())
     }
 
@@ -182,7 +177,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_text_color_selection(&selection, text_color, cursor)?;
+        self.set_text_color(&selection, text_color, cursor)?;
         Ok(())
     }
 
@@ -196,7 +191,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_fill_color_selection(&selection, fill_color, cursor)?;
+        self.set_fill_color(&selection, fill_color, cursor)?;
         Ok(())
     }
 
@@ -223,8 +218,11 @@ impl GridController {
             None
         };
 
-        self.set_cell_render_size(rect.to_sheet_rect(sheet_id), value, cursor);
-        Ok(())
+        self.set_render_size(
+            &A1Selection::from_rect(rect.to_sheet_rect(sheet_id)),
+            value,
+            cursor,
+        )
     }
 
     #[wasm_bindgen(js_name = "setDateTimeFormatSelection")]
@@ -236,7 +234,8 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_date_time_format(&selection, date_time, cursor)
+        self.set_date_time_format(&selection, date_time, cursor)?;
+        Ok(())
     }
 
     /// Changes cell numeric decimals.
@@ -244,12 +243,12 @@ impl GridController {
     pub fn js_change_decimal_places_selection(
         &mut self,
         selection: String,
-        delta: u32,
+        delta: i32,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.change_decimal_places_selection(&selection, delta, cursor)?;
+        self.change_decimal_places(&selection, delta, cursor)?;
         Ok(())
     }
 
@@ -263,7 +262,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_underline_selection(&selection, underline, cursor)?;
+        self.set_underline(&selection, underline, cursor)?;
         Ok(())
     }
 
@@ -277,7 +276,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_strike_through_selection(&selection, strike_through, cursor)?;
+        self.set_strike_through(&selection, strike_through, cursor)?;
         Ok(())
     }
 
