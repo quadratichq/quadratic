@@ -149,8 +149,8 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            formats::FormatUpdate, js_types::CellFormatSummary, BorderSelection, BorderStyle,
-            CellBorderLine, CodeCellLanguage, CodeCellValue, SheetId,
+            js_types::CellFormatSummary, BorderSelection, BorderStyle, CellBorderLine,
+            CodeCellLanguage, CodeCellValue, SheetId,
         },
         CellValue, Pos, Rect, SheetPos, SheetRect,
     };
@@ -904,22 +904,11 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_format_cell(
-            Pos { x: 1, y: 2 },
-            &FormatUpdate {
-                bold: Some(Some(true)),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 3, y: 4 },
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
+        sheet.formats.bold.set(Pos { x: 1, y: 2 }, Some(true));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 3, y: 4 }, Some("red".to_string()));
         let selection = A1Selection::from_rect(SheetRect::new(0, 0, 4, 4, sheet_id));
         let JsClipboard { plain_text, html } = sheet.copy_to_clipboard(&selection).unwrap();
 

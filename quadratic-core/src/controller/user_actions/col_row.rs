@@ -193,7 +193,7 @@ mod tests {
                 1,
             ),
         );
-        sheet.set_format_cell(
+        sheet.formats.set_format(
             Pos::new(1, 1),
             &FormatUpdate {
                 fill_color: Some(Some("red".to_string())),

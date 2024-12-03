@@ -140,6 +140,13 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
         }
     }
 
+    /// Returns the upper bound on the values in the given row, or `None` if it
+    /// is unbounded.
+    pub fn row_max(&self, row: i64) -> Option<i64> {
+        dbgjs!("todo: contiguous_2d.row_max");
+        None
+    }
+
     /// Removes a column and returns the values that used to inhabit it.
     pub fn remove_column(&mut self, column: i64) -> Option<Contiguous2D<Option<T>>> {
         let mut removed = Contiguous2D::new();
@@ -282,6 +289,28 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
             }
         }
         false
+    }
+
+    /// Checks if the column is empty
+    pub fn is_column_empty(&self, column: i64) -> bool {
+        self.column_max(column).is_none()
+    }
+
+    /// Checks if the row is empty
+    pub fn is_row_empty(&self, row: i64) -> bool {
+        self.row_max(row).is_none()
+    }
+
+    /// Checks if any cell in the column satisfies the predicate
+    pub fn check_col(&self, col: i64, f: impl Fn(&T) -> bool) -> bool {
+        self.0
+            .get(col)
+            .is_some_and(|column| column.0.values().any(|block| f(&block.value)))
+    }
+
+    /// Checks if any cell in the row satisfies the predicate
+    pub fn check_row(&self, row: i64, f: impl Fn(&T) -> bool) -> bool {
+        todo!()
     }
 }
 

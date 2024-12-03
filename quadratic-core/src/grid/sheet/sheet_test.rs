@@ -39,11 +39,6 @@ impl Sheet {
         self.recalculate_bounds();
     }
 
-    #[cfg(test)]
-    pub fn test_set_format(&mut self, x: i64, y: i64, update: crate::grid::formats::FormatUpdate) {
-        self.set_format_cell(crate::grid::Pos { x, y }, &update, true);
-    }
-
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
     #[cfg(test)]
     pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: crate::grid::CellValue) {

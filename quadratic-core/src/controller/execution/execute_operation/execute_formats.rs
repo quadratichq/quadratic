@@ -3,59 +3,12 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 
 impl GridController {
-    /// Executes SetCellFormatsSelection operation.
-    pub fn execute_set_cell_formats_selection(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        op: Operation,
-    ) {
-        if let Operation::SetCellFormatsSelection { selection, formats } = op {
-            if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-                let (reverse_operations, hashes, rows) =
-                    sheet.set_formats_selection(&selection, &formats);
-                if reverse_operations.is_empty() {
-                    return;
-                }
-
-                if !transaction.is_server() {
-                    self.send_updated_bounds_selection(&selection, true);
-
-                    if !rows.is_empty() && transaction.is_user() {
-                        let resize_rows = transaction
-                            .resize_rows
-                            .entry(selection.sheet_id)
-                            .or_default();
-                        resize_rows.extend(rows);
-                    }
-                }
-
-                if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-                    let dirty_hashes = transaction
-                        .dirty_hashes
-                        .entry(selection.sheet_id)
-                        .or_default();
-                    dirty_hashes.extend(hashes);
-                }
-
-                transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
-
-                transaction
-                    .forward_operations
-                    .push(Operation::SetCellFormatsSelection { selection, formats });
-
-                transaction
-                    .reverse_operations
-                    .extend(reverse_operations.iter().cloned());
-            }
-        }
-    }
-
     pub fn execute_set_cell_formats_a1(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        unwrap_op!(let SetCellFormatsA1 { sheet_id,formats } = op);
+        unwrap_op!(let SetCellFormatsA1 { sheet_id, formats } = op);
 
         transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
 

@@ -1,10 +1,11 @@
-//! Updating sheet formatting.
+//! Updates to sheet formatting.
 
 use crate::grid::formats::SheetFormatUpdates;
 
 use super::*;
 
 impl SheetFormatting {
+    /// Applies updates to the sheet formatting.
     pub fn apply_updates(&mut self, updates: &SheetFormatUpdates) -> SheetFormatUpdates {
         SheetFormatUpdates {
             align: updates

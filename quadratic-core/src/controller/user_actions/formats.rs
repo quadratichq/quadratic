@@ -347,7 +347,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.formats.get_format(pos![A2]).unwrap_or_default().align,
+            sheet.formats.try_format(pos![A2]).unwrap_or_default().align,
             Some(crate::grid::CellAlign::Center)
         );
     }
@@ -367,7 +367,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .vertical_align,
             Some(crate::grid::CellVerticalAlign::Middle)
@@ -383,7 +383,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.formats.get_format(pos![A2]).unwrap_or_default().bold,
+            sheet.formats.try_format(pos![A2]).unwrap_or_default().bold,
             Some(true)
         );
     }
@@ -397,7 +397,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.formats.get_format(pos![A2]).unwrap_or_default().wrap,
+            sheet.formats.try_format(pos![A2]).unwrap_or_default().wrap,
             Some(CellWrap::Clip)
         );
     }
@@ -413,7 +413,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(Pos { x: 1, y: 1 })
+                .try_format(Pos { x: 1, y: 1 })
                 .unwrap_or_default()
                 .numeric_format,
             Some(crate::grid::NumericFormat {
@@ -439,7 +439,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .numeric_format,
             Some(crate::grid::NumericFormat {
@@ -465,7 +465,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .numeric_format,
             Some(crate::grid::NumericFormat {
@@ -485,7 +485,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .numeric_commas,
             Some(true)
@@ -497,7 +497,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .numeric_commas,
             Some(false)
@@ -515,7 +515,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .italic,
             Some(true)
@@ -537,7 +537,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .text_color,
             Some("red".to_string())
@@ -559,7 +559,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .fill_color,
             Some("blue".to_string())
@@ -579,7 +579,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .numeric_decimals,
             Some(2)
@@ -623,7 +623,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A1])
+                .try_format(pos![A1])
                 .unwrap_or_default()
                 .text_color,
             Some("red".to_string())
@@ -636,7 +636,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A1])
+                .try_format(pos![A1])
                 .unwrap_or_default()
                 .text_color,
             None
@@ -694,7 +694,7 @@ mod test {
         assert_eq!(
             sheet
                 .formats
-                .get_format(pos![A2])
+                .try_format(pos![A2])
                 .unwrap_or_default()
                 .date_time,
             Some("yyyy-mm-dd".to_string())

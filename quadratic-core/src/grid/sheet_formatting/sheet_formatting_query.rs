@@ -28,9 +28,19 @@ impl SheetFormatting {
         .max()
     }
 
+    /// Returns format for a cell or None if default.
+    pub fn try_format(&self, pos: Pos) -> Option<Format> {
+        let format = self.format(pos);
+        if format.is_default() {
+            None
+        } else {
+            Some(format)
+        }
+    }
+
     /// Returns all formatting values for a cell.
-    pub fn get_format(&self, pos: Pos) -> Option<Format> {
-        let format = Format {
+    pub fn format(&self, pos: Pos) -> Format {
+        Format {
             align: self.align.get(pos).copied(),
             vertical_align: self.vertical_align.get(pos).copied(),
             wrap: self.wrap.get(pos).copied(),
@@ -45,11 +55,18 @@ impl SheetFormatting {
             date_time: self.date_time.get(pos).cloned(),
             underline: self.underline.get(pos).copied(),
             strike_through: self.strike_through.get(pos).copied(),
-        };
-        if format.is_default() {
-            None
-        } else {
-            Some(format)
         }
+    }
+
+    pub fn column_has_fills(&self, column: i64) -> bool {
+        !self.fill_color.is_column_empty(column)
+    }
+
+    pub fn row_has_fills(&self, row: i64) -> bool {
+        !self.fill_color.is_row_empty(row)
+    }
+
+    pub fn row_has_wrap(&self, row: i64) -> bool {
+        self.wrap.is_row_empty(row)
     }
 }

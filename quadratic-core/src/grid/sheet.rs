@@ -27,7 +27,6 @@ pub mod clipboard;
 pub mod code;
 pub mod col_row;
 pub mod formats;
-pub mod formatting;
 pub mod jump_cursor;
 pub mod rendering;
 pub mod rendering_date_time;
@@ -308,7 +307,7 @@ impl Sheet {
 
     /// Returns a summary of formatting in a region.
     pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.formats.get_format(pos).unwrap_or_default();
+        let format = self.formats.try_format(pos).unwrap_or_default();
         let cell_type = self
             .display_value(pos)
             .and_then(|cell_value| match cell_value {
@@ -377,8 +376,8 @@ impl Sheet {
     /// get or calculate decimal places for a cell
     pub fn calculate_decimal_places(&self, pos: Pos, kind: NumericFormatKind) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
-        if let Some(decimals) = self.format_cell(pos.x, pos.y, true).numeric_decimals {
-            return Some(decimals);
+        if let Some(decimals) = self.formats.numeric_decimals.get(pos) {
+            return Some(*decimals);
         }
 
         // if currency and percentage, then use the default 2 decimal places
@@ -415,10 +414,12 @@ impl Sheet {
         }
     }
 
+    /// Returns true if the cell at Pos has wrap formatting.
     pub fn check_if_wrap_in_cell(&self, pos: Pos) -> bool {
-        let value: Option<CellValue> = self.cell_value(pos);
-        let format = self.format_cell(pos.x, pos.y, true);
-        value.is_some() && Some(CellWrap::Wrap) == format.wrap
+        if self.cell_value(pos).is_none() {
+            return false;
+        }
+        self.formats.wrap.get(pos) == Some(&CellWrap::Wrap)
     }
 
     pub fn check_if_wrap_in_row(&self, y: i64) -> bool {

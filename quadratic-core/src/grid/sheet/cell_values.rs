@@ -113,12 +113,10 @@ impl Sheet {
         let value = self.display_value(pos)?;
         match value {
             CellValue::Number(_) => {
-                let format = self.format_cell(pos.x, pos.y, true);
-                Some(value.to_number_display(
-                    format.numeric_format,
-                    format.numeric_decimals,
-                    format.numeric_commas,
-                ))
+                let numeric_format = self.formats.numeric_format.get(pos).cloned();
+                let numeric_decimals = self.formats.numeric_decimals.get(pos).cloned();
+                let numeric_commas = self.formats.numeric_commas.get(pos).cloned();
+                Some(value.to_number_display(numeric_format, numeric_decimals, numeric_commas))
             }
             _ => Some(value.to_display()),
         }
@@ -131,7 +129,6 @@ mod test {
 
     use crate::{
         grid::{
-            formats::FormatUpdate,
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
             NumericFormat,
         },
@@ -192,16 +189,12 @@ mod test {
             CellValue::Number(BigDecimal::from_str("123.456").unwrap()),
         );
 
-        sheet.set_format_cell(
+        sheet.formats.numeric_format.set(
             pos,
-            &FormatUpdate {
-                numeric_format: Some(Some(NumericFormat {
-                    kind: crate::grid::NumericFormatKind::Currency,
-                    symbol: Some("$".to_string()),
-                })),
-                ..Default::default()
-            },
-            false,
+            Some(NumericFormat {
+                kind: crate::grid::NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }),
         );
 
         // no format for to_display

@@ -283,7 +283,7 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
     for y in rect.y_range() {
         let mut vals = vec![y.to_string()];
         for x in rect.x_range() {
-            let format = sheet.format_cell(x, y, false);
+            let format = sheet.formats.format(Pos { x, y });
             vals.push(format.to_string());
         }
         builder.push_record(vals);
@@ -296,8 +296,6 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 
 #[cfg(test)]
 mod test {
-    use crate::grid::formats::FormatUpdate;
-
     use super::*;
     use serial_test::parallel;
 
@@ -307,55 +305,17 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_format_cell(
-            Pos { x: 0, y: 0 },
-            &FormatUpdate {
-                bold: Some(Some(true)),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 1, y: 1 },
-            &FormatUpdate {
-                bold: Some(Some(true)),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 2, y: 2 },
-            &FormatUpdate {
-                bold: Some(Some(true)),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 0, y: 1 },
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 1, y: 2 },
-            &FormatUpdate {
-                fill_color: Some(Some("blue".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 2, y: 0 },
-            &FormatUpdate {
-                fill_color: Some(Some("green".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
-        let rect = Rect::new(0, 0, 3, 3);
-        print_table_sheet_formats(sheet, rect);
+        sheet.formats.bold.set(pos![A1], Some(true));
+        sheet.formats.bold.set(pos![B2], Some(true));
+        sheet.formats.italic.set(pos![A2], Some(true));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![B3], Some("blue".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![C3], Some("green".to_string()));
+        print_table_sheet_formats(sheet, Rect::test_a1("A1:C3"));
     }
 }

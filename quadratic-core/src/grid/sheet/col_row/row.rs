@@ -4,9 +4,8 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{formats::Formats, GridBounds, Sheet},
-    selection::OldSelection,
-    CopyFormats, Pos, Rect, SheetPos,
+    grid::{GridBounds, Sheet},
+    CopyFormats, Pos, SheetPos,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
@@ -39,23 +38,11 @@ impl Sheet {
 
     /// Creates reverse operations for cell formatting within the row.
     fn reverse_formats_ops_for_row(&self, row: i64) -> Vec<Operation> {
-        let mut formats = Formats::new();
-        let mut selection = OldSelection::new(self.id);
-
-        if let Some(format) = self.try_format_row(row) {
-            selection.rows = Some(vec![row]);
-            formats.push(format.to_replace());
-        }
-
-        if let Some((min, max)) = self.row_bounds_formats(row) {
-            for x in min..=max {
-                let format = self.format_cell(x, row, false).to_replace();
-                formats.push(format);
-            }
-            selection.rects = Some(vec![Rect::new(min, row, max, row)]);
-        }
-        if !selection.is_empty() {
-            vec![Operation::SetCellFormatsSelection { selection, formats }]
+        if let Some(formats) = self.formats.copy_row(row) {
+            vec![Operation::SetCellFormatsA1 {
+                sheet_id: self.id,
+                formats,
+            }]
         } else {
             vec![]
         }
@@ -461,29 +448,17 @@ mod test {
         sheet.test_set_code_run_array(1, 3, vec!["=A1", "=A2"], false);
         sheet.test_set_code_run_array(1, 4, vec!["=A1", "=A2"], false);
 
-        sheet.set_formats_rows(
-            &[1],
-            &Formats::repeat(
-                FormatUpdate {
-                    bold: Some(Some(true)),
-                    italic: Some(Some(true)),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
+        sheet.bold.set_rect(1, 1, Some(1), None, Some(true));
+        sheet.italic.set_rect(1, 1, Some(1), None, Some(true));
 
-        sheet.set_formats_rows(
-            &[2],
-            &Formats::repeat(
-                FormatUpdate {
-                    bold: Some(Some(false)),
-                    italic: Some(Some(false)),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
+        sheet
+            .formats
+            .bold
+            .set_rect(2, 1, Some(2), None, Some(false));
+        sheet
+            .formats
+            .italic
+            .set_rect(2, 1, Some(2), None, Some(false));
 
         sheet.recalculate_bounds();
 

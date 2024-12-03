@@ -848,24 +848,25 @@ impl GridController {
 
     fn apply_formats(
         &self,
-        sheet_id: SheetId,
-        start_pos: Pos,
-        format_rect: Rect,
-        format_rects: &mut Vec<Rect>,
-        formats: &mut Formats,
+        _sheet_id: SheetId,
+        _start_pos: Pos,
+        _format_rect: Rect,
+        _format_rects: &mut Vec<Rect>,
+        _formats: &mut Formats,
     ) {
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            format_rects.push(format_rect);
-            for x in 0..format_rect.width() as i64 {
-                for y in 0..format_rect.height() as i64 {
-                    formats.push(
-                        sheet
-                            .format_cell(start_pos.x + x, start_pos.y + y, true)
-                            .to_replace(),
-                    );
-                }
-            }
-        }
+        dbgjs!("apply_formats");
+        // if let Some(sheet) = self.try_sheet(sheet_id) {
+        //     format_rects.push(format_rect);
+        //     for x in 0..format_rect.width() as i64 {
+        //         for y in 0..format_rect.height() as i64 {
+        //             formats.push(
+        //                 sheet
+        //                     .format_cell(start_pos.x + x, start_pos.y + y, true)
+        //                     .to_replace(),
+        //             );
+        //         }
+        //     }
+        // }
     }
 
     fn apply_borders(
