@@ -310,7 +310,10 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
 
     /// Checks if any cell in the row satisfies the predicate
     pub fn check_row(&self, row: i64, f: impl Fn(&T) -> bool) -> bool {
-        todo!()
+        self.0
+             .0
+            .values()
+            .any(|col| col.value.get(row).is_some_and(&f))
     }
 }
 
