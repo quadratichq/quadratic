@@ -6,7 +6,6 @@ use std::collections::btree_map;
 use crate::{A1Selection, CellRefRange, CopyFormats, Pos, Rect};
 
 use serde::{Deserialize, Serialize};
-use serde_json::value;
 
 use super::{block::Block, contiguous_blocks::ContiguousBlocks};
 
