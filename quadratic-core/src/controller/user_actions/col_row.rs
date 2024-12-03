@@ -183,32 +183,19 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_formats_columns(
-            &[1],
-            &Formats::repeat(
-                FormatUpdate {
-                    text_color: Some(Some("blue".to_string())),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
-        sheet.formats.set_format(
-            Pos::new(1, 1),
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
+        sheet
+            .formats
+            .text_color
+            .set_rect(1, 1, Some(1), None, Some("blue".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos::new(1, 1), Some("red".to_string()));
         sheet.recalculate_bounds();
 
         assert_eq!(
-            sheet.format_cell(1, 1, false),
-            Format {
-                fill_color: Some("red".to_string()),
-                ..Default::default()
-            }
+            sheet.formats.fill_color.get(pos![A1]),
+            Some(&"red".to_string())
         );
 
         gc.insert_column(sheet_id, 1, true, None);

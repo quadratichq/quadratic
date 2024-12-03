@@ -466,6 +466,7 @@ class QuadraticCore {
     });
   }
 
+  // todo: we should probably only have getFormatCell and not this one...
   getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
     return new Promise((resolve) => {
       const id = this.id++;
@@ -480,50 +481,6 @@ class QuadraticCore {
         resolve(message.formatSummary);
       };
       this.send(message);
-    });
-  }
-
-  getFormatAll(sheetId: string): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
-        resolve(message.format);
-      };
-      this.send({
-        type: 'clientCoreGetFormatAll',
-        sheetId,
-        id,
-      });
-    });
-  }
-
-  getFormatColumn(sheetId: string, column: number): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
-        resolve(message.format);
-      };
-      this.send({
-        type: 'clientCoreGetFormatColumn',
-        sheetId,
-        column,
-        id,
-      });
-    });
-  }
-
-  getFormatRow(sheetId: string, row: number): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
-        resolve(message.format);
-      };
-      this.send({
-        type: 'clientCoreGetFormatRow',
-        sheetId,
-        row,
-        id,
-      });
     });
   }
 

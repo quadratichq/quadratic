@@ -307,7 +307,7 @@ mod tests {
 
     use crate::{
         controller::execution::TransactionSource,
-        grid::{formats::FormatUpdate, BorderStyle, CellBorderLine, CellWrap},
+        grid::{BorderStyle, CellBorderLine, CellWrap},
         CellValue, DEFAULT_COLUMN_WIDTH,
     };
 
@@ -327,30 +327,16 @@ mod tests {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.test_set_format(
-            1,
-            1,
-            FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            3,
-            4,
-            FormatUpdate {
-                wrap: Some(Some(CellWrap::Clip)),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            4,
-            4,
-            FormatUpdate {
-                fill_color: Some(Some("blue".to_string())),
-                ..Default::default()
-            },
-        );
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A1], Some("red".to_string()));
+        sheet.formats.wrap.set(pos![C4], Some(CellWrap::Clip));
+
+        sheet
+            .formats
+            .fill_color
+            .set(pos![D4], Some("blue".to_string()));
         sheet.test_set_code_run_array(2, 5, vec!["=A1", "=B1"], true);
         sheet.test_set_code_run_array(4, 5, vec!["=A1", "=B1"], true);
 

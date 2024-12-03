@@ -24,7 +24,7 @@ impl SheetFormatting {
             self.strike_through.column_max(column),
         ]
         .iter()
-        .filter_map(|&x| x)
+        .filter_map(|&x| Some(x))
         .max()
     }
 
@@ -69,4 +69,10 @@ impl SheetFormatting {
     pub fn row_has_wrap(&self, row: i64) -> bool {
         self.wrap.is_row_empty(row)
     }
+}
+
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use super::*;
 }

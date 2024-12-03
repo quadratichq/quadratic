@@ -168,44 +168,6 @@ export interface CoreClientGetCellFormatSummary {
   id: number;
 }
 
-export interface ClientCoreGetFormatAll {
-  type: 'clientCoreGetFormatAll';
-  id: number;
-  sheetId: string;
-}
-
-export interface CoreClientGetFormatAll {
-  type: 'coreClientGetFormatAll';
-  id: number;
-  format?: Format;
-}
-
-export interface ClientCoreGetFormatColumn {
-  type: 'clientCoreGetFormatColumn';
-  id: number;
-  sheetId: string;
-  column: number;
-}
-
-export interface CoreClientGetFormatColumn {
-  type: 'coreClientGetFormatColumn';
-  id: number;
-  format?: Format;
-}
-
-export interface ClientCoreGetFormatRow {
-  type: 'clientCoreGetFormatRow';
-  id: number;
-  sheetId: string;
-  row: number;
-}
-
-export interface CoreClientGetFormatRow {
-  type: 'coreClientGetFormatRow';
-  id: number;
-  format?: Format;
-}
-
 export interface ClientCoreGetFormatCell {
   type: 'clientCoreGetFormatCell';
   id: number;
@@ -1214,9 +1176,6 @@ export type ClientCoreMessage =
   | ClientCoreCancelExecution
   | ClientCoreGetJwt
   | ClientCoreMoveCells
-  | ClientCoreGetFormatAll
-  | ClientCoreGetFormatColumn
-  | ClientCoreGetFormatRow
   | ClientCoreGetFormatCell
   | ClientCoreSetDateTimeFormat
   | ClientCoreGetValidations
@@ -1287,9 +1246,6 @@ export type CoreClientMessage =
   | CoreClientUndoRedo
   | CoreClientGetJwt
   | CoreClientImage
-  | CoreClientGetFormatAll
-  | CoreClientGetFormatColumn
-  | CoreClientGetFormatRow
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
   | CoreClientOfflineTransactionsApplied

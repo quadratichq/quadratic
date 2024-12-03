@@ -51,8 +51,8 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{file::import, formats::Format, CellBorderLine},
-        CellValue,
+        grid::{file::import, CellBorderLine},
+        CellValue, Pos,
     };
 
     #[test]
@@ -77,32 +77,17 @@ mod test {
             CellValue::Text("negative column".into())
         );
         assert_eq!(
-            sheet.format_column(col![F] as i64),
-            Format {
-                fill_color: Some("rgb(23, 200, 165)".to_string()),
-                ..Default::default()
-            }
+            sheet.formats.fill_color.get(Pos {
+                x: col![F],
+                y: i64::MAX
+            }),
+            Some(&"rgb(23, 200, 165)".to_string())
         );
+        assert_eq!(sheet.formats.bold.get("F1".into()), Some(&true));
+        assert_eq!(sheet.formats.italic.get(pos![A9]), Some(&true));
         assert_eq!(
-            sheet.format_cell_a1("f1", false).unwrap(),
-            Format {
-                bold: Some(true),
-                ..Default::default()
-            }
-        );
-        assert_eq!(
-            sheet.format_cell_a1("a9", false).unwrap(),
-            Format {
-                italic: Some(true),
-                ..Default::default()
-            }
-        );
-        assert_eq!(
-            sheet.format_row(1),
-            Format {
-                fill_color: Some("rgb(241, 196, 15)".to_string()),
-                ..Default::default()
-            }
+            sheet.formats.fill_color.get(Pos { x: i64::MAX, y: 1 }),
+            Some(&"rgb(241, 196, 15)".to_string())
         );
 
         let borders = sheet.borders.try_from_a1("A1").unwrap();

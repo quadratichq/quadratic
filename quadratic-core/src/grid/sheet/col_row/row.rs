@@ -377,10 +377,7 @@ mod test {
 
     use crate::{
         controller::execution::TransactionSource,
-        grid::{
-            formats::{Format, FormatUpdate},
-            BorderStyle, CellBorderLine, CellWrap,
-        },
+        grid::{BorderStyle, CellBorderLine, CellWrap},
         CellValue, DEFAULT_ROW_HEIGHT,
     };
 
@@ -421,35 +418,23 @@ mod test {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.test_set_format(
-            1,
-            2,
-            FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            2,
-            2,
-            FormatUpdate {
-                wrap: Some(Some(CellWrap::Clip)),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            3,
-            2,
-            FormatUpdate {
-                fill_color: Some(Some("blue".to_string())),
-                ..Default::default()
-            },
-        );
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A2], Some("red".to_string()));
+        sheet.formats.wrap.set(pos![B2], Some(CellWrap::Clip));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![C2], Some("blue".to_string()));
         sheet.test_set_code_run_array(1, 3, vec!["=A1", "=A2"], false);
         sheet.test_set_code_run_array(1, 4, vec!["=A1", "=A2"], false);
 
-        sheet.bold.set_rect(1, 1, Some(1), None, Some(true));
-        sheet.italic.set_rect(1, 1, Some(1), None, Some(true));
+        sheet.formats.bold.set_rect(1, 1, Some(1), None, Some(true));
+        sheet
+            .formats
+            .italic
+            .set_rect(1, 1, Some(1), None, Some(true));
 
         sheet
             .formats
@@ -474,12 +459,10 @@ mod test {
             Some(CellValue::Text("E".to_string()))
         );
         assert_eq!(
-            sheet.format_cell(3, 1, false),
-            Format {
-                fill_color: Some("blue".to_string()),
-                ..Default::default()
-            }
+            sheet.formats.fill_color.get(pos![C1]),
+            Some(&"blue".to_string())
         );
+
         assert!(sheet.code_runs.get(&Pos { x: 1, y: 2 }).is_some());
         assert!(sheet.code_runs.get(&Pos { x: 1, y: 3 }).is_some());
     }

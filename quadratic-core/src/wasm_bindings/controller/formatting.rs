@@ -31,8 +31,8 @@ impl GridController {
     }
 
     /// Sets cell align formatting given as an optional [`CellAlign`].
-    #[wasm_bindgen(js_name = "setAlignSelection")]
-    pub fn js_set_align_selection(
+    #[wasm_bindgen(js_name = "setAlign")]
+    pub fn js_set_align(
         &mut self,
         selection: String,
         align: JsValue,
@@ -45,8 +45,8 @@ impl GridController {
     }
 
     /// Sets cell vertical align formatting given as an optional [`CellVerticalAlign`].
-    #[wasm_bindgen(js_name = "setVerticalAlignSelection")]
-    pub fn js_set_vertical_align_selection(
+    #[wasm_bindgen(js_name = "setVerticalAlign")]
+    pub fn js_set_vertical_align(
         &mut self,
         selection: String,
         vertical_align: JsValue,
@@ -60,8 +60,8 @@ impl GridController {
     }
 
     /// Sets cell wrap formatting given as an optional [`CellWrap`].
-    #[wasm_bindgen(js_name = "setWrapSelection")]
-    pub fn js_set_wrap_selection(
+    #[wasm_bindgen(js_name = "setWrap")]
+    pub fn js_set_wrap(
         &mut self,
         selection: String,
         wrap: JsValue,
@@ -74,8 +74,8 @@ impl GridController {
     }
 
     /// Sets cells numeric_format to normal
-    #[wasm_bindgen(js_name = "removeNumericFormatSelection")]
-    pub fn js_remove_numeric_format_selection(
+    #[wasm_bindgen(js_name = "removeNumericFormat")]
+    pub fn js_remove_numeric_format(
         &mut self,
         selection: String,
         cursor: Option<String>,
@@ -87,8 +87,8 @@ impl GridController {
     }
 
     /// Sets cells numeric_format to currency
-    #[wasm_bindgen(js_name = "setCurrencySelection")]
-    pub fn js_set_currency_selection(
+    #[wasm_bindgen(js_name = "setCurrency")]
+    pub fn js_set_currency(
         &mut self,
         selection: String,
         symbol: String,
@@ -101,8 +101,8 @@ impl GridController {
     }
 
     /// Sets cells numeric_format to percentage
-    #[wasm_bindgen(js_name = "setPercentageSelection")]
-    pub fn js_set_percentage_selection(
+    #[wasm_bindgen(js_name = "setPercentage")]
+    pub fn js_set_percentage(
         &mut self,
         selection: String,
         cursor: Option<String>,
@@ -114,8 +114,8 @@ impl GridController {
     }
 
     /// Sets cells numeric_format to scientific notation
-    #[wasm_bindgen(js_name = "setExponentialSelection")]
-    pub fn js_set_exponential_selection(
+    #[wasm_bindgen(js_name = "setExponential")]
+    pub fn js_set_exponential(
         &mut self,
         selection: String,
         cursor: Option<String>,
@@ -127,8 +127,8 @@ impl GridController {
     }
 
     /// Sets cells numeric_commas
-    #[wasm_bindgen(js_name = "setCommasSelection")]
-    pub fn js_set_commas_selection(
+    #[wasm_bindgen(js_name = "setCommas")]
+    pub fn js_set_commas(
         &mut self,
         selection: String,
         commas: bool,
@@ -141,8 +141,8 @@ impl GridController {
     }
 
     /// Sets cell bold formatting given as an optional [`bool`].
-    #[wasm_bindgen(js_name = "setBoldSelection")]
-    pub fn js_set_bold_selection(
+    #[wasm_bindgen(js_name = "setBold")]
+    pub fn js_set_bold(
         &mut self,
         selection: String,
         bold: bool,
@@ -154,8 +154,8 @@ impl GridController {
         Ok(())
     }
     /// Sets cell italic formatting given as an optional [`bool`].
-    #[wasm_bindgen(js_name = "setItalicSelection")]
-    pub fn js_set_italic_selection(
+    #[wasm_bindgen(js_name = "setItalic")]
+    pub fn js_set_italic(
         &mut self,
         selection: String,
         italic: bool,
@@ -168,8 +168,8 @@ impl GridController {
     }
 
     /// Sets cell text color given as an optional [`String`].
-    #[wasm_bindgen(js_name = "setTextColorSelection")]
-    pub fn js_set_text_color_selection(
+    #[wasm_bindgen(js_name = "setTextColor")]
+    pub fn js_set_text_color(
         &mut self,
         selection: String,
         text_color: Option<String>,
@@ -182,8 +182,8 @@ impl GridController {
     }
 
     /// Sets cell fill color given as an optional [`String`].
-    #[wasm_bindgen(js_name = "setFillColorSelection")]
-    pub fn js_set_fill_color_selection(
+    #[wasm_bindgen(js_name = "setFillColor")]
+    pub fn js_set_fill_color(
         &mut self,
         selection: String,
         fill_color: Option<String>,
@@ -225,8 +225,8 @@ impl GridController {
         )
     }
 
-    #[wasm_bindgen(js_name = "setDateTimeFormatSelection")]
-    pub fn js_set_date_time_format_selection(
+    #[wasm_bindgen(js_name = "setDateTimeFormat")]
+    pub fn js_set_date_time_format(
         &mut self,
         selection: String,
         date_time: Option<String>,
@@ -239,8 +239,8 @@ impl GridController {
     }
 
     /// Changes cell numeric decimals.
-    #[wasm_bindgen(js_name = "changeDecimalPlacesSelection")]
-    pub fn js_change_decimal_places_selection(
+    #[wasm_bindgen(js_name = "changeDecimalPlaces")]
+    pub fn js_change_decimal_places(
         &mut self,
         selection: String,
         delta: i32,
@@ -253,8 +253,8 @@ impl GridController {
     }
 
     /// Sets cell bold formatting given as an optional [`bool`].
-    #[wasm_bindgen(js_name = "setUnderlineSelection")]
-    pub fn js_set_underline_selection(
+    #[wasm_bindgen(js_name = "setUnderline")]
+    pub fn js_set_underline(
         &mut self,
         selection: String,
         underline: bool,
@@ -267,8 +267,8 @@ impl GridController {
     }
 
     /// Sets cell bold formatting given as an optional [`bool`].
-    #[wasm_bindgen(js_name = "setStrikeThroughSelection")]
-    pub fn js_set_strike_through_selection(
+    #[wasm_bindgen(js_name = "setStrikeThrough")]
+    pub fn js_set_strike_through(
         &mut self,
         selection: String,
         strike_through: bool,
@@ -281,8 +281,8 @@ impl GridController {
     }
 
     /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "clearFormattingSelection")]
-    pub fn js_clear_formatting_selection(
+    #[wasm_bindgen(js_name = "clearFormatting")]
+    pub fn js_clear_formatting(
         &mut self,
         selection: String,
         cursor: Option<String>,
@@ -292,33 +292,14 @@ impl GridController {
         self.clear_format(&selection, cursor)
     }
 
-    #[wasm_bindgen(js_name = "getFormatAll")]
-    pub fn js_get_format_all(&self, sheet_id: String) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
-        let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_wasm_bindgen::to_value(&sheet.format_all()).map_err(|_| JsValue::UNDEFINED)
-    }
-
-    #[wasm_bindgen(js_name = "getFormatColumn")]
-    pub fn js_get_format_column(&self, sheet_id: String, column: i32) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
-        let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_wasm_bindgen::to_value(&sheet.format_column(column as _))
-            .map_err(|_| JsValue::UNDEFINED)
-    }
-
-    #[wasm_bindgen(js_name = "getFormatRow")]
-    pub fn js_get_format_row(&self, sheet_id: String, row: i32) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
-        let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_wasm_bindgen::to_value(&sheet.format_row(row as _)).map_err(|_| JsValue::UNDEFINED)
-    }
-
     #[wasm_bindgen(js_name = "getFormatCell")]
     pub fn js_get_format_cell(&self, sheet_id: String, x: i32, y: i32) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_wasm_bindgen::to_value(&sheet.format_cell(x as i64, y as i64, false))
-            .map_err(|_| JsValue::UNDEFINED)
+        serde_wasm_bindgen::to_value(&sheet.formats.try_format(Pos {
+            x: x as i64,
+            y: y as i64,
+        }))
+        .map_err(|_| JsValue::UNDEFINED)
     }
 }
