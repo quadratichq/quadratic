@@ -651,15 +651,21 @@ mod test {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.format_column(1).text_color, Some("red".to_string()));
+        assert_eq!(
+            sheet.formats.text_color.get(pos![A1]),
+            Some(&"red".to_string())
+        );
+        assert_eq!(
+            sheet.formats.text_color.get(pos![A100]),
+            Some(&"red".to_string())
+        );
 
         let selection = A1Selection::from_column_ranges(&[1..=1], sheet_id);
         gc.clear_format(&selection, None).unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.format_column(1).text_color, None);
-        todo!("remove this last line, probably?")
-        // assert!(sheet.formats_columns.is_empty());
+        assert_eq!(sheet.formats.text_color.get(pos![A1]), None);
+        assert_eq!(sheet.formats.text_color.get(pos![A100]), None);
     }
 
     #[test]
@@ -674,9 +680,18 @@ mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.format_column(1).fill_color, Some("red".to_string()));
-        assert_eq!(sheet.format_row(1).fill_color, Some("red".to_string()));
-        assert_eq!(sheet.format_row(3).fill_color, Some("red".to_string()));
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![A1]),
+            Some(&"red".to_string())
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![D1]),
+            Some(&"red".to_string())
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get(pos![D3]),
+            Some(&"red".to_string())
+        );
     }
 
     #[test]
@@ -717,8 +732,8 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.format_column(1).render_size,
-            Some(RenderSize {
+            sheet.formats.render_size.get(pos![A1]),
+            Some(&RenderSize {
                 w: "1".to_string(),
                 h: "2".to_string()
             })

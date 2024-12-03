@@ -105,7 +105,6 @@ impl Sheet {
     }
 
     /// Creates a sheet for testing.
-    #[cfg(test)]
     pub fn test() -> Self {
         Sheet::new(SheetId::TEST, String::from("Sheet 1"), String::from("a0"))
     }
@@ -512,7 +511,6 @@ mod test {
 
     use super::*;
     use crate::controller::GridController;
-    use crate::grid::formats::{FormatUpdate, Formats};
     use crate::grid::{CodeCellLanguage, CodeCellValue};
     use crate::test_util::print_table;
     use crate::{A1Selection, SheetPos, SheetRect};
@@ -946,16 +944,10 @@ mod test {
             sheet.get_rows_with_wrap_in_selection(&selection),
             Vec::<i64>::new()
         );
-        sheet.set_formats_selection(
-            &selection,
-            &Formats::repeat(
-                FormatUpdate {
-                    wrap: Some(Some(CellWrap::Wrap)),
-                    ..FormatUpdate::default()
-                },
-                4,
-            ),
-        );
+        sheet
+            .formats
+            .wrap
+            .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
         let mut rows = sheet.get_rows_with_wrap_in_selection(&selection);
         rows.sort();
         assert_eq!(rows, vec![0, 2]);

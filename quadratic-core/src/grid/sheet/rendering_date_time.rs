@@ -37,11 +37,7 @@ mod tests {
 
     use crate::{
         controller::GridController,
-        grid::{
-            formats::{Format, Formats},
-            js_types::JsRenderCell,
-            CellAlign,
-        },
+        grid::{js_types::JsRenderCell, CellAlign},
         Rect,
     };
 

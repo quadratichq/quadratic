@@ -76,10 +76,7 @@ mod tests {
     use serial_test::parallel;
 
     use crate::{
-        grid::{
-            formats::{Format, FormatUpdate, Formats},
-            CodeCellLanguage, CodeCellValue,
-        },
+        grid::{formats::Format, CodeCellLanguage, CodeCellValue},
         CellValue, Pos, SheetPos,
     };
 
@@ -204,36 +201,36 @@ mod tests {
 
         // this is the new column that was inserted (with the copied formatting)
         assert_eq!(
-            sheet.format_cell(1, 1, true),
-            Format {
-                fill_color: Some("red".to_string()),
-                text_color: Some("blue".to_string()),
-                ..Default::default()
-            }
+            sheet.formats.fill_color.get(pos![A1]),
+            Some(&"red".to_string())
+        );
+        assert_eq!(
+            sheet.formats.text_color.get(pos![A1]),
+            Some(&"blue".to_string())
         );
 
         // this is the original row that was shifted down (with the original formatting)
         assert_eq!(
-            sheet.format_cell(2, 1, true),
-            Format {
-                fill_color: Some("red".to_string()),
-                text_color: Some("blue".to_string()),
-                ..Default::default()
-            }
+            sheet.formats.fill_color.get(pos![B1]),
+            Some(&"red".to_string())
+        );
+        assert_eq!(
+            sheet.formats.text_color.get(pos![B1]),
+            Some(&"blue".to_string())
         );
 
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.format_cell(1, 1, true),
+            sheet.formats.format(pos![A1]),
             Format {
                 text_color: Some("blue".to_string()),
                 fill_color: Some("red".to_string()),
                 ..Default::default()
             }
         );
-        assert!(sheet.format_cell(0, 1, true).is_default());
-        assert!(sheet.format_cell(2, 1, true).is_default());
+        assert!(sheet.formats.format(pos![A1]).is_default());
+        assert!(sheet.formats.format(pos![B1]).is_default());
     }
 
     #[test]
@@ -243,28 +240,18 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_formats_columns(
-            &[1],
-            &Formats::repeat(
-                FormatUpdate {
-                    text_color: Some(Some("blue".to_string())),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
-        sheet.set_format_cell(
-            Pos::new(1, 1),
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
+        sheet
+            .formats
+            .text_color
+            .set_rect(1, 1, Some(1), None, Some("blue".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A1], Some("red".to_string()));
         sheet.recalculate_bounds();
 
         assert_eq!(
-            sheet.format_cell(1, 1, false),
+            sheet.formats.format(pos![A1]),
             Format {
                 fill_color: Some("red".to_string()),
                 ..Default::default()
@@ -277,7 +264,7 @@ mod tests {
 
         // this is the new column that was inserted (with the copied formatting)
         assert_eq!(
-            sheet.format_cell(1, 1, true),
+            sheet.formats.format(pos![A1]),
             Format {
                 fill_color: Some("red".to_string()),
                 text_color: Some("blue".to_string()),
@@ -287,7 +274,7 @@ mod tests {
 
         // this is the original row that was shifted down (with the original formatting)
         assert_eq!(
-            sheet.format_cell(2, 1, true),
+            sheet.formats.format(pos![B1]),
             Format {
                 fill_color: Some("red".to_string()),
                 text_color: Some("blue".to_string()),
@@ -298,15 +285,15 @@ mod tests {
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.format_cell(1, 1, true),
+            sheet.formats.format(pos![A1]),
             Format {
                 text_color: Some("blue".to_string()),
                 fill_color: Some("red".to_string()),
                 ..Default::default()
             }
         );
-        assert!(sheet.format_cell(0, 1, true).is_default());
-        assert!(sheet.format_cell(2, 1, true).is_default());
+        assert!(sheet.formats.format(pos![D1]).is_default());
+        assert!(sheet.formats.format(pos![B1]).is_default());
     }
 
     #[test]
@@ -316,28 +303,18 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_formats_rows(
-            &[1],
-            &Formats::repeat(
-                FormatUpdate {
-                    text_color: Some(Some("blue".to_string())),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
-        sheet.set_format_cell(
-            Pos::new(1, 1),
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
+        sheet
+            .formats
+            .text_color
+            .set_rect(1, 1, None, Some(1), Some("blue".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A1], Some("red".to_string()));
         sheet.recalculate_bounds();
 
         assert_eq!(
-            sheet.format_cell(1, 1, false),
+            sheet.formats.format(pos![A1]),
             Format {
                 fill_color: Some("red".to_string()),
                 ..Default::default()
@@ -350,7 +327,7 @@ mod tests {
 
         // this is the new row that was inserted (with the copied formatting)
         assert_eq!(
-            sheet.format_cell(1, 1, true),
+            sheet.formats.format(pos![A1]),
             Format {
                 fill_color: Some("red".to_string()),
                 text_color: Some("blue".to_string()),
@@ -360,7 +337,7 @@ mod tests {
 
         // this is the original row that was shifted down (with the original formatting)
         assert_eq!(
-            sheet.format_cell(1, 2, true),
+            sheet.formats.format(pos![A2]),
             Format {
                 fill_color: Some("red".to_string()),
                 text_color: Some("blue".to_string()),
@@ -371,15 +348,15 @@ mod tests {
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.format_cell(1, 1, true),
+            sheet.formats.format(pos![A1]),
             Format {
                 text_color: Some("blue".to_string()),
                 fill_color: Some("red".to_string()),
                 ..Default::default()
             }
         );
-        assert!(sheet.format_cell(1, 0, true).is_default());
-        assert!(sheet.format_cell(1, 2, true).is_default());
+        assert!(sheet.formats.format(pos![D1]).is_default());
+        assert!(sheet.formats.format(pos![B2]).is_default());
     }
 
     #[test]
@@ -389,28 +366,18 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_formats_rows(
-            &[1],
-            &Formats::repeat(
-                FormatUpdate {
-                    text_color: Some(Some("blue".to_string())),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
-        sheet.set_format_cell(
-            Pos::new(1, 1),
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
+        sheet
+            .formats
+            .text_color
+            .set_rect(1, 1, None, Some(1), Some("blue".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos::new(1, 1), Some("red".to_string()));
         sheet.recalculate_bounds();
 
         assert_eq!(
-            sheet.format_cell(1, 1, false),
+            sheet.formats.format(pos![A1]),
             Format {
                 fill_color: Some("red".to_string()),
                 ..Default::default()
@@ -423,7 +390,7 @@ mod tests {
 
         // this is the new row that was inserted (with the copied formatting)
         assert_eq!(
-            sheet.format_cell(1, 1, true),
+            sheet.formats.format(pos![A1]),
             Format {
                 fill_color: Some("red".to_string()),
                 text_color: Some("blue".to_string()),
@@ -433,7 +400,7 @@ mod tests {
 
         // this is the original row that was shifted down (with the original formatting)
         assert_eq!(
-            sheet.format_cell(1, 2, true),
+            sheet.formats.format(pos![A2]),
             Format {
                 fill_color: Some("red".to_string()),
                 text_color: Some("blue".to_string()),
@@ -444,14 +411,14 @@ mod tests {
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.format_cell(1, 1, true),
+            sheet.formats.format(pos![A1]),
             Format {
                 text_color: Some("blue".to_string()),
                 fill_color: Some("red".to_string()),
                 ..Default::default()
             }
         );
-        assert!(sheet.format_cell(1, 0, true).is_default());
-        assert!(sheet.format_cell(1, 2, true).is_default());
+        assert!(sheet.formats.format(pos![D1]).is_default());
+        assert!(sheet.formats.format(pos![B2]).is_default());
     }
 }
