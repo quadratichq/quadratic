@@ -201,17 +201,15 @@ export const pos = (): { x: number; y: number } => {
 };
 
 export const relCell = (deltaX: number, deltaY: number) => {
-  const p = pos();
-  const a1 = q.toA1(p.x + deltaX, p.y + deltaY);
+  const a1 = q.toA1(deltaX, deltaY, false);
   let oldFuncParams = deltaX + ', ' + deltaY;
 
   createConversionError('relCell', a1, oldFuncParams);
 };
 
 export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, deltaY1: number) => {
-  const p = pos();
-  const a1_0 = q.toA1(p.x + deltaX0, p.y + deltaY0);
-  const a1_1 = q.toA1(p.x + deltaX1, p.y + deltaY1);
+  const a1_0 = q.toA1(deltaX0, deltaY0, false);
+  const a1_1 = q.toA1(deltaX1, deltaY1, false);
   const oldFuncParams = deltaX0 + ', ' + deltaY0 + ', ' + deltaX1 + ', ' + deltaY1;
 
   createConversionError('relCells', a1_0 + ':' + a1_1, oldFuncParams);
@@ -291,9 +289,15 @@ export class q {
    * @param y The y coordinate.
    * @returns The A1 string.
    */
-  static toA1(x: number, y?: number): string {
+  static toA1(x: number, y?: number, absolute: boolean = true): string {
     let column = "";
-    
+
+    if (!absolute) {
+      const p = pos();
+      x = x + p.x;
+      if (y !== undefined) y = y + p.y;
+    }
+
     while (x > 0) {
         x--; // adjust for 1-based index
         column = String.fromCharCode((x % 26) + 65) + column;
