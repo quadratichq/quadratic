@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     grid::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, RenderSize},
-    A1Selection, Rect,
+    A1Selection, Pos, Rect,
 };
 
 use super::FormatUpdate;
@@ -146,6 +146,169 @@ impl SheetFormatUpdates {
             && self.underline.is_none()
             && self.strike_through.is_none()
     }
+
+    pub fn set_format_cell(&mut self, pos: Pos, update: FormatUpdate) {
+        update.align.map(|align| {
+            self.align
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(align))
+        });
+        update.vertical_align.map(|vertical_align| {
+            self.vertical_align
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(vertical_align))
+        });
+        update.wrap.map(|wrap| {
+            self.wrap
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(wrap))
+        });
+        update.numeric_format.map(|numeric_format| {
+            self.numeric_format
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(numeric_format))
+        });
+        update.numeric_decimals.map(|numeric_decimals| {
+            self.numeric_decimals
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(numeric_decimals))
+        });
+        update.numeric_commas.map(|numeric_commas| {
+            self.numeric_commas
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(numeric_commas))
+        });
+        update.bold.map(|bold| {
+            self.bold
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(bold))
+        });
+        update.italic.map(|italic| {
+            self.italic
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(italic))
+        });
+        update.text_color.map(|text_color| {
+            self.text_color
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(text_color))
+        });
+        update.fill_color.map(|fill_color| {
+            self.fill_color
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(fill_color))
+        });
+        update.render_size.map(|render_size| {
+            self.render_size
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(render_size))
+        });
+        update.date_time.map(|date_time| {
+            self.date_time
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(date_time))
+        });
+        update.underline.map(|underline| {
+            self.underline
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(underline))
+        });
+        update.strike_through.map(|strike_through| {
+            self.strike_through
+                .get_or_insert_with(Default::default)
+                .set(pos, Some(strike_through))
+        });
+    }
+
+    /// Returns the format for a cell within the SheetFormatUpdates.
+    pub fn format_update(&self, pos: Pos) -> FormatUpdate {
+        FormatUpdate {
+            align: self
+                .align
+                .as_ref()
+                .map(|align| align.get(pos))
+                .flatten()
+                .cloned(),
+            vertical_align: self
+                .vertical_align
+                .as_ref()
+                .map(|vertical_align| vertical_align.get(pos))
+                .flatten()
+                .cloned(),
+            wrap: self
+                .wrap
+                .as_ref()
+                .map(|wrap| wrap.get(pos))
+                .flatten()
+                .cloned(),
+            numeric_format: self
+                .numeric_format
+                .as_ref()
+                .map(|numeric_format| numeric_format.get(pos))
+                .flatten()
+                .cloned(),
+            numeric_decimals: self
+                .numeric_decimals
+                .as_ref()
+                .map(|numeric_decimals| numeric_decimals.get(pos))
+                .flatten()
+                .cloned(),
+            numeric_commas: self
+                .numeric_commas
+                .as_ref()
+                .map(|numeric_commas| numeric_commas.get(pos))
+                .flatten()
+                .cloned(),
+            bold: self
+                .bold
+                .as_ref()
+                .map(|bold| bold.get(pos))
+                .flatten()
+                .copied(),
+            italic: self
+                .italic
+                .as_ref()
+                .map(|italic| italic.get(pos))
+                .flatten()
+                .copied(),
+            text_color: self
+                .text_color
+                .as_ref()
+                .map(|text_color| text_color.get(pos))
+                .flatten()
+                .cloned(),
+            fill_color: self
+                .fill_color
+                .as_ref()
+                .map(|fill_color| fill_color.get(pos))
+                .flatten()
+                .cloned(),
+            render_size: self
+                .render_size
+                .as_ref()
+                .map(|render_size| render_size.get(pos))
+                .flatten()
+                .cloned(),
+            date_time: self
+                .date_time
+                .as_ref()
+                .map(|date_time| date_time.get(pos))
+                .flatten()
+                .cloned(),
+            underline: self
+                .underline
+                .as_ref()
+                .map(|underline| underline.get(pos))
+                .flatten()
+                .copied(),
+            strike_through: self
+                .strike_through
+                .as_ref()
+                .map(|strike_through| strike_through.get(pos))
+                .flatten()
+                .copied(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -163,5 +326,31 @@ mod tests {
             Some(CellAlign::Center),
         ));
         assert!(!s.is_default());
+    }
+
+    #[test]
+    fn test_set_format_cell() {
+        let mut updates = SheetFormatUpdates::default();
+        let pos = pos![B3];
+
+        let format_update = FormatUpdate {
+            align: Some(Some(CellAlign::Center)),
+            bold: Some(Some(true)),
+            text_color: Some(Some("red".to_string())),
+            ..Default::default()
+        };
+
+        updates.set_format_cell(pos, format_update);
+
+        // Verify the updated fields
+        let format = updates.format_update(pos);
+        assert_eq!(format.bold, Some(Some(true)));
+        assert_eq!(format.align, Some(Some(CellAlign::Center)));
+        assert_eq!(format.text_color, Some(Some("red".to_string())));
+
+        // Verify other fields remained None
+        assert!(updates.vertical_align.is_none());
+        assert!(updates.wrap.is_none());
+        assert!(updates.numeric_format.is_none());
     }
 }
