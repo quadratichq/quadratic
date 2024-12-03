@@ -6,6 +6,7 @@ use std::collections::btree_map;
 use crate::{A1Selection, CellRefRange, CopyFormats, Pos, Rect};
 
 use serde::{Deserialize, Serialize};
+use serde_json::value;
 
 use super::{block::Block, contiguous_blocks::ContiguousBlocks};
 
@@ -131,20 +132,33 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
             }),
         })))
     }
-    /// Returns the upper bound on the values in the given column, or `None` if
-    /// it is unbounded. Returns 0 if there are no values.
-    pub fn column_max(&self, column: i64) -> Option<i64> {
-        match self.0.get(column) {
-            Some(column_data) => column_data.max(),
-            None => Some(0),
+    /// Returns the upper bound on the finite regions in the given column.
+    /// Returns 0 if there are no values.
+    pub fn column_max(&self, column: i64) -> i64 {
+        match self
+            .0
+            .get(column)
+            .and_then(|column_data| column_data.0.last_key_value())
+        {
+            Some((_, last_block)) => last_block.finite_max(),
+            None => 0,
         }
     }
 
-    /// Returns the upper bound on the values in the given row, or `None` if it
-    /// is unbounded.
-    pub fn row_max(&self, row: i64) -> Option<i64> {
-        dbgjs!("todo: contiguous_2d.row_max");
-        None
+    /// Returns the upper bound on the finite regions in the given row. Returns
+    /// 0 if there are no values.
+    pub fn row_max(&self, row: i64) -> i64 {
+        self.0
+             .0
+            .values()
+            .filter_map(|column_block| {
+                column_block
+                    .value
+                    .get(row)
+                    .map(|_| column_block.finite_max())
+            })
+            .max()
+            .unwrap_or(0)
     }
 
     /// Removes a column and returns the values that used to inhabit it.
@@ -291,24 +305,30 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
         false
     }
 
-    /// Checks if the column is empty
+    /// Returns whether a column is empty
     pub fn is_column_empty(&self, column: i64) -> bool {
-        self.column_max(column).is_none()
+        match self.0.get(column) {
+            Some(column_data) => column_data.is_empty(),
+            None => true,
+        }
     }
 
-    /// Checks if the row is empty
+    /// Returns whether a row is empty
     pub fn is_row_empty(&self, row: i64) -> bool {
-        self.row_max(row).is_none()
+        self.0
+             .0
+            .values()
+            .all(|column_block| column_block.value.get(row).is_none())
     }
 
-    /// Checks if any cell in the column satisfies the predicate
+    /// Returns whether any cell in the column satisfies the predicate
     pub fn check_col(&self, col: i64, f: impl Fn(&T) -> bool) -> bool {
         self.0
             .get(col)
             .is_some_and(|column| column.0.values().any(|block| f(&block.value)))
     }
 
-    /// Checks if any cell in the row satisfies the predicate
+    /// Returns whether any cell in the row satisfies the predicate
     pub fn check_row(&self, row: i64, f: impl Fn(&T) -> bool) -> bool {
         self.0
              .0
