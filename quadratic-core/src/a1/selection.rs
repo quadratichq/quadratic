@@ -116,7 +116,7 @@ impl A1Selection {
     }
 
     /// Constructs a selection all for a sheet.
-    pub fn from_all(sheet: SheetId) -> Self {
+    pub fn all(sheet: SheetId) -> Self {
         Self::from_range(CellRefRange::ALL, sheet)
     }
 

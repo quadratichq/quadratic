@@ -317,7 +317,7 @@ pub fn new_rect_selection(
 pub fn new_all_selection(sheet_id: String) -> Result<JsSelection, String> {
     let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
     Ok(JsSelection {
-        selection: A1Selection::from_all(sheet_id),
+        selection: A1Selection::all(sheet_id),
     })
 }
 

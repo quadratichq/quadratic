@@ -11,12 +11,8 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
-    /// Returns a HashMap<Pos, &CellValue> for a Selection in the Sheet. Note:
-    /// there's an order of precedence in enumerating the selection:
-    /// 1. All
-    /// 2. Columns
-    /// 3. Rows
-    /// 4. Rects
+    /// Returns a IndexMap<Pos, &CellValue> for a Selection in the Sheet.
+    /// Values are in order of selection made.
     ///
     /// If the selection is empty or the count > max_count then it returns None.
     /// It ignores CellValue::Blank (except below), and CellValue::Code (since
@@ -32,246 +28,78 @@ impl Sheet {
     /// (for now).
     pub fn selection_values(
         &self,
-        _selection: &A1Selection,
-        _max_count: Option<i64>,
-        _skip_code_runs: bool,
-        _include_blanks: bool,
+        selection: &A1Selection,
+        max_count: Option<i64>,
+        skip_code_runs: bool,
+        include_blanks: bool,
     ) -> Option<IndexMap<Pos, &CellValue>> {
-        dbgjs!("todo: implement selection_values");
-        None
-        // let mut count = 0u64;
-        // let max_count = max_count.unwrap_or(i64::MAX) as u64;
+        let mut count = 0u64;
+        let max_count = max_count.unwrap_or(i64::MAX) as u64;
 
-        // // we use a IndexMap to maintain the order of the cells
-        // let mut cells = IndexMap::new();
+        // we use a IndexMap to maintain the order of the cells
+        let mut cells = IndexMap::new();
 
-        // // This checks whether we should skip a CellValue::Code. We skip the
-        // // code cell if `skip_code_runs`` is true. For example, when running
-        // // summarize, we want the values of the code run, not the actual code
-        // // cell. Conversely, when we're deleting a cell, we want the code cell,
-        // // not the code run.
-        // let check_code =
-        //     |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
+        // This checks whether we should skip a CellValue::Code. We skip the
+        // code cell if `skip_code_runs`` is true. For example, when running
+        // summarize, we want the values of the code run, not the actual code
+        // cell. Conversely, when we're deleting a cell, we want the code cell,
+        // not the code run.
+        let check_code =
+            |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
 
-        // if let Some(all_pos) = subspaces.all {
-        //     for (&x, column) in self.columns.range(all_pos.x..) {
-        //         count += column.values.range(all_pos.x..).count() as u64;
-        //         if count >= max_count {
-        //             return None;
-        //         }
-        //         cells.extend(column.values.range(all_pos.y..).filter_map(|(&y, entry)| {
-        //             if !matches!(entry, &CellValue::Blank) && check_code(entry) {
-        //                 Some((Pos { x, y }, entry))
-        //             } else {
-        //                 None
-        //             }
-        //         }));
-        //     }
-        //     if !skip_code_runs {
-        //         for (pos, code_run) in self.code_runs.iter() {
-        //             match code_run.result {
-        //                 CodeRunResult::Ok(ref value) => match value {
-        //                     Value::Single(v) => {
-        //                         if pos.x < all_pos.x || pos.y < all_pos.y {
-        //                             continue;
-        //                         }
-        //                         count += 1;
-        //                         if count >= max_count {
-        //                             return None;
-        //                         }
-        //                         cells.insert(*pos, v);
-        //                     }
-        //                     Value::Array(a) => {
-        //                         for x in 0..a.width() {
-        //                             for y in 0..a.height() {
-        //                                 let pos = Pos {
-        //                                     x: pos.x + x as i64,
-        //                                     y: pos.y + y as i64,
-        //                                 };
+        for range in selection.ranges.iter() {
+            let rect = self.cell_ref_range_to_rect(*range);
+            for x in rect.min.x..=rect.max.x {
+                for y in rect.min.y..=rect.max.y {
+                    if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
+                        if (include_blanks || !matches!(entry, &CellValue::Blank))
+                            && check_code(entry)
+                        {
+                            count += 1;
+                            if count >= max_count {
+                                return None;
+                            }
+                            cells.insert(Pos { x, y }, entry);
+                        }
+                    } else if include_blanks {
+                        count += 1;
+                        if count >= max_count {
+                            return None;
+                        }
+                        cells.insert(Pos { x, y }, &CellValue::Blank);
+                    }
+                }
+            }
 
-        //                                 if pos.x < all_pos.x || pos.y < all_pos.y {
-        //                                     continue;
-        //                                 }
+            if !skip_code_runs {
+                for (pos, code_run) in self.code_runs.iter() {
+                    let rect = code_run.output_rect(*pos, false);
+                    for x in rect.min.x..=rect.max.x {
+                        for y in rect.min.y..=rect.max.y {
+                            if rect.contains(Pos { x, y }) {
+                                if let Some(entry) = code_run
+                                    .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
+                                {
+                                    if !matches!(entry, &CellValue::Blank) {
+                                        count += 1;
+                                        if count >= max_count {
+                                            return None;
+                                        }
+                                        cells.insert(Pos { x, y }, entry);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-        //                                 if let Ok(entry) = a.get(x, y) {
-        //                                     if include_blanks || !matches!(entry, &CellValue::Blank)
-        //                                     {
-        //                                         count += 1;
-        //                                         if count >= max_count {
-        //                                             return None;
-        //                                         }
-        //                                         cells.insert(pos, entry);
-        //                                     }
-        //                                 } else if include_blanks {
-        //                                     count += 1;
-        //                                     if count >= max_count {
-        //                                         return None;
-        //                                     }
-        //                                     cells.insert(pos, &CellValue::Blank);
-        //                                 }
-        //                             }
-        //                         }
-        //                     }
-        //                     Value::Tuple(_) => {} // Tuples are not spilled onto the grid
-        //                 },
-        //                 CodeRunResult::Err(_) => {}
-        //             }
-        //         }
-        //     }
-
-        //     // if selection.all, then we don't need to check the other selections
-        //     return Some(cells.into_iter().collect());
-        // }
-
-        // if !subspaces.cols.is_empty() {
-        //     for (col, min_row) in subspaces.cols.iter() {
-        //         if let Some(column) = self.columns.get(col) {
-        //             count += column.values.range(min_row..).count() as u64;
-        //             if count >= max_count {
-        //                 return None;
-        //             }
-        //             cells.extend(column.values.range(min_row..).filter_map(|(y, entry)| {
-        //                 if !matches!(entry, &CellValue::Blank) && check_code(entry) {
-        //                     Some((Pos { x: *col, y: *y }, entry))
-        //                 } else {
-        //                     None
-        //                 }
-        //             }));
-        //         }
-        //     }
-        //     if !skip_code_runs {
-        //         for (pos, code_run) in self.code_runs.iter() {
-        //             let rect = code_run.output_rect(*pos, false);
-        //             for (col, min_row) in subspaces.cols.iter() {
-        //                 if *col >= rect.min.x && *col <= rect.max.x && *min_row <= rect.max.y {
-        //                     let min_row = *min_row;
-        //                     for x in rect.min.x..=rect.max.x {
-        //                         if subspaces.cols.contains_key(&x) {
-        //                             for y in rect.min.y..=rect.max.y {
-        //                                 if y < min_row {
-        //                                     continue;
-        //                                 }
-        //                                 if let Some(entry) = code_run.cell_value_ref_at(
-        //                                     (x - pos.x) as u32,
-        //                                     (y - pos.y) as u32,
-        //                                 ) {
-        //                                     if !matches!(entry, &CellValue::Blank) {
-        //                                         count += 1;
-        //                                         if count >= max_count {
-        //                                             return None;
-        //                                         }
-        //                                         cells.insert(Pos { x, y }, entry);
-        //                                     }
-        //                                 }
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
-        // if !subspaces.rows.is_empty() {
-        //     for (&x, column) in self.columns.iter() {
-        //         for (&y, entry) in column.values.iter() {
-        //             if let Some(min_col) = subspaces.rows.get(&y) {
-        //                 if x < *min_col {
-        //                     continue;
-        //                 }
-        //                 if !matches!(entry, &CellValue::Blank) && check_code(entry) {
-        //                     count += 1;
-        //                     if count >= max_count {
-        //                         return None;
-        //                     }
-        //                     cells.insert(Pos { x, y }, entry);
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     if !skip_code_runs {
-        //         for (pos, code_run) in self.code_runs.iter() {
-        //             let rect = code_run.output_rect(*pos, false);
-        //             for y in rect.min.y..=rect.max.y {
-        //                 if let Some(min_col) = subspaces.rows.get(&y) {
-        //                     for x in rect.min.x..=rect.max.x {
-        //                         if x < *min_col {
-        //                             continue;
-        //                         }
-        //                         if let Some(entry) = code_run
-        //                             .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-        //                         {
-        //                             if !matches!(entry, &CellValue::Blank) {
-        //                                 count += 1;
-        //                                 if count >= max_count {
-        //                                     return None;
-        //                                 }
-        //                                 cells.insert(Pos { x, y }, entry);
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
-        // if !subspaces.rects.is_empty() {
-        //     for rect in subspaces.rects.iter() {
-        //         for x in rect.min.x..=rect.max.x {
-        //             for y in rect.min.y..=rect.max.y {
-        //                 if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
-        //                     if (include_blanks || !matches!(entry, &CellValue::Blank))
-        //                         && check_code(entry)
-        //                     {
-        //                         count += 1;
-        //                         if count >= max_count {
-        //                             return None;
-        //                         }
-        //                         cells.insert(Pos { x, y }, entry);
-        //                     }
-        //                 } else if include_blanks {
-        //                     count += 1;
-        //                     if count >= max_count {
-        //                         return None;
-        //                     }
-        //                     cells.insert(Pos { x, y }, &CellValue::Blank);
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     if !skip_code_runs {
-        //         for (pos, code_run) in self.code_runs.iter() {
-        //             let rect = code_run.output_rect(*pos, false);
-        //             for x in rect.min.x..=rect.max.x {
-        //                 for y in rect.min.y..=rect.max.y {
-        //                     if subspaces
-        //                         .rects
-        //                         .iter()
-        //                         .any(|rect| rect.contains(Pos { x, y }))
-        //                     {
-        //                         if let Some(entry) = code_run
-        //                             .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-        //                         {
-        //                             if !matches!(entry, &CellValue::Blank) {
-        //                                 count += 1;
-        //                                 if count >= max_count {
-        //                                     return None;
-        //                                 }
-        //                                 cells.insert(Pos { x, y }, entry);
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-        // if cells.is_empty() {
-        //     None
-        // } else {
-        //     Some(cells)
-        // }
+        if cells.is_empty() {
+            None
+        } else {
+            Some(cells)
+        }
     }
 
     ///   Gets a selection of CellValues. This is useful for dealing with a

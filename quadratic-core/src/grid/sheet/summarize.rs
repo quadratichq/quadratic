@@ -92,7 +92,7 @@ mod tests {
         let mut sheet = Sheet::test();
 
         // returns none if selection is too large (MAX_SUMMARIZE_SELECTION_SIZE)
-        let selection = A1Selection::from_all(sheet.id);
+        let selection = A1Selection::all(sheet.id);
         for i in 0..MAX_SUMMARIZE_SELECTION_SIZE + 1 {
             sheet.test_set_value_number(100, 100 + i, "1");
         }
@@ -151,7 +151,7 @@ mod tests {
             }
         }
         sheet.test_set_code_run_array(20, 20, vec!["1", "2", "3"], false);
-        let selection = A1Selection::from_all(sheet.id);
+        let selection = A1Selection::all(sheet.id);
         let result = sheet.summarize_selection(selection, 9).unwrap();
         assert_eq!(result.count, 103);
         assert_eq!(result.sum, Some(206.0));

@@ -508,13 +508,13 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(3, 3, 2, 2, vec!["1", "2", "3", "4"]);
         sheet.recalculate_bounds();
-        let selection = A1Selection::from_all(sheet_id);
+        let selection = A1Selection::all(sheet_id);
         let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
         gc.add_sheet(None);
 
         let sheet_id = gc.sheet_ids()[1];
         let operations = gc
-            .paste_html_operations(&A1Selection::from_all(sheet_id), html, PasteSpecial::None)
+            .paste_html_operations(&A1Selection::all(sheet_id), html, PasteSpecial::None)
             .unwrap();
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
 
