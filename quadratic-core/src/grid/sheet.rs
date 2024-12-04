@@ -515,7 +515,7 @@ mod test {
 
     use super::*;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, CodeCellValue};
+    use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat};
     use crate::test_util::print_table;
     use crate::{A1Selection, SheetPos, SheetRect};
 
@@ -686,23 +686,20 @@ mod test {
 
     #[test]
     fn test_cell_numeric_format_kind() {
-        todo!("update, remove, or replace this test");
+        let mut sheet = Sheet::test();
 
-        // let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
-        // let column = sheet.get_or_create_column(0);
+        sheet.formats.numeric_format.set(
+            pos![A1],
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }),
+        );
 
-        // column.numeric_format.set(
-        //     0,
-        //     Some(NumericFormat {
-        //         kind: NumericFormatKind::Percentage,
-        //         symbol: None,
-        //     }),
-        // );
-
-        // assert_eq!(
-        //     sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
-        //     NumericFormatKind::Percentage
-        // );
+        assert_eq!(
+            sheet.cell_numeric_format_kind(pos![A1]),
+            NumericFormatKind::Percentage
+        );
     }
 
     #[test]
