@@ -67,7 +67,7 @@ impl SheetFormatting {
     }
 
     pub fn row_has_wrap(&self, row: i64) -> bool {
-        self.wrap.is_row_empty(row)
+        !self.wrap.is_row_empty(row)
     }
 }
 
@@ -135,7 +135,7 @@ mod tests {
     fn test_row_has_wrap() {
         let formatting = create_test_formatting();
 
-        assert!(formatting.row_has_wrap(0));
-        assert!(!formatting.row_has_wrap(2));
+        assert!(formatting.row_has_wrap(1));
+        assert!(!formatting.row_has_wrap(4));
     }
 }

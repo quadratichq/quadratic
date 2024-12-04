@@ -83,7 +83,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        let pos = (1, 1).into();
+        let pos = pos![A1];
         let date_time = "%Y-%m-%d %H:%M:%S".to_string();
         let value = CellValue::DateTime(
             NaiveDateTime::parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z")
@@ -95,6 +95,8 @@ mod tests {
         assert_eq!(
             rendering[0],
             JsRenderCell {
+                x: 1,
+                y: 1,
                 align: Some(CellAlign::Right),
                 value: "05/17/2014 12:34 PM".to_string(),
                 ..Default::default()
@@ -109,6 +111,8 @@ mod tests {
         assert_eq!(
             rendering[0],
             JsRenderCell {
+                x: 1,
+                y: 1,
                 align: Some(CellAlign::Right),
                 value: "2014-05-17 12:34:56".to_string(),
                 ..Default::default()
@@ -124,6 +128,8 @@ mod tests {
         assert_eq!(
             rendering[0],
             JsRenderCell {
+                x: 1,
+                y: 1,
                 align: Some(CellAlign::Right),
                 value: "2014-05-17".to_string(),
                 ..Default::default()
