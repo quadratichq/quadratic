@@ -134,6 +134,7 @@ impl Sheet {
                 last_modified: Utc::now(),
             }),
         );
+        self.recalculate_bounds();
     }
 
     #[cfg(test)]
