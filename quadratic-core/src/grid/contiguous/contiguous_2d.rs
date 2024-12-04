@@ -307,13 +307,13 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
         self.to_rects()
             .filter_map(move |(x1, y1, x2, y2, value)| match (x2, y2) {
                 (Some(x2), Some(y2)) => Some((x1, y1, x2, y2, value)),
-                (None, Some(y2)) => {
-                    rows_bounds(y1, y2, ignore_formatting).map(|(_, x2)| (x1, y1, x2, y2, value))
+                (None, Some(y2)) => rows_bounds(y1, y2, ignore_formatting)
+                    .map(|(_, x2)| (x1, y1, x2.max(x1), y2, value)),
+                (Some(x2), None) => columns_bounds(x1, x2, ignore_formatting)
+                    .map(|(_, y2)| (x1, y1, x2, y2.max(y1), value)),
+                _ => {
+                    sheet_bounds.map(|rect| (x1, y1, rect.max.x.max(x1), rect.max.y.max(y1), value))
                 }
-                (Some(x2), None) => {
-                    columns_bounds(x1, x2, ignore_formatting).map(|(_, y2)| (x1, y1, x2, y2, value))
-                }
-                _ => sheet_bounds.map(|rect| (x1, y1, rect.max.x, rect.max.y, value)),
             })
     }
 

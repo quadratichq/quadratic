@@ -215,7 +215,7 @@ impl Sheet {
                                     std::cmp::max(a, b),
                                     ignore_formatting,
                                 )
-                                .map_or(rect_start.x, |(_, hi)| hi)
+                                .map_or(rect_start.x, |(_, hi)| hi.max(rect_start.x))
                             }),
                             y: end_row.unwrap_or_else(|| {
                                 let a = start.col.map_or(bounds.min.x, |c| c.coord);
@@ -226,7 +226,7 @@ impl Sheet {
                                     std::cmp::max(a, b),
                                     ignore_formatting,
                                 )
-                                .map_or(rect_start.y, |(_, hi)| hi)
+                                .map_or(rect_start.y, |(_, hi)| hi.max(rect_start.y))
                             }),
                         }
                     }
