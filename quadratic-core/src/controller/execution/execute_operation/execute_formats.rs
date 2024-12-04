@@ -18,6 +18,7 @@ impl GridController {
 
         let (reverse_operations, hashes, rows, html, fills_changed) =
             sheet.set_formats_a1(&formats);
+
         if reverse_operations.is_empty() {
             return;
         }

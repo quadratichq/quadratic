@@ -452,15 +452,15 @@ impl Sheet {
         rows
     }
 
-    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect) -> Vec<i64> {
+    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect, include_blanks: bool) -> Vec<i64> {
         let mut rows = vec![];
         for y in rect.y_range() {
             for x in rect.x_range() {
-                if self.cell_value(Pos { x, y }).is_some()
+                if (include_blanks || self.cell_value((x, y).into()).is_some())
                     && self
                         .formats
                         .wrap
-                        .get(Pos { x, y })
+                        .get((x, y).into())
                         .is_some_and(|wrap| wrap == &CellWrap::Wrap)
                 {
                     rows.push(y);
@@ -471,11 +471,15 @@ impl Sheet {
         rows
     }
 
-    pub fn get_rows_with_wrap_in_selection(&self, selection: &A1Selection) -> Vec<i64> {
+    pub fn get_rows_with_wrap_in_selection(
+        &self,
+        selection: &A1Selection,
+        include_blanks: bool,
+    ) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         selection.ranges.iter().for_each(|range| {
-            let rect = self.cell_ref_range_to_rect(range.clone());
-            let rows = self.get_rows_with_wrap_in_rect(&rect);
+            let rect = self.cell_ref_range_to_rect(*range);
+            let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
             rows_set.extend(rows);
         });
         rows_set.into_iter().collect()
@@ -897,12 +901,15 @@ mod test {
             min: pos![A1],
             max: pos![A4],
         };
-        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect), Vec::<i64>::new());
+        assert_eq!(
+            sheet.get_rows_with_wrap_in_rect(&rect, false),
+            Vec::<i64>::new()
+        );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect), vec![1, 3]);
+        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect, false), vec![1, 3]);
     }
 
     #[test]
@@ -912,14 +919,14 @@ mod test {
         sheet.set_cell_value(pos![A3], "test");
         let selection = A1Selection::test_a1("A1:A4");
         assert_eq!(
-            sheet.get_rows_with_wrap_in_selection(&selection),
+            sheet.get_rows_with_wrap_in_selection(&selection, false),
             Vec::<i64>::new()
         );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection);
+        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection, false);
         rows.sort();
         assert_eq!(rows, vec![1, 3]);
     }

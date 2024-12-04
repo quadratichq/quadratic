@@ -80,7 +80,7 @@ mod tests {
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
     use crate::grid::formats::FormatUpdate;
-    use crate::grid::formats::Formats;
+    use crate::grid::formats::SheetFormatUpdates;
     use crate::grid::js_types::JsRowHeight;
     use crate::grid::{
         CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, NumericFormat, NumericFormatKind,
@@ -90,7 +90,6 @@ mod tests {
     use crate::wasm_bindings::js::{
         clear_js_calls, expect_js_call, expect_js_call_count, expect_js_offsets,
     };
-    use crate::OldSelection;
     use crate::{A1Selection, CellValue, Pos, SheetPos, SheetRect};
 
     fn mock_auto_resize_row_heights(
@@ -206,12 +205,11 @@ mod tests {
 
         gc.set_cell_values(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             vec![
-                vec!["0"],
                 vec!["1"],
                 vec!["2"],
                 vec!["3"],
@@ -219,62 +217,27 @@ mod tests {
                 vec!["5"],
                 vec!["6"],
                 vec!["7"],
+                vec!["8"],
             ],
             None,
         );
-        gc.set_cell_wrap(
-            &A1Selection::from_rect(SheetRect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 10 },
-                sheet_id,
-            }),
-            CellWrap::Wrap,
-            None,
-        )
-        .unwrap();
+        gc.set_cell_wrap(&A1Selection::test_a1("A1:J10"), CellWrap::Wrap, None)
+            .unwrap();
 
         // should trigger auto resize row heights for wrap
-        let ops = vec![Operation::SetCellFormatsSelection {
-            selection: OldSelection::pos(0, 0, sheet_id),
-            formats: Formats::repeat(
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1("A1"),
                 FormatUpdate {
                     wrap: Some(Some(CellWrap::Overflow)),
                     ..FormatUpdate::default()
                 },
-                1,
-            ),
-        }];
-        let row_heights = vec![JsRowHeight {
-            row: 0,
-            height: 40f64,
-        }];
-        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
-        let transaction_id = gc.last_transaction().unwrap().id;
-        expect_js_call(
-            "jsRequestRowHeights",
-            format!("{},{},{}", transaction_id, sheet_id, "[0]"),
-            false,
-        );
-        assert_eq!(gc.sheet(sheet_id).offsets.row_height(0), 40f64);
-        expect_js_request_row_heights(sheet_id, row_heights);
-
-        // should trigger auto resize row heights for numeric format
-        let ops = vec![Operation::SetCellFormatsSelection {
-            selection: OldSelection::pos(0, 1, sheet_id),
-            formats: Formats::repeat(
-                FormatUpdate {
-                    numeric_format: Some(Some(NumericFormat {
-                        kind: NumericFormatKind::Currency,
-                        symbol: None,
-                    })),
-                    ..FormatUpdate::default()
-                },
-                1,
             ),
         }];
         let row_heights = vec![JsRowHeight {
             row: 1,
-            height: 41f64,
+            height: 40f64,
         }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -283,23 +246,26 @@ mod tests {
             format!("{},{},{}", transaction_id, sheet_id, "[1]"),
             false,
         );
-        assert_eq!(gc.sheet(sheet_id).offsets.row_height(1), 41f64);
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(1), 40f64);
         expect_js_request_row_heights(sheet_id, row_heights);
 
-        // should trigger auto resize row heights for numeric decimals
-        let ops = vec![Operation::SetCellFormatsSelection {
-            selection: OldSelection::pos(0, 2, sheet_id),
-            formats: Formats::repeat(
+        // should trigger auto resize row heights for numeric format
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1("A2"),
                 FormatUpdate {
-                    numeric_decimals: Some(Some(2)),
+                    numeric_format: Some(Some(NumericFormat {
+                        kind: NumericFormatKind::Currency,
+                        symbol: None,
+                    })),
                     ..FormatUpdate::default()
                 },
-                1,
             ),
         }];
         let row_heights = vec![JsRowHeight {
             row: 2,
-            height: 42f64,
+            height: 41f64,
         }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -308,23 +274,24 @@ mod tests {
             format!("{},{},{}", transaction_id, sheet_id, "[2]"),
             false,
         );
-        assert_eq!(gc.sheet(sheet_id).offsets.row_height(2), 42f64);
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(2), 41f64);
         expect_js_request_row_heights(sheet_id, row_heights);
 
-        // should trigger auto resize row heights for numeric commas
-        let ops = vec![Operation::SetCellFormatsSelection {
-            selection: OldSelection::pos(0, 3, sheet_id),
-            formats: Formats::repeat(
+        // should trigger auto resize row heights for numeric decimals
+
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1("A3"),
                 FormatUpdate {
-                    numeric_commas: Some(Some(true)),
+                    numeric_decimals: Some(Some(2)),
                     ..FormatUpdate::default()
                 },
-                1,
             ),
         }];
         let row_heights = vec![JsRowHeight {
             row: 3,
-            height: 43f64,
+            height: 42f64,
         }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -333,23 +300,23 @@ mod tests {
             format!("{},{},{}", transaction_id, sheet_id, "[3]"),
             false,
         );
-        assert_eq!(gc.sheet(sheet_id).offsets.row_height(3), 43f64);
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(3), 42f64);
         expect_js_request_row_heights(sheet_id, row_heights);
 
-        // should trigger auto resize row heights for bold
-        let ops = vec![Operation::SetCellFormatsSelection {
-            selection: OldSelection::pos(0, 4, sheet_id),
-            formats: Formats::repeat(
+        // should trigger auto resize row heights for numeric commas
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1("A4"),
                 FormatUpdate {
-                    bold: Some(Some(true)),
+                    numeric_commas: Some(Some(true)),
                     ..FormatUpdate::default()
                 },
-                1,
             ),
         }];
         let row_heights = vec![JsRowHeight {
             row: 4,
-            height: 44f64,
+            height: 43f64,
         }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -358,23 +325,23 @@ mod tests {
             format!("{},{},{}", transaction_id, sheet_id, "[4]"),
             false,
         );
-        assert_eq!(gc.sheet(sheet_id).offsets.row_height(4), 44f64);
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(4), 43f64);
         expect_js_request_row_heights(sheet_id, row_heights);
 
-        // should trigger auto resize row heights for italic
-        let ops = vec![Operation::SetCellFormatsSelection {
-            selection: OldSelection::pos(0, 5, sheet_id),
-            formats: Formats::repeat(
+        // should trigger auto resize row heights for bold
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1("A5"),
                 FormatUpdate {
-                    italic: Some(Some(true)),
+                    bold: Some(Some(true)),
                     ..FormatUpdate::default()
                 },
-                1,
             ),
         }];
         let row_heights = vec![JsRowHeight {
             row: 5,
-            height: 45f64,
+            height: 44f64,
         }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -383,13 +350,39 @@ mod tests {
             format!("{},{},{}", transaction_id, sheet_id, "[5]"),
             false,
         );
-        assert_eq!(gc.sheet(sheet_id).offsets.row_height(5), 45f64);
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(5), 44f64);
+        expect_js_request_row_heights(sheet_id, row_heights);
+
+        // should trigger auto resize row heights for italic
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1("A6"),
+                FormatUpdate {
+                    italic: Some(Some(true)),
+                    ..FormatUpdate::default()
+                },
+            ),
+        }];
+        let row_heights = vec![JsRowHeight {
+            row: 6,
+            height: 45f64,
+        }];
+        mock_auto_resize_row_heights(&mut gc, sheet_id, ops, row_heights.clone());
+        let transaction_id = gc.last_transaction().unwrap().id;
+        expect_js_call(
+            "jsRequestRowHeights",
+            format!("{},{},{}", transaction_id, sheet_id, "[6]"),
+            false,
+        );
+        assert_eq!(gc.sheet(sheet_id).offsets.row_height(6), 45f64);
         expect_js_request_row_heights(sheet_id, row_heights);
 
         // should not trigger auto resize row heights for other formats
-        let ops = vec![Operation::SetCellFormatsSelection {
-            selection: OldSelection::pos(1, 0, sheet_id),
-            formats: Formats::repeat(
+        let ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(
+                &A1Selection::test_a1("A1"),
                 FormatUpdate {
                     align: Some(Some(CellAlign::Center)),
                     vertical_align: Some(Some(CellVerticalAlign::Middle)),
@@ -401,7 +394,6 @@ mod tests {
                     })),
                     ..FormatUpdate::default()
                 },
-                1,
             ),
         }];
         mock_auto_resize_row_heights(&mut gc, sheet_id, ops, vec![]);

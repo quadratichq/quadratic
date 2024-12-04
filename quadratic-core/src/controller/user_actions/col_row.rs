@@ -253,6 +253,7 @@ mod tests {
             sheet.formats.format(pos![A1]),
             Format {
                 fill_color: Some("red".to_string()),
+                text_color: Some("blue".to_string()),
                 ..Default::default()
             }
         );
@@ -316,6 +317,7 @@ mod tests {
             sheet.formats.format(pos![A1]),
             Format {
                 fill_color: Some("red".to_string()),
+                text_color: Some("blue".to_string()),
                 ..Default::default()
             }
         );
@@ -349,8 +351,8 @@ mod tests {
         assert_eq!(
             sheet.formats.format(pos![A1]),
             Format {
-                text_color: Some("blue".to_string()),
                 fill_color: Some("red".to_string()),
+                text_color: Some("blue".to_string()),
                 ..Default::default()
             }
         );
@@ -379,6 +381,7 @@ mod tests {
             sheet.formats.format(pos![A1]),
             Format {
                 fill_color: Some("red".to_string()),
+                text_color: Some("blue".to_string()),
                 ..Default::default()
             }
         );
@@ -417,7 +420,7 @@ mod tests {
                 ..Default::default()
             }
         );
-        assert!(sheet.formats.format(pos![D1]).is_default());
+        assert!(sheet.formats.format(pos![A2]).is_default());
         assert!(sheet.formats.format(pos![B2]).is_default());
     }
 }

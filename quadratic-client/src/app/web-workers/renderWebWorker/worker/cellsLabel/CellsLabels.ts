@@ -12,10 +12,11 @@ import { isFloatEqual } from '@/app/helpers/float';
 import { ColumnRow, JsOffset, JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { Pos } from '@/app/quadratic-core/quadratic_core';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import { CellsTextHash } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHash';
+import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
+import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
-import { RenderBitmapFonts } from '../../renderBitmapFonts';
-import { renderText } from '../renderText';
-import { CellsTextHash } from './CellsTextHash';
 
 // 500 MB maximum memory per sheet before we start unloading hashes (right now
 // this is on a per-sheet basis--we will want to change this to a global limit)
@@ -548,7 +549,7 @@ export class CellsLabels {
     });
     await Promise.all(promises);
     const jsRowHeights: JsRowHeight[] = rows.map((row) => {
-      const height = rowHeights.get(Number(row)) ?? this.sheetOffsets.getRowHeight(Number(row));
+      const height = rowHeights.get(Number(row)) ?? CELL_HEIGHT;
       return { row, height };
     });
     const changesRowHeights: JsRowHeight[] = jsRowHeights.filter(

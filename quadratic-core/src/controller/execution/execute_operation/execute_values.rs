@@ -72,7 +72,8 @@ impl GridController {
 
                         if transaction.is_user() {
                             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
+                                let rows =
+                                    sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
                                 if !rows.is_empty() {
                                     let resize_rows = transaction
                                         .resize_rows
