@@ -88,6 +88,12 @@ declare global {
     static cells(a1: string): (number | string | boolean | Date | undefined)[] | (number | string | boolean | Date | undefined)[][] | number | string | boolean | Date | undefined;
 
     /**
+     * Gets the position of the code cell
+     * @returns { x: number, y: number }
+     */
+    static pos(): { x: number; y: number };
+
+    /**
      * Convert a 0-based x,y coordinate to an A1 string.
      * @param x The x coordinate.
      * @param y The y coordinate.
@@ -306,6 +312,14 @@ export class q {
     }
 
     return column + y;
+  }
+
+  /**
+   * Gets the position of the code cell
+   * @returns { x: number, y: number }
+   */
+  static pos(): { x: number; y: number } {
+    return pos();
   }
 
   /**
