@@ -4,6 +4,7 @@
 
 pub mod autocomplete;
 pub mod borders;
+pub mod borders_a1;
 pub mod cell_value;
 pub mod clipboard;
 pub mod code_cell;
