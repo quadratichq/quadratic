@@ -424,6 +424,25 @@ impl RefRangeBounds {
         }
     }
 
+    /// Converts the CellRefRange to coordinates to be used in Contiguous2D.
+    pub fn to_contiguous2d_coords(&self) -> (i64, i64, Option<i64>, Option<i64>) {
+        if let Some(end) = self.end {
+            (
+                self.start.col_or(1),
+                self.start.row_or(1),
+                end.col.map(|c| c.coord),
+                end.row.map(|r| r.coord),
+            )
+        } else {
+            (
+                self.start.col_or(1),
+                self.start.row_or(1),
+                Some(self.start.col_or(1)),
+                Some(self.start.row_or(1)),
+            )
+        }
+    }
+
     /// Returns a test range from the A1-string.
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
@@ -818,5 +837,33 @@ mod tests {
         assert_eq!(RefRangeBounds::test_a1("A").try_to_pos(), None);
         assert_eq!(RefRangeBounds::test_a1("1:5").try_to_pos(), None);
         assert_eq!(RefRangeBounds::test_a1("*").try_to_pos(), None);
+    }
+
+    #[test]
+    fn test_to_contiguous2d_coords() {
+        assert_eq!(
+            RefRangeBounds::test_a1("A1").to_contiguous2d_coords(),
+            (1, 1, Some(1), Some(1))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("A1:B2").to_contiguous2d_coords(),
+            (1, 1, Some(2), Some(2))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("B1:C").to_contiguous2d_coords(),
+            (2, 1, Some(3), None)
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("2").to_contiguous2d_coords(),
+            (2, 1, Some(2), None)
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("*").to_contiguous2d_coords(),
+            (1, 1, None, None)
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("E:G").to_contiguous2d_coords(),
+            (5, 1, Some(7), None)
+        );
     }
 }

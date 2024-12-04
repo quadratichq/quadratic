@@ -19,6 +19,7 @@ use crate::{A1Selection, Array, CellValue, Pos, Rect};
 
 pub mod a1_selection;
 pub mod borders;
+pub mod borders_a1;
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;

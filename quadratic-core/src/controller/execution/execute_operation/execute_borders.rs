@@ -79,8 +79,8 @@ impl GridController {
     ) {
         // unwrap_op!(let SetBordersA1 { sheet_id, borders } = op);
 
-        todo!()
-        // transaction.generate_thumbnail |= self.thumbnail_dirty_subspaces(sheet_id, &subspaces);
+        // // todo: self.thumbnail_dirty_borders (similar to thumbnail_dirty_formats)
+        // // transaction.generate_thumbnail |= self.thumbnail_dirty_ranges(&ranges);
 
         // let Some(sheet) = self.try_sheet_mut(sheet_id) else {
         //     return; // sheet may have been deleted
@@ -88,7 +88,7 @@ impl GridController {
 
         // transaction
         //     .reverse_operations
-        //     .extend(sheet.borders.set_borders_a1(&borders));
+        //     .extend(sheet.borders.set_borders_a1(&ranges, &borders));
 
         // // Do not finitize selection; borders actually *does* treat the sheet as
         // // infinite.

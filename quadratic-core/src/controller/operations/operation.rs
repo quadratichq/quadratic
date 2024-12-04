@@ -9,7 +9,10 @@ use crate::{
         formats::{Formats, SheetFormatUpdates},
         formatting::CellFmtArray,
         js_types::JsRowHeight,
-        sheet::{borders::BorderStyleCellUpdates, validations::validation::Validation},
+        sheet::{
+            borders::BorderStyleCellUpdates, borders_a1::BordersA1Updates,
+            validations::validation::Validation,
+        },
         CodeRun, CodeRunOld, Sheet, SheetBorders, SheetId,
     },
     selection::OldSelection,
@@ -82,7 +85,7 @@ pub enum Operation {
     /// Updates borders for all cells in a selection.
     SetBordersA1 {
         sheet_id: SheetId,
-        borders: BorderStyleCellUpdates,
+        borders: BordersA1Updates,
     },
 
     /// **Deprecated** Nov 2024 in favor of `AddSheetSchema`.

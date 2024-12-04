@@ -10,7 +10,7 @@ use super::{
 };
 
 impl Borders {
-    /// **Deprecated** Nov 2024 in favor of [`Self::set_borders()`].
+    /// **Deprecated** Nov 2024 in favor of [`Self::set_borders_a1()`].
     ///
     /// Sets the borders for a selection.
     pub fn set_borders_selection(
@@ -152,14 +152,6 @@ impl Borders {
         }
 
         undo
-    }
-
-    /// Sets the borders for a selection.
-    pub fn set_borders_a1(&mut self, _borders: &BorderStyleCellUpdates) -> Vec<Operation> {
-        dbgjs!("implement set_borders_a1");
-        vec![]
-        // let mut undo = vec![];
-        // let mut undo_borders = RunLengthEncoding::new();
     }
 
     /// Sets the border for a cell. This is used in the upgrade_border for going

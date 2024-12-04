@@ -167,6 +167,16 @@ impl CellRefRangeEnd {
             self.row.map_or(default, |c| c.coord),
         ]
     }
+
+    /// Unpacks the x coordinate or returns 1
+    pub fn col_or(self, default: i64) -> i64 {
+        self.col.map_or(default, |c| c.coord)
+    }
+
+    /// Unpacks the y coordinate or returns 1
+    pub fn row_or(self, default: i64) -> i64 {
+        self.row.map_or(default, |c| c.coord)
+    }
 }
 
 #[cfg(test)]
@@ -302,5 +312,17 @@ mod tests {
             CellRefRangeEnd::new_relative_row(2).unpack_xy_default(1),
             [1, 2]
         );
+    }
+
+    #[test]
+    fn test_x_or() {
+        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).col_or(2), 1);
+        assert_eq!(CellRefRangeEnd::UNBOUNDED.col_or(1), 1);
+    }
+
+    #[test]
+    fn test_y_or_1() {
+        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).row_or(3), 1);
+        assert_eq!(CellRefRangeEnd::UNBOUNDED.row_or(1), 1);
     }
 }
