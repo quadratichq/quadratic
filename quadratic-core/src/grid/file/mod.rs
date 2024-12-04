@@ -164,8 +164,22 @@ fn import_json(file_contents: String) -> Result<Grid> {
         anyhow!(e)
     })?;
     drop(file_contents);
+
+    let check_for_negative_offsets = matches!(
+        &json,
+        GridFile::V1_3 { .. }
+            | GridFile::V1_4 { .. }
+            | GridFile::V1_5 { .. }
+            | GridFile::V1_6 { .. }
+            | GridFile::V1_7 { .. }
+    );
+
     let file = json.into_latest()?;
-    serialize::import(file)
+    let mut grid = serialize::import(file);
+
+    handle_negative_offsets(&mut grid, check_for_negative_offsets);
+
+    grid
 }
 
 pub fn export(grid: Grid) -> Result<Vec<u8>> {
