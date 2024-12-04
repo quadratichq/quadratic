@@ -49,8 +49,8 @@ impl Sheet {
 
         for range in selection.ranges.iter() {
             let rect = self.cell_ref_range_to_rect(*range);
-            for x in rect.min.x..=rect.max.x {
-                for y in rect.min.y..=rect.max.y {
+            for x in rect.x_range() {
+                for y in rect.y_range() {
                     if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
                         if (include_blanks || !matches!(entry, &CellValue::Blank))
                             && check_code(entry)
@@ -73,9 +73,9 @@ impl Sheet {
 
             if !skip_code_runs {
                 for (pos, code_run) in self.code_runs.iter() {
-                    let rect = code_run.output_rect(*pos, false);
-                    for x in rect.min.x..=rect.max.x {
-                        for y in rect.min.y..=rect.max.y {
+                    let code_rect = code_run.output_rect(*pos, false);
+                    for x in code_rect.x_range() {
+                        for y in code_rect.y_range() {
                             if rect.contains(Pos { x, y }) {
                                 if let Some(entry) = code_run
                                     .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
