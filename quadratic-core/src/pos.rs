@@ -115,6 +115,14 @@ impl From<(i64, i64)> for Pos {
         Pos { x: pos.0, y: pos.1 }
     }
 }
+impl From<[i64; 2]> for Pos {
+    fn from(pos: [i64; 2]) -> Self {
+        Pos {
+            x: pos[0],
+            y: pos[1],
+        }
+    }
+}
 impl From<SheetPos> for Pos {
     fn from(sheet_pos: SheetPos) -> Self {
         Pos {

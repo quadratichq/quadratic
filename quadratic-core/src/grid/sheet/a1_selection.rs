@@ -192,10 +192,7 @@ impl Sheet {
             CellRefRange::Sheet { range } => {
                 let RefRangeBounds { start, end } = range;
 
-                let rect_start = Pos {
-                    x: start.col.map_or(1, |c| c.coord),
-                    y: start.row.map_or(1, |r| r.coord),
-                };
+                let rect_start: Pos = start.unpack_xy_default(1).into();
 
                 let ignore_formatting = false;
                 let bounds = match self.bounds(ignore_formatting) {

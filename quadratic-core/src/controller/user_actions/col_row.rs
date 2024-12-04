@@ -209,7 +209,7 @@ mod tests {
             Some(&"blue".to_string())
         );
 
-        // this is the original row that was shifted down (with the original formatting)
+        // this is the original column that was shifted right (with the original formatting)
         assert_eq!(
             sheet.formats.fill_color.get(pos![B1]),
             Some(&"red".to_string())
@@ -229,7 +229,6 @@ mod tests {
                 ..Default::default()
             }
         );
-        assert!(sheet.formats.format(pos![A1]).is_default());
         assert!(sheet.formats.format(pos![B1]).is_default());
     }
 

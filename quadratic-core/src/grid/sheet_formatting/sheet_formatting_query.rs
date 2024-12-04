@@ -81,10 +81,10 @@ mod tests {
         // Add some test data
         formatting.align.set(pos![A1], Some(CellAlign::Center));
         formatting.bold.set(pos![B1], Some(true));
+        formatting.wrap.set(pos![D1], Some(CellWrap::Wrap));
         formatting
             .fill_color
-            .set(pos![B2], Some("#FF0000".to_string()));
-        formatting.wrap.set(pos![D1], Some(CellWrap::Wrap));
+            .set(pos![A2], Some("rgb(241, 196, 15)".to_string()));
         formatting
     }
 

@@ -52,17 +52,37 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
         let mut c: Contiguous2D<Option<T>> = Contiguous2D::new();
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
+                let start = range.start.unpack_xy_default(1);
                 if let Some(end) = range.end {
-                    c.set_rect(
-                        range.start.col.map_or(1, |col| col.coord),
-                        range.start.row.map_or(1, |row| row.coord),
-                        end.col.map(|col| col.coord),
-                        end.row.map(|row| row.coord),
-                        Some(value.clone()),
-                    );
+                    let end = end.unpack_xy();
+                    c.set_rect(start[0], start[1], end[0], end[1], Some(value.clone()));
                 } else {
-                    let xy = range.start.unpack_xy_default(1);
-                    c.set(Pos { x: xy[0], y: xy[1] }, Some(value.clone()));
+                    match (range.start.col, range.start.row) {
+                        (Some(_), Some(_)) => {
+                            c.set(start.into(), Some(value.clone()));
+                        }
+                        (Some(_), None) => {
+                            c.set_rect(
+                                start[0],
+                                start[1],
+                                Some(start[0]),
+                                None,
+                                Some(value.clone()),
+                            );
+                        }
+                        (None, Some(_)) => {
+                            c.set_rect(
+                                start[0],
+                                start[1],
+                                None,
+                                Some(start[1]),
+                                Some(value.clone()),
+                            );
+                        }
+                        (None, None) => {
+                            c.set_rect(start[0], start[1], None, None, Some(value.clone()));
+                        }
+                    }
                 }
             }
         });
