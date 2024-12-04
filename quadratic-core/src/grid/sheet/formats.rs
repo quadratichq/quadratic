@@ -230,6 +230,14 @@ mod tests {
         reverse_align.set_rect(1, 1, Some(5), Some(5), None);
         reverse_formats.align = Some(reverse_align);
 
+        let mut wrap = Contiguous2D::new();
+        wrap.set_rect(1, 1, Some(5), Some(5), Some(Some(CellWrap::Wrap)));
+        formats.wrap = Some(wrap);
+
+        let mut reverse_wrap = Contiguous2D::new();
+        reverse_wrap.set_rect(1, 1, Some(5), Some(5), None);
+        reverse_formats.wrap = Some(reverse_wrap);
+
         let mut bold = Contiguous2D::new();
         bold.set_rect(1, 1, Some(5), Some(5), Some(Some(true)));
         formats.bold = Some(bold);
@@ -264,7 +272,7 @@ mod tests {
         .collect();
 
         // Expected rows that changed
-        let expected_rows: HashSet<i64> = (1..=5).collect();
+        let expected_rows: HashSet<i64> = [1, 5].into_iter().collect();
 
         assert_eq!(dirty_hashes, expected_quadrants);
         assert_eq!(rows_changed, expected_rows);
