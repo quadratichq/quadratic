@@ -26,12 +26,12 @@ export type GridBounds = { "type": "empty" } | { "type": "nonEmpty" } & Rect;
 export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint, }
 export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint, }
 export interface JsBordersSheet { all: BorderStyleCell | null, columns: Record<string, BorderStyleCell> | null, rows: Record<string, BorderStyleCell> | null, horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
-export interface JsCellsAccessed { cells: Record<string, Array<string>>, }
+export interface JsCellsAccessed { sheetId: string, ranges: Array<CellRefRange>, }
 export interface JsCellValue { value: string, kind: string, }
 export interface JsCellValuePos { value: string, kind: string, pos: string, }
 export interface JsCellValuePosAIContext { sheet_name: string, rect_origin: string, rect_width: number, rect_height: number, starting_rect_values: Array<Array<JsCellValuePos>>, }
 export interface JsClipboard { plainText: string, html: string, }
-export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: JsCellsAccessed | null, }
+export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
 export interface JsCoordinate { x: number, y: number, }
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }

@@ -91,8 +91,8 @@ class CoreJavascript {
       if (cellsString) {
         cells = JSON.parse(cellsString) as CellA1Response;
       }
-    } catch (e) {
-      console.warn('[coreJavascript] Error getting cells:', e);
+    } catch (_e) {
+      // core threw and handled the error
     }
     if (cells) {
       this.send({

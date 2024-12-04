@@ -1,13 +1,11 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import {
-  codeEditorCellsAccessedAtom,
   codeEditorCodeCellAtom,
   codeEditorDiffEditorContentAtom,
   codeEditorEditorContentAtom,
   codeEditorLoadingAtom,
   codeEditorShowCodeEditorAtom,
   codeEditorShowDiffEditorAtom,
-  codeEditorUnsavedChangesAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
@@ -59,13 +57,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
-  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const loading = useRecoilValue(codeEditorLoadingAtom);
-  const cellsAccessedState = useRecoilValue(codeEditorCellsAccessedAtom);
-  const cellsAccessed = useMemo(
-    () => (!unsavedChanges ? cellsAccessedState : []),
-    [cellsAccessedState, unsavedChanges]
-  );
   const {
     userMakingRequest: { teamPermissions },
   } = useFileRouteLoaderData();
@@ -78,7 +70,7 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
 
   const [isValidRef, setIsValidRef] = useState(false);
   const [monacoInst, setMonacoInst] = useState<Monaco | null>(null);
-  useEditorCellHighlights(isValidRef, editorInst, monacoInst, cellsAccessed);
+  useEditorCellHighlights(isValidRef, editorInst, monacoInst);
   useEditorOnSelectionChange(isValidRef, editorInst, monacoInst);
   useEditorReturn(isValidRef, editorInst, monacoInst);
 

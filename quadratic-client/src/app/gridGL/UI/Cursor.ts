@@ -19,8 +19,7 @@ const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 const INLINE_NAVIGATE_TEXT_INDICATOR_SIZE = 6;
 
-export type CursorCell = { x: number; y: number; width: number; height: number };
-const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
+const CURSOR_CELL_DEFAULT_VALUE = new Rectangle(0, 0, 0, 0);
 
 // outside border when editing the cell
 const CURSOR_INPUT_ALPHA = 0.333;
@@ -29,8 +28,8 @@ export class Cursor extends Container {
   indicator: Rectangle;
   dirty = true;
 
-  startCell: CursorCell;
-  endCell: CursorCell;
+  startCell: Rectangle;
+  endCell: Rectangle;
 
   cursorRectangle?: Rectangle;
 

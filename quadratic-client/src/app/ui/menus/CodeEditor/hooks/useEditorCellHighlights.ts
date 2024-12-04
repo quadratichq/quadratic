@@ -1,9 +1,13 @@
-import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorCellsAccessedAtom,
+  codeEditorCodeCellAtom,
+  codeEditorUnsavedChangesAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
 import { getKey, StringId } from '@/app/helpers/getKey';
-import { JsCoordinate, SheetRect } from '@/app/quadratic-core-types';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { Monaco } from '@monaco-editor/react';
@@ -60,10 +64,11 @@ export const createFormulaStyleHighlights = () => {
 export const useEditorCellHighlights = (
   isValidRef: boolean,
   editorInst: monaco.editor.IStandaloneCodeEditor | null,
-  monacoInst: Monaco | null,
-  cellsAccessed?: SheetRect[] | null
+  monacoInst: Monaco | null
 ) => {
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+  const cellsAccessed = useRecoilValue(codeEditorCellsAccessedAtom);
+  const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
   const decorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
@@ -91,11 +96,7 @@ export const useEditorCellHighlights = (
         codeCell.language === 'Javascript' ||
         codeCellIsAConnection(codeCell.language)
       ) {
-        // const parsed = parseCellsAccessed(cellsAccessed);
-        // if (parsed) {
-        //   pixiApp.cellHighlights.fromCellsAccessed(parsed, codeCell.pos, codeCell.sheetId);
-        // }
-        // todo...
+        pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed);
       } else if (codeCell.language === 'Formula') {
         const parsed = (await parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
         if (parsed) {
@@ -140,5 +141,14 @@ export const useEditorCellHighlights = (
 
     onChangeModel();
     editorInst.onDidChangeModelContent(() => onChangeModel());
-  }, [cellsAccessed, codeCell.language, codeCell.pos, codeCell.sheetId, editorInst, isValidRef, monacoInst]);
+  }, [
+    cellsAccessed,
+    codeCell.language,
+    codeCell.pos,
+    codeCell.sheetId,
+    editorInst,
+    isValidRef,
+    monacoInst,
+    unsavedChanges,
+  ]);
 };

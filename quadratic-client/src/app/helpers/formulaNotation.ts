@@ -1,8 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { CursorCell } from '@/app/gridGL/UI/Cursor';
 import { StringId } from '@/app/helpers/getKey';
 import { JsCoordinate } from '@/app/quadratic-core-types';
 import { CellRefId } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
+import { Rectangle } from 'pixi.js';
 
 export function getCoordinatesFromStringId(stringId: StringId): [number, number] {
   // required for type inference
@@ -69,7 +69,7 @@ function getCellWithLimit(
   row: number,
   column: number,
   offset = 20000
-): CursorCell {
+): Rectangle {
   // getCell is slow with more than 9 digits, so limit if column or row is > editorCursorPosition + an offset
   // If it's a single cell to be highlighted, it won't be visible anyway, and if it's a range
   // It will highlight beyond the what's visible in the viewport
@@ -79,7 +79,7 @@ function getCellWithLimit(
   );
 }
 
-export function isCellRangeTypeGuard(obj: any): obj is { startCell: CursorCell; endCell: CursorCell } {
+export function isCellRangeTypeGuard(obj: any): obj is { startCell: Rectangle; endCell: Rectangle } {
   return (
     typeof obj === 'object' &&
     obj !== null &&

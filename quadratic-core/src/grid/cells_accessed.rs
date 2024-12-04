@@ -9,8 +9,10 @@ use super::SheetId;
 use crate::{CellRefRange, Rect, SheetPos, SheetRect};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
 pub struct JsCellsAccessed {
-    pub cells: HashMap<String, Vec<String>>,
+    pub sheet_id: String,
+    pub ranges: Vec<CellRefRange>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
@@ -59,14 +61,14 @@ impl<'de> Deserialize<'de> for CellsAccessed {
     }
 }
 
-impl From<CellsAccessed> for JsCellsAccessed {
+impl From<CellsAccessed> for Vec<JsCellsAccessed> {
     fn from(cells: CellsAccessed) -> Self {
-        let mut js_cells = JsCellsAccessed::default();
+        let mut js_cells = Vec::new();
         for (sheet_id, ranges) in cells.cells {
-            js_cells.cells.insert(
-                sheet_id.to_string(),
-                ranges.into_iter().map(|r| r.to_string()).collect(),
-            );
+            js_cells.push(JsCellsAccessed {
+                sheet_id: sheet_id.to_string(),
+                ranges: ranges.into_iter().collect(),
+            });
         }
         js_cells
     }
@@ -231,9 +233,10 @@ mod tests {
         let mut cells = CellsAccessed::default();
         let sheet_id = SheetId::new();
         cells.add(sheet_id, CellRefRange::ALL);
-        let js_cells: JsCellsAccessed = cells.into();
-        assert_eq!(js_cells.cells.len(), 1);
-        assert_eq!(js_cells.cells[&sheet_id.to_string()], vec!["*".to_string()]);
+        let js_cells: Vec<JsCellsAccessed> = cells.into();
+        assert_eq!(js_cells.len(), 1);
+        assert_eq!(js_cells[0].sheet_id, sheet_id.to_string());
+        assert_eq!(js_cells[0].ranges, vec![CellRefRange::ALL]);
     }
 
     #[test]

@@ -36,10 +36,7 @@ export const useUpdateCodeEditor = () => {
             diffEditorContent:
               editorContent === prev.diffEditorContent?.editorContent ? undefined : prev.diffEditorContent,
             evaluationResult: { ...newEvaluationResult, ...codeCell.return_info },
-
-            // todo...
-            cellsAccessed: undefined, //codeCell.cells_accessed,
-
+            cellsAccessed: codeCell.cells_accessed,
             consoleOutput: { stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined },
             spillError: codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as JsCoordinate)),
             initialCode: undefined,
@@ -57,7 +54,7 @@ export const useUpdateCodeEditor = () => {
             editorContent: initialCode ? initialCode : prev.diffEditorContent?.editorContent ?? '',
             diffEditorContent: initialCode ? prev.diffEditorContent : undefined,
             evaluationResult: undefined,
-            cellsAccessed: undefined,
+            cellsAccessed: null,
             consoleOutput: undefined,
             spillError: undefined,
             initialCode: undefined,

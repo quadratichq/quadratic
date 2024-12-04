@@ -74,7 +74,7 @@ export class CellHighlights extends Container {
     const highlightedCellIndex = this.highlightedCellIndex;
     if (!highlightedCells.length) return;
     highlightedCells.forEach((cell, index) => {
-      if (cell.sheet !== sheets.sheet.id) return;
+      if (cell.sheet !== sheets.current) return;
 
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[cell.index % NUM_OF_CELL_REF_COLORS]);
       const cursorCell = sheets.sheet.getScreenRectangle(cell.column, cell.row, cell.width, cell.height);
@@ -216,15 +216,18 @@ export class CellHighlights extends Container {
     pixiApp.cellHighlights.dirty = true;
   }
 
-  fromCellsAccessed(cellsAccessed: JsCellsAccessed, cell: JsCoordinate, sheet: string) {
+  fromCellsAccessed(cellsAccessed: JsCellsAccessed[] | null) {
     this.highlightedCells = [];
-    for (const sheetId in cellsAccessed.cells) {
-      if (sheetId === sheet) {
-        cellsAccessed.cells[sheetId].forEach((cell: any) => {
-          throw new Error('todo');
+
+    cellsAccessed
+      ?.filter((cellsAccessed) => cellsAccessed.sheetId === sheets.current)
+      .forEach(({ ranges }) => {
+        ranges.forEach(({ range }) => {
+          console.log('todo(ayush): draw finite / infinite marching highlights');
+          console.log('range', range);
         });
-      }
-    }
+      });
+
     pixiApp.cellHighlights.dirty = true;
   }
 

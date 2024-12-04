@@ -37,13 +37,7 @@ class Python {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
-    const cells = pythonCore.sendGetCellsA1(this.transactionId, a1, lineNumber);
-    if (!cells) {
-      this.init();
-      pythonClient.sendPythonState('ready');
-    } else {
-      return cells;
-    }
+    return pythonCore.sendGetCellsA1(this.transactionId, a1, lineNumber);
   };
 
   private getCells = (
@@ -151,8 +145,13 @@ class Python {
 
     try {
       // make run_python easier to call later
-      await this.pyodide.runPython('from quadratic_py.run_python import run_python');
-      await this.pyodide.runPythonAsync('from quadratic_py.inspect_python import inspect_python');
+      await this.pyodide.runPythonAsync(`
+        from quadratic_py.run_python import run_python
+        from quadratic_py.inspect_python import inspect_python
+        import sys
+        sys.modules['__main__'].run_python = run_python
+        sys.modules['__main__'].inspect_python = inspect_python
+      `);
     } catch (e: any) {
       pythonClient.sendPythonLoadError(e?.message);
       console.warn(`[Python WebWorker] failed to load`, e);
@@ -161,7 +160,7 @@ class Python {
       return;
     }
 
-    const pythonVersion = this.pyodide.runPython('import platform; platform.python_version()');
+    const pythonVersion = await this.pyodide.runPythonAsync('import platform; platform.python_version()');
     const pyodideVersion = this.pyodide.version;
 
     if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
@@ -169,7 +168,7 @@ class Python {
     pythonClient.sendInit(pythonVersion);
     pythonClient.sendPythonState('ready');
     this.state = 'ready';
-    this.next();
+    await this.next();
   };
 
   private corePythonRunToCodeRun = (corePythonRun: CorePythonRun): CodeRun => {
@@ -238,7 +237,9 @@ class Python {
     let inspectionResults: InspectPython | undefined;
 
     try {
-      result = await this.pyodide.globals.get('run_python')(message.code, { x: message.x, y: message.y });
+      result = await this.pyodide.runPythonAsync(
+        `run_python(${JSON.stringify(message.code)}, {"x": ${message.x}, "y": ${message.y}})`
+      );
       output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
       inspectionResults = await this.inspectPython(message.code || '');
       let outputType = output?.output_type || '';

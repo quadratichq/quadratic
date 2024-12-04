@@ -143,8 +143,8 @@ class CorePython {
         Atomics.store(int32View, 2, id);
       }
       Atomics.store(int32View, 0, 1);
-    } catch (e) {
-      console.warn('[corePython] Error getting cells:', e);
+    } catch (_e) {
+      // core threw and handled the error
     }
     Atomics.notify(int32View, 0, 1);
   }

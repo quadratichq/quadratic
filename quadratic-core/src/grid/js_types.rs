@@ -200,7 +200,7 @@ pub struct JsCodeCell {
     pub evaluation_result: Option<String>,
     pub spill_error: Option<Vec<Pos>>,
     pub return_info: Option<JsReturnInfo>,
-    pub cells_accessed: Option<JsCellsAccessed>,
+    pub cells_accessed: Option<Vec<JsCellsAccessed>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

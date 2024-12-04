@@ -1,13 +1,13 @@
 import { DASHED, DASHED_THICKNESS, generatedTextures } from '@/app/gridGL/generateTextures';
-import { CURSOR_THICKNESS, CursorCell, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
-import { Graphics } from 'pixi.js';
+import { CURSOR_THICKNESS, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
+import { Graphics, Rectangle } from 'pixi.js';
 
 export function drawDashedRectangle(options: {
   g: Graphics;
   color: number;
   isSelected: boolean;
-  startCell: CursorCell;
-  endCell?: CursorCell;
+  startCell: Rectangle;
+  endCell?: Rectangle;
 }) {
   const { g, color, isSelected, startCell, endCell } = options;
   const minX = Math.min(startCell.x, endCell?.x ?? Infinity);
@@ -46,7 +46,7 @@ export function drawDashedRectangle(options: {
   }
 }
 
-export function drawDashedRectangleMarching(g: Graphics, color: number, startCell: CursorCell, march: number) {
+export function drawDashedRectangleMarching(g: Graphics, color: number, startCell: Rectangle, march: number) {
   const minX = startCell.x;
   const minY = startCell.y;
   const maxX = startCell.width + startCell.x;

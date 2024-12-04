@@ -125,12 +125,12 @@ impl GridController {
             ));
         }
 
-        let current_sheet = transaction
-            .current_sheet_pos
-            .ok_or(CoreError::TransactionNotFound(
-                "Transaction's position not found".into(),
-            ))?
-            .sheet_id;
+        let current_sheet_pos =
+            transaction
+                .current_sheet_pos
+                .ok_or(CoreError::TransactionNotFound(
+                    "Transaction's position not found".into(),
+                ))?;
 
         let get_run_error = |msg: &str| -> RunError {
             let mut msg = msg.to_owned();
@@ -143,7 +143,7 @@ impl GridController {
             }
         };
 
-        let selection = match self.a1_selection_from_string(&a1, &current_sheet) {
+        let selection = match self.a1_selection_from_string(&a1, &current_sheet_pos.sheet_id) {
             Ok(selection) => selection,
             Err(e) => {
                 // unable to parse A1 string
@@ -158,6 +158,21 @@ impl GridController {
                 return Err(error);
             }
         };
+
+        if selection.sheet_id == current_sheet_pos.sheet_id
+            && selection.might_contain_pos(current_sheet_pos.into())
+        {
+            // self reference not allowed
+            let msg = "Self reference not allowed".to_string();
+            let run_error = get_run_error(&msg);
+            let error = match self.code_cell_sheet_error(&mut transaction, &run_error) {
+                Ok(_) => CoreError::A1Error(msg),
+                Err(err) => err,
+            };
+            self.start_transaction(&mut transaction);
+            self.finalize_transaction(transaction);
+            return Err(error);
+        }
 
         let sheet = match self.try_sheet(selection.sheet_id) {
             Some(sheet) => sheet,
