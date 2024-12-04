@@ -16,7 +16,8 @@ impl GridController {
             return; // sheet may have been deleted
         };
 
-        let (reverse_operations, hashes, rows) = sheet.set_formats_a1(&formats);
+        let (reverse_operations, hashes, rows, html, fills_changed) =
+            sheet.set_formats_a1(&formats);
         if reverse_operations.is_empty() {
             return;
         }
@@ -24,15 +25,24 @@ impl GridController {
         if !transaction.is_server() {
             self.send_updated_bounds(sheet_id);
 
+            if !hashes.is_empty() {
+                let dirty_hashes = transaction.dirty_hashes.entry(sheet_id).or_default();
+                dirty_hashes.extend(hashes);
+            }
+
             if !rows.is_empty() && transaction.is_user() {
                 let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
                 resize_rows.extend(rows);
             }
-        }
 
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            let dirty_hashes = transaction.dirty_hashes.entry(sheet_id).or_default();
-            dirty_hashes.extend(hashes);
+            if !html.is_empty() {
+                let html_cells = transaction.html_cells.entry(sheet_id).or_default();
+                html_cells.extend(html);
+            }
+
+            if fills_changed {
+                transaction.fill_cells.insert(sheet_id);
+            }
         }
 
         transaction

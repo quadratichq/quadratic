@@ -278,27 +278,23 @@ impl<T: Clone + PartialEq> Contiguous2D<T> {
     /// Unlike `to_rects()`, this returns concrete coordinates rather than potentially infinite bounds.
     pub fn to_rects_with_bounds<'a>(
         &'a self,
+        sheet_bounds: impl 'a + Fn(bool) -> Option<Rect>,
         columns_bounds: impl 'a + Fn(i64, i64, bool) -> Option<(i64, i64)>,
         rows_bounds: impl 'a + Fn(i64, i64, bool) -> Option<(i64, i64)>,
         ignore_formatting: bool,
     ) -> impl 'a + Iterator<Item = (i64, i64, i64, i64, T)> {
-        self.to_rects().filter_map(move |(x1, y1, x2, y2, value)| {
-            let x2 = if let Some(x2) = x2 {
-                x2
-            } else if let Some((_, x2)) = columns_bounds(x1, x2.unwrap_or(x1), ignore_formatting) {
-                x2
-            } else {
-                return None;
-            };
-            let y2 = if let Some(y2) = y2 {
-                y2
-            } else if let Some((_, y2)) = rows_bounds(y1, y2.unwrap_or(y1), ignore_formatting) {
-                y2
-            } else {
-                return None;
-            };
-            Some((x1, y1, x2, y2, value))
-        })
+        let sheet_bounds = sheet_bounds(ignore_formatting);
+        self.to_rects()
+            .filter_map(move |(x1, y1, x2, y2, value)| match (x2, y2) {
+                (Some(x2), Some(y2)) => Some((x1, y1, x2, y2, value)),
+                (None, Some(y2)) => {
+                    rows_bounds(y1, y2, ignore_formatting).map(|(_, x2)| (x1, y1, x2, y2, value))
+                }
+                (Some(x2), None) => {
+                    columns_bounds(x1, x2, ignore_formatting).map(|(_, y2)| (x1, y1, x2, y2, value))
+                }
+                _ => sheet_bounds.map(|rect| (x1, y1, rect.max.x, rect.max.y, value)),
+            })
     }
 
     /// Returns the values in a Rect as a Vec of values, organized by y then x.
@@ -673,6 +669,10 @@ mod tests {
 
     #[test]
     fn test_to_rects_with_bounds() {
+        fn sheet_bounds(_ignore_formatting: bool) -> Option<Rect> {
+            Some(Rect::test_a1("A1:J10"))
+        }
+
         fn columns_bounds(_start: i64, _end: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
             Some((1, 10))
         }
@@ -683,12 +683,12 @@ mod tests {
 
         let mut c = Contiguous2D::<bool>::new();
         c.set_rect(2, 2, Some(10), Some(10), Some(true));
-        let mut rects = c.to_rects_with_bounds(columns_bounds, rows_bounds, true);
+        let mut rects = c.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
         assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
 
         let mut c = Contiguous2D::<bool>::new();
         c.set_rect(2, 2, None, None, Some(true));
-        let mut rects = c.to_rects_with_bounds(columns_bounds, rows_bounds, true);
+        let mut rects = c.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
         assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
     }
 }

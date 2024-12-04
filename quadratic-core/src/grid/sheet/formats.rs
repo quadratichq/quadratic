@@ -7,149 +7,124 @@ impl Sheet {
     fn formats_transaction_changes(
         &self,
         formats: &SheetFormatUpdates,
-    ) -> (HashSet<Pos>, HashSet<i64>) {
+    ) -> (HashSet<Pos>, HashSet<i64>, HashSet<Pos>, bool) {
         let mut dirty_hashes = HashSet::new();
-        let mut rows_changed = HashSet::new();
+        let mut resize_rows = HashSet::new();
+        let mut html_cells_changed = HashSet::new();
+        let mut fills_changed = false;
+
+        dbgjs!("todo(ayush): handle rows changed");
+
+        let sheet_bounds =
+            |ignore_formatting: bool| -> Option<Rect> { self.bounds(ignore_formatting).into() };
 
         let columns_bounds = |start: i64, end: i64, ignore_formatting: bool| {
             self.columns_bounds(start, end, ignore_formatting)
         };
+
         let rows_bounds = |start: i64, end: i64, ignore_formatting: bool| {
             self.rows_bounds(start, end, ignore_formatting)
         };
 
         if let Some(align) = formats.align.as_ref() {
             align
-                .to_rects_with_bounds(columns_bounds, rows_bounds, true)
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        rows_changed.insert(y);
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
-                        }
-                    }
+                    resize_rows.extend(y1..=y2); // todo(ayush): handle rows changed
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
                 });
         }
         if let Some(vertical_align) = formats.vertical_align.as_ref() {
             vertical_align
-                .to_rects_with_bounds(columns_bounds, rows_bounds, true)
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
-                        }
-                    }
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
+                });
+        }
+        if let Some(wrap) = formats.wrap.as_ref() {
+            wrap.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
+                .for_each(|(x1, y1, x2, y2, _)| {
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
                 });
         }
         if let Some(numeric_format) = formats.numeric_format.as_ref() {
             numeric_format
-                .to_rects_with_bounds(columns_bounds, rows_bounds, true)
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
-                        }
-                    }
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
                 });
         }
         if let Some(numeric_decimals) = formats.numeric_decimals.as_ref() {
             numeric_decimals
-                .to_rects_with_bounds(columns_bounds, rows_bounds, true)
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
-                        }
-                    }
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
                 });
         }
         if let Some(numeric_commas) = formats.numeric_commas.as_ref() {
             numeric_commas
-                .to_rects_with_bounds(columns_bounds, rows_bounds, true)
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
-                        }
-                    }
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
                 });
         }
         if let Some(bold) = formats.bold.as_ref() {
-            bold.to_rects_with_bounds(columns_bounds, rows_bounds, true)
+            bold.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
-                        }
-                    }
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
                 });
         }
         if let Some(italic) = formats.italic.as_ref() {
             italic
-                .to_rects_with_bounds(columns_bounds, rows_bounds, true)
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
-                        }
-                    }
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
                 });
         }
-        if let Some(fill_color) = formats.fill_color.as_ref() {
-            fill_color
-                .to_rects_with_bounds(columns_bounds, rows_bounds, true)
+        if let Some(text_color) = formats.text_color.as_ref() {
+            text_color
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
+                });
+        }
+        if formats.fill_color.is_some() {
+            fills_changed = true;
+        }
+        if let Some(render_size) = formats.render_size.as_ref() {
+            render_size
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
+                .for_each(|(x1, y1, x2, y2, _)| {
+                    for x in x1..=x2 {
+                        for y in y1..=y2 {
+                            html_cells_changed.insert((x, y).into());
                         }
                     }
                 });
         }
         if let Some(date_time) = formats.date_time.as_ref() {
             date_time
-                .to_rects_with_bounds(columns_bounds, rows_bounds, true)
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
-                        }
-                    }
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
                 });
         }
         if let Some(underline) = formats.underline.as_ref() {
             underline
-                .to_rects_with_bounds(columns_bounds, rows_bounds, true)
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(x1, y1, x2, y2, _)| {
-                    for y in y1..=y2 {
-                        for x in x1..=x2 {
-                            let mut quadrant = Pos { x, y };
-                            quadrant.to_quadrant();
-                            dirty_hashes.insert(quadrant);
-                        }
-                    }
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
+                });
+        }
+        if let Some(strike_through) = formats.strike_through.as_ref() {
+            strike_through
+                .to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
+                .for_each(|(x1, y1, x2, y2, _)| {
+                    dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
                 });
         }
 
-        (dirty_hashes, rows_changed)
+        (dirty_hashes, resize_rows, html_cells_changed, fills_changed)
     }
 
     /// Sets formats using SheetFormatUpdates.
@@ -158,21 +133,34 @@ impl Sheet {
     pub fn set_formats_a1(
         &mut self,
         formats: &SheetFormatUpdates,
-    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>) {
+    ) -> (
+        Vec<Operation>,
+        HashSet<Pos>,
+        HashSet<i64>,
+        HashSet<Pos>,
+        bool,
+    ) {
         let reverse_formats = self.formats.apply_updates(formats);
         let reverse_op = Operation::SetCellFormatsA1 {
             sheet_id: self.id,
             formats: reverse_formats,
         };
-        let (dirty_hashes, rows_changed) = self.formats_transaction_changes(formats);
-        (vec![reverse_op], dirty_hashes, rows_changed)
+        let (dirty_hashes, resize_rows, html_cells_changed, fills_changed) =
+            self.formats_transaction_changes(formats);
+        (
+            vec![reverse_op],
+            dirty_hashes,
+            resize_rows,
+            html_cells_changed,
+            fills_changed,
+        )
     }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::grid::Contiguous2D;
+    use crate::grid::{CellAlign, Contiguous2D};
 
     use super::*;
 
@@ -187,12 +175,28 @@ mod tests {
 
         // Create format updates with alignment
         let mut formats = SheetFormatUpdates::default();
+
+        let mut align = Contiguous2D::new();
+        align.set_rect(1, 1, Some(5), Some(5), Some(Some(CellAlign::Center)));
+        formats.align = Some(align);
+
         let mut bold = Contiguous2D::new();
         bold.set_rect(1, 1, Some(5), Some(5), Some(Some(true)));
         formats.bold = Some(bold);
 
+        let mut fill_color = Contiguous2D::new();
+        fill_color.set_rect(
+            1,
+            1,
+            Some(5),
+            Some(5),
+            Some(Some("rgb(231, 76, 60)".to_string())),
+        );
+        formats.fill_color = Some(fill_color);
+
         // Get the changes
-        let (dirty_hashes, rows_changed) = sheet.formats_transaction_changes(&formats);
+        let (dirty_hashes, rows_changed, _html_cells_changed, fills_changed) =
+            sheet.formats_transaction_changes(&formats);
 
         // Expected quadrants (converted to quadrant coordinates)
         let expected_quadrants: HashSet<Pos> = [
@@ -202,9 +206,10 @@ mod tests {
         .collect();
 
         // Expected rows that changed
-        let expected_rows: HashSet<i64> = [1, 5].into_iter().collect();
+        let expected_rows: HashSet<i64> = (1..=5).collect();
 
         assert_eq!(dirty_hashes, expected_quadrants);
         assert_eq!(rows_changed, expected_rows);
+        assert!(fills_changed);
     }
 }

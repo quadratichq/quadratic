@@ -223,20 +223,6 @@ impl Sheet {
         }
         self.send_sheet_fills();
     }
-
-    /// Sends all fills to the client. TODO: the fills should be sent in
-    /// batches instead of for the entire sheet.
-    pub fn send_fills(&self, fills: &HashSet<Pos>) {
-        // this is needed to prevent sending when no fills have changed. See TODO.
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || fills.is_empty() {
-            return;
-        }
-
-        let fills = self.get_all_render_fills();
-        if let Ok(fills) = serde_json::to_string(&fills) {
-            crate::wasm_bindings::js::jsSheetFills(self.id.to_string(), fills);
-        }
-    }
 }
 
 #[cfg(test)]

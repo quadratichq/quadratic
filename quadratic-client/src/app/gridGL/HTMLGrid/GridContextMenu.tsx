@@ -5,30 +5,28 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { gridHeadingAtom } from '@/app/atoms/gridHeadingAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { IconComponent } from '@/shared/components/Icons';
 import { ControlledMenu, MenuDivider, MenuItem } from '@szhsin/react-menu';
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRecoilState } from 'recoil';
-import { pixiApp } from '../pixiApp/PixiApp';
 
 export const GridContextMenu = () => {
   const [show, setShow] = useRecoilState(gridHeadingAtom);
 
-  const onClose = useCallback(() => {
-    setShow({ world: undefined, column: null, row: null });
-    focusGrid();
-  }, [setShow]);
-
   useEffect(() => {
-    events.on('viewportChanged', onClose);
-
-    return () => {
-      events.off('viewportChanged', onClose);
+    const handleViewportChanged = () => {
+      setShow({ world: undefined, column: null, row: null });
     };
-  }, [onClose]);
+
+    events.on('viewportChanged', handleViewportChanged);
+    return () => {
+      events.off('viewportChanged', handleViewportChanged);
+    };
+  }, [setShow]);
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -49,7 +47,10 @@ export const GridContextMenu = () => {
     >
       <ControlledMenu
         state={show?.world ? 'open' : 'closed'}
-        onClose={onClose}
+        onClose={() => {
+          setShow({ world: undefined, column: null, row: null });
+          focusGrid();
+        }}
         anchorRef={ref}
         menuStyle={{ padding: '0', color: 'inherit' }}
         menuClassName="bg-background"

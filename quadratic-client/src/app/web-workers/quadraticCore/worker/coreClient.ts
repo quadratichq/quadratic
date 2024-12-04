@@ -221,35 +221,35 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellBold':
-        await core.setBoldSelection(e.data.selection, e.data.bold, e.data.cursor);
+        await core.setBold(e.data.selection, e.data.bold, e.data.cursor);
         return;
 
       case 'clientCoreSetCellItalic':
-        await core.setItalicSelection(e.data.selection, e.data.italic, e.data.cursor);
+        await core.setItalic(e.data.selection, e.data.italic, e.data.cursor);
         return;
 
       case 'clientCoreSetCellTextColor':
-        await core.setTextColorSelection(e.data.selection, e.data.color, e.data.cursor);
+        await core.setTextColor(e.data.selection, e.data.color, e.data.cursor);
         return;
 
       case 'clientCoreSetCellUnderline':
-        await core.setUnderlineSelection(e.data.selection, e.data.underline, e.data.cursor);
+        await core.setUnderline(e.data.selection, e.data.underline, e.data.cursor);
         return;
 
       case 'clientCoreSetCellStrikeThrough':
-        await core.setStrikeThroughSelection(e.data.selection, e.data.strikeThrough, e.data.cursor);
+        await core.setStrikeThrough(e.data.selection, e.data.strikeThrough, e.data.cursor);
         return;
 
       case 'clientCoreSetCellFillColor':
-        await core.setFillColorSelection(e.data.selection, e.data.fillColor, e.data.cursor);
+        await core.setFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
         return;
 
       case 'clientCoreSetCommas':
-        await core.setCommasSelection(e.data.selection, e.data.commas, e.data.cursor);
+        await core.setCommas(e.data.selection, e.data.commas, e.data.cursor);
         return;
 
       case 'clientCoreSetCurrency':
-        await core.setCurrencySelection(e.data.selection, e.data.symbol, e.data.cursor);
+        await core.setCurrency(e.data.selection, e.data.symbol, e.data.cursor);
         return;
 
       case 'clientCoreUpgradeGridFile':
@@ -339,15 +339,15 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellAlign':
-        await core.setAlignSelection(e.data.selection, e.data.align, e.data.cursor);
+        await core.setAlign(e.data.selection, e.data.align, e.data.cursor);
         return;
 
       case 'clientCoreSetCellVerticalAlign':
-        await core.setVerticalAlignSelection(e.data.selection, e.data.verticalAlign, e.data.cursor);
+        await core.setVerticalAlign(e.data.selection, e.data.verticalAlign, e.data.cursor);
         break;
 
       case 'clientCoreSetCellWrap':
-        await core.setWrapSelection(e.data.selection, e.data.wrap, e.data.cursor);
+        await core.setWrap(e.data.selection, e.data.wrap, e.data.cursor);
         break;
 
       case 'clientCoreCopyToClipboard':
@@ -477,7 +477,7 @@ class CoreClient {
         break;
 
       case 'clientCoreClearFormatting':
-        core.clearFormattingSelection(e.data.selection, e.data.cursor);
+        core.clearFormatting(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreRerunCodeCells':
@@ -498,19 +498,19 @@ class CoreClient {
         return;
 
       case 'clientCoreChangeDecimals':
-        core.changeDecimalPlacesSelection(e.data.selection, e.data.delta, e.data.cursor);
+        core.changeDecimalPlaces(e.data.selection, e.data.delta, e.data.cursor);
         return;
 
       case 'clientCoreSetPercentage':
-        core.setPercentageSelection(e.data.selection, e.data.cursor);
+        core.setPercentage(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreSetExponential':
-        core.setExponentialSelection(e.data.selection, e.data.cursor);
+        core.setExponential(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreRemoveCellNumericFormat':
-        core.removeNumericFormatSelection(e.data.selection, e.data.cursor);
+        core.removeNumericFormat(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreMoveCells':
@@ -534,7 +534,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetDateTimeFormat':
-        core.setDateTimeFormatSelection(e.data.selection, e.data.format, e.data.cursor);
+        core.setDateTimeFormat(e.data.selection, e.data.format, e.data.cursor);
         return;
 
       case 'clientCoreUpdateValidation':

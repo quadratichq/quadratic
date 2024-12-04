@@ -292,7 +292,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setItalicSelection(selection, !!inlineEditorHandler.temporaryItalic);
+        quadraticCore.setItalic(selection, !!inlineEditorHandler.temporaryItalic);
       }
     }
 
@@ -307,7 +307,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setBoldSelection(selection, !!inlineEditorHandler.temporaryBold);
+        quadraticCore.setBold(selection, !!inlineEditorHandler.temporaryBold);
       }
     }
 
@@ -322,7 +322,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setUnderlineSelection(selection, !!inlineEditorHandler.temporaryUnderline);
+        quadraticCore.setUnderline(selection, !!inlineEditorHandler.temporaryUnderline);
       }
     }
 
@@ -337,7 +337,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setStrikeThroughSelection(selection, !!inlineEditorHandler.temporaryStrikeThrough);
+        quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough);
       }
     }
 

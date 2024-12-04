@@ -289,11 +289,7 @@ impl A1Selection {
 
         // // Set the cursor to the last range's start position.
         // if let Some(last_range) = intersection.ranges.last() {
-        //     match last_range {
-        //         CellRefRange::Sheet { .. } => {
-        //             intersection.cursor = cursor_pos_from_last_range(last_range);
-        //         }
-        //     }
+        //     intersection.cursor = cursor_pos_from_last_range(last_range);
         // } else {
         //     // No ranges means the intersection is empty.
         //     return None;

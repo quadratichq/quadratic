@@ -341,7 +341,7 @@ class Core {
     });
   }
 
-  setBoldSelection(selection: string, bold: boolean, cursor?: string) {
+  setBold(selection: string, bold: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -351,7 +351,7 @@ class Core {
     });
   }
 
-  setItalicSelection(selection: string, italic: boolean, cursor?: string) {
+  setItalic(selection: string, italic: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -361,7 +361,7 @@ class Core {
     });
   }
 
-  setTextColorSelection(selection: string, color?: string, cursor?: string) {
+  setTextColor(selection: string, color?: string, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -371,7 +371,7 @@ class Core {
     });
   }
 
-  setUnderlineSelection(selection: string, underline: boolean, cursor?: string) {
+  setUnderline(selection: string, underline: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -381,7 +381,7 @@ class Core {
     });
   }
 
-  setStrikeThroughSelection(selection: string, strikeThrough: boolean, cursor?: string) {
+  setStrikeThrough(selection: string, strikeThrough: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -391,7 +391,7 @@ class Core {
     });
   }
 
-  setFillColorSelection(selection: string, fillColor?: string, cursor?: string) {
+  setFillColor(selection: string, fillColor?: string, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -401,7 +401,7 @@ class Core {
     });
   }
 
-  setCommasSelection(selection: string, commas: boolean, cursor?: string) {
+  setCommas(selection: string, commas: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -421,7 +421,7 @@ class Core {
     });
   }
 
-  setCurrencySelection(selection: string, symbol: string, cursor?: string) {
+  setCurrency(selection: string, symbol: string, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -667,7 +667,7 @@ class Core {
     });
   }
 
-  setAlignSelection(selection: string, align: CellAlign, cursor?: string) {
+  setAlign(selection: string, align: CellAlign, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -677,7 +677,7 @@ class Core {
     });
   }
 
-  setVerticalAlignSelection(selection: string, verticalAlign: CellVerticalAlign, cursor?: string) {
+  setVerticalAlign(selection: string, verticalAlign: CellVerticalAlign, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -687,7 +687,7 @@ class Core {
     });
   }
 
-  setWrapSelection(selection: string, wrap: CellWrap, cursor?: string) {
+  setWrap(selection: string, wrap: CellWrap, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -945,7 +945,7 @@ class Core {
     }
   }
 
-  clearFormattingSelection(selection: string, cursor?: string) {
+  clearFormatting(selection: string, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       this.gridController.clearFormatting(selection, cursor);
@@ -979,28 +979,28 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }
 
-  changeDecimalPlacesSelection(selection: string, decimals: number, cursor?: string) {
+  changeDecimalPlaces(selection: string, decimals: number, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       this.gridController.changeDecimalPlaces(selection, decimals, cursor);
     });
   }
 
-  setPercentageSelection(selection: string, cursor?: string) {
+  setPercentage(selection: string, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       this.gridController.setPercentage(selection, cursor);
     });
   }
 
-  setExponentialSelection(selection: string, cursor?: string) {
+  setExponential(selection: string, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       this.gridController.setExponential(selection, cursor);
     });
   }
 
-  removeNumericFormatSelection(selection: string, cursor?: string) {
+  removeNumericFormat(selection: string, cursor?: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       this.gridController.removeNumericFormat(selection, cursor);
@@ -1087,7 +1087,7 @@ class Core {
     });
   }
 
-  setDateTimeFormatSelection(selection: string, format: string, cursor: string) {
+  setDateTimeFormat(selection: string, format: string, cursor: string) {
     this.clientQueue.push(() => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       this.gridController.setDateTimeFormat(selection, format, cursor);
