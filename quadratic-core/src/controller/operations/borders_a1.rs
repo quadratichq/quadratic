@@ -59,9 +59,9 @@ impl GridController {
     //     borders.push(border_style);
     // }
 
-    /// We need to determine how to clear the border based on the sheet's border
-    /// settings, and any neighboring borders. We either clear the border, or we
-    /// set it to BorderLineStyle::Clear.
+    // We need to determine how to clear the border based on the sheet's border
+    // settings, and any neighboring borders. We either clear the border, or we
+    // set it to BorderLineStyle::Clear.
     // fn a1_check_sheet(
     //     sheet: &Sheet,
     //     x: i64,
