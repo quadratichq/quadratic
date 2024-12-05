@@ -155,7 +155,7 @@ where
     F: Fn(T) -> C,
 {
     blocks
-        .xy_blocks()
+        .into_xy_blocks()
         .map(|x_block| current::BlockSchema {
             start: x_block.start,
             end: x_block.end,
@@ -164,7 +164,7 @@ where
                 .map(|y_block| current::BlockSchema {
                     start: y_block.start,
                     end: y_block.end,
-                    value: f(y_block.value.clone()),
+                    value: f(y_block.value),
                 })
                 .collect(),
         })

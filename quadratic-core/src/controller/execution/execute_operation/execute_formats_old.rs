@@ -54,7 +54,7 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(numeric_commas),
+                    numeric_commas,
                 );
             }
             if let Some(bold) = format.bold {
@@ -145,7 +145,7 @@ impl GridController {
                             &old_formats,
                             col,
                             1,
-                            None,
+                            Some(col),
                             None,
                         );
                     }
@@ -158,7 +158,7 @@ impl GridController {
                             1,
                             row,
                             None,
-                            None,
+                            Some(row),
                         );
                     }
                 }

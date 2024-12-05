@@ -24,7 +24,7 @@ pub struct SheetFormattingSchema {
     pub numeric_decimals: Contiguous2DSchema<Option<i16>>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub numeric_commas: Contiguous2DSchema<Option<bool>>,
+    pub numeric_commas: Contiguous2DSchema<bool>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub bold: Contiguous2DSchema<bool>,

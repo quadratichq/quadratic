@@ -16,7 +16,7 @@ pub struct SheetFormatUpdates {
     pub wrap: Option<Contiguous2D<Option<Option<CellWrap>>>>,
     pub numeric_format: Option<Contiguous2D<Option<Option<NumericFormat>>>>,
     pub numeric_decimals: Option<Contiguous2D<Option<Option<i16>>>>,
-    pub numeric_commas: Option<Contiguous2D<Option<Option<bool>>>>,
+    pub numeric_commas: Option<Contiguous2D<Option<bool>>>,
     pub bold: Option<Contiguous2D<Option<bool>>>,
     pub italic: Option<Contiguous2D<Option<bool>>>,
     pub text_color: Option<Contiguous2D<Option<Option<String>>>>,
@@ -42,14 +42,17 @@ impl SheetFormatUpdates {
                 selection,
                 update.numeric_decimals,
             ),
-            numeric_commas: Contiguous2D::new_from_opt_selection(selection, update.numeric_commas),
+            numeric_commas: Contiguous2D::new_from_opt_selection(
+                selection,
+                update.numeric_commas.map(|opt| opt.unwrap_or(false)), // numeric_commas=None -> numeric_commas=false
+            ),
             bold: Contiguous2D::new_from_opt_selection(
                 selection,
                 update.bold.map(|opt| opt.unwrap_or(false)), // bold=None -> bold=false
             ),
             italic: Contiguous2D::new_from_opt_selection(
                 selection,
-                update.italic.map(|opt| opt.unwrap_or(false)), // italic=None -> bold=false
+                update.italic.map(|opt| opt.unwrap_or(false)), // italic=None -> italic=false
             ),
             text_color: Contiguous2D::new_from_opt_selection(selection, update.text_color.clone()),
             fill_color: Contiguous2D::new_from_opt_selection(selection, update.fill_color.clone()),
@@ -169,7 +172,7 @@ impl SheetFormatUpdates {
         update.numeric_commas.map(|numeric_commas| {
             self.numeric_commas
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(numeric_commas))
+                .set(pos, numeric_commas)
         });
         update.bold.map(|bold| {
             self.bold
@@ -234,7 +237,8 @@ impl SheetFormatUpdates {
             numeric_commas: self
                 .numeric_commas
                 .as_ref()
-                .and_then(|numeric_commas| numeric_commas.get(pos)),
+                .and_then(|numeric_commas| numeric_commas.get(pos))
+                .map(Some),
             bold: self.bold.as_ref().and_then(|bold| bold.get(pos)).map(Some),
             italic: self
                 .italic

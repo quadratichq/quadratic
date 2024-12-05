@@ -46,7 +46,7 @@ impl SheetFormatting {
             wrap: self.wrap.get(pos),
             numeric_format: self.numeric_format.get(pos),
             numeric_decimals: self.numeric_decimals.get(pos),
-            numeric_commas: self.numeric_commas.get(pos),
+            numeric_commas: self.numeric_commas.get(pos).then_some(true),
             bold: self.bold.get(pos).then_some(true),
             italic: self.italic.get(pos).then_some(true),
             text_color: self.text_color.get(pos),

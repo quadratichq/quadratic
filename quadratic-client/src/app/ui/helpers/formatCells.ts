@@ -23,13 +23,13 @@ const getFormat = async (): Promise<Format | undefined> => {
 
 export const setBold = async () => {
   const format = await getFormat();
-  const bold = !(format ? format.bold === true : true);
+  const bold = !(format?.bold ?? false);
   quadraticCore.setBold(sheets.getRustSelection(), bold, sheets.getCursorPosition());
 };
 
 export const setItalic = async () => {
   const format = await getFormat();
-  const italic = !(format ? format.italic === true : true);
+  const italic = !(format?.italic ?? false);
   quadraticCore.setItalic(sheets.getRustSelection(), italic, sheets.getCursorPosition());
 };
 
@@ -43,13 +43,13 @@ export const setTextColor = (rgb?: ColorResult) => {
 
 export const setUnderline = async () => {
   const format = await getFormat();
-  const underline = !(format ? format.underline === true : true);
+  const underline = !(format?.underline ?? false);
   quadraticCore.setUnderline(sheets.getRustSelection(), underline, sheets.getCursorPosition());
 };
 
 export const setStrikeThrough = async () => {
   const format = await getFormat();
-  const strikeThrough = !(format ? format.strike_through === true : true);
+  const strikeThrough = !(format?.strike_through ?? false);
   quadraticCore.setStrikeThrough(sheets.getRustSelection(), strikeThrough, sheets.getCursorPosition());
 };
 
@@ -76,7 +76,7 @@ export const textFormatDecreaseDecimalPlaces = () => {
 export const setCellCommas = async () => {
   const cursor = sheets.sheet.cursor.position;
   const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y);
-  const commas = !(formatCell ? formatCell.commas === true : true);
+  const commas = !(formatCell?.commas ?? false);
   quadraticCore.setCommas(sheets.getRustSelection(), commas, sheets.getCursorPosition());
 };
 

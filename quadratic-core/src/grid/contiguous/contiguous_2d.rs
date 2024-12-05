@@ -183,18 +183,26 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         xy_block: Block<impl Clone + IntoIterator<Item = Block<T>>>,
     ) {
         let x1 = xy_block.start;
-        let x2 = xy_block.start;
+        let x2 = xy_block.end;
         self.0.update_range(x1, x2, |column_data| {
             for y_block in xy_block.value.clone() {
                 column_data.raw_set_block(y_block);
             }
         });
     }
+
     /// Returns all data as 2D blocks.
     pub fn xy_blocks(&self) -> impl Iterator<Item = Block<impl Iterator<Item = &Block<T>>>> {
         self.0
             .iter()
             .map(|column_block| column_block.map_ref(|column_data| column_data.iter()))
+    }
+
+    /// Returns all data as owned 2D blocks.
+    pub fn into_xy_blocks(self) -> impl Iterator<Item = Block<impl Iterator<Item = Block<T>>>> {
+        self.0
+            .into_iter()
+            .map(|column_block| column_block.map(|column_data| column_data.into_iter()))
     }
 
     /// Sets a rectangle to the same value and returns the blocks to set undo

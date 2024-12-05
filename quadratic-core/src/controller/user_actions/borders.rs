@@ -24,11 +24,12 @@ impl GridController {
         selection: A1Selection,
         border_selection: crate::grid::sheet::borders_a1::BorderSelection,
         style: Option<crate::grid::sheet::borders_a1::BorderStyle>,
+        cursor: Option<String>,
     ) {
         if let Some(ops) =
             self.set_borders_a1_selection_operations(selection, border_selection, style)
         {
-            self.start_user_transaction(ops, None, TransactionName::SetBorders);
+            self.start_user_transaction(ops, cursor, TransactionName::SetBorders);
         }
     }
 }
