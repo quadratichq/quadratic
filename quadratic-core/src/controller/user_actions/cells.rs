@@ -195,7 +195,7 @@ mod test {
             get_cell_value(&gc),
             CellValue::Number(BigDecimal::from_str("1.22").unwrap())
         );
-        assert_eq!(get_cell_numeric_commas(&gc), None);
+        assert!(!get_cell_numeric_commas(&gc));
         assert_eq!(
             get_cell_numeric_format(&gc),
             Some(NumericFormat {

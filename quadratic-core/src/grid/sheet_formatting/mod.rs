@@ -28,7 +28,7 @@ pub struct SheetFormatting {
     pub wrap: Contiguous2D<Option<CellWrap>>,
     pub numeric_format: Contiguous2D<Option<NumericFormat>>,
     pub numeric_decimals: Contiguous2D<Option<i16>>,
-    pub numeric_commas: Contiguous2D<Option<bool>>,
+    pub numeric_commas: Contiguous2D<bool>,
     pub bold: Contiguous2D<bool>,
     pub italic: Contiguous2D<bool>,
     pub text_color: Contiguous2D<Option<String>>,

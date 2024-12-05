@@ -180,14 +180,13 @@ impl CellValue {
         &self,
         numeric_format: Option<NumericFormat>,
         numeric_decimals: Option<i16>,
-        numeric_commas: Option<bool>,
+        numeric_commas: bool,
     ) -> String {
         match self {
             CellValue::Number(n) => {
                 let numeric_format = numeric_format.unwrap_or_default();
-                let use_commas = numeric_commas.is_some_and(|c| c)
-                    || (numeric_commas.is_none()
-                        && numeric_format.kind == NumericFormatKind::Currency);
+                let use_commas =
+                    numeric_commas || numeric_format.kind == NumericFormatKind::Currency;
                 let numeric_decimals = numeric_decimals.or({
                     if matches!(
                         numeric_format,
@@ -928,7 +927,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                None
+                false,
             ),
             String::from("$123,123.12")
         );
@@ -939,7 +938,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                Some(false)
+                false,
             ),
             String::from("$123123.12")
         );
@@ -951,7 +950,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                None
+                false,
             ),
             String::from("-$123,123.12")
         );
@@ -962,7 +961,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                Some(true)
+                true,
             ),
             String::from("-$123,123.12")
         );
@@ -973,7 +972,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                Some(false)
+                false,
             ),
             String::from("-$123123.12")
         );
@@ -985,7 +984,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                None
+                false,
             ),
             String::from("$123.13")
         );
@@ -997,7 +996,7 @@ mod test {
                     symbol: Some(String::from("$")),
                 }),
                 Some(2),
-                None
+                false,
             ),
             String::from("$123.00")
         );
@@ -1014,7 +1013,7 @@ mod test {
                     symbol: None,
                 }),
                 None,
-                None,
+                false,
             ),
             String::from("1.5%")
         );
@@ -1027,7 +1026,7 @@ mod test {
                     symbol: None,
                 }),
                 Some(4),
-                Some(false),
+                false,
             ),
             String::from("99.1224%")
         );
@@ -1039,7 +1038,7 @@ mod test {
                     symbol: None,
                 }),
                 Some(4),
-                Some(true),
+                true,
             ),
             String::from("123,112,312,399.1224%")
         );
@@ -1056,7 +1055,7 @@ mod test {
                     symbol: None,
                 }),
                 None,
-                None
+                false,
             ),
             String::from("1.23e7")
         );
@@ -1068,7 +1067,7 @@ mod test {
                     symbol: None,
                 }),
                 Some(3),
-                None
+                false,
             ),
             String::from("1.235e7")
         );
@@ -1081,7 +1080,7 @@ mod test {
                     symbol: None,
                 }),
                 None,
-                None
+                false,
             ),
             String::from("-1.23e7")
         );
@@ -1094,7 +1093,7 @@ mod test {
                     symbol: None,
                 }),
                 None,
-                None
+                false,
             ),
             String::from("1.00e6")
         );
