@@ -129,16 +129,10 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         other: &Contiguous2D<Option<U>>,
         update_fn: impl Fn(&mut T, &U) -> Option<R>,
     ) -> Contiguous2D<Option<R>> {
-        println!("update from");
-        for block in other.0.iter() {
-            println!("{:?}", (block.start, block.end))
-        }
         self.0
             .update_non_default_from(&other.0, |col, col_update| {
-                println!("inner 1");
                 Some(
                     col.update_non_default_from(col_update, |value, value_update| {
-                        println!("inner 2");
                         update_fn(value, value_update.as_ref()?)
                     }),
                 )
@@ -315,16 +309,18 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
 
     /// Returns the values in a Rect as a Vec of values, organized by y then x.
     pub fn rect_values(&self, rect: Rect) -> Vec<Option<T>> {
-        let mut values = vec![None; rect.height() as usize];
+        let mut values = vec![None; rect.len() as usize];
         for x in rect.x_range() {
+            let dx = x - rect.min.x;
             let Some(x) = convert_coord(x) else { continue };
             let Some(column) = self.0.get(x) else {
                 continue;
             };
             for y in rect.y_range() {
+                let dy = y - rect.min.y;
                 let Some(y) = convert_coord(y) else { continue };
                 let Some(value) = column.get(y) else { continue };
-                values[y as usize * rect.width() as usize + x as usize] = Some(value.clone());
+                values[dy as usize * rect.width() as usize + dx as usize] = Some(value.clone());
             }
         }
         values
@@ -333,7 +329,8 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
     /// Returns whether any of the non-default values in `self` intersects
     /// `rect`.
     pub fn intersects(&self, rect: Rect) -> bool {
-        // TODO(perf): this could be optimized a LOT
+        // TODO(perf): this could be optimized a LOT using `.non_default_blocks()`
+        let default = T::default();
         for x in rect.x_range() {
             let Some(x) = convert_coord(x) else { continue };
             let Some(column) = self.0.get(x) else {
@@ -341,7 +338,7 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
             };
             for y in rect.y_range() {
                 let Some(y) = convert_coord(y) else { continue };
-                if column.get(y).is_some() {
+                if column.get(y).is_some_and(|v| *v != default) {
                     return true;
                 }
             }
