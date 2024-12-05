@@ -200,7 +200,7 @@ mod test {
     #[test]
     #[parallel]
     fn test_copy_to_clipboard() {
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
@@ -748,7 +748,7 @@ mod test {
     #[test]
     #[parallel]
     fn paste_special_formats() {
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         set_cell_value(&mut gc, sheet_id, "1", 1, 1);

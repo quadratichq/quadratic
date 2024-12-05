@@ -1,6 +1,6 @@
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
-use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin, ClipboardSheetFormats};
+use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
 use crate::formulas::replace_a1_notation;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
@@ -242,34 +242,20 @@ impl Sheet {
 
         dbgjs!("todo(ayush): implement validations for clipboard");
 
-        let formats = if let Some(bounds) = sheet_bounds {
-            let mut formats = SheetFormatUpdates::default();
+        let mut formats = SheetFormatUpdates::default();
 
-            for x in bounds.x_range() {
-                for y in bounds.y_range() {
-                    formats.set_format_cell(Pos { x, y }, self.formats.format(Pos { x, y }).into());
+        for range in selection.ranges.iter() {
+            if let Some(rect) = range.to_rect() {
+                for x in rect.x_range() {
+                    for y in rect.y_range() {
+                        formats.set_format_cell(
+                            Pos { x, y },
+                            self.formats.format(Pos { x, y }).into(),
+                        );
+                    }
                 }
             }
-
-            formats
-        } else {
-            SheetFormatUpdates::default()
-        };
-
-        // if selection.all {
-        //     clipboard_origin.all = Some((clipboard_origin.x, clipboard_origin.y));
-        // } else {
-        //     if selection.columns.is_some() {
-        //         // we need the row origin when columns are selected
-        //         clipboard_origin.row = sheet_bounds.map(|b| b.min.y);
-        //     }
-
-        //     if selection.rows.is_some() {
-        //         // we need the column origin when rows are selected
-        //         clipboard_origin.column = sheet_bounds.map(|b| b.min.x);
-        //     }
-        // }
-        // let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
+        }
 
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
         // let borders = self.borders.to_clipboard(selection);
@@ -278,7 +264,6 @@ impl Sheet {
             cells,
             formats,
             // sheet_formats,
-            sheet_formats: ClipboardSheetFormats::default(),
             // borders: borders.map(|borders| {
             //     (
             //         selection.translate(-clipboard_origin.x, -clipboard_origin.y),
