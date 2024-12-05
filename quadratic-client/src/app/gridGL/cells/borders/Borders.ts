@@ -359,6 +359,7 @@ export class Borders extends Container {
   }
 
   drawSheetCells = (sheetId: string, borders?: JsBordersSheet): void => {
+    console.log(borders)
     if (sheetId === this.cellsSheet.sheetId) {
       this.borders = borders;
       this.cellLines.removeChildren();

@@ -50,4 +50,17 @@ impl BordersA1 {
             && self.left.is_all_default()
             && self.right.is_all_default()
     }
+
+    /// Returns true if the borders update is already applied to the sheet.
+    pub fn is_toggle_borders(&self, border_update: &BordersA1Updates) -> bool {
+        if let Some(update_left) = border_update.left.as_ref() {
+            if !self
+                .left
+                .zip_any(update_left, |border, update| border != update)
+            {
+                return false;
+            }
+        }
+        true
+    }
 }

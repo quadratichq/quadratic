@@ -170,10 +170,7 @@ impl GridController {
 
         let sheet = self.try_sheet(selection.sheet_id)?;
         selection.ranges.iter().for_each(|range| {
-            let style = if sheet
-                .borders_a1
-                .is_toggle_borders(border_selection, style, range)
-            {
+            let style = if sheet.borders_a1.is_toggle_borders(&borders) {
                 None
             } else {
                 style
