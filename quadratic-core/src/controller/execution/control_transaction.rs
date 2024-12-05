@@ -152,7 +152,7 @@ impl GridController {
 
             transaction.sheet_borders.iter().for_each(|sheet_id| {
                 if let Some(sheet) = self.try_sheet(*sheet_id) {
-                    sheet.borders.send_sheet_borders(*sheet_id);
+                    sheet.borders_a1.send_sheet_borders(*sheet_id);
                 }
             });
 

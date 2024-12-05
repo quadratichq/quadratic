@@ -168,19 +168,26 @@ impl GridController {
     ) -> Option<Vec<Operation>> {
         let mut borders: BordersA1Updates = BordersA1Updates::default();
 
-        let sheet = self.try_sheet(selection.sheet_id)?;
-        selection.ranges.iter().for_each(|range| {
-            let style = if sheet.borders_a1.is_toggle_borders(&borders) {
-                None
-            } else {
-                style
-            };
-            match range {
-                CellRefRange::Sheet { range } => {
-                    self.a1_border_style_range(border_selection, style, range, &mut borders);
-                }
+        selection.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                self.a1_border_style_range(border_selection, style, range, &mut borders);
             }
         });
+
+        // Once we have the style updates, we need to check if we should toggle
+        // instead of setting the style
+        if style.is_some() {
+            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                if sheet.borders_a1.is_toggle_borders(&borders) {
+                    borders = BordersA1Updates::default();
+                    selection.ranges.iter().for_each(|range| match range {
+                        CellRefRange::Sheet { range } => {
+                            self.a1_border_style_range(border_selection, None, range, &mut borders);
+                        }
+                    });
+                }
+            }
+        }
 
         if !borders.is_default() {
             Some(vec![Operation::SetBordersA1 {

@@ -88,17 +88,13 @@ impl BordersA1 {
     pub fn send_sheet_borders(&self, sheet_id: SheetId) {
         match self.borders_in_sheet() {
             Some(b) => {
-                dbgjs!(&b);
                 if let Ok(borders) = serde_json::to_string(&b) {
                     jsBordersSheet(sheet_id.to_string(), borders);
                 } else {
                     dbgjs!("Unable to serialize borders in send_sheet_borders");
                 }
             }
-            None => {
-                dbgjs!("No borders to send");
-                jsBordersSheet(sheet_id.to_string(), String::new())
-            }
+            None => jsBordersSheet(sheet_id.to_string(), String::new()),
         }
     }
 }
