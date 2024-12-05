@@ -200,280 +200,269 @@ impl BordersA1 {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use std::collections::HashMap;
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use crate::controller::GridController;
 
-//     use serial_test::parallel;
+    use super::*;
 
-//     use crate::{
-//         color::Rgba,
-//         controller::GridController,
-//         grid::sheet::borders::{BorderSelection, BorderStyle, BorderStyleCell, CellBorderLine},
-//         selection::OldSelection,
-//         SheetRect,
-//     };
+    #[test]
+    fn horizontal_borders_in_rect() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet(sheet_id);
+        let horizontal = sheet
+            .borders
+            .horizontal_borders_in_rect(Rect::test_a1("A1:D4"));
+        assert_eq!(horizontal, None);
 
-//     use super::*;
+        gc.set_borders(
+            crate::A1Selection::test_a1("A1:C3"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+        );
+        let sheet = gc.sheet(sheet_id);
+        let horizontal = sheet
+            .borders
+            .horizontal_borders_in_rect(Rect::new(0, 0, 10, 10))
+            .unwrap();
+        assert_eq!(horizontal.len(), 7);
+    }
 
-//     #[test]
-//     #[parallel]
-//     fn horizontal_borders_in_rect() {
-//         let mut gc = GridController::test();
-//         let sheet_id = gc.sheet_ids()[0];
-//         let sheet = gc.sheet(sheet_id);
-//         let horizontal = sheet
-//             .borders
-//             .horizontal_borders_in_rect(Rect::new(0, 0, 10, 10));
-//         assert_eq!(horizontal, None);
+    //     #[test]
+    //     #[parallel]
+    //     fn vertical_borders_in_rect() {
+    //         let mut gc = GridController::test();
+    //         let sheet_id = gc.sheet_ids()[0];
+    //         let sheet = gc.sheet(sheet_id);
+    //         let vertical = sheet
+    //             .borders
+    //             .vertical_borders_in_rect(Rect::new(0, 0, 10, 10));
+    //         assert_eq!(vertical, None);
 
-//         gc.set_borders_selection(
-//             OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
-//             BorderSelection::All,
-//             Some(BorderStyle::default()),
-//             None,
-//         );
-//         let sheet = gc.sheet(sheet_id);
-//         let horizontal = sheet
-//             .borders
-//             .horizontal_borders_in_rect(Rect::new(0, 0, 10, 10))
-//             .unwrap();
-//         assert_eq!(horizontal.len(), 7);
-//     }
+    //         gc.set_borders_selection(
+    //             OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+    //             BorderSelection::All,
+    //             Some(BorderStyle::default()),
+    //             None,
+    //         );
+    //         let sheet = gc.sheet(sheet_id);
+    //         let vertical = sheet
+    //             .borders
+    //             .vertical_borders_in_rect(Rect::new(0, 0, 10, 10))
+    //             .unwrap();
+    //         assert_eq!(vertical.len(), 7);
+    //     }
 
-//     #[test]
-//     #[parallel]
-//     fn vertical_borders_in_rect() {
-//         let mut gc = GridController::test();
-//         let sheet_id = gc.sheet_ids()[0];
-//         let sheet = gc.sheet(sheet_id);
-//         let vertical = sheet
-//             .borders
-//             .vertical_borders_in_rect(Rect::new(0, 0, 10, 10));
-//         assert_eq!(vertical, None);
+    //     #[test]
+    //     #[parallel]
+    //     fn horizontal_vertical() {
+    //         let mut gc = GridController::test();
+    //         let sheet_id = gc.sheet_ids()[0];
 
-//         gc.set_borders_selection(
-//             OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
-//             BorderSelection::All,
-//             Some(BorderStyle::default()),
-//             None,
-//         );
-//         let sheet = gc.sheet(sheet_id);
-//         let vertical = sheet
-//             .borders
-//             .vertical_borders_in_rect(Rect::new(0, 0, 10, 10))
-//             .unwrap();
-//         assert_eq!(vertical.len(), 7);
-//     }
+    //         let color = Rgba::new(255, 0, 0, 255);
+    //         let line = CellBorderLine::Line2;
+    //         gc.set_borders_selection(
+    //             OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+    //             BorderSelection::Outer,
+    //             Some(BorderStyle { color, line }),
+    //             None,
+    //         );
 
-//     #[test]
-//     #[parallel]
-//     fn horizontal_vertical() {
-//         let mut gc = GridController::test();
-//         let sheet_id = gc.sheet_ids()[0];
+    //         let sheet = gc.sheet(sheet_id);
+    //         let borders = sheet.borders.borders_in_sheet().unwrap();
 
-//         let color = Rgba::new(255, 0, 0, 255);
-//         let line = CellBorderLine::Line2;
-//         gc.set_borders_selection(
-//             OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
-//             BorderSelection::Outer,
-//             Some(BorderStyle { color, line }),
-//             None,
-//         );
+    //         let expected = JsBordersSheet {
+    //             all: None,
+    //             columns: None,
+    //             rows: None,
 
-//         let sheet = gc.sheet(sheet_id);
-//         let borders = sheet.borders.borders_in_sheet().unwrap();
+    //             horizontal: Some(vec![
+    //                 JsBorderHorizontal {
+    //                     x: 0,
+    //                     y: 0,
+    //                     width: 6,
+    //                     color,
+    //                     line,
+    //                 },
+    //                 JsBorderHorizontal {
+    //                     x: 0,
+    //                     y: 6,
+    //                     width: 6,
+    //                     color,
+    //                     line,
+    //                 },
+    //             ]),
+    //             vertical: Some(vec![
+    //                 JsBorderVertical {
+    //                     x: 0,
+    //                     y: 0,
+    //                     height: 6,
+    //                     color,
+    //                     line,
+    //                 },
+    //                 JsBorderVertical {
+    //                     x: 6,
+    //                     y: 0,
+    //                     height: 6,
+    //                     color,
+    //                     line,
+    //                 },
+    //             ]),
+    //         };
+    //         assert_eq!(borders, expected);
+    //     }
 
-//         let expected = JsBordersSheet {
-//             all: None,
-//             columns: None,
-//             rows: None,
+    //     #[test]
+    //     #[parallel]
+    //     fn all_single() {
+    //         let mut gc = GridController::test();
+    //         let sheet_id = gc.sheet_ids()[0];
 
-//             horizontal: Some(vec![
-//                 JsBorderHorizontal {
-//                     x: 0,
-//                     y: 0,
-//                     width: 6,
-//                     color,
-//                     line,
-//                 },
-//                 JsBorderHorizontal {
-//                     x: 0,
-//                     y: 6,
-//                     width: 6,
-//                     color,
-//                     line,
-//                 },
-//             ]),
-//             vertical: Some(vec![
-//                 JsBorderVertical {
-//                     x: 0,
-//                     y: 0,
-//                     height: 6,
-//                     color,
-//                     line,
-//                 },
-//                 JsBorderVertical {
-//                     x: 6,
-//                     y: 0,
-//                     height: 6,
-//                     color,
-//                     line,
-//                 },
-//             ]),
-//         };
-//         assert_eq!(borders, expected);
-//     }
+    //         gc.set_borders_selection(
+    //             OldSelection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),
+    //             BorderSelection::Top,
+    //             Some(BorderStyle::default()),
+    //             None,
+    //         );
 
-//     #[test]
-//     #[parallel]
-//     fn all_single() {
-//         let mut gc = GridController::test();
-//         let sheet_id = gc.sheet_ids()[0];
+    //         let sheet = gc.sheet(sheet_id);
+    //         let borders = sheet.borders.borders_in_sheet().unwrap();
+    //         let expected = JsBordersSheet {
+    //             all: None,
+    //             columns: None,
+    //             rows: None,
 
-//         gc.set_borders_selection(
-//             OldSelection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),
-//             BorderSelection::Top,
-//             Some(BorderStyle::default()),
-//             None,
-//         );
+    //             horizontal: Some(vec![JsBorderHorizontal {
+    //                 x: 2,
+    //                 y: 2,
+    //                 width: 1,
+    //                 color: Rgba::default(),
+    //                 line: CellBorderLine::default(),
+    //             }]),
+    //             vertical: None,
+    //         };
+    //         assert_eq!(borders, expected);
+    //     }
 
-//         let sheet = gc.sheet(sheet_id);
-//         let borders = sheet.borders.borders_in_sheet().unwrap();
-//         let expected = JsBordersSheet {
-//             all: None,
-//             columns: None,
-//             rows: None,
+    //     #[test]
+    //     #[parallel]
+    //     fn top() {
+    //         let mut gc = GridController::test();
+    //         let sheet_id = gc.sheet_ids()[0];
 
-//             horizontal: Some(vec![JsBorderHorizontal {
-//                 x: 2,
-//                 y: 2,
-//                 width: 1,
-//                 color: Rgba::default(),
-//                 line: CellBorderLine::default(),
-//             }]),
-//             vertical: None,
-//         };
-//         assert_eq!(borders, expected);
-//     }
+    //         gc.set_borders_selection(
+    //             OldSelection::all(sheet_id),
+    //             BorderSelection::Top,
+    //             Some(BorderStyle::default()),
+    //             None,
+    //         );
 
-//     #[test]
-//     #[parallel]
-//     fn top() {
-//         let mut gc = GridController::test();
-//         let sheet_id = gc.sheet_ids()[0];
+    //         let sheet = gc.sheet(sheet_id);
+    //         let borders = sheet.borders.borders_in_sheet().unwrap();
+    //         assert!(borders.all.unwrap().top.is_some());
+    //         assert!(borders.all.unwrap().bottom.is_none());
+    //         assert!(borders.all.unwrap().left.is_none());
+    //         assert!(borders.all.unwrap().right.is_none());
+    //         assert_eq!(borders.horizontal, None);
+    //         assert_eq!(borders.vertical, None);
+    //         assert_eq!(borders.columns, None);
+    //         assert_eq!(borders.rows, None);
+    //     }
 
-//         gc.set_borders_selection(
-//             OldSelection::all(sheet_id),
-//             BorderSelection::Top,
-//             Some(BorderStyle::default()),
-//             None,
-//         );
+    //     #[test]
+    //     #[parallel]
+    //     fn columns() {
+    //         let mut gc = GridController::test();
+    //         let sheet_id = gc.sheet_ids()[0];
 
-//         let sheet = gc.sheet(sheet_id);
-//         let borders = sheet.borders.borders_in_sheet().unwrap();
-//         assert!(borders.all.unwrap().top.is_some());
-//         assert!(borders.all.unwrap().bottom.is_none());
-//         assert!(borders.all.unwrap().left.is_none());
-//         assert!(borders.all.unwrap().right.is_none());
-//         assert_eq!(borders.horizontal, None);
-//         assert_eq!(borders.vertical, None);
-//         assert_eq!(borders.columns, None);
-//         assert_eq!(borders.rows, None);
-//     }
+    //         gc.set_borders_selection(
+    //             OldSelection::columns(&[1, 2, 3], sheet_id),
+    //             BorderSelection::All,
+    //             Some(BorderStyle::default()),
+    //             None,
+    //         );
 
-//     #[test]
-//     #[parallel]
-//     fn columns() {
-//         let mut gc = GridController::test();
-//         let sheet_id = gc.sheet_ids()[0];
+    //         let sheet = gc.sheet(sheet_id);
+    //         let borders = sheet.borders.borders_in_sheet().unwrap();
+    //         let columns = HashMap::from([
+    //             (1i64.to_string(), BorderStyleCell::all()),
+    //             (2i64.to_string(), BorderStyleCell::all()),
+    //             (3i64.to_string(), BorderStyleCell::all()),
+    //         ]);
+    //         let expected = JsBordersSheet {
+    //             all: None,
+    //             columns: Some(columns),
+    //             rows: None,
 
-//         gc.set_borders_selection(
-//             OldSelection::columns(&[1, 2, 3], sheet_id),
-//             BorderSelection::All,
-//             Some(BorderStyle::default()),
-//             None,
-//         );
+    //             horizontal: None,
+    //             vertical: None,
+    //         };
+    //         assert_eq!(borders, expected);
+    //     }
 
-//         let sheet = gc.sheet(sheet_id);
-//         let borders = sheet.borders.borders_in_sheet().unwrap();
-//         let columns = HashMap::from([
-//             (1i64.to_string(), BorderStyleCell::all()),
-//             (2i64.to_string(), BorderStyleCell::all()),
-//             (3i64.to_string(), BorderStyleCell::all()),
-//         ]);
-//         let expected = JsBordersSheet {
-//             all: None,
-//             columns: Some(columns),
-//             rows: None,
+    //     #[test]
+    //     #[parallel]
+    //     fn rows() {
+    //         let mut gc = GridController::test();
+    //         let sheet_id = gc.sheet_ids()[0];
 
-//             horizontal: None,
-//             vertical: None,
-//         };
-//         assert_eq!(borders, expected);
-//     }
+    //         gc.set_borders_selection(
+    //             OldSelection::rows(&[1, 2, 3], sheet_id),
+    //             BorderSelection::All,
+    //             Some(BorderStyle::default()),
+    //             None,
+    //         );
 
-//     #[test]
-//     #[parallel]
-//     fn rows() {
-//         let mut gc = GridController::test();
-//         let sheet_id = gc.sheet_ids()[0];
+    //         let sheet = gc.sheet(sheet_id);
+    //         let borders = sheet.borders.borders_in_sheet().unwrap();
+    //         let rows = HashMap::from([
+    //             (1i64.to_string(), BorderStyleCell::all()),
+    //             (2i64.to_string(), BorderStyleCell::all()),
+    //             (3i64.to_string(), BorderStyleCell::all()),
+    //         ]);
+    //         let expected = JsBordersSheet {
+    //             all: None,
+    //             columns: None,
+    //             rows: Some(rows),
 
-//         gc.set_borders_selection(
-//             OldSelection::rows(&[1, 2, 3], sheet_id),
-//             BorderSelection::All,
-//             Some(BorderStyle::default()),
-//             None,
-//         );
+    //             horizontal: None,
 
-//         let sheet = gc.sheet(sheet_id);
-//         let borders = sheet.borders.borders_in_sheet().unwrap();
-//         let rows = HashMap::from([
-//             (1i64.to_string(), BorderStyleCell::all()),
-//             (2i64.to_string(), BorderStyleCell::all()),
-//             (3i64.to_string(), BorderStyleCell::all()),
-//         ]);
-//         let expected = JsBordersSheet {
-//             all: None,
-//             columns: None,
-//             rows: Some(rows),
+    //             vertical: None,
+    //         };
+    //         assert_eq!(borders, expected);
+    //     }
 
-//             horizontal: None,
+    //     #[test]
+    //     #[parallel]
+    //     fn right() {
+    //         let mut gc = GridController::test();
+    //         let sheet_id = gc.sheet_ids()[0];
 
-//             vertical: None,
-//         };
-//         assert_eq!(borders, expected);
-//     }
+    //         gc.set_borders_selection(
+    //             OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
+    //             BorderSelection::Right,
+    //             Some(BorderStyle::default()),
+    //             None,
+    //         );
 
-//     #[test]
-//     #[parallel]
-//     fn right() {
-//         let mut gc = GridController::test();
-//         let sheet_id = gc.sheet_ids()[0];
+    //         let sheet = gc.sheet(sheet_id);
+    //         let borders = sheet.borders.borders_in_sheet().unwrap();
+    //         let expected = JsBordersSheet {
+    //             all: None,
+    //             columns: None,
+    //             rows: None,
 
-//         gc.set_borders_selection(
-//             OldSelection::sheet_rect(SheetRect::new(0, 0, 5, 5, sheet_id)),
-//             BorderSelection::Right,
-//             Some(BorderStyle::default()),
-//             None,
-//         );
-
-//         let sheet = gc.sheet(sheet_id);
-//         let borders = sheet.borders.borders_in_sheet().unwrap();
-//         let expected = JsBordersSheet {
-//             all: None,
-//             columns: None,
-//             rows: None,
-
-//             horizontal: None,
-//             vertical: Some(vec![JsBorderVertical {
-//                 x: 6,
-//                 y: 0,
-//                 height: 6,
-//                 color: Rgba::default(),
-//                 line: CellBorderLine::default(),
-//             }]),
-//         };
-//         assert_eq!(borders, expected);
-//     }
-// }
+    //             horizontal: None,
+    //             vertical: Some(vec![JsBorderVertical {
+    //                 x: 6,
+    //                 y: 0,
+    //                 height: 6,
+    //                 color: Rgba::default(),
+    //                 line: CellBorderLine::default(),
+    //             }]),
+    //         };
+    //         assert_eq!(borders, expected);
+    //     }
+}
