@@ -1,10 +1,10 @@
 //! A1-style borders.
 //!
-//! The BorderStyleTimestamp is necessary to differentiate
-//! between overlapping left/right and top/bottom borders--eg, if a cell has a
-//! right border and its neighbor to the right has a left border, then we need
-//! to know which one to display. Right borders do not necessarily override
-//! their neighbors left border.
+//! The BorderStyleTimestamp is necessary to differentiate between overlapping
+//! left/right and top/bottom borders--eg, if a cell has a right border and its
+//! neighbor to the right has a left border, then we need to know which one to
+//! display. Right borders do not necessarily override their neighbors left
+//! border.
 
 use serde::{Deserialize, Serialize};
 

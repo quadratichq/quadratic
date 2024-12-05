@@ -122,15 +122,11 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
     /// Gets the value at `pos` if the block is finite.
     pub fn get_finite(&self, pos: Pos) -> Option<&T> {
         let col = self.0.get(pos.x as u64)?;
-        if col.max().is_some_and(|max| max != u64::MAX) {
-            let block = col.get_block_containing(pos.y as u64)?;
-            if block.contains(u64::MAX) {
-                None
-            } else {
-                Some(&block.value)
-            }
-        } else {
+        let block = col.get_block_containing(pos.y as u64)?;
+        if block.contains(u64::MAX) {
             None
+        } else {
+            Some(&block.value)
         }
     }
 
