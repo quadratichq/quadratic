@@ -106,7 +106,7 @@ pub fn assert_cell_format_bold(
     expect_bold: bool,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
-    let has_bold = sheet.formats.bold.get(Pos { x, y }).is_some();
+    let has_bold = sheet.formats.bold.get(Pos { x, y });
     assert!(
         has_bold == expect_bold,
         "Cell at ({}, {}) should be bold={}, but is actually bold={}",
@@ -149,7 +149,7 @@ pub fn assert_cell_format_fill_color(
     let sheet = grid_controller.sheet(sheet_id);
     let fill_color = sheet.formats.fill_color.get(Pos { x, y });
     assert!(
-        fill_color == Some(&expect_fill_color.to_string()),
+        fill_color == Some(expect_fill_color.to_string()),
         "Cell at ({}, {}) should be fill_color={:?}, but is actually fill_color={:?}",
         x,
         y,
@@ -198,7 +198,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
         rect.x_range().for_each(|x| {
             let pos: Pos = Pos { x, y };
 
-            if sheet.formats.bold.get(pos).is_some() {
+            if sheet.formats.bold.get(pos) {
                 bolds.push((count_y + 1, count_x + 1));
             }
 
@@ -307,9 +307,9 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.formats.bold.set(pos![A1], Some(true));
-        sheet.formats.bold.set(pos![B2], Some(true));
-        sheet.formats.italic.set(pos![A2], Some(true));
+        sheet.formats.bold.set(pos![A1], true);
+        sheet.formats.bold.set(pos![B2], true);
+        sheet.formats.italic.set(pos![A2], true);
         sheet
             .formats
             .fill_color

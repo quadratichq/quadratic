@@ -50,9 +50,9 @@ impl Sheet {
                 if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
                     true
                 } else {
-                    let numeric_format = self.formats.numeric_format.get(pos).cloned();
-                    let numeric_decimals = self.formats.numeric_decimals.get(pos).cloned();
-                    let numeric_commas = self.formats.numeric_commas.get(pos).cloned();
+                    let numeric_format = self.formats.numeric_format.get(pos);
+                    let numeric_decimals = self.formats.numeric_decimals.get(pos);
+                    let numeric_commas = self.formats.numeric_commas.get(pos);
                     let display = cell_value.to_number_display(
                         numeric_format,
                         numeric_decimals,

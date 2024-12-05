@@ -1,6 +1,3 @@
-// todo: fix this
-#![allow(non_local_definitions)]
-
 //! This stores a format for Operations and eventually for the entire sheet.
 
 use std::fmt::Display;
@@ -10,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use super::format_update::FormatUpdate;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, RenderSize};
 
+// TODO: consider making `bold`, `italic`, `underline`, and `strikethrough` into
+//       just `bool` instead of `Option<bool>`
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, ts_rs::TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct Format {

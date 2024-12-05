@@ -23,18 +23,18 @@ pub mod sheet_formatting_update;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct SheetFormatting {
-    pub align: Contiguous2D<CellAlign>,
-    pub vertical_align: Contiguous2D<CellVerticalAlign>,
-    pub wrap: Contiguous2D<CellWrap>,
-    pub numeric_format: Contiguous2D<NumericFormat>,
-    pub numeric_decimals: Contiguous2D<i16>,
-    pub numeric_commas: Contiguous2D<bool>,
+    pub align: Contiguous2D<Option<CellAlign>>,
+    pub vertical_align: Contiguous2D<Option<CellVerticalAlign>>,
+    pub wrap: Contiguous2D<Option<CellWrap>>,
+    pub numeric_format: Contiguous2D<Option<NumericFormat>>,
+    pub numeric_decimals: Contiguous2D<Option<i16>>,
+    pub numeric_commas: Contiguous2D<Option<bool>>,
     pub bold: Contiguous2D<bool>,
     pub italic: Contiguous2D<bool>,
-    pub text_color: Contiguous2D<String>,
-    pub fill_color: Contiguous2D<String>,
-    pub render_size: Contiguous2D<RenderSize>,
-    pub date_time: Contiguous2D<String>,
+    pub text_color: Contiguous2D<Option<String>>,
+    pub fill_color: Contiguous2D<Option<String>>,
+    pub render_size: Contiguous2D<Option<RenderSize>>,
+    pub date_time: Contiguous2D<Option<String>>,
     pub underline: Contiguous2D<bool>,
     pub strike_through: Contiguous2D<bool>,
 }

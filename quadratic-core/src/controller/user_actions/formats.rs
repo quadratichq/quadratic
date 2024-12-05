@@ -591,7 +591,7 @@ mod test {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.formats.underline.get(pos![A2]), Some(&true));
+        assert_eq!(sheet.formats.underline.get(pos![A2]), true);
     }
 
     #[test]
@@ -602,7 +602,7 @@ mod test {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.formats.strike_through.get(pos![A2]), Some(&true));
+        assert_eq!(sheet.formats.strike_through.get(pos![A2]), true);
     }
 
     #[test]
@@ -650,11 +650,11 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.text_color.get(pos![A1]),
-            Some(&"red".to_string())
+            Some("red".to_string())
         );
         assert_eq!(
             sheet.formats.text_color.get(pos![A100]),
-            Some(&"red".to_string())
+            Some("red".to_string())
         );
 
         let selection = A1Selection::from_column_ranges(&[1..=1], sheet_id);
@@ -679,15 +679,15 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.fill_color.get(pos![A1]),
-            Some(&"red".to_string())
+            Some("red".to_string())
         );
         assert_eq!(
             sheet.formats.fill_color.get(pos![D1]),
-            Some(&"red".to_string())
+            Some("red".to_string())
         );
         assert_eq!(
             sheet.formats.fill_color.get(pos![D3]),
-            Some(&"red".to_string())
+            Some("red".to_string())
         );
     }
 
@@ -730,7 +730,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.formats.render_size.get(pos![A1]),
-            Some(&RenderSize {
+            Some(RenderSize {
                 w: "1".to_string(),
                 h: "2".to_string()
             })

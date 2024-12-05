@@ -531,11 +531,8 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.formats.bold.set_rect(1, 1, Some(2), None, Some(true));
-        sheet
-            .formats
-            .italic
-            .set_rect(1, 3, None, Some(4), Some(true));
+        sheet.formats.bold.set_rect(1, 1, Some(2), None, true);
+        sheet.formats.italic.set_rect(1, 3, None, Some(4), true);
 
         let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::from_ranges(
@@ -558,13 +555,13 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 3 }), Some(&true));
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 4 }), Some(&true));
+        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 3 }), true);
+        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 4 }), true);
 
-        assert_eq!(sheet.formats.italic.get(Pos { x: 1, y: 3 }), Some(&true));
-        assert_eq!(sheet.formats.bold.get(Pos { x: 1, y: 3 }), Some(&true));
-        assert_eq!(sheet.formats.italic.get(Pos { x: 2, y: 3 }), Some(&true));
-        assert_eq!(sheet.formats.bold.get(Pos { x: 2, y: 3 }), Some(&true));
+        assert_eq!(sheet.formats.italic.get(Pos { x: 1, y: 3 }), true);
+        assert_eq!(sheet.formats.bold.get(Pos { x: 1, y: 3 }), true);
+        assert_eq!(sheet.formats.italic.get(Pos { x: 2, y: 3 }), true);
+        assert_eq!(sheet.formats.bold.get(Pos { x: 2, y: 3 }), true);
     }
 
     #[test]

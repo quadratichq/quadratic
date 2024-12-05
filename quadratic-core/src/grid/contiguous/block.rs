@@ -10,24 +10,34 @@ use smallvec::{smallvec, SmallVec};
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Block<T> {
     /// Start of the block.
-    pub start: i64,
-    /// End of the block, which is `i64::MAX` if unbounded.
-    pub end: i64,
+    pub start: u64,
+    /// End of the block, which is `u64::MAX` if unbounded.
+    pub end: u64,
     /// Value for every value between `start` (inclusive) and `end` (exclusive).
     pub value: T,
 }
 impl<T: fmt::Debug> fmt::Debug for Block<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.end {
-            i64::MAX => write!(f, "({:?}, {:?})", self.start.., self.value),
+            u64::MAX => write!(f, "({:?}, {:?})", self.start.., self.value),
             _ => write!(f, "({:?}, {:?})", self.start..self.end, self.value),
         }
     }
 }
-impl<T: Clone + PartialEq> Block<T> {
+impl<T> Block<T> {
+    /// Return a block that covers the entire space
+    pub fn new_total(value: T) -> Self {
+        Self {
+            start: 1,
+            end: u64::MAX,
+            value,
+        }
+    }
+}
+impl<T> Block<T> {
     /// Returns the length of the block, or `None` if it is unbounded.
-    pub fn len(&self) -> Option<i64> {
-        (self.end < i64::MAX || self.start == self.end)
+    pub fn len(&self) -> Option<u64> {
+        (self.end < u64::MAX || self.start == self.end)
             .then_some(self.end.saturating_sub(self.start))
     }
     /// Returns whether the block is empty (length 0).
@@ -39,22 +49,22 @@ impl<T: Clone + PartialEq> Block<T> {
         (!self.is_empty()).then_some(self)
     }
 
-    /// Returns whether the block contains the key `coordinate`.
-    pub fn contains(&self, coordinate: i64) -> bool {
-        self.start <= coordinate && (coordinate < self.end || self.end == i64::MAX)
+    /// Returns whether the block contains a coordinate.
+    pub fn contains(&self, coordinate: u64) -> bool {
+        self.start <= coordinate && (coordinate < self.end || self.end == u64::MAX)
     }
     /// Clamps a coordinate to `self`. Both endpoints are allowed.
-    fn clamp(&self, coordinate: i64) -> i64 {
+    fn clamp(&self, coordinate: u64) -> u64 {
         coordinate.clamp(self.start, self.end)
     }
 
-    /// Returns the end of the block if it is a finite block, or the start of
-    /// the block if it is infinite.
-    pub fn finite_max(&self) -> i64 {
-        if self.end == i64::MAX {
+    /// Returns the lat coordinate in the block (i.e., `end - 1`) if it is a
+    /// finite block, or the start of the block if it is infinite.
+    pub fn finite_max(&self) -> u64 {
+        if self.end == u64::MAX {
             self.start
         } else {
-            self.end
+            self.end.saturating_sub(1)
         }
     }
 
@@ -67,33 +77,21 @@ impl<T: Clone + PartialEq> Block<T> {
         }
     }
     /// Applies a function to the value in the block.
-    pub fn map_ref<U>(&self, f: impl FnOnce(&T) -> U) -> Block<U> {
+    pub fn map_ref<'a, U>(&'a self, f: impl FnOnce(&'a T) -> U) -> Block<U> {
         Block {
             start: self.start,
             end: self.end,
             value: f(&self.value),
         }
     }
-    /// Applies a function to the value in the block and creates two new blocks
-    /// with the same range.
-    pub fn map_split<U, V>(self, f: impl FnOnce(T) -> (U, V)) -> (Block<U>, Block<V>) {
-        let (u, v) = f(self.value);
-        (
-            Block {
-                start: self.start,
-                end: self.end,
-                value: u,
-            },
-            Block {
-                start: self.start,
-                end: self.end,
-                value: v,
-            },
-        )
+    /// Converts a `&Block<T>` to a `Block<&T>`.
+    pub fn as_ref(&self) -> Block<&T> {
+        self.map_ref(|value| value)
     }
-
+}
+impl<T: Clone + PartialEq> Block<T> {
     /// Splits the block at `coordinate`, returning the halves before and after.
-    pub fn split(self, coordinate: i64) -> [Option<Self>; 2] {
+    pub fn split(self, coordinate: u64) -> [Option<Self>; 2] {
         let clamped_coordinate = self.clamp(coordinate);
         [
             Block {
@@ -114,7 +112,7 @@ impl<T: Clone + PartialEq> Block<T> {
     /// - the portion of the block before `start` (if any)
     /// - and the portion of the block between `start` and `end` (if any).
     /// - the portion of the block after `end` (if any)
-    pub fn split_twice(self, start: i64, end: i64) -> [Option<Self>; 3] {
+    pub fn split_twice(self, start: u64, end: u64) -> [Option<Self>; 3] {
         let [before, middle_after] = self.split(start);
         let [middle, after] = match middle_after {
             Some(block) => block.split(end),
@@ -126,33 +124,26 @@ impl<T: Clone + PartialEq> Block<T> {
 
     /// Offsets a block by the given positive delta.
     ///
-    /// # Panics
-    ///
-    /// Panics if `self.start + delta` or `self.end + delta` exceeds
-    /// [`i64::MAX`].
-    pub fn add_offset(self, delta: u64) -> Self {
+    /// Returns `None` if the block becomes empty.
+    pub fn add_offset(self, delta: u64) -> Option<Self> {
         Block {
-            start: self.start.saturating_add(delta as i64),
-            end: self.end.saturating_add(delta as i64),
+            start: self.start.saturating_add(delta),
+            end: self.end.saturating_add(delta),
             value: self.value,
         }
+        .if_nonempty()
     }
     /// Offsets a block by the given negative delta. Truncates the block if it
-    /// goes below 0.
-    pub fn subtract_offset(self, delta: u64) -> Self {
+    /// goes below 1.
+    ///
+    /// Returns `None` if the block becomes empty.
+    pub fn subtract_offset(self, delta: u64) -> Option<Self> {
         Block {
-            start: if self.start == i64::MIN {
-                self.start
-            } else {
-                self.start.saturating_sub(delta as i64)
-            },
-            end: if self.end == i64::MAX {
-                self.end
-            } else {
-                self.end.saturating_sub(delta as i64)
-            },
+            start: self.start.saturating_sub(delta).max(1),
+            end: self.end.saturating_sub(delta).max(1),
             value: self.value,
         }
+        .if_nonempty()
     }
 
     /// Attempts to merge two blocks, which are assumed to be non-overlapping.
@@ -180,13 +171,21 @@ impl<T: Clone + PartialEq> Block<T> {
         }
     }
 }
-impl<T: Clone + PartialEq> Block<Option<T>> {
+impl<T> Block<Option<T>> {
     /// Transposes a `Block<Option<T>>` into an `Option<Block<T>>`.
-    pub fn as_some(self) -> Option<Block<T>> {
+    pub fn into_some(self) -> Option<Block<T>> {
         Some(Block {
             start: self.start,
             end: self.end,
             value: self.value?,
+        })
+    }
+    /// Transposes a `&Block<Option<T>>` into an `Option<Block<&T>>`.
+    pub fn as_some(&self) -> Option<Block<&T>> {
+        Some(Block {
+            start: self.start,
+            end: self.end,
+            value: self.value.as_ref()?,
         })
     }
 }

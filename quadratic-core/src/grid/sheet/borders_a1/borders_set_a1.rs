@@ -10,15 +10,15 @@ impl BordersA1 {
         borders: &BordersA1Updates,
     ) -> Vec<Operation> {
         let reverse_borders = BordersA1Updates {
-            left: borders.left.clone().map(|value| self.left.set_from(value)),
+            left: borders.left.as_ref().map(|value| self.left.set_from(value)),
             right: borders
                 .right
-                .clone()
+                .as_ref()
                 .map(|value| self.right.set_from(value)),
-            top: borders.top.clone().map(|value| self.top.set_from(value)),
+            top: borders.top.as_ref().map(|value| self.top.set_from(value)),
             bottom: borders
                 .bottom
-                .clone()
+                .as_ref()
                 .map(|value| self.bottom.set_from(value)),
         };
 

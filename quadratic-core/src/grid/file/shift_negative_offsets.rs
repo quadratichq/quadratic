@@ -96,13 +96,13 @@ mod test {
                 x: col![F],
                 y: i64::MAX
             }),
-            Some(&"rgb(23, 200, 165)".to_string())
+            Some("rgb(23, 200, 165)".to_string())
         );
-        assert_eq!(sheet.formats.bold.get("F1".into()), Some(&true));
-        assert_eq!(sheet.formats.italic.get(pos![A9]), Some(&true));
+        assert_eq!(sheet.formats.bold.get("F1".into()), true);
+        assert_eq!(sheet.formats.italic.get(pos![A9]), true);
         assert_eq!(
             sheet.formats.fill_color.get(Pos { x: i64::MAX, y: 1 }),
-            Some(&"rgb(241, 196, 15)".to_string())
+            Some("rgb(241, 196, 15)".to_string())
         );
 
         let borders = sheet.borders.try_from_a1("A1").unwrap();

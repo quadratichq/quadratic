@@ -171,21 +171,18 @@ mod test {
                 .formats
                 .numeric_commas
                 .get(sheet_pos.into())
-                .cloned()
         };
         let get_cell_numeric_format = |g: &GridController| {
             g.sheet(sheet_id)
                 .formats
                 .numeric_format
                 .get(sheet_pos.into())
-                .cloned()
         };
         let get_cell_numeric_decimals = |g: &GridController| {
             g.sheet(sheet_id)
                 .formats
                 .numeric_decimals
                 .get(sheet_pos.into())
-                .cloned()
         };
 
         // empty string converts to blank cell value

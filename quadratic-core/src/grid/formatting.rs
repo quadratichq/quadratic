@@ -1,8 +1,5 @@
 // todo: maybe delete this file?
 
-// todo: fix this
-#![allow(non_local_definitions)]
-
 use std::fmt;
 
 #[cfg(test)]

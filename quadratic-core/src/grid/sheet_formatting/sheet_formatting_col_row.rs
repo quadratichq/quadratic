@@ -134,8 +134,8 @@ mod tests {
     #[test]
     fn test_insert_column() {
         let mut formatting = SheetFormatting::default();
-        formatting.bold.set(pos![A1], Some(true));
-        formatting.italic.set(pos![A2], Some(true));
+        formatting.bold.set(pos![A1], true);
+        formatting.italic.set(pos![A2], true);
         formatting.text_color.set(pos![A3], Some("red".to_string()));
         formatting.align.set(pos![A4], Some(CellAlign::Center));
 
@@ -143,131 +143,107 @@ mod tests {
         formatting.insert_column(1, CopyFormats::After);
 
         // Check if values were inserted correctly
-        assert_eq!(formatting.bold.get(pos![A1]), Some(&true));
-        assert_eq!(formatting.italic.get(pos![A2]), Some(&true));
-        assert_eq!(
-            formatting.text_color.get(pos![A3]),
-            Some(&"red".to_string())
-        );
-        assert_eq!(formatting.align.get(pos![A4]), Some(&CellAlign::Center));
+        assert_eq!(formatting.bold.get(pos![A1]), true);
+        assert_eq!(formatting.italic.get(pos![A2]), true);
+        assert_eq!(formatting.text_color.get(pos![A3]), Some("red".to_string()));
+        assert_eq!(formatting.align.get(pos![A4]), Some(CellAlign::Center));
 
         // Check if values were shifted correctly
-        assert_eq!(formatting.bold.get(pos![B1]), Some(&true));
-        assert_eq!(formatting.italic.get(pos![B2]), Some(&true));
-        assert_eq!(
-            formatting.text_color.get(pos![B3]),
-            Some(&"red".to_string())
-        );
-        assert_eq!(formatting.align.get(pos![B4]), Some(&CellAlign::Center));
+        assert_eq!(formatting.bold.get(pos![B1]), true);
+        assert_eq!(formatting.italic.get(pos![B2]), true);
+        assert_eq!(formatting.text_color.get(pos![B3]), Some("red".to_string()));
+        assert_eq!(formatting.align.get(pos![B4]), Some(CellAlign::Center));
     }
 
     #[test]
     fn test_insert_row() {
         let mut formatting = SheetFormatting::default();
-        formatting.bold.set(pos![A1], Some(true));
-        formatting.italic.set(pos![B1], Some(true));
+        formatting.bold.set(pos![A1], true);
+        formatting.italic.set(pos![B1], true);
         formatting.text_color.set(pos![C1], Some("red".to_string()));
         formatting.align.set(pos![D1], Some(CellAlign::Center));
 
         formatting.insert_row(1, CopyFormats::After);
 
         // Check if values were inserted correctly
-        assert_eq!(formatting.bold.get(pos![A1]), Some(&true));
-        assert_eq!(formatting.italic.get(pos![B1]), Some(&true));
-        assert_eq!(
-            formatting.text_color.get(pos![C1]),
-            Some(&"red".to_string())
-        );
-        assert_eq!(formatting.align.get(pos![D1]), Some(&CellAlign::Center));
+        assert_eq!(formatting.bold.get(pos![A1]), true);
+        assert_eq!(formatting.italic.get(pos![B1]), true);
+        assert_eq!(formatting.text_color.get(pos![C1]), Some("red".to_string()));
+        assert_eq!(formatting.align.get(pos![D1]), Some(CellAlign::Center));
 
         // Check if values were shifted correctly
-        assert_eq!(formatting.bold.get(pos![A2]), Some(&true));
-        assert_eq!(formatting.italic.get(pos![B2]), Some(&true));
-        assert_eq!(
-            formatting.text_color.get(pos![C2]),
-            Some(&"red".to_string())
-        );
-        assert_eq!(formatting.align.get(pos![D2]), Some(&CellAlign::Center));
+        assert_eq!(formatting.bold.get(pos![A2]), true);
+        assert_eq!(formatting.italic.get(pos![B2]), true);
+        assert_eq!(formatting.text_color.get(pos![C2]), Some("red".to_string()));
+        assert_eq!(formatting.align.get(pos![D2]), Some(CellAlign::Center));
     }
 
     #[test]
     fn test_remove_column() {
         let mut formatting = SheetFormatting::default();
-        formatting.bold.set(pos![A1], Some(true));
-        formatting.italic.set(pos![A2], Some(true));
+        formatting.bold.set(pos![A1], true);
+        formatting.italic.set(pos![A2], true);
         formatting.text_color.set(pos![A3], Some("red".to_string()));
         formatting.align.set(pos![A4], Some(CellAlign::Center));
 
         let updates = formatting.remove_column(1);
 
         // Should be no values left
-        assert_eq!(formatting.bold.get(pos![A1]), None);
-        assert_eq!(formatting.italic.get(pos![A2]), None);
+        assert_eq!(formatting.bold.get(pos![A1]), false);
+        assert_eq!(formatting.italic.get(pos![A2]), false);
         assert_eq!(formatting.text_color.get(pos![A3]), None);
         assert_eq!(formatting.align.get(pos![A4]), None);
 
         // undo the changes
         formatting.apply_updates(&updates);
-        assert_eq!(formatting.bold.get(pos![A1]), Some(&true));
-        assert_eq!(formatting.italic.get(pos![A2]), Some(&true));
-        assert_eq!(
-            formatting.text_color.get(pos![A3]),
-            Some(&"red".to_string())
-        );
-        assert_eq!(formatting.align.get(pos![A4]), Some(&CellAlign::Center));
+        assert_eq!(formatting.bold.get(pos![A1]), true);
+        assert_eq!(formatting.italic.get(pos![A2]), true);
+        assert_eq!(formatting.text_color.get(pos![A3]), Some("red".to_string()));
+        assert_eq!(formatting.align.get(pos![A4]), Some(CellAlign::Center));
     }
 
     #[test]
     fn test_remove_row() {
         let mut formatting = SheetFormatting::default();
-        formatting.bold.set(pos![A1], Some(true));
-        formatting.italic.set(pos![B1], Some(true));
+        formatting.bold.set(pos![A1], true);
+        formatting.italic.set(pos![B1], true);
         formatting.text_color.set(pos![C1], Some("red".to_string()));
         formatting.align.set(pos![D1], Some(CellAlign::Center));
 
         let updates = formatting.remove_row(1);
 
         // check if row was removed
-        assert_eq!(formatting.bold.get(pos![A1]), None);
-        assert_eq!(formatting.italic.get(pos![B1]), None);
+        assert_eq!(formatting.bold.get(pos![A1]), false);
+        assert_eq!(formatting.italic.get(pos![B1]), false);
         assert_eq!(formatting.text_color.get(pos![C1]), None);
         assert_eq!(formatting.align.get(pos![D1]), None);
 
         // undo the changes
         formatting.apply_updates(&updates);
-        assert_eq!(formatting.bold.get(pos![A1]), Some(&true));
-        assert_eq!(formatting.italic.get(pos![B1]), Some(&true));
-        assert_eq!(
-            formatting.text_color.get(pos![C1]),
-            Some(&"red".to_string())
-        );
-        assert_eq!(formatting.align.get(pos![D1]), Some(&CellAlign::Center));
+        assert_eq!(formatting.bold.get(pos![A1]), true);
+        assert_eq!(formatting.italic.get(pos![B1]), true);
+        assert_eq!(formatting.text_color.get(pos![C1]), Some("red".to_string()));
+        assert_eq!(formatting.align.get(pos![D1]), Some(CellAlign::Center));
     }
 
     #[test]
     fn test_copy_column() {
         let mut formatting = SheetFormatting::default();
-        formatting.bold.set(pos![A1], Some(true));
-        formatting.italic.set(pos![A2], Some(true));
+        formatting.bold.set(pos![A1], true);
+        formatting.italic.set(pos![A2], true);
         formatting.text_color.set(pos![A3], Some("red".to_string()));
         formatting.align.set(pos![A4], Some(CellAlign::Center));
 
         let updates = formatting.copy_column(1).unwrap();
-        assert_eq!(
-            updates.bold.as_ref().unwrap().get(pos![A1]),
-            Some(&Some(true))
-        );
-        assert_eq!(
-            updates.italic.as_ref().unwrap().get(pos![A2]),
-            Some(&Some(true))
-        );
+        assert_eq!(updates.bold.as_ref().unwrap().get(pos![A1]), Some(true));
+        assert_eq!(updates.italic.as_ref().unwrap().get(pos![A2]), Some(true));
         assert_eq!(
             updates.text_color.as_ref().unwrap().get(pos![A3]),
-            Some(&Some("red".to_string()))
+            Some(Some("red".to_string()))
         );
         assert_eq!(
             updates.align.as_ref().unwrap().get(pos![A4]),
-            Some(&Some(CellAlign::Center))
+            Some(Some(CellAlign::Center))
         );
         assert_eq!(updates.align.as_ref().unwrap().get(pos![B1]), None);
     }
@@ -275,27 +251,21 @@ mod tests {
     #[test]
     fn test_copy_row() {
         let mut formatting = SheetFormatting::default();
-        formatting.bold.set(pos![A1], Some(true));
-        formatting.italic.set(pos![B1], Some(true));
+        formatting.bold.set(pos![A1], true);
+        formatting.italic.set(pos![B1], true);
         formatting.text_color.set(pos![C1], Some("red".to_string()));
         formatting.align.set(pos![D1], Some(CellAlign::Center));
 
         let updates = formatting.copy_row(1).unwrap();
-        assert_eq!(
-            updates.bold.as_ref().unwrap().get(pos![A1]),
-            Some(&Some(true))
-        );
-        assert_eq!(
-            updates.italic.as_ref().unwrap().get(pos![B1]),
-            Some(&Some(true))
-        );
+        assert_eq!(updates.bold.as_ref().unwrap().get(pos![A1]), Some(true));
+        assert_eq!(updates.italic.as_ref().unwrap().get(pos![B1]), Some(true));
         assert_eq!(
             updates.text_color.as_ref().unwrap().get(pos![C1]),
-            Some(&Some("red".to_string()))
+            Some(Some("red".to_string()))
         );
         assert_eq!(
             updates.align.as_ref().unwrap().get(pos![D1]),
-            Some(&Some(CellAlign::Center))
+            Some(Some(CellAlign::Center))
         );
         assert_eq!(updates.align.as_ref().unwrap().get(pos![A1]), None);
     }

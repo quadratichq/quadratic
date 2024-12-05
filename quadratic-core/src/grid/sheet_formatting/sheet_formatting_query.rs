@@ -41,33 +41,33 @@ impl SheetFormatting {
     /// Returns all formatting values for a cell.
     pub fn format(&self, pos: Pos) -> Format {
         Format {
-            align: self.align.get(pos).copied(),
-            vertical_align: self.vertical_align.get(pos).copied(),
-            wrap: self.wrap.get(pos).copied(),
-            numeric_format: self.numeric_format.get(pos).cloned(),
-            numeric_decimals: self.numeric_decimals.get(pos).copied(),
-            numeric_commas: self.numeric_commas.get(pos).copied(),
-            bold: self.bold.get(pos).copied(),
-            italic: self.italic.get(pos).copied(),
-            text_color: self.text_color.get(pos).cloned(),
-            fill_color: self.fill_color.get(pos).cloned(),
-            render_size: self.render_size.get(pos).cloned(),
-            date_time: self.date_time.get(pos).cloned(),
-            underline: self.underline.get(pos).copied(),
-            strike_through: self.strike_through.get(pos).copied(),
+            align: self.align.get(pos),
+            vertical_align: self.vertical_align.get(pos),
+            wrap: self.wrap.get(pos),
+            numeric_format: self.numeric_format.get(pos),
+            numeric_decimals: self.numeric_decimals.get(pos),
+            numeric_commas: self.numeric_commas.get(pos),
+            bold: self.bold.get(pos).then_some(true),
+            italic: self.italic.get(pos).then_some(true),
+            text_color: self.text_color.get(pos),
+            fill_color: self.fill_color.get(pos),
+            render_size: self.render_size.get(pos),
+            date_time: self.date_time.get(pos),
+            underline: self.underline.get(pos).then_some(true),
+            strike_through: self.strike_through.get(pos).then_some(true),
         }
     }
 
     pub fn column_has_fills(&self, column: i64) -> bool {
-        !self.fill_color.is_column_empty(column)
+        !self.fill_color.is_col_default(column)
     }
 
     pub fn row_has_fills(&self, row: i64) -> bool {
-        !self.fill_color.is_row_empty(row)
+        !self.fill_color.is_row_default(row)
     }
 
     pub fn row_has_wrap(&self, row: i64) -> bool {
-        !self.wrap.is_row_empty(row)
+        !self.wrap.is_row_default(row)
     }
 }
 
@@ -80,7 +80,7 @@ mod tests {
         let mut formatting = SheetFormatting::default();
         // Add some test data
         formatting.align.set(pos![A1], Some(CellAlign::Center));
-        formatting.bold.set(pos![B1], Some(true));
+        formatting.bold.set(pos![B1], true);
         formatting.wrap.set(pos![D1], Some(CellWrap::Wrap));
         formatting
             .fill_color

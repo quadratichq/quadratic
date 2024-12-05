@@ -113,9 +113,9 @@ impl Sheet {
         let value = self.display_value(pos)?;
         match value {
             CellValue::Number(_) => {
-                let numeric_format = self.formats.numeric_format.get(pos).cloned();
-                let numeric_decimals = self.formats.numeric_decimals.get(pos).cloned();
-                let numeric_commas = self.formats.numeric_commas.get(pos).cloned();
+                let numeric_format = self.formats.numeric_format.get(pos);
+                let numeric_decimals = self.formats.numeric_decimals.get(pos);
+                let numeric_commas = self.formats.numeric_commas.get(pos);
                 Some(value.to_number_display(numeric_format, numeric_decimals, numeric_commas))
             }
             _ => Some(value.to_display()),

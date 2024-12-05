@@ -1,5 +1,6 @@
 #![warn(rust_2018_idioms, clippy::semicolon_if_nothing_returned)]
 #![allow(clippy::diverging_sub_expression, clippy::match_like_matches_macro)]
+#![allow(non_local_definitions)] // TODO: blocked on https://github.com/proptest-rs/proptest/issues/447
 
 #[macro_use]
 pub mod util;

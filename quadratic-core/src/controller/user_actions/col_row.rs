@@ -192,7 +192,7 @@ mod tests {
 
         assert_eq!(
             sheet.formats.fill_color.get(pos![A1]),
-            Some(&"red".to_string())
+            Some("red".to_string())
         );
 
         gc.insert_column(sheet_id, 1, true, None);
@@ -202,21 +202,21 @@ mod tests {
         // this is the new column that was inserted (with the copied formatting)
         assert_eq!(
             sheet.formats.fill_color.get(pos![A1]),
-            Some(&"red".to_string())
+            Some("red".to_string())
         );
         assert_eq!(
             sheet.formats.text_color.get(pos![A1]),
-            Some(&"blue".to_string())
+            Some("blue".to_string())
         );
 
         // this is the original column that was shifted right (with the original formatting)
         assert_eq!(
             sheet.formats.fill_color.get(pos![B1]),
-            Some(&"red".to_string())
+            Some("red".to_string())
         );
         assert_eq!(
             sheet.formats.text_color.get(pos![B1]),
-            Some(&"blue".to_string())
+            Some("blue".to_string())
         );
 
         gc.undo(None);

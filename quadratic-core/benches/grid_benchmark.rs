@@ -214,14 +214,11 @@ fn criterion_benchmark(c: &mut Criterion) {
         // add some data
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
         sheet.random_numbers(&small_selection);
-        sheet
-            .formats
-            .bold
-            .set_rect(1, 1, Some(11), Some(11), Some(true));
+        sheet.formats.bold.set_rect(1, 1, Some(11), Some(11), true);
         sheet
             .formats
             .italic
-            .set_rect(1, 1, Some(11), Some(11), Some(true));
+            .set_rect(1, 1, Some(11), Some(11), true);
         sheet
             .formats
             .text_color

@@ -382,7 +382,7 @@ impl Sheet {
     pub fn calculate_decimal_places(&self, pos: Pos, kind: NumericFormatKind) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
         if let Some(decimals) = self.formats.numeric_decimals.get(pos) {
-            return Some(*decimals);
+            return Some(decimals);
         }
 
         // if currency and percentage, then use the default 2 decimal places
@@ -424,13 +424,13 @@ impl Sheet {
         if self.cell_value(pos).is_none() {
             return false;
         }
-        self.formats.wrap.get(pos) == Some(&CellWrap::Wrap)
+        self.formats.wrap.get(pos) == Some(CellWrap::Wrap)
     }
 
     pub fn check_if_wrap_in_row(&self, y: i64) -> bool {
-        self.formats.wrap.check_row(y, |wrap| {
+        self.formats.wrap.any_in_row(y, |wrap| {
             let pos = Pos { x: 1, y };
-            self.cell_value(pos).is_some() && wrap == &CellWrap::Wrap
+            self.cell_value(pos).is_some() && *wrap == Some(CellWrap::Wrap)
         })
     }
 
@@ -443,7 +443,7 @@ impl Sheet {
                         .formats
                         .wrap
                         .get(Pos { x, y })
-                        .is_some_and(|wrap| wrap == &CellWrap::Wrap)
+                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
                 {
                     rows.push(y);
                 }
@@ -461,7 +461,7 @@ impl Sheet {
                         .formats
                         .wrap
                         .get((x, y).into())
-                        .is_some_and(|wrap| wrap == &CellWrap::Wrap)
+                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
                 {
                     rows.push(y);
                     break;
@@ -796,7 +796,7 @@ mod test {
         assert_eq!(format_summary, CellFormatSummary::default());
 
         // just set a bold value
-        sheet.formats.bold.set(Pos { x: 2, y: 1 }, Some(true));
+        sheet.formats.bold.set(Pos { x: 2, y: 1 }, true);
         let value = sheet.cell_format_summary((2, 1).into());
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
@@ -808,7 +808,7 @@ mod test {
         assert_eq!(cell_format_summary.clone(), format_summary);
 
         // now set a italic value
-        let _ = sheet.formats.italic.set(Pos { x: 2, y: 1 }, Some(true));
+        let _ = sheet.formats.italic.set(Pos { x: 2, y: 1 }, true);
         let value = sheet.cell_format_summary((2, 1).into());
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);

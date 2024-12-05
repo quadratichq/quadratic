@@ -632,7 +632,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
-        sheet.formats.bold.set(Pos { x: 1, y: 2 }, Some(true));
+        sheet.formats.bold.set(Pos { x: 1, y: 2 }, true);
         sheet
             .formats
             .align
@@ -646,7 +646,7 @@ mod tests {
             .wrap
             .set(Pos { x: 1, y: 2 }, Some(CellWrap::Wrap));
         sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
-        sheet.formats.italic.set(Pos { x: 1, y: 3 }, Some(true));
+        sheet.formats.italic.set(Pos { x: 1, y: 3 }, true);
         sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
         sheet.set_cell_value(Pos { x: 2, y: 5 }, CellValue::Logical(true));
         sheet.set_cell_value(

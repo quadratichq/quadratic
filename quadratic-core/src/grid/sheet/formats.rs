@@ -239,7 +239,7 @@ mod tests {
         reverse_formats.wrap = Some(reverse_wrap);
 
         let mut bold = Contiguous2D::new();
-        bold.set_rect(1, 1, Some(5), Some(5), Some(Some(true)));
+        bold.set_rect(1, 1, Some(5), Some(5), Some(true));
         formats.bold = Some(bold);
 
         let mut reverse_bold = Contiguous2D::new();

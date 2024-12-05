@@ -1,6 +1,3 @@
-// todo: fix this
-#![allow(non_local_definitions)]
-
 use std::fmt::{self, Display};
 use std::ops::{Add, Mul, Neg, Sub};
 use std::str::FromStr;

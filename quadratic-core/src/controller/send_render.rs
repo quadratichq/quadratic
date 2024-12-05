@@ -363,12 +363,11 @@ impl GridController {
                             _ => None,
                         })
                 });
-                let (w, h) =
-                    if let Some(size) = sheet.formats.render_size.get(sheet_pos.into()).cloned() {
-                        (Some(size.w), Some(size.h))
-                    } else {
-                        (None, None)
-                    };
+                let (w, h) = if let Some(size) = sheet.formats.render_size.get(sheet_pos.into()) {
+                    (Some(size.w), Some(size.h))
+                } else {
+                    (None, None)
+                };
 
                 crate::wasm_bindings::js::jsSendImage(
                     sheet_pos.sheet_id.to_string(),
