@@ -200,25 +200,20 @@ impl GridController {
         self.send_render_cells_from_hash(selection.sheet_id, &modified);
     }
 
-    /// Sends the modified fills to the client
-    pub fn send_fill_cells(&self, sheet_rect: &SheetRect) {
+    pub fn send_all_fills(&self, sheet_id: SheetId) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
-        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+
+        if let Some(sheet) = self.try_sheet(sheet_id) {
             let fills = sheet.get_all_render_fills();
             if let Ok(fills) = serde_json::to_string(&fills) {
-                crate::wasm_bindings::js::jsSheetFills(sheet_rect.sheet_id.to_string(), fills);
+                crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
             }
-        }
-    }
-
-    /// Sends all fills to the client
-    pub fn sheet_fills(&self, sheet_id: SheetId) -> Vec<JsRenderFill> {
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            sheet.get_all_render_fills()
-        } else {
-            Vec::new()
+            let sheet_fills = sheet.get_all_sheet_fills();
+            if let Ok(sheet_fills) = serde_json::to_string(&sheet_fills) {
+                crate::wasm_bindings::js::jsSheetMetaFills(sheet_id.to_string(), sheet_fills);
+            }
         }
     }
 
@@ -527,40 +522,6 @@ mod test {
         expect_js_call(
             "jsRenderCellSheets",
             format!("{},{},{},{}", sheet_id, 6, 3, hash_test(&result)),
-            true,
-        );
-    }
-
-    #[test]
-    #[serial]
-    fn send_fill_cells() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
-            .unwrap();
-        expect_js_call(
-            "jsSheetFills",
-            format!(
-                "{},{}",
-                sheet_id, r#"[{"x":1,"y":1,"w":1,"h":1,"color":"red"}]"#
-            ),
-            true,
-        );
-
-        gc.set_fill_color(
-            &A1Selection::test_a1("CV100"),
-            Some("green".to_string()),
-            None,
-        )
-        .unwrap();
-        expect_js_call(
-            "jsSheetFills",
-            format!(
-                "{},{}",
-                sheet_id,
-                r#"[{"x":1,"y":1,"w":1,"h":1,"color":"red"},{"x":100,"y":100,"w":1,"h":1,"color":"green"}]"#
-            ),
             true,
         );
     }

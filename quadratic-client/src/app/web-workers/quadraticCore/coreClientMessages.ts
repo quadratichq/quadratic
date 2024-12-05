@@ -452,7 +452,7 @@ export interface CoreClientSheetFills {
 export interface CoreClientSheetMetaFills {
   type: 'coreClientSheetMetaFills';
   sheetId: string;
-  fills: JsSheetFill;
+  fills: JsSheetFill[];
 }
 
 export interface ClientCoreRerunCodeCells {

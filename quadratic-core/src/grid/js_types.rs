@@ -151,11 +151,6 @@ pub struct JsSheetFill {
     pub color: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
-pub struct JsSheetFills {
-    pub fills: Vec<JsSheetFill>,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 pub enum CellType {
     Date,

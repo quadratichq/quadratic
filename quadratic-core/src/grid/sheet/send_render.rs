@@ -205,7 +205,7 @@ impl Sheet {
             return;
         }
 
-        let fills = self.get_sheet_fills();
+        let fills = self.get_all_sheet_fills();
         if let Ok(fills) = serde_json::to_string(&fills) {
             crate::wasm_bindings::js::jsSheetMetaFills(self.id.to_string(), fills);
         }

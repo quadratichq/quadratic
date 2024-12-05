@@ -3,7 +3,7 @@ use code_run::CodeRunResult;
 use super::Sheet;
 use crate::grid::js_types::{
     JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-    JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsSheetFills, JsValidationWarning,
+    JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
 };
 use crate::grid::{code_run, CellAlign, CodeCellLanguage, CodeRun};
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
@@ -313,9 +313,8 @@ impl Sheet {
 
     /// Returns all fills for the rows, columns, and sheet. This does not return
     /// individual cell formats.
-    pub fn get_sheet_fills(&self) -> JsSheetFills {
-        let fills = self
-            .formats
+    pub fn get_all_sheet_fills(&self) -> Vec<JsSheetFill> {
+        self.formats
             .fill_color
             .to_rects()
             .filter_map(|(x0, y0, x1, y1, color)| {
@@ -331,8 +330,7 @@ impl Sheet {
                     })
                 }
             })
-            .collect();
-        JsSheetFills { fills }
+            .collect()
     }
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
@@ -1112,53 +1110,51 @@ mod tests {
     #[test]
     #[parallel]
     fn test_get_sheet_fills() {
-        todo!()
-        // let mut sheet = Sheet::test();
-        // assert_eq!(sheet.get_sheet_fills(), JsSheetFill::default());
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
-        // sheet.infinite_sheet_format = Some(Format {
-        //     fill_color: Some("red".to_string()),
-        //     ..Default::default()
-        // });
-        // assert_eq!(
-        //     sheet.get_sheet_fills(),
-        //     JsSheetFill {
-        //         all: Some("red".to_string()),
-        //         ..Default::default()
-        //     }
-        // );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.get_all_sheet_fills(), vec![]);
 
-        // let mut sheet = Sheet::test();
-        // sheet.set_formats_columns(
-        //     &[1],
-        //     &Formats::repeat(
-        //         FormatUpdate {
-        //             fill_color: Some(Some("blue".to_string())),
-        //             ..Default::default()
-        //         },
-        //         1,
-        //     ),
-        // );
-        // let fills = sheet.get_sheet_fills();
-        // assert_eq!(fills.columns.len(), 1);
-        // assert_eq!(fills.columns[0].1 .0, "blue".to_string());
+        gc.set_fill_color(&A1Selection::test_a1("B:D"), Some("red".to_string()), None)
+            .unwrap();
+        gc.set_fill_color(&A1Selection::test_a1("2"), Some("blue".to_string()), None)
+            .unwrap();
 
-        // sheet.set_formats_rows(
-        //     &[-5],
-        //     &Formats::repeat(
-        //         FormatUpdate {
-        //             fill_color: Some(Some("red".to_string())),
-        //             ..Default::default()
-        //         },
-        //         1,
-        //     ),
-        // );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_all_sheet_fills(),
+            vec![
+                JsSheetFill {
+                    x: 2,
+                    y: 3,
+                    w: Some(3),
+                    h: None,
+                    color: "red".to_string(),
+                },
+                JsSheetFill {
+                    x: 5,
+                    y: 2,
+                    w: None,
+                    h: Some(1),
+                    color: "blue".to_string(),
+                }
+            ]
+        );
 
-        // let fills = sheet.get_sheet_fills();
-        // assert_eq!(fills.columns.len(), 1);
-        // assert_eq!(fills.columns[0].1 .0, "blue".to_string());
-        // assert_eq!(fills.rows.len(), 1);
-        // assert_eq!(fills.rows[0].1 .0, "red".to_string());
+        gc.set_fill_color(&A1Selection::test_a1("*"), Some("green".to_string()), None)
+            .unwrap();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_all_sheet_fills(),
+            vec![JsSheetFill {
+                x: 1,
+                y: 1,
+                w: None,
+                h: None,
+                color: "green".to_string()
+            }]
+        );
     }
 
     #[test]

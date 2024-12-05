@@ -47,7 +47,7 @@ declare var self: WorkerGlobalScope &
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
-    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
+    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
     sendSetCursor: (cursor: string) => void;
     sendSetCursorSelection: (selection: string) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
@@ -680,7 +680,7 @@ class CoreClient {
     this.send({ type: 'coreClientSheetFills', sheetId, fills });
   };
 
-  sendSheetMetaFills = (sheetId: string, fills: JsSheetFill) => {
+  sendSheetMetaFills = (sheetId: string, fills: JsSheetFill[]) => {
     this.send({ type: 'coreClientSheetMetaFills', sheetId, fills });
   };
 

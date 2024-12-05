@@ -46,14 +46,10 @@ impl GridController {
                     return;
                 }
                 let sheet_id = sheet.id;
-                let sheet_bounds = sheet.bounds(false);
                 self.grid.add_sheet(Some(sheet));
 
                 self.send_add_sheet(sheet_id, transaction);
-
-                if let GridBounds::NonEmpty(bounds) = sheet_bounds {
-                    self.send_fill_cells(&bounds.to_sheet_rect(sheet_id));
-                }
+                self.send_all_fills(sheet_id);
 
                 transaction
                     .forward_operations
