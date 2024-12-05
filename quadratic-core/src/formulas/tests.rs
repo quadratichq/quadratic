@@ -81,6 +81,7 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 
 #[test]
 #[parallel]
+// TODO(ddimaria): @HactarCE fix broken test
 fn test_formula_cell_ref() {
     let form = parse_formula("SUM($D$4, $B0, E$n6, B0, nB2)", pos![D4]).unwrap();
 
