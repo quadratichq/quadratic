@@ -537,23 +537,19 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_fill_color(
-            &A1Selection::from_rect(SheetRect::from_numbers(0, 0, 1, 1, sheet_id)),
-            Some("red".to_string()),
-            None,
-        )
-        .unwrap();
+        gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
+            .unwrap();
         expect_js_call(
             "jsSheetFills",
             format!(
                 "{},{}",
-                sheet_id, r#"[{"x":0,"y":0,"w":1,"h":1,"color":"red"}]"#
+                sheet_id, r#"[{"x":1,"y":1,"w":1,"h":1,"color":"red"}]"#
             ),
             true,
         );
 
         gc.set_fill_color(
-            &A1Selection::from_rect(SheetRect::from_numbers(100, 100, 1, 1, sheet_id)),
+            &A1Selection::test_a1("CV100"),
             Some("green".to_string()),
             None,
         )
@@ -563,7 +559,7 @@ mod test {
             format!(
                 "{},{}",
                 sheet_id,
-                r#"[{"x":0,"y":0,"w":1,"h":1,"color":"red"},{"x":100,"y":100,"w":1,"h":1,"color":"green"}]"#
+                r#"[{"x":1,"y":1,"w":1,"h":1,"color":"red"},{"x":100,"y":100,"w":1,"h":1,"color":"green"}]"#
             ),
             true,
         );
@@ -616,7 +612,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            (0, 0, sheet_id).into(),
+            (1, 1, sheet_id).into(),
             crate::grid::CodeCellLanguage::Python,
             "test".to_string(),
             None,
@@ -636,7 +632,7 @@ mod test {
         .unwrap();
 
         gc.set_render_size(
-            &A1Selection::from_rect((0, 0, 1, 1, sheet_id).into()),
+            &A1Selection::test_a1("A1"),
             Some(RenderSize {
                 w: "1".to_string(),
                 h: "2".to_string(),
@@ -649,8 +645,8 @@ mod test {
             "jsUpdateHtml",
             serde_json::to_string(&JsHtmlOutput {
                 sheet_id: sheet_id.to_string(),
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 html: Some("<html></html>".to_string()),
                 w: Some("1".to_string()),
                 h: Some("2".to_string()),

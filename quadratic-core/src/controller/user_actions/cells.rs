@@ -157,8 +157,8 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 2,
             sheet_id,
         };
         let get_cell_value = |g: &GridController| {

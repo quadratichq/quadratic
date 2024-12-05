@@ -653,8 +653,8 @@ mod tests {
         let mut c = Contiguous2D::<bool>::new();
         c.set_rect(2, 2, Some(10), Some(10), true);
         assert_eq!(
-            c.rect_values(Rect::test_a1("A1:J10")),
-            vec![Some(true); 10 * 10]
+            c.rect_values(Rect::test_a1("B2:J10")),
+            vec![Some(true); 9 * 9]
         );
     }
 
