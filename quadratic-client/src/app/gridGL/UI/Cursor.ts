@@ -5,8 +5,9 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { drawColumnRowCursor, drawMultiCursor } from '@/app/gridGL/UI/drawCursor';
+import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
+import { CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics, Rectangle, Sprite } from 'pixi.js';
 
@@ -18,8 +19,7 @@ const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
 const INLINE_NAVIGATE_TEXT_INDICATOR_SIZE = 6;
 
-export type CursorCell = { x: number; y: number; width: number; height: number };
-const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
+const CURSOR_CELL_DEFAULT_VALUE = new Rectangle(0, 0, 0, 0);
 
 // outside border when editing the cell
 const CURSOR_INPUT_ALPHA = 0.333;
@@ -28,8 +28,8 @@ export class Cursor extends Container {
   indicator: Rectangle;
   dirty = true;
 
-  startCell: CursorCell;
-  endCell: CursorCell;
+  startCell: Rectangle;
+  endCell: Rectangle;
 
   cursorRectangle?: Rectangle;
 
@@ -46,7 +46,7 @@ export class Cursor extends Container {
   }
 
   // redraws corners if there is an error
-  private drawError(cell: Coordinate, x: number, y: number, width: number, height: number) {
+  private drawError(cell: JsCoordinate, x: number, y: number, width: number, height: number) {
     const error = pixiApp.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
     if (error) {
       if (error.triangle) {
@@ -74,7 +74,7 @@ export class Cursor extends Container {
     const cursor = sheet.cursor;
     const { viewport } = pixiApp;
     const { codeEditorState } = pixiAppSettings;
-    const cell = cursor.cursorPosition;
+    const cell = cursor.position;
     const showInput = pixiAppSettings.input.show;
 
     let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
@@ -85,8 +85,8 @@ export class Cursor extends Container {
     const indicatorSize =
       hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions) &&
       (!pixiAppSettings.codeEditorState.showCodeEditor ||
-        cursor.cursorPosition.x !== codeCell.pos.x ||
-        cursor.cursorPosition.y !== codeCell.pos.y)
+        cursor.position.x !== codeCell.pos.x ||
+        cursor.position.y !== codeCell.pos.y)
         ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
         : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
@@ -103,7 +103,7 @@ export class Cursor extends Container {
         setTimeout(() => (this.dirty = true), 0);
       }
     } else {
-      if (!cursor.multiCursor) {
+      if (!cursor.isMultiCursor()) {
         indicatorOffset = indicatorSize / 2 + indicatorPadding;
       }
     }
@@ -142,34 +142,12 @@ export class Cursor extends Container {
     }
   }
 
-  private drawMultiCursor() {
+  private drawFiniteCursor(ranges: CellRefRange[]) {
     const sheet = sheets.sheet;
     const { cursor } = sheet;
 
-    this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
-    if (cursor.multiCursor) {
-      drawMultiCursor(this.graphics, pixiApp.accentColor, FILL_ALPHA, cursor.multiCursor);
-
-      // endCell is only interesting for one multiCursor since we use it to draw
-      // the indicator, which is only active for one multiCursor
-      const multiCursor = cursor.multiCursor[0];
-      const startCell = sheet.getCellOffsets(multiCursor.left, multiCursor.top);
-      this.endCell = sheet.getCellOffsets(multiCursor.right - 1, multiCursor.bottom - 1);
-      this.cursorRectangle = new Rectangle(
-        startCell.x,
-        startCell.y,
-        this.endCell.x + this.endCell.width - startCell.x,
-        this.endCell.y + this.endCell.height - startCell.y
-      );
-    } else {
-      this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
-      this.cursorRectangle = new Rectangle(
-        this.startCell.x,
-        this.startCell.y,
-        this.endCell.x + this.endCell.width - this.startCell.x,
-        this.endCell.y + this.endCell.height - this.startCell.y
-      );
-    }
+    this.startCell = sheet.getCellOffsets(cursor.position.x, cursor.position.y);
+    drawFiniteSelection(this.graphics, pixiApp.accentColor, FILL_ALPHA, ranges);
   }
 
   private drawCursorIndicator() {
@@ -179,7 +157,10 @@ export class Cursor extends Container {
     if (viewport.scale.x > HIDE_INDICATORS_BELOW_SCALE) {
       const { codeEditorState } = pixiAppSettings;
       const codeCell = codeEditorState.codeCell;
-      const cell = cursor.cursorPosition;
+      const cell = cursor.position;
+
+      const endCell = cursor.bottomRight;
+      this.endCell = sheets.sheet.getCellOffsets(endCell.x, endCell.y);
 
       // draw cursor indicator
       const indicatorSize = Math.max(INDICATOR_SIZE / viewport.scale.x, 4);
@@ -188,13 +169,15 @@ export class Cursor extends Container {
       this.indicator.x = x - indicatorSize / 2;
       this.indicator.y = y - indicatorSize / 2;
       this.graphics.lineStyle(0);
+
       // have cursor color match code editor mode
       let color = pixiApp.accentColor;
       if (
         inlineEditorHandler.getShowing(cell.x, cell.y) ||
         (codeEditorState.showCodeEditor && codeCell.pos.x === cell.x && codeCell.pos.y === cell.y)
-      )
+      ) {
         color = pixiApp.accentColor;
+      }
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
@@ -278,19 +261,36 @@ export class Cursor extends Container {
     this.graphics.endFill();
   }
 
+  private drawUnselectDown() {
+    const { unselectDown } = pixiApp.pointer.pointerDown;
+    if (!unselectDown) return;
+    const foreground = pixiApp.accentColor;
+    this.graphics.lineStyle({ color: foreground, width: 1 });
+    const background = getCSSVariableTint('background');
+    this.graphics.beginFill(background, 0.5);
+    const rectangle = sheets.sheet.getScreenRectangle(
+      unselectDown.x,
+      unselectDown.y,
+      unselectDown.width + 1,
+      unselectDown.height + 1
+    );
+    this.graphics.drawShape(rectangle);
+    this.graphics.endFill();
+  }
+
   // Besides the dirty flag, we also need to update the cursor when the viewport
   // is dirty and columnRow is set because the columnRow selection is drawn to
   // visible bounds on the screen, not to the selection size.
   update(viewportDirty: boolean) {
-    const columnRow = !!sheets.sheet.cursor.columnRow;
-    const multiCursor = sheets.sheet.cursor.multiCursor;
+    const cursor = sheets.sheet.cursor;
+    const columnRow = cursor.isColumnRow();
     if (this.dirty || (viewportDirty && columnRow)) {
       this.dirty = false;
       this.graphics.clear();
       while (this.children.length > 1) {
         this.removeChildAt(1);
       }
-      if (!columnRow && !inlineEditorHandler.isEditingFormula()) {
+      if (!inlineEditorHandler.isEditingFormula()) {
         this.drawCursor();
       }
       this.drawCodeCursor();
@@ -298,20 +298,23 @@ export class Cursor extends Container {
       this.drawInlineCursorModeIndicator();
 
       if (!pixiAppSettings.input.show) {
-        this.drawMultiCursor();
-        const columnRow = sheets.sheet.cursor.columnRow;
+        const ranges: CellRefRange[] = cursor.jsSelection.getRanges();
+        this.drawFiniteCursor(ranges);
         if (columnRow) {
-          drawColumnRowCursor({
+          drawInfiniteSelection({
             g: this.graphics,
-            columnRow,
             color: pixiApp.accentColor,
             alpha: FILL_ALPHA,
-            cursorPosition: sheets.sheet.cursor.cursorPosition,
+            ranges,
           });
         }
-        if (!columnRow && (!multiCursor || multiCursor.length === 1)) {
+        if (!columnRow && cursor.rangeCount() === 1) {
           this.drawCursorIndicator();
         }
+      }
+
+      if (pixiApp.pointer.pointerDown.unselectDown) {
+        this.drawUnselectDown();
       }
 
       pixiApp.setViewportDirty();

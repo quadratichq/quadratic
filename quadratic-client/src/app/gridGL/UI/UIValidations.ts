@@ -61,17 +61,22 @@ export class UIValidations extends Container<SpecialSprite> {
       const type = validationUIType(v);
       if (v.selection.sheet_id.id !== sheets.sheet.id || !type) continue;
 
-      if (v.selection.all) {
-        this.drawAll(range, type);
-      }
-      if (v.selection.rows?.length) {
-        const rows = v.selection.rows.filter((r) => r >= range.y && r <= range.y + range.height);
-        rows.forEach((row) => this.drawRow(Number(row), range, type));
-      }
-      if (v.selection.columns?.length) {
-        const columns = v.selection.columns.filter((c) => c >= range.x && c <= range.x + range.width);
-        columns.forEach((column) => this.drawColumn(Number(column), range, type));
-      }
+      // const jsSelection = A1SelectionValueToSelection(v.selection);
+      // console.log(jsSelection);
+
+      // const ranges = jsSelection.getRanges();
+
+      // if (v.selection.all) {
+      //   this.drawAll(range, type);
+      // }
+      // if (v.selection.rows?.length) {
+      //   const rows = v.selection.rows.filter((r) => r >= range.y && r <= range.y + range.height);
+      //   rows.forEach((row) => this.drawRow(Number(row), range, type));
+      // }
+      // if (v.selection.columns?.length) {
+      //   const columns = v.selection.columns.filter((c) => c >= range.x && c <= range.x + range.width);
+      //   columns.forEach((column) => this.drawColumn(Number(column), range, type));
+      // }
     }
   }
 

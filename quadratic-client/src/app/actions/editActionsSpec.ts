@@ -164,7 +164,7 @@ export const editActionsSpec: EditActionSpec = {
     label: 'Edit cell',
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
-        const { x, y } = sheets.sheet.cursor.cursorPosition;
+        const { x, y } = sheets.sheet.cursor.position;
         quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
           if (code) {
             doubleClickCell({
@@ -192,7 +192,7 @@ export const editActionsSpec: EditActionSpec = {
     label: 'Toggle arrow mode',
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
-        const { x, y } = sheets.sheet.cursor.cursorPosition;
+        const { x, y } = sheets.sheet.cursor.position;
         quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
           if (code) {
             doubleClickCell({
@@ -239,7 +239,7 @@ export const editActionsSpec: EditActionSpec = {
   [Action.TriggerCell]: {
     label: 'Trigger cell',
     run: () => {
-      const p = sheets.sheet.cursor.cursorPosition;
+      const p = sheets.sheet.cursor.position;
       events.emit('triggerCell', p.x, p.y, true);
     },
   },

@@ -1,3 +1,6 @@
+//! This is deprecated from the old Borders format. We keep a subset of the old
+//! code to convert files with old borders.
+
 use serde::{Deserialize, Serialize};
 
 use crate::grid::sheet::borders::BorderStyle;

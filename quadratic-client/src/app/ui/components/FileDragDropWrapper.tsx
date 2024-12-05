@@ -3,8 +3,8 @@ import { userMessageAtom } from '@/app/atoms/userMessageAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { isExcelMimeType } from '@/app/helpers/files';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { DragEvent, PropsWithChildren, useCallback, useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
@@ -30,16 +30,9 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
     (e: DragEvent<HTMLDivElement>) => {
       const { column, row } = getColumnRowFromScreen(e);
       const cursor = sheets.sheet.cursor;
-      const hasMoved =
-        cursor.cursorPosition.x !== column ||
-        cursor.cursorPosition.y !== row ||
-        cursor.keyboardMovePosition.x !== column ||
-        cursor.keyboardMovePosition.y !== row;
+      const hasMoved = cursor.position.x !== column || cursor.position.y !== row;
       if (hasMoved) {
-        cursor.changePosition({
-          cursorPosition: { x: column, y: row },
-          keyboardMovePosition: { x: column, y: row },
-        });
+        cursor.moveTo(column, row);
       }
     },
     [getColumnRowFromScreen]
@@ -87,7 +80,7 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
         const sheetId = sheets.sheet.id;
         const cursor = sheets.getCursorPosition();
         const { column, row } = getColumnRowFromScreen(e);
-        const insertAt = { x: column, y: row } as Coordinate;
+        const insertAt = { x: column, y: row } as JsCoordinate;
         handleFileImport({ files, insertAt, sheetId, cursor });
       }
     },

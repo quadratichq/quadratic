@@ -5,13 +5,14 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { A1SelectionStringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { Context, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAnalystContextProps = {
@@ -34,23 +35,14 @@ export const AIAnalystContext = ({
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
+  const [, setCurrentSheet] = useState(sheets.sheet.name);
 
   useEffect(() => {
     if (!editing) return;
     const updateSelection = () => {
-      const selection = sheets.getRustSelection();
-      const rect = selection.rects?.[0];
-      let sheetRect = undefined;
-      if (rect && (rect.min.x !== rect.max.x || rect.min.y !== rect.max.y)) {
-        sheetRect = {
-          sheet_id: selection.sheet_id,
-          min: { x: Number(rect.min.x), y: Number(rect.min.y) },
-          max: { x: Number(rect.max.x), y: Number(rect.max.y) },
-        };
-      }
       setContext((prev) => ({
         ...prev,
-        selection: sheetRect,
+        selection: sheets.sheet.cursor.save(),
       }));
     };
     updateSelection();
@@ -64,14 +56,17 @@ export const AIAnalystContext = ({
   }, [editing, setContext]);
 
   useEffect(() => {
-    if (!editing) return;
     const updateCurrentSheet = () => {
-      setContext((prev) => ({
-        ...prev,
-        sheets: prev.sheets.filter((sheet) => sheet !== sheets.sheet.name),
-        currentSheet: sheets.sheet.name,
-      }));
+      if (editing) {
+        setContext((prev) => ({
+          ...prev,
+          sheets: prev.sheets.filter((sheet) => sheet !== sheets.sheet.name),
+          currentSheet: sheets.sheet.name,
+        }));
+      }
+      setCurrentSheet(sheets.sheet.name);
     };
+
     updateCurrentSheet();
 
     events.on('changeSheet', updateCurrentSheet);
@@ -120,8 +115,8 @@ export const AIAnalystContext = ({
         key="cursor"
         primary={
           context.selection
-            ? `(${context.selection.min.x}, ${context.selection.min.y}), (${context.selection.max.x}, ${context.selection.max.y}) `
-            : `(${sheets.sheet.cursor.cursorPosition.x}, ${sheets.sheet.cursor.cursorPosition.y})`
+            ? A1SelectionStringToSelection(context.selection).toA1String(sheets.current, sheets.getSheetIdNameMap())
+            : sheets.sheet.cursor.toCursorA1String()
         }
         secondary="Cursor"
         onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
@@ -169,7 +164,7 @@ function ContextPill({
 }) {
   return (
     <div className="flex h-5 items-center self-stretch rounded border border-border px-1 text-xs">
-      <span>{primary}</span>
+      <span className="max-w-32 truncate">{primary}</span>
 
       <span className="ml-0.5 text-muted-foreground">{secondary}</span>
 

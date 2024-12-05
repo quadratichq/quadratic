@@ -7,7 +7,7 @@ use crate::{
         },
         CellBorderLine, Sheet, SheetId,
     },
-    selection::Selection,
+    selection::OldSelection,
     Rect,
 };
 
@@ -280,7 +280,7 @@ impl GridController {
     /// Creates border operations. Returns None if selection is empty.
     pub fn set_borders_selection_operations(
         &self,
-        selection: Selection,
+        selection: OldSelection,
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
     ) -> Option<Vec<Operation>> {
@@ -388,7 +388,7 @@ mod tests {
     fn test_borders_operations_all() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let selection = Selection::all(sheet_id);
+        let selection = OldSelection::all(sheet_id);
         let ops = gc
             .set_borders_selection_operations(
                 selection.clone(),
@@ -442,7 +442,7 @@ mod tests {
     fn borders_operations_columns() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let selection = Selection::columns(&[0, 1], sheet_id);
+        let selection = OldSelection::columns(&[0, 1], sheet_id);
         let ops = gc
             .set_borders_selection_operations(
                 selection.clone(),
@@ -518,7 +518,7 @@ mod tests {
     fn borders_operations_rows() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let selection = Selection::rows(&[0, 1], sheet_id);
+        let selection = OldSelection::rows(&[0, 1], sheet_id);
         let ops = gc
             .set_borders_selection_operations(
                 selection.clone(),
@@ -595,7 +595,7 @@ mod tests {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let rect = Rect::from_numbers(0, 0, 2, 2);
-        let selection = Selection::rect(rect, sheet_id);
+        let selection = OldSelection::rect(rect, sheet_id);
         let expected = BorderStyle::default();
 
         // Test BorderSelection::All

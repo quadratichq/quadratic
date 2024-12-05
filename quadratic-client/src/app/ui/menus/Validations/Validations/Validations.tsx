@@ -5,6 +5,7 @@ import { useValidationsData } from '@/app/ui/menus/Validations/Validations/useVa
 import { ValidationEntry } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
 import { ValidationsHeader } from '@/app/ui/menus/Validations/Validations/ValidationsHeader';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useCallback, useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
@@ -24,7 +25,7 @@ export const Validations = () => {
       }
       const cursor = sheets.sheet.cursor;
       const newHighlighted = validations
-        .filter((validation) => cursor.overlapsSelection(validation.selection))
+        .filter((validation) => cursor.overlapsSelection(JSON.stringify(validation.selection, bigIntReplacer)))
         .map((validation) => validation.id);
 
       setHighlighted(newHighlighted);

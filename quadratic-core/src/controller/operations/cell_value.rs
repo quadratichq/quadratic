@@ -5,10 +5,9 @@ use bigdecimal::BigDecimal;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::grid::formatting::CellFmtArray;
-use crate::grid::{CodeCellLanguage, NumericFormat, NumericFormatKind};
-use crate::selection::Selection;
-use crate::{CellValue, CodeCellValue, RunLengthEncoding, SheetPos, SheetRect};
+use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
+use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind};
+use crate::{A1Selection, CellValue, SheetPos};
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -23,27 +22,28 @@ impl GridController {
         value: &str,
     ) -> (Vec<Operation>, CellValue) {
         let mut ops = vec![];
-        let sheet_rect: SheetRect = sheet_pos.into();
         let cell_value = if value.is_empty() {
             CellValue::Blank
         } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some(currency),
+            let mut format_update = FormatUpdate {
+                numeric_format: Some(Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(currency),
+                })),
+                ..Default::default()
             };
-            ops.push(Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
-            });
+
             if value.contains(',') {
-                ops.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
-                });
+                format_update.numeric_commas = Some(Some(true));
             }
+
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: sheet_pos.sheet_id,
+                formats: SheetFormatUpdates::from_selection(
+                    &A1Selection::from_single_cell(sheet_pos),
+                    format_update,
+                ),
+            });
 
             // We no longer automatically set numeric decimals for
             // currency; instead, we handle changes in currency decimal
@@ -57,24 +57,34 @@ impl GridController {
                 CellValue::Text(value.into())
             } else {
                 if value.contains(',') {
-                    ops.push(Operation::SetCellFormats {
-                        sheet_rect,
-                        attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
+                    let format_update = FormatUpdate {
+                        numeric_commas: Some(Some(true)),
+                        ..Default::default()
+                    };
+                    ops.push(Operation::SetCellFormatsA1 {
+                        sheet_id: sheet_pos.sheet_id,
+                        formats: SheetFormatUpdates::from_selection(
+                            &A1Selection::from_single_cell(sheet_pos),
+                            format_update,
+                        ),
                     });
                 }
                 CellValue::Number(bd)
             }
         } else if let Some(percent) = CellValue::unpack_percentage(value) {
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
+            let format_update = FormatUpdate {
+                numeric_format: Some(Some(NumericFormat {
+                    kind: NumericFormatKind::Percentage,
+                    symbol: None,
+                })),
+                ..Default::default()
             };
-            ops.push(Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: sheet_pos.sheet_id,
+                formats: SheetFormatUpdates::from_selection(
+                    &A1Selection::from_single_cell(sheet_pos),
+                    format_update,
+                ),
             });
             CellValue::Number(percent)
         } else if let Some(time) = CellValue::unpack_time(value) {
@@ -120,10 +130,10 @@ impl GridController {
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
-    pub fn delete_cells_operations(&self, selection: &Selection) -> Vec<Operation> {
+    pub fn delete_cells_operations(&self, selection: &A1Selection) -> Vec<Operation> {
         let mut ops = vec![];
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            let rects = sheet.selection_rects_values(selection);
+            let rects = sheet.selection_to_rects(selection);
             for rect in rects {
                 let cell_values = CellValues::new(rect.width(), rect.height());
                 ops.push(Operation::SetCellValues {
@@ -138,7 +148,7 @@ impl GridController {
     /// Generates and returns the set of operations to clear the formatting in a sheet_rect
     pub fn delete_values_and_formatting_operations(
         &mut self,
-        selection: &Selection,
+        selection: &A1Selection,
     ) -> Vec<Operation> {
         let mut ops = self.delete_cells_operations(selection);
         ops.extend(self.clear_format_selection_operations(selection));
@@ -156,9 +166,8 @@ mod test {
     use crate::cell_values::CellValues;
     use crate::controller::operations::operation::Operation;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, SheetId};
-    use crate::selection::Selection;
-    use crate::{CellValue, CodeCellValue, Rect, SheetPos};
+    use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
+    use crate::{A1Selection, CellValue, SheetPos, SheetRect};
 
     #[test]
     #[parallel]
@@ -340,7 +349,7 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
-        let selection = Selection::rect(Rect::from_numbers(1, 2, 2, 1), sheet_id);
+        let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 2, 2, 1, sheet_id));
         let operations = gc.delete_cells_operations(&selection);
         assert_eq!(operations.len(), 1);
         assert_eq!(
@@ -379,7 +388,7 @@ mod test {
             "5 + 5".to_string(),
             None,
         );
-        let selection = Selection::columns(&[1, 2], sheet_id);
+        let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection);
         assert_eq!(operations.len(), 2);
         assert_eq!(
@@ -391,15 +400,15 @@ mod test {
                         y: 2,
                         sheet_id
                     },
-                    values: CellValues::new(1, 1)
+                    values: CellValues::new(2, 1)
                 },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos {
                         x: 2,
-                        y: 2,
+                        y: 1,
                         sheet_id
                     },
-                    values: CellValues::new(1, 1)
+                    values: CellValues::new(1, 2)
                 }
             ]
         );

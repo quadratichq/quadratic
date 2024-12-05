@@ -205,7 +205,7 @@ impl Sheet {
             return;
         }
 
-        let fills = self.get_sheet_fills();
+        let fills = self.get_all_sheet_fills();
         if let Ok(fills) = serde_json::to_string(&fills) {
             crate::wasm_bindings::js::jsSheetMetaFills(self.id.to_string(), fills);
         }
@@ -223,27 +223,12 @@ impl Sheet {
         }
         self.send_sheet_fills();
     }
-
-    /// Sends all fills to the client. TODO: the fills should be sent in
-    /// batches instead of for the entire sheet.
-    pub fn send_fills(&self, fills: &HashSet<Pos>) {
-        // this is needed to prevent sending when no fills have changed. See TODO.
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || fills.is_empty() {
-            return;
-        }
-
-        let fills = self.get_all_render_fills();
-        if let Ok(fills) = serde_json::to_string(&fills) {
-            crate::wasm_bindings::js::jsSheetFills(self.id.to_string(), fills);
-        }
-    }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::{
-        grid::formats::format::Format,
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
         CellValue,
     };
@@ -267,7 +252,7 @@ mod test {
         clear_js_calls();
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         let mut positions = HashSet::new();
         positions.insert(Pos { x: 1, y: 2 });
         sheet.send_render_cells(&positions);
@@ -286,7 +271,7 @@ mod test {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         sheet.send_all_render_cells();
         expect_render_cell_sheet(&sheet, 0, 0, false);
         expect_render_cell_sheet(&sheet, 1, 0, true);
@@ -304,7 +289,7 @@ mod test {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         sheet.send_column_render_cells(vec![CELL_SHEET_WIDTH as i64 - 1]);
         expect_render_cell_sheet(&sheet, 0, 0, true);
 
@@ -325,7 +310,7 @@ mod test {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         sheet.send_row_render_cells(vec![CELL_SHEET_HEIGHT as i64 - 1]);
         expect_render_cell_sheet(&sheet, 0, 0, true);
 
@@ -337,18 +322,19 @@ mod test {
     #[test]
     #[serial]
     fn send_sheet_fills() {
-        clear_js_calls();
-        let mut sheet = Sheet::test();
-        sheet.format_all = Some(Format {
-            fill_color: Some("red".to_string()),
-            ..Default::default()
-        });
-        sheet.send_sheet_fills();
-        let fills = sheet.get_sheet_fills();
-        expect_js_call(
-            "jsSheetMetaFills",
-            format!("{},{}", sheet.id, serde_json::to_string(&fills).unwrap()),
-            true,
-        );
+        todo!("update, remove, or replace this test");
+        // clear_js_calls();
+        // let mut sheet = Sheet::test();
+        // sheet.infinite_sheet_format = Some(Format {
+        //     fill_color: Some("red".to_string()),
+        //     ..Default::default()
+        // });
+        // sheet.send_sheet_fills();
+        // let fills = sheet.get_sheet_fills();
+        // expect_js_call(
+        //     "jsSheetMetaFills",
+        //     format!("{},{}", sheet.id, serde_json::to_string(&fills).unwrap()),
+        //     true,
+        // );
     }
 }

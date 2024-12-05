@@ -85,7 +85,7 @@ impl SheetOffsets {
 
     /// gets the screen coordinate and size for a pixel x-coordinate. Returns a [`Placement`]
     #[wasm_bindgen(js_name = "getXPlacement")]
-    pub fn js_x_placement(&self, x: f64) -> Placement {
+    pub fn js_x_placement(&mut self, x: f64) -> Placement {
         let index = self.column_from_x(x);
         Placement {
             index: index.0 as i32,
@@ -95,7 +95,7 @@ impl SheetOffsets {
     }
     /// gets the screen coordinate and size for a pixel y-coordinate. Returns a [`Placement`]
     #[wasm_bindgen(js_name = "getYPlacement")]
-    pub fn js_y_placement(&self, y: f64) -> Placement {
+    pub fn js_y_placement(&mut self, y: f64) -> Placement {
         let index = self.row_from_y(y);
         Placement {
             index: index.0 as i32,
@@ -104,9 +104,19 @@ impl SheetOffsets {
         }
     }
 
+    #[wasm_bindgen(js_name = "getColumnFromScreen")]
+    pub fn js_column_from_screen(&mut self, x: f64) -> i32 {
+        self.column_from_x(x).0 as i32
+    }
+
+    #[wasm_bindgen(js_name = "getRowFromScreen")]
+    pub fn js_row_from_screen(&mut self, y: f64) -> i32 {
+        self.row_from_y(y).0 as i32
+    }
+
     /// gets the column and row based on the pixels' coordinates. Returns a (column, row) index
     #[wasm_bindgen(js_name = "getColumnRowFromScreen")]
-    pub fn js_get_column_row_from_screen(&self, x: f64, y: f64) -> String {
+    pub fn js_get_column_row_from_screen(&mut self, x: f64, y: f64) -> String {
         let column_row = ColumnRow {
             column: self.js_x_placement(x).index,
             row: self.js_y_placement(y).index,
@@ -143,17 +153,5 @@ impl SheetOffsets {
     pub fn js_get_resize_to_apply(&mut self) -> Option<String> {
         let transient_resize = self.pop_local_transient_resize()?;
         serde_json::to_string(&transient_resize).ok()
-    }
-
-    /// Returns the width of all the columns in a range.
-    #[wasm_bindgen(js_name = "getRangeColumnWidth")]
-    pub fn js_get_total_column_width(&self, start: u32, end: u32) -> f64 {
-        self.total_column_width(start as i64, end as i64)
-    }
-
-    /// Returns the height of all the rows in a range.
-    #[wasm_bindgen(js_name = "getRangeRowHeight")]
-    pub fn js_get_total_row_height(&self, start: u32, end: u32) -> f64 {
-        self.total_row_height(start as i64, end as i64)
     }
 }

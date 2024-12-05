@@ -1,6 +1,7 @@
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { InsertCellRefIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -9,24 +10,29 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const CodeEditorRefButton = () => {
+  const codeEditor = useRecoilValue(codeEditorCodeCellAtom);
+
+  // todo: relative should not have been removed
+  const [relative] = useState(true);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
 
   const [disabled, setDisabled] = useState(true);
   useEffect(() => {
     const checkDisabled = () => {
-      // we do not yet support multiple multiCursors for inserting cell references
       if (
-        (sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) ||
-        sheets.sheet.cursor.columnRow !== undefined
+        sheets.sheet.cursor.isMultiRange() ||
+        (codeCell.sheetId === sheets.sheet.id &&
+          codeCell.pos.x === sheets.sheet.cursor.position.x &&
+          codeCell.pos.y === sheets.sheet.cursor.position.y)
       ) {
         setDisabled(true);
       } else {
-        setDisabled(
-          !sheets.sheet.cursor.multiCursor &&
-            codeCell.sheetId === sheets.sheet.id &&
-            codeCell.pos.x === sheets.sheet.cursor.cursorPosition.x &&
-            codeCell.pos.y === sheets.sheet.cursor.cursorPosition.y
-        );
+        // for connections, we currently only support one cursor position
+        if (codeCellIsAConnection(codeEditor.language)) {
+          setDisabled(!sheets.sheet.cursor.onlySingleSelection());
+        } else {
+          setDisabled(false);
+        }
       }
     };
     events.on('cursorPosition', checkDisabled);
@@ -35,11 +41,16 @@ export const CodeEditorRefButton = () => {
       events.off('cursorPosition', checkDisabled);
       events.off('changeSheet', checkDisabled);
     };
-  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId]);
+  }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId, codeEditor.language]);
 
   const tooltip = useMemo(
-    () => (!disabled ? 'Insert cell reference' : 'Select cell(s) on the grid to insert a reference.'),
-    [disabled]
+    () =>
+      !disabled
+        ? `Insert ${relative ? 'relative ' : ''}cell reference`
+        : codeCellIsAConnection(codeEditor.language)
+        ? `Select one cell on the grid to insert cell reference.`
+        : `Select cells on the grid to insert cell reference.`,
+    [codeEditor.language, disabled, relative]
   );
 
   return (
@@ -51,7 +62,7 @@ export const CodeEditorRefButton = () => {
           className="text-muted-foreground"
           onClick={() => {
             if (disabled) return;
-            insertCellRef(codeCell.pos, codeCell.sheetId, codeCell.language, true);
+            insertCellRef(codeCell.sheetId, codeCell.language, false);
           }}
         >
           <InsertCellRefIcon />

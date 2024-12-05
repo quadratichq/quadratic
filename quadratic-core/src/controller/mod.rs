@@ -63,12 +63,13 @@ impl GridController {
         Self::from_grid(Grid::new(), 0)
     }
 
-    // create a new gc for testing purposes in both Rust and TS
+    /// Creates a grid controller for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::test(), 0)
     }
 
     // create a new gc for testing purposes with a viewport buffer
+    #[cfg(test)]
     pub fn test_with_viewport_buffer() -> Self {
         let mut gc = Self::from_grid(Grid::test(), 0);
         gc.viewport_buffer = Some(ViewportBuffer::default());

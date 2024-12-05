@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { JsGetCellResponse } from '@/app/quadratic-core-types';
+import { CellA1Response, JsGetCellResponse } from '@/app/quadratic-core-types';
 import { CoreJavascriptMessage, JavascriptCoreMessage } from '../../javascriptWebWorker/javascriptCoreMessages';
 import { core } from './core';
 
@@ -43,6 +43,10 @@ class CoreJavascript {
         );
         break;
 
+      case 'javascriptCoreGetCellsA1':
+        this.handleGetCellsA1Response(e.data.id, e.data.transactionId, e.data.a1, e.data.lineNumber);
+        break;
+
       default:
         console.warn('[coreJavascript] Unhandled message type', e.data);
     }
@@ -78,6 +82,29 @@ class CoreJavascript {
       id,
       cells,
     });
+  };
+
+  private handleGetCellsA1Response = (id: number, transactionId: string, a1: string, lineNumber?: number) => {
+    let cells: CellA1Response | undefined;
+    try {
+      const cellsString = core.getCellsA1(transactionId, a1, lineNumber);
+      if (cellsString) {
+        cells = JSON.parse(cellsString) as CellA1Response;
+      }
+    } catch (_e) {
+      // core threw and handled the error
+    }
+    if (cells) {
+      this.send({
+        type: 'coreJavascriptGetCells',
+        id,
+        cells: cells.cells,
+        x: Number(cells.x),
+        y: Number(cells.y),
+        w: Number(cells.w),
+        h: Number(cells.h),
+      });
+    }
   };
 
   sendRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {

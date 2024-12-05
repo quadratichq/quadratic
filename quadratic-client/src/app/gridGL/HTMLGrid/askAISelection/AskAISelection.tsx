@@ -2,8 +2,8 @@ import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -30,42 +30,35 @@ const ASK_AI_SELECTION_DELAY = 500;
 export function AskAISelection() {
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
   const [currentSheet, setCurrentSheet] = useState(sheets.current);
+  const [selectionSheetId, setSelectionSheetId] = useState<string | undefined>();
   const [selection, setSelection] = useState<Context['selection']>();
-  const [displayPos, setDisplayPos] = useState<Coordinate | undefined>();
+  const [displayPos, setDisplayPos] = useState<JsCoordinate | undefined>();
   const [loading, setLoading] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | undefined>();
 
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   const showAskAISelection = useCallback(() => {
-    const selection = sheets.getRustSelection();
-    if (
-      selection &&
-      selection.rects?.length === 1 &&
-      !(selection.rects[0].min.x === selection.rects[0].max.x && selection.rects[0].min.y === selection.rects[0].max.y)
-    ) {
-      const rect = selection.rects[0];
-      const sheetRect: Context['selection'] = {
-        sheet_id: selection.sheet_id,
-        min: { x: Number(rect.min.x), y: Number(rect.min.y) },
-        max: { x: Number(rect.max.x), y: Number(rect.max.y) },
-      };
-      const hasContent = pixiApp.cellsSheets.getById(selection.sheet_id.id)?.cellsLabels.hasCellInRect(rect);
-      const column = Math.max(Number(rect.min.x), Number(rect.max.x));
-      const row = Math.min(Number(rect.min.y), Number(rect.max.y));
-      const rectangle = sheets.getById(selection.sheet_id.id)?.getCellOffsets(column, row);
-      if (hasContent && rectangle && !inlineEditorState.visible) {
-        setSelection(sheetRect);
+    const singleRect = sheets.sheet.cursor.getSingleRectangle();
+    if (singleRect) {
+      const hasContent = pixiApp.cellsSheets.getById(sheets.current)?.cellsLabels.hasCellInRect(singleRect);
+      if (hasContent && !inlineEditorState.visible) {
+        const selection = sheets.sheet.cursor.save();
+        const screenRect = sheets.sheet.getScreenRectangleFromRect(singleRect);
+        setSelection(selection);
+        setSelectionSheetId(sheets.current);
         setDisplayPos({
-          x: rectangle.x + rectangle.width,
-          y: rectangle.y,
+          x: screenRect.x + screenRect.width,
+          y: screenRect.y,
         });
       } else {
         setSelection(undefined);
+        setSelectionSheetId(undefined);
         setDisplayPos(undefined);
       }
     } else {
       setSelection(undefined);
+      setSelectionSheetId(undefined);
       setDisplayPos(undefined);
     }
   }, [inlineEditorState.visible]);
@@ -73,6 +66,7 @@ export function AskAISelection() {
   const updateSelection = useCallback(() => {
     clearTimeout(timeoutRef.current);
     setSelection(undefined);
+    setSelectionSheetId(undefined);
     setDisplayPos(undefined);
 
     timeoutRef.current = setTimeout(() => {
@@ -96,6 +90,7 @@ export function AskAISelection() {
         .finally(() => {
           setLoading(false);
           setSelection(undefined);
+          setSelectionSheetId(undefined);
           setDisplayPos(undefined);
         });
     },
@@ -136,7 +131,7 @@ export function AskAISelection() {
     };
   }, [currentSheet, updateSelection]);
 
-  if (selection?.sheet_id.id !== currentSheet || displayPos === undefined) return null;
+  if (selectionSheetId !== currentSheet || displayPos === undefined) return null;
 
   return (
     <div

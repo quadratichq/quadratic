@@ -7,17 +7,18 @@
 
 import { debugWebWorkersMessages } from '@/app/debugFlags';
 import { Link } from '@/app/gridGL/types/links';
-import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
-import { Rectangle } from 'pixi.js';
+import { DrawRects } from '@/app/gridGL/types/size';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import {
   ClientRenderMessage,
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
   RenderClientMessage,
-} from '../renderClientMessages';
-import { RenderSpecial } from './cellsLabel/CellsTextHashSpecial';
-import { renderCore } from './renderCore';
-import { renderText } from './renderText';
+} from '@/app/web-workers/renderWebWorker/renderClientMessages';
+import { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
+import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore';
+import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
+import { Rectangle } from 'pixi.js';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
@@ -82,7 +83,7 @@ class RenderClient {
     hashX: number,
     hashY: number,
     viewRectangle: { x: number; y: number; width: number; height: number },
-    overflowGridLines: Coordinate[],
+    overflowGridLines: JsCoordinate[],
     content: Uint32Array,
     links: Link[],
     drawRects: DrawRects[]

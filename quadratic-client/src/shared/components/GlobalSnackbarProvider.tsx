@@ -1,6 +1,6 @@
 // import CloseIcon from '@mui/icons-material/Close';
 import { Alert, AlertColor, Snackbar } from '@mui/material';
-import { useEffect, createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '../shadcn/ui/button';
 
@@ -15,6 +15,7 @@ export const snackbarSeverityQueryParam = 'snackbar-severity';
 interface SnackbarOptions {
   severity?: 'error' | 'warning' | 'success';
   button?: { title: string; callback: Function };
+  stayOpen?: boolean;
 }
 
 export interface GlobalSnackbar {
@@ -85,6 +86,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
         {
           message,
           key: new Date().getTime(),
+          stayOpen: options?.stayOpen ?? false,
           ...(options || {}),
         },
       ]);
@@ -136,13 +138,12 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
       setSearchParams(searchParams);
     }
   }, [addGlobalSnackbar, searchParams, setSearchParams]);
-
   return (
     <GlobalSnackbarContext.Provider value={value}>
       {children}
       <Snackbar
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        autoHideDuration={stayOpen ? 0 : DURATION}
+        autoHideDuration={stayOpen ? null : DURATION}
         key={activeMessage ? activeMessage.key : undefined}
         open={open}
         onClose={handleClose}

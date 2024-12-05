@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
 
-use super::TransactionType;
+use super::TransactionSource;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::active_transactions::unsaved_transactions::UnsavedTransaction;
@@ -23,7 +23,7 @@ impl GridController {
     ) {
         let mut transaction = PendingTransaction {
             id: transaction_id,
-            transaction_type: TransactionType::Multiplayer,
+            source: TransactionSource::Multiplayer,
             operations: operations.into(),
             ..Default::default()
         };
@@ -44,7 +44,7 @@ impl GridController {
             .flat_map(|unsaved_transaction| unsaved_transaction.reverse.operations.clone())
             .collect::<VecDeque<_>>();
         let mut rollback = PendingTransaction {
-            transaction_type: TransactionType::Multiplayer,
+            source: TransactionSource::Multiplayer,
             operations,
             ..Default::default()
         };
@@ -69,7 +69,7 @@ impl GridController {
             // Note: setting this to multiplayer makes it so the calculations are not rerun when reapplied.
             // This seems the right approach, otherwise we may end up with long running calculations
             // having to be sent to the server multiple times when multiple users are making changes.
-            transaction_type: TransactionType::Multiplayer,
+            source: TransactionSource::Multiplayer,
             operations: operations.into(),
             ..Default::default()
         };
@@ -86,7 +86,7 @@ impl GridController {
         transaction_name: Option<TransactionName>,
     ) {
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::Server,
+            source: TransactionSource::Server,
             operations: operations.into(),
             transaction_name: transaction_name.unwrap_or(TransactionName::Unknown),
             ..Default::default()
@@ -154,7 +154,7 @@ impl GridController {
             }
         });
         let mut out_of_order_transaction = PendingTransaction {
-            transaction_type: TransactionType::Multiplayer,
+            source: TransactionSource::Multiplayer,
             operations,
             ..Default::default()
         };
@@ -231,7 +231,7 @@ impl GridController {
     pub fn received_transactions(&mut self, transactions: Vec<TransactionServer>) {
         // used to track client changes when combining transactions
         let mut results = PendingTransaction {
-            transaction_type: TransactionType::Multiplayer,
+            source: TransactionSource::Multiplayer,
             ..Default::default()
         };
         self.rollback_unsaved_transactions(&mut results);
@@ -244,7 +244,7 @@ impl GridController {
             if let Ok(operations) = operations {
                 let mut transaction = PendingTransaction {
                     id: t.id,
-                    transaction_type: TransactionType::Multiplayer,
+                    source: TransactionSource::Multiplayer,
                     operations: operations.into(),
                     cursor: None,
                     ..Default::default()
@@ -287,7 +287,7 @@ impl GridController {
         } else {
             let mut transaction = PendingTransaction {
                 id: transaction_id,
-                transaction_type: TransactionType::Unsaved,
+                source: TransactionSource::Unsaved,
                 ..Default::default()
             };
             transaction
@@ -310,9 +310,9 @@ mod tests {
     use crate::controller::transaction::Transaction;
     use crate::controller::transaction_types::JsCodeResult;
     use crate::controller::GridController;
-    use crate::grid::{CodeCellLanguage, Sheet};
+    use crate::grid::{CodeCellLanguage, CodeCellValue, Sheet};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{CellValue, CodeCellValue, Pos, SheetPos};
+    use crate::{CellValue, Pos, SheetPos};
 
     #[test]
     #[parallel]

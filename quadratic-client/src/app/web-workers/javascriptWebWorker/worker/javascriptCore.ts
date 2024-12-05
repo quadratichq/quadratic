@@ -58,19 +58,20 @@ class JavascriptCore {
     );
   }
 
-  sendGetCells(
+  sendGetCellsA1(
     transactionId: string,
-    x: number,
-    y: number,
-    w: number,
-    h?: number,
-    sheet?: string,
+    a1: string,
     lineNumber?: number
-  ): Promise<JsGetCellResponse[] | undefined> {
+  ): Promise<{ cells?: JsGetCellResponse[]; x: number; y: number; w: number; h: number } | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreJavascriptGetCells) => resolve(message.cells);
-      this.send({ type: 'javascriptCoreGetCells', transactionId, id, x, y, w, h, sheet, lineNumber });
+      this.waitingForResponse[id] = (message: CoreJavascriptGetCells) => {
+        if (message.x === undefined || message.y === undefined || message.w === undefined || message.h === undefined) {
+          throw new Error('[javascriptCore] sendGetCellsA1: x, y, w or h is undefined');
+        }
+        resolve({ cells: message.cells, x: message.x, y: message.y, w: message.w, h: message.h });
+      };
+      this.send({ type: 'javascriptCoreGetCellsA1', transactionId, id, a1, lineNumber });
     });
   }
 }

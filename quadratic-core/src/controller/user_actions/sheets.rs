@@ -52,14 +52,16 @@ impl GridController {
 mod test {
     use crate::{
         controller::GridController,
-        grid::sheet::borders::{BorderSelection, BorderStyle},
-        grid::{CodeCellLanguage, SheetId},
-        selection::Selection,
+        grid::{
+            sheet::borders::{BorderSelection, BorderStyle},
+            CodeCellLanguage, SheetId,
+        },
+        selection::OldSelection,
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
         },
-        CellValue, SheetPos, SheetRect,
+        A1Selection, CellValue, SheetPos, SheetRect,
     };
     use bigdecimal::BigDecimal;
     use serial_test::{parallel, serial};
@@ -237,26 +239,18 @@ mod test {
         gc.set_code_cell(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
             },
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),
             None,
         );
-        gc.set_fill_color_selection(
-            Selection::sheet_pos(SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            }),
-            Some("red".to_string()),
-            None,
-        )
-        .unwrap();
+        gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
+            .unwrap();
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),
+            OldSelection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,
@@ -299,8 +293,8 @@ mod test {
         // code cells should rerun and send updated code cell
         let sheet_pos = SheetPos {
             sheet_id,
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
         };
         let code_cell = gc
             .sheet(duplicated_sheet_id)
@@ -384,8 +378,8 @@ mod test {
         gc.set_cell_value(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
             },
             "1".to_string(),
             None,
@@ -393,8 +387,8 @@ mod test {
         gc.set_cell_value(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 1,
+                x: 1,
+                y: 2,
             },
             "1".to_string(),
             None,
@@ -402,15 +396,15 @@ mod test {
         gc.set_code_cell(
             SheetPos {
                 sheet_id,
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
             },
             CodeCellLanguage::Formula,
-            "A0 + A1".to_string(),
+            "A1 + A2".to_string(),
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
 
@@ -430,19 +424,19 @@ mod test {
         gc.set_cell_value(
             SheetPos {
                 sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
             },
             "2".to_string(),
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
         assert_eq!(
             gc.sheet(duplicated_sheet_id)
-                .get_code_cell_value((1, 0).into()),
+                .get_code_cell_value((2, 1).into()),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
 
@@ -451,19 +445,19 @@ mod test {
         gc.set_cell_value(
             SheetPos {
                 sheet_id: duplicated_sheet_id,
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
             },
             "3".to_string(),
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((1, 0).into()),
+            gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
         assert_eq!(
             gc.sheet(duplicated_sheet_id)
-                .get_code_cell_value((1, 0).into()),
+                .get_code_cell_value((2, 1).into()),
             Some(CellValue::Number(BigDecimal::from(4)))
         );
     }

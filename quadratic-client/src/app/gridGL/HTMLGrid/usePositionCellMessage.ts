@@ -101,13 +101,13 @@ export const usePositionCellMessage = (props: Props): PositionCellMessage => {
     updatePosition();
     inlineEditorEvents.on('status', updatePosition);
     events.on('cursorPosition', updatePosition);
-    pixiApp.viewport.on('moved', updatePosition);
+    events.on('viewportChangedReady', updatePosition);
     window.addEventListener('resize', updatePosition);
 
     return () => {
       inlineEditorEvents.off('status', updatePosition);
       events.off('cursorPosition', updatePosition);
-      pixiApp.viewport.off('moved', updatePosition);
+      events.off('viewportChangedReady', updatePosition);
       window.removeEventListener('resize', updatePosition);
     };
   }, [centerHorizontal, div, annotationState, forceLeft, forceTop, leftHeading, offsets, side, topHeading]);

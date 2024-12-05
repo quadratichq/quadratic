@@ -2,9 +2,8 @@ import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCell } from '@/app/gridGL/types/codeCell';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { SheetRect } from '@/app/quadratic-core-types';
+import { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -28,7 +27,7 @@ export interface CodeEditorState {
   codeString?: string;
   evaluationResult?: EvaluationResult;
   consoleOutput?: ConsoleOutput;
-  spillError?: Coordinate[];
+  spillError?: JsCoordinate[];
   panelBottomActiveTab: PanelTab;
   showSnippetsPopover: boolean;
   initialCode?: string;
@@ -38,7 +37,7 @@ export interface CodeEditorState {
     isApplied: boolean;
   };
   showSaveChangesAlert: boolean;
-  cellsAccessed?: SheetRect[] | null;
+  cellsAccessed: JsCellsAccessed[] | null;
   waitingForEditorClose?: {
     codeCell: CodeCell;
     showCellTypeMenu: boolean;
@@ -71,7 +70,7 @@ export const defaultCodeEditorState: CodeEditorState = {
   editorContent: undefined,
   diffEditorContent: undefined,
   showSaveChangesAlert: false,
-  cellsAccessed: undefined,
+  cellsAccessed: null,
   waitingForEditorClose: undefined,
 };
 

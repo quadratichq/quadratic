@@ -78,10 +78,10 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        grid::{CodeCellLanguage, CodeRunResult},
+        grid::{CodeCellLanguage, CodeCellValue, CodeRunResult},
         test_util::{assert_cell_value_row, print_table},
         wasm_bindings::js::clear_js_calls,
-        CellValue, CodeCellValue, Rect, RunError, RunErrorMsg, Span,
+        CellValue, Rect, RunError, RunErrorMsg, Span,
     };
 
     use bigdecimal::BigDecimal;

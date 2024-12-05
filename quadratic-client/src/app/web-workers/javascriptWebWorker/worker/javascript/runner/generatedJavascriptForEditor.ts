@@ -3,13 +3,7 @@ export const javascriptLibraryForEditor = `declare var self: WorkerGlobalScope &
 
 declare global {
   /**
-   * Get a range of cells from the sheet
-   * @param x0 x coordinate of the top-left cell
-   * @param y0 y coordinate of the top-left cell
-   * @param x1 x coordinate of the bottom-right cell
-   * @param y1 y coordinate of the bottom-right cell
-   * @param [sheetName] optional name of the sheet
-   * @returns 2D array [y][x] of the cells
+   * THIS FUNCTION IS NO LONGER USED. Use q.cells() INSTEAD.
    */
   function getCells(
     x0: number,
@@ -20,12 +14,7 @@ declare global {
   ): (number | string | boolean | undefined)[][];
 
   /**
-   * Gets a cell relative to the current cell
-   * @param {number} deltaX0 Change in x relative to the code cell for first cell
-   * @param {number} deltaY0 Change in y relative to the code cell for first cell
-   * @param {number} deltaX1 Change in x relative to the code cell for second cell
-   * @param {number} deltaY1 Change in y relative to the code cell for second cell
-   * @returns 2D array [y][x] of the cells
+   * THIS FUNCTION IS NO LONGER USED. Use q.cells() INSTEAD.
    */
   function relCells(
     deltaX0: number,
@@ -35,13 +24,7 @@ declare global {
   ): number | string | boolean | undefined;
 
   /**
-   * Alias for getCells: Get a range of cells from the sheet
-   * @param x0 x coordinate of the top-left cell
-   * @param y0 y coordinate of the top-left cell
-   * @param x1 x coordinate of the bottom-right cell
-   * @param y1 y coordinate of the bottom-right cell
-   * @param [sheetName] optional name of the sheet
-   * @returns 2D array [y][x] of the cells
+   * THIS FUNCTION IS NO LONGER USED. Use q.cells() INSTEAD.
    */
   function cells(
     x0: number,
@@ -52,29 +35,17 @@ declare global {
   ): (number | string | boolean | undefined)[][];
 
   /**
-   * Get a single cell from the sheet
-   * @param x x coordinate of the cell
-   * @param y y coordinate of the cell
-   * @param sheetName optional name of the sheet to get the cell
-   * @returns value of the cell
+   * THIS FUNCTION IS NO LONGER USED. Use q.cells() INSTEAD.
    */
   function getCell(x: number, y: number, sheetName?: string): number | string | boolean | undefined;
 
   /**
-   * Alias for getCell - Get a single cell from the sheet
-   * @param x x coordinate of the cell
-   * @param y y coordinate of the cell
-   * @param sheetName The optional name of the sheet to get the cell
-   * @returns value of the cell
+   * THIS FUNCTION IS NO LONGER USED. Use q.cells() INSTEAD.
    */
   function c(x: number, y: number, sheetName?: string): number | string | boolean | undefined;
 
   /**
-   * Alias for getCell - Get a single cell from the sheet
-   * @param x x coordinate of the cell
-   * @param y y coordinate of the cell
-   * @param sheetName The optional name of the sheet to get the cell
-   * @returns value of the cell
+   * THIS FUNCTION IS NO LONGER USED. Use q.cells() INSTEAD.
    */
   function cell(x: number, y: number, sheetName?: string): number | string | boolean | undefined;
 
@@ -85,29 +56,17 @@ declare global {
   function pos(): { x: number; y: number };
 
   /**
-   * Gets a cell relative to the current cell
-   * @param {number} deltaX Change in x relative to the code cell
-   * @param {number} deltaY Change in y relative to the code cell
-   * @returns value of the cell
+   * THIS FUNCTION IS NO LONGER USED. Use q.cells() INSTEAD.
    */
   function relCell(deltaX: number, deltaY: number): number | string | boolean | undefined;
 
   /**
-   * Alias for relCell - Gets a cell relative to the current cell
-   * @param {number} deltaX Change in x relative to code cell
-   * @param {number} deltaY Change in y relative to code cell
-   * @returns value of the cell
+   * THIS FUNCTION IS NO LONGER USED. Use q.cells() INSTEAD.
    */
   function rc(deltaX: number, deltaY: number): number | string | boolean | undefined;
 
   /**
-   * Get a range of cells from the sheet and create an array of object based on
-   * the header row.
-   * @param x0 x coordinate of the top-left cell
-   * @param y0 y coordinate of the top-left cell
-   * @param x1 x coordinate of the bottom-right cell
-   * @param y1 y coordinate of the bottom-right cell
-   * @param sheetName optional name of the sheet
+   * THIS FUNCTION IS NO LONGER USED. Use q.cells() INSTEAD.
    */
   function getCellsWithHeadings(
     x0: number,
@@ -116,67 +75,34 @@ declare global {
     y1?: number,
     sheetName?: string
   ): Record<string, number | string | boolean | undefined>[];
-}
 
-const getCellsDB = (
-  x0: number,
-  y0: number,
-  x1: number,
-  y1?: number,
-  sheetName?: string
-): (number | string | boolean | Date | undefined)[][] => {
-  try {
-    // This is a shared buffer that will be used to communicate with core
-    // The first 4 bytes are used to signal the python core that the data is ready
-    // The second 4 bytes are used to signal the length of the data
-    // The third 4 bytes are used to signal the id of the data
-    // Length of the cells string is unknown at this point
-    let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
-    let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
-    Atomics.store(int32View, 0, 0);
+  /**
+   * Quadratic API
+   */
+  class q {
+    /**
+     * Reference cells in the grid.
+     * @param a1 A string representing a cell or range of cells.
+     * @returns For single returns: the value of the cell referenced. For multiple returns: An array of the cells referenced.
+     */
+    static cells(a1: string): (number | string | boolean | Date | undefined)[] | (number | string | boolean | Date | undefined)[][] | number | string | boolean | Date | undefined;
 
-    self.postMessage({ type: 'getCellsLength', sharedBuffer, x0, y0, x1, y1, sheetName });
-    let result = Atomics.wait(int32View, 0, 0);
-    const length = int32View[1];
-    if (result !== 'ok' || length === 0) return [];
+    /**
+     * Gets the position of the code cell
+     * @returns { x: number, y: number }
+     */
+    static pos(): { x: number; y: number };
 
-    const id = int32View[2];
-
-    // New shared buffer, which is sized to hold the cells string
-    sharedBuffer = new SharedArrayBuffer(4 + length);
-    int32View = new Int32Array(sharedBuffer, 0, 1);
-    Atomics.store(int32View, 0, 0);
-
-    self.postMessage({ type: 'getCellsData', id, sharedBuffer });
-    result = Atomics.wait(int32View, 0, 0);
-    if (result !== 'ok') return [];
-
-    let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
-
-    // Copy the data to a non-shared buffer, for decoding
-    const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);
-    const nonSharedView = new Uint8Array(nonSharedBuffer);
-    nonSharedView.set(uint8View);
-    sharedBuffer = undefined;
-    int32View = undefined;
-    uint8View = undefined;
-
-    const decoder = new TextDecoder();
-    const cellsStringified = decoder.decode(nonSharedView);
-    const cells = convertNullToUndefined(JSON.parse(cellsStringified) as (number | string | boolean | Date | null)[][]);
-    cells.forEach((row) => {
-      row.forEach((cell, i) => {
-        if (typeof cell === 'string' && cell.startsWith('___date___')) {
-          row[i] = new Date(parseInt(cell.substring('___date___'.length)));
-        }
-      });
-    });
-    return cells;
-  } catch (e) {
-    console.warn('[javascriptLibrary] getCells error', e);
+    /**
+     * Convert a 0-based x,y coordinate to an A1 string.
+     * @param x The x coordinate.
+     * @param y The y coordinate.
+     * @param absolute Whether the A1 string should be absolute or relative.
+     * @returns The A1 string.
+     */
+    static toA1(x: number, y: number, absolute: boolean): string;
   }
-  return [];
-};
+}
 
 // JSON.parse convert undefined to null,
 // so we need to convert null back to undefined
@@ -198,32 +124,61 @@ function lineNumber(): number | undefined {
   }
 }
 
+const createConversionError = (
+  funcName: string,
+  a1Params: string,
+  oldFuncParams: string,
+  sheetName?: string
+) => {
+  const oldFunc = funcName + '(' + oldFuncParams + ')';
+  let params = a1Params;
+  
+  if (sheetName) params = sheetName + ':' + params;
+  
+  const newFunc = "q.cells('" + params + "')";
+  
+  q.conversionError(oldFunc, newFunc);
+};
+
+const getCellsConversionError = (funcName: string, x0: number, y0: number, x1: number, y1?: number, sheetName?: string) => {
+  const a1_0 = q.toA1(x0, y0);
+  const a1_1 = q.toA1(x1, y1);
+
+  let oldFuncParams = x0 + ', ' + y0 + ', ' + x1;
+  if (y1) oldFuncParams += ', ' + y1;
+  if (sheetName) oldFuncParams += ', ' + sheetName;
+
+  createConversionError(funcName, a1_0 + ':' + a1_1, oldFuncParams, sheetName);
+};
+
+const getCellConversionError = (funcName: string, x: number, y: number, sheetName?: string) => {
+  const a1 = q.toA1(x, y);
+  let oldFuncParams = x + ', ' + y;
+  if (sheetName) oldFuncParams += ', ' + sheetName;
+
+  createConversionError(funcName, a1, oldFuncParams, sheetName);
+};
+
 export const getCells = (
   x0: number,
   y0: number,
   x1: number,
   y1?: number,
   sheetName?: string
-): (number | string | boolean | Date | undefined)[][] => {
-  if (isNaN(x0) || isNaN(y0) || isNaN(x1)) {
-    const line = lineNumber();
-    throw new Error(
-      'getCells requires at least 3 arguments, received getCells(' +
-        x0 +
-        ', ' +
-        y0 +
-        ', ' +
-        x1 +
-        ', ' +
-        y1 +
-        ')' +
-        (line !== undefined ? ' at line ' + (line - 1) : '')
-    );
-  }
-  return getCellsDB(x0, y0, x1, y1, sheetName);
+) => {
+  getCellsConversionError('getCells', x0, y0, x1, y1, sheetName);
 };
 
-export const cells = getCells;
+
+export const cells = (
+  x0: number,
+  y0: number,
+  x1: number,
+  y1?: number,
+  sheetName?: string
+) => {
+  getCellsConversionError('cells', x0, y0, x1, y1, sheetName);
+};
 
 export const getCellsWithHeadings = (
   x0: number,
@@ -231,94 +186,148 @@ export const getCellsWithHeadings = (
   x1: number,
   y1?: number,
   sheetName?: string
-): Record<string, number | string | boolean | Date | undefined>[] => {
-  if (isNaN(x0) || isNaN(y0) || isNaN(x1)) {
-    const line = lineNumber();
-    throw new Error(
-      'getCellsWithHeadings requires at least 3 arguments, received getCellsWithHeadings(' +
-        x0 +
-        ', ' +
-        y0 +
-        ', ' +
-        x1 +
-        ', ' +
-        y1 +
-        ')' +
-        (line !== undefined ? ' at line ' + (line - 1) : '')
-    );
-  }
-  const cells = getCells(x0, y0, x1, y1, sheetName);
-  const headers = cells[0];
-  return cells.slice(1).map((row) => {
-    const obj: Record<string, number | string | boolean | Date | undefined> = {};
-    headers.forEach((header, i) => {
-      obj[header as string] = row[i];
-    });
-    return obj;
-  });
+) => {
+  getCellsConversionError('getCellsWithHeadings', x0, y0, x1, y1, sheetName);
 };
 
-export const getCell = (x: number, y: number, sheetName?: string): number | string | boolean | Date | undefined => {
-  if (isNaN(x) || isNaN(y)) {
-    const line = lineNumber();
-    throw new Error(
-      'getCell requires at least 2 arguments, received getCell(' +
-        x +
-        ', ' +
-        y +
-        ')' +
-        (line !== undefined ? ' at line ' + (line - 1) : '')
-    );
-  }
-  const results = getCells(x, y, x, y, sheetName);
-  return results?.[0]?.[0];
+export const getCell = (x: number, y: number, sheetName?: string) => {
+    getCellConversionError('getCell', x, y, sheetName);
 };
 
-export const c = getCell;
+export const cell = (x: number, y: number, sheetName?: string) => {
+    getCellConversionError('cell', x, y, sheetName);
+};
 
-export const cell = getCell;
+export const c = (x: number, y: number, sheetName?: string) => {
+    getCellConversionError('c', x, y, sheetName);
+};
 
+// This is hard coded here, but is replaced with the correct x,y coordinates elsewhere
 export const pos = (): { x: number; y: number } => {
   return { x: 0, y: 0 };
 };
 
 export const relCell = (deltaX: number, deltaY: number) => {
-  const p = pos();
-  if (isNaN(deltaX) || isNaN(deltaY)) {
-    const line = lineNumber();
-    throw new Error(
-      'relCell requires at least 2 arguments, received relCell(' +
-        deltaX +
-        ', ' +
-        deltaY +
-        ')' +
-        (line !== undefined ? ' at line ' + (line - 1) : '')
-    );
-  }
+  const a1 = q.toA1(deltaX, deltaY, false);
+  let oldFuncParams = deltaX + ', ' + deltaY;
 
-  return getCell(deltaX + p.x, deltaY + p.y);
+  createConversionError('relCell', a1, oldFuncParams);
 };
 
 export const relCells = (deltaX0: number, deltaY0: number, deltaX1: number, deltaY1: number) => {
-  const p = pos();
-  if (isNaN(deltaX0) || isNaN(deltaY0) || isNaN(deltaX1) || isNaN(deltaY1)) {
-    const line = lineNumber();
-    throw new Error(
-      'relCells requires at least 4 arguments, received relCells(' +
-        deltaX0 +
-        ', ' +
-        deltaY0 +
-        ', ' +
-        deltaX1 +
-        ', ' +
-        deltaY1 +
-        ')' +
-        (line !== undefined ? ' at line ' + (line - 1) : '')
-    );
-  }
+  const a1_0 = q.toA1(deltaX0, deltaY0, false);
+  const a1_1 = q.toA1(deltaX1, deltaY1, false);
+  const oldFuncParams = deltaX0 + ', ' + deltaY0 + ', ' + deltaX1 + ', ' + deltaY1;
 
-  return getCells(deltaX0 + p.x, deltaY0 + p.y, deltaX1 + p.x, deltaY1 + p.y);
+  createConversionError('relCells', a1_0 + ':' + a1_1, oldFuncParams);
 };
 
 export const rc = relCell;
+
+export class q {
+  /**
+   * Reference cells in the grid.
+   * @param a1 A string representing a cell or range of cells.
+   * @returns For single returns: the value of the cell referenced. For multiple returns: An array of the cells referenced.
+   */
+  static cells(a1: string): (number | string | boolean | Date | undefined)[] | (number | string | boolean | Date | undefined)[][] | number | string | boolean | Date | undefined {
+    if (typeof a1 !== 'string') {
+      const line = lineNumber();
+      
+      throw new Error(
+        'q.cell requires at least 1 argument, received q.cell(' + a1 + ')' + (line !== undefined ? ' at line ' + (line - 1) : '')
+      );
+    }
+  
+    try {
+      let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
+      let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
+      Atomics.store(int32View, 0, 0);
+  
+      self.postMessage({ type: 'getCellsA1Length', sharedBuffer, a1 });
+      let result = Atomics.wait(int32View, 0, 0);
+      const length = int32View[1];
+      if (result !== 'ok' || length === 0) return [];
+  
+      const id = int32View[2];
+  
+      // New shared buffer, which is sized to hold the cells string
+      sharedBuffer = new SharedArrayBuffer(4 + length);
+      int32View = new Int32Array(sharedBuffer, 0, 1);
+      Atomics.store(int32View, 0, 0);
+  
+      self.postMessage({ type: 'getCellsData', id, sharedBuffer });
+      result = Atomics.wait(int32View, 0, 0);
+      if (result !== 'ok') return [];
+  
+      let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, length);
+  
+      // Copy the data to a non-shared buffer, for decoding
+      const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);
+      const nonSharedView = new Uint8Array(nonSharedBuffer);
+      nonSharedView.set(uint8View);
+      sharedBuffer = undefined;
+      int32View = undefined;
+      uint8View = undefined;
+  
+      const decoder = new TextDecoder();
+      const cellsStringified = decoder.decode(nonSharedView);
+      const cells = convertNullToUndefined(JSON.parse(cellsStringified) as (number | string | boolean | Date | null)[][]);
+      cells.forEach((row) => {
+        row.forEach((cell, i) => {
+          if (typeof cell === 'string' && cell.startsWith('___date___')) {
+            row[i] = new Date(parseInt(cell.substring('___date___'.length)));
+          }
+        });
+      });
+      if (cells.length === 1 && cells[0].length === 1) {
+        return cells[0][0];
+      }
+      return cells;
+    } catch (e) {
+      console.warn('[javascriptLibrary] q error', e);
+    }
+    return [];
+  }
+
+  /**
+   * Convert a 0-based x,y coordinate to an A1 string.
+   * @param x The x coordinate.
+   * @param y The y coordinate.
+   * @returns The A1 string.
+   */
+  static toA1(x: number, y?: number, absolute: boolean = true): string {
+    let column = "";
+
+    if (!absolute) {
+      const p = pos();
+      x = x + p.x;
+      if (y !== undefined) y = y + p.y;
+    }
+
+    while (x > 0) {
+        x--; // adjust for 1-based index
+        column = String.fromCharCode((x % 26) + 65) + column;
+        x = Math.floor(x / 26);
+    }
+
+    return column + y;
+  }
+
+  /**
+   * Gets the position of the code cell
+   * @returns { x: number, y: number }
+   */
+  static pos(): { x: number; y: number } {
+    return pos();
+  }
+
+  /**
+   * Show a conversion error message when the user tries to use an old function.
+   */
+  static conversionError(oldFunc: string, newFunc: string): void {
+    const message = oldFunc + ' functionality is no longer supported. Use ' + newFunc + ' instead.';
+    throw new Error(message);
+  }
+}
 `;

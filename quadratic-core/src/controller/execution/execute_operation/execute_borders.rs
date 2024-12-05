@@ -1,99 +1,106 @@
 use crate::{
-    color::Rgba,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::sheet::borders::{BorderStyle, BorderStyleCellUpdate},
-    selection::Selection,
+    grid::sheet::borders::BorderStyleCellUpdate,
+    selection::OldSelection,
     Pos, RunLengthEncoding,
 };
 
 impl GridController {
-    fn fix_color(style: BorderStyle) -> BorderStyle {
-        if style.color.alpha == 1 {
-            BorderStyle {
-                color: Rgba {
-                    alpha: 255,
-                    ..style.color
-                },
-                ..style
-            }
-        } else {
-            style
-        }
-    }
-
-    /// This is deprecated and only included for offline transactions during the
-    /// transition to the new borders operation.
+    /// **Deprecated** Nov 2024 in favor of [`Self::execute_set_borders_a1()`].
     pub fn execute_set_borders(&mut self, transaction: &mut PendingTransaction, op: Operation) {
-        match op {
-            Operation::SetBorders {
-                sheet_rect,
-                borders,
-            } => {
-                let selection = Selection::sheet_rect(sheet_rect);
-                let mut borders_new = RunLengthEncoding::new();
+        unwrap_op!(let SetBorders { sheet_rect, borders } = op);
 
-                for y in sheet_rect.y_range() {
-                    for x in sheet_rect.x_range() {
-                        if let Some(original) = borders.per_cell.try_get_cell_border(Pos { x, y }) {
-                            borders_new.push(BorderStyleCellUpdate {
-                                top: original.borders[1].map(|b| Some(Self::fix_color(b).into())),
-                                bottom: original.borders[3]
-                                    .map(|b| Some(Self::fix_color(b).into())),
-                                left: original.borders[0].map(|b| Some(Self::fix_color(b).into())),
-                                right: original.borders[2].map(|b| Some(Self::fix_color(b).into())),
-                            });
-                        } else {
-                            borders_new.push(BorderStyleCellUpdate::default());
-                        }
-                    }
-                }
+        let selection = OldSelection::sheet_rect(sheet_rect);
+        let mut borders_new = RunLengthEncoding::new();
 
-                // We add the new borders operation to the front of the list so it's next.
-                transaction
-                    .operations
-                    .push_front(Operation::SetBordersSelection {
-                        selection,
-                        borders: borders_new,
+        for y in sheet_rect.y_range() {
+            for x in sheet_rect.x_range() {
+                if let Some(original) = borders.per_cell.try_get_cell_border(Pos { x, y }) {
+                    borders_new.push(BorderStyleCellUpdate {
+                        top: original.borders[1].map(|b| Some(b.into())),
+                        bottom: original.borders[3].map(|b| Some(b.into())),
+                        left: original.borders[0].map(|b| Some(b.into())),
+                        right: original.borders[2].map(|b| Some(b.into())),
                     });
+                } else {
+                    borders_new.push(BorderStyleCellUpdate::default());
+                }
             }
-            _ => unreachable!("Expected Operation::SetBorders"),
         }
+
+        // We add the new borders operation to the front of the list so it's next.
+        transaction
+            .operations
+            .push_front(Operation::SetBordersSelection {
+                selection,
+                borders: borders_new,
+            });
     }
 
+    /// **Deprecated** Nov 2024 in favor of [`Self::execute_set_borders_a1()`].
     pub fn execute_set_borders_selection(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        match op {
-            Operation::SetBordersSelection { selection, borders } => {
-                if self.thumbnail_dirty_selection(&selection) {
-                    transaction.generate_thumbnail = true;
-                }
+        unwrap_op!(let SetBordersSelection { selection, borders } = op);
 
-                let Some(sheet) = self.try_sheet_mut(selection.sheet_id) else {
-                    // sheet may have been deleted
-                    return;
-                };
-
-                transaction
-                    .reverse_operations
-                    .extend(sheet.borders.set_borders(&selection, &borders));
-
-                transaction
-                    .forward_operations
-                    .push(Operation::SetBordersSelection {
-                        selection: selection.clone(),
-                        borders,
-                    });
-
-                transaction.sheet_borders.insert(selection.sheet_id);
-            }
-            _ => unreachable!("Expected Operation::SetBordersSelection"),
+        if self.thumbnail_dirty_selection(&selection) {
+            transaction.generate_thumbnail = true;
         }
+
+        let Some(sheet) = self.try_sheet_mut(selection.sheet_id) else {
+            return; // sheet may have been deleted
+        };
+
+        transaction
+            .reverse_operations
+            .extend(sheet.borders.set_borders_selection(&selection, &borders));
+
+        // Do not finitize selection; borders actually *does* treat the sheet as
+        // infinite.
+        transaction
+            .forward_operations
+            .push(Operation::SetBordersSelection {
+                selection: selection.clone(),
+                borders,
+            });
+
+        transaction.sheet_borders.insert(selection.sheet_id);
+    }
+
+    pub fn execute_set_borders_a1(
+        &mut self,
+        _transaction: &mut PendingTransaction,
+        _op: Operation,
+    ) {
+        // unwrap_op!(let SetBordersA1 { sheet_id, borders } = op);
+
+        // // todo: self.thumbnail_dirty_borders (similar to thumbnail_dirty_formats)
+        // // transaction.generate_thumbnail |= self.thumbnail_dirty_ranges(&ranges);
+
+        // let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+        //     return; // sheet may have been deleted
+        // };
+
+        // transaction
+        //     .reverse_operations
+        //     .extend(sheet.borders.set_borders_a1(&ranges, &borders));
+
+        // // Do not finitize selection; borders actually *does* treat the sheet as
+        // // infinite.
+        // transaction
+        //     .forward_operations
+        //     .push(Operation::SetBordersA1 {
+        //         sheet_id,
+        //         // subspaces: subspaces.clone(),
+        //         borders,
+        //     });
+
+        // transaction.sheet_borders.insert(sheet_id);
     }
 }
 

@@ -31,8 +31,21 @@ export interface CoreJavascriptGetCells {
   type: 'coreJavascriptGetCells';
   id: number;
   cells?: JsGetCellResponse[];
+  // returned by GetCellsA1
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+}
+
+export interface JavascriptCoreGetCellsA1 {
+  type: 'javascriptCoreGetCellsA1';
+  id: number;
+  transactionId: string;
+  a1: string;
+  lineNumber?: number;
 }
 
 export type CoreJavascriptMessage = CoreJavascriptRun | CoreJavascriptGetCells;
 
-export type JavascriptCoreMessage = JavascriptCoreResults | JavascriptCoreGetCells;
+export type JavascriptCoreMessage = JavascriptCoreResults | JavascriptCoreGetCells | JavascriptCoreGetCellsA1;

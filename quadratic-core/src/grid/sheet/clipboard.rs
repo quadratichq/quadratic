@@ -1,20 +1,20 @@
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
-use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
+use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin, ClipboardSheetFormats};
 use crate::formulas::replace_a1_notation;
-use crate::grid::formats::Formats;
+use crate::grid::formats::SheetFormatUpdates;
+use crate::grid::js_types::JsClipboard;
 use crate::grid::{CodeCellLanguage, Sheet};
-use crate::selection::Selection;
-use crate::{CellValue, Pos, Rect};
+use crate::{A1Selection, CellValue, Pos, Rect};
 
 impl Sheet {
     /// Copies the selection to the clipboard.
     ///
     /// Returns the copied SheetRect, plain text, and html.
-    pub fn copy_to_clipboard(&self, selection: &Selection) -> Result<(String, String), String> {
+    pub fn copy_to_clipboard(&self, selection: &A1Selection) -> Result<JsClipboard, String> {
         let mut clipboard_origin = ClipboardOrigin::default();
-        let mut html = String::from("<tbody>");
         let mut plain_text = String::new();
+        let mut html_body = String::from("<tbody>");
         let mut cells = CellValues::default();
         let mut values = CellValues::default();
         let mut sheet_bounds: Option<Rect> = None;
@@ -27,20 +27,20 @@ impl Sheet {
             for y in bounds.y_range() {
                 if y != bounds.min.y {
                     plain_text.push('\n');
-                    html.push_str("</tr>");
+                    html_body.push_str("</tr>");
                 }
 
-                html.push_str("<tr>");
+                html_body.push_str("<tr>");
 
                 for x in bounds.x_range() {
                     if x != bounds.min.x {
                         plain_text.push('\t');
-                        html.push_str("</td>");
+                        html_body.push_str("</td>");
                     }
 
                     let pos = Pos { x, y };
 
-                    if !selection.contains_pos(pos) {
+                    if !selection.might_contain_pos(pos) {
                         continue;
                     }
 
@@ -81,7 +81,7 @@ impl Sheet {
                     // add styling for html (only used for pasting to other spreadsheets)
                     let mut style = String::new();
 
-                    let summary = self.cell_format_summary(pos, true);
+                    let summary = self.cell_format_summary(pos);
                     let bold = summary.bold.unwrap_or(false);
                     let italic = summary.italic.unwrap_or(false);
                     let text_color = summary.text_color;
@@ -149,7 +149,7 @@ impl Sheet {
                             style.push_str("text-decoration:underline line-through;");
                         }
 
-                        // todo...
+                        dbgjs!("todo(ayush): implement cell_border");
                         // if let Some(cell_border) = cell_border {
                         //     for (side, border) in cell_border.borders.iter().enumerate() {
                         //         let side = match side {
@@ -176,11 +176,11 @@ impl Sheet {
                         style.push('"');
                     }
 
-                    html.push_str(format!("<td {}>", style).as_str());
+                    html_body.push_str(format!("<td {}>", style).as_str());
 
                     if let Some(value) = &simple_value {
                         plain_text.push_str(&value.to_string());
-                        html.push_str(&value.to_string());
+                        html_body.push_str(&value.to_string());
                     }
                 }
             }
@@ -228,7 +228,7 @@ impl Sheet {
                                     x: x - bounds.min.x,
                                     y: y - bounds.min.y,
                                 };
-                                if selection.contains_pos(Pos { x, y }) {
+                                if selection.might_contain_pos(Pos { x, y }) {
                                     if include_in_cells {
                                         cells.set(pos.x as u32, pos.y as u32, value.clone());
                                     }
@@ -240,39 +240,52 @@ impl Sheet {
                 });
         }
 
+        dbgjs!("todo(ayush): implement validations for clipboard");
+
         let formats = if let Some(bounds) = sheet_bounds {
-            self.override_cell_formats(bounds, Some(selection))
+            let mut formats = SheetFormatUpdates::default();
+
+            for x in bounds.x_range() {
+                for y in bounds.y_range() {
+                    formats.set_format_cell(Pos { x, y }, self.formats.format(Pos { x, y }).into());
+                }
+            }
+
+            formats
         } else {
-            Formats::default()
+            SheetFormatUpdates::default()
         };
 
-        if selection.all {
-            clipboard_origin.all = Some((clipboard_origin.x, clipboard_origin.y));
-        } else {
-            if selection.columns.is_some() {
-                // we need the row origin when columns are selected
-                clipboard_origin.row = sheet_bounds.map(|b| b.min.y);
-            }
+        // if selection.all {
+        //     clipboard_origin.all = Some((clipboard_origin.x, clipboard_origin.y));
+        // } else {
+        //     if selection.columns.is_some() {
+        //         // we need the row origin when columns are selected
+        //         clipboard_origin.row = sheet_bounds.map(|b| b.min.y);
+        //     }
 
-            if selection.rows.is_some() {
-                // we need the column origin when rows are selected
-                clipboard_origin.column = sheet_bounds.map(|b| b.min.x);
-            }
-        }
-        let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
+        //     if selection.rows.is_some() {
+        //         // we need the column origin when rows are selected
+        //         clipboard_origin.column = sheet_bounds.map(|b| b.min.x);
+        //     }
+        // }
+        // let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
+
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
-        let borders = self.borders.to_clipboard(selection);
+        // let borders = self.borders.to_clipboard(selection);
 
         let clipboard = Clipboard {
             cells,
             formats,
-            sheet_formats,
-            borders: borders.map(|borders| {
-                (
-                    selection.translate(-clipboard_origin.x, -clipboard_origin.y),
-                    borders,
-                )
-            }),
+            // sheet_formats,
+            sheet_formats: ClipboardSheetFormats::default(),
+            // borders: borders.map(|borders| {
+            //     (
+            //         selection.translate(-clipboard_origin.x, -clipboard_origin.y),
+            //         borders,
+            //     )
+            // }),
+            borders: None,
             values,
             w: sheet_bounds.map_or(0, |b| b.width()),
             h: sheet_bounds.map_or(0, |b| b.height()),
@@ -281,14 +294,14 @@ impl Sheet {
             validations,
         };
 
-        html.push_str("</td></tr></tbody></table>");
-        let mut final_html = String::from("<table data-quadratic=\"");
+        html_body.push_str("</td></tr></tbody></table>");
+        let mut html = String::from("<table data-quadratic=\"");
         let data = serde_json::to_string(&clipboard).unwrap();
         let encoded = htmlescape::encode_attribute(&data);
-        final_html.push_str(&encoded);
-        final_html.push_str(&String::from("\">"));
-        final_html.push_str(&html);
-        Ok((plain_text, final_html))
+        html.push_str(&encoded);
+        html.push_str(&String::from("\">"));
+        html.push_str(&html_body);
+        Ok(JsClipboard { plain_text, html })
     }
 }
 
@@ -296,11 +309,12 @@ impl Sheet {
 mod tests {
     use serial_test::parallel;
 
-    use super::*;
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::GridController;
+    use crate::grid::js_types::JsClipboard;
     use crate::grid::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::{Rect, SheetRect};
+    use crate::selection::OldSelection;
+    use crate::{A1Selection, Pos, Rect, SheetRect};
 
     #[test]
     #[parallel]
@@ -311,18 +325,17 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(0, 0, 4, 1, vec!["1", "2", "3", "4"]);
 
-        let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
-                rects: Some(vec![
-                    Rect::single_pos(Pos { x: 0, y: 0 }),
-                    Rect::from_numbers(2, 0, 2, 1),
-                ]),
-                ..Default::default()
-            })
-            .unwrap();
+        let selection = A1Selection::from_rects(
+            &[
+                Rect::single_pos(Pos { x: 0, y: 0 }),
+                Rect::from_numbers(2, 0, 2, 1),
+            ],
+            sheet_id,
+        );
+        let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
-            Selection::pos(0, 5, sheet_id),
+            &A1Selection::from_xy(0, 5, sheet_id),
             None,
             Some(html),
             PasteSpecial::None,
@@ -339,7 +352,10 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+        let selection = OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+        // todo: this is temporary until all is moved to A1Selection
+        let new_selection = A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+
         gc.set_borders_selection(
             selection.clone(),
             BorderSelection::All,
@@ -348,10 +364,10 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let (_, html) = sheet.copy_to_clipboard(&selection).unwrap();
+        let JsClipboard { html, .. } = sheet.copy_to_clipboard(&new_selection).unwrap();
 
         gc.paste_from_clipboard(
-            Selection::pos(2, 2, sheet_id),
+            &A1Selection::from_xy(2, 2, sheet_id),
             None,
             Some(html),
             PasteSpecial::None,

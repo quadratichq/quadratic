@@ -104,6 +104,7 @@ export class Javascript {
         type: 'module',
         name: 'javascriptWorker',
       });
+
       runner.onerror = (e) => {
         if (this.withLineNumbers) {
           runner.terminate();
@@ -116,6 +117,7 @@ export class Javascript {
         this.state = 'ready';
         setTimeout(this.next, 0);
       };
+
       runner.onmessage = (e: MessageEvent<RunnerJavascriptMessage>) => {
         if (e.data.type === 'results') {
           javascriptResults(
@@ -129,9 +131,9 @@ export class Javascript {
           this.state = 'ready';
           setTimeout(this.next, 0);
           runner.terminate();
-        } else if (e.data.type === 'getCellsLength') {
-          const { sharedBuffer, x0, y0, x1, y1, sheetName } = e.data;
-          this.api.getCells(x0, y0, x1, y1, sheetName).then((cells) => {
+        } else if (e.data.type === 'getCellsA1Length') {
+          const { sharedBuffer, a1 } = e.data;
+          this.api.getCellsA1(a1).then((cells) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
             if (cells) {
               const cellsString = JSON.stringify(cells);

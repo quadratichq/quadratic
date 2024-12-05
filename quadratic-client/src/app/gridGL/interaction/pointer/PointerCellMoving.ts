@@ -148,14 +148,11 @@ export class PointerCellMoving {
   }
 
   private pointerMoveHover(world: Point): boolean {
-    const sheet = sheets.sheet;
-    const rectangles = sheet.cursor.getRectangles();
-
     // we do not move if there are multiple rectangles (for now)
-    if (rectangles.length > 1) return false;
-    const rectangle = rectangles[0];
+    const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
+    if (!rectangle) return false;
 
-    const origin = sheet.cursor.getCursor();
+    const origin = sheets.sheet.cursor.position;
     const column = origin.x;
     const row = origin.y;
 
@@ -208,12 +205,9 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
-        const rectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
+        const rectangle = sheets.sheet.cursor.getLargestRectangle();
         quadraticCore.moveCells(
-          rectToSheetRect(
-            new Rectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1),
-            sheets.sheet.id
-          ),
+          rectToSheetRect(rectangle, sheets.sheet.id),
           this.movingCells.toColumn,
           this.movingCells.toRow,
           sheets.sheet.id

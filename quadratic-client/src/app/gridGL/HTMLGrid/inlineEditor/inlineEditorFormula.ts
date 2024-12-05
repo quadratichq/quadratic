@@ -8,7 +8,6 @@ import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineE
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
 import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
@@ -119,23 +118,7 @@ class InlineEditorFormula {
 
       inlineEditorHandler.cursorIsMoving = true;
       inlineEditorMonaco.removeSelection();
-      let sheet = '';
-      if (location.sheetId !== sheets.sheet.id) {
-        sheet = `'${sheets.sheet.name}'!`;
-      }
-      if (cursor.multiCursor) {
-        let coords = '';
-        cursor.multiCursor.forEach((c, i) => {
-          const start = getA1Notation(c.left, c.top);
-          const end = getA1Notation(c.right - 1, c.bottom - 1);
-          coords += `${start}:${end}${i !== cursor.multiCursor!.length - 1 ? ',' : ''}`;
-        });
-        this.insertInsertingCells(`${sheet}${coords}`);
-      } else {
-        const location = cursor.getCursor();
-        const a1Notation = getA1Notation(location.x, location.y);
-        this.insertInsertingCells(`${sheet}${a1Notation}`);
-      }
+      this.insertInsertingCells(cursor.toA1String());
 
       inlineEditorHandler.sendMultiplayerUpdate();
 

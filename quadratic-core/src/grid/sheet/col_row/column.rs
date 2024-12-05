@@ -2,11 +2,10 @@ use crate::{
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::{CopyFormats, Operation},
+        operations::operation::Operation,
     },
-    grid::{formats::Formats, Sheet},
-    selection::Selection,
-    Pos, Rect, SheetPos,
+    grid::Sheet,
+    CopyFormats, Pos, SheetPos,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
@@ -42,23 +41,11 @@ impl Sheet {
 
     /// Creates reverse operations for cell formatting within the column.
     fn reverse_formats_ops_for_column(&self, column: i64) -> Vec<Operation> {
-        let mut formats = Formats::new();
-        let mut selection = Selection::new(self.id);
-
-        if let Some(format) = self.try_format_column(column) {
-            selection.columns = Some(vec![column]);
-            formats.push(format.to_replace());
-        }
-
-        if let Some(range) = self.columns.get(&column).and_then(|c| c.format_range()) {
-            for y in range.start..=range.end {
-                let format = self.format_cell(column, y, false).to_replace();
-                formats.push(format);
-            }
-            selection.rects = Some(vec![Rect::new(column, range.start, column, range.end)]);
-        }
-        if !selection.is_empty() {
-            vec![Operation::SetCellFormatsSelection { selection, formats }]
+        if let Some(formats) = self.formats.copy_column(column) {
+            vec![Operation::SetCellFormatsA1 {
+                sheet_id: self.id,
+                formats,
+            }]
         } else {
             vec![]
         }
@@ -73,10 +60,11 @@ impl Sheet {
             .enumerate()
             .for_each(|(index, (pos, code_run))| {
                 if pos.x == column {
-                    reverse_operations.push(Operation::SetCodeRun {
+                    reverse_operations.push(Operation::SetCodeRunVersion {
                         sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
                         code_run: Some(code_run.clone()),
                         index,
+                        version: 1,
                     });
                 }
             });
@@ -84,7 +72,11 @@ impl Sheet {
         reverse_operations
     }
 
-    pub fn delete_column_offset(&mut self, transaction: &mut PendingTransaction, column: i64) {
+    pub(crate) fn delete_column_offset(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        column: i64,
+    ) {
         let (changed, new_size) = self.offsets.delete_column(column);
         if let Some(new_size) = new_size {
             transaction
@@ -104,7 +96,7 @@ impl Sheet {
     }
 
     /// Deletes columns and returns the operations to undo the deletion.
-    pub fn delete_column(&mut self, transaction: &mut PendingTransaction, column: i64) {
+    pub(crate) fn delete_column(&mut self, transaction: &mut PendingTransaction, column: i64) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
@@ -139,12 +131,10 @@ impl Sheet {
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
         // remove the column's data from the sheet
-        if let Some(c) = self.columns.get(&column) {
-            if !c.fill_color.is_empty() {
-                transaction.fill_cells.insert(self.id);
-            }
-            self.columns.remove(&column);
-        }
+        self.formats.remove_column(column);
+        dbgjs!("actually save the column formatting and update transaction appropriately");
+
+        self.columns.remove(&column);
 
         // remove the column's code runs from the sheet
         self.code_runs.retain(|pos, code_run| {
@@ -163,14 +153,6 @@ impl Sheet {
             }
         });
 
-        // remove the column's formats from the sheet
-        if let Some((format, _)) = self.formats_columns.get(&column) {
-            if format.fill_color.is_some() {
-                transaction.fill_cells.insert(self.id);
-            }
-            self.formats_columns.remove(&column);
-        }
-
         // remove the column's borders from the sheet
         if self.borders.remove_column(column) {
             transaction.sheet_borders.insert(self.id);
@@ -186,9 +168,6 @@ impl Sheet {
         for col in columns_to_update {
             if let Some(mut column_data) = self.columns.remove(&col) {
                 column_data.x -= 1;
-                if !column_data.fill_color.is_empty() {
-                    transaction.fill_cells.insert(self.id);
-                }
                 self.columns.insert(col - 1, column_data);
             }
         }
@@ -224,60 +203,14 @@ impl Sheet {
             }
         }
 
-        // update the indices of all column-based formats impacted by the deletion
-        let mut formats_to_update = Vec::new();
-        for col in self.formats_columns.keys() {
-            if *col >= column {
-                formats_to_update.push(*col);
-            }
-        }
-        for col in formats_to_update {
-            if let Some(format) = self.formats_columns.remove(&col) {
-                self.formats_columns.insert(col - 1, format);
-            }
-        }
-
         // mark hashes of new columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
-        self.validations.remove_column(transaction, self.id, column);
+        let changed_selections = self.validations.remove_column(transaction, self.id, column);
+        transaction.add_dirty_hashes_from_selections(self, changed_selections);
     }
 
-    /// Copies column formats to the new column.
-    ///
-    /// We don't need reverse operations since the updated column will be
-    /// deleted during an undo.
-    fn copy_column_formats(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        column: i64,
-        copy_direction: CopyFormats,
-    ) {
-        let delta = match copy_direction {
-            CopyFormats::After => 1,
-            CopyFormats::Before => -1,
-            CopyFormats::None => return,
-        };
-        if let Some(format) = self.try_format_column(column + delta) {
-            self.set_formats_columns(&[column], &Formats::repeat(format.to_replace(), 1));
-        }
-        if let Some(range) = self
-            .columns
-            .get(&(column + delta))
-            .and_then(|c| c.format_range())
-        {
-            for y in range {
-                if let Some(format) = self.try_format_cell(column + delta, y) {
-                    if format.fill_color.is_some() {
-                        transaction.fill_cells.insert(self.id);
-                    }
-                    self.set_format_cell(Pos { x: column, y }, &format.to_replace(), false);
-                }
-            }
-        }
-    }
-
-    pub fn insert_column(
+    pub(crate) fn insert_column(
         &mut self,
         transaction: &mut PendingTransaction,
         column: i64,
@@ -343,18 +276,9 @@ impl Sheet {
             }
         }
 
-        // update the indices of all column-based formats impacted by the deletion
-        let mut formats_to_update = Vec::new();
-        for col in self.formats_columns.keys() {
-            if *col >= column {
-                formats_to_update.push(*col);
-            }
-        }
-        formats_to_update.reverse();
-        for col in formats_to_update {
-            if let Some(format) = self.formats_columns.remove(&col) {
-                self.formats_columns.insert(col + 1, format);
-            }
+        self.formats.insert_column(column, copy_formats);
+        if self.formats.column_has_fills(column) {
+            transaction.fill_cells.insert(self.id);
         }
 
         // signal client ot update the borders for changed columns
@@ -365,9 +289,8 @@ impl Sheet {
         // mark hashes of new columns dirty
         transaction.add_dirty_hashes_from_sheet_columns(self, column, None);
 
-        self.validations.insert_column(transaction, self.id, column);
-
-        self.copy_column_formats(transaction, column, copy_formats);
+        let changed_selections = self.validations.insert_column(transaction, self.id, column);
+        transaction.add_dirty_hashes_from_selections(self, changed_selections);
 
         let changes = self.offsets.insert_column(column);
         if !changes.is_empty() {
@@ -383,11 +306,8 @@ mod tests {
     use serial_test::parallel;
 
     use crate::{
-        controller::execution::TransactionType,
-        grid::{
-            formats::{format::Format, format_update::FormatUpdate},
-            BorderStyle, CellBorderLine, CellWrap,
-        },
+        controller::execution::TransactionSource,
+        grid::{BorderStyle, CellBorderLine, CellWrap},
         CellValue, DEFAULT_COLUMN_WIDTH,
     };
 
@@ -399,64 +319,32 @@ mod tests {
         // will delete column 0 and -1
         let mut sheet = Sheet::test();
         sheet.test_set_values(
-            -2,
-            -2,
+            1,
+            1,
             4,
             4,
             vec![
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.test_set_format(
-            -2,
-            -2,
-            FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            0,
-            1,
-            FormatUpdate {
-                wrap: Some(Some(CellWrap::Clip)),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            1,
-            1,
-            FormatUpdate {
-                fill_color: Some(Some("blue".to_string())),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_code_run_array(-1, 2, vec!["=A1", "=B1"], true);
-        sheet.test_set_code_run_array(1, 2, vec!["=A1", "=B1"], true);
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A1], Some("red".to_string()));
+        sheet.formats.wrap.set(pos![C4], Some(CellWrap::Clip));
 
-        sheet.set_formats_columns(
-            &[-1],
-            &Formats::repeat(
-                FormatUpdate {
-                    bold: Some(Some(true)),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
-        sheet.set_formats_columns(
-            &[1],
-            &Formats::repeat(
-                FormatUpdate {
-                    italic: Some(Some(true)),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
+        sheet
+            .formats
+            .fill_color
+            .set(pos![D4], Some("blue".to_string()));
+        sheet.test_set_code_run_array(2, 5, vec!["=A1", "=B1"], true);
+        sheet.test_set_code_run_array(4, 5, vec!["=A1", "=B1"], true);
+
+        sheet.formats.bold.set_rect(1, 1, Some(1), None, true);
+        sheet.formats.italic.set_rect(4, 1, Some(4), None, true);
 
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             ..Default::default()
         };
         sheet.delete_column(&mut transaction, 0);
@@ -468,13 +356,10 @@ mod tests {
             Some(CellValue::Text("P".to_string()))
         );
         assert_eq!(
-            sheet.format_cell(0, 1, false),
-            Format {
-                fill_color: Some("blue".to_string()),
-                ..Default::default()
-            }
+            sheet.formats.fill_color.get(Pos { x: 3, y: 4 }),
+            Some("blue".to_string())
         );
-        assert!(sheet.code_runs.get(&Pos { x: 0, y: 2 }).is_some());
+        assert!(sheet.code_runs.get(&Pos { x: 2, y: 5 }).is_some());
     }
 
     #[test]

@@ -1,32 +1,16 @@
-use std::cmp::Reverse;
+//! Calculates all bounds for the sheet: data, formatting, and borders. We cache
+//! this value and only recalculate when necessary.
 
 use crate::{
-    grid::{bounds::BoundsRect, Column, GridBounds},
-    selection::Selection,
+    grid::{Column, GridBounds},
+    selection::OldSelection,
     CellValue, Pos, Rect,
 };
+use std::cmp::Reverse;
 
 use super::Sheet;
 
 impl Sheet {
-    /// calculates all bounds
-    pub fn calculate_bounds(&mut self) {
-        for (&x, column) in &self.columns {
-            if let Some(data_range) = column.range(true) {
-                let y = data_range.start;
-                self.data_bounds.add(Pos { x, y });
-                let y = data_range.end - 1;
-                self.data_bounds.add(Pos { x, y });
-            }
-            if let Some(format_range) = column.range(false) {
-                let y = format_range.start;
-                self.format_bounds.add(Pos { x, y });
-                let y = format_range.end - 1;
-                self.format_bounds.add(Pos { x, y });
-            }
-        }
-    }
-
     /// Recalculates all bounds of the sheet.
     ///
     /// Returns whether any of the sheet's bounds has changed
@@ -36,7 +20,25 @@ impl Sheet {
         self.data_bounds.clear();
         self.format_bounds.clear();
 
-        self.calculate_bounds();
+        for (&x, column) in &self.columns {
+            if let Some(data_range) = column.range() {
+                let y = data_range.start;
+                self.data_bounds.add(Pos { x, y });
+                let y = data_range.end - 1;
+                self.data_bounds.add(Pos { x, y });
+            }
+        }
+
+        if let Some(formats) = self.formats.finite_bounds() {
+            self.format_bounds.add(Pos {
+                x: formats.min.x,
+                y: formats.min.y,
+            });
+            self.format_bounds.add(Pos {
+                x: formats.max.x,
+                y: formats.max.y,
+            });
+        }
 
         self.code_runs.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);
@@ -46,10 +48,10 @@ impl Sheet {
 
         self.validations.validations.iter().for_each(|validation| {
             if validation.render_special().is_some() {
-                if let Some(rect) = validation.selection.largest_rect() {
-                    self.data_bounds.add(rect.min);
-                    self.data_bounds.add(rect.max);
-                }
+                // todo: this might not work properly.
+                let rect = validation.selection.largest_rect_finite();
+                self.data_bounds.add(rect.min);
+                self.data_bounds.add(rect.max);
             }
         });
 
@@ -79,7 +81,7 @@ impl Sheet {
     /// Returns whether any of the sheet's bounds has changed
     pub fn recalculate_add_bounds_selection(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
         format: bool,
     ) -> bool {
         if selection.all || selection.columns.is_some() || selection.rows.is_some() {
@@ -133,9 +135,10 @@ impl Sheet {
     ///
     /// If `ignore_formatting` is `true`, only data is considered; if it is
     /// `false`, then data and formatting are both considered.
-    pub fn column_bounds(&self, column: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
+    pub fn column_bounds(&self, column: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
+        // TODO: currently this method assumes `ignore_formatting` is `true`
         let range = if let Some(column_data) = self.columns.get(&column) {
-            column_data.range(ignore_formatting)
+            column_data.range()
         } else {
             None
         };
@@ -197,7 +200,10 @@ impl Sheet {
     pub fn row_bounds(&self, row: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
             true => column.has_data_in_row(row),
-            false => column.has_anything_in_row(row),
+            false => {
+                dbgjs!("todo: row_bounds - has data or format in row");
+                column.has_data_in_row(row)
+            }
         };
         let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
             Some(*index)
@@ -225,8 +231,11 @@ impl Sheet {
 
     /// Returns the lower and upper bounds of formatting in a row, or `None` if
     /// the row has no formatting.
-    pub fn row_bounds_formats(&self, row: i64) -> Option<(i64, i64)> {
-        let column_has_row = |(_x, column): &(&i64, &Column)| column.has_format_in_row(row);
+    pub fn row_bounds_formats(&self, _row: i64) -> Option<(i64, i64)> {
+        let column_has_row = |(_x, _column): &(&i64, &Column)| {
+            dbgjs!("TODO: row_bounds_formats -column.has_format_in_row(row)");
+            false
+        };
         let min = self
             .columns
             .iter()
@@ -249,12 +258,16 @@ impl Sheet {
     /// If `ignore_formatting` is `true`, only data is considered; if it
     /// is `false`, then data and formatting are both considered.
     ///
+    /// todo: would be helpful if we added column_start: Option<i64> to this function
     pub fn rows_bounds(
         &self,
         row_start: i64,
         row_end: i64,
         ignore_formatting: bool,
     ) -> Option<(i64, i64)> {
+        // TODO: Take a range of rows instead of start & end, to make the
+        // boundary conditions and `row_start <= row_end` assumption explicit.
+        // Do the same for `columns_bounds()`.
         let mut min: i64 = i64::MAX;
         let mut max: i64 = i64::MIN;
         let mut found = false;
@@ -465,52 +478,50 @@ impl Sheet {
         }
     }
 
-    pub fn find_tabular_data_rects(&self, rect: Rect, max_rects: Option<usize>) -> Vec<Rect> {
-        let mut rects = Vec::new();
+    pub fn find_tabular_data_rects_in_selection_rects(
+        &self,
+        selection_rects: Vec<Rect>,
+        max_rects: Option<usize>,
+    ) -> Vec<Rect> {
+        let mut tabular_data_rects = Vec::new();
 
-        for y in rect.y_range() {
-            for x in rect.x_range() {
-                let pos = Pos { x, y };
+        for selection_rect in selection_rects {
+            for y in selection_rect.y_range() {
+                for x in selection_rect.x_range() {
+                    let pos = Pos { x, y };
 
-                let is_visited = rects.iter().any(|rect: &Rect| rect.contains(pos));
-                if is_visited {
-                    continue;
+                    let is_visited = tabular_data_rects
+                        .iter()
+                        .any(|prev_tabular_data_rect: &Rect| prev_tabular_data_rect.contains(pos));
+                    if is_visited {
+                        continue;
+                    }
+
+                    let has_value = self.display_value(pos).is_some();
+                    if !has_value {
+                        continue;
+                    }
+
+                    let last_row = self
+                        .find_next_row(pos.y + 1, pos.x, false, false)
+                        .unwrap_or(pos.y + 1)
+                        - 1;
+
+                    let last_col = self
+                        .find_next_column(pos.x + 1, pos.y, false, false)
+                        .unwrap_or(pos.x + 1)
+                        - 1;
+
+                    let tabular_data_rect = Rect::new(pos.x, pos.y, last_col, last_row);
+                    tabular_data_rects.push(tabular_data_rect);
                 }
-
-                let has_value = self.display_value(pos).is_some();
-                if !has_value {
-                    continue;
-                }
-
-                let last_row = self
-                    .find_next_row(pos.y + 1, pos.x, false, false)
-                    .unwrap_or(pos.y + 1)
-                    - 1;
-
-                let last_col = self
-                    .find_next_column(pos.x + 1, pos.y, false, false)
-                    .unwrap_or(pos.x + 1)
-                    - 1;
-
-                let tabular_data_rect = Rect::new(pos.x, pos.y, last_col, last_row);
-                rects.push(tabular_data_rect);
             }
         }
         if let Some(max_rects) = max_rects {
-            rects.sort_by_key(|rect| Reverse(rect.len()));
-            rects.truncate(max_rects);
+            tabular_data_rects.sort_by_key(|rect| Reverse(rect.len()));
+            tabular_data_rects.truncate(max_rects);
         }
-        rects
-    }
-
-    /// Returns the bounds of the sheet.
-    ///
-    /// Returns `(data_bounds, format_bounds)`.
-    pub fn to_bounds_rects(&self) -> (Option<BoundsRect>, Option<BoundsRect>) {
-        (
-            self.data_bounds.to_bounds_rect(),
-            self.format_bounds.to_bounds_rect(),
-        )
+        tabular_data_rects
     }
 }
 
@@ -519,15 +530,14 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            formats::format_update::FormatUpdate,
             sheet::validations::{
                 validation::Validation,
                 validation_rules::{validation_logical::ValidationLogical, ValidationRule},
             },
             BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
-        selection::Selection,
-        Array, CellValue, Pos, Rect, SheetPos, SheetRect,
+        selection::OldSelection,
+        A1Selection, Array, CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use serial_test::parallel;
@@ -557,9 +567,11 @@ mod test {
         assert_eq!(sheet.bounds(true), GridBounds::Empty);
         assert_eq!(sheet.bounds(false), GridBounds::Empty);
 
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
-        let _ =
-            sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        sheet
+            .formats
+            .align
+            .set(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
         assert!(sheet.recalculate_bounds());
 
         assert_eq!(
@@ -588,8 +600,10 @@ mod test {
             CellValue::Text(String::from("test")),
         );
         let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
-        let _ =
-            sheet.set_formatting_value::<CellWrap>(Pos { x: 100, y: 200 }, Some(CellWrap::Wrap));
+        sheet
+            .formats
+            .wrap
+            .set(Pos { x: 100, y: 200 }, Some(CellWrap::Wrap));
         assert!(sheet.recalculate_bounds());
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
@@ -614,7 +628,10 @@ mod test {
             CellValue::Text(String::from("test")),
         );
         sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
+        sheet
+            .formats
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.row_bounds(100, true), Some((-50, 80)));
@@ -641,7 +658,9 @@ mod test {
         );
         let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
         let _ = sheet
-            .set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
+            .formats
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
 
         // set negative values
         let _ = sheet.set_cell_value(
@@ -653,7 +672,9 @@ mod test {
             CellValue::Text(String::from("test")),
         );
         let _ = sheet
-            .set_formatting_value::<CellAlign>(Pos { x: -100, y: -200 }, Some(CellAlign::Center));
+            .formats
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.columns_bounds(0, 100, true), Some((-50, 80)));
@@ -674,25 +695,29 @@ mod test {
     fn test_rows_bounds() {
         let mut sheet = Sheet::test();
 
-        let _ = sheet.set_cell_value(
+        sheet.set_cell_value(
             Pos { y: 100, x: -50 },
             CellValue::Text(String::from("test")),
         );
-        let _ = sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
-        let _ = sheet
-            .set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
+        sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
+        sheet
+            .formats
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
 
         // set negative values
-        let _ = sheet.set_cell_value(
+        sheet.set_cell_value(
             Pos { y: -100, x: -50 },
             CellValue::Text(String::from("test")),
         );
-        let _ = sheet.set_cell_value(
+        sheet.set_cell_value(
             Pos { y: -100, x: -80 },
             CellValue::Text(String::from("test")),
         );
-        let _ = sheet
-            .set_formatting_value::<CellAlign>(Pos { y: -100, x: -200 }, Some(CellAlign::Center));
+        sheet
+            .formats
+            .align
+            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.rows_bounds(0, 100, true), Some((-50, 80)));
@@ -977,11 +1002,12 @@ mod test {
             sheet.data_bounds,
             GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
         );
-        gc.set_cell_bold(
-            SheetRect::from_numbers(3, 5, 1, 1, sheet_id),
-            Some(true),
+        gc.set_bold(
+            &A1Selection::from_rect(SheetRect::from_numbers(3, 5, 1, 1, sheet_id)),
+            true,
             None,
-        );
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -1047,7 +1073,7 @@ mod test {
                     show_checkbox: true,
                     ignore_blank: true,
                 }),
-                selection: Selection::pos(0, 0, sheet_id),
+                selection: A1Selection::test_a1_sheet_id("A1", &sheet_id),
                 message: Default::default(),
                 error: Default::default(),
             },
@@ -1057,7 +1083,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.data_bounds,
-            GridBounds::NonEmpty(Rect::new(0, 0, 0, 0))
+            GridBounds::NonEmpty(Rect::new(1, 1, 1, 1))
         );
     }
 
@@ -1068,7 +1094,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+            OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -1083,22 +1109,14 @@ mod test {
     fn row_bounds_formats() {
         let mut sheet = Sheet::test();
 
-        sheet.set_format_cell(
-            Pos { x: 3, y: 1 },
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 5, y: 1 },
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 3, y: 1 }, Some("red".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(Pos { x: 5, y: 1 }, Some("red".to_string()));
 
         // Check that the bounds include the formatted row
         assert_eq!(sheet.row_bounds_formats(1), Some((3, 5)));
@@ -1221,7 +1239,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn find_tabular_data_rects() {
+    fn find_tabular_data_rects_in_selection_rects() {
         let mut sheet = Sheet::test();
         sheet.set_cell_values(
             Rect {
@@ -1267,7 +1285,8 @@ mod test {
             ),
         );
 
-        let tabular_data_rects = sheet.find_tabular_data_rects(Rect::new(1, 1, 10000, 10000), None);
+        let tabular_data_rects = sheet
+            .find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10000, 10000)], None);
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![

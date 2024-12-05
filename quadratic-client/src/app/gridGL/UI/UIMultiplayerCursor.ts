@@ -1,12 +1,12 @@
+import { sheets } from '@/app/grid/controller/Sheets';
+import { drawFiniteSelection, drawInfiniteSelection } from '@/app/gridGL/UI/drawCursor';
+import { CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Graphics } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { Coordinate } from '../types/size';
-import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
 
 export const CURSOR_THICKNESS = 1;
 const ALPHA = 0.5;
-const FILL_ALPHA = 0.01 / ALPHA;
+const FILL_ALPHA = 0.05;
 
 // outside border when editing the cell
 const CURSOR_INPUT_ALPHA = 0.333 / ALPHA;
@@ -28,7 +28,7 @@ export class UIMultiPlayerCursor extends Graphics {
     code,
   }: {
     color: number;
-    cursor: Coordinate;
+    cursor: JsCoordinate;
     editing: boolean;
     sessionId: string;
     code: boolean;
@@ -68,7 +68,7 @@ export class UIMultiPlayerCursor extends Graphics {
     // we need to update the multiplayer cursor if a player has selected a row,
     // column, or the sheet, and the viewport has changed
     const dirtySheet = viewportDirty
-      ? [...multiplayer.users].some(([_, player]) => player.parsedSelection?.columnRow)
+      ? [...multiplayer.users].some(([_, player]) => player.parsedSelection?.isColumnRow())
       : false;
 
     if (dirtySheet || this.dirty) {
@@ -80,24 +80,20 @@ export class UIMultiPlayerCursor extends Graphics {
         if (player.parsedSelection && player.sheet_id === sheetId) {
           this.drawCursor({
             color,
-            cursor: player.parsedSelection.cursorPosition,
             editing: player.cell_edit.active,
             sessionId: player.session_id,
             code: player.cell_edit.code_editor,
+            cursor: player.parsedSelection?.getCursor(),
           });
 
-          const columnRow = player.parsedSelection.columnRow;
-          if (columnRow) {
-            drawColumnRowCursor({
-              g: this,
-              color,
-              alpha: FILL_ALPHA,
-              cursorPosition: player.parsedSelection.cursorPosition,
-              columnRow,
-            });
-          } else if (player.parsedSelection.multiCursor) {
-            drawMultiCursor(this, color, FILL_ALPHA, player.parsedSelection.multiCursor);
-          }
+          const ranges: CellRefRange[] = player.parsedSelection.getRanges();
+          drawFiniteSelection(this, color, FILL_ALPHA, ranges);
+          drawInfiniteSelection({
+            g: this,
+            color,
+            alpha: FILL_ALPHA,
+            ranges,
+          });
         }
       });
     }

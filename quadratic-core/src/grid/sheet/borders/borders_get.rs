@@ -1,3 +1,5 @@
+use crate::Pos;
+
 use super::{BorderStyleCell, BorderStyleCellUpdate, Borders};
 
 impl Borders {
@@ -116,6 +118,22 @@ impl Borders {
         }
     }
 
+    /// Gets the border style for a cell from an A1 string. Returns None if a1
+    /// string is invalid or the border style is empty.
+    pub fn try_from_a1(&self, a1: &str) -> Option<BorderStyleCell> {
+        if let Some(pos) = Pos::try_a1_string(a1) {
+            let border = self.get(pos.x, pos.y);
+            if border.is_empty() {
+                None
+            } else {
+                Some(border)
+            }
+        } else {
+            dbgjs!(format!("Invalid A1 string {}", a1));
+            None
+        }
+    }
+
     /// Gets an update to undo the border to its current state.
     pub fn try_get_update(&self, x: i64, y: i64) -> Option<BorderStyleCellUpdate> {
         let cell = self.get(x, y);
@@ -139,7 +157,7 @@ mod tests {
         color::Rgba,
         controller::GridController,
         grid::{BorderSelection, BorderStyle, CellBorderLine},
-        selection::Selection,
+        selection::OldSelection,
     };
 
     #[test]
@@ -148,7 +166,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_borders_selection(
-            Selection::sheet_rect(crate::SheetRect::new(0, 0, 5, 5, sheet_id)),
+            OldSelection::sheet_rect(crate::SheetRect::new(0, 0, 5, 5, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -174,7 +192,7 @@ mod tests {
 
         // Set initial borders
         gc.set_borders_selection(
-            Selection::sheet_rect(crate::SheetRect::new(0, 0, 0, 0, sheet_id)),
+            OldSelection::sheet_rect(crate::SheetRect::new(0, 0, 0, 0, sheet_id)),
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,
@@ -199,7 +217,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_borders_selection(
-            Selection::sheet_rect(crate::SheetRect::new(0, 0, 0, 0, sheet_id)),
+            OldSelection::sheet_rect(crate::SheetRect::new(0, 0, 0, 0, sheet_id)),
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,
@@ -219,7 +237,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_borders_selection(
-            Selection::sheet_rect(crate::SheetRect::new(1, 1, 1, 1, sheet_id)),
+            OldSelection::sheet_rect(crate::SheetRect::new(1, 1, 1, 1, sheet_id)),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
@@ -231,5 +249,27 @@ mod tests {
         assert_eq!(cell.bottom.unwrap().line, CellBorderLine::default());
         assert_eq!(cell.left.unwrap().line, CellBorderLine::default());
         assert_eq!(cell.right.unwrap().line, CellBorderLine::default());
+    }
+
+    #[test]
+    #[parallel]
+    fn try_from_a1() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_borders_selection(
+            OldSelection::sheet_rect(crate::SheetRect::new(1, 1, 1, 1, sheet_id)),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let cell = sheet.borders.try_from_a1("A1").unwrap();
+        assert_eq!(cell.top.unwrap().line, CellBorderLine::default());
+        assert_eq!(cell.bottom.unwrap().line, CellBorderLine::default());
+        assert_eq!(cell.left.unwrap().line, CellBorderLine::default());
+        assert_eq!(cell.right.unwrap().line, CellBorderLine::default());
+
+        assert_eq!(sheet.borders.try_from_a1("none"), None);
     }
 }

@@ -1,7 +1,7 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
-import { Selection, SheetRect } from '@/app/quadratic-core-types';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
@@ -359,28 +359,32 @@ delete_cells functions requires an array of rectangular selection of cells to de
         return `No cells to delete`;
       }
 
-      const selection: Selection = {
-        sheet_id: {
-          id: sheets.current,
-        },
-        x: BigInt(rects[0].top_left_x),
-        y: BigInt(rects[0].top_left_y),
-        rects: rects.map((rect) => ({
-          min: {
-            x: BigInt(rect.top_left_x),
-            y: BigInt(rect.top_left_y),
-          },
-          max: {
-            x: BigInt(rect.top_left_x + rect.rect_width - 1),
-            y: BigInt(rect.top_left_y + rect.rect_height - 1),
-          },
-        })),
-        rows: null,
-        columns: null,
-        all: false,
-      };
-      quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
-      return `Executed delete cells tool successfully.`;
+      // todo
+
+      throw new Error('Not implemented');
+
+      // const selection: Selection = {
+      //   sheet_id: {
+      //     id: sheets.current,
+      //   },
+      //   x: BigInt(rects[0].top_left_x),
+      //   y: BigInt(rects[0].top_left_y),
+      //   rects: rects.map((rect) => ({
+      //     min: {
+      //       x: BigInt(rect.top_left_x),
+      //       y: BigInt(rect.top_left_y),
+      //     },
+      //     max: {
+      //       x: BigInt(rect.top_left_x + rect.rect_width - 1),
+      //       y: BigInt(rect.top_left_y + rect.rect_height - 1),
+      //     },
+      //   })),
+      //   rows: null,
+      //   columns: null,
+      //   all: false,
+      // };
+      // quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
+      // return `Executed delete cells tool successfully.`;
     },
     prompt: `
 You should use the delete_cells function to delete the value(s) of a rectangular selection of cells on the currently open sheet.\n

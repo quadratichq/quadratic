@@ -11,7 +11,6 @@ import {
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
-  Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
@@ -44,7 +43,7 @@ declare var self: WorkerGlobalScope &
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSetCursorSelection: (selection: Selection) => void;
+    sendSetCursorSelection: (selection: string) => void;
     requestTransactions: (sequenceNum: number) => void;
     sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
     sendSheetOffsetsRender: (sheetId: string, offsets: JsOffset[]) => void;
@@ -88,6 +87,7 @@ declare var self: WorkerGlobalScope &
     sendMultiplayerSynced: () => void;
     sendHashesDirty: (sheetId: string, hashes: string) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
+    sendClientMessage: (message: string, error: boolean) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -166,8 +166,7 @@ export const jsSetCursor = (cursor: string) => {
   self.sendSetCursor(cursor);
 };
 
-export const jsSetCursorSelection = (selectionStringified: string) => {
-  const selection = JSON.parse(selectionStringified) as Selection;
+export const jsSetCursorSelection = (selection: string) => {
   self.sendSetCursorSelection(selection);
 };
 
@@ -283,6 +282,10 @@ export const jsMultiplayerSynced = () => {
 
 export const jsHashesDirty = (sheetId: string, hashes: string) => {
   self.sendHashesDirty(sheetId, hashes);
+};
+
+export const jsClientMessage = (message: string, error: boolean) => {
+  self.sendClientMessage(message, error);
 };
 
 export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {

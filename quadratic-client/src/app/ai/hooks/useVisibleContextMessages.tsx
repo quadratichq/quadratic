@@ -7,11 +7,11 @@ import { useCallback } from 'react';
 export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
-    const visibleSheetRect = sheets.getVisibleSheetRect();
-    const [visibleRectContext, erroredCodeCells] = visibleSheetRect
+    const visibleSelection = sheets.getVisibleSelection();
+    const [visibleContext, erroredCodeCells] = visibleSelection
       ? await Promise.all([
-          quadraticCore.getAIContextRectsInSheetRects([visibleSheetRect], maxRects),
-          quadraticCore.getErroredCodeCellsInSheetRects([visibleSheetRect]),
+          quadraticCore.getAIContextRectsInSelections([visibleSelection], maxRects),
+          quadraticCore.getErroredCodeCellsInSelections([visibleSelection]),
         ])
       : [undefined, undefined];
 
@@ -28,33 +28,33 @@ ${
 }\n\n
 
 ${
-  visibleRectContext && visibleRectContext.length === 1 && visibleRectContext[0].length > 0
+  visibleContext && visibleContext.length === 1 && visibleContext[0].length > 0
     ? `
 Visible data in the viewport:\n
 
 I am sharing visible data as an array of tabular data rectangles, each tabular data rectangle in this array has following properties:\n
 - sheet_name: This is the name of the sheet.\n
-- rect_origin: This is a JSON object having x and y properties. x is the column index and y is the row index of the top left cell of the rectangle.\n
+- rect_origin: This is the position of the top left cell of the data rectangle in A1 notation. Columns are represented by letters and rows are represented by numbers.\n
 - rect_width: This is the width of the rectangle in number of columns.\n
 - rect_height: This is the height of the rectangle in number of rows.\n
-- starting_rect_values: This is a 2D array of cell values (json object format described below). This is the starting 3 rows of data in the rectangle. This includes headers, if present, and data.\n
+- starting_rect_values: This is a 2D array of cell values (json object format described below). This 2D array contains the starting 3 rows of data in the rectangle. This includes headers, if present, and data.\n
 
 Each cell value is a JSON object having the following properties:\n
 - value: The value of the cell. This is a string representation of the value in the cell.\n
 - kind: The kind of the value. This can be blank, text, number, logical, time instant, duration, error, html, code, image, date, time, date time, null or undefined.\n
-- pos: This is a JSON object having x and y properties. x is the column index and y is the row index of the cell.\n\n
+- pos: This is the position of the cell in A1 notation. Columns are represented by letters and rows are represented by numbers.\n\n
 
 This is being shared so that you can understand the table format, size and value types inside the data rectangle.\n
 
-Data from cells can be referenced by Formulas, Python, Javascript or SQL code using \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions.\n
+Data from cells can be referenced by Formulas, Python, Javascript or SQL code using the cell reference function \`q\`, i.e. \`q(a1_notation)\`, to reference data cells. Always use sheet name in a1 notation to reference cells.\n
 To reference data from different tabular data rectangles, use multiple \`cells\` functions.\n
 Use this visible data in the context of following messages. Refer to cells if required in code.\n\n
 
 Current visible data is:\n
 \`\`\`json
-${JSON.stringify(visibleRectContext[0])}
+${JSON.stringify(visibleContext[0])}
 \`\`\`
-Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference functions, like \`c(x,y)\` or \`cells((x1,y1), (x2,y2))\` functions, to reference cells in code.\n\n
+Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q\`, i.e. \`q(a1_notation)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells.\n\n
 `
     : `This visible part of the sheet has no data.\n`
 }\n

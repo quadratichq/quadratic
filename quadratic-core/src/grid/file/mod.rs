@@ -5,20 +5,27 @@ use crate::compression::{
 
 use super::Grid;
 use anyhow::{anyhow, Result};
+use migrate_code_cell_references::migrate_code_cell_references;
 use serde::{Deserialize, Serialize};
+use shift_negative_offsets::shift_negative_offsets;
 use std::fmt::Debug;
 use std::str;
-use v1_7::schema::GridSchema as current;
+pub use v1_7_1::GridSchema as current;
 
+mod migrate_code_cell_references;
 pub mod serialize;
 pub mod sheet_schema;
+mod shift_negative_offsets;
 mod v1_3;
 mod v1_4;
 mod v1_5;
 mod v1_6;
 mod v1_7;
+pub mod v1_7_1;
 
-pub static CURRENT_VERSION: &str = "1.7";
+pub use v1_7_1::{CellsAccessedSchema, CodeRunSchema};
+
+pub static CURRENT_VERSION: &str = "1.7.1";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
 pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
@@ -31,6 +38,11 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.7.1")]
+    V1_7_1 {
+        #[serde(flatten)]
+        grid: v1_7_1::GridSchema,
+    },
     #[serde(rename = "1.7")]
     V1_7 {
         #[serde(flatten)]
@@ -59,17 +71,20 @@ enum GridFile {
 }
 
 impl GridFile {
-    fn into_latest(self) -> Result<v1_7::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_7_1::GridSchema> {
         match self {
-            GridFile::V1_7 { grid } => Ok(grid),
-            GridFile::V1_6 { grid } => v1_6::file::upgrade(grid),
-            GridFile::V1_5 { grid } => v1_6::file::upgrade(v1_5::file::upgrade(grid)?),
-            GridFile::V1_4 { grid } => {
-                v1_6::file::upgrade(v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?)
+            GridFile::V1_7_1 { grid } => Ok(grid),
+            GridFile::V1_7 { grid } => v1_7::upgrade(grid),
+            GridFile::V1_6 { grid } => v1_7::upgrade(v1_6::file::upgrade(grid)?),
+            GridFile::V1_5 { grid } => {
+                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(grid)?)?)
             }
-            GridFile::V1_3 { grid } => v1_6::file::upgrade(v1_5::file::upgrade(
+            GridFile::V1_4 { grid } => v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
+                v1_4::file::upgrade(grid)?,
+            )?)?),
+            GridFile::V1_3 { grid } => v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
                 v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?,
-            )?),
+            )?)?),
         }
     }
 }
@@ -88,21 +103,31 @@ pub fn import(file_contents: Vec<u8>) -> Result<Grid> {
 fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
     let (header, data) = remove_header(&file_contents)?;
 
-    // we're currently not doing anything with the file version, but will in
-    // the future as we use different serialization and compression methods
     let file_version = deserialize::<FileVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
-    match file_version.version.as_str() {
+    let mut check_for_negative_offsets = false;
+    let mut grid = match file_version.version.as_str() {
         "1.6" => {
+            check_for_negative_offsets = true;
             let schema = decompress_and_deserialize::<v1_6::schema::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_6::file::upgrade(schema)?;
+            let schema = v1_7::upgrade(v1_6::file::upgrade(schema)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.7" => {
+            check_for_negative_offsets = true;
+            let schema = decompress_and_deserialize::<v1_7::schema::GridSchema>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            )?;
+            drop(file_contents);
+            Ok(serialize::import(v1_7::upgrade(schema)?)?)
+        }
+        "1.7.1" => {
             let schema = decompress_and_deserialize::<current>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
@@ -115,6 +140,21 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             "Unsupported file version: {}",
             file_version.version
         )),
+    };
+
+    handle_negative_offsets(&mut grid, check_for_negative_offsets);
+
+    grid
+}
+
+fn handle_negative_offsets(grid: &mut Result<Grid>, check_for_negative_offsets: bool) {
+    if !check_for_negative_offsets {
+        return;
+    }
+
+    if let Ok(grid) = grid {
+        let shifted_offsets = shift_negative_offsets(grid);
+        migrate_code_cell_references(grid, &shifted_offsets);
     }
 }
 
@@ -124,8 +164,22 @@ fn import_json(file_contents: String) -> Result<Grid> {
         anyhow!(e)
     })?;
     drop(file_contents);
+
+    let check_for_negative_offsets = matches!(
+        &json,
+        GridFile::V1_3 { .. }
+            | GridFile::V1_4 { .. }
+            | GridFile::V1_5 { .. }
+            | GridFile::V1_6 { .. }
+            | GridFile::V1_7 { .. }
+    );
+
     let file = json.into_latest()?;
-    serialize::import(file)
+    let mut grid = serialize::import(file);
+
+    handle_negative_offsets(&mut grid, check_for_negative_offsets);
+
+    grid
 }
 
 pub fn export(grid: Grid) -> Result<Vec<u8>> {
@@ -147,9 +201,9 @@ mod tests {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{BorderSelection, BorderStyle, CodeCellLanguage},
-        selection::Selection,
-        ArraySize, CellValue, CodeCellValue, Pos, SheetPos,
+        grid::{BorderSelection, BorderStyle, CodeCellLanguage, CodeCellValue},
+        selection::OldSelection,
+        ArraySize, CellValue, Pos, SheetPos,
     };
     use serial_test::parallel;
 
@@ -284,7 +338,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders_selection(
-            Selection::sheet_pos(SheetPos::new(sheet_id, 0, 0)),
+            OldSelection::sheet_pos(SheetPos::new(sheet_id, 0, 0)),
             BorderSelection::Bottom,
             Some(BorderStyle::default()),
             None,

@@ -1,23 +1,29 @@
 //! Functionality to set borders on a selection.
 
 use crate::{
-    controller::operations::operation::Operation, grid::CellBorderLine, selection::Selection,
-    RunLengthEncoding,
+    controller::operations::operation::Operation, selection::OldSelection, RunLengthEncoding,
 };
 
-use super::{BorderStyle, BorderStyleCell, BorderStyleCellUpdate, BorderStyleCellUpdates, Borders};
+use super::{
+    BorderStyle, BorderStyleCell, BorderStyleCellUpdate, BorderStyleCellUpdates, Borders,
+    CellBorderLine,
+};
 
 impl Borders {
+    /// **Deprecated** Nov 2024 in favor of [`Self::set_borders_a1()`].
+    ///
     /// Sets the borders for a selection.
-    pub fn set_borders(
+    pub fn set_borders_selection(
         &mut self,
-        selection: &Selection,
+        selection: &OldSelection,
         borders: &BorderStyleCellUpdates,
     ) -> Vec<Operation> {
         let mut undo = vec![];
         let mut undo_borders = RunLengthEncoding::new();
 
         if selection.all {
+            // BUG: `index` should be incremented here.
+            //      fixing this would be a breaking change.
             let Some(border) = borders.get_at(0) else {
                 panic!("Expected border style for all");
             };
@@ -216,9 +222,9 @@ mod tests {
     fn set_borders() {
         let sheet_id = SheetId::test();
         let mut borders = Borders::default();
-        let selection = Selection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id));
+        let selection = OldSelection::sheet_rect(SheetRect::new(0, 0, 9, 9, sheet_id));
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 10 * 10);
-        borders.set_borders(&selection, &value);
+        borders.set_borders_selection(&selection, &value);
 
         let border = borders.get(0, 0);
         assert_eq!(border.top.unwrap().line, CellBorderLine::default());
@@ -236,9 +242,9 @@ mod tests {
     fn set_borders_erase() {
         let sheet_id = SheetId::test();
         let mut borders = Borders::default();
-        let selection = Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
+        let selection = OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1);
-        borders.set_borders(&selection, &value);
+        borders.set_borders_selection(&selection, &value);
 
         let border = borders.get(1, 1);
         assert!(BorderStyleCell::is_equal_ignore_timestamp(
@@ -247,7 +253,7 @@ mod tests {
         ));
 
         let value = RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1);
-        borders.set_borders(&selection, &value);
+        borders.set_borders_selection(&selection, &value);
 
         let border = borders.get(1, 1);
         assert!(BorderStyleCell::is_equal_ignore_timestamp(
@@ -259,29 +265,31 @@ mod tests {
     #[test]
     #[parallel]
     fn set_borders_all() {
-        let sheet_id = SheetId::test();
-        let mut borders = Borders::default();
-        assert!(borders.all.left.is_none());
-        assert!(borders.all.right.is_none());
-        assert!(borders.all.top.is_none());
-        assert!(borders.all.bottom.is_none());
+        todo!();
 
-        borders.set_borders(
-            &Selection::all(sheet_id),
-            &RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1),
-        );
-        assert!(borders.all.left.is_some());
-        assert!(borders.all.right.is_some());
-        assert!(borders.all.top.is_some());
-        assert!(borders.all.bottom.is_some());
+        // let sheet_id = SheetId::test();
+        // let mut borders = Borders::default();
+        // assert!(borders.all.left.is_none());
+        // assert!(borders.all.right.is_none());
+        // assert!(borders.all.top.is_none());
+        // assert!(borders.all.bottom.is_none());
 
-        borders.set_borders(
-            &Selection::all(sheet_id),
-            &RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
-        );
-        assert!(borders.all.left.is_none());
-        assert!(borders.all.right.is_none());
-        assert!(borders.all.top.is_none());
-        assert!(borders.all.bottom.is_none());
+        // borders.set_borders_a1(
+        //     &A1Subspaces::All(sheet_id),
+        //     &RunLengthEncoding::repeat(BorderStyleCellUpdate::all(), 1),
+        // );
+        // assert!(borders.all.left.is_some());
+        // assert!(borders.all.right.is_some());
+        // assert!(borders.all.top.is_some());
+        // assert!(borders.all.bottom.is_some());
+
+        // borders.set_borders_a1(
+        //     &A1Subspaces::All(sheet_id),
+        //     &RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
+        // );
+        // assert!(borders.all.left.is_none());
+        // assert!(borders.all.right.is_none());
+        // assert!(borders.all.top.is_none());
+        // assert!(borders.all.bottom.is_none());
     }
 }

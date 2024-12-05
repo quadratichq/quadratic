@@ -10,19 +10,13 @@ use serde::{Deserialize, Serialize};
 use super::{Duration, Instant, IsBlank};
 use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{js_types::JsCellValuePos, CodeCellLanguage, NumericFormat, NumericFormatKind},
+    grid::{js_types::JsCellValuePos, CodeCellValue, NumericFormat, NumericFormatKind},
     CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned,
 };
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CodeCellValue {
-    pub language: CodeCellLanguage,
-    pub code: String,
-}
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -41,7 +35,7 @@ pub enum CellValue {
     Number(BigDecimal),
     /// Logical value.
     Logical(bool),
-    /// Instant in time. TODO: remove
+    /// **Deprecated** Nov 2024 in favor of `DateTime`.
     #[cfg_attr(test, proptest(skip))]
     Instant(Instant),
     // Date + time.
@@ -119,12 +113,12 @@ impl CellValue {
             CellValue::Number(n) => n.to_string(),
             CellValue::Logical(true) => "TRUE".to_string(),
             CellValue::Logical(false) => "FALSE".to_string(),
-            CellValue::Instant(_) => todo!("repr of Instant"),
+            CellValue::Instant(_) => "[deprecated]".to_string(),
             CellValue::Duration(d) => d.to_string(),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
-            CellValue::Code(_) => todo!("repr of code"),
-            CellValue::Image(_) => todo!("repr of image"),
+            CellValue::Code(_) => "[code cell]".to_string(),
+            CellValue::Image(_) => "[image]".to_string(),
             CellValue::Date(d) => d.to_string(),
             CellValue::Time(d) => d.to_string(),
             CellValue::DateTime(d) => d.to_string(),
@@ -312,7 +306,7 @@ impl CellValue {
         JsCellValuePos {
             value: self.to_string(),
             kind: self.type_name().to_string(),
-            pos: pos.into(),
+            pos: pos.a1_string(),
         }
     }
 

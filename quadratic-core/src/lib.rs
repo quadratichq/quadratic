@@ -1,13 +1,16 @@
 #![warn(rust_2018_idioms, clippy::semicolon_if_nothing_returned)]
 #![allow(clippy::diverging_sub_expression, clippy::match_like_matches_macro)]
+#![allow(non_local_definitions)] // TODO: blocked on https://github.com/proptest-rs/proptest/issues/447
 
 #[macro_use]
 pub mod util;
 #[macro_use]
 mod error_run;
+pub mod a1;
 pub mod color;
 pub mod compression;
 pub mod controller;
+mod copy_formats;
 pub mod date_time;
 pub mod error_core;
 pub mod ext;
@@ -29,13 +32,15 @@ pub mod viewport;
 #[cfg(feature = "js")]
 pub mod wasm_bindings;
 
+pub use a1::*;
+pub use copy_formats::CopyFormats;
 pub use error_run::*;
 pub use ext::*;
 pub use pos::*;
 pub use rect::*;
 pub use rle::RunLengthEncoding;
+pub use selection::OldSelection;
 pub use sheet_rect::*;
-
 pub use span::*;
 pub use values::*;
 

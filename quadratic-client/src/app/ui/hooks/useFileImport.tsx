@@ -1,5 +1,5 @@
-import { Coordinate } from '@/app/gridGL/types/size';
 import { getFileType, stripExtension, supportedFileTypes, uploadFile } from '@/app/helpers/files';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileImportProgress, filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
@@ -30,7 +30,7 @@ export function useFileImport() {
   }: {
     files?: FileList | File[];
     sheetId?: string;
-    insertAt?: Coordinate;
+    insertAt?: JsCoordinate;
     cursor?: string; // cursor is available when importing into a existing file, it is also being used as a flag to denote this
     isPrivate?: boolean;
     teamUuid?: string;
@@ -190,7 +190,8 @@ export function useFileImport() {
               updateCurrentFileState({ step: 'done', progress: 100, uuid, abortController: undefined });
               if (openImportedFile) {
                 setFilesImportProgressListState({ show: false });
-                window.location.href = ROUTES.FILE(uuid);
+                const params = quadraticCore.receivedClientMessage ? `?negative_offsets` : '';
+                window.location.href = `${ROUTES.FILE(uuid)}${params}`;
               }
             })
             .catch((error) => {

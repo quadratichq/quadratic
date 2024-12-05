@@ -31,6 +31,14 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
             _ => self.0.push((value, len)),
         }
     }
+    pub fn extend_runs(&mut self, other: Self) {
+        let mut new_runs = other.0.into_iter();
+        if let Some((value, len)) = new_runs.next() {
+            self.push_n(value, len);
+        }
+        self.0.extend(new_runs);
+    }
+
     pub fn iter_runs(&self) -> impl Iterator<Item = (&T, usize)> {
         self.0.iter().map(|(value, len)| (value, *len))
     }

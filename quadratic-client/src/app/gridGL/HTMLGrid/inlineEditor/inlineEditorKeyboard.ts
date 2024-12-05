@@ -292,7 +292,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setCellItalic(selection, !!inlineEditorHandler.temporaryItalic);
+        quadraticCore.setItalic(selection, !!inlineEditorHandler.temporaryItalic);
       }
     }
 
@@ -307,7 +307,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setCellBold(selection, !!inlineEditorHandler.temporaryBold);
+        quadraticCore.setBold(selection, !!inlineEditorHandler.temporaryBold);
       }
     }
 
@@ -322,7 +322,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setCellUnderline(selection, !!inlineEditorHandler.temporaryUnderline);
+        quadraticCore.setUnderline(selection, !!inlineEditorHandler.temporaryUnderline);
       }
     }
 
@@ -337,7 +337,7 @@ class InlineEditorKeyboard {
           inlineEditorHandler.location.x,
           inlineEditorHandler.location.y
         );
-        quadraticCore.setCellStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough);
+        quadraticCore.setStrikeThrough(selection, !!inlineEditorHandler.temporaryStrikeThrough);
       }
     }
 
@@ -387,7 +387,7 @@ class InlineEditorKeyboard {
       e.preventDefault();
       e.stopPropagation();
       pixiAppSettings.changeInput(false);
-      const cursor = sheets.sheet.cursor.getCursor();
+      const cursor = sheets.sheet.cursor.position;
       pixiAppSettings.setEditorInteractionState?.({
         ...pixiAppSettings.editorInteractionState,
         showCellTypeMenu: true,
@@ -438,14 +438,7 @@ class InlineEditorKeyboard {
     if (!editingSheet) {
       throw new Error('Expected editingSheet to be defined in resetKeyboardPosition');
     }
-    const position = { x: location.x, y: location.y };
-    editingSheet.cursor.changePosition({
-      cursorPosition: position,
-      multiCursor: null,
-      columnRow: null,
-      keyboardMovePosition: position,
-      ensureVisible: true,
-    });
+    editingSheet.cursor.moveTo(location.x, location.y);
     if (sheets.sheet.id !== location.sheetId) {
       sheets.current = location.sheetId;
 

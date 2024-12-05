@@ -1,11 +1,14 @@
-use block::{Block, BlockContent, SameValue};
 pub use borders::{
     BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide, IdSpaceBorders,
     SheetBorders,
 };
 pub use bounds::GridBounds;
+pub use cells_accessed::*;
+pub use code_cell::*;
 pub use code_run::*;
 pub use column::{Column, ColumnData};
+pub use contiguous::{Block, Contiguous2D, ContiguousBlocks};
+pub use formats::Format;
 pub use formatting::{
     Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap, FillColor, Italic, NumericCommas,
     NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, StrikeThrough, TextColor,
@@ -14,6 +17,8 @@ pub use formatting::{
 pub use ids::*;
 use serde::{Deserialize, Serialize};
 pub use sheet::Sheet;
+pub use sheet_formatting::SheetFormatting;
+
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
@@ -24,8 +29,11 @@ use crate::{Array, Pos};
 mod block;
 mod borders;
 mod bounds;
+mod cells_accessed;
+mod code_cell;
 mod code_run;
 mod column;
+pub mod contiguous;
 pub mod file;
 pub mod formats;
 pub mod formatting;
@@ -33,8 +41,10 @@ mod ids;
 pub mod js_types;
 pub mod resize;
 pub mod search;
+pub mod selection;
 pub mod series;
 pub mod sheet;
+pub mod sheet_formatting;
 pub mod sheets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -57,6 +67,7 @@ impl Grid {
         Grid { sheets: vec![] }
     }
 
+    /// Creates a grid for testing.
     pub fn test() -> Self {
         let mut ret = Grid::new_blank();
         let sheet = Sheet::test();

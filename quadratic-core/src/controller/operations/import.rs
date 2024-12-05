@@ -6,8 +6,8 @@ use chrono::{NaiveDate, NaiveTime};
 use crate::{
     cell_values::CellValues,
     controller::GridController,
-    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, Sheet, SheetId},
-    CellValue, CodeCellValue, Pos, SheetPos,
+    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, CodeCellValue, Sheet, SheetId},
+    CellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -285,7 +285,7 @@ impl GridController {
             }
             // add new sheets
             ops.push(Operation::AddSheetSchema {
-                schema: export_sheet(sheet),
+                schema: Box::new(export_sheet(sheet)),
             });
             ops.extend(formula_compute_ops);
         }

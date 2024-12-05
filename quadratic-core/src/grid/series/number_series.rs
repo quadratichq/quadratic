@@ -2,18 +2,18 @@ use bigdecimal::{BigDecimal, Zero};
 
 use crate::CellValue;
 
-use super::{copy_series, SeriesOptions};
+use super::SeriesOptions;
 
-pub(crate) fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
+pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
     // if only one number, copy it
     if options.series.len() == 1 {
-        return copy_series(options);
+        return None;
     }
 
     let mut addition: Option<BigDecimal> = None;
     let mut multiplication: Option<BigDecimal> = None;
     let SeriesOptions {
-        ref series,
+        series,
         spaces,
         negative,
     } = options;
@@ -22,7 +22,7 @@ pub(crate) fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
     let zero = BigDecimal::zero();
     let numbers = series
         .iter()
-        .map(|s| match s {
+        .map(|(s, _)| match s {
             CellValue::Number(number) => number,
             _ => &zero,
         })
@@ -59,12 +59,12 @@ pub(crate) fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
 
     // if neither addition or multiplication are possible, just copy series
     if addition.is_none() && multiplication.is_none() {
-        return copy_series(options);
+        return None;
     }
 
     let mut current = numbers[numbers.len() - 1].to_owned();
 
-    if negative {
+    if *negative {
         numbers[0].clone_into(&mut current);
     }
 
@@ -76,18 +76,18 @@ pub(crate) fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
         (_, _, _) => unreachable!(),
     };
 
-    let mut results = (0..spaces)
+    let mut results = (0..*spaces)
         .map(|_| {
             current = calc(&current);
             CellValue::Number(current.to_owned())
         })
         .collect::<Vec<CellValue>>();
 
-    if negative {
+    if *negative {
         results.reverse();
     }
 
-    results
+    Some(results)
 }
 
 #[cfg(test)]

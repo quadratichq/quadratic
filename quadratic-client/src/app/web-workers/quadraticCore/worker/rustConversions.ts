@@ -76,7 +76,7 @@ export function rectToPoint(rect: Rect): Point {
 export function rectToSheetRect(rectangle: Rectangle, sheetId: string): SheetRect {
   return {
     min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
-    max: { x: BigInt(rectangle.x + rectangle.width), y: BigInt(rectangle.y + rectangle.height) },
+    max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     sheet_id: { id: sheetId },
   };
 }

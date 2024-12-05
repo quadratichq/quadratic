@@ -72,6 +72,10 @@ class CorePython {
         );
         break;
 
+      case 'pythonCoreGetCellsA1Length':
+        this.sendGetCellsA1Length(e.data.sharedBuffer, e.data.transactionId, e.data.a1, e.data.lineNumber);
+        break;
+
       case 'pythonCoreGetCellsData':
         this.sendGetCellsData(e.data.id, e.data.sharedBuffer);
         break;
@@ -119,15 +123,41 @@ class CorePython {
     Atomics.notify(int32View, 0, 1);
   }
 
+  private sendGetCellsA1Length(
+    sharedBuffer: SharedArrayBuffer,
+    transactionId: string,
+    a1: string,
+    lineNumber?: number
+  ) {
+    const int32View = new Int32Array(sharedBuffer, 0, 3);
+    try {
+      const cellsString = core.getCellsA1(transactionId, a1, lineNumber);
+
+      // need to get the bytes of the string (which covers unicode characters)
+      const length = new Blob([cellsString]).size;
+
+      Atomics.store(int32View, 1, length);
+      if (length !== 0) {
+        const id = this.id++;
+        this.getCellsResponses[id] = cellsString;
+        Atomics.store(int32View, 2, id);
+      }
+      Atomics.store(int32View, 0, 1);
+    } catch (_e) {
+      // core threw and handled the error
+    }
+    Atomics.notify(int32View, 0, 1);
+  }
+
   private sendGetCellsData(id: number, sharedBuffer: SharedArrayBuffer) {
-    const cells = this.getCellsResponses[id];
+    const cellsString = this.getCellsResponses[id];
     delete this.getCellsResponses[id];
     const int32View = new Int32Array(sharedBuffer, 0, 1);
-    if (cells === undefined) {
+    if (cellsString === undefined) {
       console.warn('[corePython] No cells found for id:', id);
     } else {
       const encoder = new TextEncoder();
-      const encodedCells = encoder.encode(cells);
+      const encodedCells = encoder.encode(cellsString);
       const uint8View = new Uint8Array(sharedBuffer, 4, encodedCells.length);
       uint8View.set(encodedCells);
     }

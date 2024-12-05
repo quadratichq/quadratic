@@ -145,8 +145,9 @@ class InlineEditorHandler {
     }
 
     if (x || y) {
-      pixiApp.viewport.x += x * scale;
-      pixiApp.viewport.y += y * scale;
+      const { width, height } = pixiApp.headings.headingSize;
+      pixiApp.viewport.x = Math.min(pixiApp.viewport.x + x * scale, width);
+      pixiApp.viewport.y = Math.min(pixiApp.viewport.y + y * scale, height);
       pixiApp.setViewportDirty();
     }
   };
@@ -187,7 +188,7 @@ class InlineEditorHandler {
     if (input) {
       this.open = true;
       const sheet = sheets.sheet;
-      const cursor = sheet.cursor.getCursor();
+      const cursor = sheet.cursor.position;
       this.location = {
         sheetId: sheet.id,
         x: cursor.x,
@@ -224,8 +225,7 @@ class InlineEditorHandler {
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
-        this.location.y,
-        true
+        this.location.y
       );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
@@ -498,16 +498,8 @@ class InlineEditorHandler {
 
     // Update Grid Interaction state, reset input value state
     if (deltaX || deltaY) {
-      const position = sheets.sheet.cursor.cursorPosition;
-      sheets.sheet.cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: {
-          x: position.x + deltaX,
-          y: position.y + deltaY,
-        },
-        ensureVisible: true,
-      });
+      const position = sheets.sheet.cursor.position;
+      sheets.sheet.cursor.moveTo(position.x + deltaX, position.y + deltaY);
     }
 
     // Set focus back to Grid

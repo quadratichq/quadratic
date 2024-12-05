@@ -64,7 +64,7 @@ export class GridHeadings extends Container {
 
   private findIntervalX(i: number): number {
     if (i > 100) return 50;
-    if (i > 20) return 25;
+    if (i > 20) return 26;
     if (i > 5) return 10;
     return 5;
   }
@@ -85,71 +85,36 @@ export class GridHeadings extends Container {
     const bounds = viewport.getVisibleBounds();
     const scale = viewport.scaled;
     const cellHeight = CELL_HEIGHT / scale;
-    const offsets = sheets.sheet.offsets;
-    const cursor = sheets.sheet.cursor;
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
+    const cursor = sheet.cursor;
+    const clamp = sheet.clamp;
 
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(bounds.left, bounds.top, bounds.width, cellHeight);
+    const left = Math.max(bounds.left, clamp.left);
+    this.columnRect = new Rectangle(left, bounds.top, bounds.width, cellHeight);
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
 
-    // fill the entire viewport if all cells are selected
-    if (cursor.columnRow?.all) {
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-      this.headingsGraphics.drawRect(viewport.left, viewport.top, viewport.screenWidthInWorldPixels, cellHeight);
-      this.headingsGraphics.endFill();
-      return 'all';
-    }
+    const leftColumn = sheet.getColumnFromScreen(left);
+    const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
+    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
-    // dark fill headings if there is a columnRow selection
-    if (cursor.columnRow?.columns) {
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-      cursor.columnRow.columns.forEach((column) => {
-        const offset = offsets.getColumnPlacement(column);
-        this.headingsGraphics.drawRect(offset.position, viewport.top, offset.size, cellHeight);
-      });
-      this.headingsGraphics.endFill();
-      return cursor.columnRow.columns;
+    const selectedColumns = cursor.getSelectedColumnRanges(leftColumn, rightColumn);
+    for (let i = 0; i < selectedColumns.length; i += 2) {
+      const startPlacement = offsets.getColumnPlacement(selectedColumns[i]);
+      const start = startPlacement.position;
+      let end: number;
+      if (selectedColumns[i] === selectedColumns[i + 1]) {
+        end = start + startPlacement.size;
+      } else {
+        const endPlacement = offsets.getColumnPlacement(selectedColumns[i + 1]);
+        end = endPlacement.position + endPlacement.size;
+      }
+      this.headingsGraphics.drawRect(start, viewport.top, end - start, cellHeight);
     }
-
-    // if we're selecting rows, then show all columns as selected
-    if (cursor.columnRow?.rows) {
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-      this.headingsGraphics.drawRect(viewport.left, viewport.top, viewport.screenWidthInWorldPixels, cellHeight);
-      this.headingsGraphics.endFill();
-      return 'all';
-    }
-
-    // selected cells based on multiCursor
-    else if (cursor.multiCursor) {
-      const selectedColumns = new Set<number>();
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-      cursor.multiCursor.forEach((rectangle) => {
-        const start = offsets.getColumnPlacement(rectangle.left);
-        const end = offsets.getColumnPlacement(rectangle.right - 1);
-        this.headingsGraphics.drawRect(
-          start.position,
-          viewport.top,
-          end.position + end.size - start.position,
-          cellHeight
-        );
-        for (let x = rectangle.left; x < rectangle.right; x++) {
-          selectedColumns.add(x);
-        }
-      });
-      this.headingsGraphics.endFill();
-      this.selectedColumns = Array.from(selectedColumns);
-    }
-
-    // otherwise selected cursor is cursorPosition
-    else {
-      const offset = offsets.getColumnPlacement(cursor.cursorPosition.x);
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-      this.headingsGraphics.drawRect(offset.position, viewport.top, offset.size, cellHeight);
-      this.headingsGraphics.endFill();
-      this.selectedColumns = [cursor.cursorPosition.x];
-    }
+    this.headingsGraphics.endFill();
   }
 
   // Adds horizontal labels
@@ -163,7 +128,6 @@ export class GridHeadings extends Container {
     const cellWidth = CELL_WIDTH / scale;
     const cellHeight = CELL_HEIGHT / scale;
     const gridAlpha = calculateAlphaForGridLines(scale);
-    const showA1Notation = pixiAppSettings.showA1Notation;
 
     const start = offsets.getXPlacement(bounds.left);
     const end = offsets.getXPlacement(bounds.right);
@@ -237,7 +201,7 @@ export class GridHeadings extends Container {
 
           // show only when selected or not intersects one of the selected numbers
           if (!intersectsLast) {
-            const text = showA1Notation ? getColumnA1Notation(column) : column.toString();
+            const text = getColumnA1Notation(column);
             this.labels.add({ text, x: xPosition, y });
             lastLabel = { left, right, selected };
           }
@@ -257,8 +221,10 @@ export class GridHeadings extends Container {
 
     const viewport = pixiApp.viewport;
     const bounds = viewport.getVisibleBounds();
-    const offsets = sheets.sheet.offsets;
-    const cursor = sheets.sheet.cursor;
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+    const offsets = sheet.offsets;
+    const clamp = sheet.clamp;
 
     const start = offsets.getYPlacement(bounds.top);
     const end = offsets.getYPlacement(bounds.bottom);
@@ -275,64 +241,30 @@ export class GridHeadings extends Container {
     // draw background of vertical bar
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
+    const top = Math.max(bounds.top, clamp.top);
+    this.columnRect = new Rectangle(bounds.left, top, this.rowWidth, bounds.height);
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
     this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
 
-    // fill the entire viewport if all cells are selected
-    if (cursor.columnRow?.all) {
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-      this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, bounds.height);
-      this.headingsGraphics.endFill();
-    }
+    const topRow = sheet.getRowFromScreen(top);
+    const bottomRow = sheet.getRowFromScreen(top + bounds.height);
+    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
-    // dark fill headings if there is a columnRow selection
-    if (cursor.columnRow?.rows) {
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
-      cursor.columnRow.rows.forEach((row) => {
-        const offset = offsets.getRowPlacement(row);
-        this.headingsGraphics.drawRect(bounds.left, offset.position, this.rowWidth, offset.size);
-      });
-      this.headingsGraphics.endFill();
+    const selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
+    for (let i = 0; i < selectedRows.length; i += 2) {
+      const startPlacement = offsets.getRowPlacement(selectedRows[i]);
+      const start = startPlacement.position;
+      let end: number;
+      if (selectedRows[i] === selectedRows[i + 1]) {
+        end = start + startPlacement.size;
+      } else {
+        const endPlacement = offsets.getRowPlacement(selectedRows[i + 1]);
+        end = endPlacement.position + endPlacement.size;
+      }
+      this.headingsGraphics.drawRect(bounds.left, start, this.rowWidth, end - start);
     }
-
-    // if we're selecting columns, then show all rows as selected
-    if (cursor.columnRow?.columns) {
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-      this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, bounds.height);
-      this.headingsGraphics.endFill();
-    }
-
-    // selected cells based on multiCursor
-    if (cursor.multiCursor) {
-      const selectedRows = new Set<number>();
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-      cursor.multiCursor.forEach((rectangle) => {
-        const start = offsets.getRowPlacement(rectangle.top);
-        const end = offsets.getRowPlacement(rectangle.bottom - 1);
-        this.headingsGraphics.drawRect(
-          bounds.left,
-          start.position,
-          this.rowWidth,
-          end.position + end.size - start.position
-        );
-        for (let y = rectangle.top; y < rectangle.bottom; y++) {
-          selectedRows.add(y);
-        }
-      });
-      this.headingsGraphics.endFill();
-      this.selectedRows = Array.from(selectedRows);
-    }
-
-    // otherwise selected cursor is cursorPosition
-    if (!cursor.multiCursor && !cursor.columnRow) {
-      const offset = offsets.getRowPlacement(cursor.cursorPosition.y);
-      this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedBackgroundColorAlpha);
-      this.headingsGraphics.drawRect(bounds.left, offset.position, this.rowWidth, offset.size);
-      this.headingsGraphics.endFill();
-      this.selectedRows = [cursor.cursorPosition.y];
-    }
+    this.headingsGraphics.endFill();
   }
 
   private verticalLabels() {
@@ -428,7 +360,7 @@ export class GridHeadings extends Container {
     this.verticalLabels();
   }
 
-  private drawCorner(): void {
+  private drawCorner() {
     const { viewport } = pixiApp;
     const bounds = viewport.getVisibleBounds();
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
@@ -437,16 +369,28 @@ export class GridHeadings extends Container {
     this.cornerRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, cellHeight);
     this.corner.drawShape(this.cornerRect);
     this.corner.endFill();
+    this.corner.lineStyle(1, colors.gridLines, colors.headerSelectedRowColumnBackgroundColorAlpha, 0, true);
+    this.corner.moveTo(bounds.left + this.rowWidth, bounds.top);
+    this.corner.lineTo(bounds.left + this.rowWidth, bounds.top + cellHeight);
+    this.corner.lineTo(bounds.left, bounds.top + cellHeight);
   }
 
-  private drawHeadingLines(): void {
+  // draws the lines under and to the right of the headings
+  private drawHeadingLines() {
     const { viewport } = pixiApp;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
+    const clamp = sheets.sheet.clamp;
     this.headingsGraphics.lineStyle(1, colors.gridLines, colors.headerSelectedRowColumnBackgroundColorAlpha, 0.5, true);
-    this.headingsGraphics.moveTo(bounds.left + this.rowWidth, viewport.top);
+
+    // draw the left line to the right of the headings
+    const top = Math.max(bounds.top, clamp.top);
+    this.headingsGraphics.moveTo(bounds.left + this.rowWidth, top);
     this.headingsGraphics.lineTo(bounds.left + this.rowWidth, viewport.bottom);
-    this.headingsGraphics.moveTo(bounds.left, bounds.top + cellHeight);
+
+    // draw the top line under the headings
+    const left = Math.max(bounds.left, clamp.left);
+    this.headingsGraphics.moveTo(left, bounds.top + cellHeight);
     this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
   }
 
@@ -455,8 +399,10 @@ export class GridHeadings extends Container {
     // selection (which requires a redraw)
     if (
       !this.dirty &&
-      !viewportDirty &&
-      !(viewportDirty && (sheets.sheet.cursor.columnRow?.columns || sheets.sheet.cursor.columnRow?.rows))
+      !viewportDirty
+
+      // todo....
+      // !(viewportDirty && (sheets.sheet.cursor.columnRow?.columns || sheets.sheet.cursor.columnRow?.rows))
     ) {
       return;
     }

@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 
 use crate::CellValue;
 
-use super::{copy_series, SeriesOptions};
+use super::SeriesOptions;
 
 const ALPHABET_LOWER: [&str; 26] = [
     "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s",
@@ -119,7 +119,7 @@ fn get_series_next_key(last_key: &str, all_keys: &&[&str], negative: bool) -> Re
     Ok(next_key.to_string())
 }
 
-pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
+pub fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
     let mut results: Vec<CellValue> = vec![];
     let SeriesOptions {
         ref series,
@@ -141,7 +141,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
 
     let mut possible_text_series = text_series.iter().map(|_| Some(vec![])).collect::<Vec<_>>();
 
-    series.iter().for_each(|cell| {
+    series.iter().for_each(|(cell, _)| {
         text_series.iter().enumerate().for_each(|(i, text_series)| {
             let cell_value = cell.to_string();
 
@@ -187,28 +187,27 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
                     _ => "".into(),
                 };
 
-                (0..spaces).for_each(|_| {
-                    if let Ok(next) = get_series_next_key(&cell_value, &text_series[i], negative) {
+                (0..*spaces).for_each(|_| {
+                    if let Ok(next) = get_series_next_key(&cell_value, &text_series[i], *negative) {
                         results.push(CellValue::Text(next.to_owned()));
                         cell_value = next;
                     }
                 });
 
-                if negative {
+                if *negative {
                     results.reverse();
                 }
 
-                return results;
+                return Some(results);
             }
         }
     }
 
     if !results.is_empty() {
-        return results;
+        return Some(results);
     }
 
-    // no case found
-    copy_series(options)
+    None
 }
 
 #[cfg(test)]
