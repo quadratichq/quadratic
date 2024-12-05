@@ -13,6 +13,7 @@ use tabled::{
 
 /// Run an assertion that a cell value is equal to the given value
 #[cfg(test)]
+#[track_caller]
 pub fn assert_display_cell_value(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -58,6 +59,7 @@ pub fn assert_code_cell_value(
 
 /// Run an assertion that cell values in a given row are equal to the given value
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_value_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -119,6 +121,7 @@ pub fn assert_cell_format_bold(
 
 // TODO(ddimaria): refactor all format assertions into a generic function
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_format_cell_fill_color_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -139,6 +142,7 @@ pub fn assert_cell_format_cell_fill_color_row(
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_format_fill_color(
     grid_controller: &GridController,
     sheet_id: SheetId,
