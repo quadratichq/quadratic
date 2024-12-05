@@ -2,7 +2,7 @@ use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin, ClipboardSheetFormats};
 use crate::formulas::replace_a1_notation;
-use crate::grid::formats::Formats;
+use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::{CodeCellLanguage, Sheet};
 use crate::{A1Selection, CellValue, Pos, Rect};
@@ -240,13 +240,21 @@ impl Sheet {
                 });
         }
 
-        dbgjs!("todo(ayush): implement formats and validations for clipboard");
+        dbgjs!("todo(ayush): implement validations for clipboard");
 
-        // let formats = if let Some(bounds) = sheet_bounds {
-        //     self.override_cell_formats(bounds, Some(selection))
-        // } else {
-        //     Formats::default()
-        // };
+        let formats = if let Some(bounds) = sheet_bounds {
+            let mut formats = SheetFormatUpdates::default();
+
+            for x in bounds.x_range() {
+                for y in bounds.y_range() {
+                    formats.set_format_cell(Pos { x, y }, self.formats.format(Pos { x, y }).into());
+                }
+            }
+
+            formats
+        } else {
+            SheetFormatUpdates::default()
+        };
 
         // if selection.all {
         //     clipboard_origin.all = Some((clipboard_origin.x, clipboard_origin.y));
@@ -262,13 +270,13 @@ impl Sheet {
         //     }
         // }
         // let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
+
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
         // let borders = self.borders.to_clipboard(selection);
 
         let clipboard = Clipboard {
             cells,
-            // formats,
-            formats: Formats::default(),
+            formats,
             // sheet_formats,
             sheet_formats: ClipboardSheetFormats::default(),
             // borders: borders.map(|borders| {

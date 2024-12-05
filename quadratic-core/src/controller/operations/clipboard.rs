@@ -11,6 +11,7 @@ use crate::controller::GridController;
 use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::Format;
 use crate::grid::formats::Formats;
+use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::BorderStyleCellUpdates;
 use crate::grid::sheet::validations::validation::Validation;
@@ -63,7 +64,7 @@ pub struct Clipboard {
     // plain values for use with PasteSpecial::Values
     pub values: CellValues,
 
-    pub formats: Formats,
+    pub formats: SheetFormatUpdates,
     pub sheet_formats: ClipboardSheetFormats,
 
     pub borders: Option<(OldSelection, BorderStyleCellUpdates)>,
@@ -296,8 +297,8 @@ impl GridController {
                 },
                 sheet_id: selection.sheet_id,
             };
-            ops.push(Operation::SetCellFormatsSelection {
-                selection: OldSelection::sheet_rect(sheet_rect),
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: selection.sheet_id,
                 formats: clipboard.formats,
             });
 
