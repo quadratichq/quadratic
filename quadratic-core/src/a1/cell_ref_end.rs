@@ -313,13 +313,13 @@ mod tests {
 
     #[test]
     fn test_x_or() {
-        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).col_or(2), 1);
+        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).col_or(1), 2);
         assert_eq!(CellRefRangeEnd::UNBOUNDED.col_or(1), 1);
     }
 
     #[test]
-    fn test_y_or_1() {
-        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).row_or(3), 1);
+    fn test_y_or() {
+        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).row_or(1), 3);
         assert_eq!(CellRefRangeEnd::UNBOUNDED.row_or(1), 1);
     }
 }

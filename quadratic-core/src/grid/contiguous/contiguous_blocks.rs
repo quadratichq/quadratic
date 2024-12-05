@@ -141,9 +141,16 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
             .unwrap_or(0)
     }
 
-    /// Returns the block containing `coordinate`, or `None` if there is no such
-    /// block (which should only happen if `coordinate == 0`).
-    fn get_block_containing(&self, coordinate: u64) -> Option<&Block<T>> {
+    /// Returns the maximum coordinate with a value, or `None` if there is an
+    /// infinite block. Returns 0 if there are no values.
+    pub fn max(&self) -> Option<u64> {
+        match self.0.last_key_value() {
+            Some((_, block)) => (block.end < u64::MAX).then_some(block.end.saturating_sub(1)),
+            None => Some(0), // no values
+        }
+    }
+    /// Returns the block containing `coordinate`, if any.
+    pub(crate) fn get_block_containing(&self, coordinate: u64) -> Option<&Block<T>> {
         self.0
             .range(..=coordinate)
             .next_back()

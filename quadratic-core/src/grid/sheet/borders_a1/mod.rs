@@ -10,8 +10,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::grid::Contiguous2D;
 
+pub mod borders_query;
+pub mod borders_render;
 pub mod borders_set_a1;
 mod borders_style;
+pub mod borders_toggle;
 pub mod borders_update;
 pub mod sides;
 
@@ -19,18 +22,18 @@ pub use borders_style::*;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct BordersA1 {
-    pub(crate) left: Contiguous2D<Option<BorderStyleTimestamp>>,
-    pub(crate) right: Contiguous2D<Option<BorderStyleTimestamp>>,
-    pub(crate) top: Contiguous2D<Option<BorderStyleTimestamp>>,
-    pub(crate) bottom: Contiguous2D<Option<BorderStyleTimestamp>>,
+    pub(crate) left: Contiguous2D<BorderStyleTimestamp>,
+    pub(crate) right: Contiguous2D<BorderStyleTimestamp>,
+    pub(crate) top: Contiguous2D<BorderStyleTimestamp>,
+    pub(crate) bottom: Contiguous2D<BorderStyleTimestamp>,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct BordersA1Updates {
-    pub(crate) left: Option<Contiguous2D<Option<Option<BorderStyleTimestamp>>>>,
-    pub(crate) right: Option<Contiguous2D<Option<Option<BorderStyleTimestamp>>>>,
-    pub(crate) top: Option<Contiguous2D<Option<Option<BorderStyleTimestamp>>>>,
-    pub(crate) bottom: Option<Contiguous2D<Option<Option<BorderStyleTimestamp>>>>,
+    pub(crate) left: Option<Contiguous2D<Option<BorderStyleTimestamp>>>,
+    pub(crate) right: Option<Contiguous2D<Option<BorderStyleTimestamp>>>,
+    pub(crate) top: Option<Contiguous2D<Option<BorderStyleTimestamp>>>,
+    pub(crate) bottom: Option<Contiguous2D<Option<BorderStyleTimestamp>>>,
 }
 
 impl BordersA1Updates {

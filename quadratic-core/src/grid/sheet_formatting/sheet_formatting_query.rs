@@ -2,7 +2,7 @@
 
 use super::*;
 
-use crate::{grid::formats::Format, Pos};
+use crate::{grid::formats::Format, Pos, Rect};
 
 impl SheetFormatting {
     /// Returns the maximum value in the column for which formatting exists.
@@ -68,6 +68,10 @@ impl SheetFormatting {
 
     pub fn row_has_wrap(&self, row: i64) -> bool {
         !self.wrap.is_row_default(row)
+    }
+
+    pub fn finite_bounds(&self) -> Option<Rect> {
+        self.align.finite_bounds()
     }
 }
 

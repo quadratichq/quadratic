@@ -431,8 +431,8 @@ mod test {
         );
         gc.set_cell_value(
             SheetPos {
-                x: -10,
-                y: -11,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "10.123%".to_string(),
@@ -442,7 +442,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let results = sheet.search(&"123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 1));
         assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
 
         let results = sheet.search(&"$5,123".into(), &SearchOptions::default());
@@ -476,7 +476,7 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 1));
 
         let results = sheet.search(
             &"0.10123".into(),
@@ -487,7 +487,7 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 1));
     }
 
     #[test]

@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, RoundingMode};
 use borders::Borders;
+use borders_a1::BordersA1;
 use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -75,6 +76,8 @@ pub struct Sheet {
     pub(super) rows_resize: ResizeMap,
 
     pub borders: Borders,
+
+    pub borders_a1: BordersA1,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -84,23 +87,16 @@ impl Sheet {
             name,
             color: None,
             order,
-
             offsets: SheetOffsets::default(),
-
             columns: BTreeMap::new(),
-
             code_runs: IndexMap::new(),
-
             formats: SheetFormatting::default(),
-
             data_bounds: GridBounds::Empty,
-
             format_bounds: GridBounds::Empty,
-
             validations: Validations::default(),
             rows_resize: ResizeMap::default(),
-
             borders: Borders::default(),
+            borders_a1: BordersA1::default(),
         }
     }
 

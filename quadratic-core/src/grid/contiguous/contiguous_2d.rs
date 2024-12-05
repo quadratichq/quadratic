@@ -119,6 +119,21 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         .unwrap_or_default()
     }
 
+    /// Gets the value at `pos` if the block is finite.
+    pub fn get_finite(&self, pos: Pos) -> Option<&T> {
+        let col = self.0.get(pos.x as u64)?;
+        if col.max().is_some_and(|max| max != u64::MAX) {
+            let block = col.get_block_containing(pos.y as u64)?;
+            if block.contains(u64::MAX) {
+                None
+            } else {
+                Some(&block.value)
+            }
+        } else {
+            None
+        }
+    }
+
     /// For each non-`None` value in `other`, updates the range in `self` using
     /// `update_fn`.
     ///
@@ -197,6 +212,21 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         // `.try_into()` will only fail if there are finite values beyond
         // `i64::MAX`. In that case there's no correct answer.
         column_data.finite_max().try_into().unwrap_or(i64::MAX)
+    }
+
+    // todo
+    pub fn column_min(&self, _column: u64) -> Option<u64> {
+        Some(1)
+    }
+
+    // todo
+    pub fn row_min(&self, _row: u64) -> Option<u64> {
+        Some(1)
+    }
+
+    // todo
+    pub fn finite_bounds(&self) -> Option<Rect> {
+        None
     }
 
     /// Returns the upper bound on the finite regions in the given row. Returns
@@ -709,5 +739,19 @@ mod tests {
         c.set_rect(2, 2, None, None, Some(true));
         let mut rects = c.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
         assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
+    }
+
+    #[test]
+    fn test_get_finite() {
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(1, 1, Some(2), Some(2), true);
+        assert_eq!(c.get_finite(pos![A1]), Some(&true));
+        assert_eq!(c.get_finite(pos![A2]), Some(&true));
+        assert_eq!(c.get_finite(pos![B1]), Some(&true));
+        assert_eq!(c.get_finite(pos![B2]), Some(&true));
+
+        c.set_rect(3, 3, None, None, true);
+        assert_eq!(c.get_finite(pos![C3]), None);
+        assert_eq!(c.get_finite(pos![D4]), None);
     }
 }

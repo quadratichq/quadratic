@@ -15,7 +15,7 @@ impl GridController {
         range: &RefRangeBounds,
         borders: &mut BordersA1Updates,
     ) {
-        let style = style.map_or(Some(None), |s| Some(Some(s.into())));
+        let style = style.map(|s| s.into());
         let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
         match border_selection {
             BorderSelection::All => {
@@ -166,64 +166,25 @@ impl GridController {
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
     ) -> Option<Vec<Operation>> {
-        // Check if the borders are already set to the same style. If they are,
-        // toggle them off.
-        // let (style_sheet, style_rect) =
-        // todo...
-        // if sheet
-        //     .borders
-        //     .is_toggle_borders(&selection, border_selection, style)
-        // {
-        //     (
-        //         None,
-        //         Some(BorderStyle {
-        //             line: CellBorderLine::Clear,
-        //             ..Default::default()
-        //         }),
-        //     )
-        // } else {
-        // (style, style);
-        // };
-
         let mut borders: BordersA1Updates = BordersA1Updates::default();
 
-        selection.ranges.iter().for_each(|range| match range {
-            CellRefRange::Sheet { range } => {
-                let style = if false
-                /* sheet.borders.is_toggle_borders(border_selection, range, style) */
-                {
-                    None
-                } else {
-                    style
-                };
-                self.a1_border_style_range(border_selection, style, range, &mut borders);
+        let sheet = self.try_sheet(selection.sheet_id)?;
+        selection.ranges.iter().for_each(|range| {
+            let style = if sheet
+                .borders_a1
+                .is_toggle_borders(border_selection, style, range)
+            {
+                None
+            } else {
+                style
+            };
+            match range {
+                CellRefRange::Sheet { range } => {
+                    self.a1_border_style_range(border_selection, style, range, &mut borders);
+                }
             }
         });
 
-        // if selection.all {
-        //     Self::a1_border_style_sheet(border_selection, style_sheet, &mut borders);
-        // }
-        // if let Some(columns) = selection.columns.as_ref() {
-        //     for _ in columns {
-        //         Self::a1_border_style_sheet(border_selection, style_sheet, &mut borders);
-        //     }
-        // }
-        // if let Some(rows) = selection.rows.as_ref() {
-        //     for _ in rows {
-        //         Self::a1_border_style_sheet(border_selection, style_sheet, &mut borders);
-        //     }
-        // }
-        // if let Some(rects) = selection.rects.as_ref() {
-        //     for rect in rects {
-        //         self.a1_border_style_rect(
-        //             selection.sheet_id,
-        //             border_selection,
-        //             style_rect,
-        //             rect,
-        //             &mut borders,
-        //         );
-        //     }
-        // }
         if !borders.is_default() {
             Some(vec![Operation::SetBordersA1 {
                 sheet_id: selection.sheet_id,
@@ -411,81 +372,4 @@ mod tests {
         assert_borders(&borders, pos![D5], "right,bottom");
         assert_borders(&borders, pos![C5], "bottom");
     }
-
-    //     #[test]
-    //     #[parallel]
-    //     fn a1_check_sheet() {
-    //         let mut sheet = Sheet::test();
-
-    //         // Test for Top border
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Top),
-    //             Some(None)
-    //         );
-    //         sheet.borders.all.top = Some(BorderStyleTimestamp::default());
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Top),
-    //             Some(Some(BorderStyleTimestamp::clear()))
-    //         );
-
-    //         // Test for Bottom border
-    //         let mut sheet = Sheet::test();
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Bottom),
-    //             Some(None)
-    //         );
-    //         sheet.borders.all.bottom = Some(BorderStyleTimestamp::default());
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Bottom),
-    //             Some(Some(BorderStyleTimestamp::clear()))
-    //         );
-
-    //         // Test for Left border
-    //         let mut sheet = Sheet::test();
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Left),
-    //             Some(None)
-    //         );
-    //         sheet.borders.all.left = Some(BorderStyleTimestamp::default());
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Left),
-    //             Some(Some(BorderStyleTimestamp::clear()))
-    //         );
-
-    //         // Test for Right border
-    //         let mut sheet = Sheet::test();
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Right),
-    //             Some(None)
-    //         );
-    //         sheet.borders.all.right = Some(BorderStyleTimestamp::default());
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Right),
-    //             Some(Some(BorderStyleTimestamp::clear()))
-    //         );
-
-    //         // Test for column-specific borders
-    //         let mut sheet = Sheet::test();
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Top),
-    //             Some(None)
-    //         );
-    //         sheet.borders.columns.insert(0, BorderStyleCell::all());
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Top),
-    //             Some(Some(BorderStyleTimestamp::clear()))
-    //         );
-
-    //         // Test for row-specific borders
-    //         let mut sheet = Sheet::test();
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Bottom),
-    //             Some(None)
-    //         );
-    //         sheet.borders.rows.insert(0, BorderStyleCell::all());
-    //         assert_eq!(
-    //             GridController::a1_check_sheet(&sheet, 0, 0, BorderSide::Top),
-    //             Some(Some(BorderStyleTimestamp::clear()))
-    //         );
-    //     }
 }

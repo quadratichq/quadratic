@@ -1,13 +1,12 @@
 //! Calculates all bounds for the sheet: data, formatting, and borders. We cache
 //! this value and only recalculate when necessary.
 
-use std::cmp::Reverse;
-
 use crate::{
     grid::{Column, GridBounds},
     selection::OldSelection,
     CellValue, Pos, Rect,
 };
+use std::cmp::Reverse;
 
 use super::Sheet;
 
@@ -28,12 +27,17 @@ impl Sheet {
                 let y = data_range.end - 1;
                 self.data_bounds.add(Pos { x, y });
             }
-            if let Some(format_range) = column.range() {
-                let y = format_range.start;
-                self.format_bounds.add(Pos { x, y });
-                let y = format_range.end - 1;
-                self.format_bounds.add(Pos { x, y });
-            }
+        }
+
+        if let Some(formats) = self.formats.finite_bounds() {
+            self.format_bounds.add(Pos {
+                x: formats.min.x,
+                y: formats.min.y,
+            });
+            self.format_bounds.add(Pos {
+                x: formats.max.x,
+                y: formats.max.y,
+            });
         }
 
         self.code_runs.iter().for_each(|(pos, code_cell_value)| {
