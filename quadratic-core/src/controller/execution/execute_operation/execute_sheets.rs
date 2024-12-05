@@ -3,7 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{file::sheet_schema::export_sheet, GridBounds, Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
 };
 use lexicon_fractional_index::key_between;
 
@@ -46,14 +46,10 @@ impl GridController {
                     return;
                 }
                 let sheet_id = sheet.id;
-                let sheet_bounds = sheet.bounds(false);
                 self.grid.add_sheet(Some(sheet));
 
                 self.send_add_sheet(sheet_id, transaction);
-
-                if let GridBounds::NonEmpty(bounds) = sheet_bounds {
-                    self.send_fill_cells(&bounds.to_sheet_rect(sheet_id));
-                }
+                self.send_all_fills(sheet_id);
 
                 transaction
                     .forward_operations

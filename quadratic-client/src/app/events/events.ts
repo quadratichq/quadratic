@@ -57,7 +57,7 @@ interface EventTypes {
 
   sheetOffsets: (sheetId: string, offsets: JsOffset[]) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
-  sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
+  sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;

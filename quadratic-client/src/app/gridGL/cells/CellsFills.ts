@@ -13,17 +13,10 @@ interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
 }
 
-// interface ColumnRow {
-//   row: number | null;
-//   column: number | null;
-//   color: string;
-//   timestamp: number;
-// }
-
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   private cells: JsRenderFill[] = [];
-  private metaFill?: JsSheetFill;
+  private sheetFills?: JsSheetFill[];
 
   private cellsContainer: ParticleContainer;
   private meta: Graphics;
@@ -69,14 +62,15 @@ export class CellsFills extends Container {
     }
   };
 
-  private handleSheetMetaFills = (sheetId: string, fills: JsSheetFill) => {
+  private handleSheetMetaFills = (sheetId: string, fills: JsSheetFill[]) => {
     if (sheetId === this.cellsSheet.sheetId) {
-      if (this.isMetaEmpty(fills)) {
-        this.metaFill = undefined;
+      console.log(sheetId, fills);
+      if (fills.length === 0) {
+        this.sheetFills = undefined;
         this.meta.clear();
         pixiApp.setViewportDirty();
       } else {
-        this.metaFill = fills;
+        this.sheetFills = fills;
         this.setDirty();
       }
     }
@@ -98,12 +92,6 @@ export class CellsFills extends Container {
     } else {
       return convertColorStringToTint(color);
     }
-  }
-
-  private isMetaEmpty(fill: JsSheetFill): boolean {
-    // return !(fill.all || fill.columns.length || fill.rows.length);
-    console.log('todo: implement isMetaEmpty');
-    return true;
   }
 
   private get sheet(): Sheet {
@@ -140,52 +128,52 @@ export class CellsFills extends Container {
   };
 
   private drawMeta = () => {
-    console.log('todo: implement drawMeta');
-    // if (this.metaFill) {
-    //   this.meta.clear();
-    //   const viewport = pixiApp.viewport.getVisibleBounds();
-    //   if (this.metaFill.all) {
-    //     this.meta.beginFill(this.getColor(this.metaFill.all));
-    //     this.meta.drawRect(viewport.left, viewport.top, viewport.width, viewport.height);
-    //     this.meta.endFill();
-    //   }
-    //   // combine the column and row fills and sort them by their timestamp so
-    //   // they are drawn in the correct order
-    //   const columns: ColumnRow[] = this.metaFill.columns.map((entry) => ({
-    //     column: Number(entry[0]),
-    //     row: null,
-    //     color: entry[1][0],
-    //     timestamp: Number(entry[1][1]),
-    //   }));
-    //   const rows: ColumnRow[] = this.metaFill.rows.map((entry) => ({
-    //     column: null,
-    //     row: Number(entry[0]),
-    //     color: entry[1][0],
-    //     timestamp: Number(entry[1][1]),
-    //   }));
-    //   const fills = [...columns, ...rows].sort((a, b) => a.timestamp - b.timestamp);
-    //   fills.forEach((fill) => {
-    //     if (fill.column !== null) {
-    //       const screen = this.sheet.offsets.getColumnPlacement(Number(fill.column));
-    //       const left = screen.position;
-    //       const width = screen.size;
-    //       // only draw if the column is visible on the screen
-    //       if (left >= viewport.right || left + width <= viewport.left) return;
-    //       this.meta.beginFill(this.getColor(fill.color));
-    //       this.meta.drawRect(left, viewport.top, width, viewport.height);
-    //       this.meta.endFill();
-    //     } else if (fill.row !== null) {
-    //       const screen = this.sheet.offsets.getRowPlacement(fill.row);
-    //       const top = screen.position;
-    //       const height = screen.size;
-    //       // only draw if the row is visible on the screen
-    //       if (top >= viewport.bottom || top + height <= viewport.top) return;
-    //       this.meta.beginFill(this.getColor(fill.color));
-    //       this.meta.drawRect(viewport.left, top, viewport.width, height);
-    //       this.meta.endFill();
-    //     }
-    //   });
-    //   pixiApp.setViewportDirty();
-    // }
+    if (this.sheetFills) {
+      this.meta.clear();
+      const viewport = pixiApp.viewport.getVisibleBounds();
+      this.sheetFills.forEach((fill) => {
+        const offset = this.sheet.getCellOffsets(fill.x, fill.y);
+        if (offset.x > viewport.right || offset.y > viewport.bottom) return;
+
+        // infinite sheet
+        if (fill.w == null && fill.h == null) {
+          this.meta.beginFill(this.getColor(fill.color));
+          const x = Math.max(offset.x, viewport.left);
+          const y = Math.max(offset.y, viewport.top);
+          this.meta.drawRect(
+            x,
+            y,
+            viewport.width - (offset.x - viewport.left),
+            viewport.height - (offset.y - viewport.top)
+          );
+          this.meta.endFill();
+        }
+
+        // infinite column
+        else if (fill.h == null && fill.w != null) {
+          this.meta.beginFill(this.getColor(fill.color));
+          const startX = Math.max(offset.x, viewport.left);
+          const startY = Math.max(offset.y, viewport.top);
+          const end = this.sheet.offsets.getColumnPlacement(Number(fill.x) + Number(fill.w));
+          let endX = end.position;
+          endX = Math.min(endX, viewport.right);
+          this.meta.drawRect(startX, startY, endX - startX, viewport.height - (startY - viewport.top));
+          this.meta.endFill();
+        }
+
+        // infinite row
+        else if (fill.w == null && fill.h != null) {
+          this.meta.beginFill(this.getColor(fill.color));
+          const startX = Math.max(offset.x, viewport.left);
+          const startY = Math.max(offset.y, viewport.top);
+          const end = this.sheet.offsets.getRowPlacement(Number(fill.y) + Number(fill.h));
+          let endY = end.position;
+          endY = Math.min(endY, viewport.bottom);
+          this.meta.drawRect(startX, startY, viewport.width - (startX - viewport.left), endY - startY);
+          this.meta.endFill();
+        }
+      });
+      pixiApp.setViewportDirty();
+    }
   };
 }
