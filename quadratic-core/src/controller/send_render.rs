@@ -3,10 +3,7 @@ use std::collections::{HashMap, HashSet};
 use itertools::Itertools;
 
 use crate::{
-    grid::{
-        js_types::{JsOffset, JsRenderFill},
-        SheetId,
-    },
+    grid::{js_types::JsOffset, SheetId},
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     selection::OldSelection,
     viewport::ViewportBuffer,

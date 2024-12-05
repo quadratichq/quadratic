@@ -3,7 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{file::sheet_schema::export_sheet, GridBounds, Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
 };
 use lexicon_fractional_index::key_between;
 
