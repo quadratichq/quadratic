@@ -739,6 +739,8 @@ impl GridController {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
                     if let Some(original_pos) = original_pos {
                         code_cell.update_cell_references(x - original_pos.x, y - original_pos.y);
+                        original_pos.x = x;
+                        original_pos.y = y;
                     }
                     let sheet_pos = SheetPos::new(sheet_id, x, y);
                     Some(Operation::ComputeCode { sheet_pos })
