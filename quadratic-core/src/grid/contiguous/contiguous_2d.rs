@@ -159,6 +159,24 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         })
     }
 
+    /// For each non-`None` value in `other`, calls `predicate` with the
+    /// corresponding values in `self` and `other`. Returns `true` if **any**
+    /// invocation of `predicate` returns true.
+    pub fn zip_any<U: PartialEq>(
+        &self,
+        other: &Contiguous2D<Option<U>>,
+        predicate: impl Fn(&T, &U) -> bool,
+    ) -> bool {
+        self.0.zip_any(&other.0, |self_column, other_column| {
+            self_column.zip_any(other_column, |self_value, other_value| {
+                let Some(value) = other_value else {
+                    return false;
+                };
+                predicate(self_value, value)
+            })
+        })
+    }
+
     /// Sets multiple block of values in the same column range.
     pub fn raw_set_xy_blocks(
         &mut self,
@@ -749,5 +767,25 @@ mod tests {
         c.set_rect(3, 3, None, None, true);
         assert_eq!(c.get_finite(pos![C3]), None);
         assert_eq!(c.get_finite(pos![D4]), None);
+    }
+
+    #[test]
+    fn test_contiguous_2d_zip_any() {
+        let mut c = Contiguous2D::<u8>::new();
+        let mut u = Contiguous2D::<Option<u8>>::new();
+
+        assert_eq!(false, c.zip_any(&u, |a, b| a != b));
+
+        c.set_rect(1, 1, Some(10), Some(3), 5);
+        assert_eq!(false, c.zip_any(&u, |a, b| a != b));
+
+        u.set_rect(1, 1, Some(10), Some(3), Some(5));
+        assert_eq!(false, c.zip_any(&u, |a, b| a != b));
+
+        u.set_rect(1, 1, Some(3), Some(10), Some(10));
+        assert_eq!(true, c.zip_any(&u, |a, b| a != b));
+
+        c.set_rect(1, 1, Some(3), Some(10), 10);
+        assert_eq!(false, c.zip_any(&u, |a, b| a != b));
     }
 }

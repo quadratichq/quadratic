@@ -36,6 +36,15 @@ impl<T> IntoIterator for ContiguousBlocks<T> {
         self.0.into_values()
     }
 }
+impl<'a, T> IntoIterator for &'a ContiguousBlocks<T> {
+    type Item = &'a Block<T>;
+
+    type IntoIter = btree_map::Values<'a, u64, Block<T>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
 impl<T> ContiguousBlocks<T> {
     /// Iterates over all the blocks.
     pub fn iter(&self) -> btree_map::Values<'_, u64, Block<T>> {
@@ -419,6 +428,20 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         ret
     }
 
+    /// For each non-default value in `other`, calls `predicate` with the
+    /// corresponding values in `self` and `other`. Returns `true` if **any**
+    /// invocation of `predicate` returns true.
+    pub fn zip_any<U: Default + PartialEq>(
+        &self,
+        other: &ContiguousBlocks<U>,
+        predicate: impl Fn(&T, &U) -> bool,
+    ) -> bool {
+        other.iter().any(|other_block| {
+            self.blocks_touching_range(other_block.start, other_block.end)
+                .any(|self_block| predicate(&self_block.value, &other_block.value))
+        })
+    }
+
     /// Merges the two blocks sharing a border at `coordinate`, if such blocks
     /// exist and can be merged.
     fn try_merge_at(&mut self, coordinate: u64) {
@@ -698,7 +721,7 @@ mod tests {
 
         // Make sure we didn't lose any `u64::MAX` coordinates
         const FINITE_LIMIT: u64 = u64::MAX / 2; // doesn't matter exactly what this is
-        for block in actual.iter() {
+        for block in &actual {
             assert!(block.start < FINITE_LIMIT);
             if block.end > FINITE_LIMIT {
                 assert_eq!(block.end, u64::MAX);
