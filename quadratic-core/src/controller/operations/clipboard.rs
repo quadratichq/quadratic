@@ -10,7 +10,6 @@ use crate::cell_values::CellValues;
 use crate::controller::GridController;
 use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::Format;
-use crate::grid::formats::Formats;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::BorderStyleCellUpdates;
