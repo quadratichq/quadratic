@@ -140,7 +140,11 @@ impl<T: Clone + PartialEq> Block<T> {
     pub fn subtract_offset(self, delta: u64) -> Option<Self> {
         Block {
             start: self.start.saturating_sub(delta).max(1),
-            end: self.end.saturating_sub(delta).max(1),
+            end: if self.end == u64::MAX {
+                u64::MAX
+            } else {
+                self.end.saturating_sub(delta).max(1)
+            },
             value: self.value,
         }
         .if_nonempty()

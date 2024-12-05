@@ -188,7 +188,9 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         let first_block = self
             .get_block_containing(start)
             // filter to avoid double-counting
-            .filter(|block| block.start != start);
+            .filter(|block| block.start != start)
+            // filter to avoid bad ranges
+            .filter(|_| start < end);
 
         let rest = if start < end {
             Some(
@@ -448,6 +450,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Shifts everything after `start` by `end-start` and then sets the values
     /// from `start` (inclusive) to `end` (exclusive).
     pub fn shift_insert(&mut self, start: u64, end: u64, value: T) {
+        let start = start.max(1);
+        let end = end.max(1);
         let Some(offset) = end.checked_sub(start) else {
             return;
         };
@@ -461,7 +465,9 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Removes the values from `start` (inclusive) to `end` (exclusive) and
     /// shifts everything after `end` by `start-end`.
     pub fn shift_remove(&mut self, start: u64, end: u64) {
-        let Some(offset) = start.checked_sub(end) else {
+        let start = start.max(1);
+        let end = end.max(1);
+        let Some(offset) = end.checked_sub(start) else {
             return;
         };
         self.raw_remove_range(start, end);
@@ -482,7 +488,7 @@ mod tests {
     // Comment out variants to test individual operations
     #[derive(Debug, Copy, Clone, proptest_derive::Arbitrary)]
     enum TestOp {
-        SetRange {
+        SetBlock {
             start: u8,
             end: Option<u8>,
             value: u8,
@@ -490,6 +496,13 @@ mod tests {
         Set {
             index: u8,
             value: u8,
+        },
+        Increment {
+            index: u8,
+        },
+        IncrementRange {
+            start: u8,
+            end: Option<u8>,
         },
         ShiftInsert {
             start: u8,
@@ -508,12 +521,15 @@ mod tests {
             let finite_end = match end {
                 Some(x) => x as usize,
                 None => start as usize + 42,
-            };            let mut expected = vec![0; finite_end];
-            expected[start as usize..finite_end].fill(value);
-            let infinity = match end {
-                Some(_) => value,
-                None => 0,
             };
+            let mut expected = vec![0; finite_end];
+            let mut infinity = 0;
+            if (start as usize) < finite_end {
+                expected[start as usize..finite_end].fill(value);
+                if end.is_none() {
+                    infinity = value;
+                }
+            }
 
             let actual = ContiguousBlocks::from_block(Block {
                 start: start as u64,
@@ -524,95 +540,154 @@ mod tests {
             assert_matches_vec(expected, infinity, actual);
         }
 
-        // #[test]
-        // fn test_contiguous_blocks(ops: Vec<TestOp>) {
-        //     let mut expected = vec![];
-        //     let mut infinity = 0;
-        //     let mut actual = ContiguousBlocks::default();
+        #[test]
+        fn test_contiguous_blocks(ops: Vec<TestOp>) {
+            let mut expected = vec![];
+            let mut infinity = 0;
+            let mut actual = ContiguousBlocks::default();
 
-        //     for op in ops {
-        //         match op {
-        //             TestOp::SetRange { start, end, value } => {
-        //                 let reverse_blocks =
-        //                     blocks.set_range(start as i64, end.map(|i| i as i64).unwrap_or(i64::MAX), value);
+            for op in ops {
+                let required_len = match op {
+                    TestOp::SetBlock { start, end, .. } => end.unwrap_or(start),
+                    TestOp::Set { index, .. } => index,
+                    TestOp::Increment { index } => index,
+                    TestOp::IncrementRange { start, end, .. } => end.unwrap_or(start),
+                    TestOp::ShiftInsert { end, .. } => end,
+                    TestOp::ShiftRemove { end, .. } => end,
+                };
+                while expected.len() <= required_len as usize {
+                    expected.push(infinity);
+                }
 
-        //                 // Before we update `bytes`, check that undo works
-        //                 // correctly.
-        //                 let mut test_blocks = blocks.clone();
-        //                 test_blocks.set_blocks(reverse_blocks.into_iter().map(|(
-        //                   _,block)| block));
-        //                 assert_matches_vec(bytes, test_blocks, shift_inserted);
+                match op {
+                    TestOp::SetBlock { start, end, value } => {
+                        let reverse_op = actual.set_blocks(ContiguousBlocks::from_block(Block {
+                            start: start as u64,
+                            end: end.map(|i| i as u64).unwrap_or(u64::MAX),
+                            value: Some(value),
+                        }));
 
-        //                 let start = start as usize;
-        //                 let end = match end {
-        //                     Some(i) => i as usize,
-        //                     None => 256,
-        //                 };
-        //                 if start < end {
-        //                     bytes[start..end].fill(Some(value));
-        //                 }
-        //             }
-        //             TestOp::Set { index, value } => {
-        //                 let old_value = blocks.set(index as u64, value);
-        //                 assert_eq!(bytes[index as usize], old_value, "wrong old value");
-        //                 bytes[index as usize] = Some(value);
-        //             }
-        //             TestOp::ShiftInsert { start, end, value } => {
-        //                 blocks.shift_insert(start as u64, end as u64, value);
-        //                 if let Some(delta) = end.checked_sub(start) {
-        //                     bytes[start as usize..].rotate_right(delta as usize);
-        //                     bytes[start as usize..end as usize].fill(value);
-        //                     shift_inserted = true;
-        //                 }
-        //             }
-        //             TestOp::ShiftRemove { start, end } => {
-        //                 blocks.shift_remove(start as u64, end as u64);
-        //                 if let Some(delta) = end.checked_sub(start) {
-        //                     bytes[start as usize..].rotate_left(delta as usize);
-        //                     // Oops, we actually don't know what these indices
-        //                     // are supposed to be
-        //                     for i in 256 - delta as usize..256 {
-        //                         bytes[i] = blocks.get(i).expect("missing value");
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
+                        // Before we update `expected`, check that undo works
+                        // correctly.
+                        let mut test = actual.clone();
+                        test.set_blocks(reverse_op);
+                        assert_matches_vec(expected.clone(), infinity, test);
 
-        //     assert_matches_vec(bytes, blocks, shift_inserted);
-        // }
+                        let start = start as usize;
+                        let end = match end {
+                            Some(i) => i as usize,
+                            None => {
+                                infinity = value;
+                                expected.len()
+                            }
+                        };
+                        if start < end {
+                            expected[start..end].fill(value);
+                        }
+                    }
+                    TestOp::Set { index, value } => {
+                        while expected.len() <= index as usize {
+                            expected.push(infinity);
+                        }
+                        let old_value = actual.set(index as u64, value);
+                        let expected_old_value = (index > 0).then_some(expected[index as usize]);
+                        assert_eq!(expected_old_value, old_value, "wrong old value");
+                        expected[index as usize] = value;
+                    }
+                    TestOp::Increment { index } => {
+                        let ret = actual.update(index as u64, |n| {
+                            *n = n.wrapping_add(1);
+                            42
+                        });
+                        assert_eq!((index > 0).then_some(42), ret);
+                        expected[index as usize] = expected[index as usize].wrapping_add(1);
+                    }
+                    TestOp::IncrementRange { start, end } => {
+                        let reverse_op = actual.update_range(
+                            start as u64,
+                            end.map(|i| i as u64).unwrap_or(u64::MAX),
+                            |n| std::mem::replace(n, n.wrapping_add(1)),
+                        );
+
+                        // Before we update `expected`, check that undo works
+                        // correctly.
+                        let mut test = actual.clone();
+                        for block in reverse_op {
+                            test.raw_set_block(block);
+                        }
+                        assert_matches_vec(expected.clone(), infinity, test);
+
+                        let start = start as usize;
+                        let end = match end {
+                            Some(i) => i as usize,
+                            None => {
+                                infinity = infinity.wrapping_add(1);
+                                expected.len()
+                            }
+                        };
+                        for i in start..end {
+                            expected[i] = expected[i].wrapping_add(1);
+                        }
+                    }
+                    TestOp::ShiftInsert { start, end, value } => {
+                        actual.shift_insert(start as u64, end as u64, value);
+                        for i in start.max(1)..end.max(1) {
+                            expected.insert(i as usize, value);
+                        }
+                    }
+                    TestOp::ShiftRemove { start, end } => {
+                        actual.shift_remove(start as u64, end as u64);
+                        for _ in start.max(1)..end.max(1) {
+                            expected.remove(start as usize);
+                        }
+                    }
+                }
+            }
+
+            assert_matches_vec(expected, infinity, actual);
+        }
     }
 
     fn assert_matches_vec(mut expected: Vec<u8>, infinity: u8, actual: ContiguousBlocks<u8>) {
-        // println!("{expected:?}");
-        // println!("{actual:?}");
-
         actual.check_validity().unwrap();
 
         assert_eq!(None, actual.get(0));
         for i in 1..expected.len() {
             assert_eq!(expected.get(i), actual.get(i as u64), "wrong value at {i}");
         }
-        assert_eq!(Some(&infinity), actual.get(expected.len().max(1) as u64));
+        assert_eq!(
+            Some(&infinity),
+            actual.get(expected.len().max(1) as u64),
+            "wrong value at infinity",
+        );
 
-        let is_all_default = expected[1..].iter().all(|&val| val == 0) && infinity == 0;
+        // remove index 0 from `expected` because `actual` skips index 0
+        if !expected.is_empty() {
+            expected.remove(0);
+        }
+
+        let is_all_default = expected.iter().all(|&val| val == 0) && infinity == 0;
         assert_eq!(is_all_default, actual.is_all_default());
 
         while expected.last() == Some(&infinity) {
             expected.pop();
         }
-        if expected.is_empty() {
-            assert_eq!(0, actual.finite_max());
-        } else if infinity == 0 {
-            assert_eq!(expected.len() as u64 - 1, actual.finite_max());
+        let expected_finite_max = if infinity == 0 {
+            expected.len() as u64 // finite values only
         } else {
-            assert_eq!(expected.len() as u64, actual.finite_max());
-        }
+            expected.len() as u64 + 1 // infinite values starting at last block
+        };
+        assert_eq!(expected_finite_max, actual.finite_max(), "wrong finite max");
 
         // Check that we are using the minimal number of blocks
-        let actual_block_count = actual.0.len();
         let expected_block_count = expected.iter().dedup().count() + 1;
+        let actual_block_count = actual.0.len();
         assert_eq!(expected_block_count, actual_block_count, "too many blocks");
+
+        expected.push(infinity);
+        let expected_non_default_blocks = expected.iter().dedup().filter(|&&x| x != 0);
+        let actual_non_default_blocks = actual.non_default_blocks().map(|block| &block.value);
+        itertools::assert_equal(expected_non_default_blocks, actual_non_default_blocks);
 
         // Make sure we didn't lose any `u64::MAX` coordinates
         const FINITE_LIMIT: u64 = u64::MAX / 2; // doesn't matter exactly what this is

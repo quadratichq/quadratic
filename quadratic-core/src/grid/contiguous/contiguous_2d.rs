@@ -108,11 +108,15 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         .unwrap_or_default()
     }
 
-    /// Sets a single value and returns the old one, or `None` if `pos` is
-    /// invalid.
-    pub fn set(&mut self, pos: Pos, value: T) -> Option<T> {
-        let (x, y) = convert_pos(pos)?;
-        self.0.update(x, |col| col.set(y, value))?
+    /// Sets a single value and returns the old one, or `T::default()` if `pos`
+    /// is invalid.
+    pub fn set(&mut self, pos: Pos, value: T) -> T {
+        // IIFE to mimic try_block
+        (|| {
+            let (x, y) = convert_pos(pos)?;
+            self.0.update(x, |col| col.set(y, value))?
+        })()
+        .unwrap_or_default()
     }
 
     /// For each non-`None` value in `other`, updates the range in `self` using
@@ -125,10 +129,16 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         other: &Contiguous2D<Option<U>>,
         update_fn: impl Fn(&mut T, &U) -> Option<R>,
     ) -> Contiguous2D<Option<R>> {
+        println!("update from");
+        for block in other.0.iter() {
+            println!("{:?}", (block.start, block.end))
+        }
         self.0
             .update_non_default_from(&other.0, |col, col_update| {
+                println!("inner 1");
                 Some(
                     col.update_non_default_from(col_update, |value, value_update| {
+                        println!("inner 2");
                         update_fn(value, value_update.as_ref()?)
                     }),
                 )
@@ -236,8 +246,8 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         let column = convert_coord(column)?;
 
         let mut ret = Contiguous2D::new();
-        let removed_column = self.0.get(column).cloned().unwrap_or_default().map(Some);
-        ret.0.set(column, removed_column);
+        let column_data = self.0.get(column).cloned().unwrap_or_default().map(Some);
+        ret.0.set(column, column_data);
         Some(ret)
     }
 
@@ -484,224 +494,224 @@ fn convert_rect(
         .unwrap_or(u64::MAX)
         .saturating_add(1);
 
-    (x1 < x2 && y1 < y2).then_some((x1, x2, y1, y2))
+    (x1 < x2 && y1 < y2).then_some((x1, y1, x2, y2))
 }
 
-// #[cfg(test)]
-// #[serial_test::parallel]
-// mod tests {
-//     use super::*;
-//     use itertools::Itertools;
-//     use proptest::prelude::*;
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use super::*;
 
-//     #[test]
-//     fn test_is_empty() {
-//         let mut c = Contiguous2D::<Option<bool>>::new();
-//         assert!(c.is_all_default());
-//         c.set(pos![A1], Some(true));
-//         assert!(!c.is_all_default());
-//     }
+    #[test]
+    fn test_is_empty() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        assert!(c.is_all_default());
+        c.set(pos![A1], Some(true));
+        assert!(!c.is_all_default());
+    }
 
-//     #[test]
-//     fn test_set() {
-//         let mut c = Contiguous2D::<Option<bool>>::new();
-//         assert_eq!(c.set(pos![A1], Some(true)), None);
-//         assert_eq!(c.get(pos![A1]), Some(&true));
-//         assert_eq!(c.set(pos![A1], Some(false)), Some(true));
-//         assert_eq!(c.get(pos![A1]), Some(&false));
-//     }
+    #[test]
+    fn test_set() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        assert_eq!(c.set(pos![A1], Some(true)), None);
+        assert_eq!(c.get(pos![A1]), Some(true));
+        assert_eq!(c.set(pos![A1], Some(false)), Some(true));
+        assert_eq!(c.get(pos![A1]), Some(false));
+    }
 
-//     #[test]
-//     fn test_set_rect() {
-//         let mut c = Contiguous2D::<bool>::new();
+    #[test]
+    fn test_set_rect() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
 
-//         let mut undo = Contiguous2D::<Option<bool>>::new();
-//         undo.set_rect(2, 2, Some(10), Some(10), Some(None));
+        let mut undo = Contiguous2D::<Option<Option<bool>>>::new();
+        undo.set_rect(2, 2, Some(10), Some(10), Some(None));
 
-//         assert_eq!(c.set_rect(2, 2, Some(10), Some(10), Some(true)), undo);
-//         assert_eq!(c.get(pos![A1]), None);
-//         assert_eq!(c.get(pos![B2]), Some(&true));
-//         assert_eq!(c.get(pos![J10]), Some(&true));
+        assert_eq!(c.set_rect(2, 2, Some(10), Some(10), Some(true)), undo);
+        assert_eq!(c.get(pos![A1]), None);
+        assert_eq!(c.get(pos![B2]), Some(true));
+        assert_eq!(c.get(pos![J10]), Some(true));
 
-//         let mut undo2 = Contiguous2D::<Option<bool>>::new();
-//         undo2.set(Pos { x: 5, y: 5 }, Some(Some(true)));
-//         assert_eq!(c.set_rect(5, 5, Some(5), Some(5), Some(false)), undo2);
-//         assert_eq!(c.get(Pos { x: 5, y: 5 }), Some(&false));
+        let mut undo2 = Contiguous2D::<Option<Option<bool>>>::new();
+        undo2.set(Pos { x: 5, y: 5 }, Some(Some(true)));
+        assert_eq!(c.set_rect(5, 5, Some(5), Some(5), Some(false)), undo2);
+        assert_eq!(c.get(Pos { x: 5, y: 5 }), Some(false));
 
-//         c.set_from(undo2);
-//         assert_eq!(c.get(Pos { x: 5, y: 5 }), Some(&true));
-//         assert_eq!(c.get(pos![A1]), None);
-//         assert_eq!(c.get(pos![B2]), Some(&true));
+        c.set_from(&undo2);
+        assert_eq!(c.get(Pos { x: 5, y: 5 }), Some(true));
+        assert_eq!(c.get(pos![A1]), None);
+        assert_eq!(c.get(pos![B2]), Some(true));
 
-//         c.set_from(undo);
-//         assert_eq!(c.get(pos![A1]), None);
-//         assert_eq!(c.get(pos![B2]), None);
-//         assert_eq!(c.get(pos![J10]), None);
-//     }
+        c.set_from(&undo);
+        assert_eq!(c.get(pos![A1]), None);
+        assert_eq!(c.get(pos![B2]), None);
+        assert_eq!(c.get(pos![J10]), None);
+    }
 
-//     #[test]
-//     fn test_set_rect_infinite() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         let mut undo = Contiguous2D::<Option<bool>>::new();
-//         undo.set_rect(1, 1, None, None, Some(None));
-//         assert_eq!(c.set_rect(1, 1, None, None, Some(true)), undo);
+    #[test]
+    fn test_set_rect_infinite() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        let mut undo = Contiguous2D::<Option<Option<bool>>>::new();
+        undo.set_rect(1, 1, None, None, Some(None));
+        assert_eq!(c.set_rect(1, 1, None, None, Some(true)), undo);
 
-//         assert_eq!(c.get(pos![A1]), Some(&true));
-//         assert_eq!(c.get(pos![B2]), Some(&true));
-//         assert_eq!(c.get(pos![Z1000]), Some(&true));
-//     }
+        assert_eq!(c.get(pos![A1]), Some(true));
+        assert_eq!(c.get(pos![B2]), Some(true));
+        assert_eq!(c.get(pos![Z1000]), Some(true));
+    }
 
-//     #[test]
-//     fn test_set_column() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         let mut undo = Contiguous2D::<Option<bool>>::new();
-//         undo.set_rect(2, 1, Some(2), None, Some(None));
-//         assert_eq!(c.set_rect(2, 1, Some(2), None, Some(true)), undo);
+    #[test]
+    fn test_set_column() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        let mut undo = Contiguous2D::<Option<Option<bool>>>::new();
+        undo.set_rect(2, 1, Some(2), None, Some(None));
+        assert_eq!(c.set_rect(2, 1, Some(2), None, Some(true)), undo);
 
-//         assert_eq!(c.get(pos![B2]), Some(&true));
-//         assert_eq!(c.get(pos![B100000]), Some(&true));
-//         assert_eq!(c.get(pos![A1]), None);
+        assert_eq!(c.get(pos![B2]), Some(true));
+        assert_eq!(c.get(pos![B100000]), Some(true));
+        assert_eq!(c.get(pos![A1]), None);
 
-//         c.set_from(undo);
-//         assert_eq!(c.get(pos![B2]), None);
-//         assert_eq!(c.get(pos![B100000]), None);
-//     }
+        c.set_from(&undo);
+        assert_eq!(c.get(pos![B2]), None);
+        assert_eq!(c.get(pos![B100000]), None);
+    }
 
-//     #[test]
-//     fn test_set_row() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         let mut undo = Contiguous2D::<Option<bool>>::new();
-//         undo.set_rect(1, 2, None, Some(2), Some(None));
-//         assert_eq!(c.set_rect(1, 2, None, Some(2), Some(true)), undo);
+    #[test]
+    fn test_set_row() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        let mut undo = Contiguous2D::<Option<Option<bool>>>::new();
+        undo.set_rect(1, 2, None, Some(2), Some(None));
+        assert_eq!(c.set_rect(1, 2, None, Some(2), Some(true)), undo);
 
-//         assert_eq!(c.get(pos![A2]), Some(&true));
-//         assert_eq!(c.get(pos![ZZZZ2]), Some(&true));
+        assert_eq!(c.get(pos![A2]), Some(true));
+        assert_eq!(c.get(pos![ZZZZ2]), Some(true));
 
-//         c.set_from(undo);
-//         assert_eq!(c.get(pos![A2]), None);
-//         assert_eq!(c.get(pos![ZZZZ2]), None);
-//     }
+        c.set_from(&undo);
+        assert_eq!(c.get(pos![A2]), None);
+        assert_eq!(c.get(pos![ZZZZ2]), None);
+    }
 
-//     #[test]
-//     fn test_insert_column() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
+    #[test]
+    fn test_insert_column() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
 
-//         c.insert_column(2, CopyFormats::After);
+        c.insert_column(2, CopyFormats::After);
 
-//         assert_eq!(c.get(pos![B2]), Some(&true));
-//         assert_eq!(c.get(pos![B10]), Some(&true));
-//         assert_eq!(c.get(pos![B11]), None);
+        assert_eq!(c.get(pos![B2]), Some(true));
+        assert_eq!(c.get(pos![B10]), Some(true));
+        assert_eq!(c.get(pos![B11]), None);
 
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
 
-//         c.insert_column(2, CopyFormats::Before);
-//         assert_eq!(c.get(pos![B2]), None);
-//         assert_eq!(c.get(pos![B10]), None);
-//     }
+        c.insert_column(2, CopyFormats::Before);
+        assert_eq!(c.get(pos![B2]), None);
+        assert_eq!(c.get(pos![B10]), None);
+    }
 
-//     #[test]
-//     fn test_insert_row() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
-//         assert_eq!(c.get(pos![B2]), Some(&true));
+    #[test]
+    fn test_insert_row() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        assert_eq!(c.get(pos![B2]), Some(true));
 
-//         c.insert_row(2, CopyFormats::After);
+        c.insert_row(2, CopyFormats::After);
 
-//         assert_eq!(c.get(pos![B2]), Some(&true));
-//         assert_eq!(c.get(pos![D2]), Some(&true));
-//         assert_eq!(c.get(pos![K2]), None);
+        assert_eq!(c.get(pos![B2]), Some(true));
+        assert_eq!(c.get(pos![D2]), Some(true));
+        assert_eq!(c.get(pos![K2]), None);
 
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
 
-//         c.insert_row(2, CopyFormats::Before);
-//         assert_eq!(c.get(pos![B2]), None);
-//         assert_eq!(c.get(pos![D2]), None);
-//     }
+        c.insert_row(2, CopyFormats::Before);
+        assert_eq!(c.get(pos![B2]), None);
+        assert_eq!(c.get(pos![D2]), None);
+    }
 
-//     #[test]
-//     fn test_remove_column() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
-//         assert_eq!(c.get(Pos { x: 10, y: 2 }), Some(&true));
+    #[test]
+    fn test_remove_column() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        assert_eq!(c.get(Pos { x: 10, y: 2 }), Some(true));
 
-//         c.remove_column(3);
-//         assert_eq!(c.get(Pos { x: 10, y: 2 }), None);
-//         assert_eq!(c.get(Pos { x: 9, y: 2 }), Some(&true));
-//     }
+        c.remove_column(3);
+        assert_eq!(c.get(Pos { x: 10, y: 2 }), None);
+        assert_eq!(c.get(Pos { x: 9, y: 2 }), Some(true));
+    }
 
-//     #[test]
-//     fn test_remove_row() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
-//         assert_eq!(c.get(Pos { x: 2, y: 10 }), Some(&true));
+    #[test]
+    fn test_remove_row() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        assert_eq!(c.get(Pos { x: 2, y: 10 }), Some(true));
 
-//         c.remove_row(3);
-//         assert_eq!(c.get(Pos { x: 2, y: 10 }), None);
-//         assert_eq!(c.get(Pos { x: 2, y: 9 }), Some(&true));
-//     }
+        c.remove_row(3);
+        assert_eq!(c.get(Pos { x: 2, y: 10 }), None);
+        assert_eq!(c.get(Pos { x: 2, y: 9 }), Some(true));
+    }
 
-//     #[test]
-//     fn test_rect_values() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
-//         assert_eq!(
-//             c.rect_values(Rect::test_a1("A1:J10")),
-//             vec![Some(true); 10 * 10]
-//         );
-//     }
+    #[test]
+    fn test_rect_values() {
+        let mut c = Contiguous2D::<bool>::new();
+        c.set_rect(2, 2, Some(10), Some(10), true);
+        assert_eq!(
+            c.rect_values(Rect::test_a1("A1:J10")),
+            vec![Some(true); 10 * 10]
+        );
+    }
 
-//     #[test]
-//     fn test_intersects() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
-//         assert!(c.intersects(Rect::test_a1("A1:J10")));
-//         assert!(!c.intersects(Rect::test_a1("A1")));
-//     }
+    #[test]
+    fn test_intersects() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        assert!(c.intersects(Rect::test_a1("A1:J10")));
+        assert!(!c.intersects(Rect::test_a1("A1")));
+    }
 
-//     #[test]
-//     fn test_new_from_selection() {
-//         let c =
-//             Contiguous2D::<bool>::new_from_selection(&A1Selection::test_a1("A1:B2"), Some(true));
-//         assert_eq!(c.get(pos![A1]), Some(&Some(true)));
-//         assert_eq!(c.get(pos![A2]), Some(&Some(true)));
-//         assert_eq!(c.get(pos![B1]), Some(&Some(true)));
-//         assert_eq!(c.get(pos![B2]), Some(&Some(true)));
-//         assert_eq!(c.get(pos![C1]), None);
-//     }
+    #[test]
+    fn test_new_from_selection() {
+        let c = Contiguous2D::<Option<bool>>::new_from_selection(
+            &A1Selection::test_a1("A1:B2"),
+            Some(true),
+        );
+        assert_eq!(c.get(pos![A1]), Some(true));
+        assert_eq!(c.get(pos![A2]), Some(true));
+        assert_eq!(c.get(pos![B1]), Some(true));
+        assert_eq!(c.get(pos![B2]), Some(true));
+        assert_eq!(c.get(pos![C1]), None);
+    }
 
-//     #[test]
-//     fn test_copy_column() {
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
-//         let copy = c.copy_column(3).unwrap();
-//         assert_eq!(copy.get(pos![D2]), Some(&Some(true)));
-//     }
+    #[test]
+    fn test_copy_column() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        let copy = c.copy_column(3).unwrap();
+        assert_eq!(copy.get(Pos { x: 3, y: 2 }), Some(Some(true)));
+    }
 
-//     #[test]
-//     fn test_to_rects_with_bounds() {
-//         fn sheet_bounds(_ignore_formatting: bool) -> Option<Rect> {
-//             Some(Rect::test_a1("A1:J10"))
-//         }
+    #[test]
+    fn test_to_rects_with_bounds() {
+        fn sheet_bounds(_ignore_formatting: bool) -> Option<Rect> {
+            Some(Rect::test_a1("A1:J10"))
+        }
 
-//         fn columns_bounds(_start: i64, _end: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
-//             Some((1, 10))
-//         }
+        fn columns_bounds(_start: i64, _end: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
+            Some((1, 10))
+        }
 
-//         fn rows_bounds(_start: i64, _end: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
-//             Some((1, 10))
-//         }
+        fn rows_bounds(_start: i64, _end: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
+            Some((1, 10))
+        }
 
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, Some(10), Some(10), Some(true));
-//         let mut rects = c.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
-//         assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, Some(10), Some(10), Some(true));
+        let mut rects = c.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
+        assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
 
-//         let mut c = Contiguous2D::<bool>::new();
-//         c.set_rect(2, 2, None, None, Some(true));
-//         let mut rects = c.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
-//         assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
-//     }
-// }
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(2, 2, None, None, Some(true));
+        let mut rects = c.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true);
+        assert_eq!(rects.next().unwrap(), (2, 2, 10, 10, true));
+    }
+}
