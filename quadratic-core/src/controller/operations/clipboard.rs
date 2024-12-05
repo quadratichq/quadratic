@@ -64,7 +64,6 @@ pub struct Clipboard {
     pub values: CellValues,
 
     pub formats: SheetFormatUpdates,
-    pub sheet_formats: ClipboardSheetFormats,
 
     pub borders: Option<(OldSelection, BorderStyleCellUpdates)>,
 
@@ -120,65 +119,6 @@ impl GridController {
             }
             _ => (None, vec![]),
         }
-    }
-
-    /// Sets sheet formats from ClipboardSheetFormats.
-    ///
-    /// Returns a list of operations to undo the change.
-    fn sheet_formats_operations(
-        &mut self,
-        _selection: &A1Selection,
-        _sheet_formats: ClipboardSheetFormats,
-    ) -> Vec<Operation> {
-        dbgjs!("todo: implement sheet_formats_operations");
-        vec![]
-        // let mut ops = vec![];
-        // if let Some(all) = sheet_formats.all {
-        //     let formats = Formats::repeat(all.into(), 1);
-        //     ops.push(Operation::SetCellFormatsSelection {
-        //         selection: OldSelection {
-        //             sheet_id: selection.sheet_id,
-        //             all: true,
-        //             ..Default::default()
-        //         },
-        //         formats,
-        //     });
-        // } else {
-        //     let mut formats = Formats::new();
-        //     let mut new_selection = OldSelection {
-        //         sheet_id: selection.sheet_id,
-        //         ..Default::default()
-        //     };
-        //     let columns = sheet_formats
-        //         .columns
-        //         .into_iter()
-        //         .map(|(column, format)| {
-        //             formats.push(format.into());
-        //             column + selection.x
-        //         })
-        //         .collect::<Vec<_>>();
-        //     if !columns.is_empty() {
-        //         new_selection.columns = Some(columns);
-        //     }
-        //     let rows = sheet_formats
-        //         .rows
-        //         .into_iter()
-        //         .map(|(row, format)| {
-        //             formats.push(format.into());
-        //             row + selection.y
-        //         })
-        //         .collect::<Vec<_>>();
-        //     if !rows.is_empty() {
-        //         new_selection.rows = Some(rows);
-        //     }
-        //     if !formats.is_empty() {
-        //         ops.push(Operation::SetCellFormatsSelection {
-        //             selection: new_selection,
-        //             formats,
-        //         });
-        //     }
-        // }
-        // ops
     }
 
     /// Gets operations to add validations from clipboard to sheet.
@@ -288,20 +228,10 @@ impl GridController {
 
         // paste formats and borders if not PasteSpecial::Values
         if !matches!(special, PasteSpecial::Values) {
-            let sheet_rect = SheetRect {
-                min: start_pos,
-                max: Pos {
-                    x: start_pos.x + (clipboard.w as i64) - 1,
-                    y: start_pos.y + (clipboard.h as i64) - 1,
-                },
-                sheet_id: selection.sheet_id,
-            };
             ops.push(Operation::SetCellFormatsA1 {
                 sheet_id: selection.sheet_id,
                 formats: clipboard.formats,
             });
-
-            ops.extend(self.sheet_formats_operations(selection, clipboard.sheet_formats));
 
             if let Some((selection, borders)) = clipboard.borders {
                 let selection = selection.translate(start_pos.x, start_pos.y);
