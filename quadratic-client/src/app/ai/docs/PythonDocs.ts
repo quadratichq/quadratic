@@ -26,21 +26,20 @@ In Quadratic, reference individual cells from Python for single values or refere
 
 Referencing individual cells
 
-To reference an individual cell, use the global function \`cell\` (or \`c\` for short) which returns the cell value.
+To reference an individual cell, use the global function \`q.cells\` which returns the cell value.
 
 \`\`\`python
-# NOTE: cell is (x,y), so cell(2,3) means column 2, row 3 
-cell(2, 3) # Returns the value of the cell
+# NOTE: uses the same A1 notation as Formulas
+# Reads the value in cell A1 and places in variable x 
+x = q.cells('A1')
 
-c(2, 3) # Returns the value of the cell
+q.cells('A3') # Returns the value of the cell at A3
 \`\`\`
 
 You can reference cells and use them directly in a Pythonic fashion. 
 
 \`\`\`python
-cell(0, 0) + cell(0, 1) # Adds cell 0, 0 and cell 0, 1
-
-cell(0, 0) == cell(0, 1) # Is cell 0, 0 equal to cell 0, 1 ?
+q.cells('A1') + q.cells('A2') # Adds the values in cells A1 and A2 
 \`\`\`
 
 Any time cells dependent on other cells update the dependent cell will also update. This means your code will execute in one cell if it is dependent on another.
@@ -51,7 +50,17 @@ Referencing a range of cells
 To reference a range of cells, use the global function \`cells\` which returns a Pandas DataFrame.
 
 \`\`\`python
-cells((0, 0), (2, 2)) # Returns a DataFrame with the cell values
+q.cells('A1:A5') # Returns a 1x5 DataFrame spanning from A1 to A5
+
+q.cells('A1:C7') # Returns a 3x7 DataFrame spanning from A1 to C7
+
+q.cells('A') # Returns all values in column A into a single-column DataFrame
+
+q.cells('A:C') # Returns all values in columns A to C into a three-column DataFrame
+
+q.cells('A5:A') # Returns all values in column A starting at A5 and going down
+
+q.cells('A5:C') # Returns all values in column A to C, starting at A5 and going down
 \`\`\`
 
 If the first row of cells is a header, you should set \`first_row_header\` as an argument. This makes the first row of your DataFrame the column names, otherwise will default to integer column names as 0, 1, 2, 3, etc.
@@ -60,50 +69,20 @@ Use first_row_header when you have column names that you want as the header of t
 
 \`\`\`python
 # first_row_header=True will be used any time the first row is the intended header for that data.
-cells((2, 2), (7, 52), first_row_header=True)
+q.cells('A1:B9', first_row_header=True) # returns a 2x9 DataFrame with first rows as DataFrame headers
 \`\`\`
 
 As an example, this code references a table of expenses, filters it based on a user-specified column, and returns the resulting DataFrame to the spreadsheet.
 
 \`\`\`python
 # Pull the full expenses table in as a DataFrame
-expenses_table = cells((2, 2), (7, 52), first_row_header=True)
+expenses_table = q.cells('B2:F54', first_row_header=True)
 
 # Take user input at a cell (Category = "Gas")
-category = cell(10, 0)
+category = q.cells('A2')
 
 # Filter the full expenses table to the "Gas" category, return the resulting DataFrame
 expenses_table[expenses_table["Category"] == category]
-\`\`\`
-
-Alternatively, slicing syntax works for selecting a range of cells (returns a Pandas DataFrame).
-
-\`\`\`python
-# Given a table like this:
-#
-#    [  0  ][  1  ]
-# [0][ 100 ][ 600 ]
-# [1][ 200 ][ 700 ]
-# [2][ 300 ][ 800 ]
-# [3][ 400 ][ 900 ]
-# [4][ 500 ][  0  ]
-
-# table[row, col]
-table[0, 0] # -> [100]
-table[0, 1] # -> [200]
-table[1, 0] # -> [600]
-table[1, 1] # -> [700]
-
-# table[row_min:row_max, col]
-table[0:5, 0] # -> [100, 200, 300, 400, 500]
-table[0:5, 1] # -> [600, 700, 800, 900, 0]
-
-# table[row, col_min:col_max]
-table[0, 0:2] # -> [100, 600]
-table[1, 0:2] # -> [200, 700]
-
-# table[row_min:row_max, col_min:col_max]
-table[0:3, 0:2] # -> [[100, 200, 300], [600, 700, 800]]
 \`\`\`
 
 Referencing another sheet
@@ -112,48 +91,50 @@ To reference another sheet's cells or range of cells use the following:
 
 \`\`\`python
 # Use the sheet name as an argument for referencing range of cells 
-df = cells((0,0), (3,50), 'Sheet Name Here')
+q.cells("'Sheet_name_here'!A1:C9")
 
-# For individual cell reference (alternatively can use just c instead of cell)
-x = cell(0,0, 'Sheet Name Here')
+# For individual cell reference 
+q.cells("'Sheet_name_here'!A1")
 \`\`\`
 
-Relative references
+Column references
 
-Reference cells relative to the cell you're currently in with relative cell references in Python. 
+To reference all the data in a column or set of columns without defining the range, use the following syntax. 
 
-Get position of current cell
-
-Keyword \`pos()\` returns a tuple of the \`(x, y)\` coordinates of the current cell. 
+Column references span from row 1 to wherever the content in that column ends. 
 
 \`\`\`python
-# if the current position is cell (1,1) this would return tuple (1,1)
-(x, y) = pos() 
+# references all values in the column from row 1 to the end of the content 
+q.cells('A') # returns all the data in the column starting from row 1 to end of data 
+
+q.cells('A:D') # returns all the data in columns A to D starting from row 1 to end of data in longest column
+
+q.cells('A5:A') # returns all values from A5 to the end of the content in column A 
+
+q.cells('A5:C') # returns all values from A5 to end of content in C
+
+q.cells('A:C', first_row_header=True) # same rules with first_row_header apply 
+
+q.cells("'Sheet2'!A:C", first_row_header=True) # same rules to reference in other sheets apply
 \`\`\`
 
-Reference values in relative cells
 
-Reference the values of cells relative the current position. 
+Relative vs absolute references
+
+By default when you copy paste a reference it will update the row reference unless you use $ notation in your references. 
 
 \`\`\`python
-# data is the cell one cell to the left of the current cell, use either rel_cell or rc
-data = rel_cell(-1, 0)
-data = rc(-1, 0)
+# Copy pasting this one row down will change reference to A2
+q.cells('A1')
 
-# above for one cell to the left is equivalent to the following 
-(x, y) = pos()
-data = cell(x - 1, y)
+# Copy pasting this one row down will keep reference as A1
+q.cells('A$1')
 
-# one cell left
-data = rel_cell(-1, 0)
-# one cell up 
-data = rel_cell(0, -1)
-# one cell right 
-data = rel_cell(1, 0)
-# one cell down
-data = rel_cell(0, 1)
-# five cells left, five cells down
-data = rel_cell(-5, 5)
+# Example using ranges - row references will not change
+q.cells('A$1:B$20)
+
+# Only A reference will change when copied down
+q.cells('A1:B$20')
 \`\`\`
 
 # Return data to the sheet
