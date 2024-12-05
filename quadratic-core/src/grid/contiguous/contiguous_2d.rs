@@ -159,7 +159,6 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
             for y_block in xy_block.value.clone() {
                 column_data.raw_set_block(y_block);
             }
-            ()
         });
     }
     /// Returns all data as 2D blocks.

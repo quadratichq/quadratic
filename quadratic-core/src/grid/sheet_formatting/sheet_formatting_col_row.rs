@@ -143,14 +143,14 @@ mod tests {
         formatting.insert_column(1, CopyFormats::After);
 
         // Check if values were inserted correctly
-        assert_eq!(formatting.bold.get(pos![A1]), true);
-        assert_eq!(formatting.italic.get(pos![A2]), true);
+        assert!(formatting.bold.get(pos![A1]));
+        assert!(formatting.italic.get(pos![A2]));
         assert_eq!(formatting.text_color.get(pos![A3]), Some("red".to_string()));
         assert_eq!(formatting.align.get(pos![A4]), Some(CellAlign::Center));
 
         // Check if values were shifted correctly
-        assert_eq!(formatting.bold.get(pos![B1]), true);
-        assert_eq!(formatting.italic.get(pos![B2]), true);
+        assert!(formatting.bold.get(pos![B1]));
+        assert!(formatting.italic.get(pos![B2]));
         assert_eq!(formatting.text_color.get(pos![B3]), Some("red".to_string()));
         assert_eq!(formatting.align.get(pos![B4]), Some(CellAlign::Center));
     }
@@ -166,14 +166,14 @@ mod tests {
         formatting.insert_row(1, CopyFormats::After);
 
         // Check if values were inserted correctly
-        assert_eq!(formatting.bold.get(pos![A1]), true);
-        assert_eq!(formatting.italic.get(pos![B1]), true);
+        assert!(formatting.bold.get(pos![A1]));
+        assert!(formatting.italic.get(pos![B1]));
         assert_eq!(formatting.text_color.get(pos![C1]), Some("red".to_string()));
         assert_eq!(formatting.align.get(pos![D1]), Some(CellAlign::Center));
 
         // Check if values were shifted correctly
-        assert_eq!(formatting.bold.get(pos![A2]), true);
-        assert_eq!(formatting.italic.get(pos![B2]), true);
+        assert!(formatting.bold.get(pos![A2]));
+        assert!(formatting.italic.get(pos![B2]));
         assert_eq!(formatting.text_color.get(pos![C2]), Some("red".to_string()));
         assert_eq!(formatting.align.get(pos![D2]), Some(CellAlign::Center));
     }
@@ -189,15 +189,15 @@ mod tests {
         let updates = formatting.remove_column(1);
 
         // Should be no values left
-        assert_eq!(formatting.bold.get(pos![A1]), false);
-        assert_eq!(formatting.italic.get(pos![A2]), false);
+        assert!(!formatting.bold.get(pos![A1]));
+        assert!(!formatting.italic.get(pos![A2]));
         assert_eq!(formatting.text_color.get(pos![A3]), None);
         assert_eq!(formatting.align.get(pos![A4]), None);
 
         // undo the changes
         formatting.apply_updates(&updates);
-        assert_eq!(formatting.bold.get(pos![A1]), true);
-        assert_eq!(formatting.italic.get(pos![A2]), true);
+        assert!(formatting.bold.get(pos![A1]));
+        assert!(formatting.italic.get(pos![A2]));
         assert_eq!(formatting.text_color.get(pos![A3]), Some("red".to_string()));
         assert_eq!(formatting.align.get(pos![A4]), Some(CellAlign::Center));
     }
@@ -213,15 +213,15 @@ mod tests {
         let updates = formatting.remove_row(1);
 
         // check if row was removed
-        assert_eq!(formatting.bold.get(pos![A1]), false);
-        assert_eq!(formatting.italic.get(pos![B1]), false);
+        assert!(!formatting.bold.get(pos![A1]));
+        assert!(!formatting.italic.get(pos![B1]));
         assert_eq!(formatting.text_color.get(pos![C1]), None);
         assert_eq!(formatting.align.get(pos![D1]), None);
 
         // undo the changes
         formatting.apply_updates(&updates);
-        assert_eq!(formatting.bold.get(pos![A1]), true);
-        assert_eq!(formatting.italic.get(pos![B1]), true);
+        assert!(formatting.bold.get(pos![A1]));
+        assert!(formatting.italic.get(pos![B1]));
         assert_eq!(formatting.text_color.get(pos![C1]), Some("red".to_string()));
         assert_eq!(formatting.align.get(pos![D1]), Some(CellAlign::Center));
     }

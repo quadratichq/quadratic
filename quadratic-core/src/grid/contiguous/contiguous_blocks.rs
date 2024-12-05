@@ -69,7 +69,7 @@ impl<T: Default + PartialEq> ContiguousBlocks<T> {
     }
 
     /// Returns an iterator over all non-default blocks.
-    fn non_default_blocks(&self) -> impl DoubleEndedIterator + Iterator<Item = &Block<T>> {
+    fn non_default_blocks(&self) -> impl DoubleEndedIterator<Item = &Block<T>> {
         self.0.values().filter(|block| block.value != T::default())
     }
 }
@@ -97,7 +97,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         }
 
         // There is no block that covers the coordinate `0`
-        if self.0.get(&0).is_some() {
+        if self.0.contains_key(&0) {
             return Err("block contains 0");
         }
 

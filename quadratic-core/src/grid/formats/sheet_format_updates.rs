@@ -31,24 +31,18 @@ impl SheetFormatUpdates {
     /// affected cell.
     pub fn from_selection(selection: &A1Selection, update: FormatUpdate) -> Self {
         Self {
-            align: Contiguous2D::new_from_opt_selection(selection, update.align.clone()),
-            vertical_align: Contiguous2D::new_from_opt_selection(
-                selection,
-                update.vertical_align.clone(),
-            ),
-            wrap: Contiguous2D::new_from_opt_selection(selection, update.wrap.clone()),
+            align: Contiguous2D::new_from_opt_selection(selection, update.align),
+            vertical_align: Contiguous2D::new_from_opt_selection(selection, update.vertical_align),
+            wrap: Contiguous2D::new_from_opt_selection(selection, update.wrap),
             numeric_format: Contiguous2D::new_from_opt_selection(
                 selection,
                 update.numeric_format.clone(),
             ),
             numeric_decimals: Contiguous2D::new_from_opt_selection(
                 selection,
-                update.numeric_decimals.clone(),
+                update.numeric_decimals,
             ),
-            numeric_commas: Contiguous2D::new_from_opt_selection(
-                selection,
-                update.numeric_commas.clone(),
-            ),
+            numeric_commas: Contiguous2D::new_from_opt_selection(selection, update.numeric_commas),
             bold: Contiguous2D::new_from_opt_selection(
                 selection,
                 update.bold.map(|opt| opt.unwrap_or(false)), // bold=None -> bold=false
@@ -222,13 +216,12 @@ impl SheetFormatUpdates {
     /// Returns the format for a cell within the SheetFormatUpdates.
     pub fn format_update(&self, pos: Pos) -> FormatUpdate {
         FormatUpdate {
-            align: self.align.as_ref().and_then(|align| align.get(pos)).clone(),
+            align: self.align.as_ref().and_then(|align| align.get(pos)),
             vertical_align: self
                 .vertical_align
                 .as_ref()
-                .and_then(|vertical_align| vertical_align.get(pos))
-                .clone(),
-            wrap: self.wrap.as_ref().and_then(|wrap| wrap.get(pos)).clone(),
+                .and_then(|vertical_align| vertical_align.get(pos)),
+            wrap: self.wrap.as_ref().and_then(|wrap| wrap.get(pos)),
             numeric_format: self
                 .numeric_format
                 .as_ref()
@@ -237,13 +230,11 @@ impl SheetFormatUpdates {
             numeric_decimals: self
                 .numeric_decimals
                 .as_ref()
-                .and_then(|numeric_decimals| numeric_decimals.get(pos))
-                .clone(),
+                .and_then(|numeric_decimals| numeric_decimals.get(pos)),
             numeric_commas: self
                 .numeric_commas
                 .as_ref()
-                .and_then(|numeric_commas| numeric_commas.get(pos))
-                .clone(),
+                .and_then(|numeric_commas| numeric_commas.get(pos)),
             bold: self.bold.as_ref().and_then(|bold| bold.get(pos)).map(Some),
             italic: self
                 .italic

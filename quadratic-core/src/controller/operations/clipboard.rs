@@ -555,13 +555,13 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 3 }), true);
-        assert_eq!(sheet.formats.italic.get(Pos { x: 3, y: 4 }), true);
+        assert!(sheet.formats.italic.get(Pos { x: 3, y: 3 }));
+        assert!(sheet.formats.italic.get(Pos { x: 3, y: 4 }));
 
-        assert_eq!(sheet.formats.italic.get(Pos { x: 1, y: 3 }), true);
-        assert_eq!(sheet.formats.bold.get(Pos { x: 1, y: 3 }), true);
-        assert_eq!(sheet.formats.italic.get(Pos { x: 2, y: 3 }), true);
-        assert_eq!(sheet.formats.bold.get(Pos { x: 2, y: 3 }), true);
+        assert!(sheet.formats.italic.get(Pos { x: 1, y: 3 }));
+        assert!(sheet.formats.bold.get(Pos { x: 1, y: 3 }));
+        assert!(sheet.formats.italic.get(Pos { x: 2, y: 3 }));
+        assert!(sheet.formats.bold.get(Pos { x: 2, y: 3 }));
     }
 
     #[test]

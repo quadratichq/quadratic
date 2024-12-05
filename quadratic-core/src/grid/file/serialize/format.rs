@@ -75,7 +75,7 @@ where
                 end: y_block.end,
                 value: f(y_block.value),
             }),
-        })
+        });
     }
     ret
 }
@@ -161,7 +161,6 @@ where
             end: x_block.end,
             value: x_block
                 .value
-                .into_iter()
                 .map(|y_block| current::BlockSchema {
                     start: y_block.start,
                     end: y_block.end,

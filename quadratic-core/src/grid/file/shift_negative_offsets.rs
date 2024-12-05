@@ -98,8 +98,8 @@ mod test {
             }),
             Some("rgb(23, 200, 165)".to_string())
         );
-        assert_eq!(sheet.formats.bold.get("F1".into()), true);
-        assert_eq!(sheet.formats.italic.get(pos![A9]), true);
+        assert!(sheet.formats.bold.get("F1".into()));
+        assert!(sheet.formats.italic.get(pos![A9]));
         assert_eq!(
             sheet.formats.fill_color.get(Pos { x: i64::MAX, y: 1 }),
             Some("rgb(241, 196, 15)".to_string())
