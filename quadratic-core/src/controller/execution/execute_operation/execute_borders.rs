@@ -72,35 +72,27 @@ impl GridController {
         transaction.sheet_borders.insert(selection.sheet_id);
     }
 
-    pub fn execute_set_borders_a1(
-        &mut self,
-        _transaction: &mut PendingTransaction,
-        _op: Operation,
-    ) {
-        // unwrap_op!(let SetBordersA1 { sheet_id, borders } = op);
+    pub fn execute_set_borders_a1(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        unwrap_op!(let SetBordersA1 { sheet_id, borders } = op);
 
-        // // todo: self.thumbnail_dirty_borders (similar to thumbnail_dirty_formats)
-        // // transaction.generate_thumbnail |= self.thumbnail_dirty_ranges(&ranges);
+        // todo: self.thumbnail_dirty_borders (similar to thumbnail_dirty_formats)
+        // transaction.generate_thumbnail |= self.thumbnail_dirty_ranges(&ranges);
 
-        // let Some(sheet) = self.try_sheet_mut(sheet_id) else {
-        //     return; // sheet may have been deleted
-        // };
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+            return; // sheet may have been deleted
+        };
 
-        // transaction
-        //     .reverse_operations
-        //     .extend(sheet.borders.set_borders_a1(&ranges, &borders));
+        transaction
+            .reverse_operations
+            .extend(sheet.borders_a1.set_borders_a1(sheet_id, &borders));
 
-        // // Do not finitize selection; borders actually *does* treat the sheet as
-        // // infinite.
-        // transaction
-        //     .forward_operations
-        //     .push(Operation::SetBordersA1 {
-        //         sheet_id,
-        //         // subspaces: subspaces.clone(),
-        //         borders,
-        //     });
+        // Do not finitize selection; borders actually *does* treat the sheet as
+        // infinite.
+        transaction
+            .forward_operations
+            .push(Operation::SetBordersA1 { sheet_id, borders });
 
-        // transaction.sheet_borders.insert(sheet_id);
+        transaction.sheet_borders.insert(sheet_id);
     }
 }
 

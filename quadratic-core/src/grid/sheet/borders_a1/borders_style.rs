@@ -1,8 +1,7 @@
 //! Data structures for borders.
 
-use std::{collections::HashMap, hash::Hash};
+use std::hash::Hash;
 
-#[cfg(feature = "js")]
 use crate::color::Rgba;
 use crate::small_timestamp::SmallTimestamp;
 use serde::{Deserialize, Serialize};
@@ -70,7 +69,7 @@ impl CellBorderLine {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, TS)]
 pub enum BorderSide {
     Top,
     Bottom,
@@ -113,11 +112,6 @@ impl BorderStyleTimestamp {
         style.filter(|&style| style.line != CellBorderLine::Clear)
     }
 
-    // /// Returns whether the style is the same by ignoring the timestamp.
-    // pub fn is_equal_to_border_style(&self, other: &BorderStyle) -> bool {
-    //     self.color == other.color && self.line == other.line
-    // }
-
     #[cfg(test)]
     pub fn is_equal_ignore_timestamp(
         b1: Option<BorderStyleTimestamp>,
@@ -158,349 +152,28 @@ pub struct BorderStyleCell {
     pub right: Option<BorderStyleTimestamp>,
 }
 
-// impl From<BorderStyleCell> for BorderStyleCellUpdate {
-//     fn from(cell: BorderStyleCell) -> Self {
-//         BorderStyleCellUpdate {
-//             top: cell.top.map(|ts| ts.into()),
-//             bottom: cell.bottom.map(|ts| ts.into()),
-//             left: cell.left.map(|ts| ts.into()),
-//             right: cell.right.map(|ts| ts.into()),
-//         }
-//     }
-// }
-
-// impl BorderStyleCell {
-//     /// Overrides the border style of the cell with the new border style or
-//     /// clears the border if the new border style is None. If force_clear is
-//     /// true, then the border is set to BorderLineStyle::Clear, otherwise the
-//     /// border is set to Some(None) (ie, removed).
-//     pub fn override_border(&self, force_clear: bool) -> BorderStyleCellUpdate {
-//         let clear = if force_clear {
-//             Some(Some(BorderStyleTimestamp::clear()))
-//         } else {
-//             Some(None)
-//         };
-//         BorderStyleCellUpdate {
-//             top: self.top.map(Some).or(clear),
-//             bottom: self.bottom.map(Some).or(clear),
-//             left: self.left.map(Some).or(clear),
-//             right: self.right.map(Some).or(clear),
-//         }
-//     }
-
-//     pub fn clear() -> BorderStyleCellUpdate {
-//         BorderStyleCellUpdate {
-//             top: Some(Some(BorderStyleTimestamp::clear())),
-//             bottom: Some(Some(BorderStyleTimestamp::clear())),
-//             left: Some(Some(BorderStyleTimestamp::clear())),
-//             right: Some(Some(BorderStyleTimestamp::clear())),
-//         }
-//     }
-
-//     pub fn is_empty(&self) -> bool {
-//         self.top.is_none() && self.bottom.is_none() && self.left.is_none() && self.right.is_none()
-//     }
-
-//     #[cfg(test)]
-//     pub fn all() -> BorderStyleCell {
-//         BorderStyleCell {
-//             top: Some(BorderStyleTimestamp::default()),
-//             bottom: Some(BorderStyleTimestamp::default()),
-//             left: Some(BorderStyleTimestamp::default()),
-//             right: Some(BorderStyleTimestamp::default()),
-//         }
-//     }
-
-//     /// Apply an update to the cell.
-//     ///
-//     /// Returns the original cell so it can be used for undo.
-//     pub fn apply_update(&mut self, update: &BorderStyleCellUpdate) -> BorderStyleCellUpdate {
-//         let mut undo = BorderStyleCellUpdate::default();
-//         if let Some(top) = update.top {
-//             undo.top = self.top.map_or(Some(None), |ts| Some(ts.into()));
-//             self.top = top;
-//         }
-//         if let Some(bottom) = update.bottom {
-//             undo.bottom = self.bottom.map_or(Some(None), |ts| Some(ts.into()));
-//             self.bottom = bottom;
-//         }
-//         if let Some(left) = update.left {
-//             undo.left = self.left.map_or(Some(None), |ts| Some(ts.into()));
-//             self.left = left;
-//         }
-//         if let Some(right) = update.right {
-//             undo.right = self.right.map_or(Some(None), |ts| Some(ts.into()));
-//             self.right = right;
-//         }
-//         undo
-//     }
-
-//     /// Used to test equality for unit tests by ignoring the timestamp.
-//     #[cfg(test)]
-//     pub fn is_equal_ignore_timestamp(
-//         b1: Option<BorderStyleCell>,
-//         b2: Option<BorderStyleCell>,
-//     ) -> bool {
-//         match (b1, b2) {
-//             (None, None) => true,
-//             (Some(b1), Some(b2)) => {
-//                 BorderStyleTimestamp::is_equal_ignore_timestamp(b1.top, b2.top)
-//                     && BorderStyleTimestamp::is_equal_ignore_timestamp(b1.bottom, b2.bottom)
-//                     && BorderStyleTimestamp::is_equal_ignore_timestamp(b1.left, b2.left)
-//                     && BorderStyleTimestamp::is_equal_ignore_timestamp(b1.right, b2.right)
-//             }
-//             _ => false,
-//         }
-//     }
-// }
-
-// pub type BorderStyleCellUpdates = RunLengthEncoding<BorderStyleCellUpdate>;
-
-// #[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
-// pub struct BorderStyleCellUpdate {
-//     #[serde(
-//         default,
-//         skip_serializing_if = "Option::is_none",
-//         with = "::serde_with::rust::double_option"
-//     )]
-//     pub top: Option<Option<BorderStyleTimestamp>>,
-
-//     #[serde(
-//         default,
-//         skip_serializing_if = "Option::is_none",
-//         with = "::serde_with::rust::double_option"
-//     )]
-//     pub bottom: Option<Option<BorderStyleTimestamp>>,
-
-//     #[serde(
-//         default,
-//         skip_serializing_if = "Option::is_none",
-//         with = "::serde_with::rust::double_option"
-//     )]
-//     pub left: Option<Option<BorderStyleTimestamp>>,
-
-//     #[serde(
-//         default,
-//         skip_serializing_if = "Option::is_none",
-//         with = "::serde_with::rust::double_option"
-//     )]
-//     pub right: Option<Option<BorderStyleTimestamp>>,
-// }
-
-// impl BorderStyleCellUpdate {
-//     /// Converts the update to a clear update (ie, if a border value is set,
-//     /// then turns it into Some(None); otherwise None).
-//     pub fn convert_to_clear(&self) -> BorderStyleCellUpdate {
-//         BorderStyleCellUpdate {
-//             top: if self.top.is_some() { Some(None) } else { None },
-//             bottom: if self.bottom.is_some() {
-//                 Some(None)
-//             } else {
-//                 None
-//             },
-//             left: if self.left.is_some() {
-//                 Some(None)
-//             } else {
-//                 None
-//             },
-//             right: if self.right.is_some() {
-//                 Some(None)
-//             } else {
-//                 None
-//             },
-//         }
-//     }
-
-//     /// Create a update that will clear the border. If force_clear is true, then
-//     /// the border is set to BorderLineStyle::Clear, otherwise the border is set
-//     /// to None (ie, removed).
-//     pub fn clear(force_clear: bool) -> Self {
-//         if force_clear {
-//             BorderStyleCellUpdate {
-//                 top: Some(Some(BorderStyleTimestamp::clear())),
-//                 bottom: Some(Some(BorderStyleTimestamp::clear())),
-//                 left: Some(Some(BorderStyleTimestamp::clear())),
-//                 right: Some(Some(BorderStyleTimestamp::clear())),
-//             }
-//         } else {
-//             BorderStyleCellUpdate {
-//                 top: Some(None),
-//                 bottom: Some(None),
-//                 left: Some(None),
-//                 right: Some(None),
-//             }
-//         }
-//     }
-
-//     /// Converts all line == Clear to None in a BorderStyleCellUpdate.
-//     pub fn replace_clear_with_none(&self) -> BorderStyleCellUpdate {
-//         BorderStyleCellUpdate {
-//             top: self.top.map(|border| {
-//                 border.and_then(|b| {
-//                     if b.line == CellBorderLine::Clear {
-//                         None
-//                     } else {
-//                         Some(b)
-//                     }
-//                 })
-//             }),
-//             bottom: self.bottom.map(|border| {
-//                 border.and_then(|b| {
-//                     if b.line == CellBorderLine::Clear {
-//                         None
-//                     } else {
-//                         Some(b)
-//                     }
-//                 })
-//             }),
-//             left: self.left.map(|border| {
-//                 border.and_then(|b| {
-//                     if b.line == CellBorderLine::Clear {
-//                         None
-//                     } else {
-//                         Some(b)
-//                     }
-//                 })
-//             }),
-//             right: self.right.map(|border| {
-//                 border.and_then(|b| {
-//                     if b.line == CellBorderLine::Clear {
-//                         None
-//                     } else {
-//                         Some(b)
-//                     }
-//                 })
-//             }),
-//         }
-//     }
-
-//     /// Create a cell with a complete border on all sides.
-//     #[cfg(test)]
-//     pub fn all() -> Self {
-//         BorderStyleCellUpdate {
-//             top: Some(Some(BorderStyleTimestamp::default())),
-//             bottom: Some(Some(BorderStyleTimestamp::default())),
-//             left: Some(Some(BorderStyleTimestamp::default())),
-//             right: Some(Some(BorderStyleTimestamp::default())),
-//         }
-//     }
-
-//     /// Used to test equality for unit tests by ignoring the timestamps.
-//     #[cfg(test)]
-//     pub fn is_equal_ignore_timestamp(
-//         b1: Option<BorderStyleCellUpdate>,
-//         b2: Option<BorderStyleCellUpdate>,
-//     ) -> bool {
-//         match (b1, b2) {
-//             (None, None) => true,
-//             (Some(b1), Some(b2)) => {
-//                 BorderStyleTimestamp::is_equal_ignore_timestamp(b1.top.flatten(), b2.top.flatten())
-//                     && BorderStyleTimestamp::is_equal_ignore_timestamp(
-//                         b1.bottom.flatten(),
-//                         b2.bottom.flatten(),
-//                     )
-//                     && BorderStyleTimestamp::is_equal_ignore_timestamp(
-//                         b1.left.flatten(),
-//                         b2.left.flatten(),
-//                     )
-//                     && BorderStyleTimestamp::is_equal_ignore_timestamp(
-//                         b1.right.flatten(),
-//                         b2.right.flatten(),
-//                     )
-//             }
-//             _ => false,
-//         }
-//     }
-// }
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
-pub struct JsBorderHorizontal {
+pub struct JsBorder {
     pub color: Rgba,
     pub line: CellBorderLine,
     pub x: i64,
     pub y: i64,
-    pub width: i64,
+    pub w: Option<i64>,
+    pub h: Option<i64>,
+    pub side: BorderSide,
+    pub time_stamp: i64,
 }
 
-impl JsBorderHorizontal {
+impl JsBorder {
     #[cfg(test)]
-    pub fn new_test(x: i64, y: i64, width: i64) -> Self {
-        JsBorderHorizontal {
-            color: Rgba::default(),
-            line: CellBorderLine::Line1,
-            x,
-            y,
-            width,
-        }
-    }
-}
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
-pub struct JsBorderVertical {
-    pub color: Rgba,
-    pub line: CellBorderLine,
-    pub x: i64,
-    pub y: i64,
-    pub height: i64,
-}
-
-impl JsBorderVertical {
-    #[cfg(test)]
-    pub fn new_test(x: i64, y: i64, height: i64) -> Self {
-        JsBorderVertical {
-            color: Rgba::default(),
-            line: CellBorderLine::Line1,
-            x,
-            y,
-            height,
-        }
-    }
-}
-
-#[derive(Default, Serialize, Deserialize, Debug, TS)]
-pub struct JsBordersSheet {
-    pub all: Option<BorderStyleCell>,
-
-    // regrettably, we need to use String instead of i64 since js can't handle a
-    // Record<BigInt, ...>
-    pub columns: Option<HashMap<String, BorderStyleCell>>,
-    pub rows: Option<HashMap<String, BorderStyleCell>>,
-
-    pub horizontal: Option<Vec<JsBorderHorizontal>>,
-    pub vertical: Option<Vec<JsBorderVertical>>,
-}
-
-#[cfg(test)]
-impl PartialEq for JsBordersSheet {
-    fn eq(&self, other: &Self) -> bool {
-        self.all == other.all
-            && compare_option_hashmap(&self.columns, &other.columns)
-            && compare_option_hashmap(&self.rows, &other.rows)
-            && compare_option_vec(&self.horizontal, &other.horizontal)
-            && compare_option_vec(&self.vertical, &other.vertical)
-    }
-}
-
-#[cfg(test)]
-fn compare_option_hashmap<K, V>(a: &Option<HashMap<K, V>>, b: &Option<HashMap<K, V>>) -> bool
-where
-    K: Eq + Hash,
-    V: PartialEq,
-{
-    match (a, b) {
-        (Some(a), Some(b)) => {
-            a.len() == b.len() && a.iter().all(|(k, v)| b.get(k).map_or(false, |bv| v == bv))
-        }
-        (None, None) => true,
-        _ => false,
-    }
-}
-
-#[cfg(test)]
-fn compare_option_vec<T: PartialEq>(a: &Option<Vec<T>>, b: &Option<Vec<T>>) -> bool {
-    match (a, b) {
-        (Some(a), Some(b)) => a.len() == b.len() && a.iter().all(|item| b.contains(item)),
-        (None, None) => true,
-        _ => false,
+    pub fn compare_without_timestamp(&self, other: &Self) -> bool {
+        self.x == other.x
+            && self.y == other.y
+            && self.w == other.w
+            && self.h == other.h
+            && self.side == other.side
+            && self.color == other.color
+            && self.line == other.line
     }
 }
 
