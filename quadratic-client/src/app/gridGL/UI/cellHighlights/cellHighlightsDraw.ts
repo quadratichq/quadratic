@@ -1,5 +1,9 @@
 import { DASHED, DASHED_THICKNESS, generatedTextures } from '@/app/gridGL/generateTextures';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { getRangeScreenRectangleFromCellRefRange } from '@/app/gridGL/helpers/selection';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
+import { CellRefRange } from '@/app/quadratic-core-types';
 import { Graphics, Rectangle } from 'pixi.js';
 
 export function drawDashedRectangle(options: {
@@ -107,5 +111,58 @@ export function drawDashedRectangleMarching(g: Graphics, color: number, startCel
   for (let y = maxY - wrapAmount; y >= minY + DASHED / 2; y -= DASHED) {
     g.moveTo(minX + DASHED_THICKNESS, clamp(y - DASHED / 2, minY, maxY));
     g.lineTo(minX + DASHED_THICKNESS, clamp(y, minY, maxY));
+  }
+}
+
+export function drawDashedRectangleForCellsAccessed(options: {
+  g: Graphics;
+  color: number;
+  isSelected: boolean;
+  range: CellRefRange;
+}) {
+  const { g, color, isSelected, range } = options;
+  const bounds = pixiApp.viewport.getVisibleBounds();
+  const selectionRect = getRangeScreenRectangleFromCellRefRange(range);
+  if (intersects.rectangleRectangle(selectionRect, bounds)) {
+    g.lineStyle({
+      width: CURSOR_THICKNESS,
+      color,
+      alignment: 0.5,
+      texture: generatedTextures.dashedHorizontal,
+    });
+    g.moveTo(selectionRect.left, selectionRect.top);
+    g.lineTo(Math.min(selectionRect.right, bounds.right), selectionRect.top);
+    if (selectionRect.bottom <= bounds.bottom) {
+      g.moveTo(Math.min(selectionRect.right, bounds.right), selectionRect.bottom);
+      g.lineTo(selectionRect.left, selectionRect.bottom);
+    }
+
+    g.lineStyle({
+      width: CURSOR_THICKNESS,
+      color,
+      alignment: 0.5,
+      texture: generatedTextures.dashedVertical,
+    });
+    g.moveTo(selectionRect.left, Math.min(selectionRect.bottom, bounds.bottom));
+    g.lineTo(selectionRect.left, selectionRect.top);
+    if (selectionRect.right <= bounds.right) {
+      g.moveTo(selectionRect.right, Math.min(selectionRect.bottom, bounds.bottom));
+      g.lineTo(selectionRect.right, selectionRect.top);
+    }
+
+    if (isSelected) {
+      g.lineStyle({
+        alignment: 0,
+      });
+      g.moveTo(selectionRect.left, selectionRect.top);
+      g.beginFill(color, FILL_ALPHA);
+      g.drawRect(
+        selectionRect.left,
+        selectionRect.top,
+        Math.min(selectionRect.right, bounds.right) - selectionRect.left,
+        Math.min(selectionRect.bottom, bounds.bottom) - selectionRect.top
+      );
+      g.endFill();
+    }
   }
 }

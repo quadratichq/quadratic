@@ -3,7 +3,11 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { DASHED } from '@/app/gridGL/generateTextures';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
+import {
+  drawDashedRectangle,
+  drawDashedRectangleForCellsAccessed,
+  drawDashedRectangleMarching,
+} from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import { CellPosition, ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
 import { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
@@ -34,6 +38,7 @@ const MARCH_ANIMATE_TIME_MS = 80;
 
 export class CellHighlights extends Container {
   private highlightedCells: HighlightedCellRange[] = [];
+  private cellsAccessed: JsCellsAccessed[] = [];
   highlightedCellIndex: number | undefined;
 
   private highlights: Graphics;
@@ -61,6 +66,7 @@ export class CellHighlights extends Container {
 
   clear() {
     this.highlightedCells = [];
+    this.cellsAccessed = [];
     this.highlightedCellIndex = undefined;
     this.highlights.clear();
     this.marchingHighlight.clear();
@@ -70,27 +76,45 @@ export class CellHighlights extends Container {
 
   private draw() {
     this.highlights.clear();
+
     const highlightedCells = [...this.highlightedCells];
     const highlightedCellIndex = this.highlightedCellIndex;
-    if (!highlightedCells.length) return;
-    highlightedCells.forEach((cell, index) => {
-      if (cell.sheet !== sheets.current) return;
+    highlightedCells
+      .filter((cells) => cells.sheet === sheets.current)
+      .forEach((cell, index) => {
+        const colorNumber = convertColorStringToTint(colors.cellHighlightColor[cell.index % NUM_OF_CELL_REF_COLORS]);
+        const cursorCell = sheets.sheet.getScreenRectangle(cell.column, cell.row, cell.width, cell.height);
 
-      const colorNumber = convertColorStringToTint(colors.cellHighlightColor[cell.index % NUM_OF_CELL_REF_COLORS]);
-      const cursorCell = sheets.sheet.getScreenRectangle(cell.column, cell.row, cell.width, cell.height);
+        // We do not draw the dashed rectangle if the inline Formula editor's cell
+        // cursor is moving (it's handled by updateMarchingHighlights instead).
+        if (
+          highlightedCellIndex === undefined ||
+          highlightedCellIndex !== index ||
+          !inlineEditorHandler.cursorIsMoving
+        ) {
+          drawDashedRectangle({
+            g: this.highlights,
+            color: colorNumber,
+            isSelected: highlightedCellIndex === index,
+            startCell: cursorCell,
+          });
+        }
+      });
 
-      // We do not draw the dashed rectangle if the inline Formula editor's cell
-      // cursor is moving (it's handled by updateMarchingHighlights instead).
-      if (highlightedCellIndex === undefined || highlightedCellIndex !== index || !inlineEditorHandler.cursorIsMoving) {
-        drawDashedRectangle({
+    const cellsAccessed = [...this.cellsAccessed];
+    cellsAccessed
+      .filter(({ sheetId }) => sheetId === sheets.current)
+      .flatMap(({ ranges }) => ranges)
+      .forEach((range, index) => {
+        drawDashedRectangleForCellsAccessed({
           g: this.highlights,
-          color: colorNumber,
-          isSelected: highlightedCellIndex === index,
-          startCell: cursorCell,
+          color: convertColorStringToTint(colors.cellHighlightColor[index % NUM_OF_CELL_REF_COLORS]),
+          isSelected: false,
+          range,
         });
-      }
-    });
-    if (highlightedCells.length) {
+      });
+
+    if (highlightedCells.length || cellsAccessed.length) {
       pixiApp.setViewportDirty();
     }
   }
@@ -217,17 +241,7 @@ export class CellHighlights extends Container {
   }
 
   fromCellsAccessed(cellsAccessed: JsCellsAccessed[] | null) {
-    this.highlightedCells = [];
-
-    cellsAccessed
-      ?.filter((cellsAccessed) => cellsAccessed.sheetId === sheets.current)
-      .forEach(({ ranges }) => {
-        ranges.forEach(({ range }) => {
-          console.log('todo(ayush): draw finite / infinite marching highlights');
-          console.log('range', range);
-        });
-      });
-
+    this.cellsAccessed = cellsAccessed ?? [];
     pixiApp.cellHighlights.dirty = true;
   }
 
