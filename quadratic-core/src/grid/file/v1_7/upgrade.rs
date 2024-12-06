@@ -484,6 +484,8 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
 
     let (columns, formats) = upgrade_columns_formats(columns, formats);
 
+    dbgjs!("todo(ayush): upgrade borders_a1");
+
     v1_7_1::SheetSchema {
         id,
         name,
@@ -493,6 +495,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
         rows_resize,
         validations: upgrade_validations(validations),
         borders,
+        borders_a1: v1_7_1::BordersA1Schema::default(),
         formats,
         code_runs: upgrade_code_runs(code_runs),
         columns,

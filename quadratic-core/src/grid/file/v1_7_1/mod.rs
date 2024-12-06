@@ -1,15 +1,20 @@
 mod a1_selection_schema;
+mod borders_a1_schema;
 mod cells_accessed_schema;
-mod sheet_formatting;
+mod contiguous_2d_schema;
+mod sheet_formatting_schema;
+mod validations_schema;
+
+pub use a1_selection_schema::*;
+pub use borders_a1_schema::*;
+pub use cells_accessed_schema::*;
+pub use contiguous_2d_schema::*;
+pub use sheet_formatting_schema::*;
+pub use validations_schema::*;
 
 use crate::grid::file::v1_7::schema as v1_7;
 
-pub use a1_selection_schema::*;
-pub use cells_accessed_schema::*;
-pub use sheet_formatting::*;
-
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 pub type IdSchema = v1_7::IdSchema;
 pub type PosSchema = v1_7::PosSchema;
@@ -53,47 +58,6 @@ pub type BorderStyleTimestampSchema = v1_7::BorderStyleTimestampSchema;
 pub type BorderStyleCellSchema = v1_7::BorderStyleCellSchema;
 pub type BordersSchema = v1_7::BordersSchema;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct ValidationListSchema {
-    pub source: ValidationListSourceSchema,
-    pub ignore_blank: bool,
-    pub drop_down: bool,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum ValidationRuleSchema {
-    None,
-    List(ValidationListSchema),
-    Logical(ValidationLogicalSchema),
-    Text(ValidationTextSchema),
-    Number(ValidationNumberSchema),
-    DateTime(ValidationDateTimeSchema),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum ValidationListSourceSchema {
-    Selection(A1SelectionSchema),
-    List(Vec<String>),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct ValidationSchema {
-    pub selection: A1SelectionSchema,
-    pub id: Uuid,
-    pub rule: ValidationRuleSchema,
-    pub message: ValidationMessageSchema,
-    pub error: ValidationErrorSchema,
-}
-
-#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
-pub struct ValidationsSchema {
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub validations: Vec<ValidationSchema>,
-
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub warnings: Vec<(PosSchema, Uuid)>,
-}
-
 pub type RowsResizeSchema = Vec<(i64, ResizeSchema)>;
 
 pub type CodeRunsSchema = Vec<(PosSchema, CodeRunSchema)>;
@@ -112,6 +76,7 @@ pub struct SheetSchema {
     pub validations: ValidationsSchema,
     pub rows_resize: RowsResizeSchema,
     pub borders: BordersSchema,
+    pub borders_a1: BordersA1Schema,
     pub formats: SheetFormattingSchema,
     pub code_runs: CodeRunsSchema,
     pub columns: ColumnsSchema,

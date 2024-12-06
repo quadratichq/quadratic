@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, NumericFormatSchema, RenderSizeSchema,
+    CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, Contiguous2DSchema,
+    NumericFormatSchema, RenderSizeSchema,
 };
-
-pub type Contiguous2DSchema<T> = Vec<BlockSchema<Vec<BlockSchema<T>>>>;
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct SheetFormattingSchema {
@@ -49,11 +48,4 @@ pub struct SheetFormattingSchema {
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub strike_through: Contiguous2DSchema<bool>,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct BlockSchema<T> {
-    pub start: u64,
-    pub end: u64,
-    pub value: T,
 }

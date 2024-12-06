@@ -9,9 +9,11 @@ use crate::grid::Grid;
 use super::CURRENT_VERSION;
 
 pub(crate) mod borders;
+pub(crate) mod borders_a1;
 pub(crate) mod cell_value;
 pub(crate) mod code_cell;
 pub(crate) mod column;
+pub(crate) mod contiguous_2d;
 pub(crate) mod format;
 pub(crate) mod row_resizes;
 pub(crate) mod selection;
