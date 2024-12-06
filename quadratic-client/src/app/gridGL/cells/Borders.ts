@@ -15,14 +15,13 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { BorderStyleCell, BorderStyleTimestamp, JsBordersSheet } from '@/app/quadratic-core-types';
+import { BorderStyleCell, BorderStyleTimestamp, JsBorder } from '@/app/quadratic-core-types';
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { intersects } from '../../helpers/intersects';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { CellsSheet } from '../CellsSheet';
-import { BorderCull, drawCellBorder } from '../drawBorders';
-import { divideLine, findPerpendicularHorizontalLines, findPerpendicularVerticalLines } from './bordersUtil';
+import { Sheet } from '../../grid/sheet/Sheet';
+import { intersects } from '../helpers/intersects';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { CellsSheet } from './CellsSheet';
+import { BorderCull, drawCellBorder } from './drawBorders';
 
 // this sets when to fade the sheet borders when (for performance reasons)
 const SCALE_TO_SHOW_SHEET_BORDERS = 0.15;
@@ -34,7 +33,7 @@ export class Borders extends Container {
   private spriteLines: BorderCull[];
 
   private sheetLines: Container;
-  private borders?: JsBordersSheet;
+  private borders?: JsBorder;
 
   dirty = false;
 
@@ -359,7 +358,7 @@ export class Borders extends Container {
   }
 
   drawSheetCells = (sheetId: string, borders?: JsBordersSheet): void => {
-    console.log(borders)
+    console.log(borders);
     if (sheetId === this.cellsSheet.sheetId) {
       this.borders = borders;
       this.cellLines.removeChildren();

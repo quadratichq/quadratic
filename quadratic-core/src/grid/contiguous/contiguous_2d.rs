@@ -1,4 +1,4 @@
-use crate::{A1Selection, CellRefRange, CopyFormats, Pos, Rect};
+use crate::{grid::GridBounds, A1Selection, CellRefRange, CopyFormats, Pos, Rect};
 
 use serde::{Deserialize, Serialize};
 
@@ -119,17 +119,6 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         .unwrap_or_default()
     }
 
-    /// Gets the value at `pos` if the block is finite.
-    pub fn get_finite(&self, pos: Pos) -> Option<&T> {
-        let col = self.0.get(pos.x as u64)?;
-        let block = col.get_block_containing(pos.y as u64)?;
-        if block.contains(u64::MAX) {
-            None
-        } else {
-            Some(&block.value)
-        }
-    }
-
     /// For each non-`None` value in `other`, updates the range in `self` using
     /// `update_fn`.
     ///
@@ -234,21 +223,6 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         // `.try_into()` will only fail if there are finite values beyond
         // `i64::MAX`. In that case there's no correct answer.
         column_data.finite_max().try_into().unwrap_or(i64::MAX)
-    }
-
-    // todo
-    pub fn column_min(&self, _column: u64) -> Option<u64> {
-        Some(1)
-    }
-
-    // todo
-    pub fn row_min(&self, _row: u64) -> Option<u64> {
-        Some(1)
-    }
-
-    // todo
-    pub fn finite_bounds(&self) -> Option<Rect> {
-        None
     }
 
     /// Returns the upper bound on the finite regions in the given row. Returns
@@ -497,8 +471,10 @@ impl<T: Clone + PartialEq> Contiguous2D<Option<T>> {
             })
     }
 
-    /// Returns the set of rectangles that have values. Each rectangle is `(x1, y1, x2, y2, value)` with inclusive coordinates.
-    /// Unlike `to_rects()`, this returns concrete coordinates rather than potentially infinite bounds.
+    /// Returns the set of rectangles that have values. Each rectangle is `(x1,
+    /// y1, x2, y2, value)` with inclusive coordinates. Unlike `to_rects()`,
+    /// this returns concrete coordinates rather than potentially infinite
+    /// bounds.
     ///
     /// `None` values are skipped.
     pub fn to_rects_with_bounds<'a>(
@@ -520,6 +496,17 @@ impl<T: Clone + PartialEq> Contiguous2D<Option<T>> {
                     sheet_bounds.map(|rect| (x1, y1, rect.max.x.max(x1), rect.max.y.max(y1), value))
                 }
             })
+    }
+
+    /// Returns the finite bounds of the contiguous 2d.
+    pub fn finite_bounds(&self) -> Option<Rect> {
+        let mut bounds = GridBounds::default();
+        self.to_rects().for_each(|(x1, y1, x2, y2, _)| {
+            if let (Some(x2), Some(y2)) = (x2, y2) {
+                bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64));
+            }
+        });
+        bounds.into()
     }
 }
 
@@ -783,20 +770,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_finite() {
-        let mut c = Contiguous2D::<bool>::new();
-        c.set_rect(1, 1, Some(2), Some(2), true);
-        assert_eq!(c.get_finite(pos![A1]), Some(&true));
-        assert_eq!(c.get_finite(pos![A2]), Some(&true));
-        assert_eq!(c.get_finite(pos![B1]), Some(&true));
-        assert_eq!(c.get_finite(pos![B2]), Some(&true));
-
-        c.set_rect(3, 3, None, None, true);
-        assert_eq!(c.get_finite(pos![C3]), None);
-        assert_eq!(c.get_finite(pos![D4]), None);
-    }
-
-    #[test]
     fn test_contiguous_2d_zip_any() {
         let mut c = Contiguous2D::<u8>::new();
         let mut u = Contiguous2D::<Option<u8>>::new();
@@ -814,5 +787,41 @@ mod tests {
 
         c.set_rect(1, 1, Some(3), Some(10), 10);
         assert!(!c.zip_any(&u, |a, b| a != b));
+    }
+
+    #[test]
+    fn test_to_rects() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(1, 1, Some(3), Some(10), Some(true));
+        assert_eq!(c.to_rects().count(), 1);
+        assert_eq!(
+            c.to_rects().next(),
+            Some((1i64, 1i64, Some(3i64), Some(10i64), true))
+        );
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(1, 1, None, None, Some(false));
+        assert_eq!(c.to_rects().next(), Some((1i64, 1i64, None, None, false)));
+
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(1, 1, Some(3), None, Some(true));
+        c.set_rect(10, 10, None, Some(20), Some(true));
+        assert_eq!(c.to_rects().count(), 2);
+        assert_eq!(
+            c.to_rects().next(),
+            Some((1i64, 1i64, Some(3i64), None, true))
+        );
+        assert_eq!(
+            c.to_rects().nth(1),
+            Some((10i64, 10i64, None, Some(20i64), true))
+        );
+    }
+
+    #[test]
+    fn test_finite_bounds() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(1, 1, Some(3), Some(10), Some(true));
+        c.set_rect(20, 20, Some(100), None, Some(true));
+        c.set_rect(200, 200, None, Some(200), Some(false));
+        assert_eq!(c.finite_bounds(), Some(Rect::new(1, 1, 3, 10)));
     }
 }

@@ -177,193 +177,29 @@ impl JsBorder {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use serial_test::parallel;
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
+pub struct JsBorderHorizontal {
+    pub color: Rgba,
+    pub line: CellBorderLine,
+    pub x: i64,
+    pub y: i64,
+    pub width: Option<i64>,
+}
 
-//     use super::*;
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
+pub struct JsBorderVertical {
+    pub color: Rgba,
+    pub line: CellBorderLine,
+    pub x: i64,
+    pub y: i64,
+    pub height: Option<i64>,
+}
 
-//     #[test]
-//     #[parallel]
-//     fn apply_update() {
-//         let mut cell = BorderStyleCell::default();
-//         let update = BorderStyleCellUpdate::all();
-//         let original = cell.apply_update(&update);
-//         assert_eq!(cell, BorderStyleCell::all());
-//         assert!(BorderStyleCellUpdate::is_equal_ignore_timestamp(
-//             Some(original),
-//             Some(BorderStyleCellUpdate::clear(false))
-//         ));
-//     }
+#[derive(Default, Serialize, Deserialize, Debug, TS)]
+pub struct JsBordersSheet {
+    pub horizontal: Option<Vec<JsBorderHorizontal>>,
+    pub vertical: Option<Vec<JsBorderVertical>>,
 
-//     #[test]
-//     #[parallel]
-//     fn override_border() {
-//         let update = BorderStyleCell {
-//             top: Some(BorderStyleTimestamp::new(
-//                 Rgba::default(),
-//                 CellBorderLine::Line2,
-//             )),
-//             bottom: None,
-//             left: None,
-//             right: Some(BorderStyleTimestamp::default()),
-//         };
-//         let updated = update.override_border(false);
-//         assert_eq!(updated.top.unwrap().unwrap().line, CellBorderLine::Line2);
-//         assert_eq!(updated.bottom, Some(None));
-//         assert_eq!(updated.left, Some(None));
-//         assert_eq!(updated.right.unwrap().unwrap().line, CellBorderLine::Line1);
-
-//         let updated = update.override_border(true);
-//         assert_eq!(updated.top.unwrap().unwrap().line, CellBorderLine::Line2);
-//         assert_eq!(updated.bottom, Some(Some(BorderStyleTimestamp::clear())));
-//         assert_eq!(updated.left, Some(Some(BorderStyleTimestamp::clear())));
-//         assert_eq!(updated.right.unwrap().unwrap().line, CellBorderLine::Line1);
-//     }
-
-//     #[test]
-//     #[parallel]
-//     fn clear() {
-//         let cleared = BorderStyleCell::clear();
-//         assert_eq!(cleared.top, Some(Some(BorderStyleTimestamp::clear())));
-//         assert_eq!(cleared.bottom, Some(Some(BorderStyleTimestamp::clear())));
-//         assert_eq!(cleared.left, Some(Some(BorderStyleTimestamp::clear())));
-//         assert_eq!(cleared.right, Some(Some(BorderStyleTimestamp::clear())));
-//     }
-
-//     #[test]
-//     #[parallel]
-//     fn timestamp_is_equal_ignore_timestamp() {
-//         assert!(BorderStyleTimestamp::is_equal_ignore_timestamp(
-//             Some(BorderStyleTimestamp::default()),
-//             Some(BorderStyleTimestamp {
-//                 timestamp: SmallTimestamp::new(0),
-//                 ..BorderStyleTimestamp::default()
-//             }),
-//         ));
-//         assert!(!BorderStyleTimestamp::is_equal_ignore_timestamp(
-//             Some(BorderStyleTimestamp::default()),
-//             Some(BorderStyleTimestamp::new(
-//                 Rgba::default(),
-//                 CellBorderLine::Line2
-//             )),
-//         ));
-//     }
-
-//     #[test]
-//     #[parallel]
-//     fn cell_is_equal_ignore_timestamp() {
-//         let b1 = Some(BorderStyleCell::all());
-//         let b2 = Some(BorderStyleCell {
-//             top: Some(BorderStyleTimestamp {
-//                 timestamp: SmallTimestamp::new(1),
-//                 ..BorderStyleTimestamp::default()
-//             }),
-//             bottom: Some(BorderStyleTimestamp {
-//                 timestamp: SmallTimestamp::new(1),
-//                 ..BorderStyleTimestamp::default()
-//             }),
-//             left: Some(BorderStyleTimestamp {
-//                 timestamp: SmallTimestamp::new(1),
-//                 ..BorderStyleTimestamp::default()
-//             }),
-//             right: Some(BorderStyleTimestamp {
-//                 timestamp: SmallTimestamp::new(1),
-//                 ..BorderStyleTimestamp::default()
-//             }),
-//         });
-//         assert!(BorderStyleCell::is_equal_ignore_timestamp(b1, b2));
-
-//         let b1 = Some(BorderStyleCell {
-//             top: Some(BorderStyleTimestamp::new(
-//                 Rgba::default(),
-//                 CellBorderLine::Line1,
-//             )),
-//             ..BorderStyleCell::default()
-//         });
-//         let b2 = Some(BorderStyleCell {
-//             top: Some(BorderStyleTimestamp::new(
-//                 Rgba::default(),
-//                 CellBorderLine::Line2,
-//             )),
-//             ..BorderStyleCell::default()
-//         });
-//         assert!(!BorderStyleCell::is_equal_ignore_timestamp(b1, b2));
-//     }
-
-//     #[test]
-//     #[parallel]
-//     fn remove_clear() {
-//         assert_eq!(
-//             BorderStyleTimestamp::remove_clear(Some(BorderStyleTimestamp::clear())),
-//             None
-//         );
-//         assert_eq!(
-//             BorderStyleTimestamp::remove_clear(Some(BorderStyleTimestamp::default())),
-//             Some(BorderStyleTimestamp::default())
-//         );
-//     }
-
-//     #[test]
-//     #[parallel]
-//     fn is_empty() {
-//         let cell = BorderStyleCell::default();
-//         assert!(cell.is_empty());
-
-//         let cell = BorderStyleCell {
-//             top: Some(BorderStyleTimestamp::default()),
-//             ..BorderStyleCell::default()
-//         };
-//         assert!(!cell.is_empty());
-//     }
-
-//     #[test]
-//     #[parallel]
-//     fn js_border_horizontal_new() {
-//         let border = JsBorderHorizontal::new_test(1, 1, 1);
-//         assert_eq!(border.x, 1);
-//         assert_eq!(border.y, 1);
-//         assert_eq!(border.width, 1);
-//     }
-
-//     #[test]
-//     #[parallel]
-//     fn js_border_vertical_new() {
-//         let border = JsBorderVertical::new_test(1, 1, 1);
-//         assert_eq!(border.x, 1);
-//         assert_eq!(border.y, 1);
-//         assert_eq!(border.height, 1);
-//     }
-
-//     #[test]
-//     #[parallel]
-//     fn convert_to_clear() {
-//         let update = BorderStyleCellUpdate {
-//             top: Some(Some(BorderStyleTimestamp::default())),
-//             bottom: Some(Some(BorderStyleTimestamp::default())),
-//             left: None,
-//             right: Some(Some(BorderStyleTimestamp::default())),
-//         };
-//         let clear = update.convert_to_clear();
-//         assert_eq!(clear.top, Some(None));
-//         assert_eq!(clear.bottom, Some(None));
-//         assert_eq!(clear.left, None);
-//         assert_eq!(clear.right, Some(None));
-//     }
-
-//     #[test]
-//     #[parallel]
-//     fn replace_clear_with_none() {
-//         let update = BorderStyleCellUpdate {
-//             top: Some(Some(BorderStyleTimestamp::default())),
-//             bottom: Some(Some(BorderStyleTimestamp::clear())),
-//             left: Some(Some(BorderStyleTimestamp::default())),
-//             right: Some(Some(BorderStyleTimestamp::default())),
-//         };
-//         let updated = update.replace_clear_with_none();
-//         assert!(updated.top.unwrap().is_some());
-//         assert!(updated.bottom.unwrap().is_none());
-//         assert!(updated.left.unwrap().is_some());
-//         assert!(updated.right.unwrap().is_some());
-//     }
-// }
+    pub horizontal_infinite: Option<Vec<JsBorderHorizontal>>,
+    pub vertical_infinite: Option<Vec<JsBorderVertical>>,
+}

@@ -1,46 +1,35 @@
-use crate::Rect;
+use crate::{grid::GridBounds, Pos, Rect};
 
 use super::*;
 
 impl BordersA1 {
+    /// Returns the finite bounds of the borders.
     pub fn finite_bounds(&self) -> Option<Rect> {
-        let top = self.top.finite_bounds();
+        let mut bounds = GridBounds::default();
 
-        // bottom needs to be adjusted by 1 cell down
-        let bottom = self
-            .bottom
-            .finite_bounds()
-            .map(|r| Rect::from_numbers(r.min.x, r.min.y + 1, r.width() as i64, r.height() as i64));
-        let left = self.left.finite_bounds();
+        self.top.to_rects().for_each(|(x1, y1, x2, y2, _)| {
+            if let (Some(x2), Some(y2)) = (x2, y2) {
+                bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64))
+            }
+        });
+        self.bottom.to_rects().for_each(|(x1, y1, x2, y2, _)| {
+            if let (Some(x2), Some(y2)) = (x2, y2) {
+                bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64))
+            }
+        });
 
-        // right needs to be adjusted by 1 cell right
-        let right = self
-            .right
-            .finite_bounds()
-            .map(|r| Rect::from_numbers(r.min.x + 1, r.min.y, r.width() as i64, r.height() as i64));
-        let mut bounds = None;
-        if let Some(rect) = top {
-            bounds = Some(rect);
-        }
-        if let Some(rect) = bottom {
-            bounds = match bounds {
-                Some(b) => Some(b.union(&rect)),
-                None => Some(rect),
-            };
-        }
-        if let Some(rect) = left {
-            bounds = match bounds {
-                Some(b) => Some(b.union(&rect)),
-                None => Some(rect),
-            };
-        }
-        if let Some(rect) = right {
-            bounds = match bounds {
-                Some(b) => Some(b.union(&rect)),
-                None => Some(rect),
-            };
-        }
-        bounds
+        self.left.to_rects().for_each(|(x1, y1, x2, y2, _)| {
+            if let (Some(x2), Some(y2)) = (x2, y2) {
+                bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64))
+            }
+        });
+        self.right.to_rects().for_each(|(x1, y1, x2, y2, _)| {
+            if let (Some(x2), Some(y2)) = (x2, y2) {
+                bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64))
+            }
+        });
+
+        bounds.into()
     }
 
     /// Returns true if all the borders are empty.
@@ -86,5 +75,39 @@ impl BordersA1 {
             }
         }
         true
+    }
+
+    /// Returns the border style for the given side and position.
+    pub fn get(&self, side: BorderSide, pos: Pos) -> Option<BorderStyle> {
+        match side {
+            BorderSide::Top => self.top.get(pos).map(|b| b.into()),
+            BorderSide::Bottom => self.bottom.get(pos).map(|b| b.into()),
+            BorderSide::Left => self.left.get(pos).map(|b| b.into()),
+            BorderSide::Right => self.right.get(pos).map(|b| b.into()),
+        }
+    }
+}
+
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_finite_bounds() {
+        let mut borders = BordersA1::default();
+
+        // Empty borders should return None
+        assert_eq!(borders.finite_bounds(), None);
+
+        // Add some borders and verify bounds
+        borders.top.set_rect(
+            1,
+            1,
+            Some(20),
+            Some(20),
+            Some(BorderStyleTimestamp::default()),
+        );
+        assert_eq!(borders.finite_bounds().unwrap(), Rect::new(1, 1, 20, 20));
     }
 }
