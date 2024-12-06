@@ -299,7 +299,9 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
     /// Inserts a column and optionally populates it based on the column before
     /// or after it.
     pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
-        // Handle column <= 1 case
+        // This is required when migrating versions < 1.7.1 having negative
+        // column offsets. When inserting a column at a negative offset, we need
+        // insert at column 1 with no copy.
         if column < 1 {
             self.0.shift_insert(1, 2, ContiguousBlocks::default());
             return;
@@ -344,7 +346,9 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
     /// Inserts a row and optionally populates it based on the row before
     /// or after it.
     pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
-        // Handle row < 1 case
+        // This is required when migrating versions < 1.7.1 having negative
+        // row offsets. When inserting a row at a negative offset, we need
+        // insert at row 1 with no copy.
         if row < 1 {
             self.0.update_all(|column_data| {
                 column_data.shift_insert(1, 2, T::default());

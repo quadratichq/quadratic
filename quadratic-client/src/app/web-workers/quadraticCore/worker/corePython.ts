@@ -16,12 +16,12 @@ class CorePython {
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
 
-  init(pythonPort: MessagePort) {
+  init = (pythonPort: MessagePort) => {
     this.corePythonPort = pythonPort;
     this.corePythonPort.onmessage = this.handleMessage;
-    self.sendRunPython = corePython.sendRunPython;
+    self.sendRunPython = this.sendRunPython;
     if (debugWebWorkers) console.log('[corePython] initialized');
-  }
+  };
 
   private handleMessage = (e: MessageEvent<PythonCoreMessage>) => {
     switch (e.data.type) {

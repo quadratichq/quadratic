@@ -62,12 +62,12 @@ class InlineEditorMonaco {
   }
 
   // Gets the value of the inline editor.
-  get(): string {
+  get = (): string => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in getValue');
     }
     return this.editor.getValue();
-  }
+  };
 
   // Sets the value of the inline editor and moves the cursor to the end.
   set(s: string, select?: boolean | number) {
@@ -285,7 +285,7 @@ class InlineEditorMonaco {
     return this.editor.getValue().length + 1;
   }
 
-  getPosition(): monaco.Position {
+  getPosition = (): monaco.Position => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in getPosition');
     }
@@ -294,7 +294,7 @@ class InlineEditorMonaco {
       throw new Error('Expected position to be defined in getPosition');
     }
     return position;
-  }
+  };
 
   getCursorColumn(): number {
     if (!this.editor) {
@@ -333,13 +333,13 @@ class InlineEditorMonaco {
     return { bounds, position };
   }
 
-  getNonWhitespaceCharBeforeCursor(): string {
-    const formula = inlineEditorMonaco.get();
+  getNonWhitespaceCharBeforeCursor = (): string => {
+    const formula = this.get();
 
     // If there is a selection then use the start of the selection; otherwise
     // use the cursor position.
-    const selection = inlineEditorMonaco.editor?.getSelection()?.getStartPosition();
-    const position = selection ?? inlineEditorMonaco.getPosition();
+    const selection = this.editor?.getSelection()?.getStartPosition();
+    const position = selection ?? this.getPosition();
 
     const line = formula.split('\n')[position.lineNumber - 1];
     const lastCharacter =
@@ -348,7 +348,7 @@ class InlineEditorMonaco {
         .trimEnd()
         .at(-1) ?? '';
     return lastCharacter;
-  }
+  };
 
   createDecorationsCollection(newDecorations: editor.IModelDeltaDecoration[]) {
     if (!this.editor) {

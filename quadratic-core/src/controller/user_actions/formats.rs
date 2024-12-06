@@ -497,7 +497,7 @@ mod test {
                 .try_format(pos![A2])
                 .unwrap_or_default()
                 .numeric_commas,
-            Some(false)
+            None
         );
     }
 

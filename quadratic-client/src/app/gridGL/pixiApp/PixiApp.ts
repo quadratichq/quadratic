@@ -111,17 +111,17 @@ export class PixiApp {
   }
 
   // called after RenderText has no more updates to send
-  firstRenderComplete() {
+  firstRenderComplete = () => {
     if (this.waitingForFirstRender) {
       // perform a render to warm up the GPU
       this.cellsSheets.showAll(sheets.sheet.id);
-      pixiApp.renderer.render(pixiApp.stage);
+      this.renderer.render(this.stage);
       this.waitingForFirstRender();
       this.waitingForFirstRender = undefined;
     } else {
       this.alreadyRendered = true;
     }
-  }
+  };
 
   private initCanvas() {
     this.canvas = document.createElement('canvas');

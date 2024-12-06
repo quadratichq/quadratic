@@ -14,12 +14,12 @@ class CoreJavascript {
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
 
-  init(JavascriptPort: MessagePort) {
+  init = (JavascriptPort: MessagePort) => {
     this.coreJavascriptPort = JavascriptPort;
     this.coreJavascriptPort.onmessage = this.handleMessage;
-    self.sendRunJavascript = coreJavascript.sendRunJavascript;
+    self.sendRunJavascript = this.sendRunJavascript;
     if (debugWebWorkers) console.log('[coreJavascript] initialized');
-  }
+  };
 
   private handleMessage = (e: MessageEvent<JavascriptCoreMessage>) => {
     switch (e.data.type) {

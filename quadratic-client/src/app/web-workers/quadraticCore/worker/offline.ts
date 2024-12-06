@@ -37,7 +37,7 @@ class Offline {
   stats: OfflineStats = { transactions: 0, operations: 0, timestamps: [] };
 
   // Creates a connection to the indexedDb database
-  init(fileId: string): Promise<undefined> {
+  init = (fileId: string): Promise<undefined> => {
     return new Promise((resolve) => {
       this.fileId = fileId;
       const request = self.indexedDB.open(DB_NAME, DB_VERSION);
@@ -47,7 +47,7 @@ class Offline {
 
       request.onsuccess = () => {
         this.db = request.result;
-        self.addUnsentTransaction = offline.addUnsentTransaction.bind(offline);
+        self.addUnsentTransaction = this.addUnsentTransaction;
         resolve(undefined);
       };
 
@@ -61,7 +61,7 @@ class Offline {
         objectStore.createIndex('transactionId', 'transactionId');
       };
     });
-  }
+  };
 
   // gets a file index from the indexedDb
   private getFileIndex(readOnly: boolean, index: string): IDBIndex {
@@ -109,7 +109,7 @@ class Offline {
   }
 
   // Adds the transaction to the unsent transactions list.
-  addUnsentTransaction(transactionId: string, transaction: string, operations: number) {
+  addUnsentTransaction = (transactionId: string, transaction: string, operations: number) => {
     const store = this.getObjectStore(false);
     if (!this.fileId) throw new Error("Expected fileId to be set in 'addUnsentTransaction' method.");
     const offlineEntry: OfflineEntry = {
@@ -127,7 +127,7 @@ class Offline {
     if (debugOffline) {
       console.log(`[Offline] Added transaction ${transactionId} to indexedDB.`);
     }
-  }
+  };
 
   // Removes the transaction from the unsent transactions list.
   markTransactionSent(transactionId: string) {
