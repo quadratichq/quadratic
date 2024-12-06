@@ -29,16 +29,17 @@ impl Sheet {
             }
         }
 
-        if let Some(formats) = self.formats.finite_bounds() {
-            self.format_bounds.add(Pos {
-                x: formats.min.x,
-                y: formats.min.y,
-            });
-            self.format_bounds.add(Pos {
-                x: formats.max.x,
-                y: formats.max.y,
-            });
-        }
+        // todo: maybe remove this?
+        // if let Some(formats) = self.formats.finite_bounds() {
+        //     self.format_bounds.add(Pos {
+        //         x: formats.min.x,
+        //         y: formats.min.y,
+        //     });
+        //     self.format_bounds.add(Pos {
+        //         x: formats.max.x,
+        //         y: formats.max.y,
+        //     });
+        // }
 
         self.code_runs.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);

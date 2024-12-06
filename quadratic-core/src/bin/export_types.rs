@@ -14,7 +14,6 @@ use quadratic_core::grid::js_types::{
     JsSummarizeSelectionResult, JsValidationWarning,
 };
 use quadratic_core::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
-use quadratic_core::grid::sheet::borders::{JsBorderHorizontal, JsBorderVertical, JsBordersSheet};
 use quadratic_core::grid::sheet::borders_a1::BorderSide;
 use quadratic_core::grid::sheet::borders_a1::JsBorder;
 use quadratic_core::grid::sheet::jump_cursor::JumpDirection;
@@ -96,9 +95,6 @@ fn main() {
         Format,
         GridBounds,
         JsBorder,
-        JsBorderHorizontal,
-        JsBorderVertical,
-        JsBordersSheet,
         JsCellsAccessed,
         JsCellValue,
         JsCellValuePos,

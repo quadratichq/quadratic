@@ -2,7 +2,10 @@
 
 use super::*;
 
-use crate::{grid::formats::Format, Pos, Rect};
+use crate::{
+    grid::{formats::Format, GridBounds},
+    Pos, Rect,
+};
 
 impl SheetFormatting {
     /// Returns the maximum value in the column for which formatting exists.
@@ -70,9 +73,48 @@ impl SheetFormatting {
         !self.wrap.is_row_default(row)
     }
 
-    pub fn finite_bounds(&self) -> Option<Rect> {
-        self.align.finite_bounds()
-    }
+    // todo: maybe remove this?
+    // /// Returns the finite bounds of the formatting.
+    // pub fn finite_bounds(&self) -> Option<Rect> {
+    //     let mut bounds = GridBounds::default();
+    //     self.align.finite_bounds().map(|rect| bounds.add_rect(rect));
+    //     self.vertical_align
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.wrap.finite_bounds().map(|rect| bounds.add_rect(rect));
+    //     self.numeric_format
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.numeric_decimals
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.numeric_commas
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.bold.finite_bounds().map(|rect| bounds.add_rect(rect));
+    //     self.italic
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.text_color
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.fill_color
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.render_size
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.date_time
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.underline
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     self.strike_through
+    //         .finite_bounds()
+    //         .map(|rect| bounds.add_rect(rect));
+    //     bounds.into()
+    // }
 }
 
 #[cfg(test)]
