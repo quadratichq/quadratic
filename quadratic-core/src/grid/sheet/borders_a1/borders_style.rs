@@ -199,7 +199,4 @@ pub struct JsBorderVertical {
 pub struct JsBordersSheet {
     pub horizontal: Option<Vec<JsBorderHorizontal>>,
     pub vertical: Option<Vec<JsBorderVertical>>,
-
-    pub horizontal_infinite: Option<Vec<JsBorderHorizontal>>,
-    pub vertical_infinite: Option<Vec<JsBorderVertical>>,
 }

@@ -904,7 +904,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.formats.bold.set(Pos { x: 1, y: 2 }, true);
+        sheet.formats.bold.set(Pos { x: 1, y: 2 }, Some(true));
         sheet
             .formats
             .fill_color

@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::grid::{Block, Contiguous2D};
 
 use super::current;
@@ -7,7 +9,7 @@ pub(crate) fn opt_fn<T, U>(f: impl Fn(T) -> U) -> impl Fn(Option<T>) -> Option<U
     move |x| x.map(&f)
 }
 
-pub(crate) fn import_contiguous_2d<C: Clone, F, T: Default + Clone + PartialEq>(
+pub(crate) fn import_contiguous_2d<C: Clone, F, T: Default + Clone + PartialEq + Debug>(
     blocks: current::Contiguous2DSchema<C>,
     f: F,
 ) -> Contiguous2D<T>
@@ -29,7 +31,7 @@ where
     ret
 }
 
-pub(crate) fn export_contiguous_2d<T: Default + Clone + PartialEq, F, C>(
+pub(crate) fn export_contiguous_2d<T: Default + Clone + PartialEq + Debug, F, C>(
     blocks: Contiguous2D<T>,
     f: F,
 ) -> current::Contiguous2DSchema<C>

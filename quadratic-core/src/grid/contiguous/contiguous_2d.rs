@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::{grid::GridBounds, A1Selection, CellRefRange, CopyFormats, Pos, Rect};
 
 use serde::{Deserialize, Serialize};
@@ -39,7 +41,7 @@ impl<T: Default + Clone + PartialEq> From<Contiguous2D<T>>
         value.0.map(|col| (!col.is_all_default()).then_some(col))
     }
 }
-impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
+impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
     /// Constructs a [`Contiguous2D`] containing `value` inside a (possibly
     /// infinite) rectangle and `T::default()` everywhere else.
     ///
@@ -433,7 +435,8 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
         !self.any_in_row(row, |value| !f(value))
     }
 }
-impl<T: Clone + PartialEq> Contiguous2D<Option<T>> {
+
+impl<T: Clone + PartialEq + Debug> Contiguous2D<Option<T>> {
     /// Constructs an update Contiguous2D from a selection and a value set
     /// across the selection, or returns `None` if the value is `None`.
     ///
@@ -498,13 +501,29 @@ impl<T: Clone + PartialEq> Contiguous2D<Option<T>> {
             })
     }
 
+    /// Returns an iterator over the blocks in the contiguous 2d.
+    pub fn into_iter(&self) -> impl '_ + Iterator<Item = (u64, u64, Option<u64>, Option<u64>, T)> {
+        self.0.iter().flat_map(|x_block| {
+            let column = &x_block.value;
+            let x1 = x_block.start;
+            let x2 = (x_block.end < u64::MAX).then_some(x_block.end.saturating_sub(1));
+            column.iter().filter_map(move |y_block| {
+                let y1 = y_block.start;
+                let y2 = (y_block.end < u64::MAX).then_some(y_block.end.saturating_sub(1));
+                Some((x1, y1, x2, y2, y_block.value.clone()?))
+            })
+        })
+    }
+
     /// Returns the finite bounds of the contiguous 2d.
     pub fn finite_bounds(&self) -> Option<Rect> {
         let mut bounds = GridBounds::default();
-        self.to_rects().for_each(|(x1, y1, x2, y2, _)| {
+        self.into_iter().for_each(|(x1, y1, x2, y2, value)| {
             if let (Some(x2), Some(y2)) = (x2, y2) {
                 bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64));
             }
+            dbg!(x1, y1, x2, y2);
+            dbg!(&value);
         });
         bounds.into()
     }
@@ -819,9 +838,29 @@ mod tests {
     #[test]
     fn test_finite_bounds() {
         let mut c = Contiguous2D::<Option<bool>>::new();
-        c.set_rect(1, 1, Some(3), Some(10), Some(true));
+        // c.set_rect(1, 1, Some(3), Some(10), true);
         c.set_rect(20, 20, Some(100), None, Some(true));
-        c.set_rect(200, 200, None, Some(200), Some(false));
+        // c.set_rect(200, 200, None, Some(200), false);
         assert_eq!(c.finite_bounds(), Some(Rect::new(1, 1, 3, 10)));
+    }
+
+    #[test]
+    fn test_into_iter() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        assert_eq!(c.into_iter().count(), 0);
+
+        c.set_rect(1, 1, Some(3), Some(3), Some(true));
+        let iter_result: Vec<_> = c.into_iter().collect();
+        assert_eq!(iter_result.len(), 1);
+        assert_eq!(iter_result[0], (1, 1, Some(2), Some(2), true));
+
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(1, 1, Some(2), Some(2), Some(true));
+        c.set_rect(5, 5, None, Some(10), Some(false));
+
+        let iter_result: Vec<_> = c.into_iter().collect();
+        assert_eq!(iter_result.len(), 2);
+        assert!(iter_result.contains(&(1, 1, Some(1), Some(1), true)));
+        assert!(iter_result.contains(&(5, 5, None, Some(9), false)));
     }
 }

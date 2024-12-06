@@ -14,15 +14,15 @@ pub struct SheetFormattingUpgrade {
     pub wrap: Contiguous2DUpgrade<Option<CellWrapSchema>>,
     pub numeric_format: Contiguous2DUpgrade<Option<NumericFormatSchema>>,
     pub numeric_decimals: Contiguous2DUpgrade<Option<i16>>,
-    pub numeric_commas: Contiguous2DUpgrade<bool>,
-    pub bold: Contiguous2DUpgrade<bool>,
-    pub italic: Contiguous2DUpgrade<bool>,
+    pub numeric_commas: Contiguous2DUpgrade<Option<bool>>,
+    pub bold: Contiguous2DUpgrade<Option<bool>>,
+    pub italic: Contiguous2DUpgrade<Option<bool>>,
     pub text_color: Contiguous2DUpgrade<Option<String>>,
     pub fill_color: Contiguous2DUpgrade<Option<String>>,
     pub render_size: Contiguous2DUpgrade<Option<RenderSizeSchema>>,
     pub date_time: Contiguous2DUpgrade<Option<String>>,
-    pub underline: Contiguous2DUpgrade<bool>,
-    pub strike_through: Contiguous2DUpgrade<bool>,
+    pub underline: Contiguous2DUpgrade<Option<bool>>,
+    pub strike_through: Contiguous2DUpgrade<Option<bool>>,
 }
 
 impl SheetFormattingUpgrade {
@@ -55,13 +55,14 @@ impl SheetFormattingUpgrade {
                 .set_rect(x1, y1, x2, y2, Some(numeric_decimals));
         }
         if let Some(numeric_commas) = format.numeric_commas {
-            self.numeric_commas.set_rect(x1, y1, x2, y2, numeric_commas);
+            self.numeric_commas
+                .set_rect(x1, y1, x2, y2, Some(numeric_commas));
         }
         if let Some(bold) = format.bold {
-            self.bold.set_rect(x1, y1, x2, y2, bold);
+            self.bold.set_rect(x1, y1, x2, y2, Some(bold));
         }
         if let Some(italic) = format.italic {
-            self.italic.set_rect(x1, y1, x2, y2, italic);
+            self.italic.set_rect(x1, y1, x2, y2, Some(italic));
         }
         if let Some(text_color) = format.text_color {
             self.text_color.set_rect(x1, y1, x2, y2, Some(text_color));
@@ -76,10 +77,11 @@ impl SheetFormattingUpgrade {
             self.date_time.set_rect(x1, y1, x2, y2, Some(date_time));
         }
         if let Some(underline) = format.underline {
-            self.underline.set_rect(x1, y1, x2, y2, underline);
+            self.underline.set_rect(x1, y1, x2, y2, Some(underline));
         }
         if let Some(strike_through) = format.strike_through {
-            self.strike_through.set_rect(x1, y1, x2, y2, strike_through);
+            self.strike_through
+                .set_rect(x1, y1, x2, y2, Some(strike_through));
         }
     }
 

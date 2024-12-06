@@ -57,6 +57,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         let borders = sheet.borders_a1.borders_in_sheet().unwrap();
-        assert_eq!(borders.len(), 4);
+        assert_eq!(borders.horizontal.unwrap().len(), 4);
+        assert_eq!(borders.vertical.unwrap().len(), 4);
     }
 }

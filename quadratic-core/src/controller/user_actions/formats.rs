@@ -591,7 +591,7 @@ mod test {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.formats.underline.get(pos![A2]));
+        assert_eq!(sheet.formats.underline.get(pos![A2]), Some(true));
     }
 
     #[test]
@@ -602,7 +602,7 @@ mod test {
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.formats.strike_through.get(pos![A2]));
+        assert_eq!(sheet.formats.strike_through.get(pos![A2]), Some(true));
     }
 
     #[test]

@@ -792,7 +792,7 @@ mod test {
         assert_eq!(format_summary, CellFormatSummary::default());
 
         // just set a bold value
-        sheet.formats.bold.set(Pos { x: 2, y: 1 }, true);
+        sheet.formats.bold.set(Pos { x: 2, y: 1 }, Some(true));
         let value = sheet.cell_format_summary((2, 1).into());
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
@@ -804,7 +804,7 @@ mod test {
         assert_eq!(cell_format_summary.clone(), format_summary);
 
         // now set a italic value
-        let _ = sheet.formats.italic.set(Pos { x: 2, y: 1 }, true);
+        sheet.formats.italic.set(Pos { x: 2, y: 1 }, Some(true));
         let value = sheet.cell_format_summary((2, 1).into());
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);

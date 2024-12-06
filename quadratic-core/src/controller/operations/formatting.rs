@@ -83,7 +83,11 @@ impl GridController {
         let Some(sheet) = self.try_sheet(source.sheet_id) else {
             return vec![];
         };
-        let commas = !sheet.formats.numeric_commas.get(source.into());
+        let commas = sheet
+            .formats
+            .numeric_commas
+            .get(source.into())
+            .unwrap_or(true);
         vec![Operation::SetCellFormats {
             sheet_rect,
             attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(
