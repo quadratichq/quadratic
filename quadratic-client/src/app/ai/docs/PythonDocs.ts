@@ -323,14 +323,14 @@ x.text
 
 Bringing your CSV to Quadratic is as simple as a drag and drop. Once your CSV is in the spreadsheet, reference the range of cells in Python to get your data into a DatarFrame. 
 
-You use the argument \`first_row_header=True\` to avoid the first row of your DataFrame being what is intended to be our header.
+You use the argument \`first_row_header=True\` to set the first row of DataFrame to be your headers as column names.
 Note that the output, in this case, is printed to the console since you already have your initial CSV in the sheet.
 After some manipulation of the data, perhaps you would want to display your new DataFrame. In that case, leave \`df\` as the last line of code.
 
-In this case, the spreadsheet reflects \`cells((0, 0),(0, 160))\` since we want the full span of data in both columns 0 and 1 spanning from rows 0 to 160.
+In this case, the spreadsheet reflects \`q.cells('A1:B160')\` since we want the full span of data in both columns A and B spanning from rows 1 to 160.
 
 \`\`\`python
-df = cells((0,0),(1,160), first_row_header=True)
+df = q.cells('A1:B160'), first_row_header=True)
 \`\`\`
 
 # Clean data
