@@ -340,8 +340,11 @@ mod tests {
         sheet.test_set_code_run_array(2, 5, vec!["=A1", "=B1"], true);
         sheet.test_set_code_run_array(4, 5, vec!["=A1", "=B1"], true);
 
-        sheet.formats.bold.set_rect(1, 1, Some(1), None, true);
-        sheet.formats.italic.set_rect(4, 1, Some(4), None, true);
+        sheet.formats.bold.set_rect(1, 1, Some(1), None, Some(true));
+        sheet
+            .formats
+            .italic
+            .set_rect(4, 1, Some(4), None, Some(true));
 
         let mut transaction = PendingTransaction {
             source: TransactionSource::User,

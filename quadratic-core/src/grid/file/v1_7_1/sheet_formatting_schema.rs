@@ -23,13 +23,13 @@ pub struct SheetFormattingSchema {
     pub numeric_decimals: Contiguous2DSchema<Option<i16>>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub numeric_commas: Contiguous2DSchema<bool>,
+    pub numeric_commas: Contiguous2DSchema<Option<bool>>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub bold: Contiguous2DSchema<bool>,
+    pub bold: Contiguous2DSchema<Option<bool>>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub italic: Contiguous2DSchema<bool>,
+    pub italic: Contiguous2DSchema<Option<bool>>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub text_color: Contiguous2DSchema<Option<String>>,
@@ -44,8 +44,8 @@ pub struct SheetFormattingSchema {
     pub date_time: Contiguous2DSchema<Option<String>>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub underline: Contiguous2DSchema<bool>,
+    pub underline: Contiguous2DSchema<Option<bool>>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub strike_through: Contiguous2DSchema<bool>,
+    pub strike_through: Contiguous2DSchema<Option<bool>>,
 }

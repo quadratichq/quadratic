@@ -430,11 +430,20 @@ mod test {
         sheet.test_set_code_run_array(1, 3, vec!["=A1", "=A2"], false);
         sheet.test_set_code_run_array(1, 4, vec!["=A1", "=A2"], false);
 
-        sheet.formats.bold.set_rect(1, 1, Some(1), None, true);
-        sheet.formats.italic.set_rect(1, 1, Some(1), None, true);
+        sheet.formats.bold.set_rect(1, 1, Some(1), None, Some(true));
+        sheet
+            .formats
+            .italic
+            .set_rect(1, 1, Some(1), None, Some(true));
 
-        sheet.formats.bold.set_rect(2, 1, Some(2), None, false);
-        sheet.formats.italic.set_rect(2, 1, Some(2), None, false);
+        sheet
+            .formats
+            .bold
+            .set_rect(2, 1, Some(2), None, Some(false));
+        sheet
+            .formats
+            .italic
+            .set_rect(2, 1, Some(2), None, Some(false));
 
         sheet.recalculate_bounds();
 

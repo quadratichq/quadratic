@@ -52,7 +52,7 @@ impl Sheet {
                 } else {
                     let numeric_format = self.formats.numeric_format.get(pos);
                     let numeric_decimals = self.formats.numeric_decimals.get(pos);
-                    let numeric_commas = self.formats.numeric_commas.get(pos);
+                    let numeric_commas = self.formats.numeric_commas.get(pos).unwrap_or_default();
                     let display = cell_value.to_number_display(
                         numeric_format,
                         numeric_decimals,

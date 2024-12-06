@@ -54,20 +54,20 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    numeric_commas,
+                    Some(numeric_commas),
                 );
             }
             if let Some(bold) = format.bold {
                 a1_formats
                     .bold
                     .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, bold);
+                    .set_rect(x1, y1, x2, y2, Some(bold));
             }
             if let Some(italic) = format.italic {
                 a1_formats
                     .italic
                     .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, italic);
+                    .set_rect(x1, y1, x2, y2, Some(italic));
             }
             if let Some(text_color) = &format.text_color {
                 a1_formats.text_color.get_or_insert_default().set_rect(
@@ -106,10 +106,13 @@ impl GridController {
                 );
             }
             if let Some(underline) = format.underline {
-                a1_formats
-                    .underline
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, underline);
+                a1_formats.underline.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(underline),
+                );
             }
             if let Some(strike_through) = format.strike_through {
                 a1_formats.strike_through.get_or_insert_default().set_rect(
@@ -117,7 +120,7 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    strike_through,
+                    Some(strike_through),
                 );
             }
         }
