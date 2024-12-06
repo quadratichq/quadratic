@@ -160,18 +160,24 @@ mod tests {
     #[test]
     #[parallel]
     fn test_formula_average() {
-        let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
+        let form = parse_formula("AVERAGE(3, A1:C3)", pos![A10]).unwrap();
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
         for x in 1..=3 {
             for y in 1..=3 {
                 let _ = sheet.set_cell_value(Pos { x, y }, x * 3 + y);
+                println!(
+                    "({},{})={:?}",
+                    x,
+                    y,
+                    sheet.cell_value(Pos { x, y }).unwrap()
+                );
             }
         }
         let sheet_id = sheet.id;
 
-        let mut ctx = Ctx::new(&g, pos![nAn1].to_sheet_pos(sheet_id));
+        let mut ctx = Ctx::new(&g, pos![A10].to_sheet_pos(sheet_id));
         assert_eq!("7.5".to_string(), form.eval(&mut ctx).to_string());
 
         assert_eq!(
@@ -204,6 +210,7 @@ mod tests {
 
     #[test]
     #[parallel]
+    // TODO(ddimaria): @HactarCE fix broken test
     fn test_averageif() {
         let g = Grid::new();
 

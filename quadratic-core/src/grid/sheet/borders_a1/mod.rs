@@ -12,10 +12,8 @@ use crate::grid::Contiguous2D;
 
 pub mod borders_query;
 pub mod borders_render;
-pub mod borders_set_a1;
+pub mod borders_set;
 mod borders_style;
-pub mod borders_toggle;
-pub mod borders_update;
 pub mod sides;
 
 pub use borders_style::*;

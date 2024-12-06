@@ -287,8 +287,8 @@ mod tests {
         // Resolve from some random base position.
         let base_pos = pos![E8];
 
-        for col in ["A", "B", "C", "AE", "QR", "nA", "nB", "nQR"] {
-            for row in ["n99", "n42", "n2", "n1", "0", "1", "2", "42", "99"] {
+        for col in ["A", "B", "C", "AE", "QR", "A", "B", "QR"] {
+            for row in ["99", "42", "2", "1", "0", "1", "2", "42", "99"] {
                 for col_prefix in ["", "$"] {
                     for row_prefix in ["", "$"] {
                         let s = format!("{col_prefix}{col}{row_prefix}{row}");
@@ -307,7 +307,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_a1_sheet_parsing() {
-        let pos = CellRef::parse_a1("'Sheet 2'!A0", crate::Pos::ORIGIN);
+        let pos = CellRef::parse_a1("'Sheet 2'!A1", pos![A1]);
         assert_eq!(
             pos,
             Some(CellRef {
@@ -316,7 +316,7 @@ mod tests {
                 y: CellRefCoord::Relative(0),
             })
         );
-        let pos = CellRef::parse_a1("\"Sheet 2\"!A0", crate::Pos::ORIGIN);
+        let pos = CellRef::parse_a1("\"Sheet 2\"!A1", pos![A1]);
         assert_eq!(
             pos,
             Some(CellRef {

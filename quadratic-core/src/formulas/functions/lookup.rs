@@ -958,6 +958,7 @@ mod tests {
     /// Test XLOOKUP's various search modes.
     #[test]
     #[parallel]
+    // TODO(ddimaria): @HactarCE fix broken test
     fn test_xlookup_search_modes() {
         fn test_exact_xlookup_with_array(
             array: &Array,
@@ -1206,6 +1207,7 @@ mod tests {
 
     #[test]
     #[parallel]
+    // TODO(ddimaria): @HactarCE fix broken test
     fn test_xlookup() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
@@ -1224,6 +1226,7 @@ mod tests {
     }
 
     #[test]
+    // TODO(ddimaria): @HactarCE fix broken test
     fn test_match() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];

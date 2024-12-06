@@ -331,10 +331,10 @@ mod tests {
     #[test]
     #[parallel]
     fn test_replace_internal_cell_references() {
-        let src = "SUM(R[0]C[-1])
-        + SUM(R[-1]C[0])";
-        let expected = "SUM(nA0)
-        + SUM(An1)";
+        let src = "SUM(R[1]C[1])
+        + SUM(R[2]C[2])";
+        let expected = "SUM(A1)
+        + SUM(B2)";
 
         let replaced = replace_internal_cell_references(src, (0, 0).into());
         assert_eq!(replaced, expected);
@@ -343,10 +343,10 @@ mod tests {
     #[test]
     #[parallel]
     fn test_replace_a1_notation() {
-        let src = "SUM(nA0)
-        + SUM(An1)";
-        let expected = "SUM(R[0]C[-1])
-        + SUM(R[-1]C[0])";
+        let src = "SUM(A1)
+        + SUM(B2)";
+        let expected = "SUM(R[1]C[1])
+        + SUM(R[2]C[2])";
 
         let replaced = replace_a1_notation(src, (0, 0).into());
         assert_eq!(replaced, expected);

@@ -228,7 +228,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_render_size(
-            &A1Selection::from_xy(0, 0, sheet_id),
+            &A1Selection::from_xy(1, 1, sheet_id),
             Some(RenderSize {
                 w: "10".to_string(),
                 h: "20".to_string(),
@@ -239,13 +239,13 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.render_size(Pos { x: 0, y: 0 }),
+            sheet.render_size(Pos { x: 1, y: 1 }),
             Some(RenderSize {
                 w: "10".to_string(),
                 h: "20".to_string()
             })
         );
-        assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
+        assert_eq!(sheet.render_size(Pos { x: 2, y: 2 }), None);
     }
 
     #[test]

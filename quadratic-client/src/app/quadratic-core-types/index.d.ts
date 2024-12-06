@@ -9,6 +9,7 @@ export type BorderSide = "Top" | "Bottom" | "Left" | "Right";
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export interface BorderStyleCell { top: BorderStyleTimestamp | null, bottom: BorderStyleTimestamp | null, left: BorderStyleTimestamp | null, right: BorderStyleTimestamp | null, }
 export interface BorderStyleTimestamp { color: Rgba, line: CellBorderLine, timestamp: SmallTimestamp, }
+export type BorderSide = "Top" | "Bottom" | "Left" | "Right";
 export interface CellA1Response { cells: Array<JsGetCellResponse>, x: bigint, y: bigint, w: bigint, h: bigint, }
 export type CellAlign = "center" | "left" | "right";
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
