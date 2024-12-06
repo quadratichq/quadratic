@@ -14,7 +14,7 @@ pub(crate) mod cell_value;
 pub(crate) mod code_cell;
 pub(crate) mod column;
 pub(crate) mod contiguous_2d;
-pub(crate) mod format;
+pub(crate) mod formats;
 pub(crate) mod row_resizes;
 pub(crate) mod selection;
 pub mod sheets;

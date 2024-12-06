@@ -13,7 +13,7 @@ use super::{
     code_cell::{export_rows_code_runs, import_code_cell_builder},
     column::{export_column_builder, import_column_builder},
     current,
-    format::{export_formats, import_formats},
+    formats::{export_formats, import_formats},
     row_resizes::{export_rows_size, import_rows_resize},
     validations::{export_validations, import_validations},
 };

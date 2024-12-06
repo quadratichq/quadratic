@@ -1,3 +1,6 @@
+//! Contiguous 2D serialization
+//! Used for formats and borders
+
 use crate::grid::{Block, Contiguous2D};
 
 use super::current;
