@@ -407,42 +407,43 @@ mod tests {
     #[test]
     #[parallel]
     fn imports_and_exports_v1_5_javascript_getting_started_example() {
-        let imported = import(V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE.to_vec()).unwrap();
-        let exported = export(imported.clone()).unwrap();
-        let imported_copy = import(exported).unwrap();
-        assert_eq!(imported_copy, imported);
+        todo!();
+        // let imported = import(V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE.to_vec()).unwrap();
+        // let exported = export(imported.clone()).unwrap();
+        // let imported_copy = import(exported).unwrap();
+        // assert_eq!(imported_copy, imported);
 
-        let sheet = &imported.sheets[0];
-        assert_eq!(
-            sheet.cell_value(Pos { x: 0, y: 0 }).unwrap(),
-            CellValue::Text("JavaScript examples".into())
-        );
-        assert_eq!(
-            sheet.cell_value(Pos { x: 0, y: 3 }).unwrap(),
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Javascript,
-                code: "let result = [];\nfor (let i = 0; i < 500; i++) {\n    result.push(2 ** i);\n}\nreturn result;".to_string(),
-            })
-        );
-        assert_eq!(
-            sheet
-                .code_runs
-                .get(&Pos { x: 0, y: 3 })
-                .unwrap()
-                .output_size(),
-            ArraySize::new(1, 500).unwrap()
-        );
-        assert_eq!(
-            sheet.cell_value(Pos { x: 2, y: 6 }).unwrap(),
-            CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Javascript,
-                code: "// fix by putting a let statement in front of x \nx = 5; ".to_string(),
-            })
-        );
-        assert_eq!(sheet.code_runs.len(), 10);
-        assert_eq!(
-            sheet.code_runs.get(&Pos { x: 2, y: 6 }).unwrap().std_err,
-            Some("x is not defined".into())
-        );
+        // let sheet = &imported.sheets[0];
+        // assert_eq!(
+        //     sheet.cell_value(Pos { x: 0, y: 0 }).unwrap(),
+        //     CellValue::Text("JavaScript examples".into())
+        // );
+        // assert_eq!(
+        //     sheet.cell_value(Pos { x: 0, y: 3 }).unwrap(),
+        //     CellValue::Code(CodeCellValue {
+        //         language: CodeCellLanguage::Javascript,
+        //         code: "let result = [];\nfor (let i = 0; i < 500; i++) {\n    result.push(2 ** i);\n}\nreturn result;".to_string(),
+        //     })
+        // );
+        // assert_eq!(
+        //     sheet
+        //         .code_runs
+        //         .get(&Pos { x: 0, y: 3 })
+        //         .unwrap()
+        //         .output_size(),
+        //     ArraySize::new(1, 500).unwrap()
+        // );
+        // assert_eq!(
+        //     sheet.cell_value(Pos { x: 2, y: 6 }).unwrap(),
+        //     CellValue::Code(CodeCellValue {
+        //         language: CodeCellLanguage::Javascript,
+        //         code: "// fix by putting a let statement in front of x \nx = 5; ".to_string(),
+        //     })
+        // );
+        // assert_eq!(sheet.code_runs.len(), 10);
+        // assert_eq!(
+        //     sheet.code_runs.get(&Pos { x: 2, y: 6 }).unwrap().std_err,
+        //     Some("x is not defined".into())
+        // );
     }
 }
