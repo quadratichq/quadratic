@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{grid::Contiguous2D, Pos};
 
+pub mod borders_clipboard;
 pub mod borders_query;
 pub mod borders_render;
 pub mod borders_set;

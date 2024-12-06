@@ -12,10 +12,9 @@ use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::Format;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
-use crate::grid::sheet::borders::BorderStyleCellUpdates;
+use crate::grid::sheet::borders_a1::BordersA1Updates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::CodeCellLanguage;
-use crate::selection::OldSelection;
 use crate::{A1Selection, CellValue, Pos, SheetPos, SheetRect};
 
 // todo: break up this file so tests are easier to write
@@ -65,7 +64,7 @@ pub struct Clipboard {
 
     pub formats: SheetFormatUpdates,
 
-    pub borders: Option<(OldSelection, BorderStyleCellUpdates)>,
+    pub borders: Option<(A1Selection, BordersA1Updates)>,
 
     pub origin: ClipboardOrigin,
     pub selection: Option<A1Selection>,
@@ -235,7 +234,10 @@ impl GridController {
 
             if let Some((selection, borders)) = clipboard.borders {
                 let selection = selection.translate(start_pos.x, start_pos.y);
-                ops.push(Operation::SetBordersSelection { selection, borders });
+                ops.push(Operation::SetBordersA1 {
+                    sheet_id: selection.sheet_id,
+                    borders,
+                });
             }
             ops.extend(self.set_clipboard_validations(
                 clipboard.validations,
