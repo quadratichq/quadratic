@@ -7,6 +7,7 @@ use super::Grid;
 use anyhow::{anyhow, Result};
 use migrate_code_cell_references::migrate_code_cell_references;
 use serde::{Deserialize, Serialize};
+pub use shift_negative_offsets::add_import_offset_to_contiguous_2d_rect;
 use shift_negative_offsets::shift_negative_offsets;
 use std::fmt::Debug;
 use std::str;

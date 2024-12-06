@@ -1,10 +1,11 @@
 use crate::grid::file::v1_7_1::{
-    CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, NumericFormatSchema, RenderSizeSchema,
+    CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, NumericFormatSchema,
+    RenderSizeSchema, SheetFormattingSchema,
 };
 
 use super::{schema::FormatSchema, Contiguous2DUpgrade};
 
-pub const FORMATS_IMPORT_OFFSET: i64 = 100;
+use crate::grid::file::add_import_offset_to_contiguous_2d_rect;
 
 #[derive(Default)]
 pub struct SheetFormattingUpgrade {
@@ -33,10 +34,7 @@ impl SheetFormattingUpgrade {
         y2: Option<i64>,
         format: FormatSchema,
     ) {
-        let x1 = x1.saturating_add(FORMATS_IMPORT_OFFSET);
-        let y1 = y1.saturating_add(FORMATS_IMPORT_OFFSET);
-        let x2 = x2.map(|x| x.saturating_add(FORMATS_IMPORT_OFFSET));
-        let y2 = y2.map(|y| y.saturating_add(FORMATS_IMPORT_OFFSET));
+        let (x1, y1, x2, y2) = add_import_offset_to_contiguous_2d_rect(x1, y1, x2, y2);
 
         if let Some(align) = format.align {
             self.align.set_rect(x1, y1, x2, y2, Some(align));
@@ -82,6 +80,25 @@ impl SheetFormattingUpgrade {
         }
         if let Some(strike_through) = format.strike_through {
             self.strike_through.set_rect(x1, y1, x2, y2, strike_through);
+        }
+    }
+
+    pub fn to_schema(self) -> SheetFormattingSchema {
+        SheetFormattingSchema {
+            align: self.align.to_schema(),
+            vertical_align: self.vertical_align.to_schema(),
+            wrap: self.wrap.to_schema(),
+            numeric_format: self.numeric_format.to_schema(),
+            numeric_decimals: self.numeric_decimals.to_schema(),
+            numeric_commas: self.numeric_commas.to_schema(),
+            bold: self.bold.to_schema(),
+            italic: self.italic.to_schema(),
+            text_color: self.text_color.to_schema(),
+            fill_color: self.fill_color.to_schema(),
+            render_size: self.render_size.to_schema(),
+            date_time: self.date_time.to_schema(),
+            underline: self.underline.to_schema(),
+            strike_through: self.strike_through.to_schema(),
         }
     }
 }

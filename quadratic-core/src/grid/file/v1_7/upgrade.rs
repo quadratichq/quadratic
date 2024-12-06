@@ -5,8 +5,8 @@ use anyhow::Result;
 use crate::grid::file::v1_7_1;
 
 use super::{
-    schema::{self as current},
-    Contiguous2DUpgrade, SheetFormattingUpgrade,
+    schema::{self as current, BorderStyleCellSchema},
+    BordersA1Upgrade, SheetFormattingUpgrade,
 };
 
 fn upgrade_cells_accessed(
@@ -244,51 +244,111 @@ fn upgrade_validations(validations: current::ValidationsSchema) -> v1_7_1::Valid
     }
 }
 
+fn apply_cell_borders(
+    borders_upgrade: &mut BordersA1Upgrade,
+    borders: impl IntoIterator<
+        Item = (
+            i64,
+            HashMap<i64, current::ColumnRepeatSchema<current::BorderStyleTimestampSchema>>,
+        ),
+    >,
+    f: impl Fn(current::BorderStyleTimestampSchema) -> BorderStyleCellSchema,
+) {
+    for (x, map) in borders {
+        for (y, repeat) in map {
+            borders_upgrade.apply_borders(
+                x,
+                y,
+                Some(x),
+                Some(y + repeat.len as i64 - 1),
+                f(repeat.value),
+            );
+        }
+    }
+}
+
+type BordersColumnRow = (BorderStyleCellSchema, (Option<i64>, Option<i64>));
+
+fn upgrade_borders(borders: current::BordersSchema) -> v1_7_1::BordersA1Schema {
+    let mut borders_upgrade = BordersA1Upgrade::default();
+
+    // apply all borders
+    borders_upgrade.apply_borders(1, 1, None, None, borders.all);
+
+    // collect column / row formats and sort by timestamp
+    let mut borders_column_row: Vec<(u32, BordersColumnRow)> = vec![];
+
+    for (column, border_column) in borders.columns {
+        let timestamp = border_column
+            .left
+            .as_ref()
+            .or(border_column.right.as_ref())
+            .or(border_column.top.as_ref())
+            .or(border_column.bottom.as_ref())
+            .map(|border| border.timestamp)
+            .unwrap_or(0);
+
+        borders_column_row.push((timestamp, (border_column, (Some(column), None))));
+    }
+
+    for (row, border_row) in borders.rows {
+        let timestamp = border_row
+            .left
+            .as_ref()
+            .or(border_row.right.as_ref())
+            .or(border_row.top.as_ref())
+            .or(border_row.bottom.as_ref())
+            .map(|border| border.timestamp)
+            .unwrap_or(0);
+
+        borders_column_row.push((timestamp, (border_row, (None, Some(row)))));
+    }
+
+    borders_column_row.sort_by_key(|(timestamp, _)| *timestamp);
+
+    for (_, (border, (col, row))) in borders_column_row {
+        if let Some(col) = col {
+            borders_upgrade.apply_borders(col, 1, Some(col), None, border);
+        } else if let Some(row) = row {
+            borders_upgrade.apply_borders(1, row, None, Some(row), border);
+        }
+    }
+
+    apply_cell_borders(&mut borders_upgrade, borders.left, |border| {
+        BorderStyleCellSchema {
+            left: Some(border),
+            ..Default::default()
+        }
+    });
+
+    apply_cell_borders(&mut borders_upgrade, borders.right, |border| {
+        BorderStyleCellSchema {
+            right: Some(border),
+            ..Default::default()
+        }
+    });
+
+    apply_cell_borders(&mut borders_upgrade, borders.top, |border| {
+        BorderStyleCellSchema {
+            top: Some(border),
+            ..Default::default()
+        }
+    });
+
+    apply_cell_borders(&mut borders_upgrade, borders.bottom, |border| {
+        BorderStyleCellSchema {
+            bottom: Some(border),
+            ..Default::default()
+        }
+    });
+
+    borders_upgrade.to_schema()
+}
+
 fn upgrade_column(values: HashMap<String, v1_7_1::CellValueSchema>) -> v1_7_1::ColumnSchema {
     values
         .into_iter()
         .filter_map(|(index, value)| index.parse::<i64>().ok().map(|idx| (idx, value)))
-        .collect()
-}
-
-fn sheet_formatting_upgrade_to_schema(
-    formats: SheetFormattingUpgrade,
-) -> v1_7_1::SheetFormattingSchema {
-    v1_7_1::SheetFormattingSchema {
-        align: contiguous_2d_upgrade_to_schema(formats.align),
-        vertical_align: contiguous_2d_upgrade_to_schema(formats.vertical_align),
-        wrap: contiguous_2d_upgrade_to_schema(formats.wrap),
-        numeric_format: contiguous_2d_upgrade_to_schema(formats.numeric_format),
-        numeric_decimals: contiguous_2d_upgrade_to_schema(formats.numeric_decimals),
-        numeric_commas: contiguous_2d_upgrade_to_schema(formats.numeric_commas),
-        bold: contiguous_2d_upgrade_to_schema(formats.bold),
-        italic: contiguous_2d_upgrade_to_schema(formats.italic),
-        text_color: contiguous_2d_upgrade_to_schema(formats.text_color),
-        fill_color: contiguous_2d_upgrade_to_schema(formats.fill_color),
-        render_size: contiguous_2d_upgrade_to_schema(formats.render_size),
-        date_time: contiguous_2d_upgrade_to_schema(formats.date_time),
-        underline: contiguous_2d_upgrade_to_schema(formats.underline),
-        strike_through: contiguous_2d_upgrade_to_schema(formats.strike_through),
-    }
-}
-
-fn contiguous_2d_upgrade_to_schema<T: Default + Clone + PartialEq>(
-    blocks: Contiguous2DUpgrade<T>,
-) -> v1_7_1::Contiguous2DSchema<T> {
-    blocks
-        .into_xy_blocks()
-        .map(|x_block| v1_7_1::BlockSchema {
-            start: x_block.start,
-            end: x_block.end,
-            value: x_block
-                .value
-                .map(|y_block| v1_7_1::BlockSchema {
-                    start: y_block.start,
-                    end: y_block.end,
-                    value: y_block.value,
-                })
-                .collect(),
-        })
         .collect()
 }
 
@@ -299,11 +359,11 @@ fn upgrade_formats_all_col_row(
     format_columns: Vec<(i64, (current::FormatSchema, i64))>,
     format_rows: Vec<(i64, (current::FormatSchema, i64))>,
 ) -> SheetFormattingUpgrade {
-    let mut formats = SheetFormattingUpgrade::default();
+    let mut formats_upgrade = SheetFormattingUpgrade::default();
 
     // apply format all
     if let Some(format_all) = format_all {
-        formats.apply_format(1, 1, None, None, format_all);
+        formats_upgrade.apply_format(1, 1, None, None, format_all);
     }
 
     // collect column / row formats and sort by timestamp
@@ -322,13 +382,13 @@ fn upgrade_formats_all_col_row(
     // apply column / row formats
     for (_, (format, (col, row))) in format_col_row {
         if let Some(col) = col {
-            formats.apply_format(1, 1, Some(col), None, format);
+            formats_upgrade.apply_format(col, 1, Some(col), None, format);
         } else if let Some(row) = row {
-            formats.apply_format(1, 1, None, Some(row), format);
+            formats_upgrade.apply_format(1, row, None, Some(row), format);
         }
     }
 
-    formats
+    formats_upgrade
 }
 
 fn upgrade_column_formats_property<T>(
@@ -352,103 +412,106 @@ fn upgrade_column_formats_property<T>(
 
 fn upgrade_columns_formats(
     current_columns: Vec<(i64, current::ColumnSchema)>,
-    mut formats: SheetFormattingUpgrade,
+    mut formats_upgrade: SheetFormattingUpgrade,
 ) -> (v1_7_1::ColumnsSchema, v1_7_1::SheetFormattingSchema) {
     let mut columns: v1_7_1::ColumnsSchema = vec![];
 
     for (x, column) in current_columns {
-        upgrade_column_formats_property(&mut formats, x, column.align, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.align, |value| {
             current::FormatSchema {
                 align: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.vertical_align, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.vertical_align, |value| {
             current::FormatSchema {
                 vertical_align: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.wrap, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.wrap, |value| {
             current::FormatSchema {
                 wrap: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.numeric_format, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.numeric_format, |value| {
             current::FormatSchema {
                 numeric_format: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.numeric_decimals, |value| {
-            current::FormatSchema {
+        upgrade_column_formats_property(
+            &mut formats_upgrade,
+            x,
+            column.numeric_decimals,
+            |value| current::FormatSchema {
                 numeric_decimals: Some(value),
                 ..Default::default()
-            }
-        });
+            },
+        );
 
-        upgrade_column_formats_property(&mut formats, x, column.numeric_commas, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.numeric_commas, |value| {
             current::FormatSchema {
                 numeric_commas: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.bold, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.bold, |value| {
             current::FormatSchema {
                 bold: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.italic, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.italic, |value| {
             current::FormatSchema {
                 italic: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.text_color, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.text_color, |value| {
             current::FormatSchema {
                 text_color: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.fill_color, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.fill_color, |value| {
             current::FormatSchema {
                 fill_color: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.render_size, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.render_size, |value| {
             current::FormatSchema {
                 render_size: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.date_time, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.date_time, |value| {
             current::FormatSchema {
                 date_time: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.underline, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.underline, |value| {
             current::FormatSchema {
                 underline: Some(value),
                 ..Default::default()
             }
         });
 
-        upgrade_column_formats_property(&mut formats, x, column.strike_through, |value| {
+        upgrade_column_formats_property(&mut formats_upgrade, x, column.strike_through, |value| {
             current::FormatSchema {
                 strike_through: Some(value),
                 ..Default::default()
@@ -458,7 +521,7 @@ fn upgrade_columns_formats(
         columns.push((x, upgrade_column(column.values)));
     }
 
-    let formats = sheet_formatting_upgrade_to_schema(formats);
+    let formats = formats_upgrade.to_schema();
 
     (columns, formats)
 }
@@ -480,11 +543,9 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
         columns,
     } = sheet;
 
-    let formats = upgrade_formats_all_col_row(formats_all, formats_columns, formats_rows);
+    let formats_upgrade = upgrade_formats_all_col_row(formats_all, formats_columns, formats_rows);
 
-    let (columns, formats) = upgrade_columns_formats(columns, formats);
-
-    dbgjs!("todo(ayush): upgrade borders_a1");
+    let (columns, formats) = upgrade_columns_formats(columns, formats_upgrade);
 
     v1_7_1::SheetSchema {
         id,
@@ -494,8 +555,8 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
         offsets,
         rows_resize,
         validations: upgrade_validations(validations),
-        borders,
-        borders_a1: v1_7_1::BordersA1Schema::default(),
+        borders: borders.clone(),
+        borders_a1: upgrade_borders(borders),
         formats,
         code_runs: upgrade_code_runs(code_runs),
         columns,

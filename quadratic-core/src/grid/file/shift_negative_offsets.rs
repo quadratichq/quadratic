@@ -12,7 +12,20 @@ use crate::{
     CopyFormats,
 };
 
-use super::v1_7::FORMATS_IMPORT_OFFSET;
+const IMPORT_OFFSET: i64 = 100;
+
+pub fn add_import_offset_to_contiguous_2d_rect(
+    x1: i64,
+    y1: i64,
+    x2: Option<i64>,
+    y2: Option<i64>,
+) -> (i64, i64, Option<i64>, Option<i64>) {
+    let x1 = x1.saturating_add(IMPORT_OFFSET);
+    let y1 = y1.saturating_add(IMPORT_OFFSET);
+    let x2 = x2.map(|x| x.saturating_add(IMPORT_OFFSET));
+    let y2 = y2.map(|y| y.saturating_add(IMPORT_OFFSET));
+    (x1, y1, x2, y2)
+}
 
 /// Shifts all negative offsets in the grid and signals client.
 pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
@@ -55,7 +68,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     }
 
     for sheet in grid.sheets.iter_mut() {
-        for _ in 0..FORMATS_IMPORT_OFFSET {
+        for _ in 0..IMPORT_OFFSET {
             sheet.formats.remove_column(1);
             sheet.formats.remove_row(1);
         }

@@ -6,7 +6,7 @@ use std::collections::{btree_map, BTreeMap};
 use itertools::Itertools;
 use smallvec::{smallvec, SmallVec};
 
-use crate::grid::file::v1_7_1::BlockSchema;
+use crate::grid::file::v1_7_1::{BlockSchema, Contiguous2DSchema};
 
 /// Key-value store from cell positions to values, optimized for contiguous
 /// rectangles with the same value, particularly along columns. All (infinitely
@@ -112,6 +112,23 @@ impl<T: Default + Clone + PartialEq> Contiguous2DUpgrade<T> {
         value: T,
     ) -> Contiguous2DUpgrade<Option<T>> {
         self.set_from(&Contiguous2DUpgrade::from_rect(x1, y1, x2, y2, Some(value)))
+    }
+
+    pub fn to_schema(self) -> Contiguous2DSchema<T> {
+        self.into_xy_blocks()
+            .map(|x_block| BlockSchema {
+                start: x_block.start,
+                end: x_block.end,
+                value: x_block
+                    .value
+                    .map(|y_block| BlockSchema {
+                        start: y_block.start,
+                        end: y_block.end,
+                        value: y_block.value,
+                    })
+                    .collect(),
+            })
+            .collect()
     }
 }
 
