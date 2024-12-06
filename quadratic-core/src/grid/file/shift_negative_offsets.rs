@@ -12,6 +12,8 @@ use crate::{
     CopyFormats,
 };
 
+use super::v1_7::FORMATS_IMPORT_OFFSET;
+
 /// Shifts all negative offsets in the grid and signals client.
 pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     // This is a dummy transaction because it happens before the initial
@@ -50,6 +52,14 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
                 }
             }
         }
+    }
+
+    for sheet in grid.sheets.iter_mut() {
+        for _ in 0..FORMATS_IMPORT_OFFSET {
+            sheet.formats.remove_column(1);
+            sheet.formats.remove_row(1);
+        }
+        sheet.recalculate_bounds();
     }
 
     // if changed && cfg!(target_family = "wasm") || cfg!(test) {

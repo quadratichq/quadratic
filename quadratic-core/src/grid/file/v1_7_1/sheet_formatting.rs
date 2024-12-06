@@ -51,7 +51,7 @@ pub struct SheetFormattingSchema {
     pub strike_through: Contiguous2DSchema<bool>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct BlockSchema<T> {
     pub start: u64,
     pub end: u64,

@@ -5,6 +5,7 @@ export interface A1Selection { sheet_id: SheetId, cursor: Pos, ranges: Array<Cel
 export interface ArraySize { w: number, h: number, }
 export type Axis = "X" | "Y";
 export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertical" | "left" | "top" | "right" | "bottom" | "clear";
+export type BorderSide = "Top" | "Bottom" | "Left" | "Right";
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export interface BorderStyleCell { top: BorderStyleTimestamp | null, bottom: BorderStyleTimestamp | null, left: BorderStyleTimestamp | null, right: BorderStyleTimestamp | null, }
 export interface BorderStyleTimestamp { color: Rgba, line: CellBorderLine, timestamp: SmallTimestamp, }

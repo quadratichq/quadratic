@@ -1,14 +1,12 @@
 mod a1_selection_schema;
 mod cells_accessed_schema;
 mod sheet_formatting;
-mod sheet_formatting_upgrade;
 
 use crate::grid::file::v1_7::schema as v1_7;
 
 pub use a1_selection_schema::*;
 pub use cells_accessed_schema::*;
 pub use sheet_formatting::*;
-// pub use sheet_formatting_upgrade::*;
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

@@ -299,6 +299,12 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
     /// Inserts a column and optionally populates it based on the column before
     /// or after it.
     pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
+        // Handle column <= 1 case
+        if column < 1 {
+            self.0.shift_insert(1, 2, ContiguousBlocks::default());
+            return;
+        }
+
         let Some(column) = convert_coord(column) else {
             return;
         };
@@ -338,6 +344,15 @@ impl<T: Default + Clone + PartialEq> Contiguous2D<T> {
     /// Inserts a row and optionally populates it based on the row before
     /// or after it.
     pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
+        // Handle row < 1 case
+        if row < 1 {
+            self.0.update_all(|column_data| {
+                column_data.shift_insert(1, 2, T::default());
+                None::<()> // no return value needed
+            });
+            return;
+        }
+
         let Some(row) = convert_coord(row) else {
             return;
         };
@@ -782,18 +797,18 @@ mod tests {
         let mut c = Contiguous2D::<u8>::new();
         let mut u = Contiguous2D::<Option<u8>>::new();
 
-        assert_eq!(false, c.zip_any(&u, |a, b| a != b));
+        assert!(!c.zip_any(&u, |a, b| a != b));
 
         c.set_rect(1, 1, Some(10), Some(3), 5);
-        assert_eq!(false, c.zip_any(&u, |a, b| a != b));
+        assert!(!c.zip_any(&u, |a, b| a != b));
 
         u.set_rect(1, 1, Some(10), Some(3), Some(5));
-        assert_eq!(false, c.zip_any(&u, |a, b| a != b));
+        assert!(!c.zip_any(&u, |a, b| a != b));
 
         u.set_rect(1, 1, Some(3), Some(10), Some(10));
-        assert_eq!(true, c.zip_any(&u, |a, b| a != b));
+        assert!(c.zip_any(&u, |a, b| a != b));
 
         c.set_rect(1, 1, Some(3), Some(10), 10);
-        assert_eq!(false, c.zip_any(&u, |a, b| a != b));
+        assert!(!c.zip_any(&u, |a, b| a != b));
     }
 }
