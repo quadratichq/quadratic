@@ -15,7 +15,6 @@ use quadratic_core::grid::js_types::{
 };
 use quadratic_core::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
 use quadratic_core::grid::sheet::borders_a1::BorderSide;
-use quadratic_core::grid::sheet::borders_a1::JsBorder;
 use quadratic_core::grid::sheet::borders_a1::JsBorderHorizontal;
 use quadratic_core::grid::sheet::borders_a1::JsBorderVertical;
 use quadratic_core::grid::sheet::borders_a1::JsBordersSheet;
