@@ -29,17 +29,9 @@ impl Sheet {
             }
         }
 
-        // todo: maybe remove this?
-        // if let Some(formats) = self.formats.finite_bounds() {
-        //     self.format_bounds.add(Pos {
-        //         x: formats.min.x,
-        //         y: formats.min.y,
-        //     });
-        //     self.format_bounds.add(Pos {
-        //         x: formats.max.x,
-        //         y: formats.max.y,
-        //     });
-        // }
+        self.formats
+            .finite_bounds()
+            .map(|rect| self.format_bounds.add_rect(rect));
 
         self.code_runs.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);
@@ -136,26 +128,49 @@ impl Sheet {
     ///
     /// If `ignore_formatting` is `true`, only data is considered; if it is
     /// `false`, then data and formatting are both considered.
-    pub fn column_bounds(&self, column: i64, _ignore_formatting: bool) -> Option<(i64, i64)> {
-        // TODO: currently this method assumes `ignore_formatting` is `true`
-        let range = if let Some(column_data) = self.columns.get(&column) {
-            column_data.range()
+    pub fn column_bounds(&self, column: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
+        // Get bounds from data columns
+        let data_range = self.columns.get(&column).and_then(|col| col.range());
+
+        // Get bounds from code columns
+        let code_range = self.code_columns_bounds(column, column);
+
+        // Get bounds from formatting if needed
+        let format_range = if !ignore_formatting {
+            self.formats.col_max(column).map(|max| (1i64, max))
         } else {
             None
         };
-        let code_range = self.code_columns_bounds(column, column);
-        if range.is_none() && code_range.is_none() {
+
+        // Early return if no bounds found
+        if data_range.is_none() && code_range.is_none() && format_range.is_none() {
             return None;
         }
-        if let (Some(range), Some(code_range)) = (&range, &code_range) {
-            Some((
-                range.start.min(code_range.start),
-                range.end.max(code_range.end) - 1,
-            ))
-        } else if let Some(range) = range {
-            Some((range.start, range.end - 1))
+
+        // Find min/max across all ranges
+        let mut min = i64::MAX;
+        let mut max = i64::MIN;
+
+        if let Some(range) = data_range.as_ref() {
+            min = min.min(range.start);
+            max = max.max(range.end - 1);
+        }
+
+        if let Some(range) = code_range.as_ref() {
+            min = min.min(range.start);
+            max = max.max(range.end - 1);
+        }
+
+        if let Some((start, end)) = format_range {
+            min = min.min(start);
+            max = max.max(end);
+        }
+
+        // Return bounds if any were found
+        if min != i64::MAX && max != i64::MIN {
+            Some((min, max))
         } else {
-            code_range.map(|code_range| (code_range.start, code_range.end - 1))
+            None
         }
     }
 
@@ -201,21 +216,23 @@ impl Sheet {
     pub fn row_bounds(&self, row: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
             true => column.has_data_in_row(row),
-            false => {
-                dbgjs!("todo: row_bounds - has data or format in row");
-                column.has_data_in_row(row)
-            }
+            false => column.has_data_in_row(row) || self.formats.has_format_in_row(row),
         };
-        let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
+        let mut min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
             Some(*index)
         } else {
             None
         };
-        let max = if let Some((index, _)) = self.columns.iter().rfind(column_has_row) {
+        let mut max = if let Some((index, _)) = self.columns.iter().rfind(column_has_row) {
             Some(*index)
         } else {
             None
         };
+
+        if !ignore_formatting {
+            max = max.max(self.formats.row_max(row));
+        }
+
         let code_range = self.code_rows_bounds(row, row);
 
         if min.is_none() && code_range.is_none() {
@@ -233,25 +250,7 @@ impl Sheet {
     /// Returns the lower and upper bounds of formatting in a row, or `None` if
     /// the row has no formatting.
     pub fn row_bounds_formats(&self, _row: i64) -> Option<(i64, i64)> {
-        let column_has_row = |(_x, _column): &(&i64, &Column)| {
-            dbgjs!("TODO: row_bounds_formats -column.has_format_in_row(row)");
-            false
-        };
-        let min = self
-            .columns
-            .iter()
-            .find(column_has_row)
-            .map(|(index, _)| *index);
-        let max = self
-            .columns
-            .iter()
-            .rfind(column_has_row)
-            .map(|(index, _)| *index);
-        if let (Some(min), Some(max)) = (min, max) {
-            Some((min.min(max), max.max(max)))
-        } else {
-            None
-        }
+        self.formats.row_max(_row).map(|max| (1, max))
     }
 
     /// Returns the lower and upper bounds of a range of rows, or 'None' if the rows are empty

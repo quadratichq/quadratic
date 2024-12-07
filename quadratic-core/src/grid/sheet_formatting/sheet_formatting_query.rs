@@ -11,24 +11,58 @@ impl SheetFormatting {
     /// Returns the maximum value in the column for which formatting exists.
     pub fn column_max(&self, column: i64) -> Option<i64> {
         [
-            self.align.column_max(column),
-            self.vertical_align.column_max(column),
-            self.wrap.column_max(column),
-            self.numeric_format.column_max(column),
-            self.numeric_decimals.column_max(column),
-            self.numeric_commas.column_max(column),
-            self.bold.column_max(column),
-            self.italic.column_max(column),
-            self.text_color.column_max(column),
-            self.fill_color.column_max(column),
-            self.render_size.column_max(column),
-            self.date_time.column_max(column),
-            self.underline.column_max(column),
-            self.strike_through.column_max(column),
+            self.align.col_max(column),
+            self.vertical_align.col_max(column),
+            self.wrap.col_max(column),
+            self.numeric_format.col_max(column),
+            self.numeric_decimals.col_max(column),
+            self.numeric_commas.col_max(column),
+            self.bold.col_max(column),
+            self.italic.col_max(column),
+            self.text_color.col_max(column),
+            self.fill_color.col_max(column),
+            self.render_size.col_max(column),
+            self.date_time.col_max(column),
+            self.underline.col_max(column),
+            self.strike_through.col_max(column),
         ]
         .iter()
         .copied()
         .max()
+    }
+
+    pub fn has_format_in_column(&self, column: i64) -> bool {
+        self.align.col_max(column) > 0
+            || self.vertical_align.col_max(column) > 0
+            || self.wrap.col_max(column) > 0
+            || self.numeric_format.col_max(column) > 0
+            || self.numeric_decimals.col_max(column) > 0
+            || self.numeric_commas.col_max(column) > 0
+            || self.bold.col_max(column) > 0
+            || self.italic.col_max(column) > 0
+            || self.text_color.col_max(column) > 0
+            || self.fill_color.col_max(column) > 0
+            || self.render_size.col_max(column) > 0
+            || self.date_time.col_max(column) > 0
+            || self.underline.col_max(column) > 0
+            || self.strike_through.col_max(column) > 0
+    }
+
+    pub fn has_format_in_row(&self, row: i64) -> bool {
+        self.align.row_max(row) > 0
+            || self.vertical_align.row_max(row) > 0
+            || self.wrap.row_max(row) > 0
+            || self.numeric_format.row_max(row) > 0
+            || self.numeric_decimals.row_max(row) > 0
+            || self.numeric_commas.row_max(row) > 0
+            || self.bold.row_max(row) > 0
+            || self.italic.row_max(row) > 0
+            || self.text_color.row_max(row) > 0
+            || self.fill_color.row_max(row) > 0
+            || self.render_size.row_max(row) > 0
+            || self.date_time.row_max(row) > 0
+            || self.underline.row_max(row) > 0
+            || self.strike_through.row_max(row) > 0
     }
 
     /// Returns format for a cell or None if default.
@@ -113,6 +147,58 @@ impl SheetFormatting {
             .finite_bounds()
             .map(|rect| bounds.add_rect(rect));
         bounds.into()
+    }
+
+    /// Returns the maximum value in the column for which formatting exists.
+    pub fn col_max(&self, column: i64) -> Option<i64> {
+        let col_maxes = vec![
+            self.align.col_max(column),
+            self.vertical_align.col_max(column),
+            self.wrap.col_max(column),
+            self.numeric_format.col_max(column),
+            self.numeric_decimals.col_max(column),
+            self.numeric_commas.col_max(column),
+            self.bold.col_max(column),
+            self.italic.col_max(column),
+            self.text_color.col_max(column),
+            self.fill_color.col_max(column),
+            self.render_size.col_max(column),
+            self.date_time.col_max(column),
+            self.underline.col_max(column),
+            self.strike_through.col_max(column),
+        ];
+        let max = col_maxes.iter().max()?;
+        if *max == 0 {
+            None
+        } else {
+            Some(*max)
+        }
+    }
+
+    /// Returns the maximum value in the row for which formatting exists.
+    pub fn row_max(&self, row: i64) -> Option<i64> {
+        let row_maxes = vec![
+            self.align.row_max(row),
+            self.vertical_align.row_max(row),
+            self.wrap.row_max(row),
+            self.numeric_format.row_max(row),
+            self.numeric_decimals.row_max(row),
+            self.numeric_commas.row_max(row),
+            self.bold.row_max(row),
+            self.italic.row_max(row),
+            self.text_color.row_max(row),
+            self.fill_color.row_max(row),
+            self.render_size.row_max(row),
+            self.date_time.row_max(row),
+            self.underline.row_max(row),
+            self.strike_through.row_max(row),
+        ];
+        let max = row_maxes.iter().max()?;
+        if *max == 0 {
+            None
+        } else {
+            Some(*max)
+        }
     }
 }
 

@@ -214,7 +214,7 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
     }
     /// Returns the upper bound on the finite regions in the given column.
     /// Returns 0 if there are no values.
-    pub fn column_max(&self, column: i64) -> i64 {
+    pub fn col_max(&self, column: i64) -> i64 {
         let Some(column) = convert_coord(column) else {
             return 0;
         };
