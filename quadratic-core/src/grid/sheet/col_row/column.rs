@@ -259,8 +259,6 @@ impl Sheet {
         }
         code_runs_to_move.reverse();
         for old_pos in code_runs_to_move {
-            dbgjs!("insert column");
-            dbgjs!(format!("{:?}", old_pos));
             let new_pos = Pos {
                 x: old_pos.x + 1,
                 y: old_pos.y,

@@ -7,7 +7,9 @@
 use std::collections::HashMap;
 
 use crate::{
-    controller::active_transactions::pending_transaction::PendingTransaction,
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction, execution::TransactionSource,
+    },
     grid::{Grid, GridBounds},
     CopyFormats,
 };
@@ -36,39 +38,71 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
     // client. Also, we do not send any information to multiplayer, as
     // quadratic-files will automatically upgrade using this function
     // before applying any changes.
-    let mut _transaction = PendingTransaction::default();
+    let mut transaction = PendingTransaction {
+        source: TransactionSource::Server,
+        ..Default::default()
+    };
     let mut changed = false;
-    let mut shifted_offsets = HashMap::new();
+    let mut shifted_offsets_sheet_name = HashMap::new(); // for migrating cells to q.cells
+    let mut shifted_offsets_sheet_id = HashMap::new(); // for translating code runs's cells_accessed
     for sheet in grid.sheets.iter_mut() {
-        let current_sheet_name = sheet.name.clone();
+        let mut x_shift = 0;
+        let mut y_shift = 0;
+
         if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
+            // shift columns
             if bounds.min.x <= 0 {
                 changed = true;
                 let insert = bounds.min.x - 1;
                 for _ in bounds.min.x..=0 {
-                    sheet.insert_column(&mut _transaction, insert, CopyFormats::None);
+                    sheet.insert_column(&mut transaction, insert, CopyFormats::None);
                     sheet.recalculate_bounds();
-                    shifted_offsets
-                        .entry(current_sheet_name.clone())
-                        .or_insert((0, 0))
-                        .0 += 1;
+                    x_shift += 1;
                 }
             }
+
+            // shift rows
             if bounds.min.y <= 0 {
                 changed = true;
                 let insert = bounds.min.y - 1;
                 for _ in bounds.min.y..=0 {
-                    sheet.insert_row(&mut _transaction, insert, CopyFormats::None);
+                    sheet.insert_row(&mut transaction, insert, CopyFormats::None);
                     sheet.recalculate_bounds();
-                    shifted_offsets
-                        .entry(current_sheet_name.clone())
-                        .or_insert((0, 0))
-                        .1 += 1;
+                    y_shift += 1;
                 }
+            }
+        }
+
+        // record the shift
+        shifted_offsets_sheet_name.insert(sheet.name.clone(), (x_shift, y_shift));
+        shifted_offsets_sheet_id.insert(sheet.id, (x_shift, y_shift));
+    }
+
+    // translate code runs's cells_accessed
+    for sheet in grid.sheets.iter_mut() {
+        for code_run in sheet.code_runs.values_mut() {
+            let cells = &mut code_run.cells_accessed.cells;
+            for (sheet_id, ranges) in cells {
+                // Get shift values for the current sheet, skip if not found
+                let Some(&(x_shift, y_shift)) = shifted_offsets_sheet_id.get(sheet_id) else {
+                    continue;
+                };
+
+                // Skip translation if no shift is needed
+                if x_shift == 0 && y_shift == 0 {
+                    continue;
+                }
+
+                // Translate all ranges and collect into new HashSet
+                *ranges = ranges
+                    .iter()
+                    .map(|r| r.translate(x_shift, y_shift))
+                    .collect();
             }
         }
     }
 
+    // remove the import offset from the formats and borders_a1
     for sheet in grid.sheets.iter_mut() {
         for _ in 0..IMPORT_OFFSET {
             sheet.formats.remove_column(1);
@@ -84,7 +118,7 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
         crate::wasm_bindings::js::jsClientMessage("negative_offsets".to_string(), false);
     }
 
-    shifted_offsets
+    shifted_offsets_sheet_name
 }
 
 #[cfg(test)]
