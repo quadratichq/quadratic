@@ -42,18 +42,9 @@ impl SheetFormatUpdates {
                 selection,
                 update.numeric_decimals,
             ),
-            numeric_commas: Contiguous2D::new_from_opt_selection(
-                selection,
-                update.numeric_commas, // numeric_commas=None -> numeric_commas=false
-            ),
-            bold: Contiguous2D::new_from_opt_selection(
-                selection,
-                update.bold, // bold=None -> bold=false
-            ),
-            italic: Contiguous2D::new_from_opt_selection(
-                selection,
-                update.italic, // italic=None -> italic=false
-            ),
+            numeric_commas: Contiguous2D::new_from_opt_selection(selection, update.numeric_commas),
+            bold: Contiguous2D::new_from_opt_selection(selection, update.bold),
+            italic: Contiguous2D::new_from_opt_selection(selection, update.italic),
             text_color: Contiguous2D::new_from_opt_selection(selection, update.text_color.clone()),
             fill_color: Contiguous2D::new_from_opt_selection(selection, update.fill_color.clone()),
             render_size: Contiguous2D::new_from_opt_selection(
@@ -61,14 +52,8 @@ impl SheetFormatUpdates {
                 update.render_size.clone(),
             ),
             date_time: Contiguous2D::new_from_opt_selection(selection, update.date_time.clone()),
-            underline: Contiguous2D::new_from_opt_selection(
-                selection,
-                update.underline, // underline=None -> underline=false
-            ),
-            strike_through: Contiguous2D::new_from_opt_selection(
-                selection,
-                update.strike_through, // strike_through=None -> strike_through=false
-            ),
+            underline: Contiguous2D::new_from_opt_selection(selection, update.underline),
+            strike_through: Contiguous2D::new_from_opt_selection(selection, update.strike_through),
         }
     }
 

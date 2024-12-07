@@ -12,7 +12,9 @@ use crate::{
     CopyFormats,
 };
 
-const IMPORT_OFFSET: i64 = 100;
+pub const IMPORT_OFFSET: i64 = 100;
+
+pub const IMPORT_OFFSET_START_FOR_INFINITE: i64 = 1 - IMPORT_OFFSET;
 
 pub fn add_import_offset_to_contiguous_2d_rect(
     x1: i64,
@@ -20,10 +22,10 @@ pub fn add_import_offset_to_contiguous_2d_rect(
     x2: Option<i64>,
     y2: Option<i64>,
 ) -> (i64, i64, Option<i64>, Option<i64>) {
-    let x1 = x1.saturating_add(IMPORT_OFFSET);
-    let y1 = y1.saturating_add(IMPORT_OFFSET);
-    let x2 = x2.map(|x| x.saturating_add(IMPORT_OFFSET));
-    let y2 = y2.map(|y| y.saturating_add(IMPORT_OFFSET));
+    let x1 = x1.saturating_add(IMPORT_OFFSET).max(1);
+    let y1 = y1.saturating_add(IMPORT_OFFSET).max(1);
+    let x2 = x2.map(|x| x.saturating_add(IMPORT_OFFSET).max(1));
+    let y2 = y2.map(|y| y.saturating_add(IMPORT_OFFSET).max(1));
     (x1, y1, x2, y2)
 }
 
@@ -71,6 +73,8 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
         for _ in 0..IMPORT_OFFSET {
             sheet.formats.remove_column(1);
             sheet.formats.remove_row(1);
+            sheet.borders_a1.remove_column(1);
+            sheet.borders_a1.remove_row(1);
         }
         sheet.recalculate_bounds();
     }
@@ -89,7 +93,7 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{file::import, CellBorderLine},
+        grid::{file::import, sheet::borders_a1::CellBorderLine},
         CellValue, Pos,
     };
 
@@ -128,7 +132,7 @@ mod test {
             Some("rgb(241, 196, 15)".to_string())
         );
 
-        let borders = sheet.borders.try_from_a1("A1").unwrap();
+        let borders = sheet.borders_a1.get_style_cell(pos![A1]);
         assert_eq!(borders.top.unwrap().line, CellBorderLine::default());
         assert_eq!(borders.left.unwrap().line, CellBorderLine::default());
         assert_eq!(borders.bottom.unwrap().line, CellBorderLine::default());

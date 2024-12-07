@@ -368,20 +368,6 @@ class InlineEditorKeyboard {
       });
     }
 
-    // switch sheet next
-    else if (matchShortcut(Action.SwitchSheetNext, e)) {
-      e.stopPropagation();
-      e.preventDefault();
-      defaultActionSpec[Action.SwitchSheetNext].run();
-    }
-
-    // switch sheet previous
-    else if (matchShortcut(Action.SwitchSheetPrevious, e)) {
-      e.stopPropagation();
-      e.preventDefault();
-      defaultActionSpec[Action.SwitchSheetPrevious].run();
-    }
-
     // trigger cell type menu
     else if (matchShortcut(Action.ShowCellTypeMenu, e) && inlineEditorMonaco.get().length === 0) {
       e.preventDefault();

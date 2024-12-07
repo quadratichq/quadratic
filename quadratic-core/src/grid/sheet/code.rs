@@ -16,7 +16,7 @@ impl Sheet {
     /// Returns the old value if it was set.
     pub fn set_code_run(&mut self, pos: Pos, code_run: Option<CodeRun>) -> Option<CodeRun> {
         if let Some(code_run) = code_run {
-            self.code_runs.insert(pos, code_run)
+            self.code_runs.insert_sorted(pos, code_run).1
         } else {
             self.code_runs.shift_remove(&pos)
         }

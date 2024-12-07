@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use crate::grid::file::v1_7_1;
+use crate::grid::file::{shift_negative_offsets::IMPORT_OFFSET_START_FOR_INFINITE, v1_7_1};
 
 use super::{
     schema::{self as current, BorderStyleCellSchema},
@@ -244,7 +244,7 @@ fn upgrade_validations(validations: current::ValidationsSchema) -> v1_7_1::Valid
     }
 }
 
-fn apply_cell_borders(
+fn apply_left_right_cell_borders(
     borders_upgrade: &mut BordersA1Upgrade,
     borders: impl IntoIterator<
         Item = (
@@ -267,13 +267,42 @@ fn apply_cell_borders(
     }
 }
 
+fn apply_top_bottom_cell_borders(
+    borders_upgrade: &mut BordersA1Upgrade,
+    borders: impl IntoIterator<
+        Item = (
+            i64,
+            HashMap<i64, current::ColumnRepeatSchema<current::BorderStyleTimestampSchema>>,
+        ),
+    >,
+    f: impl Fn(current::BorderStyleTimestampSchema) -> BorderStyleCellSchema,
+) {
+    for (y, map) in borders {
+        for (x, repeat) in map {
+            borders_upgrade.apply_borders(
+                x,
+                y,
+                Some(x + repeat.len as i64 - 1),
+                Some(y),
+                f(repeat.value),
+            );
+        }
+    }
+}
+
 type BordersColumnRow = (BorderStyleCellSchema, (Option<i64>, Option<i64>));
 
 fn upgrade_borders(borders: current::BordersSchema) -> v1_7_1::BordersA1Schema {
     let mut borders_upgrade = BordersA1Upgrade::default();
 
     // apply all borders
-    borders_upgrade.apply_borders(1, 1, None, None, borders.all);
+    borders_upgrade.apply_borders(
+        IMPORT_OFFSET_START_FOR_INFINITE,
+        IMPORT_OFFSET_START_FOR_INFINITE,
+        None,
+        None,
+        borders.all,
+    );
 
     // collect column / row formats and sort by timestamp
     let mut borders_column_row: Vec<(u32, BordersColumnRow)> = vec![];
@@ -308,34 +337,46 @@ fn upgrade_borders(borders: current::BordersSchema) -> v1_7_1::BordersA1Schema {
 
     for (_, (border, (col, row))) in borders_column_row {
         if let Some(col) = col {
-            borders_upgrade.apply_borders(col, 1, Some(col), None, border);
+            borders_upgrade.apply_borders(
+                col,
+                IMPORT_OFFSET_START_FOR_INFINITE,
+                Some(col),
+                None,
+                border,
+            );
         } else if let Some(row) = row {
-            borders_upgrade.apply_borders(1, row, None, Some(row), border);
+            borders_upgrade.apply_borders(
+                IMPORT_OFFSET_START_FOR_INFINITE,
+                row,
+                None,
+                Some(row),
+                border,
+            );
         }
     }
 
-    apply_cell_borders(&mut borders_upgrade, borders.left, |border| {
+    apply_left_right_cell_borders(&mut borders_upgrade, borders.left, |border| {
         BorderStyleCellSchema {
             left: Some(border),
             ..Default::default()
         }
     });
 
-    apply_cell_borders(&mut borders_upgrade, borders.right, |border| {
+    apply_left_right_cell_borders(&mut borders_upgrade, borders.right, |border| {
         BorderStyleCellSchema {
             right: Some(border),
             ..Default::default()
         }
     });
 
-    apply_cell_borders(&mut borders_upgrade, borders.top, |border| {
+    apply_top_bottom_cell_borders(&mut borders_upgrade, borders.top, |border| {
         BorderStyleCellSchema {
             top: Some(border),
             ..Default::default()
         }
     });
 
-    apply_cell_borders(&mut borders_upgrade, borders.bottom, |border| {
+    apply_top_bottom_cell_borders(&mut borders_upgrade, borders.bottom, |border| {
         BorderStyleCellSchema {
             bottom: Some(border),
             ..Default::default()
@@ -363,7 +404,13 @@ fn upgrade_formats_all_col_row(
 
     // apply format all
     if let Some(format_all) = format_all {
-        formats_upgrade.apply_format(1, 1, None, None, format_all);
+        formats_upgrade.apply_format(
+            IMPORT_OFFSET_START_FOR_INFINITE,
+            IMPORT_OFFSET_START_FOR_INFINITE,
+            None,
+            None,
+            format_all,
+        );
     }
 
     // collect column / row formats and sort by timestamp
@@ -382,9 +429,21 @@ fn upgrade_formats_all_col_row(
     // apply column / row formats
     for (_, (format, (col, row))) in format_col_row {
         if let Some(col) = col {
-            formats_upgrade.apply_format(col, 1, Some(col), None, format);
+            formats_upgrade.apply_format(
+                col,
+                IMPORT_OFFSET_START_FOR_INFINITE,
+                Some(col),
+                None,
+                format,
+            );
         } else if let Some(row) = row {
-            formats_upgrade.apply_format(1, row, None, Some(row), format);
+            formats_upgrade.apply_format(
+                IMPORT_OFFSET_START_FOR_INFINITE,
+                row,
+                None,
+                Some(row),
+                format,
+            );
         }
     }
 

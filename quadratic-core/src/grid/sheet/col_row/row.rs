@@ -48,8 +48,20 @@ impl Sheet {
         }
     }
 
+    /// Creates reverse operations for borders within the row.
+    fn reverse_borders_ops_for_row(&self, row: i64) -> Vec<Operation> {
+        if let Some(borders) = self.borders_a1.copy_row(row) {
+            vec![Operation::SetBordersA1 {
+                sheet_id: self.id,
+                borders,
+            }]
+        } else {
+            vec![]
+        }
+    }
+
     /// Creates reverse operations for code runs within the column.
-    fn code_runs_for_row(&self, row: i64) -> Vec<Operation> {
+    fn reverse_code_runs_ops_for_row(&self, row: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
         self.code_runs
@@ -99,7 +111,7 @@ impl Sheet {
         }
     }
 
-    pub(crate) fn delete_row_offset(&mut self, transaction: &mut PendingTransaction, row: i64) {
+    fn delete_row_offset(&mut self, transaction: &mut PendingTransaction, row: i64) {
         let (changed, new_size) = self.offsets.delete_row(row);
 
         if let Some(new_size) = new_size {
@@ -133,13 +145,34 @@ impl Sheet {
                 .extend(self.reverse_formats_ops_for_row(row));
             transaction
                 .reverse_operations
-                .extend(self.code_runs_for_row(row));
+                .extend(self.reverse_borders_ops_for_row(row));
             transaction
                 .reverse_operations
-                .extend(self.borders.get_row_ops(self.id, row));
+                .extend(self.reverse_code_runs_ops_for_row(row));
+
+            // reverse operation to create the column (this will also shift all impacted columns)
+            transaction.reverse_operations.push(Operation::InsertRow {
+                sheet_id: self.id,
+                row,
+                copy_formats: CopyFormats::None,
+            });
         }
 
         self.delete_row_offset(transaction, row);
+
+        // mark hashes of existing rows dirty
+        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
+
+        // remove the row's formats from the sheet
+        self.formats.remove_row(row);
+        transaction.fill_cells.insert(self.id);
+
+        // remove the column's borders from the sheet
+        self.borders_a1.remove_row(row);
+        transaction.sheet_borders.insert(self.id);
+
+        // update all cells that were impacted by the deletion
+        self.delete_and_shift_values(row);
 
         // remove the row's code runs from the sheet
         self.code_runs.retain(|pos, code_run| {
@@ -157,23 +190,6 @@ impl Sheet {
                 true
             }
         });
-
-        // mark hashes of existing rows dirty
-        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
-
-        // remove the row's formats from the sheet
-        self.formats.remove_row(row);
-        // TODO: only update fill cells if necessary due to removed formatting?
-
-        transaction.fill_cells.insert(self.id);
-
-        // remove the column's borders from the sheet
-        if self.borders.remove_row(row) {
-            transaction.sheet_borders.insert(self.id);
-        }
-
-        // update all cells that were impacted by the deletion
-        self.delete_and_shift_values(row);
 
         // update the indices of all code_runs impacted by the deletion
         let mut code_runs_to_move = Vec::new();
@@ -199,7 +215,7 @@ impl Sheet {
                     transaction.add_image_cell(self.id, new_pos);
                 }
 
-                self.code_runs.insert(new_pos, code_run);
+                self.code_runs.insert_sorted(new_pos, code_run);
 
                 // signal client to update the code runs
                 transaction.add_code_cell(self.id, old_pos);
@@ -207,20 +223,8 @@ impl Sheet {
             }
         }
 
-        // update the indices of all column-based formats impacted by the deletion
-        self.formats.remove_row(row); // TODO: save formats returned here
-
-        dbgjs!("actually save the row formatting and update transaction appropriately");
-
         // mark hashes of new rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
-
-        // reverse operation to create the column (this will also shift all impacted columns)
-        transaction.reverse_operations.push(Operation::InsertRow {
-            sheet_id: self.id,
-            row,
-            copy_formats: CopyFormats::None,
-        });
 
         let changed_selections = self.validations.remove_row(transaction, self.id, row);
         transaction.add_dirty_hashes_from_selections(self, changed_selections);
@@ -252,43 +256,6 @@ impl Sheet {
         }
     }
 
-    /// Copies row formats to the new row.
-    ///
-    /// We don't need reverse operations since the updated column will be
-    /// deleted during an undo.
-    fn copy_row_formats(
-        &mut self,
-        _transaction: &mut PendingTransaction,
-        _row: i64,
-        _copy_formats: CopyFormats,
-    ) {
-        dbgjs!(
-            "copy_row_formats - this function isn't necessary; the data structure does it for you!"
-        );
-        // let delta = match copy_formats {
-        //     CopyFormats::After => 1,
-        //     CopyFormats::Before => -1,
-        //     CopyFormats::None => return,
-        // };
-        // if let Some((min, max)) = self.row_bounds_formats(row + delta) {
-        //     for x in min..=max {
-        //         if let Some(format) = self.try_format_cell(x, row + delta) {
-        //             if format.fill_color.is_some() {
-        //                 transaction.fill_cells.insert(self.id);
-        //             }
-        //             self.set_format_cell(Pos { x, y: row }, &format.to_replace(), false);
-        //         }
-        //     }
-        // }
-        // if let Some((format, _)) = self.formats_rows.get(&(row + delta)) {
-        //     if format.fill_color.is_some() {
-        //         transaction.fill_cells.insert(self.id);
-        //     }
-        //     self.formats_rows
-        //         .insert(row, (format.clone(), Utc::now().timestamp()));
-        // }
-    }
-
     pub(crate) fn insert_row(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -309,6 +276,14 @@ impl Sheet {
 
         self.insert_and_shift_values(row);
 
+        // update formatting
+        self.formats.insert_row(row, copy_formats);
+        transaction.fill_cells.insert(self.id);
+
+        // signal client to update the borders for changed columns
+        self.borders_a1.insert_row(row, copy_formats);
+        transaction.sheet_borders.insert(self.id);
+
         // update the indices of all code_runs impacted by the insertion
         let mut code_runs_to_move = Vec::new();
         for (pos, _) in self.code_runs.iter() {
@@ -317,7 +292,6 @@ impl Sheet {
             }
         }
         code_runs_to_move.reverse();
-
         for old_pos in code_runs_to_move {
             let new_pos = Pos {
                 x: old_pos.x,
@@ -333,7 +307,7 @@ impl Sheet {
                     transaction.add_image_cell(self.id, new_pos);
                 }
 
-                self.code_runs.insert(new_pos, code_run);
+                self.code_runs.insert_sorted(new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_code_cell(self.id, old_pos);
@@ -341,26 +315,11 @@ impl Sheet {
             }
         }
 
-        // update the indices of all column-based formats impacted by the deletion
-        if true {
-            dbgjs!("todo: insert row with format data");
-        }
-
-        // signal client to update the borders for changed columns
-        if self.borders.insert_row(row) {
-            transaction.sheet_borders.insert(self.id);
-        }
-
-        // update formatting
-        self.formats.insert_row(row, copy_formats);
-
         // mark hashes of new rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
         let changed_selections = self.validations.insert_row(transaction, self.id, row);
         transaction.add_dirty_hashes_from_selections(self, changed_selections);
-
-        self.copy_row_formats(transaction, row, copy_formats);
 
         let changes = self.offsets.insert_row(row);
         if !changes.is_empty() {
@@ -615,7 +574,7 @@ mod test {
 
     #[test]
     #[parallel]
-    fn delete_column_offset() {
+    fn delete_row_offset() {
         let mut sheet = Sheet::test();
         sheet.offsets.set_row_height(1, 100.0);
         sheet.offsets.set_row_height(2, 200.0);

@@ -444,12 +444,10 @@ mod tests {
             })
         );
 
-        // todo: this should be 10 but C10 (new file) is missing
-        todo!();
-        // assert_eq!(sheet.code_runs.len(), 10);
-        // assert_eq!(
-        //     sheet.code_runs.get(&Pos { x: 3, y: 7 }).unwrap().std_err,
-        //     Some("x is not defined".into())
-        // );
+        assert_eq!(sheet.code_runs.len(), 10);
+        assert_eq!(
+            sheet.code_runs.get(&Pos { x: 3, y: 7 }).unwrap().std_err,
+            Some("x is not defined".into())
+        );
     }
 }
