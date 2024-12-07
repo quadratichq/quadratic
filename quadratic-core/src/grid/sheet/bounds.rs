@@ -218,7 +218,7 @@ impl Sheet {
             true => column.has_data_in_row(row),
             false => column.has_data_in_row(row) || self.formats.has_format_in_row(row),
         };
-        let mut min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
+        let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
             Some(*index)
         } else {
             None
