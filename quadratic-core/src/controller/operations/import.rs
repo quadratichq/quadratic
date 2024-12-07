@@ -171,7 +171,7 @@ impl GridController {
 
             // values
             let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
-            let insert_at = range.start().map_or_else(Pos::default, xlsx_range_to_pos);
+            let insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     let cell_value = match cell {

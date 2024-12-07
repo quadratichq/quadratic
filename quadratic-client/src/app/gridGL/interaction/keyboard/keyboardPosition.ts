@@ -23,12 +23,18 @@ async function jumpCursor(direction: JumpDirection, select: boolean) {
   const position = await quadraticCore.jumpCursor(sheetId, { x: keyboardX, y: keyboardY }, direction);
 
   // something went wrong
-  if (!position) return;
+  if (!position) {
+    console.error('Failed to jump cursor');
+    return;
+  }
+
+  const col = Math.max(1, position.x);
+  const row = Math.max(1, position.y);
 
   if (select) {
-    cursor.selectTo(position.x, position.y, true);
+    cursor.selectTo(col, row, true);
   } else {
-    cursor.moveTo(position.x, position.y);
+    cursor.moveTo(col, row);
   }
 }
 
