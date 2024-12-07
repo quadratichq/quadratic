@@ -31,7 +31,6 @@ impl BordersA1 {
             }))
             .collect::<Vec<_>>();
         horizontal_rects.sort_unstable_by(|a, b| b.4.timestamp.cmp(&a.4.timestamp));
-
         let mut horizontal = Contiguous2D::<Option<BorderStyleTimestamp>>::default();
         horizontal_rects
             .iter()
@@ -66,6 +65,7 @@ impl BordersA1 {
                     });
                 }
             } else {
+                // handle infinite horizontal
                 horizontal_vec.push(JsBorderHorizontal {
                     color: border.color,
                     line: border.line,
@@ -114,6 +114,8 @@ impl BordersA1 {
         vertical_rects
             .into_iter()
             .for_each(|(x1, y1, x2, y2, border)| {
+                println!("{} {} {:?} {:?}", x1, y1, x2, y2);
+
                 if x2.is_some_and(|x2| x2 == x1) {
                     vertical.push(JsBorderVertical {
                         color: border.color,
@@ -132,6 +134,15 @@ impl BordersA1 {
                             height: y2.map(|y2| y2 as i64 - y1 as i64 + 1),
                         });
                     }
+                } else {
+                    // handle infinite vertical
+                    vertical.push(JsBorderVertical {
+                        color: border.color,
+                        line: border.line,
+                        x: x1 as i64,
+                        y: y1 as i64,
+                        height: None,
+                    });
                 }
             });
         if vertical.is_empty() {
@@ -181,7 +192,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn horizontal_borders_in_rect() {
+    fn horizontal_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 

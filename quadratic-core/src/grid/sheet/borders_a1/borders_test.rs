@@ -113,6 +113,8 @@ mod tests {
             );
             let sheet = gc.sheet(SheetId::TEST);
             sheet.borders_a1.print(Some(Rect::new(1, 1, 6, 6)));
+
+            // start: right and left output differently--probably because of the renderer
         }
     }
 }
