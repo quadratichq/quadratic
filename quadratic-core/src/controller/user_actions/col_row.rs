@@ -356,7 +356,7 @@ mod tests {
                 ..Default::default()
             }
         );
-        assert!(sheet.formats.format(pos![D1]).is_default());
+        assert!(sheet.formats.format(pos![D2]).is_default());
         assert!(sheet.formats.format(pos![B2]).is_default());
     }
 

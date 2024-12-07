@@ -518,12 +518,10 @@ impl<T: Clone + PartialEq + Debug> Contiguous2D<Option<T>> {
     /// Returns the finite bounds of the contiguous 2d.
     pub fn finite_bounds(&self) -> Option<Rect> {
         let mut bounds = GridBounds::default();
-        self.into_iter().for_each(|(x1, y1, x2, y2, value)| {
+        self.into_iter().for_each(|(x1, y1, x2, y2, _)| {
             if let (Some(x2), Some(y2)) = (x2, y2) {
                 bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64));
             }
-            dbg!(x1, y1, x2, y2);
-            dbg!(&value);
         });
         bounds.into()
     }

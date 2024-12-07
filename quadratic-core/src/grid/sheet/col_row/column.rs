@@ -310,7 +310,12 @@ mod tests {
 
     use crate::{
         controller::execution::TransactionSource,
-        grid::{BorderStyle, CellBorderLine, CellWrap},
+        grid::{
+            sheet::borders_a1::{
+                BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine,
+            },
+            CellWrap,
+        },
         CellValue, DEFAULT_COLUMN_WIDTH,
     };
 
@@ -373,63 +378,66 @@ mod tests {
     fn insert_column_start() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 3, 1, vec!["A", "B", "C"]);
-        sheet.borders.set(
-            1,
-            1,
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
+        sheet.borders_a1.set_style_cell(
+            pos![A1],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: Some(BorderStyleTimestamp::default()),
+                left: Some(BorderStyleTimestamp::default()),
+                right: Some(BorderStyleTimestamp::default()),
+            },
         );
-        sheet.borders.set(
-            2,
-            1,
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
+        sheet.borders_a1.set_style_cell(
+            pos![B1],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: Some(BorderStyleTimestamp::default()),
+                left: Some(BorderStyleTimestamp::default()),
+                right: Some(BorderStyleTimestamp::default()),
+            },
         );
-        sheet.borders.set(
-            3,
-            1,
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
+        sheet.borders_a1.set_style_cell(
+            pos![C1],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: Some(BorderStyleTimestamp::default()),
+                left: Some(BorderStyleTimestamp::default()),
+                right: Some(BorderStyleTimestamp::default()),
+            },
         );
 
         let mut transaction = PendingTransaction::default();
 
         sheet.insert_column(&mut transaction, 1, CopyFormats::None);
 
-        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
+        assert_eq!(sheet.display_value(pos![A1]), None);
         assert_eq!(
-            sheet.display_value(Pos { x: 2, y: 1 }),
+            sheet.display_value(pos![B1]),
             Some(CellValue::Text("A".to_string()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 3, y: 1 }),
+            sheet.display_value(pos![C1]),
             Some(CellValue::Text("B".to_string()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 4, y: 1 }),
+            sheet.display_value(pos![D1]),
             Some(CellValue::Text("C".to_string()))
         );
 
-        assert_eq!(sheet.borders.get(1, 1).top, None);
+        assert_eq!(sheet.borders_a1.get_side(BorderSide::Top, pos![A1]), None);
         assert_eq!(
-            sheet.borders.get(2, 1).top.unwrap().line,
+            sheet.borders_a1.get_style_cell(pos![B1]).top.unwrap().line,
             CellBorderLine::default()
         );
         assert_eq!(
-            sheet.borders.get(3, 1).top.unwrap().line,
+            sheet.borders_a1.get_style_cell(pos![C1]).top.unwrap().line,
             CellBorderLine::default()
         );
         assert_eq!(
-            sheet.borders.get(4, 1).top.unwrap().line,
+            sheet.borders_a1.get_style_cell(pos![D1]).top.unwrap().line,
             CellBorderLine::default()
         );
-        assert_eq!(sheet.borders.get(5, 1).top, None);
+        assert_eq!(sheet.borders_a1.get_side(BorderSide::Top, pos![E1]), None);
     }
 
     #[test]

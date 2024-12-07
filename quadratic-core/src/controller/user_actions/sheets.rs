@@ -53,15 +53,14 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            sheet::borders::{BorderSelection, BorderStyle},
+            sheet::borders_a1::{BorderSelection, BorderStyle},
             CodeCellLanguage, SheetId,
         },
-        selection::OldSelection,
         wasm_bindings::{
             controller::sheet_info::SheetInfo,
             js::{clear_js_calls, expect_js_call},
         },
-        A1Selection, CellValue, SheetPos, SheetRect,
+        A1Selection, CellValue, SheetPos,
     };
     use bigdecimal::BigDecimal;
     use serial_test::{parallel, serial};
@@ -249,8 +248,8 @@ mod test {
         gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
             .unwrap();
 
-        gc.set_borders_selection(
-            OldSelection::sheet_rect(SheetRect::single_pos((2, 2).into(), sheet_id)),
+        gc.set_borders(
+            A1Selection::test_a1("B2"),
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,
@@ -281,7 +280,7 @@ mod test {
         // should send borders for the duplicated sheet
         let borders = gc
             .sheet(duplicated_sheet_id)
-            .borders
+            .borders_a1
             .borders_in_sheet()
             .unwrap();
         let borders_str = serde_json::to_string(&borders).unwrap();

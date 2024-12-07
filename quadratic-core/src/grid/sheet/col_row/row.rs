@@ -336,7 +336,12 @@ mod test {
 
     use crate::{
         controller::execution::TransactionSource,
-        grid::{BorderStyle, CellBorderLine, CellWrap},
+        grid::{
+            sheet::borders_a1::{
+                BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine,
+            },
+            CellWrap,
+        },
         CellValue, DEFAULT_ROW_HEIGHT,
     };
 
@@ -431,29 +436,32 @@ mod test {
     fn insert_row_start() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
-        sheet.borders.set(
-            1,
-            1,
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
+        sheet.borders_a1.set_style_cell(
+            pos![A1],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: Some(BorderStyleTimestamp::default()),
+                left: Some(BorderStyleTimestamp::default()),
+                right: Some(BorderStyleTimestamp::default()),
+            },
         );
-        sheet.borders.set(
-            1,
-            2,
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
+        sheet.borders_a1.set_style_cell(
+            pos![A2],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: Some(BorderStyleTimestamp::default()),
+                left: Some(BorderStyleTimestamp::default()),
+                right: Some(BorderStyleTimestamp::default()),
+            },
         );
-        sheet.borders.set(
-            1,
-            3,
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
+        sheet.borders_a1.set_style_cell(
+            pos![A3],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: Some(BorderStyleTimestamp::default()),
+                left: Some(BorderStyleTimestamp::default()),
+                right: Some(BorderStyleTimestamp::default()),
+            },
         );
         sheet.test_set_code_run_array(4, 1, vec!["A", "B"], false);
 
@@ -463,40 +471,44 @@ mod test {
 
         sheet.insert_row(&mut transaction, 1, CopyFormats::None);
 
-        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
+        assert_eq!(sheet.display_value(pos![A1]), None);
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Text("A".to_string()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 3 }),
+            sheet.display_value(pos![A3]),
             Some(CellValue::Text("B".to_string()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 4 }),
+            sheet.display_value(pos![A4]),
             Some(CellValue::Text("C".to_string()))
         );
 
-        assert_eq!(sheet.borders.get(1, 1).top, None);
+        assert_eq!(sheet.borders_a1.get_side(BorderSide::Top, pos![A1]), None);
         assert_eq!(
-            sheet.borders.get(1, 2).top.unwrap().line,
+            sheet
+                .borders_a1
+                .get_side(BorderSide::Top, pos![A2])
+                .unwrap()
+                .line,
             CellBorderLine::default()
         );
         assert_eq!(
-            sheet.borders.get(1, 3).top.unwrap().line,
+            sheet.borders_a1.get_style_cell(pos![A3]).top.unwrap().line,
             CellBorderLine::default()
         );
         assert_eq!(
-            sheet.borders.get(1, 4).top.unwrap().line,
+            sheet.borders_a1.get_style_cell(pos![A4]).top.unwrap().line,
             CellBorderLine::default()
         );
-        assert_eq!(sheet.borders.get(5, 1).top, None);
+        assert_eq!(sheet.borders_a1.get_side(BorderSide::Top, pos![E1]), None);
 
-        assert!(sheet.code_runs.get(&Pos { x: 4, y: 1 }).is_none());
-        assert!(sheet.code_runs.get(&Pos { x: 4, y: 2 }).is_some());
+        assert!(sheet.code_runs.get(&pos![D1]).is_none());
+        assert!(sheet.code_runs.get(&pos![D2]).is_some());
 
         assert_eq!(
-            sheet.display_value(Pos { x: 4, y: 2 }),
+            sheet.display_value(pos![D2]),
             Some(CellValue::Text("A".to_string()))
         );
     }
