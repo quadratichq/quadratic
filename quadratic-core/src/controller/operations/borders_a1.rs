@@ -159,6 +159,20 @@ impl GridController {
         }
     }
 
+    /// Creates border operations to clear the selection of any borders.
+    pub fn clear_borders_a1_operations(&self, selection: &A1Selection) -> Vec<Operation> {
+        let mut borders: BordersA1Updates = BordersA1Updates::default();
+        selection.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                self.a1_border_style_range(BorderSelection::All, None, range, &mut borders);
+            }
+        });
+        vec![Operation::SetBordersA1 {
+            sheet_id: selection.sheet_id,
+            borders,
+        }]
+    }
+
     /// Creates border operations. Returns None if selection is empty.
     pub fn set_borders_a1_selection_operations(
         &self,

@@ -16,6 +16,7 @@ pub mod borders_query;
 pub mod borders_render;
 pub mod borders_set;
 mod borders_style;
+mod borders_test;
 pub mod sides;
 
 pub use borders_style::*;

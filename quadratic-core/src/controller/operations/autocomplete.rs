@@ -160,7 +160,7 @@ impl GridController {
 
         let selection = A1Selection::from_rect(delete_rect);
         ops.extend(self.delete_cells_operations(&selection));
-        ops.extend(self.clear_format_selection_operations(&selection));
+        ops.extend(self.clear_format_borders_operations(&selection));
         ops
     }
 

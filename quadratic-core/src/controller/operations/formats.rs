@@ -6,55 +6,46 @@ use crate::{
 };
 
 impl GridController {
-    pub(crate) fn clear_format_selection_operations(
+    pub(crate) fn clear_format_borders_operations(
         &self,
         selection: &A1Selection,
     ) -> Vec<Operation> {
         let sheet_id = selection.sheet_id;
-        dbgjs!("operations/formats.rs - SetBordersA1");
-        vec![
-            Operation::SetCellFormatsA1 {
-                sheet_id,
-                formats: SheetFormatUpdates::from_selection(selection, FormatUpdate::cleared()),
-            },
-            // Operation::SetBordersA1 {
-            //     sheet_id,
-            //     borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), rle_len),
-            // },
-        ]
+        let mut ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(selection, FormatUpdate::cleared()),
+        }];
+        ops.extend(self.clear_borders_a1_operations(selection));
+        ops
     }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-
-    use crate::SheetRect;
+    use crate::grid::SheetId;
 
     use super::*;
 
     #[test]
     fn clear_format_selection_operations() {
         let gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let selection = A1Selection::from_rect(SheetRect::from_numbers(1, 1, 1, 1, sheet_id));
-        let ops = gc.clear_format_selection_operations(&selection);
-        dbgjs!("borders in clear_format_selection_operations");
+        let sheet_id = SheetId::TEST;
+        let selection = A1Selection::test_a1("A1");
+        let ops = gc.clear_format_borders_operations(&selection);
+
+        assert_eq!(ops.len(), 2);
         assert_eq!(
-            ops,
-            vec![
-                Operation::SetCellFormatsA1 {
-                    sheet_id,
-                    formats: SheetFormatUpdates::from_selection(
-                        &selection,
-                        FormatUpdate::cleared()
-                    ),
-                },
-                // Operation::SetBordersA1 {
-                //     sheet_id,
-                //     borders: RunLengthEncoding::repeat(BorderStyleCellUpdate::clear(false), 1),
-                // },
-            ]
+            ops.first().unwrap(),
+            &Operation::SetCellFormatsA1 {
+                sheet_id,
+                formats: SheetFormatUpdates::from_selection(&selection, FormatUpdate::cleared()),
+            }
         );
+        let Operation::SetBordersA1 { sheet_id, borders } = ops.last().unwrap() else {
+            panic!("last operation is not SetBordersA1");
+        };
+        assert_eq!(sheet_id, &SheetId::TEST);
+        assert!(!borders.is_default());
     }
 }

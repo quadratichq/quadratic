@@ -14,14 +14,9 @@ use crate::grid::{
 use crate::A1Selection;
 
 impl GridController {
-    pub(crate) fn clear_format(
-        &mut self,
-        selection: &A1Selection,
-        cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        let ops = self.clear_format_selection_operations(selection);
+    pub(crate) fn clear_format_borders(&mut self, selection: &A1Selection, cursor: Option<String>) {
+        let ops = self.clear_format_borders_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
-        Ok(())
     }
 
     pub(crate) fn set_align(
@@ -331,6 +326,7 @@ impl GridController {
 #[serial_test::parallel]
 mod test {
     use crate::controller::GridController;
+    use crate::grid::sheet::borders_a1::{BorderSelection, BorderStyle};
     use crate::grid::{CellWrap, RenderSize};
     use crate::{A1Selection, Pos};
 
@@ -627,7 +623,7 @@ mod test {
         );
 
         let selection = A1Selection::from_xy(1, 1, sheet_id);
-        gc.clear_format(&selection, None).unwrap();
+        gc.clear_format_borders(&selection, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -658,7 +654,7 @@ mod test {
         );
 
         let selection = A1Selection::from_column_ranges(&[1..=1], sheet_id);
-        gc.clear_format(&selection, None).unwrap();
+        gc.clear_format_borders(&selection, None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.formats.text_color.get(pos![A1]), None);
@@ -689,6 +685,22 @@ mod test {
             sheet.formats.fill_color.get(pos![D3]),
             Some("red".to_string())
         );
+    }
+
+    #[test]
+    fn clear_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_borders(
+            A1Selection::test_a1("A1:B2"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+        gc.clear_format_borders(&A1Selection::test_a1("A1:B2"), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.borders_a1.is_default());
     }
 
     #[test]

@@ -838,9 +838,9 @@ mod tests {
     #[test]
     fn test_finite_bounds() {
         let mut c = Contiguous2D::<Option<bool>>::new();
-        // c.set_rect(1, 1, Some(3), Some(10), true);
+        c.set_rect(1, 1, Some(3), Some(10), Some(true));
         c.set_rect(20, 20, Some(100), None, Some(true));
-        // c.set_rect(200, 200, None, Some(200), false);
+        c.set_rect(200, 200, None, Some(200), Some(false));
         assert_eq!(c.finite_bounds(), Some(Rect::new(1, 1, 3, 10)));
     }
 

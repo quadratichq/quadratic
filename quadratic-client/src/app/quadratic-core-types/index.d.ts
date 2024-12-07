@@ -24,7 +24,9 @@ export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE";
 export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };
 export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, date_time: string | null, underline: boolean | null, strike_through: boolean | null, }
 export type GridBounds = { "type": "empty" } | { "type": "nonEmpty" } & Rect;
-export interface JsBorder { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, w: bigint | null, h: bigint | null, side: BorderSide, time_stamp: bigint, }
+export interface JsBordersSheet { horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
+export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint | null, }
+export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint | null, }
 export interface JsCellsAccessed { sheetId: string, ranges: Array<CellRefRange>, }
 export interface JsCellValue { value: string, kind: string, }
 export interface JsCellValuePos { value: string, kind: string, pos: string, }

@@ -10,20 +10,18 @@ use super::*;
 
 impl BordersA1 {
     /// Returns horizontal borders in a rect
-    fn horizontal_borders(&self) -> Option<Vec<JsBorderHorizontal>> {
-        let mut horizontal = Contiguous2D::<BorderStyleTimestamp>::default();
-
+    pub(crate) fn horizontal_borders(&self) -> Option<Vec<JsBorderHorizontal>> {
         let mut horizontal_rects = self
             .top
             .into_iter()
             .chain(self.bottom.into_iter().map(|(x1, y1, x2, y2, border)| {
                 (
                     x1,
-                    y1 - 1,
+                    y1.saturating_add(1),
                     x2,
                     y2.map(|y2| {
                         if y2 < u64::MAX {
-                            y2.saturating_sub(1)
+                            y2.saturating_add(1)
                         } else {
                             y2
                         }
@@ -34,6 +32,7 @@ impl BordersA1 {
             .collect::<Vec<_>>();
         horizontal_rects.sort_unstable_by(|a, b| b.4.timestamp.cmp(&a.4.timestamp));
 
+        let mut horizontal = Contiguous2D::<Option<BorderStyleTimestamp>>::default();
         horizontal_rects
             .iter()
             .for_each(|(x1, y1, x2, y2, border)| {
@@ -42,42 +41,48 @@ impl BordersA1 {
                     *y1 as i64,
                     x2.map(|x2| x2 as i64),
                     y2.map(|y2| y2 as i64),
-                    border.clone(),
+                    Some(border.clone()),
                 );
             });
 
-        let mut horizontal = vec![];
-        horizontal_rects
-            .into_iter()
-            .for_each(|(x1, y1, x2, y2, border)| {
-                if y2.is_some_and(|y2| y2 == y1) {
-                    horizontal.push(JsBorderHorizontal {
+        let mut horizontal_vec = vec![];
+        horizontal.into_iter().for_each(|(x1, y1, x2, y2, border)| {
+            if y2.is_some_and(|y2| y2 == y1) {
+                horizontal_vec.push(JsBorderHorizontal {
+                    color: border.color,
+                    line: border.line,
+                    x: x1 as i64,
+                    y: y1 as i64,
+                    width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
+                });
+            } else if let Some(y2) = y2 {
+                for y in y1..=y2 {
+                    horizontal_vec.push(JsBorderHorizontal {
                         color: border.color,
                         line: border.line,
                         x: x1 as i64,
-                        y: y1 as i64,
-                        width: x2.map(|x2| x2 as i64 - x1 as i64),
+                        y: y as i64,
+                        width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
                     });
-                } else if let Some(y2) = y2 {
-                    for y in y1..=y2 {
-                        horizontal.push(JsBorderHorizontal {
-                            color: border.color,
-                            line: border.line,
-                            x: x1 as i64,
-                            y: y as i64,
-                            width: x2.map(|x2| x2 as i64 - x1 as i64),
-                        });
-                    }
                 }
-            });
-        if horizontal.is_empty() {
+            } else {
+                horizontal_vec.push(JsBorderHorizontal {
+                    color: border.color,
+                    line: border.line,
+                    x: x1 as i64,
+                    y: y1 as i64,
+                    width: None,
+                });
+            }
+        });
+        if horizontal_vec.is_empty() {
             None
         } else {
-            Some(horizontal)
+            Some(horizontal_vec)
         }
     }
 
-    fn vertical_borders(&self) -> Option<Vec<JsBorderVertical>> {
+    pub(crate) fn vertical_borders(&self) -> Option<Vec<JsBorderVertical>> {
         let mut vertical = Contiguous2D::<BorderStyleTimestamp>::default();
 
         let mut vertical_rects = self
@@ -85,15 +90,9 @@ impl BordersA1 {
             .into_iter()
             .chain(self.bottom.into_iter().map(|(x1, y1, x2, y2, border)| {
                 (
-                    x1 - 1,
+                    x1.saturating_add(1),
                     y1,
-                    x2.map(|x2| {
-                        if x2 < u64::MAX {
-                            x2.saturating_sub(1)
-                        } else {
-                            x2
-                        }
-                    }),
+                    x2.map(|x2| x2.saturating_add(1)),
                     y2,
                     border,
                 )
@@ -121,7 +120,7 @@ impl BordersA1 {
                         line: border.line,
                         x: x1 as i64,
                         y: y1 as i64,
-                        height: y2.map(|y2| y2 as i64 - y1 as i64),
+                        height: y2.map(|y2| y2 as i64 - y1 as i64 + 1),
                     });
                 } else if let Some(x2) = x2 {
                     for x in x1..=x2 {
@@ -130,7 +129,7 @@ impl BordersA1 {
                             line: border.line,
                             x: x as i64,
                             y: y1 as i64,
-                            height: y2.map(|y2| y2 as i64 - y1 as i64),
+                            height: y2.map(|y2| y2 as i64 - y1 as i64 + 1),
                         });
                     }
                 }

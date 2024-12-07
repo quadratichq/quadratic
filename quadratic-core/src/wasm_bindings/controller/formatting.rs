@@ -289,7 +289,8 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.clear_format(&selection, cursor)
+        self.clear_format_borders(&selection, cursor);
+        Ok(())
     }
 
     #[wasm_bindgen(js_name = "getFormatCell")]

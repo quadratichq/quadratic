@@ -151,7 +151,7 @@ impl GridController {
         selection: &A1Selection,
     ) -> Vec<Operation> {
         let mut ops = self.delete_cells_operations(selection);
-        ops.extend(self.clear_format_selection_operations(selection));
+        ops.extend(self.clear_format_borders_operations(selection));
         ops
     }
 }
