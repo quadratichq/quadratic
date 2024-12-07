@@ -143,11 +143,9 @@ impl GridController {
                 bail!("Sheet with name {} already exists", sheet_name);
             }
         }
-        // first cell in excel is A1, but first cell in quadratic is A0
-        // so we need to offset rows by 1, so that values are inserted in the original A1 notations cell
-        // this is required so that cell references (A1 notations) in formulas are correct
+
         let xlsx_range_to_pos = |(row, col)| Pos {
-            x: col as i64,
+            x: col as i64 + 1,
             y: row as i64 + 1,
         };
 
