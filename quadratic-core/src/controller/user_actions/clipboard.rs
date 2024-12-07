@@ -145,14 +145,13 @@ mod test {
 
     use super::*;
     use crate::grid::js_types::JsClipboard;
-    use crate::OldSelection;
+    use crate::grid::sheet::borders_a1::{
+        BorderSelection, BorderSide, BorderStyle, CellBorderLine,
+    };
     use crate::{
         controller::GridController,
-        grid::{
-            js_types::CellFormatSummary, BorderSelection, BorderStyle, CellBorderLine,
-            CodeCellLanguage, CodeCellValue, SheetId,
-        },
-        CellValue, Pos, Rect, SheetPos, SheetRect,
+        grid::{js_types::CellFormatSummary, CodeCellLanguage, CodeCellValue, SheetId},
+        CellValue, Pos, SheetPos, SheetRect,
     };
 
     fn set_cell_value(gc: &mut GridController, sheet_id: SheetId, value: &str, x: i64, y: i64) {
@@ -491,17 +490,11 @@ mod test {
     #[test]
     #[parallel]
     fn test_copy_borders_to_clipboard() {
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
 
-        let selection = OldSelection::rect(
-            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }),
-            sheet_id,
-        );
-        // todo: this is temporary until all is moved to A1Selection
-        let new_selection = A1Selection::from_rect(SheetRect::new(0, 0, 0, 0, sheet_id));
-
-        gc.set_borders_selection(
+        gc.set_borders(
             selection.clone(),
             BorderSelection::All,
             Some(BorderStyle::default()),
@@ -509,10 +502,10 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let JsClipboard { html, .. } = sheet.copy_to_clipboard(&new_selection).unwrap();
+        let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::from_xy(0, 0, sheet_id),
+            &A1Selection::from_xy(3, 3, sheet_id),
             Some(String::from("")),
             Some(html),
             PasteSpecial::None,
@@ -521,7 +514,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.borders.get(3, 3).top.unwrap().line,
+            sheet
+                .borders_a1
+                .get(BorderSide::Top, Pos { x: 3, y: 3 })
+                .unwrap()
+                .line,
             CellBorderLine::default()
         );
     }
@@ -529,48 +526,49 @@ mod test {
     #[test]
     #[parallel]
     fn test_copy_borders_inside() {
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_borders_selection(
-            OldSelection::sheet_rect(SheetRect::new(0, 0, 4, 4, sheet_id)),
+        gc.set_borders(
+            A1Selection::from_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
             BorderSelection::Outer,
             Some(BorderStyle::default()),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders.borders_in_sheet().unwrap();
-        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
-            border.x == 0
-                && border.y == 0
-                && border.width == 5
-                && border.line == CellBorderLine::default()
-        }));
-        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
-            border.x == 0
-                && border.y == 5
-                && border.width == 5
-                && border.line == CellBorderLine::default()
-        }));
-        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
-            border.x == 0
-                && border.y == 0
-                && border.height == 5
-                && border.line == CellBorderLine::default()
-        }));
+        let borders = sheet.borders_a1.borders_in_sheet().unwrap();
+        let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
+        let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
 
-        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
-            border.x == 5
-                && border.y == 0
-                && border.height == 5
-                && border.line == CellBorderLine::default()
-        }));
+        let border = horizontal_borders.next().unwrap();
+        assert_eq!(border.x, 1);
+        assert_eq!(border.y, 1);
+        assert_eq!(border.width, Some(4)); // or 5
+        assert_eq!(border.line, CellBorderLine::default());
 
-        let selection = A1Selection::from_rect(SheetRect::new(0, 0, 4, 4, sheet_id));
+        let border = horizontal_borders.next().unwrap();
+        assert_eq!(border.x, 1);
+        assert_eq!(border.y, 4); // or 5
+        assert_eq!(border.width, Some(4)); // or 5
+        assert_eq!(border.line, CellBorderLine::default());
+
+        let border = vertical_borders.next().unwrap();
+        assert_eq!(border.x, 1);
+        assert_eq!(border.y, 1);
+        assert_eq!(border.height, Some(4)); // or 5
+        assert_eq!(border.line, CellBorderLine::default());
+
+        let border = vertical_borders.next().unwrap();
+        assert_eq!(border.x, 5);
+        assert_eq!(border.y, 1);
+        assert_eq!(border.height, Some(4));
+        assert_eq!(border.line, CellBorderLine::default());
+
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 5, 5, sheet_id));
         let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
         gc.paste_from_clipboard(
-            &A1Selection::from_xy(0, 10, sheet_id),
+            &A1Selection::from_xy(1, 11, sheet_id),
             None,
             Some(html),
             PasteSpecial::None,
@@ -578,32 +576,33 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders.borders_in_sheet().unwrap();
-        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
-            border.x == 0
-                && border.y == 10
-                && border.width == 5
-                && border.line == CellBorderLine::default()
-        }));
-        assert!(borders.horizontal.as_ref().unwrap().iter().any(|border| {
-            border.x == 0
-                && border.y == 15
-                && border.width == 5
-                && border.line == CellBorderLine::default()
-        }));
-        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
-            border.x == 0
-                && border.y == 10
-                && border.height == 5
-                && border.line == CellBorderLine::default()
-        }));
+        let borders = sheet.borders_a1.borders_in_sheet().unwrap();
+        let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
+        let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
 
-        assert!(borders.vertical.as_ref().unwrap().iter().any(|border| {
-            border.x == 5
-                && border.y == 10
-                && border.height == 5
-                && border.line == CellBorderLine::default()
-        }));
+        let border = horizontal_borders.next().unwrap();
+        assert_eq!(border.x, 1);
+        assert_eq!(border.y, 11);
+        assert_eq!(border.width, Some(4)); // or 5
+        assert_eq!(border.line, CellBorderLine::default());
+
+        let border = horizontal_borders.next().unwrap();
+        assert_eq!(border.x, 1);
+        assert_eq!(border.y, 15); // or 16
+        assert_eq!(border.width, Some(4)); // or 5
+        assert_eq!(border.line, CellBorderLine::default());
+
+        let border = vertical_borders.next().unwrap();
+        assert_eq!(border.x, 1);
+        assert_eq!(border.y, 11);
+        assert_eq!(border.height, Some(4)); // or 5
+        assert_eq!(border.line, CellBorderLine::default());
+
+        let border = vertical_borders.next().unwrap();
+        assert_eq!(border.x, 6);
+        assert_eq!(border.y, 11);
+        assert_eq!(border.height, Some(4)); // or 5
+        assert_eq!(border.line, CellBorderLine::default());
     }
 
     #[test]
