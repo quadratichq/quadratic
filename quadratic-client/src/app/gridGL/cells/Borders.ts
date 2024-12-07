@@ -62,113 +62,6 @@ export class Borders extends Container {
     return sheet;
   }
 
-  // private drawSheetBorders() {
-  //   this.cellLines.removeChildren();
-  //   this.sheetLines.removeChildren();
-
-  //   pixiApp.viewport.dirty = true;
-
-  //   const borders = this.borders;
-  //   if (!borders) return;
-
-  //   this.drawAll();
-  //   this.drawHorizontal();
-  //   this.drawVertical();
-
-  //   const bounds = pixiApp.viewport.getVisibleBounds();
-  //   const offsets = sheets.sheet.offsets;
-
-  //   const columnStart = offsets.getXPlacement(bounds.left);
-  //   const columnEnd = offsets.getXPlacement(bounds.right);
-
-  //   const rowStart = offsets.getYPlacement(bounds.top);
-  //   const rowEnd = offsets.getYPlacement(bounds.bottom);
-
-  //   if (borders.columns) {
-  //     for (let x in borders.columns) {
-  //       const xNumber = Number(BigInt(x));
-  //       if (xNumber >= columnStart.index && xNumber <= columnEnd.index) {
-  //         const column = borders.columns[x];
-  //         if (column) {
-  //           const left = column.left;
-  //           if (left && left.line !== 'clear') {
-  //             // need to ensure there's no right entry in x - 1
-  //             const right = borders.columns[(xNumber - 1).toString()]?.right;
-  //             if (!right || left.timestamp > right.timestamp) {
-  //               this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber, left, borders.rows);
-  //             }
-  //           }
-  //           const right = column.right;
-  //           if (right && right.line !== 'clear') {
-  //             // need to ensure there's no left entry in x + 1
-  //             const left = borders.columns[(xNumber + 1).toString()]?.left;
-  //             if (!left || right.timestamp > left.timestamp) {
-  //               this.drawScreenVerticalLine(rowStart.index, rowEnd.index + 1, xNumber + 1, right, borders.rows);
-  //             }
-  //           }
-  //           const top = column.top;
-  //           if (top && top.line !== 'clear') {
-  //             for (let y = rowStart.index; y <= rowEnd.index + 1; y++) {
-  //               this.drawScreenHorizontalLine(xNumber, xNumber + 1, y, top, null);
-  //             }
-  //           }
-  //           const bottom = column.bottom;
-  //           if (bottom && bottom.line !== 'clear') {
-  //             for (let y = rowStart.index; y <= rowEnd.index + 1; y++) {
-  //               this.drawScreenHorizontalLine(xNumber, xNumber + 1, y, bottom, null);
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-
-  //   if (borders.rows) {
-  //     for (let y in borders.rows) {
-  //       const yNumber = Number(BigInt(y));
-  //       if (yNumber >= rowStart.index && yNumber <= rowEnd.index) {
-  //         const row = borders.rows[y];
-  //         if (row) {
-  //           const top = row.top;
-  //           if (top && top.line !== 'clear') {
-  //             // need to ensure there's no bottom entry in y - 1
-  //             const bottom = borders.rows[(yNumber - 1).toString()]?.bottom;
-  //             if (!bottom || top.timestamp > bottom.timestamp) {
-  //               this.drawScreenHorizontalLine(columnStart.index, columnEnd.index + 1, yNumber, top, borders.columns);
-  //             }
-  //           }
-  //           const bottom = row.bottom;
-  //           if (bottom && bottom.line !== 'clear') {
-  //             // need to ensure there's no top entry in y + 1
-  //             const top = borders.rows[(yNumber + 1).toString()]?.top;
-  //             if (!top || bottom.timestamp > top.timestamp) {
-  //               this.drawScreenHorizontalLine(
-  //                 columnStart.index,
-  //                 columnEnd.index + 1,
-  //                 yNumber + 1,
-  //                 bottom,
-  //                 borders.columns
-  //               );
-  //             }
-  //           }
-  //           const left = row.left;
-  //           if (left && left.line !== 'clear') {
-  //             for (let x = columnStart.index; x <= columnEnd.index + 1; x++) {
-  //               this.drawScreenVerticalLine(yNumber, yNumber + 1, x, left, null);
-  //             }
-  //           }
-  //           const right = row.right;
-  //           if (right && right.line !== 'clear') {
-  //             for (let x = columnStart.index; x <= columnEnd.index + 1; x++) {
-  //               this.drawScreenVerticalLine(yNumber, yNumber + 1, x, right, null);
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
   private drawHorizontal(border: JsBorderHorizontal) {
     if (border.width !== null) {
       const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
@@ -244,6 +137,7 @@ export class Borders extends Container {
       } else {
         this.sheetLines.alpha = 1;
       }
+      pixiApp.setViewportDirty();
     }
     this.dirty = false;
     this.cull();

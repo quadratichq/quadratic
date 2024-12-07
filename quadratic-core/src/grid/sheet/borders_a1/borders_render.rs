@@ -30,7 +30,7 @@ impl BordersA1 {
                 )
             }))
             .collect::<Vec<_>>();
-        horizontal_rects.sort_unstable_by(|a, b| b.4.timestamp.cmp(&a.4.timestamp));
+        horizontal_rects.sort_unstable_by(|a, b| a.4.timestamp.cmp(&b.4.timestamp));
         let mut horizontal = Contiguous2D::<Option<BorderStyleTimestamp>>::default();
         horizontal_rects
             .iter()
@@ -86,9 +86,9 @@ impl BordersA1 {
         let mut vertical = Contiguous2D::<BorderStyleTimestamp>::default();
 
         let mut vertical_rects = self
-            .top
+            .left
             .into_iter()
-            .chain(self.bottom.into_iter().map(|(x1, y1, x2, y2, border)| {
+            .chain(self.right.into_iter().map(|(x1, y1, x2, y2, border)| {
                 (
                     x1.saturating_add(1),
                     y1,
@@ -98,7 +98,7 @@ impl BordersA1 {
                 )
             }))
             .collect::<Vec<_>>();
-        vertical_rects.sort_unstable_by(|a, b| b.4.timestamp.cmp(&a.4.timestamp));
+        vertical_rects.sort_unstable_by(|a, b| a.4.timestamp.cmp(&b.4.timestamp));
 
         vertical_rects.iter().for_each(|(x1, y1, x2, y2, border)| {
             vertical.set_rect(

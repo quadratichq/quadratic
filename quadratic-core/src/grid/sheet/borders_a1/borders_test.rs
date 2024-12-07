@@ -29,7 +29,6 @@ impl BordersA1 {
             rect.max.y += 1;
             let horizontal = self.horizontal_borders().unwrap_or_default();
             let vertical = self.vertical_borders().unwrap_or_default();
-            dbg!(&vertical);
 
             // Print x-axis coordinates
             print!("   ");
@@ -89,18 +88,19 @@ mod tests {
     fn print_borders() {
         // Test all border selection types
         let selections = [
-            // BorderSelection::All,
+            BorderSelection::All,
             BorderSelection::Outer,
-            // BorderSelection::Inner,
-            // BorderSelection::Horizontal,
-            // BorderSelection::Vertical,
-            // BorderSelection::Left,
-            // BorderSelection::Right,
-            // BorderSelection::Top,
-            // BorderSelection::Bottom,
+            BorderSelection::Inner,
+            BorderSelection::Horizontal,
+            BorderSelection::Vertical,
+            BorderSelection::Left,
+            BorderSelection::Right,
+            BorderSelection::Top,
+            BorderSelection::Bottom,
         ];
 
-        // todo: gc should be defined above and cleared after each print
+        // todo: gc should be defined above and cleared after each print (when
+        // that functionality is working)
 
         for selection in selections {
             let mut gc = GridController::test();
@@ -113,8 +113,6 @@ mod tests {
             );
             let sheet = gc.sheet(SheetId::TEST);
             sheet.borders_a1.print(Some(Rect::new(1, 1, 6, 6)));
-
-            // start: right and left output differently--probably because of the renderer
         }
     }
 }
