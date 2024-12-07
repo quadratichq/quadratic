@@ -6,30 +6,30 @@ use crate::Rect;
 const HORIZONTAL: char = '\u{203E}';
 const VERTICAL: char = '\u{23D0}';
 const EMPTY: char = ' ';
+const INFINITE: i64 = 100000;
 
 #[allow(unused)]
 impl BordersA1 {
     fn has_horizontal(horizontal: &[JsBorderHorizontal], x: i64, y: i64) -> bool {
         horizontal
             .iter()
-            .filter(|h| h.width.is_some())
-            .any(|h| y == h.y && x >= h.x && x < h.x + h.width.unwrap())
+            .any(|h| y == h.y && x >= h.x && x < h.x + h.width.unwrap_or(INFINITE))
     }
 
     fn has_vertical(vertical: &[JsBorderVertical], x: i64, y: i64) -> bool {
         vertical
             .iter()
-            .filter(|v| v.height.is_some())
-            .any(|v| x == v.x && y >= v.y && y < v.y + v.height.unwrap())
+            .any(|v| x == v.x && y >= v.y && y < v.y + v.height.unwrap_or(INFINITE))
     }
 
-    pub(crate) fn print(&self) {
-        if let Some(mut rect) = self.finite_bounds() {
+    pub(crate) fn print(&self, rect: Option<Rect>) {
+        if let Some(mut rect) = rect.or(self.finite_bounds()) {
             // extend the borders to include the last column and row
             rect.max.x += 1;
             rect.max.y += 1;
             let horizontal = self.horizontal_borders().unwrap_or_default();
             let vertical = self.vertical_borders().unwrap_or_default();
+            dbg!(&vertical);
 
             // Print x-axis coordinates
             print!("   ");
@@ -77,8 +77,6 @@ impl BordersA1 {
         };
         format!("{}{}", v_char, h_char)
     }
-
-    // ... existing code ...
 }
 
 #[cfg(test)]
@@ -88,28 +86,33 @@ mod tests {
     use crate::{controller::GridController, grid::SheetId, A1Selection};
 
     #[test]
-    fn print_borders_all() {
-        let mut gc = GridController::test();
-        gc.set_borders(
-            A1Selection::test_a1("A1:D5"),
-            BorderSelection::All,
-            Some(BorderStyle::default()),
-            None,
-        );
-        let sheet = gc.sheet(SheetId::TEST);
-        sheet.borders_a1.print();
-    }
-
-    #[test]
-    fn print_borders_outer() {
-        let mut gc = GridController::test();
-        gc.set_borders(
-            A1Selection::test_a1("A1:D5"),
+    fn print_borders() {
+        // Test all border selection types
+        let selections = [
+            // BorderSelection::All,
             BorderSelection::Outer,
-            Some(BorderStyle::default()),
-            None,
-        );
-        let sheet = gc.sheet(SheetId::TEST);
-        sheet.borders_a1.print();
+            // BorderSelection::Inner,
+            // BorderSelection::Horizontal,
+            // BorderSelection::Vertical,
+            // BorderSelection::Left,
+            // BorderSelection::Right,
+            // BorderSelection::Top,
+            // BorderSelection::Bottom,
+        ];
+
+        // todo: gc should be defined above and cleared after each print
+
+        for selection in selections {
+            let mut gc = GridController::test();
+            println!("\n{:?}:", selection);
+            gc.set_borders(
+                A1Selection::test_a1("A1:D5"),
+                selection,
+                Some(BorderStyle::default()),
+                None,
+            );
+            let sheet = gc.sheet(SheetId::TEST);
+            sheet.borders_a1.print(Some(Rect::new(1, 1, 6, 6)));
+        }
     }
 }

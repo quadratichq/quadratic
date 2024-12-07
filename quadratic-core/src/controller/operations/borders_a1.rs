@@ -62,11 +62,11 @@ impl GridController {
                 }
             }
             BorderSelection::Outer => {
-                borders
-                    .left
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, Some(x1), y2, style);
                 if let Some(x2) = x2 {
+                    borders
+                        .left
+                        .get_or_insert_default()
+                        .set_rect(x1, y1, Some(x1), y2, style);
                     borders
                         .right
                         .get_or_insert_default()
