@@ -467,12 +467,20 @@ impl RefRangeBounds {
                 end.row.map(|r| r.coord),
             )
         } else {
-            (
-                self.start.col_or(1),
-                self.start.row_or(1),
-                Some(self.start.col_or(1)),
-                Some(self.start.row_or(1)),
-            )
+            if self.start.col.is_none() && self.start.row.is_none() {
+                (1, 1, None, None)
+            } else if self.start.col.is_none() {
+                (1, self.start.row_or(1), None, Some(self.start.row_or(1)))
+            } else if self.start.row.is_none() {
+                (self.start.col_or(1), 1, Some(self.start.col_or(1)), None)
+            } else {
+                (
+                    self.start.col_or(1),
+                    self.start.row_or(1),
+                    Some(self.start.col_or(1)),
+                    Some(self.start.row_or(1)),
+                )
+            }
         }
     }
 
@@ -888,7 +896,7 @@ mod tests {
         );
         assert_eq!(
             RefRangeBounds::test_a1("2").to_contiguous2d_coords(),
-            (2, 1, Some(2), None)
+            (1, 2, None, Some(2))
         );
         assert_eq!(
             RefRangeBounds::test_a1("*").to_contiguous2d_coords(),
