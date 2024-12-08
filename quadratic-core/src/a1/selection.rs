@@ -227,74 +227,34 @@ impl A1Selection {
     }
 
     /// Finds intersection of two Selections.
-    pub fn intersection(&self, _other: &Self) -> Option<Self> {
-        dbgjs!(format!("todo(ayush): replace this with Contiguous2D"));
-
-        // if self.sheet_id != other.sheet_id {
-        //     return None;
-        // }
-
-        // let mut intersection = Self::from_xy(self.cursor.x, self.cursor.y, self.sheet_id);
-        // intersection.ranges.clear();
-
-        // let self_subspaces = self.subspaces();
-        // let other_subspaces = other.subspaces();
-
-        // if let (Some(self_all), Some(other_all)) = (self_subspaces.all, other_subspaces.all) {
-        //     let min_pos = self_all.max(other_all);
-        //     let all_range = if min_pos == pos![A1] {
-        //         CellRefRange::ALL
-        //     } else {
-        //         CellRefRange::new_relative_all_from(min_pos)
-        //     };
-        //     intersection.ranges.push(all_range);
-        // }
-
-        // for (row, min_col) in self_subspaces.rows {
-        //     if let Some(other_min_col) = other_subspaces.rows.get(&row) {
-        //         let min_col = min_col.max(*other_min_col);
-        //         let row_range = if min_col == 1 {
-        //             CellRefRange::new_relative_row(row)
-        //         } else {
-        //             CellRefRange::new_relative_row_from(row, min_col)
-        //         };
-        //         intersection.ranges.push(row_range);
-        //     }
-        // }
-
-        // for (col, min_row) in self_subspaces.cols {
-        //     if let Some(other_min_row) = other_subspaces.cols.get(&col) {
-        //         let min_row = min_row.max(*other_min_row);
-        //         let col_range = if min_row == 1 {
-        //             CellRefRange::new_relative_column(col)
-        //         } else {
-        //             CellRefRange::new_relative_column_from(col, min_row)
-        //         };
-        //         intersection.ranges.push(col_range);
-        //     }
-        // }
-
-        // for rect in self_subspaces.rects {
-        //     for other_rect in &other_subspaces.rects {
-        //         if let Some(intersection_rect) = rect.intersection(other_rect) {
-        //             intersection
-        //                 .ranges
-        //                 .push(CellRefRange::new_relative_rect(intersection_rect));
-        //         }
-        //     }
-        // }
-
-        // // Set the cursor to the last range's start position.
-        // if let Some(last_range) = intersection.ranges.last() {
-        //     intersection.cursor = cursor_pos_from_last_range(last_range);
-        // } else {
-        //     // No ranges means the intersection is empty.
-        //     return None;
-        // }
-
-        // Some(intersection)
-
-        None
+    pub fn intersection(&self, other: &Self) -> Option<Self> {
+        let mut ranges = vec![];
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                other
+                    .ranges
+                    .iter()
+                    .for_each(|other_range| match other_range {
+                        CellRefRange::Sheet { range: other_range } => {
+                            let intersection = range.intersection(other_range);
+                            if let Some(intersection) = intersection {
+                                ranges.push(CellRefRange::Sheet {
+                                    range: intersection,
+                                });
+                            }
+                        }
+                    });
+            }
+        });
+        if ranges.is_empty() {
+            None
+        } else {
+            Some(Self {
+                sheet_id: self.sheet_id,
+                cursor: self.cursor,
+                ranges,
+            })
+        }
     }
 
     /// Returns `true` if the two selections overlap.
