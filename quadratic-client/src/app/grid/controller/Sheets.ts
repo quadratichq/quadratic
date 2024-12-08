@@ -110,7 +110,7 @@ class Sheets {
         const sheet = this.getById(sheetId);
         if (sheet) {
           this.current = sheetId;
-          sheet?.cursor.load(selection);
+          sheet.cursor.load(selection);
         }
       } catch (e) {
         console.error('Error loading cursor', e);

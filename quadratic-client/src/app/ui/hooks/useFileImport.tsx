@@ -7,7 +7,9 @@ import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
+import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
+import mixpanel from 'mixpanel-browser';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
@@ -55,6 +57,12 @@ export function useFileImport() {
       });
       files = [];
       return;
+    }
+
+    for (const file of files) {
+      const fileType = getFileType(file);
+      const fileSize = file.size;
+      mixpanel.track('[Files].importFile', { fileType, fileSize, location: createNewFile ? 'Dashboard' : 'In sheet' });
     }
 
     // Only one file can be imported at a time (except for excel), inside a existing file
@@ -136,6 +144,7 @@ export function useFileImport() {
       try {
         const fileName = file.name;
         const fileType = getFileType(file);
+        const fileSize = file.size;
         const arrayBuffer = await file.arrayBuffer().catch(console.error);
         file = undefined;
         if (!arrayBuffer) {
@@ -156,11 +165,11 @@ export function useFileImport() {
             location: insertAt,
           });
         } else {
-          throw new Error(`Error importing ${fileName}: Unsupported file type`);
+          throw new Error(`Error importing ${fileName} (${fileSize} bytes): Unsupported file type.`);
         }
 
         if (result?.error !== undefined) {
-          throw new Error(`Error importing ${fileName}: ${result.error}`);
+          throw new Error(`Error importing ${fileName} (${fileSize} bytes): ${result.error}`);
         }
 
         // contents and version are returned when importing into a new file
@@ -200,7 +209,7 @@ export function useFileImport() {
               updateCurrentFileState({ step, progress: 0, abortController: undefined });
 
               if (step !== 'cancel') {
-                throw new Error(`Error importing ${fileName}: ${error}`);
+                throw new Error(`Error importing ${fileName} (${fileSize} bytes): ${error}`);
               }
             });
 
@@ -212,6 +221,7 @@ export function useFileImport() {
         }
       } catch (e) {
         if (e instanceof Error) {
+          Sentry.captureException(e);
           updateCurrentFileState({ step: 'error', progress: 0, abortController: undefined });
           addGlobalSnackbar(e.message, { severity: 'warning' });
         }
@@ -223,6 +233,7 @@ export function useFileImport() {
       try {
         await uploadFilePromise;
       } catch (e) {
+        Sentry.captureException(e);
         console.error(e);
       }
     }
