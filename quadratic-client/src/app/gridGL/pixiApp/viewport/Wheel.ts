@@ -111,6 +111,9 @@ export class Wheel extends Plugin {
   /** Flags whether the keys required to horizontal scrolling are currently pressed. */
   protected horizontalScrollKeyIsPressed: boolean;
 
+  /** Flags whether the viewport is currently zooming using ctrl key + wheel. */
+  protected currentlyZooming: boolean;
+
   /**
    * This is called by {@link Viewport.wheel}.
    */
@@ -119,16 +122,21 @@ export class Wheel extends Plugin {
     this.options = Object.assign({}, DEFAULT_WHEEL_OPTIONS, options);
     this.zoomKeyIsPressed = false;
     this.horizontalScrollKeyIsPressed = false;
-
+    this.currentlyZooming = false;
     if (this.options.keyToPress) {
       this.handleKeyPresses(this.options.keyToPress);
     }
     window.addEventListener('blur', this.handleBlur);
+    window.addEventListener('pointerup', this.checkAndEmitZoomEnd);
+    window.addEventListener('pointerdown', this.checkAndEmitZoomEnd);
+    window.addEventListener('pointerout', this.checkAndEmitZoomEnd);
+    window.addEventListener('pointerleave', this.checkAndEmitZoomEnd);
   }
 
   private handleBlur = (): void => {
     this.zoomKeyIsPressed = false;
     this.horizontalScrollKeyIsPressed = false;
+    this.checkAndEmitZoomEnd();
   };
 
   /**
@@ -144,6 +152,7 @@ export class Wheel extends Plugin {
       if (this.isHorizontalScrollKey(e.code)) {
         this.horizontalScrollKeyIsPressed = true;
       }
+      this.checkAndEmitZoomEnd();
     });
 
     window.addEventListener('keyup', (e) => {
@@ -153,6 +162,7 @@ export class Wheel extends Plugin {
       if (this.isHorizontalScrollKey(e.code)) {
         this.horizontalScrollKeyIsPressed = false;
       }
+      this.checkAndEmitZoomEnd();
     });
   }
 
@@ -179,6 +189,18 @@ export class Wheel extends Plugin {
   protected isHorizontalScrollKey(key: string): key is (typeof HORIZONTAL_SCROLL_KEY)[number] {
     return HORIZONTAL_SCROLL_KEY.includes(key);
   }
+
+  protected emitWaitForZoomEnd = (): void => {
+    this.currentlyZooming = true;
+    this.parent.emit('wait-for-zoom-end');
+  };
+
+  protected checkAndEmitZoomEnd = (): void => {
+    if (this.currentlyZooming) {
+      this.currentlyZooming = false;
+      this.parent.emit('zoom-end');
+    }
+  };
 
   public update(): void {
     if (this.smoothing) {
@@ -305,6 +327,7 @@ export class Wheel extends Plugin {
           this.parent.scale.y *= change;
         }
         this.parent.emit('zoomed', { viewport: this.parent, type: 'wheel' });
+        this.emitWaitForZoomEnd();
         const clamp = this.parent.plugins.get('clamp-zoom', true);
 
         if (clamp) {
@@ -330,11 +353,11 @@ export class Wheel extends Plugin {
       this.pinch(e, adjust);
     } else {
       const deltas = [e.deltaX, e.deltaY];
-      let [deltaX, deltaY] = deltas;
+      const [deltaX, deltaY] = deltas;
       const stepX = deltaX < 0 && this.parent.x > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1;
       const stepY = deltaY < 0 && this.parent.y > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1;
-      let newX = this.parent.x + (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * stepX * -1;
-      let newY = this.parent.y + deltaY * stepY * -1 * (this.horizontalScrollKeyIsPressed && !isMac ? 0 : 1);
+      const newX = this.parent.x + (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * stepX * -1;
+      const newY = this.parent.y + deltaY * stepY * -1 * (this.horizontalScrollKeyIsPressed && !isMac ? 0 : 1);
 
       this.parent.x = newX;
       this.parent.y = newY;

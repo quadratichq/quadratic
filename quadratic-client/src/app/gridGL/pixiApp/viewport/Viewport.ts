@@ -1,13 +1,13 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Decelerate } from '@/app/gridGL/pixiApp/viewport/Decelerate';
+import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
+import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Viewport as PixiViewport } from 'pixi-viewport';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { pixiApp } from '../PixiApp';
-import { Decelerate } from './Decelerate';
-import { Drag } from './Drag';
-import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from './Wheel';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;
@@ -29,6 +29,8 @@ export class Viewport extends PixiViewport {
   private lastScreenHeight = 0;
 
   private lastSheetId = '';
+
+  private waitForZoomEnd = false;
 
   private snapState?: SnapState;
   private snapTimeout?: number;
@@ -73,6 +75,8 @@ export class Viewport extends PixiViewport {
 
     this.on('moved', this.viewportChanged);
     this.on('zoomed', this.viewportChanged);
+    this.on('wait-for-zoom-end', this.handleWaitForZoomEnd);
+    this.on('zoom-end', this.handleZoomEnd);
     this.on('snap-end', this.handleSnapEnd);
   }
 
@@ -81,9 +85,11 @@ export class Viewport extends PixiViewport {
   };
 
   destroy() {
-    this.off('snap-end', this.handleSnapEnd);
     this.off('moved', this.viewportChanged);
     this.off('zoomed', this.viewportChanged);
+    this.off('wait-for-zoom-end', this.handleWaitForZoomEnd);
+    this.off('zoom-end', this.handleZoomEnd);
+    this.off('snap-end', this.handleSnapEnd);
   }
 
   loadViewport() {
@@ -199,18 +205,29 @@ export class Viewport extends PixiViewport {
       // Clear both timeout and state when interrupting a waiting snap
       this.snapTimeout = undefined;
       this.snapState = undefined;
-    } else if (!this.snapState) {
-      const headings = pixiApp.headings.headingSize;
-      if (this.x > headings.width || this.y > headings.height) {
-        this.snapTimeout = Date.now();
-        this.snapState = 'waiting';
-      }
-    } else if (this.snapState === 'waiting' && this.snapTimeout) {
-      if (Date.now() - this.snapTimeout > WAIT_TO_SNAP_TIME) {
-        this.startSnap();
+    } else if (!this.waitForZoomEnd) {
+      if (!this.snapState) {
+        const headings = pixiApp.headings.headingSize;
+        if (this.x > headings.width || this.y > headings.height) {
+          this.snapTimeout = Date.now();
+          this.snapState = 'waiting';
+        }
+      } else if (this.snapState === 'waiting' && this.snapTimeout) {
+        if (Date.now() - this.snapTimeout > WAIT_TO_SNAP_TIME) {
+          this.startSnap();
+        }
       }
     }
   }
+
+  private handleWaitForZoomEnd = () => {
+    this.waitForZoomEnd = true;
+  };
+
+  private handleZoomEnd = () => {
+    this.waitForZoomEnd = false;
+    this.startSnap();
+  };
 
   private handleSnapEnd = () => {
     this.snapState = undefined;
