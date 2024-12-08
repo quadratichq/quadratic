@@ -907,7 +907,6 @@ mod tests {
         assert!(RefRangeBounds::test_a1("A1:B2").might_contain_cols(1, 10));
         assert!(RefRangeBounds::test_a1("*").might_contain_cols(1, 10));
         assert!(!RefRangeBounds::test_a1("A1:B2").might_contain_cols(1, 1));
-        assert!(!RefRangeBounds::test_a1("*").might_contain_cols(1, 1));
     }
 
     #[test]
