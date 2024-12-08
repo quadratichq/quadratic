@@ -206,6 +206,7 @@ mod tests {
         selection::OldSelection,
         ArraySize, CellValue, Pos, SheetPos,
     };
+    use bigdecimal::BigDecimal;
     use serial_test::parallel;
 
     const V1_3_FILE: &[u8] =
@@ -448,6 +449,199 @@ mod tests {
         assert_eq!(
             sheet.code_runs.get(&Pos { x: 3, y: 7 }).unwrap().std_err,
             Some("x is not defined".into())
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_code_cell_references_migration_to_q_cells_for_v_1_7_1() {
+        let file = include_bytes!("../../../test-files/test_getCells_migration.grid");
+        let imported = import(file.to_vec()).unwrap();
+        let sheet1 = &imported.sheets[0];
+        let sheet2 = &imported.sheets[1];
+        assert_eq!(
+            sheet1.cell_value(pos![A1]).unwrap(),
+            CellValue::Number(BigDecimal::from(1))
+        );
+        assert_eq!(
+            sheet1.cell_value(pos![F6]).unwrap(),
+            CellValue::Number(BigDecimal::from(1))
+        );
+        assert_eq!(
+            sheet2.cell_value(pos![A1]).unwrap(),
+            CellValue::Number(BigDecimal::from(100))
+        );
+        assert_eq!(
+            sheet2.cell_value(pos![D5]).unwrap(),
+            CellValue::Number(BigDecimal::from(100))
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![I10]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"F6\") + q.cells(\"\'Sheet 2\'!D5\")".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![I11]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"F6\") + q.cells(\"\'Sheet 2\'!D5\")".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![I12]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"A1:A14\", first_row_header=False)".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![I26]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"\'Sheet 2\'!A1:A22\", first_row_header=False)".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![I48]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"F6\") + q.cells(\"\'Sheet 2\'!D5\")".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![I49]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"A1:A14\", first_row_header=False)".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![I63]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"\'Sheet 2\'!A1:A22\", first_row_header=False)".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![K10]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"I10\")".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![K11]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"I11\")".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![K12]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"A1:A14\")".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![K28]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "q.cells(\"F6\") + q.cells(\"\'Sheet 2\'!D5\") + cell(-12, -12) + cell(-86, -85, sheet=\"Sheet 2\")".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![M10]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"F6\") + q.cells(\"\'Sheet 2\'!D5\");".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![M11]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"F6\") + q.cells(\"\'Sheet 2\'!D5\");".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![M12]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"A1:A14\");".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![M26]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"\'Sheet 2\'!A1:A22\");".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![M48]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"F6\") + q.cells(\"\'Sheet 2\'!D5\");".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![M49]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"A1:A14\");".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![M63]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"\'Sheet 2\'!A1:A22\");".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![O10]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"M10\");".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![O11]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"M11\");".to_string(),
+            })
+        );
+
+        assert_eq!(
+            sheet1.cell_value(pos![O12]).unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "return q.cells(\"A1:A14\");".to_string(),
+            })
         );
     }
 }

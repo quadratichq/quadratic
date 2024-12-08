@@ -19,6 +19,8 @@ const JAVASCRIPT_CELLS_GETCELLS_REGEX: &str = r#"\b(?:cells|getCells)\s*\(\s*(-?
 const JAVASCRIPT_RC_RELCELL_REGEX: &str = r#"\b(?:rc|relCell)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)"#;
 const JAVASCRIPT_RELCELLS_REGEX: &str = r#"\b(?:relCells)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*['"`]([^'"`]*)['"`]\s*)?"#;
 
+const POS_REGEX: &str = r#"\bpos\s*\(\s*\)"#;
+
 lazy_static! {
     static ref PYTHON_C_CELL_GETCELL_REGEX_COMPILED: Regex =
         Regex::new(PYTHON_C_CELL_GETCELL_REGEX)
@@ -41,6 +43,8 @@ lazy_static! {
             .expect("Failed to compile JAVASCRIPT_RC_RELCELL_REGEX");
     static ref JAVASCRIPT_RELCELLS_REGEX_COMPILED: Regex =
         Regex::new(JAVASCRIPT_RELCELLS_REGEX).expect("Failed to compile JAVASCRIPT_RELCELLS_REGEX");
+    static ref POS_REGEX_COMPILED: Regex =
+        Regex::new(POS_REGEX).expect("Failed to compile POS_REGEX");
 }
 
 pub fn migrate_code_cell_references(
@@ -68,6 +72,7 @@ pub fn migrate_code_cell_references(
                                     );
                                     migrate_python_rc_relcell(code_cell, (x, y).into());
                                     migrate_python_relcells(code_cell, (x, y).into());
+                                    migrate_python_javascript_pos(code_cell);
                                 }
                                 CodeCellLanguage::Javascript => {
                                     migrate_javascript_c_cell_getcell(
@@ -82,6 +87,7 @@ pub fn migrate_code_cell_references(
                                     );
                                     migrate_javascript_rc_relcell(code_cell, (x, y).into());
                                     migrate_javascript_relcells(code_cell, (x, y).into());
+                                    migrate_python_javascript_pos(code_cell);
                                 }
                                 _ => {}
                             }
@@ -505,6 +511,299 @@ fn migrate_javascript_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos
         .to_string();
 }
 
+fn migrate_python_javascript_pos(code_cell: &mut CodeCellValue) {
+    if code_cell.language != CodeCellLanguage::Python
+        && code_cell.language != CodeCellLanguage::Javascript
+    {
+        return;
+    }
+
+    code_cell.code = POS_REGEX_COMPILED
+        .replace_all(&code_cell.code, |_: &regex::Captures<'_>| "q.pos()")
+        .to_string();
+}
+
 #[cfg(test)]
 #[serial_test::parallel]
-mod test {}
+mod test {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    fn create_code_cell(language: CodeCellLanguage, code: &str) -> CodeCellValue {
+        CodeCellValue {
+            language,
+            code: code.to_string(),
+        }
+    }
+
+    #[test]
+    fn test_python_c_cell_getcell_migration() {
+        let mut shifted_offsets = HashMap::new();
+        shifted_offsets.insert("Sheet1".to_string(), (1, 1));
+        shifted_offsets.insert("Sheet2".to_string(), (2, 2));
+
+        let test_cases = vec![
+            // Basic cell reference
+            ("cell(1, 2)", "q.cells(\"B3\")", "Sheet1"),
+            // With sheet name
+            (
+                "cell(1, 2, sheet=\"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4\")",
+                "Sheet1",
+            ),
+            // Negative coordinates (should stay in old format)
+            ("cell(-1, 2)", "cell(0, 3)", "Sheet1"),
+            // Invalid format (should remain unchanged)
+            ("cell(invalid, 2)", "cell(invalid, 2)", "Sheet1"),
+            // Basic cell reference
+            ("c(1, 2)", "q.cells(\"B3\")", "Sheet1"),
+            // With sheet name
+            (
+                "c(1, 2, sheet=\"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4\")",
+                "Sheet1",
+            ),
+            // Negative coordinates (should stay in old format)
+            ("c(-1, 2)", "cell(0, 3)", "Sheet1"),
+            // Invalid format (should remain unchanged)
+            ("c(invalid, 2)", "c(invalid, 2)", "Sheet1"),
+            // Basic cell reference
+            ("getCell(1, 2)", "q.cells(\"B3\")", "Sheet1"),
+            // With sheet name
+            (
+                "getCell(1, 2, sheet=\"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4\")",
+                "Sheet1",
+            ),
+            // Negative coordinates (should stay in old format)
+            ("getCell(-1, 2)", "cell(0, 3)", "Sheet1"),
+            // Invalid format (should remain unchanged)
+            ("getCell(invalid, 2)", "getCell(invalid, 2)", "Sheet1"),
+        ];
+
+        for (input, expected, sheet_name) in test_cases {
+            let mut code_cell = create_code_cell(CodeCellLanguage::Python, input);
+            migrate_python_c_cell_getcell(&mut code_cell, sheet_name, &shifted_offsets);
+            assert_eq!(code_cell.code, expected);
+        }
+    }
+
+    #[test]
+    fn test_python_cells_getcells_migration() {
+        let mut shifted_offsets = HashMap::new();
+        shifted_offsets.insert("Sheet1".to_string(), (1, 1));
+        shifted_offsets.insert("Sheet2".to_string(), (2, 2));
+
+        let test_cases = vec![
+            // Basic range
+            ("cells((1, 2), (3, 4))", "q.cells(\"B3:D5\")", "Sheet1"),
+            // With sheet name
+            (
+                "cells((1, 2), (3, 4), \"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4:E6\")",
+                "Sheet1",
+            ),
+            // Negative coordinates
+            ("cells((-1, 2), (3, 4))", "cells((0, 3), (4, 5))", "Sheet1"),
+            // Basic range
+            ("getCells((1, 2), (3, 4))", "q.cells(\"B3:D5\")", "Sheet1"),
+            // With sheet name
+            (
+                "getCells((1, 2), (3, 4), \"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4:E6\")",
+                "Sheet1",
+            ),
+            // Negative coordinates
+            (
+                "getCells((-1, 2), (3, 4))",
+                "cells((0, 3), (4, 5))",
+                "Sheet1",
+            ),
+        ];
+
+        for (input, expected, sheet_name) in test_cases {
+            let mut code_cell = create_code_cell(CodeCellLanguage::Python, input);
+            migrate_python_cells_getcells(&mut code_cell, sheet_name, &shifted_offsets);
+            assert_eq!(code_cell.code, expected);
+        }
+    }
+
+    #[test]
+    fn test_python_rc_relcell_migration() {
+        let test_cases = vec![
+            // Basic relative cell
+            ("rc(1, 2)", "q.cells(\"B3\")", Pos::new(1, 1)),
+            // Negative result
+            ("rc(-2, -2)", "rel_cell(-1, -1)", Pos::new(1, 1)),
+            // Alternative syntax
+            ("rel_cell(1, 2)", "q.cells(\"B3\")", Pos::new(1, 1)),
+        ];
+
+        for (input, expected, pos) in test_cases {
+            let mut code_cell = create_code_cell(CodeCellLanguage::Python, input);
+            migrate_python_rc_relcell(&mut code_cell, pos);
+            assert_eq!(code_cell.code, expected);
+        }
+    }
+
+    #[test]
+    fn test_python_relcells_migration() {
+        let test_cases = vec![
+            // Basic relative cell
+            (
+                "rel_cells((1, 2), (3, 4))",
+                "q.cells(\"B3:D5\")",
+                Pos::new(1, 1),
+            ),
+            // with sheet name
+            (
+                "rel_cells((1, 2), (3, 4), \"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4:E6\")",
+                Pos::new(2, 2),
+            ),
+        ];
+
+        for (input, expected, pos) in test_cases {
+            let mut code_cell = create_code_cell(CodeCellLanguage::Python, input);
+            migrate_python_relcells(&mut code_cell, pos);
+            assert_eq!(code_cell.code, expected);
+        }
+    }
+
+    #[test]
+    fn test_javascript_c_cell_getcell_migration() {
+        let mut shifted_offsets = HashMap::new();
+        shifted_offsets.insert("Sheet1".to_string(), (1, 1));
+        shifted_offsets.insert("Sheet2".to_string(), (2, 2));
+
+        let test_cases = vec![
+            // Basic cell reference
+            ("cell(1, 2)", "q.cells(\"B3\")", "Sheet1"),
+            // With sheet name
+            (
+                "cell(1, 2, \"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4\")",
+                "Sheet1",
+            ),
+            // Negative coordinates (should stay in old format)
+            ("cell(-1, 2)", "cell(0, 3)", "Sheet1"),
+            // Invalid format (should remain unchanged)
+            ("cell(invalid, 2)", "cell(invalid, 2)", "Sheet1"),
+            // Basic cell reference
+            ("c(1, 2)", "q.cells(\"B3\")", "Sheet1"),
+            // With sheet name
+            ("c(1, 2, \"Sheet2\")", "q.cells(\"'Sheet2'!C4\")", "Sheet1"),
+            // Negative coordinates (should stay in old format)
+            ("c(-1, 2)", "cell(0, 3)", "Sheet1"),
+            // Invalid format (should remain unchanged)
+            ("c(invalid, 2)", "c(invalid, 2)", "Sheet1"),
+            // Basic cell reference
+            ("getCell(1, 2)", "q.cells(\"B3\")", "Sheet1"),
+            // With sheet name
+            (
+                "getCell(1, 2, \"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4\")",
+                "Sheet1",
+            ),
+            // Negative coordinates (should stay in old format)
+            ("getCell(-1, 2)", "cell(0, 3)", "Sheet1"),
+            // Invalid format (should remain unchanged)
+            ("getCell(invalid, 2)", "getCell(invalid, 2)", "Sheet1"),
+        ];
+
+        for (input, expected, sheet_name) in test_cases {
+            let mut code_cell = create_code_cell(CodeCellLanguage::Javascript, input);
+            migrate_javascript_c_cell_getcell(&mut code_cell, sheet_name, &shifted_offsets);
+            assert_eq!(code_cell.code, expected);
+        }
+    }
+
+    #[test]
+    fn test_javascript_cells_getcells_migration() {
+        let mut shifted_offsets = HashMap::new();
+        shifted_offsets.insert("Sheet1".to_string(), (1, 1));
+        shifted_offsets.insert("Sheet2".to_string(), (2, 2));
+
+        let test_cases = vec![
+            // Basic range
+            ("cells(1, 2, 3, 4)", "q.cells(\"B3:D5\")", "Sheet1"),
+            // With sheet name
+            (
+                "cells(1, 2, 3, 4, \"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4:E6\")",
+                "Sheet1",
+            ),
+            // Negative coordinates
+            ("cells(-1, 2, 3, 4)", "cells(0, 3, 4, 5)", "Sheet1"),
+            // Basic range
+            ("getCells(1, 2, 3, 4)", "q.cells(\"B3:D5\")", "Sheet1"),
+            // With sheet name
+            (
+                "getCells(1, 2, 3, 4, \"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4:E6\")",
+                "Sheet1",
+            ),
+            // Negative coordinates
+            ("getCells(-1, 2, 3, 4)", "cells(0, 3, 4, 5)", "Sheet1"),
+        ];
+
+        for (input, expected, sheet_name) in test_cases {
+            let mut code_cell = create_code_cell(CodeCellLanguage::Javascript, input);
+            migrate_javascript_cells_getcells(&mut code_cell, sheet_name, &shifted_offsets);
+            assert_eq!(code_cell.code, expected);
+        }
+    }
+
+    #[test]
+    fn test_javascript_rc_relcell_migration() {
+        let test_cases = vec![
+            // Basic relative cell
+            ("rc(1, 2)", "q.cells(\"B3\")", Pos::new(1, 1)),
+            // Negative result
+            ("rc(-2, -2)", "relCell(-1, -1)", Pos::new(1, 1)),
+            // Alternative syntax
+            ("relCell(1, 2)", "q.cells(\"B3\")", Pos::new(1, 1)),
+        ];
+
+        for (input, expected, pos) in test_cases {
+            let mut code_cell = create_code_cell(CodeCellLanguage::Javascript, input);
+            migrate_javascript_rc_relcell(&mut code_cell, pos);
+            assert_eq!(code_cell.code, expected);
+        }
+    }
+
+    #[test]
+    fn test_javascript_relcells_migration() {
+        let test_cases = vec![
+            // Basic relative cell
+            ("relCells(1, 2, 3, 4)", "q.cells(\"B3:D5\")", Pos::new(1, 1)),
+            // with sheet name
+            (
+                "relCells(1, 2, 3, 4, \"Sheet2\")",
+                "q.cells(\"'Sheet2'!C4:E6\")",
+                Pos::new(2, 2),
+            ),
+        ];
+
+        for (input, expected, pos) in test_cases {
+            let mut code_cell = create_code_cell(CodeCellLanguage::Javascript, input);
+            migrate_javascript_relcells(&mut code_cell, pos);
+            assert_eq!(code_cell.code, expected);
+        }
+    }
+
+    #[test]
+    fn test_pos_migration() {
+        let test_cases = vec![
+            ("pos()", "q.pos()", CodeCellLanguage::Python),
+            ("pos()", "q.pos()", CodeCellLanguage::Javascript),
+        ];
+
+        for (input, expected, language) in test_cases {
+            let mut code_cell = create_code_cell(language, input);
+            migrate_python_javascript_pos(&mut code_cell);
+            assert_eq!(code_cell.code, expected);
+        }
+    }
+}

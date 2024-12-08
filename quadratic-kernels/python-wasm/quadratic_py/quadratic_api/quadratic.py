@@ -21,8 +21,8 @@ def getCell(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool |
 
     a1 = q.to_a1(p_x, p_y, absolute=False)
     old = f"getCell({p_x}, {p_y})"
-    new = f"q.cells(\"{a1}\")"
-    q.conversion_error(old, new)
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
 
 
 def cell(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
@@ -32,8 +32,8 @@ def cell(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | No
 
     a1 = q.to_a1(p_x, p_y, absolute=False)
     old = f"cell({p_x}, {p_y})"
-    new = f"q.cells(\"{a1}\")"
-    q.conversion_error(old, new)
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
 
 
 def c(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
@@ -42,9 +42,10 @@ def c(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
     """
     a1 = q.to_a1(p_x, p_y, absolute=False)
     old = f"c({p_x}, {p_y})"
-    new = f"q.cells(\"{a1}\")"
-    q.conversion_error(old, new)
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
     # return getCell(p_x, p_y, sheet)
+
 
 def getCells(
     p0: Tuple[int, int],
@@ -59,7 +60,7 @@ def getCells(
     a1_0 = q.to_a1(p0[0], p0[1], absolute=False)
     a1_1 = q.to_a1(p1[0], p1[1], absolute=False)
     old = f"cells({p0[0]},{ p0[1]}, {p1[0]}, {p1[1]})"
-    new = f"q.cells(\"{a1_0}:{a1_1}\")"
+    new = f'q.cells("{a1_0}:{a1_1}")'
     q.conversion_error(old, new)
 
     # # Get Cells
@@ -111,8 +112,9 @@ def cells(
     a1_0 = q.to_a1(p0[0], p0[1], absolute=False)
     a1_1 = q.to_a1(p1[0], p1[1], absolute=False)
     old = f"cells({p0[0]},{ p0[1]}, {p1[0]}, {p1[1]})"
-    new = f"q.cells(\"{a1_0}:{a1_1}\")"
-    q.conversion_error(old, new)
+    new = f'q.cells("{a1_0}:{a1_1}")'
+    q._conversion_error(old, new)
+
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
@@ -123,8 +125,8 @@ def rel_cell(x: int, y: int) -> int | float | str | bool | None:
 
     old = f"rel_cell({x}, {y})"
     a1 = q.to_a1(x, y, absolute=False)
-    new = f"q.cells(\"{a1}\")"
-    q.conversion_error(old, new)
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
 
 
 # This function is not used from here (it's a lambda function in run_python.py)
@@ -142,8 +144,8 @@ def rel_cells(
     a1_0 = q.to_a1(first[0], first[1], absolute=False)
     a1_1 = q.to_a1(second[0], second[1], absolute=False)
     old = f"rel_cells({first[0]},{ first[1]}, {second[0]}, {second[1]})"
-    new = f"q.cells(\"{a1_0}:{a1_1}\")"
-    q.conversion_error(old, new)
+    new = f'q.cells("{a1_0}:{a1_1}")'
+    q._conversion_error(old, new)
 
 
 # This function is not used from here (it's a lambda function in run_python.py)
@@ -155,8 +157,9 @@ def rc(x: int, y: int) -> int | float | str | bool | None:
 
     a1 = q.to_a1(x, y, absolute=False)
     old = f"rc({x}, {y})"
-    new = f"q.cells(\"{a1}\")"
-    q.conversion_error(old, new)
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
+
 
 class q:
     def __init__(self, pos):
@@ -202,7 +205,7 @@ class q:
             df.reset_index(drop=True, inplace=True)
 
         return df
-    
+
     def pos(self) -> tuple[int, int]:
         """
         A relative reference to the current cell in the grid.
@@ -215,7 +218,7 @@ class q:
         """
 
         return self._pos
-    
+
     def to_a1(x: int, y: int, absolute: bool = True) -> str:
         """
         Convert (x, y) coordinates to A1 notation.
@@ -223,7 +226,7 @@ class q:
         y: Row number (1-based index)
         Returns: A1 notation as a string
         """
-        
+
         column = ""
 
         while x > 0:
@@ -234,12 +237,12 @@ class q:
         if absolute:
             column = f"${column}"
             y = f"${y}"
-        
+
         return f"{column}{y}"
-    
-    def conversion_error(old: str, new: str, raise_exception: bool = True):
+
+    def _conversion_error(old: str, new: str, raise_exception: bool = True):
         output = f"{old} functionality is no longer supported.  Use {new} instead, though this may be different if your sheet had negative values.  Refer to the documentation at https://docs.quadratic.app/python-api/ for more details."
-        
+
         if raise_exception:
             raise Exception(output)
         else:
