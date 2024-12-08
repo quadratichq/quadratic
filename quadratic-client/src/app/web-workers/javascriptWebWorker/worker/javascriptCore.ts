@@ -1,7 +1,11 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { JsCodeResult, JsGetCellResponse } from '@/app/quadratic-core-types';
-import type { CoreJavascriptGetCells, CoreJavascriptMessage, JavascriptCoreMessage } from '../javascriptCoreMessages';
-import { javascript } from './javascript/javascript';
+import {
+  CoreJavascriptGetCellsA1,
+  CoreJavascriptMessage,
+  JavascriptCoreMessage,
+} from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
+import { javascript } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascript';
 
 class JavascriptCore {
   private coreMessagePort?: MessagePort;
@@ -62,14 +66,21 @@ class JavascriptCore {
     transactionId: string,
     a1: string,
     lineNumber?: number
-  ): Promise<{ cells?: JsGetCellResponse[]; x: number; y: number; w: number; h: number } | undefined> {
+  ): Promise<{ cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number } | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreJavascriptGetCells) => {
-        if (message.x === undefined || message.y === undefined || message.w === undefined || message.h === undefined) {
-          throw new Error('[javascriptCore] sendGetCellsA1: x, y, w or h is undefined');
+      this.waitingForResponse[id] = (message: CoreJavascriptGetCellsA1) => {
+        if (
+          message.cells !== undefined &&
+          message.x !== undefined &&
+          message.y !== undefined &&
+          message.w !== undefined &&
+          message.h !== undefined
+        ) {
+          resolve({ cells: message.cells, x: message.x, y: message.y, w: message.w, h: message.h });
+        } else {
+          resolve(undefined);
         }
-        resolve({ cells: message.cells, x: message.x, y: message.y, w: message.w, h: message.h });
       };
       this.send({ type: 'javascriptCoreGetCellsA1', transactionId, id, a1, lineNumber });
     });
