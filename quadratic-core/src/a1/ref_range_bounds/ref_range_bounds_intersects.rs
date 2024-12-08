@@ -174,28 +174,6 @@ impl RefRangeBounds {
         // Some(RefRangeBounds { start, end })
         None
     }
-
-    fn is_reversed_cols(&self) -> bool {
-        if let Some(end) = self.end {
-            self.start.col.is_some_and(|start_col| {
-                end.col
-                    .is_some_and(|end_col| start_col.coord > end_col.coord)
-            })
-        } else {
-            false
-        }
-    }
-
-    fn is_reversed_rows(&self) -> bool {
-        if let Some(end) = self.end {
-            self.start.row.is_some_and(|start_row| {
-                end.row
-                    .is_some_and(|end_row| start_row.coord > end_row.coord)
-            })
-        } else {
-            false
-        }
-    }
 }
 
 #[cfg(test)]

@@ -95,6 +95,11 @@ impl RefRangeBounds {
     ///
     /// Note: It may not maintain the is_absolute flag as values may be swapped.
     pub fn normalize(&mut self) {
+        // nothing to do if there is no end
+        if self.end.is_none() {
+            return;
+        }
+
         let start_col = self.start.col.map(|col| col.coord);
         let end_col = self
             .end
@@ -106,14 +111,26 @@ impl RefRangeBounds {
             .as_ref()
             .and_then(|end| end.row.map(|row| row.coord));
 
-        if let (Some(start_col), Some(end_col)) = (start_col, end_col) {
-            if start_col > end_col {
-                self.start.col.as_mut().unwrap().coord = end_col;
-                self.end.as_mut().unwrap().col.unwrap().coord = start_col;
-            }
+        // we cannot swap if there is an unbalance in start and end
+        let start_count = start_col.is_some() as i64 + start_row.is_some() as i64;
+        let end_count = end_col.is_some() as i64 + end_row.is_some() as i64;
+        if start_count < end_count {
+            std::mem::swap(&mut self.start, &mut self.end.as_mut().unwrap());
+            return;
+        } else if start_count != end_count {
+            return;
         }
 
-        // start here
+        if let (Some(start_col), Some(end_col)) = (start_col, end_col) {
+            if start_col > end_col {
+                std::mem::swap(&mut self.start.col, &mut self.end.as_mut().unwrap().col);
+            }
+        }
+        if let (Some(start_row), Some(end_row)) = (start_row, end_row) {
+            if start_row > end_row {
+                std::mem::swap(&mut self.start.row, &mut self.end.as_mut().unwrap().row);
+            }
+        }
     }
 
     /// Returns a test range from the A1-string.
@@ -183,5 +200,32 @@ mod tests {
         let rect = Rect::new(1, 2, 3, 4);
         let range = RefRangeBounds::new_relative_rect(rect);
         assert_eq!(range.to_string(), "A2:C4");
+    }
+
+    #[test]
+    fn test_normalize() {
+        let mut range = RefRangeBounds::test_a1("C:A");
+        range.normalize();
+        assert_eq!(range.to_string(), "A:C");
+
+        let mut range = RefRangeBounds::test_a1("3:1");
+        range.normalize();
+        assert_eq!(range.to_string(), "1:3");
+
+        let mut range = RefRangeBounds::test_a1("Z1:A10");
+        range.normalize();
+        assert_eq!(range.to_string(), "A1:Z10");
+
+        let mut range = RefRangeBounds::test_a1("A10:Z1");
+        range.normalize();
+        assert_eq!(range.to_string(), "A1:Z10");
+
+        let mut range = RefRangeBounds::test_a1("C:B13");
+        range.normalize();
+        assert_eq!(range.to_string(), "B13:C");
+
+        let mut range = RefRangeBounds::test_a1("3:B13");
+        range.normalize();
+        assert_eq!(range.to_string(), "B13:3");
     }
 }
