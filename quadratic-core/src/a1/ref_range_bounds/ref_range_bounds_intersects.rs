@@ -126,52 +126,113 @@ impl RefRangeBounds {
             };
         }
 
-        // if let Some(self.start_col)
-        // // Get the bounds for both ranges
-        // let (self_start_col, self_start_row, self_end_col, self_end_row) =
-        //     self.to_contiguous2d_coords();
-        // let (other_start_col, other_start_row, other_end_col, other_end_row) =
-        //     other.to_contiguous2d_coords();
+        // normalize the ranges to make the logic easier
+        let mut range = self.clone();
+        range.normalize();
+        let mut other = other.clone();
+        other.normalize();
 
-        // // Calculate intersection bounds using min/max to handle reverse ranges
-        // let min_col = self_start_col
-        //     .min(self_end_col.unwrap_or(self_start_col))
-        //     .max(other_start_col.min(other_end_col.unwrap_or(other_start_col)));
-        // let max_col = self_start_col
-        //     .max(self_end_col.unwrap_or(self_start_col))
-        //     .min(other_start_col.max(other_end_col.unwrap_or(other_start_col)));
+        // compare full rects and get the intersection
+        let range_rect = range.to_rect();
+        let other_rect = other.to_rect();
+        if let (Some(range_rect), Some(other_rect)) = (range_rect, other_rect) {
+            if let Some(intersection) = range_rect.intersection(&other_rect) {
+                return Some(RefRangeBounds::new_relative_rect(intersection));
+            } else {
+                return None;
+            }
+        }
 
-        // let min_row = self_start_row
-        //     .min(self_end_row.unwrap_or(self_start_row))
-        //     .max(other_start_row.min(other_end_row.unwrap_or(other_start_row)));
-        // let max_row = self_start_row
-        //     .max(self_end_row.unwrap_or(self_start_row))
-        //     .min(other_start_row.max(other_end_row.unwrap_or(other_start_row)));
+        // Compare a rect against a column(s) and row(s) since we already
+        // covered rects and single pos
+        if let Some(range_rect) = range_rect {
+            if let Some(_other_end) = other.end {
+                todo!()
+            } else {
+                if let Some(other_col) = other.start.col.map(|c| c.coord) {
+                    if range_rect.min.x >= other_col && range_rect.max.x <= other_col {
+                        return Some(RefRangeBounds::new_relative_rect(Rect::new(
+                            other_col,
+                            range_rect.min.y,
+                            other_col,
+                            range_rect.max.y,
+                        )));
+                    } else {
+                        return None;
+                    }
+                }
+                // compare row range
+                else if let Some(other_row) = other.start.row.map(|r| r.coord) {
+                    if range_rect.min.y >= other_row && range_rect.max.y <= other_row {
+                        return Some(RefRangeBounds::new_relative_rect(Rect::new(
+                            range_rect.min.x,
+                            other_row,
+                            range_rect.max.x,
+                            other_row,
+                        )));
+                    } else {
+                        return None;
+                    }
+                }
+            }
+        }
 
-        // // Check if there is no intersection
-        // if max_col < min_col || max_row < min_row {
-        //     return None;
-        // }
+        // handle column(s) intersecting column(s)
+        if range.is_column_range() && other.is_column_range() {
+            if let Some(range_end) = range.end {
+                if let Some(other_end) = other.end {
+                    // Both ranges have end points - find overlap
+                    let range_start = range.start.col.unwrap().coord;
+                    let range_end = range_end.col.unwrap().coord;
+                    let other_start = other.start.col.unwrap().coord;
+                    let other_end = other_end.col.unwrap().coord;
 
-        // // Create the intersection range
-        // let start = if self.start.row.is_none() && other.start.row.is_none() {
-        //     CellRefRangeEnd::new_relative_column(min_col)
-        // } else if self.start.col.is_none() && other.start.col.is_none() {
-        //     CellRefRangeEnd::new_relative_row(min_row)
-        // } else {
-        //     CellRefRangeEnd::new_relative_xy(min_col, min_row)
-        // };
+                    let min = range_start.max(other_start);
+                    let max = range_end.min(other_end);
 
-        // let end = if max_col.is_some() || max_row.is_some() {
-        //     Some(CellRefRangeEnd::new_relative_xy(
-        //         max_col.unwrap_or(min_col),
-        //         end_row.unwrap_or(start_row),
-        //     ))
-        // } else {
-        //     None
-        // };
+                    if min <= max {
+                        return Some(RefRangeBounds::new_relative_rect(Rect::new(min, 1, max, 1)));
+                    }
+                } else {
+                    // Other is single column
+                    let range_start = range.start.col.unwrap().coord;
+                    let range_end = range_end.col.unwrap().coord;
+                    let other_col = other.start.col.unwrap().coord;
 
-        // Some(RefRangeBounds { start, end })
+                    if other_col >= range_start && other_col <= range_end {
+                        return Some(RefRangeBounds::new_relative_rect(Rect::new(
+                            other_col, 1, other_col, 1,
+                        )));
+                    }
+                }
+            } else if let Some(other_end) = other.end {
+                // Range is single column
+                let range_col = range.start.col.unwrap().coord;
+                let other_start = other.start.col.unwrap().coord;
+                let other_end = other_end.col.unwrap().coord;
+
+                if range_col >= other_start && range_col <= other_end {
+                    return Some(RefRangeBounds::new_relative_rect(Rect::new(
+                        range_col, 1, range_col, 1,
+                    )));
+                }
+            }
+            // Both are single columns
+            else {
+                let range_col = range.start.col.unwrap().coord;
+                let other_col = other.start.col.unwrap().coord;
+
+                if range_col == other_col {
+                    return Some(RefRangeBounds::new_relative_column(range_col));
+                } else {
+                    return None;
+                }
+            }
+        }
+
+        // handle columns intersecting rows
+        if range.is_column_range() && other.is_row_range() {}
+
         None
     }
 }
@@ -224,17 +285,56 @@ mod tests {
     }
 
     #[test]
-    fn test_intersection() {
-        // Test single cell intersections
+    fn test_might_intersect_rect() {
+        assert!(RefRangeBounds::test_a1("A1:B2").might_intersect_rect(Rect::new(1, 1, 2, 2)));
+        assert!(RefRangeBounds::test_a1("A1:B2").might_intersect_rect(Rect::new(1, 1, 2, 2)));
+        assert!(!RefRangeBounds::test_a1("A1:B2").might_intersect_rect(Rect::new(3, 3, 4, 4)));
+        assert!(RefRangeBounds::test_a1("A").might_intersect_rect(Rect::new(1, 1, 1, 10)));
+        assert!(RefRangeBounds::test_a1("*").might_intersect_rect(Rect::new(1, 1, 10, 10)));
+    }
+
+    #[test]
+    fn test_might_contain_pos() {
+        assert!(RefRangeBounds::test_a1("A1:B2").might_contain_pos(Pos::new(1, 1)));
+        assert!(!RefRangeBounds::test_a1("A1:B2").might_contain_pos(Pos::new(3, 3)));
+        assert!(RefRangeBounds::test_a1("A").might_contain_pos(Pos::new(1, 5)));
+        assert!(RefRangeBounds::test_a1("*").might_contain_pos(Pos::new(10, 10)));
+    }
+
+    #[test]
+    fn test_intersection_pos_pos() {
+        assert_eq!(
+            RefRangeBounds::test_a1("A1").intersection(&RefRangeBounds::test_a1("A1")),
+            Some(RefRangeBounds::test_a1("A1"))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("A1").intersection(&RefRangeBounds::test_a1("B1")),
+            None
+        );
+    }
+
+    #[test]
+    fn test_intersection_pos_rect() {
         assert_eq!(
             RefRangeBounds::test_a1("A1").intersection(&RefRangeBounds::test_a1("A1:B2")),
             Some(RefRangeBounds::test_a1("A1"))
         );
         assert_eq!(
-            RefRangeBounds::test_a1("C3").intersection(&RefRangeBounds::test_a1("A1:B2")),
+            RefRangeBounds::test_a1("A1:B2").intersection(&RefRangeBounds::test_a1("A1")),
+            Some(RefRangeBounds::test_a1("A1"))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("C1").intersection(&RefRangeBounds::test_a1("A1:B2")),
             None
         );
+        assert_eq!(
+            RefRangeBounds::test_a1("A1:B2").intersection(&RefRangeBounds::test_a1("C1")),
+            None
+        );
+    }
 
+    #[test]
+    fn test_intersection_rect_rect() {
         // Test range intersections
         assert_eq!(
             RefRangeBounds::test_a1("A1:C3").intersection(&RefRangeBounds::test_a1("B2:D4")),
@@ -244,17 +344,30 @@ mod tests {
             RefRangeBounds::test_a1("A1:B2").intersection(&RefRangeBounds::test_a1("C3:D4")),
             None
         );
+    }
 
-        // Test column range intersections
+    #[test]
+    fn test_intersection_col_col() {
+        assert_eq!(
+            RefRangeBounds::test_a1("A").intersection(&RefRangeBounds::test_a1("A")),
+            Some(RefRangeBounds::test_a1("A"))
+        );
         assert_eq!(
             RefRangeBounds::test_a1("A:C").intersection(&RefRangeBounds::test_a1("B:D")),
             Some(RefRangeBounds::test_a1("B:C"))
         );
         assert_eq!(
+            RefRangeBounds::test_a1("A:C").intersection(&RefRangeBounds::test_a1("C:D")),
+            Some(RefRangeBounds::test_a1("C"))
+        );
+        assert_eq!(
             RefRangeBounds::test_a1("A:B").intersection(&RefRangeBounds::test_a1("C:D")),
             None
         );
+    }
 
+    #[test]
+    fn test_intersection() {
         // Test row range intersections
         assert_eq!(
             RefRangeBounds::test_a1("1:3").intersection(&RefRangeBounds::test_a1("2:4")),
@@ -284,23 +397,6 @@ mod tests {
             RefRangeBounds::test_a1("*").intersection(&RefRangeBounds::test_a1("B2:D4")),
             Some(RefRangeBounds::test_a1("B2:D4"))
         );
-    }
-
-    #[test]
-    fn test_might_intersect_rect() {
-        assert!(RefRangeBounds::test_a1("A1:B2").might_intersect_rect(Rect::new(1, 1, 2, 2)));
-        assert!(RefRangeBounds::test_a1("A1:B2").might_intersect_rect(Rect::new(1, 1, 2, 2)));
-        assert!(!RefRangeBounds::test_a1("A1:B2").might_intersect_rect(Rect::new(3, 3, 4, 4)));
-        assert!(RefRangeBounds::test_a1("A").might_intersect_rect(Rect::new(1, 1, 1, 10)));
-        assert!(RefRangeBounds::test_a1("*").might_intersect_rect(Rect::new(1, 1, 10, 10)));
-    }
-
-    #[test]
-    fn test_might_contain_pos() {
-        assert!(RefRangeBounds::test_a1("A1:B2").might_contain_pos(Pos::new(1, 1)));
-        assert!(!RefRangeBounds::test_a1("A1:B2").might_contain_pos(Pos::new(3, 3)));
-        assert!(RefRangeBounds::test_a1("A").might_contain_pos(Pos::new(1, 5)));
-        assert!(RefRangeBounds::test_a1("*").might_contain_pos(Pos::new(10, 10)));
     }
 
     #[test]
