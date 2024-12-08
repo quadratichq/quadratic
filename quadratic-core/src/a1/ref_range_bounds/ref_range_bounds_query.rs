@@ -8,7 +8,7 @@ impl RefRangeBounds {
         self.start.col.is_some() || self.start.row.is_some() || self.end.is_some()
     }
 
-    /// Returns whether `self` is a column range.
+    /// Returns whether `self` is a single column or a column range.
     pub fn is_column_range(&self) -> bool {
         self.start.row.is_none() || self.end.map_or(false, |end| end.row.is_none())
     }
@@ -48,7 +48,7 @@ impl RefRangeBounds {
         }
     }
 
-    /// Returns whether `self` is a row range.
+    /// Returns whether `self` is a single row or a row range.
     pub fn is_row_range(&self) -> bool {
         self.start.col.is_none() || self.end.map_or(false, |end| end.col.is_none())
     }
