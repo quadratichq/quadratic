@@ -174,13 +174,11 @@ impl GridController {
             }
         }
 
-        let cursor: Option<Operation> =
-            clipboard
-                .selection
-                .map(|clipboard_selection| Operation::SetCursorA1 {
-                    selection: clipboard_selection
-                        .translate(cursor_translate_x, cursor_translate_y),
-                });
+        let set_cursor: Option<Operation> = clipboard.selection.map(|clipboard_selection| {
+            let mut cursor = clipboard_selection.translate(cursor_translate_x, cursor_translate_y);
+            cursor.sheet_id = selection.sheet_id;
+            Operation::SetCursorA1 { selection: cursor }
+        });
 
         match special {
             PasteSpecial::None => {
@@ -245,8 +243,8 @@ impl GridController {
             ));
         }
 
-        if let Some(cursor) = cursor {
-            ops.push(cursor);
+        if let Some(set_cursor) = set_cursor {
+            ops.push(set_cursor);
         }
 
         ops

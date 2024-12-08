@@ -3,7 +3,7 @@ import { getRectSelection } from '@/app/grid/sheet/selection';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
+import { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
@@ -105,7 +105,13 @@ class Sheets {
   private setCursor = (selection?: string) => {
     if (selection !== undefined) {
       try {
-        this.sheet.cursor.load(selection);
+        const a1Selection = JSON.parse(selection) as A1Selection;
+        const sheetId = a1Selection.sheet_id.id;
+        const sheet = this.getById(sheetId);
+        if (sheet) {
+          this.current = sheetId;
+          sheet?.cursor.load(selection);
+        }
       } catch (e) {
         console.error('Error loading cursor', e);
       }

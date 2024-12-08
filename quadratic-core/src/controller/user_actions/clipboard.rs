@@ -34,7 +34,6 @@ impl GridController {
             }
         }
         // if not quadratic html, then use the plain text
-        // first try html
         if let Some(plain_text) = plain_text {
             let dest_pos = selection.to_cursor_sheet_pos();
             let ops = self.paste_plain_text_operations(dest_pos, plain_text, special);
