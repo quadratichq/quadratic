@@ -143,7 +143,7 @@ impl RefRangeBounds {
             }
         }
 
-        // Compare a rect against a column(s) and row(s) since we already
+        // Compare a rect against column(s) and row(s) since we already
         // covered rects and single pos
         if let Some(range_rect) = range_rect {
             if let Some(_other_end) = other.end {
@@ -190,8 +190,10 @@ impl RefRangeBounds {
                     let min = range_start.max(other_start);
                     let max = range_end.min(other_end);
 
-                    if min <= max {
-                        return Some(RefRangeBounds::new_relative_rect(Rect::new(min, 1, max, 1)));
+                    if min == max {
+                        return Some(RefRangeBounds::new_relative_column(min));
+                    } else if min <= max {
+                        return Some(RefRangeBounds::new_relative_column_range(min, max));
                     }
                 } else {
                     // Other is single column
@@ -230,8 +232,75 @@ impl RefRangeBounds {
             }
         }
 
-        // handle columns intersecting rows
-        if range.is_column_range() && other.is_row_range() {}
+        // handle row(s) intersecting row(s)
+        if range.is_row_range() && other.is_row_range() {
+            if let Some(range_end) = range.end {
+                if let Some(other_end) = other.end {
+                    // Both are row ranges
+                    let range_start = range.start.row.unwrap().coord;
+                    let range_end = range_end.row.unwrap().coord;
+                    let other_start = other.start.row.unwrap().coord;
+                    let other_end = other_end.row.unwrap().coord;
+
+                    let min = range_start.max(other_start);
+                    let max = range_end.min(other_end);
+
+                    if min == max {
+                        return Some(RefRangeBounds::new_relative_row(min));
+                    } else if min <= max {
+                        return Some(RefRangeBounds::new_relative_row_range(min, max));
+                    }
+                } else {
+                    // Other is single row
+                    let range_start = range.start.row.unwrap().coord;
+                    let range_end = range_end.row.unwrap().coord;
+                    let other_row = other.start.row.unwrap().coord;
+
+                    if other_row >= range_start && other_row <= range_end {
+                        return Some(RefRangeBounds::new_relative_rect(Rect::new(
+                            1, other_row, 1, other_row,
+                        )));
+                    }
+                }
+            } else if let Some(other_end) = other.end {
+                // Range is single row
+                let range_row = range.start.row.unwrap().coord;
+                let other_start = other.start.row.unwrap().coord;
+                let other_end = other_end.row.unwrap().coord;
+
+                if range_row >= other_start && range_row <= other_end {
+                    return Some(RefRangeBounds::new_relative_rect(Rect::new(
+                        1, range_row, 1, range_row,
+                    )));
+                }
+            } else {
+                // Both are single rows
+                let range_row = range.start.row.unwrap().coord;
+                let other_row = other.start.row.unwrap().coord;
+
+                if range_row == other_row {
+                    return Some(RefRangeBounds::new_relative_row(range_row));
+                } else {
+                    return None;
+                }
+            }
+        }
+
+        // handle columns intersecting rows (and vice versa)
+        if range.is_row_range() && other.is_column_range() {
+            std::mem::swap(&mut range, &mut other);
+        }
+        // if range.is_column_range() && other.is_row_range() {
+        //     let col_start = range.start.col.map(|c| c.coord);
+        //     let col_end = range.end.map(|e| e.col.map(|c| c.coord)).flatten();
+        //     if let (Some(col_start), Some(col_end)) = (col_start, col_end) {
+
+        //     }
+        //         return Some(RefRangeBounds {
+        //             start: CellRefRangeEnd::new_relative_xy(range.start),
+        //         });
+        //     };
+        // }
 
         None
     }
@@ -353,6 +422,10 @@ mod tests {
             Some(RefRangeBounds::test_a1("A"))
         );
         assert_eq!(
+            RefRangeBounds::test_a1("A").intersection(&RefRangeBounds::test_a1("B")),
+            None
+        );
+        assert_eq!(
             RefRangeBounds::test_a1("A:C").intersection(&RefRangeBounds::test_a1("B:D")),
             Some(RefRangeBounds::test_a1("B:C"))
         );
@@ -363,6 +436,46 @@ mod tests {
         assert_eq!(
             RefRangeBounds::test_a1("A:B").intersection(&RefRangeBounds::test_a1("C:D")),
             None
+        );
+    }
+
+    #[test]
+    fn test_intersection_row_row() {
+        assert_eq!(
+            RefRangeBounds::test_a1("1").intersection(&RefRangeBounds::test_a1("1")),
+            Some(RefRangeBounds::test_a1("1"))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("1").intersection(&RefRangeBounds::test_a1("2")),
+            None
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("1:3").intersection(&RefRangeBounds::test_a1("2:4")),
+            Some(RefRangeBounds::test_a1("2:3"))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("1:2").intersection(&RefRangeBounds::test_a1("3:4")),
+            None
+        );
+    }
+
+    #[test]
+    fn test_intersection_col_row() {
+        assert_eq!(
+            RefRangeBounds::test_a1("1").intersection(&RefRangeBounds::test_a1("A")),
+            Some(RefRangeBounds::test_a1("A1"))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("1:2").intersection(&RefRangeBounds::test_a1("B")),
+            Some(RefRangeBounds::test_a1("B1:B2"))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("B:C").intersection(&RefRangeBounds::test_a1("2")),
+            Some(RefRangeBounds::test_a1("B2:C2"))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("B:C").intersection(&RefRangeBounds::test_a1("2:3")),
+            Some(RefRangeBounds::test_a1("B2:C3"))
         );
     }
 
