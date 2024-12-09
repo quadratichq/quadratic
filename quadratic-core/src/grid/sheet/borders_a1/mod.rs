@@ -119,15 +119,20 @@ impl BordersA1Updates {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::A1Selection;
+
     use super::*;
 
     #[test]
-    fn is_default() {
+    fn test_is_default() {
         let updates = BordersA1Updates::default();
         assert!(updates.is_default());
 
         let updates = BordersA1Updates {
-            left: Some(Contiguous2D::default()),
+            left: Contiguous2D::new_from_opt_selection(
+                &A1Selection::test_a1("A1"),
+                Some(Some(BorderStyleTimestamp::default())),
+            ),
             ..Default::default()
         };
         assert!(!updates.is_default());
