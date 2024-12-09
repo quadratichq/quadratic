@@ -6,6 +6,8 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { A1Selection, JsOffset, Rect, SheetInfo } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
+import { Rectangle } from 'pixi.js';
 
 class Sheets {
   initialized: boolean;
@@ -348,6 +350,11 @@ class Sheets {
       min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
       max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
     };
+  };
+
+  getVisibleRectangle = (): Rectangle => {
+    const visibleRect = this.getVisibleRect();
+    return rectToRectangle(visibleRect);
   };
 
   getVisibleSelection = (): string | undefined => {

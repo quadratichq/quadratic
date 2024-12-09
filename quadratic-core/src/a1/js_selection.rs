@@ -193,6 +193,28 @@ impl JsSelection {
         serde_wasm_bindgen::to_value(&self.selection.ranges).map_err(|e| e.to_string())
     }
 
+    #[wasm_bindgen(js_name = "getFiniteRanges")]
+    pub fn get_finite_ranges(&self) -> Result<JsValue, String> {
+        let ranges = self
+            .selection
+            .ranges
+            .iter()
+            .filter(|r| r.is_finite())
+            .collect::<Vec<_>>();
+        serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "getInfiniteRanges")]
+    pub fn get_infinite_ranges(&self) -> Result<JsValue, String> {
+        let ranges = self
+            .selection
+            .ranges
+            .iter()
+            .filter(|r| !r.is_finite())
+            .collect::<Vec<_>>();
+        serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
+    }
+
     #[wasm_bindgen(js_name = "isColumnRow")]
     pub fn is_column_row(&self) -> bool {
         self.selection.is_column_row()

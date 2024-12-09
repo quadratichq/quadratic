@@ -8,8 +8,11 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { drawCheckbox, drawDropdown, SpecialSprite } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { getRangeRectangleFromCellRefRange } from '@/app/gridGL/helpers/selection';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { CellRefRange } from '@/app/quadratic-core-types';
+import { A1SelectionValueToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { ValidationUIType, validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Container, Point, Rectangle } from 'pixi.js';
@@ -61,93 +64,28 @@ export class UIValidations extends Container<SpecialSprite> {
       const type = validationUIType(v);
       if (v.selection.sheet_id.id !== sheets.sheet.id || !type) continue;
 
-      // const jsSelection = A1SelectionValueToSelection(v.selection);
-      // console.log(jsSelection);
-
-      // const ranges = jsSelection.getRanges();
-
-      // if (v.selection.all) {
-      //   this.drawAll(range, type);
-      // }
-      // if (v.selection.rows?.length) {
-      //   const rows = v.selection.rows.filter((r) => r >= range.y && r <= range.y + range.height);
-      //   rows.forEach((row) => this.drawRow(Number(row), range, type));
-      // }
-      // if (v.selection.columns?.length) {
-      //   const columns = v.selection.columns.filter((c) => c >= range.x && c <= range.x + range.width);
-      //   columns.forEach((column) => this.drawColumn(Number(column), range, type));
-      // }
+      const jsSelection = A1SelectionValueToSelection(v.selection);
+      const ranges: CellRefRange[] = jsSelection.getInfiniteRanges();
+      ranges.forEach((range) => this.drawInfiniteRange(range, type));
     }
   }
 
-  private drawColumn(column: number, range: Rectangle, type: ValidationUIType) {
-    const offsets = sheets.sheet.offsets;
-    const xPlacement = offsets.getColumnPlacement(column);
-    const x = xPlacement.position;
-    let yPlacement = offsets.getRowPlacement(range.y);
-    let y = yPlacement.position;
-    const cellsLabels = pixiApp.cellsSheets.current?.cellsLabels;
-    for (let row = range.y; row < range.y + range.height; row++) {
-      const key = `${column},${row}`;
-      // Check if UIValidation has added content to this cell or if
-      // CellsTextHash has rendered content in this cell.
-      if (!this.occupied.has(key) && !cellsLabels?.hasCell(column, row)) {
-        if (type === 'checkbox') {
-          this.addChild(
-            drawCheckbox({ x: x + xPlacement.size / 2, y: y + yPlacement.size / 2, column, row, value: false })
-          );
-        } else if (type === 'dropdown') {
-          this.addChild(drawDropdown({ x: x + xPlacement.size, y: y, column, row }));
-        }
-        this.occupied.add(key);
-      }
-
-      y += yPlacement.size;
-      if (row !== range.y + range.height - 1) {
-        yPlacement = offsets.getRowPlacement(row + 1);
-      }
+  private drawInfiniteRange(range: CellRefRange, type: ValidationUIType) {
+    const screenRangeRectangle = getRangeRectangleFromCellRefRange(range);
+    const visibleRangeRectangle = sheets.getVisibleRectangle();
+    const intersection = intersects.rectangleClip(screenRangeRectangle, visibleRangeRectangle);
+    if (!intersection) {
+      return;
     }
-  }
 
-  private drawRow(row: number, range: Rectangle, type: ValidationUIType) {
     const offsets = sheets.sheet.offsets;
-    const yPlacement = offsets.getRowPlacement(row);
-    const y = yPlacement.position;
-    let xPlacement = offsets.getColumnPlacement(range.x);
-    let x = xPlacement.position;
     const cellsLabels = pixiApp.cellsSheets.current?.cellsLabels;
-    for (let column = range.x; column < range.x + range.width; column++) {
-      const key = `${column},${row}`;
-      // Check if UIValidation has added content to this cell or if
-      // CellsTextHash has rendered content in this cell.
-      if (!this.occupied.has(key) && !cellsLabels?.hasCell(column, row)) {
-        if (type === 'checkbox') {
-          this.addChild(
-            drawCheckbox({ x: x + xPlacement.size / 2, y: y + yPlacement.size / 2, column, row, value: false })
-          );
-        } else if (type === 'dropdown') {
-          this.addChild(drawDropdown({ x: x + xPlacement.size, y: y, column, row }));
-        }
-        this.occupied.add(key);
-      }
-
-      x += xPlacement.size;
-      if (column !== range.x + range.width - 1) {
-        xPlacement = offsets.getColumnPlacement(column + 1);
-      }
-    }
-  }
-
-  private drawAll(range: Rectangle, type: ValidationUIType) {
-    const offsets = sheets.sheet.offsets;
-    let xPlacement = offsets.getColumnPlacement(range.x);
-    let x = xPlacement.position;
-    const xStart = x;
-    let yPlacement = offsets.getRowPlacement(range.y);
-    let y = yPlacement.position;
-    const cellsLabels = pixiApp.cellsSheets.current?.cellsLabels;
-    for (let row = range.y; row < range.y + range.height; row++) {
-      for (let column = range.x; column < range.x + range.width; column++) {
+    for (let row = intersection.top; row < intersection.bottom; row++) {
+      const yPlacement = offsets.getRowPlacement(row);
+      const y = yPlacement.position;
+      for (let column = intersection.left; column < intersection.right; column++) {
+        let xPlacement = offsets.getColumnPlacement(column);
+        let x = xPlacement.position;
         const key = `${column},${row}`;
         // Check if UIValidation has added content to this cell or if
         // CellsTextHash has rendered content in this cell.
@@ -161,16 +99,6 @@ export class UIValidations extends Container<SpecialSprite> {
           }
           this.occupied.add(key);
         }
-
-        x += xPlacement.size;
-        if (column !== range.x + range.width - 1) {
-          xPlacement = offsets.getColumnPlacement(column + 1);
-        }
-      }
-      x = xStart;
-      y += yPlacement.size;
-      if (row !== range.y + range.height - 1) {
-        yPlacement = offsets.getRowPlacement(row + 1);
       }
     }
   }
