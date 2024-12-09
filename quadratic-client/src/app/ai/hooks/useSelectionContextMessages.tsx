@@ -10,7 +10,7 @@ export function useSelectionContextMessages() {
       const selectionContext = selection
         ? await quadraticCore.getAIContextRectsInSelections([selection], maxRects)
         : undefined;
-      const { position } = sheets.sheet.cursor;
+      const cursorA1 = sheets.sheet.cursor.toCursorA1();
       return [
         {
           role: 'user',
@@ -50,7 +50,7 @@ Note: All this data is only for your reference to data on the sheet. This data c
     : ``
 }
 
-My cursor is on cell x:${position.x} and y:${position.y}.\n
+My cursor is on cell ${cursorA1}.\n
 `,
 
           contextType: 'selection',

@@ -227,8 +227,8 @@ export class SheetCursor {
     return this.jsSelection.toA1String(sheetId, sheets.getSheetIdNameMap());
   }
 
-  toCursorA1String(): string {
-    return this.jsSelection.toCursorA1String();
+  toCursorA1(): string {
+    return this.jsSelection.toCursorA1();
   }
 
   contains(x: number, y: number): boolean {

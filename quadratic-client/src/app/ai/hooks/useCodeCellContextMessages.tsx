@@ -1,5 +1,6 @@
 import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
+import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -27,7 +28,7 @@ export function useCodeCellContextMessages() {
       }
       const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
 
-      const { x, y } = pos;
+      const a1Pos = xyToA1(BigInt(pos.x), BigInt(pos.y));
       const language = getConnectionKind(cellLanguage);
       const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
 
@@ -36,7 +37,7 @@ export function useCodeCellContextMessages() {
           role: 'user',
           content: `Note: This is an internal message for context. Do not quote it in your response.\n\n
 Currently, you are in a code cell that is being edited.\n
-The code cell type is ${language}. The code cell is located at ${x}, ${y}.\n
+The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
   schemaJsonForAi
     ? `The schema for the database is:

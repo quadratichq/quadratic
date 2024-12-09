@@ -240,6 +240,10 @@ impl Rect {
         hashes
     }
 
+    pub fn a1_string(&self) -> String {
+        format!("{}:{}", self.min.a1_string(), self.max.a1_string())
+    }
+
     /// Finds the intersection of two rectangles.
     pub fn intersection(&self, other: &Rect) -> Option<Rect> {
         let x1 = self.min.x.max(other.min.x);
@@ -657,5 +661,28 @@ mod test {
         let rect = Rect::test_a1("B2:D4");
         assert_eq!(rect.min, Pos { x: 2, y: 2 });
         assert_eq!(rect.max, Pos { x: 4, y: 4 });
+    }
+
+    #[test]
+    fn test_a1_string() {
+        // Basic test with small coordinates
+        let rect = Rect::new(1, 1, 3, 3);
+        assert_eq!(rect.a1_string(), "A1:C3");
+
+        // Test with larger column values that require multiple letters
+        let rect = Rect::new(26, 1, 52, 6); // 26 = AA, 52 = BA
+        assert_eq!(rect.a1_string(), "Z1:AZ6");
+
+        // Test with larger row numbers
+        let rect = Rect::new(1, 99, 3, 102);
+        assert_eq!(rect.a1_string(), "A99:C102");
+
+        // Test single cell
+        let rect = Rect::single_pos(Pos { x: 1, y: 1 });
+        assert_eq!(rect.a1_string(), "A1:A1");
+
+        // Test non-sequential coordinates (should be normalized)
+        let rect = Rect::new(5, 5, 2, 3); // will be normalized to (2,3) to (5,5)
+        assert_eq!(rect.a1_string(), "B3:E5");
     }
 }

@@ -1,5 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getAllSelection } from '@/app/grid/sheet/selection';
+import { rectToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -11,6 +12,7 @@ export function useCurrentSheetContextMessages() {
       const sheet = sheets.getSheetByName(currentSheetName);
       if (!sheet) return [];
       const sheetBounds = sheet.boundsWithoutFormatting;
+      const sheetBoundsA1 = rectToA1(sheetBounds);
       const selection: string | undefined = sheetBounds.type === 'empty' ? undefined : getAllSelection(sheet.id);
       const currentSheetContext = selection
         ? await quadraticCore.getAIContextRectsInSelections([selection], maxRects)
@@ -23,7 +25,7 @@ export function useCurrentSheetContextMessages() {
 I have an open sheet, with sheet name '${currentSheetName}', with the following data:
 ${
   sheetBounds.type === 'nonEmpty'
-    ? `- Data range: from (${sheetBounds.min.x}, ${sheetBounds.min.y}) to (${sheetBounds.max.x}, ${sheetBounds.max.y})
+    ? `- Data range: ${sheetBoundsA1}
 - Note: This range may contain empty cells.`
     : '- The sheet is currently empty.'
 }\n\n

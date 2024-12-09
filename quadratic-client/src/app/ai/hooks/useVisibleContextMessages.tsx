@@ -1,4 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { rectToA1, xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -7,6 +8,7 @@ import { useCallback } from 'react';
 export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
+    const sheetBoundsA1 = rectToA1(sheetBounds);
     const visibleSelection = sheets.getVisibleSelection();
     const [visibleContext, erroredCodeCells] = visibleSelection
       ? await Promise.all([
@@ -22,7 +24,7 @@ export function useVisibleContextMessages() {
 I have an open sheet with the following data:
 ${
   sheetBounds.type === 'nonEmpty'
-    ? `- Data range: from (${sheetBounds.min.x}, ${sheetBounds.min.y}) to (${sheetBounds.max.x}, ${sheetBounds.max.y})
+    ? `- Data range: ${sheetBoundsA1}
 - Note: This range may contain empty cells.`
     : '- The sheet is currently empty.'
 }\n\n
@@ -79,7 +81,7 @@ ${erroredCodeCells[0].map(({ x, y, language, code_string, std_out, std_err }) =>
     std_err: std_err ?? '',
   };
   return `
-The code cell type is ${language}. The code cell is located at ${x}, ${y}.\n
+The code cell type is ${language}. The code cell is located at ${xyToA1(x, y)}.\n
 
 The code in the code cell is:\n
 \`\`\`${language}\n${code_string}\n\`\`\`

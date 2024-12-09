@@ -143,9 +143,9 @@ impl JsSelection {
         Ok(self.selection.to_string(Some(default_sheet_id), &sheet_map))
     }
 
-    #[wasm_bindgen(js_name = "toCursorA1String")]
-    pub fn to_cursor_a1_string(&self) -> Result<String, String> {
-        Ok(self.selection.to_cursor_a1_string())
+    #[wasm_bindgen(js_name = "toCursorA1")]
+    pub fn to_cursor_a1(&self) -> Result<String, String> {
+        Ok(self.selection.to_cursor_a1())
     }
 
     #[wasm_bindgen(js_name = "moveTo")]
@@ -332,4 +332,22 @@ pub fn a1_selection_value_to_selection(a1_selection: JsValue) -> Result<JsSelect
     let selection =
         serde_wasm_bindgen::from_value::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
     Ok(JsSelection { selection })
+}
+
+#[wasm_bindgen(js_name = "xyToA1")]
+pub fn xy_to_a1(x: i64, y: i64) -> Result<String, String> {
+    let pos = Pos::new(x, y);
+    Ok(pos.a1_string())
+}
+
+#[wasm_bindgen(js_name = "xyxyToA1")]
+pub fn xyxy_to_a1(x0: i64, y0: i64, x1: i64, y1: i64) -> Result<String, String> {
+    let rect = Rect::new(x0, y0, x1, y1);
+    Ok(rect.a1_string())
+}
+
+#[wasm_bindgen(js_name = "rectToA1")]
+pub fn rect_to_a1(rect: JsValue) -> Result<String, String> {
+    let rect = serde_wasm_bindgen::from_value::<Rect>(rect).map_err(|e| e.to_string())?;
+    Ok(rect.a1_string())
 }

@@ -218,7 +218,7 @@ impl A1Selection {
             .join(",")
     }
 
-    pub fn to_cursor_a1_string(&self) -> String {
+    pub fn to_cursor_a1(&self) -> String {
         self.cursor.a1_string()
     }
 
@@ -611,23 +611,19 @@ mod tests {
         // Test basic cursor position
         let selection = A1Selection::test_a1("A1");
         assert_eq!(
-            selection.to_cursor_a1_string(),
+            selection.to_cursor_a1(),
             "A1",
             "Basic cursor A1 string failed"
         );
 
         // Test cursor at different positions
         let selection = A1Selection::test_a1("B2");
-        assert_eq!(
-            selection.to_cursor_a1_string(),
-            "B2",
-            "B2 cursor A1 string failed"
-        );
+        assert_eq!(selection.to_cursor_a1(), "B2", "B2 cursor A1 string failed");
 
         // Test cursor with large coordinates
         let selection = A1Selection::test_a1("Z100");
         assert_eq!(
-            selection.to_cursor_a1_string(),
+            selection.to_cursor_a1(),
             "Z100",
             "Large coordinate cursor A1 string failed"
         );
@@ -635,7 +631,7 @@ mod tests {
         // Test cursor with multi-letter column
         let selection = A1Selection::test_a1("AA1");
         assert_eq!(
-            selection.to_cursor_a1_string(),
+            selection.to_cursor_a1(),
             "AA1",
             "Multi-letter column cursor A1 string failed"
         );
@@ -643,7 +639,7 @@ mod tests {
         // Test cursor position in a range selection
         let selection = A1Selection::test_a1("A1:C3");
         assert_eq!(
-            selection.to_cursor_a1_string(),
+            selection.to_cursor_a1(),
             "A1",
             "Range selection cursor A1 string failed"
         );

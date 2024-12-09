@@ -116,7 +116,7 @@ export const AIAnalystContext = ({
         primary={
           context.selection
             ? A1SelectionStringToSelection(context.selection).toA1String(sheets.current, sheets.getSheetIdNameMap())
-            : sheets.sheet.cursor.toCursorA1String()
+            : sheets.sheet.cursor.toCursorA1()
         }
         secondary="Cursor"
         onClick={() => setContext((prev) => ({ ...prev, selection: undefined }))}
