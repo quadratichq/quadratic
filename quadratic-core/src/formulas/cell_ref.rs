@@ -158,40 +158,38 @@ impl CellRef {
         let (sheet, rest) = parse_sheet_name(s);
 
         lazy_static! {
-            /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$
+            /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)?$
             /// ^                             $     match full string
             ///  (\$?)                              group 1: optional `$`
             ///       (n?[A-Z]+)                    group 2: column name
             ///                 (\$?)               group 3: optional `$`
             ///                      (n?)           group 4: optional `n`
-            ///                          (\d+)      group 5: row number
+            ///                          (\d+)?     group 5: row number
             pub static ref A1_CELL_REFERENCE_REGEX: Regex =
-                Regex::new(r"^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$").unwrap();
+                Regex::new(r"^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)?$").unwrap();
         }
 
         let captures = A1_CELL_REFERENCE_REGEX.captures(rest.trim())?;
 
         let column_is_absolute = !captures[1].is_empty();
         let column_name = &captures[2];
+        let col = crate::a1::column_from_name(column_name)? as i64;
+        let col_ref = match column_is_absolute {
+            true => CellRefCoord::Absolute(col),
+            false => CellRefCoord::Relative(col - base.x),
+        };
+
         let row_is_absolute = !captures[3].is_empty();
         let row_is_negative = !captures[4].is_empty();
-        let row_number = &captures[5];
-
-        let col = crate::a1::column_from_name(column_name)? as i64;
-        let mut row = row_number.parse::<i64>().ok()?;
+        let mut row = captures
+            .get(5)
+            .map_or(Some(i64::MAX), |m| m.as_str().parse::<i64>().ok())?;
         if row_is_negative {
             row = -row;
         }
-
-        let col_ref = if column_is_absolute {
-            CellRefCoord::Absolute(col)
-        } else {
-            CellRefCoord::Relative(col - base.x)
-        };
-        let row_ref = if row_is_absolute {
-            CellRefCoord::Absolute(row)
-        } else {
-            CellRefCoord::Relative(row - base.y)
+        let row_ref = match row_is_absolute {
+            true => CellRefCoord::Absolute(row),
+            false => CellRefCoord::Relative(row - base.y),
         };
 
         Some(CellRef {
@@ -324,6 +322,21 @@ mod tests {
                 sheet: Some("Sheet 2".to_string()),
                 x: CellRefCoord::Relative(0),
                 y: CellRefCoord::Relative(0),
+            })
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_a1_column_parsing() {
+        let pos = CellRef::parse_a1("A", pos![A0]);
+
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: None,
+                x: CellRefCoord::Relative(0),
+                y: CellRefCoord::Relative(i64::MAX)
             })
         );
     }
