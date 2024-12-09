@@ -109,7 +109,10 @@ impl BordersA1Updates {
     }
 
     pub fn is_default(&self) -> bool {
-        self.left.is_none() && self.right.is_none() && self.top.is_none() && self.bottom.is_none()
+        self.left.as_ref().is_none_or(|c| c.is_all_default())
+            && self.right.as_ref().is_none_or(|c| c.is_all_default())
+            && self.top.as_ref().is_none_or(|c| c.is_all_default())
+            && self.bottom.as_ref().is_none_or(|c| c.is_all_default())
     }
 }
 
