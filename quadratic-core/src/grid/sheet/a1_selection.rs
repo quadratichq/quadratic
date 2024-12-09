@@ -312,7 +312,7 @@ mod tests {
 
     use crate::{
         grid::{
-            js_types::{JsCellValuePosAIContext, JsCodeCell, JsReturnInfo},
+            js_types::{JsCodeCell, JsReturnInfo},
             CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult,
         },
         A1Selection, Array, CellRefRange, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect,
@@ -322,95 +322,96 @@ mod tests {
     use super::Sheet;
 
     #[test]
-    fn js_ai_context_rects_in_sheet_rect() {
-        let mut sheet = Sheet::test();
-        sheet.set_cell_values(
-            Rect {
-                min: Pos { x: 1, y: 1 },
-                max: Pos { x: 10, y: 1000 },
-            },
-            &Array::from(
-                (1..=1000)
-                    .map(|row| {
-                        (1..=10)
-                            .map(|_| {
-                                if row == 1 {
-                                    "heading1".to_string()
-                                } else {
-                                    "value1".to_string()
-                                }
-                            })
-                            .collect::<Vec<String>>()
-                    })
-                    .collect::<Vec<Vec<String>>>(),
-            ),
-        );
+    fn get_ai_context_rects_in_sheet_rect() {
+        todo!()
+        // let mut sheet = Sheet::test();
+        // sheet.set_cell_values(
+        //     Rect {
+        //         min: Pos { x: 1, y: 1 },
+        //         max: Pos { x: 10, y: 1000 },
+        //     },
+        //     &Array::from(
+        //         (1..=1000)
+        //             .map(|row| {
+        //                 (1..=10)
+        //                     .map(|_| {
+        //                         if row == 1 {
+        //                             "heading1".to_string()
+        //                         } else {
+        //                             "value1".to_string()
+        //                         }
+        //                     })
+        //                     .collect::<Vec<String>>()
+        //             })
+        //             .collect::<Vec<Vec<String>>>(),
+        //     ),
+        // );
 
-        sheet.set_cell_values(
-            Rect {
-                min: Pos { x: 31, y: 101 },
-                max: Pos { x: 40, y: 1100 },
-            },
-            &Array::from(
-                (1..=1000)
-                    .map(|row| {
-                        (1..=10)
-                            .map(|_| {
-                                if row == 1 {
-                                    "heading2".to_string()
-                                } else {
-                                    "value3".to_string()
-                                }
-                            })
-                            .collect::<Vec<String>>()
-                    })
-                    .collect::<Vec<Vec<String>>>(),
-            ),
-        );
+        // sheet.set_cell_values(
+        //     Rect {
+        //         min: Pos { x: 31, y: 101 },
+        //         max: Pos { x: 40, y: 1100 },
+        //     },
+        //     &Array::from(
+        //         (1..=1000)
+        //             .map(|row| {
+        //                 (1..=10)
+        //                     .map(|_| {
+        //                         if row == 1 {
+        //                             "heading2".to_string()
+        //                         } else {
+        //                             "value3".to_string()
+        //                         }
+        //                     })
+        //                     .collect::<Vec<String>>()
+        //             })
+        //             .collect::<Vec<Vec<String>>>(),
+        //     ),
+        // );
 
-        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 10000, 10000, sheet.id));
-        let ai_context_rects_in_selection =
-            sheet.get_ai_context_rects_in_selection(selection, None);
+        // let selection = A1Selection::from_rect(SheetRect::new(1, 1, 10000, 10000, sheet.id));
+        // let ai_context_rects_in_selection =
+        //     sheet.get_ai_context_rects_in_selection(selection, None);
 
-        let max_rows = 3;
+        // let max_rows = 3;
 
-        let expected_ai_context_rects_in_selection = vec![
-            JsCellValuePosAIContext {
-                sheet_name: sheet.name.clone(),
-                rect_origin: Pos { x: 1, y: 1 }.a1_string(),
-                rect_width: 10,
-                rect_height: 1000,
-                starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
-                    Rect {
-                        min: Pos { x: 1, y: 1 },
-                        max: Pos { x: 10, y: 1000 },
-                    },
-                    Some(max_rows),
-                ),
-            },
-            JsCellValuePosAIContext {
-                sheet_name: sheet.name.clone(),
-                rect_origin: Pos { x: 31, y: 101 }.a1_string(),
-                rect_width: 10,
-                rect_height: 1000,
-                starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
-                    Rect {
-                        min: Pos { x: 31, y: 101 },
-                        max: Pos { x: 40, y: 1100 },
-                    },
-                    Some(max_rows),
-                ),
-            },
-        ];
+        // let expected_ai_context_rects_in_selection = vec![
+        //     JsCellValuePosAIContext {
+        //         sheet_name: sheet.name.clone(),
+        //         rect_origin: Pos { x: 1, y: 1 }.a1_string(),
+        //         rect_width: 10,
+        //         rect_height: 1000,
+        //         starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
+        //             Rect {
+        //                 min: Pos { x: 1, y: 1 },
+        //                 max: Pos { x: 10, y: 1000 },
+        //             },
+        //             Some(max_rows),
+        //         ),
+        //     },
+        //     JsCellValuePosAIContext {
+        //         sheet_name: sheet.name.clone(),
+        //         rect_origin: Pos { x: 31, y: 101 }.a1_string(),
+        //         rect_width: 10,
+        //         rect_height: 1000,
+        //         starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
+        //             Rect {
+        //                 min: Pos { x: 31, y: 101 },
+        //                 max: Pos { x: 40, y: 1100 },
+        //             },
+        //             Some(max_rows),
+        //         ),
+        //     },
+        // ];
 
-        assert_eq!(
-            ai_context_rects_in_selection,
-            expected_ai_context_rects_in_selection
-        );
+        // assert_eq!(
+        //     ai_context_rects_in_selection,
+        //     expected_ai_context_rects_in_selection
+        // );
     }
 
     #[test]
-    fn js_errored_code_cell_rect() {
+    fn get_errored_code_cell_rect() {
         let mut sheet = Sheet::test();
 
         let code_run_1 = CodeRun {
