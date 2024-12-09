@@ -54,7 +54,6 @@ impl Sheet {
     /// Creates reverse operations for borders within the column.
     fn reverse_borders_ops_for_column(&self, column: i64) -> Vec<Operation> {
         if let Some(borders) = self.borders_a1.copy_column(column) {
-            dbgjs!(&borders);
             if borders.is_empty() {
                 return vec![];
             }
@@ -360,21 +359,22 @@ mod tests {
             ..Default::default()
         };
         sheet.delete_column(&mut transaction, 1);
-        assert_eq!(transaction.reverse_operations.len(), 3);
 
         // this should be 3--need to wait until Contiguous2D::copy_column
         // properly removes column blocks.
-        assert_eq!(sheet.columns.len(), 4);
+        assert_eq!(transaction.reverse_operations.len(), 4);
+
+        assert_eq!(sheet.columns.len(), 3);
 
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Text("P".to_string()))
+            Some(CellValue::Text("B".to_string()))
         );
         assert_eq!(
             sheet.formats.fill_color.get(Pos { x: 3, y: 4 }),
             Some("blue".to_string())
         );
-        assert!(sheet.code_runs.get(&Pos { x: 2, y: 5 }).is_some());
+        assert!(sheet.code_runs.get(&Pos { x: 1, y: 5 }).is_some());
     }
 
     #[test]
