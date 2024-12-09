@@ -109,22 +109,30 @@ impl BordersA1Updates {
     }
 
     pub fn is_default(&self) -> bool {
-        self.left.is_none() && self.right.is_none() && self.top.is_none() && self.bottom.is_none()
+        self.left.as_ref().is_none_or(|c| c.is_all_default())
+            && self.right.as_ref().is_none_or(|c| c.is_all_default())
+            && self.top.as_ref().is_none_or(|c| c.is_all_default())
+            && self.bottom.as_ref().is_none_or(|c| c.is_all_default())
     }
 }
 
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::A1Selection;
+
     use super::*;
 
     #[test]
-    fn is_default() {
+    fn test_is_default() {
         let updates = BordersA1Updates::default();
         assert!(updates.is_default());
 
         let updates = BordersA1Updates {
-            left: Some(Contiguous2D::default()),
+            left: Contiguous2D::new_from_opt_selection(
+                &A1Selection::test_a1("A1"),
+                Some(Some(BorderStyleTimestamp::default())),
+            ),
             ..Default::default()
         };
         assert!(!updates.is_default());

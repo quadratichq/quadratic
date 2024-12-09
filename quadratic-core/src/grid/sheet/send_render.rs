@@ -229,8 +229,9 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
+        grid::{formats::SheetFormatUpdates, Contiguous2D},
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
-        CellValue,
+        A1Selection, CellValue,
     };
     use serial_test::serial;
 
@@ -321,20 +322,22 @@ mod test {
 
     #[test]
     #[serial]
-    fn send_sheet_fills() {
-        todo!("update, remove, or replace this test");
-        // clear_js_calls();
-        // let mut sheet = Sheet::test();
-        // sheet.infinite_sheet_format = Some(Format {
-        //     fill_color: Some("red".to_string()),
-        //     ..Default::default()
-        // });
-        // sheet.send_sheet_fills();
-        // let fills = sheet.get_sheet_fills();
-        // expect_js_call(
-        //     "jsSheetMetaFills",
-        //     format!("{},{}", sheet.id, serde_json::to_string(&fills).unwrap()),
-        //     true,
-        // );
+    fn test_send_sheet_fills() {
+        clear_js_calls();
+        let mut sheet = Sheet::test();
+        sheet.set_formats_a1(&SheetFormatUpdates {
+            bold: Contiguous2D::new_from_opt_selection(
+                &A1Selection::test_a1("A1"),
+                Some(Some(true)),
+            ),
+            ..Default::default()
+        });
+        sheet.send_sheet_fills();
+        let fills = sheet.get_all_sheet_fills();
+        expect_js_call(
+            "jsSheetMetaFills",
+            format!("{},{}", sheet.id, serde_json::to_string(&fills).unwrap()),
+            true,
+        );
     }
 }

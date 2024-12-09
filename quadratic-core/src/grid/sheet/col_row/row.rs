@@ -51,6 +51,9 @@ impl Sheet {
     /// Creates reverse operations for borders within the row.
     fn reverse_borders_ops_for_row(&self, row: i64) -> Vec<Operation> {
         if let Some(borders) = self.borders_a1.copy_row(row) {
+            if borders.is_default() {
+                return vec![];
+            }
             vec![Operation::SetBordersA1 {
                 sheet_id: self.id,
                 borders,
@@ -331,9 +334,8 @@ impl Sheet {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
-    use serial_test::parallel;
-
     use crate::{
         controller::execution::TransactionSource,
         grid::{
@@ -348,8 +350,7 @@ mod test {
     use super::*;
 
     #[test]
-    #[parallel]
-    fn delete_row_values() {
+    fn test_delete_row_values() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
             1,
@@ -369,8 +370,7 @@ mod test {
     }
 
     #[test]
-    #[parallel]
-    fn delete_row() {
+    fn test_delete_row() {
         // will delete row 1
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -432,7 +432,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_row_start() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
@@ -514,7 +513,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_row_middle() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
@@ -539,7 +537,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_row_end() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 1, 2, vec!["A", "B"]);
@@ -560,7 +557,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_values_ops_for_column() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 2, 2, vec!["a", "b", "c", "d"]);
@@ -569,7 +565,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_row_offset() {
         let mut sheet = Sheet::test();
         sheet.offsets.set_row_height(1, 100.0);
@@ -585,7 +580,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn delete_row_offset() {
         let mut sheet = Sheet::test();
         sheet.offsets.set_row_height(1, 100.0);
