@@ -10,10 +10,9 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { SetterOrUpdater } from 'recoil';
-import { messages } from './messages';
 
 interface Input {
   show: boolean;
@@ -30,8 +29,10 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: Input;
-  private waitingForSnackbar: { message: JSX.Element | string; severity: 'error' | 'success'; stayOpen: boolean }[] =
-    [];
+  private waitingForSnackbar: {
+    message: JSX.Element | string;
+    options: SnackbarOptions;
+  }[] = [];
 
   // Keeps track of code editor content. This is used when moving code cells to
   // keep track of any unsaved changes, and keyboardCell.
@@ -227,20 +228,16 @@ class PixiAppSettings {
   setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) {
     this.addGlobalSnackbar = addGlobalSnackbar;
     for (const snackbar of this.waitingForSnackbar) {
-      this.addGlobalSnackbar(snackbar.message, { severity: snackbar.severity, stayOpen: snackbar.stayOpen });
+      this.addGlobalSnackbar(snackbar.message, snackbar.options);
     }
     this.waitingForSnackbar = [];
   }
 
-  snackbar(message: string, severity: 'error' | 'success', stayOpen?: boolean) {
-    let display: JSX.Element | string = message;
-    if (messages[message]) {
-      display = messages[message];
-    }
+  snackbar(message: string, options: SnackbarOptions) {
     if (this.addGlobalSnackbar) {
-      this.addGlobalSnackbar(display, { severity, stayOpen: !!stayOpen });
+      this.addGlobalSnackbar(message, options);
     } else {
-      this.waitingForSnackbar.push({ message: display, severity, stayOpen: !!stayOpen });
+      this.waitingForSnackbar.push({ message, options });
     }
   }
 }

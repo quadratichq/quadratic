@@ -28,7 +28,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn clear_format_selection_operations() {
+    fn test_clear_format_selection_operations() {
         let gc = GridController::test();
         let sheet_id = SheetId::TEST;
         let selection = A1Selection::test_a1("A1");
