@@ -9,6 +9,7 @@ use crate::{
 };
 
 /// Formula execution context.
+#[derive(Debug)]
 pub struct Ctx<'ctx> {
     /// Grid file to access cells from.
     pub grid: &'ctx Grid,
