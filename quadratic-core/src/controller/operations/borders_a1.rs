@@ -164,7 +164,23 @@ impl GridController {
         let mut borders: BordersA1Updates = BordersA1Updates::default();
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
-                self.a1_border_style_range(BorderSelection::All, None, range, &mut borders);
+                let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
+                borders
+                    .top
+                    .get_or_insert_default()
+                    .set_rect(x1, y1, x2, y2, Some(None));
+                borders
+                    .bottom
+                    .get_or_insert_default()
+                    .set_rect(x1, y1, x2, y2, Some(None));
+                borders
+                    .left
+                    .get_or_insert_default()
+                    .set_rect(x1, y1, x2, y2, Some(None));
+                borders
+                    .right
+                    .get_or_insert_default()
+                    .set_rect(x1, y1, x2, y2, Some(None));
             }
         });
         vec![Operation::SetBordersA1 {

@@ -688,6 +688,44 @@ mod test {
     }
 
     #[test]
+    fn test_clear_formats() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_text_color(
+            &A1Selection::test_a1("A1:B2"),
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.formats.text_color.get(pos![A1]),
+            Some("red".to_string())
+        );
+        assert_eq!(
+            sheet.formats.text_color.get(pos![A2]),
+            Some("red".to_string())
+        );
+        assert_eq!(
+            sheet.formats.text_color.get(pos![B1]),
+            Some("red".to_string())
+        );
+        assert_eq!(
+            sheet.formats.text_color.get(pos![B2]),
+            Some("red".to_string())
+        );
+
+        gc.clear_format_borders(&A1Selection::test_a1("A1:B2"), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.formats.text_color.get(pos![A1]), None);
+        assert_eq!(sheet.formats.text_color.get(pos![A2]), None);
+        assert_eq!(sheet.formats.text_color.get(pos![B1]), None);
+        assert_eq!(sheet.formats.text_color.get(pos![B2]), None);
+    }
+
+    #[test]
     fn clear_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
