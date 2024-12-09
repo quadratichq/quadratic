@@ -84,7 +84,7 @@ export const useEditorCellHighlights = (
     const model = editorInst.getModel();
     if (!model) return;
 
-    const onChangeModel = async () => {
+    const onChangeModel = () => {
       if (decorations) decorations.current?.clear();
 
       const cellColorReferences = new Map<string, number>();
@@ -98,7 +98,7 @@ export const useEditorCellHighlights = (
       ) {
         pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed);
       } else if (codeCell.language === 'Formula') {
-        const parsed = (await parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
+        const parsed = parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y) as ParseFormulaReturnType;
         if (parsed) {
           pixiApp.cellHighlights.fromFormula(parsed, codeCell.pos, codeCell.sheetId);
           const extractedCells = extractCellsFromParseFormula(parsed, codeCell.pos, codeCell.sheetId);
