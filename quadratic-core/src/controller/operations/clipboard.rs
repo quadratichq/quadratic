@@ -55,20 +55,25 @@ pub struct ClipboardValidations {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Clipboard {
+    pub origin: ClipboardOrigin,
+
+    pub selection: A1Selection,
+
     pub w: u32,
     pub h: u32,
+
     pub cells: CellValues,
 
     // plain values for use with PasteSpecial::Values
     pub values: CellValues,
 
-    pub formats: SheetFormatUpdates,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub formats: Option<SheetFormatUpdates>,
 
-    pub borders: Option<(A1Selection, BordersA1Updates)>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub borders: Option<BordersA1Updates>,
 
-    pub origin: ClipboardOrigin,
-    pub selection: Option<A1Selection>,
-
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub validations: Option<ClipboardValidations>,
 }
 
@@ -174,11 +179,11 @@ impl GridController {
             }
         }
 
-        let set_cursor: Option<Operation> = clipboard.selection.map(|clipboard_selection| {
-            let mut cursor = clipboard_selection.translate(cursor_translate_x, cursor_translate_y);
-            cursor.sheet_id = selection.sheet_id;
-            Operation::SetCursorA1 { selection: cursor }
-        });
+        let mut cursor = clipboard
+            .selection
+            .translate(cursor_translate_x, cursor_translate_y);
+        cursor.sheet_id = selection.sheet_id;
+        ops.push(Operation::SetCursorA1 { selection: cursor });
 
         match special {
             PasteSpecial::None => {
@@ -225,26 +230,29 @@ impl GridController {
 
         // paste formats and borders if not PasteSpecial::Values
         if !matches!(special, PasteSpecial::Values) {
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: selection.sheet_id,
-                formats: clipboard.formats,
-            });
+            let contiguous_2d_translate_x = start_pos.x - clipboard.origin.x;
+            let contiguous_2d_translate_y = start_pos.y - clipboard.origin.y;
 
-            if let Some((selection, borders)) = clipboard.borders {
-                let selection = selection.translate(start_pos.x, start_pos.y);
+            if let Some(mut formats) = clipboard.formats {
+                formats.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
+                ops.push(Operation::SetCellFormatsA1 {
+                    sheet_id: selection.sheet_id,
+                    formats,
+                });
+            }
+
+            if let Some(mut borders) = clipboard.borders {
+                borders.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
                 ops.push(Operation::SetBordersA1 {
                     sheet_id: selection.sheet_id,
                     borders,
                 });
             }
+
             ops.extend(self.set_clipboard_validations(
                 clipboard.validations,
                 start_pos.to_sheet_pos(selection.sheet_id),
             ));
-        }
-
-        if let Some(set_cursor) = set_cursor {
-            ops.push(set_cursor);
         }
 
         ops

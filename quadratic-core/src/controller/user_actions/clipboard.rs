@@ -526,16 +526,19 @@ mod test {
     #[parallel]
     fn test_copy_borders_inside() {
         let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let sheet_id_1 = gc.sheet_ids()[0];
+
+        gc.add_sheet(None);
+        let sheet_id_2 = gc.sheet_ids()[1];
 
         gc.set_borders(
-            A1Selection::from_rect(SheetRect::new(1, 1, 5, 5, sheet_id)),
+            A1Selection::from_rect(SheetRect::new(1, 1, 5, 5, sheet_id_1)),
             BorderSelection::Outer,
             Some(BorderStyle::default()),
             None,
         );
 
-        let sheet = gc.sheet(sheet_id);
+        let sheet = gc.sheet(sheet_id_1);
         let borders = sheet.borders_a1.borders_in_sheet().unwrap();
         let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
         let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
@@ -543,38 +546,38 @@ mod test {
         let border = horizontal_borders.next().unwrap();
         assert_eq!(border.x, 1);
         assert_eq!(border.y, 1);
-        assert_eq!(border.width, Some(4)); // or 5
+        assert_eq!(border.width, Some(5));
         assert_eq!(border.line, CellBorderLine::default());
 
         let border = horizontal_borders.next().unwrap();
         assert_eq!(border.x, 1);
-        assert_eq!(border.y, 4); // or 5
-        assert_eq!(border.width, Some(4)); // or 5
+        assert_eq!(border.y, 6);
+        assert_eq!(border.width, Some(5));
         assert_eq!(border.line, CellBorderLine::default());
 
         let border = vertical_borders.next().unwrap();
         assert_eq!(border.x, 1);
         assert_eq!(border.y, 1);
-        assert_eq!(border.height, Some(4)); // or 5
+        assert_eq!(border.height, Some(5));
         assert_eq!(border.line, CellBorderLine::default());
 
         let border = vertical_borders.next().unwrap();
-        assert_eq!(border.x, 5);
+        assert_eq!(border.x, 6);
         assert_eq!(border.y, 1);
-        assert_eq!(border.height, Some(4));
+        assert_eq!(border.height, Some(5));
         assert_eq!(border.line, CellBorderLine::default());
 
-        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 5, 5, sheet_id));
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 5, 5, sheet_id_1));
         let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
         gc.paste_from_clipboard(
-            &A1Selection::from_xy(1, 11, sheet_id),
+            &A1Selection::from_xy(1, 11, sheet_id_2),
             None,
             Some(html),
             PasteSpecial::None,
             None,
         );
 
-        let sheet = gc.sheet(sheet_id);
+        let sheet = gc.sheet(sheet_id_2);
         let borders = sheet.borders_a1.borders_in_sheet().unwrap();
         let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
         let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
@@ -582,25 +585,25 @@ mod test {
         let border = horizontal_borders.next().unwrap();
         assert_eq!(border.x, 1);
         assert_eq!(border.y, 11);
-        assert_eq!(border.width, Some(4)); // or 5
+        assert_eq!(border.width, Some(5));
         assert_eq!(border.line, CellBorderLine::default());
 
         let border = horizontal_borders.next().unwrap();
         assert_eq!(border.x, 1);
-        assert_eq!(border.y, 15); // or 16
-        assert_eq!(border.width, Some(4)); // or 5
+        assert_eq!(border.y, 16);
+        assert_eq!(border.width, Some(5));
         assert_eq!(border.line, CellBorderLine::default());
 
         let border = vertical_borders.next().unwrap();
         assert_eq!(border.x, 1);
         assert_eq!(border.y, 11);
-        assert_eq!(border.height, Some(4)); // or 5
+        assert_eq!(border.height, Some(5));
         assert_eq!(border.line, CellBorderLine::default());
 
         let border = vertical_borders.next().unwrap();
         assert_eq!(border.x, 6);
         assert_eq!(border.y, 11);
-        assert_eq!(border.height, Some(4)); // or 5
+        assert_eq!(border.height, Some(5));
         assert_eq!(border.line, CellBorderLine::default());
     }
 

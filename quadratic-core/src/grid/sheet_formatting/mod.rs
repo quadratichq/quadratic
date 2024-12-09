@@ -17,8 +17,10 @@ use serde::{Deserialize, Serialize};
 
 use super::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, RenderSize};
 
+pub mod sheet_formatting_clipboard;
 pub mod sheet_formatting_col_row;
 pub mod sheet_formatting_query;
+pub mod sheet_formatting_translate;
 pub mod sheet_formatting_update;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]

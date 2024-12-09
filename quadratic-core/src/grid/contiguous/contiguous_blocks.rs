@@ -507,6 +507,27 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
             .filter_map(|block| block.subtract_offset(offset));
         self.add_blocks(shifted_blocks);
     }
+
+    pub fn translate_in_place(&mut self, delta: i64) {
+        let mut new_map = BTreeMap::new();
+        for (mut key, mut block) in std::mem::take(&mut self.0).into_iter() {
+            if delta < 0 {
+                key = key.saturating_sub(delta.unsigned_abs());
+                block.start = block.start.saturating_sub(delta.unsigned_abs());
+                block.end = block.end.saturating_sub(delta.unsigned_abs());
+            } else {
+                key = key.saturating_add(delta as u64);
+                block.start = block.start.saturating_add(delta as u64);
+                block.end = block.end.saturating_add(delta as u64);
+            }
+            new_map.insert(key, block);
+        }
+        self.0 = new_map;
+    }
+
+    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut Block<T>> {
+        self.0.values_mut()
+    }
 }
 
 #[cfg(test)]
