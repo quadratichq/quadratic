@@ -88,8 +88,13 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        controller::GridController, grid::SheetId, selection::OldSelection, Pos, Rect, SheetPos,
-        SheetRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
+        controller::GridController,
+        grid::{
+            formats::{FormatUpdate, SheetFormatUpdates},
+            SheetId,
+        },
+        selection::OldSelection,
+        Pos, Rect, SheetPos, SheetRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
     };
     use serial_test::parallel;
 
@@ -355,7 +360,51 @@ mod test {
     }
 
     #[test]
+    #[parallel]
     fn test_thumbnail_dirty_formats() {
-        todo!()
+        let gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let wrong_sheet_id = SheetId::test();
+
+        // Test with empty formats
+        let empty_formats = SheetFormatUpdates::default();
+        assert!(!gc.thumbnail_dirty_formats(wrong_sheet_id, &empty_formats));
+        assert!(!gc.thumbnail_dirty_formats(sheet_id, &empty_formats));
+
+        // Test with formats that intersect thumbnail
+        let mut intersecting_formats = SheetFormatUpdates::default();
+        intersecting_formats.set_format_rect(
+            Rect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 1, y: 1 },
+            },
+            FormatUpdate {
+                bold: Some(Some(true)),
+                ..Default::default()
+            },
+        );
+        assert!(!gc.thumbnail_dirty_formats(wrong_sheet_id, &intersecting_formats));
+        assert!(gc.thumbnail_dirty_formats(sheet_id, &intersecting_formats));
+
+        // Test with formats outside thumbnail bounds
+        let sheet = gc.sheet(sheet_id);
+        let mut non_intersecting_formats = SheetFormatUpdates::default();
+        non_intersecting_formats.set_format_rect(
+            Rect {
+                min: Pos {
+                    x: sheet.offsets.thumbnail().max.x + 1,
+                    y: sheet.offsets.thumbnail().max.y + 1,
+                },
+                max: Pos {
+                    x: sheet.offsets.thumbnail().max.x + 2,
+                    y: sheet.offsets.thumbnail().max.y + 2,
+                },
+            },
+            FormatUpdate {
+                italic: Some(Some(true)),
+                ..Default::default()
+            },
+        );
+        assert!(!gc.thumbnail_dirty_formats(sheet_id, &non_intersecting_formats));
     }
 }

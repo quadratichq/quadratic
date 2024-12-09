@@ -255,6 +255,155 @@ impl SheetFormatUpdates {
                 .and_then(|strike_through| strike_through.get(pos)),
         }
     }
+
+    pub fn set_format_rect(&mut self, rect: Rect, update: FormatUpdate) {
+        update.align.map(|align| {
+            self.align.get_or_insert_with(Default::default).set_rect(
+                rect.min.x,
+                rect.min.y,
+                Some(rect.max.x),
+                Some(rect.max.y),
+                Some(align),
+            )
+        });
+        update.vertical_align.map(|vertical_align| {
+            self.vertical_align
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(vertical_align),
+                )
+        });
+        update.wrap.map(|wrap| {
+            self.wrap.get_or_insert_with(Default::default).set_rect(
+                rect.min.x,
+                rect.min.y,
+                Some(rect.max.x),
+                Some(rect.max.y),
+                Some(wrap),
+            )
+        });
+        update.numeric_format.map(|numeric_format| {
+            self.numeric_format
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(numeric_format),
+                )
+        });
+        update.numeric_decimals.map(|numeric_decimals| {
+            self.numeric_decimals
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(numeric_decimals),
+                )
+        });
+        update.numeric_commas.map(|numeric_commas| {
+            self.numeric_commas
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(numeric_commas),
+                )
+        });
+        update.bold.map(|bold| {
+            self.bold.get_or_insert_with(Default::default).set_rect(
+                rect.min.x,
+                rect.min.y,
+                Some(rect.max.x),
+                Some(rect.max.y),
+                Some(bold),
+            )
+        });
+        update.italic.map(|italic| {
+            self.italic.get_or_insert_with(Default::default).set_rect(
+                rect.min.x,
+                rect.min.y,
+                Some(rect.max.x),
+                Some(rect.max.y),
+                Some(italic),
+            )
+        });
+        update.text_color.map(|text_color| {
+            self.text_color
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(text_color),
+                )
+        });
+        update.fill_color.map(|fill_color| {
+            self.fill_color
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(fill_color),
+                )
+        });
+        update.render_size.map(|render_size| {
+            self.render_size
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(render_size),
+                )
+        });
+        update.date_time.map(|date_time| {
+            self.date_time
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(date_time),
+                )
+        });
+        update.underline.map(|underline| {
+            self.underline
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(underline),
+                )
+        });
+        update.strike_through.map(|strike_through| {
+            self.strike_through
+                .get_or_insert_with(Default::default)
+                .set_rect(
+                    rect.min.x,
+                    rect.min.y,
+                    Some(rect.max.x),
+                    Some(rect.max.y),
+                    Some(strike_through),
+                )
+        });
+    }
 }
 
 #[cfg(test)]
