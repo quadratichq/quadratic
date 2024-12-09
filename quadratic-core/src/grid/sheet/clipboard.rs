@@ -240,10 +240,7 @@ impl Sheet {
                 });
         }
 
-        dbgjs!("todo(ayush): implement validations for clipboard");
-
         let mut formats = SheetFormatUpdates::default();
-
         for range in selection.ranges.iter() {
             if let Some(rect) = range.to_rect() {
                 for x in rect.x_range() {
@@ -257,8 +254,9 @@ impl Sheet {
             }
         }
 
-        let validations = self.validations.to_clipboard(selection, &clipboard_origin);
         let borders = self.borders_a1.to_clipboard(selection);
+
+        let validations = self.validations.to_clipboard(selection, &clipboard_origin);
 
         let clipboard = Clipboard {
             cells,
