@@ -169,7 +169,7 @@ export class SheetCursor {
   }
 
   // Returns true if the cursor is only selecting a single cell
-  onlySingleSelection(): boolean {
+  isSingleSelection(): boolean {
     return this.jsSelection.isSingleSelection();
   }
 

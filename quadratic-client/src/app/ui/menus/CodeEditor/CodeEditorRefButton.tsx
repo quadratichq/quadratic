@@ -29,7 +29,7 @@ export const CodeEditorRefButton = () => {
       } else {
         // for connections, we currently only support one cursor position
         if (codeCellIsAConnection(codeEditor.language)) {
-          setDisabled(!sheets.sheet.cursor.onlySingleSelection());
+          setDisabled(!sheets.sheet.cursor.isSingleSelection());
         } else {
           setDisabled(false);
         }
