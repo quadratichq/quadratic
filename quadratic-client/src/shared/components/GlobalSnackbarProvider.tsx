@@ -1,4 +1,5 @@
 // import CloseIcon from '@mui/icons-material/Close';
+import { CloseIcon } from '@/shared/components/Icons';
 import { Alert, AlertColor, Snackbar } from '@mui/material';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -12,7 +13,7 @@ export const snackbarSeverityQueryParam = 'snackbar-severity';
  * Context
  */
 
-interface SnackbarOptions {
+export interface SnackbarOptions {
   severity?: 'error' | 'warning' | 'success';
   button?: { title: string; callback: Function };
   stayOpen?: boolean;
@@ -107,6 +108,19 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
 
   const value: GlobalSnackbar = { addGlobalSnackbar };
 
+  const customButton = activeMessage?.button ? (
+    <Button
+      variant="link"
+      className="!text-background underline"
+      onClick={() => {
+        activeMessage.button?.callback();
+        setOpen(false);
+      }}
+    >
+      {activeMessage.button.title}
+    </Button>
+  ) : null;
+
   // If we have the `severity`, we'll make it look like an Alert. Otherwise,
   // we'll use the default Snackbar styling.
   const otherProps = activeMessage?.severity
@@ -115,16 +129,24 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
           <Alert severity={activeMessage.severity} variant="filled" onClose={handleClose}>
             <div className="column center flex px-0.5">
               {activeMessage.message}
-              {activeMessage?.button && (
-                <Button variant="outline" onClick={() => activeMessage.button?.callback()}>
-                  {activeMessage.button.title}
-                </Button>
-              )}
+              {customButton}
             </div>
           </Alert>
         ),
       }
-    : { message: activeMessage?.message };
+    : {
+        message: activeMessage?.message,
+        action: (
+          <>
+            {customButton}
+            {stayOpen && (
+              <Button variant="ghost" size="icon-sm" onClick={handleClose} className="!bg-transparent !text-background">
+                <CloseIcon />
+              </Button>
+            )}
+          </>
+        ),
+      };
 
   // If the route has these query params (when it loads), we'll throw up a snackbar too
   useEffect(() => {
@@ -142,6 +164,13 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     <GlobalSnackbarContext.Provider value={value}>
       {children}
       <Snackbar
+        // Style overrides until we replace this MUI element with a shadcn one
+        sx={{
+          '& .MuiSnackbarContent-root': {
+            backgroundColor: 'hsl(var(--foreground))',
+            color: 'hsl(var(--background))',
+          },
+        }}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         autoHideDuration={stayOpen ? null : DURATION}
         key={activeMessage ? activeMessage.key : undefined}
