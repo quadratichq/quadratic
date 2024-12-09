@@ -56,7 +56,7 @@ impl GridController {
             Operation::SetCellFormatsA1 { .. } => {
                 self.execute_set_cell_formats_a1(transaction, op);
             }
-            Operation::SetBorders { .. } => self.execute_set_borders(transaction, op),
+            Operation::SetBorders { .. } => (), // we no longer support this (12/9/2024)
             Operation::SetBordersSelection { .. } => {
                 self.execute_set_borders_selection(transaction, op);
             }
