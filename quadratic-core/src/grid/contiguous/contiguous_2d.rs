@@ -850,7 +850,7 @@ mod tests {
         c.set_rect(1, 1, Some(3), Some(3), Some(true));
         let iter_result: Vec<_> = c.into_iter().collect();
         assert_eq!(iter_result.len(), 1);
-        assert_eq!(iter_result[0], (1, 1, Some(2), Some(2), true));
+        assert_eq!(iter_result[0], (1, 1, Some(3), Some(3), true));
 
         let mut c = Contiguous2D::<Option<bool>>::new();
         c.set_rect(1, 1, Some(2), Some(2), Some(true));
@@ -858,7 +858,7 @@ mod tests {
 
         let iter_result: Vec<_> = c.into_iter().collect();
         assert_eq!(iter_result.len(), 2);
-        assert!(iter_result.contains(&(1, 1, Some(1), Some(1), true)));
-        assert!(iter_result.contains(&(5, 5, None, Some(9), false)));
+        assert!(iter_result.contains(&(1, 1, Some(2), Some(2), true)));
+        assert!(iter_result.contains(&(5, 5, None, Some(10), false)));
     }
 }

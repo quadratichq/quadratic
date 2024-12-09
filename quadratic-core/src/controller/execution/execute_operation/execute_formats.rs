@@ -37,8 +37,12 @@ impl GridController {
             }
 
             if !html.is_empty() {
+                // not the best way, but render_size is moving to data_tables in
+                // the near future, so don't worry about this
                 let html_cells = transaction.html_cells.entry(sheet_id).or_default();
-                html_cells.extend(html);
+                html_cells.extend(html.clone());
+                let image_cells = transaction.image_cells.entry(sheet_id).or_default();
+                image_cells.extend(html);
             }
 
             if fills_changed {
