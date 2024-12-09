@@ -4,7 +4,8 @@ Quadratic is very focused on a rich developer experience.
 This means focusing on features that enable you to have a streamlined development workflow inside Quadratic, with Python as a first-class citizen that integrates seamlessly with the spreadsheet.
 Below is a quick start to get going with Python in Quadratic. 
 
-In Quadratic you can reference cells in the spreadsheet to use in your code, and you can return results from your Python analysis back to the spreadsheet. By default, the last line of code is returned to the spreadsheet. 
+In Quadratic you can reference cells in the spreadsheet to use in your code, and you can return results from your Python analysis back to the spreadsheet. By default, the last line of code is returned to the spreadsheet.
+In Quadratic python does not support conditional returns. Only the last line of code is returned to the sheet. Also there can be only one type of return from a code cell, data or chart.
 
 Single referenced cells are put in a variable with the appropriate data type. Multi-line references are placed in a DataFrame.
 
@@ -47,7 +48,7 @@ This is the behavior you want in almost all situations, including user inputs in
 
 Referencing a range of cells
 
-To reference a range of cells, use the global function \`cells\` which returns a Pandas DataFrame.
+To reference a range of cells, use the global function \`q.cells\` which returns a Pandas DataFrame.
 
 \`\`\`python
 q.cells('A1:A5') # Returns a 1x5 DataFrame spanning from A1 to A5

@@ -48,10 +48,10 @@ Each cell value is a JSON object having the following properties:\n
 
 This is being shared so that you can understand the table format, size and value types inside the data rectangle.\n
 
-Data from cells can be referenced by Formulas, Python, Javascript or SQL code using the cell reference function \`q\`, i.e. \`q(a1_notation)\`, to reference data cells. Always use sheet name in a1 notation to reference cells.\n
+Data from cells can be referenced by Formulas, Python, Javascript or SQL code. In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells.\n
 Sheet name is optional, if not provided, it is assumed to be the currently open sheet.\n
 Sheet name is case sensitive, and is required to be enclosed in single quotes.\n
-To reference data from different tabular data rectangles, use multiple \`cells\` functions.\n
+To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
 Use this sheet data in the context of following messages. Refer to cells if required in code.\n\n
 
 ${sheetsRectContext.map((sheetRectContext) => {
@@ -65,7 +65,7 @@ ${JSON.stringify(sheetRectContext)}
 `;
 })}
 
-Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q\`, i.e. \`q(a1_notation)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells.\n\n
+Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells.\n\n
 `,
           contextType: 'otherSheets',
         },

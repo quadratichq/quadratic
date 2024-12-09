@@ -47,15 +47,15 @@ Each cell value is a JSON object having the following properties:\n
 
 This is being shared so that you can understand the table format, size and value types inside the data rectangle.\n
 
-Data from cells can be referenced by Formulas, Python, Javascript or SQL code using the cell reference function \`q\`, i.e. \`q(a1_notation)\`, to reference data cells. Always use sheet name in a1 notation to reference cells.\n
-To reference data from different tabular data rectangles, use multiple \`q\` functions.\n
+Data from cells can be referenced by Formulas, Python, Javascript or SQL code. In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells.\n
+To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
 Use this sheet data in the context of following messages. Refer to cells if required in code.\n\n
 
 Current sheet data is:\n
 \`\`\`json
 ${JSON.stringify(currentSheetContext[0])}
 \`\`\`
-Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q\`, i.e. \`q(a1_notation)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells.\n\n
+Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells.\n\n
 `
     : `This currently open sheet is empty.\n`
 }\n
