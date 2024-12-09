@@ -15,7 +15,7 @@ import { CellRefRange } from '@/app/quadratic-core-types';
 import { A1SelectionValueToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { ValidationUIType, validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Container, Point, Rectangle } from 'pixi.js';
+import { Container, Point } from 'pixi.js';
 
 const MINIMUM_SCALE_TO_SHOW_VALIDATIONS = 0.25;
 const FADE_SCALE = 0.1;
@@ -44,19 +44,7 @@ export class UIValidations extends Container<SpecialSprite> {
     }
   };
 
-  // Returns the visible range of cells within the viewport.
-  getVisibleRange(): Rectangle {
-    const offsets = sheets.sheet.offsets;
-    const bounds = pixiApp.viewport.getVisibleBounds();
-    const xStart = offsets.getXPlacement(bounds.left).index;
-    const xEnd = offsets.getXPlacement(bounds.right).index;
-    const yStart = offsets.getYPlacement(bounds.top).index;
-    const yEnd = offsets.getYPlacement(bounds.bottom).index;
-
-    return new Rectangle(xStart, yStart, xEnd - xStart + 1, yEnd - yStart + 1);
-  }
-
-  private drawValidations(range: Rectangle) {
+  private drawValidations() {
     // we need to take the validations in reverse order
     const validations = sheets.sheet.validations;
     for (let i = validations.length - 1; i >= 0; i--) {
@@ -72,8 +60,8 @@ export class UIValidations extends Container<SpecialSprite> {
 
   private drawInfiniteRange(range: CellRefRange, type: ValidationUIType) {
     const screenRangeRectangle = getRangeRectangleFromCellRefRange(range);
-    const visibleRangeRectangle = sheets.getVisibleRectangle();
-    const intersection = intersects.rectangleClip(screenRangeRectangle, visibleRangeRectangle);
+    const visibleRectangle = sheets.getVisibleRectangle();
+    const intersection = intersects.rectangleClip(screenRangeRectangle, visibleRectangle);
     if (!intersection) {
       return;
     }
@@ -122,8 +110,7 @@ export class UIValidations extends Container<SpecialSprite> {
     // Shortcut if there are no validations in this sheet.
     if (sheets.sheet.validations.length === 0) return;
 
-    const range = this.getVisibleRange();
-    this.drawValidations(range);
+    this.drawValidations();
   }
 
   // handle clicking on UI elements
