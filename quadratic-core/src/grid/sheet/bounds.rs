@@ -526,6 +526,7 @@ impl Sheet {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use crate::{
         controller::GridController,
@@ -540,12 +541,10 @@ mod test {
         A1Selection, Array, CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
-    use serial_test::parallel;
     use std::collections::HashMap;
     use uuid::Uuid;
 
     #[test]
-    #[parallel]
     fn test_is_empty() {
         let mut sheet = Sheet::test();
         assert!(!sheet.recalculate_bounds());
@@ -561,7 +560,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_bounds() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.bounds(true), GridBounds::Empty);
@@ -592,7 +590,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn column_bounds() {
         let mut sheet = Sheet::test();
         let _ = sheet.set_cell_value(
@@ -611,7 +608,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn column_bounds_code() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array_2d(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
@@ -620,7 +616,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_row_bounds() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(
@@ -639,7 +634,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn row_bounds_code() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array_2d(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
@@ -648,7 +642,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_columns_bounds() {
         let mut sheet = Sheet::test();
 
@@ -691,7 +684,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_rows_bounds() {
         let mut sheet = Sheet::test();
 
@@ -734,7 +726,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_find_next_column() {
         let mut sheet = Sheet::test();
 
@@ -766,7 +757,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_find_next_column_code() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(0, 0, vec!["1", "2", "3"], false);
@@ -779,7 +769,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_find_next_row() {
         let mut sheet = Sheet::test();
 
@@ -810,7 +799,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_find_next_row_code() {
         let mut sheet = Sheet::test();
         sheet.test_set_code_run_array(0, 0, vec!["1", "2", "3"], true);
@@ -823,7 +811,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_read_write() {
         let rect = Rect {
             min: Pos::ORIGIN,
@@ -837,7 +824,6 @@ mod test {
 
     proptest! {
         #[test]
-        #[parallel]
         fn proptest_sheet_writes(writes: Vec<(Pos, CellValue)>) {
             proptest_sheet_writes_internal(writes);
         }
@@ -885,7 +871,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn code_run_columns_bounds() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -905,7 +890,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn code_run_rows_bounds() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -925,7 +909,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn code_run_column_bounds() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -945,7 +928,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn code_run_row_bounds() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -965,7 +947,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn single_row_bounds() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -984,7 +965,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn send_updated_bounds_rect() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1021,7 +1001,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn row_bounds() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1040,7 +1019,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn find_last_data_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1062,7 +1040,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn recalculate_bounds_validations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1088,7 +1065,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn empty_bounds_with_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1105,8 +1081,7 @@ mod test {
     }
 
     #[test]
-    #[parallel]
-    fn row_bounds_formats() {
+    fn test_row_bounds_formats() {
         let mut sheet = Sheet::test();
 
         sheet
@@ -1126,7 +1101,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_find_next_column_for_rect() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -1182,7 +1156,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_find_next_row_for_rect() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -1238,7 +1211,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn find_tabular_data_rects_in_selection_rects() {
         let mut sheet = Sheet::test();
         sheet.set_cell_values(
