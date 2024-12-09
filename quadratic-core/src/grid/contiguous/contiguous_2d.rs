@@ -196,6 +196,13 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
             .map(|column_block| column_block.map(|column_data| column_data.into_iter()))
     }
 
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+        self.0.translate_in_place(x);
+        self.0
+            .values_mut()
+            .for_each(|column_data| column_data.value.translate_in_place(y));
+    }
+
     /// Sets a rectangle to the same value and returns the blocks to set undo
     /// it.
     ///

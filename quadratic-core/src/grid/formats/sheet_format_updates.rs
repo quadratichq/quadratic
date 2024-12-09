@@ -404,6 +404,47 @@ impl SheetFormatUpdates {
                 )
         });
     }
+
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+        self.align
+            .as_mut()
+            .map(|align| align.translate_in_place(x, y));
+        self.vertical_align
+            .as_mut()
+            .map(|vertical_align| vertical_align.translate_in_place(x, y));
+        self.wrap.as_mut().map(|wrap| wrap.translate_in_place(x, y));
+        self.numeric_format
+            .as_mut()
+            .map(|numeric_format| numeric_format.translate_in_place(x, y));
+        self.numeric_decimals
+            .as_mut()
+            .map(|numeric_decimals| numeric_decimals.translate_in_place(x, y));
+        self.numeric_commas
+            .as_mut()
+            .map(|numeric_commas| numeric_commas.translate_in_place(x, y));
+        self.bold.as_mut().map(|bold| bold.translate_in_place(x, y));
+        self.italic
+            .as_mut()
+            .map(|italic| italic.translate_in_place(x, y));
+        self.text_color
+            .as_mut()
+            .map(|text_color| text_color.translate_in_place(x, y));
+        self.fill_color
+            .as_mut()
+            .map(|fill_color| fill_color.translate_in_place(x, y));
+        self.render_size
+            .as_mut()
+            .map(|render_size| render_size.translate_in_place(x, y));
+        self.date_time
+            .as_mut()
+            .map(|date_time| date_time.translate_in_place(x, y));
+        self.underline
+            .as_mut()
+            .map(|underline| underline.translate_in_place(x, y));
+        self.strike_through
+            .as_mut()
+            .map(|strike_through| strike_through.translate_in_place(x, y));
+    }
 }
 
 #[cfg(test)]

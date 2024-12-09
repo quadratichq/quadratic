@@ -75,6 +75,13 @@ impl BordersA1 {
         self.left.set(pos, style.left);
         self.right.set(pos, style.right);
     }
+
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+        self.left.translate_in_place(x, y);
+        self.right.translate_in_place(x, y);
+        self.top.translate_in_place(x, y);
+        self.bottom.translate_in_place(x, y);
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -115,6 +122,13 @@ impl BordersA1Updates {
             && self.right.as_ref().is_none_or(|c| c.is_all_default())
             && self.top.as_ref().is_none_or(|c| c.is_all_default())
             && self.bottom.as_ref().is_none_or(|c| c.is_all_default())
+    }
+
+    pub fn translate_in_place(&mut self, x: i64, y: i64) {
+        self.left.as_mut().map(|c| c.translate_in_place(x, y));
+        self.right.as_mut().map(|c| c.translate_in_place(x, y));
+        self.top.as_mut().map(|c| c.translate_in_place(x, y));
+        self.bottom.as_mut().map(|c| c.translate_in_place(x, y));
     }
 }
 

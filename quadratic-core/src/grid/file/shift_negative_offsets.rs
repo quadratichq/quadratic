@@ -14,7 +14,7 @@ use crate::{
     CopyFormats,
 };
 
-pub const IMPORT_OFFSET: i64 = 100;
+pub const IMPORT_OFFSET: i64 = 1000000;
 
 pub const IMPORT_OFFSET_START_FOR_INFINITE: i64 = 1 - IMPORT_OFFSET;
 
@@ -104,12 +104,12 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
 
     // remove the import offset from the formats and borders_a1
     for sheet in grid.sheets.iter_mut() {
-        for _ in 0..IMPORT_OFFSET {
-            sheet.formats.remove_column(1);
-            sheet.formats.remove_row(1);
-            sheet.borders_a1.remove_column(1);
-            sheet.borders_a1.remove_row(1);
-        }
+        sheet
+            .formats
+            .translate_in_place(-IMPORT_OFFSET, -IMPORT_OFFSET);
+        sheet
+            .borders_a1
+            .translate_in_place(-IMPORT_OFFSET, -IMPORT_OFFSET);
         sheet.recalculate_bounds();
     }
 

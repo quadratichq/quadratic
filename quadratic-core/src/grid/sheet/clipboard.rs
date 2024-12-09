@@ -2,7 +2,6 @@ use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
 use crate::formulas::replace_a1_notation;
-use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::{CodeCellLanguage, Sheet};
 use crate::{A1Selection, CellValue, Pos, Rect};
@@ -240,38 +239,21 @@ impl Sheet {
                 });
         }
 
-        let mut formats = SheetFormatUpdates::default();
-        for range in selection.ranges.iter() {
-            if let Some(rect) = range.to_rect() {
-                for x in rect.x_range() {
-                    for y in rect.y_range() {
-                        formats.set_format_cell(
-                            Pos { x, y },
-                            self.formats.format(Pos { x, y }).into(),
-                        );
-                    }
-                }
-            }
-        }
+        let formats = self.formats.to_clipboard(self, selection);
 
-        let borders = self.borders_a1.to_clipboard(selection);
+        let borders = self.borders_a1.to_clipboard(self, selection);
 
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
 
         let clipboard = Clipboard {
             cells,
             formats,
-            borders: borders.map(|borders| {
-                (
-                    selection.translate(-clipboard_origin.x, -clipboard_origin.y),
-                    borders,
-                )
-            }),
+            borders,
             values,
             w: sheet_bounds.map_or(0, |b| b.width()),
             h: sheet_bounds.map_or(0, |b| b.height()),
             origin: clipboard_origin,
-            selection: Some(selection.clone()),
+            selection: selection.clone(),
             validations,
         };
 
