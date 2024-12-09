@@ -1,3 +1,5 @@
+use crate::CellRefCoord;
+
 use super::*;
 
 impl FromStr for RefRangeBounds {
@@ -85,9 +87,50 @@ impl RefRangeBounds {
     // Creates a range from a rectangle. Be careful as this will normalize the
     // CellRefRange, which is not always what the user wants.
     pub fn new_relative_rect(rect: Rect) -> Self {
-        Self {
-            start: CellRefRangeEnd::new_relative_pos(rect.min),
-            end: Some(CellRefRangeEnd::new_relative_pos(rect.max)),
+        if rect.min == rect.max {
+            Self::new_relative_pos(rect.min)
+        } else {
+            Self {
+                start: CellRefRangeEnd::new_relative_pos(rect.min),
+                end: Some(CellRefRangeEnd::new_relative_pos(rect.max)),
+            }
+        }
+    }
+
+    // Creates a range from a list of numbers, where both 0 and i64::MAX are
+    // infinite representations.
+    pub fn new_relative(x1: i64, y1: i64, x2: i64, y2: i64) -> Self {
+        let start = CellRefRangeEnd {
+            col: if x1 == i64::MAX || x1 == 0 {
+                None
+            } else {
+                Some(CellRefCoord::new_rel(x1))
+            },
+            row: if y1 == i64::MAX || y1 == 0 {
+                None
+            } else {
+                Some(CellRefCoord::new_rel(y1))
+            },
+        };
+        let end = CellRefRangeEnd {
+            col: if x2 == i64::MAX || x2 == 0 {
+                None
+            } else {
+                Some(CellRefCoord::new_rel(x2))
+            },
+            row: if y2 == i64::MAX || y2 == 0 {
+                None
+            } else {
+                Some(CellRefCoord::new_rel(y2))
+            },
+        };
+        if start == end {
+            Self { start, end: None }
+        } else {
+            Self {
+                start,
+                end: Some(end),
+            }
         }
     }
 

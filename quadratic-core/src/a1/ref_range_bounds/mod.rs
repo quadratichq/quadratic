@@ -6,8 +6,9 @@ use ts_rs::TS;
 use super::{range_might_contain_coord, range_might_intersect, A1Error, CellRefRangeEnd};
 use crate::{Pos, Rect};
 
+pub mod ref_range_bounds_contains;
 pub mod ref_range_bounds_create;
-pub mod ref_range_bounds_intersects;
+pub mod ref_range_bounds_intersection;
 pub mod ref_range_bounds_query;
 pub mod ref_range_bounds_translate;
 
