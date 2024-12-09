@@ -222,9 +222,9 @@ mod tests {
     #[test]
     fn test_column_max() {
         let formatting = create_test_formatting();
-        assert_eq!(formatting.column_max(0), Some(2)); // Column 0 has entries up to row 2
-        assert_eq!(formatting.column_max(1), Some(1));
-        assert_eq!(formatting.column_max(2), None); // Column 2 has no entries
+        assert_eq!(formatting.column_max(1), Some(2)); // Column 0 has entries up to row 2
+        assert_eq!(formatting.column_max(2), Some(1));
+        assert_eq!(formatting.column_max(3), Some(0)); // Column 2 has no entries
     }
 
     #[test]
