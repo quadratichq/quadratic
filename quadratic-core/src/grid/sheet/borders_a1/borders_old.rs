@@ -1,4 +1,5 @@
-//! Supports Old borders types used by Operation::SetBordersSelection.
+//! Supports Old borders types used by Operation::SetBordersSelection. Delete
+//! when that Operation is removed.
 
 use serde::{Deserialize, Serialize};
 

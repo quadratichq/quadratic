@@ -12,6 +12,7 @@ use crate::{grid::Contiguous2D, Pos};
 
 pub mod borders_clipboard;
 pub mod borders_col_row;
+pub mod borders_old;
 pub mod borders_query;
 pub mod borders_render;
 pub mod borders_set;
@@ -108,7 +109,8 @@ impl BordersA1Updates {
         }
     }
 
-    pub fn is_default(&self) -> bool {
+    /// Returns true if there are no updates.
+    pub fn is_empty(&self) -> bool {
         self.left.as_ref().is_none_or(|c| c.is_all_default())
             && self.right.as_ref().is_none_or(|c| c.is_all_default())
             && self.top.as_ref().is_none_or(|c| c.is_all_default())
@@ -124,9 +126,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_is_default() {
+    fn test_is_empty() {
         let updates = BordersA1Updates::default();
-        assert!(updates.is_default());
+        assert!(updates.is_empty());
 
         let updates = BordersA1Updates {
             left: Contiguous2D::new_from_opt_selection(
@@ -135,6 +137,6 @@ mod tests {
             ),
             ..Default::default()
         };
-        assert!(!updates.is_default());
+        assert!(!updates.is_empty());
     }
 }

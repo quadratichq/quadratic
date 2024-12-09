@@ -51,7 +51,7 @@ impl Sheet {
     /// Creates reverse operations for borders within the row.
     fn reverse_borders_ops_for_row(&self, row: i64) -> Vec<Operation> {
         if let Some(borders) = self.borders_a1.copy_row(row) {
-            if borders.is_default() {
+            if borders.is_empty() {
                 return vec![];
             }
             vec![Operation::SetBordersA1 {

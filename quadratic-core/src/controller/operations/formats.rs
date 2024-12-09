@@ -46,6 +46,6 @@ mod tests {
             panic!("last operation is not SetBordersA1");
         };
         assert_eq!(sheet_id, &SheetId::TEST);
-        assert!(!borders.is_default());
+        assert!(!borders.is_empty());
     }
 }

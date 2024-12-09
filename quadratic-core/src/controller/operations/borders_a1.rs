@@ -203,7 +203,7 @@ impl GridController {
             }
         }
 
-        if !borders.is_default() {
+        if !borders.is_empty() {
             Some(vec![Operation::SetBordersA1 {
                 sheet_id: selection.sheet_id,
                 borders,
