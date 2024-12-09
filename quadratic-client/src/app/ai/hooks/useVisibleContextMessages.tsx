@@ -8,7 +8,6 @@ import { useCallback } from 'react';
 export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
-    const sheetBoundsA1 = rectToA1(sheetBounds);
     const visibleSelection = sheets.getVisibleSelection();
     const [visibleContext, erroredCodeCells] = visibleSelection
       ? await Promise.all([
@@ -24,7 +23,7 @@ export function useVisibleContextMessages() {
 I have an open sheet with the following data:
 ${
   sheetBounds.type === 'nonEmpty'
-    ? `- Data range: ${sheetBoundsA1}
+    ? `- Data range: ${rectToA1(sheetBounds)}
 - Note: This range may contain empty cells.`
     : '- The sheet is currently empty.'
 }\n\n

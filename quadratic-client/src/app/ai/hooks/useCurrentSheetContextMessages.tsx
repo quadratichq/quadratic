@@ -12,7 +12,6 @@ export function useCurrentSheetContextMessages() {
       const sheet = sheets.getSheetByName(currentSheetName);
       if (!sheet) return [];
       const sheetBounds = sheet.boundsWithoutFormatting;
-      const sheetBoundsA1 = rectToA1(sheetBounds);
       const selection: string | undefined = sheetBounds.type === 'empty' ? undefined : getAllSelection(sheet.id);
       const currentSheetContext = selection
         ? await quadraticCore.getAIContextRectsInSelections([selection], maxRects)
@@ -25,7 +24,7 @@ export function useCurrentSheetContextMessages() {
 I have an open sheet, with sheet name '${currentSheetName}', with the following data:
 ${
   sheetBounds.type === 'nonEmpty'
-    ? `- Data range: ${sheetBoundsA1}
+    ? `- Data range: ${rectToA1(sheetBounds)}
 - Note: This range may contain empty cells.`
     : '- The sheet is currently empty.'
 }\n\n

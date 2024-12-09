@@ -108,7 +108,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
           description={
             `${estimatedNumberOfLines} line` +
             (estimatedNumberOfLines === 1 ? '' : 's') +
-            (position ? ` at ${position})` : '')
+            (position ? ` at ${position}` : '')
           }
           isLoading={true}
         />
@@ -129,7 +129,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
       icon={<LanguageIcon language={code_cell_language} />}
       label={code_cell_language}
       description={
-        `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at (${code_cell_position})`
+        `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
       }
       actions={
         codeCellPos ? (

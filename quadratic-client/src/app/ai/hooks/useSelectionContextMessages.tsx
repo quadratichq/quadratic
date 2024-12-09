@@ -1,4 +1,3 @@
-import { sheets } from '@/app/grid/controller/Sheets';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ChatMessage, Context } from 'quadratic-shared/typesAndSchemasAI';
@@ -10,7 +9,6 @@ export function useSelectionContextMessages() {
       const selectionContext = selection
         ? await quadraticCore.getAIContextRectsInSelections([selection], maxRects)
         : undefined;
-      const cursorA1 = sheets.sheet.cursor.toCursorA1();
       return [
         {
           role: 'user',
@@ -49,8 +47,6 @@ Note: All this data is only for your reference to data on the sheet. This data c
 `
     : ``
 }
-
-My cursor is on cell ${cursorA1}.\n
 `,
 
           contextType: 'selection',

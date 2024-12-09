@@ -26,7 +26,7 @@ import {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
-const MAX_TOOL_CALL_ITERATIONS = 5;
+const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();

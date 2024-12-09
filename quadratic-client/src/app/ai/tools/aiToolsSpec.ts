@@ -220,6 +220,7 @@ The required location code_cell_position for this code cell is one which satisfi
  - Consider the overall layout and organization of the currently open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
  - A plot returned by the code cell occupies just one cell, the plot overlay is larger but the code cell is always just one cell.\n
  - Do not use conditional returns in python code cells.\n
+ - Don't prefix formulas with \`=\` in code cells.\n
  `,
   },
   [AITool.MoveCells]: {
