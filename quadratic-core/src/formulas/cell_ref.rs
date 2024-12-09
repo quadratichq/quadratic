@@ -20,6 +20,7 @@ use crate::Pos;
 ///
 /// TODO: replace with `CellRangeRef`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
+#[serde(tag = "type")]
 pub enum RangeRef {
     // this is not yet used...
     RowRange {

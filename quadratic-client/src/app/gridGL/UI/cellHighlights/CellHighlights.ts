@@ -200,8 +200,8 @@ export class CellHighlights extends Container {
     this.highlightedCells.push({
       column: startX,
       row: startY,
-      width: endX - startX,
-      height: endY - startY,
+      width: endX - startX + 1,
+      height: endY - startY + 1,
       sheet: this.getSheet(cellRange.sheet ?? cellRange.start.sheet, sheet),
       span,
       index,
@@ -212,8 +212,8 @@ export class CellHighlights extends Container {
     this.highlightedCells.push({
       column: this.evalCoord(cell.x, origin.x),
       row: this.evalCoord(cell.y, origin.y),
-      width: 0,
-      height: 0,
+      width: 1,
+      height: 1,
       sheet: this.getSheet(cell.sheet, sheet),
       span,
       index,

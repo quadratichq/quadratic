@@ -23,8 +23,8 @@ class InlineEditorFormula {
     events.on('cursorPosition', this.cursorMoved);
   }
 
-  async cellHighlights(location: SheetPosTS, formula: string) {
-    const parsed = (await parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
+  cellHighlights(location: SheetPosTS, formula: string) {
+    const parsed = parseFormula(formula, location.x, location.y) as ParseFormulaReturnType;
     if (parsed) {
       pixiApp.cellHighlights.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
 
