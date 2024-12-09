@@ -579,6 +579,8 @@ mod tests {
         assert!(c.is_all_default());
         c.set(pos![A1], Some(true));
         assert!(!c.is_all_default());
+        c.set(pos![A1], None);
+        assert!(c.is_all_default());
     }
 
     #[test]
@@ -860,5 +862,32 @@ mod tests {
         assert_eq!(iter_result.len(), 2);
         assert!(iter_result.contains(&(1, 1, Some(2), Some(2), true)));
         assert!(iter_result.contains(&(5, 5, None, Some(10), false)));
+    }
+
+    #[test]
+    fn test_copy_row_is_all_default_after_delete() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(1, 1, Some(3), Some(3), Some(true));
+        let copy = c.copy_row(3).unwrap();
+        assert!(!copy.is_all_default());
+        c.set_rect(1, 1, Some(3), Some(3), None);
+        assert!(c.is_all_default());
+        let copy = c.copy_row(3).unwrap();
+        assert!(copy.is_all_default());
+    }
+
+    #[test]
+    fn test_copy_column_is_all_default_after_delete() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(1, 1, Some(3), Some(3), Some(true));
+        let copy = c.copy_column(3).unwrap();
+        assert!(!copy.is_all_default());
+        c.set_rect(1, 1, Some(3), Some(3), None);
+        assert!(c.is_all_default());
+
+        dbg!(&c);
+        let copy = c.copy_column(3).unwrap();
+        dbg!(&copy);
+        assert!(copy.is_all_default());
     }
 }

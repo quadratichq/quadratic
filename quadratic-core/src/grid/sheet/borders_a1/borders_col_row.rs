@@ -29,7 +29,7 @@ impl BordersA1 {
             top: self.top.copy_column(column),
             bottom: self.bottom.copy_column(column),
         };
-        if updates.is_default() {
+        if updates.is_empty() {
             None
         } else {
             Some(updates)
@@ -59,7 +59,7 @@ impl BordersA1 {
             top: self.top.copy_row(row),
             bottom: self.bottom.copy_row(row),
         };
-        if updates.is_default() {
+        if updates.is_empty() {
             None
         } else {
             Some(updates)
