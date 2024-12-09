@@ -195,17 +195,31 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
     const cursor = sheets.sheet.cursor;
     const rect = cursor.getSingleRectangleOrCursor();
     if (rect) {
-      quadraticCore.autocomplete(
-        sheets.current,
-        rect.left,
-        rect.top,
-        rect.left,
-        rect.bottom - 1,
-        rect.left + 1,
-        rect.top,
-        rect.right - 1,
-        rect.bottom - 1
-      );
+      if (rect.width === 1) {
+        quadraticCore.autocomplete(
+          sheets.current,
+          rect.left - 1,
+          rect.top,
+          rect.left - 1,
+          rect.bottom - 1,
+          rect.left,
+          rect.top,
+          rect.left,
+          rect.bottom - 1
+        );
+      } else {
+        quadraticCore.autocomplete(
+          sheets.current,
+          rect.left,
+          rect.top,
+          rect.left,
+          rect.bottom - 1,
+          rect.left + 1,
+          rect.top,
+          rect.right - 1,
+          rect.bottom - 1
+        );
+      }
     }
 
     return true;
@@ -216,17 +230,31 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
     const cursor = sheets.sheet.cursor;
     const rect = cursor.getSingleRectangleOrCursor();
     if (rect) {
-      quadraticCore.autocomplete(
-        sheets.current,
-        rect.left,
-        rect.top,
-        rect.right - 1,
-        rect.top,
-        rect.left,
-        rect.top + 1,
-        rect.right - 1,
-        rect.bottom - 1
-      );
+      if (rect.height === 1) {
+        quadraticCore.autocomplete(
+          sheets.current,
+          rect.left,
+          rect.top - 1,
+          rect.right - 1,
+          rect.top - 1,
+          rect.left,
+          rect.top,
+          rect.right - 1,
+          rect.top
+        );
+      } else {
+        quadraticCore.autocomplete(
+          sheets.current,
+          rect.left,
+          rect.top,
+          rect.right - 1,
+          rect.top,
+          rect.left,
+          rect.top + 1,
+          rect.right - 1,
+          rect.bottom - 1
+        );
+      }
     }
 
     return true;
