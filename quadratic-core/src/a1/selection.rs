@@ -283,7 +283,19 @@ impl A1Selection {
 
     /// Returns `true` if the two selections overlap.
     pub fn overlaps_a1_selection(&self, other: &Self) -> bool {
-        self.intersection(other).is_some()
+        if self.sheet_id != other.sheet_id {
+            return false;
+        }
+
+        self.ranges.iter().any(|range| match range {
+            CellRefRange::Sheet { range } => {
+                other.ranges.iter().any(|other_range| match other_range {
+                    CellRefRange::Sheet { range: other_range } => {
+                        range.intersection(other_range).is_some()
+                    }
+                })
+            }
+        })
     }
 
     pub fn update_cursor(&mut self) {
@@ -822,24 +834,22 @@ mod intersection_tests {
             "Multiple disjoint intersections failed"
         );
 
-        // todo(ayush): make this work
-
         // Test all (*) intersect with rectangle
-        // let sel1 = A1Selection::test("*");
-        // let sel2 = A1Selection::test("B2:C3");
-        // assert_eq!(
-        //     sel1.intersection(&sel2).unwrap().test_string(),
-        //     "B2:C3",
-        //     "All (*) intersection with rectangle failed"
-        // );
+        let sel1 = A1Selection::test_a1("*");
+        let sel2 = A1Selection::test_a1("B2:C3");
+        assert_eq!(
+            sel1.intersection(&sel2).unwrap().test_to_string(),
+            "B2:C3",
+            "All (*) intersection with rectangle failed"
+        );
 
         // todo(ayush): make this work
 
         // Test complex intersection with multiple ranges
-        // let sel1 = A1Selection::test("A1:C3,E:G,2:4");
-        // let sel2 = A1Selection::test("B2:D4,F:H,3:5");
+        // let sel1 = A1Selection::test_a1("A1:C3,E:G,2:4");
+        // let sel2 = A1Selection::test_a1("B2:D4,F:H,3:5");
         // assert_eq!(
-        //     sel1.intersection(&sel2).unwrap().test_string(),
+        //     sel1.intersection(&sel2).unwrap().test_to_string(),
         //     "B2:C3,F:G,3:4",
         //     "Complex intersection with multiple ranges failed"
         // );
@@ -943,35 +953,29 @@ mod intersection_tests {
             "Complex selections should detect overlap correctly"
         );
 
-        // todo(ayush): make this work
-
         // All (*) overlaps with anything
-        // let sel1 = A1Selection::test("*");
-        // let sel2 = A1Selection::test("B2:C3");
-        // assert!(
-        //     sel1.overlaps_a1_selection(&sel2),
-        //     "All (*) should overlap with any selection"
-        // );
-
-        // todo(ayush): make this work
+        let sel1 = A1Selection::test_a1("*");
+        let sel2 = A1Selection::test_a1("B2:C3");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "All (*) should overlap with any selection"
+        );
 
         // Row overlapping with rectangle
-        // let sel1 = A1Selection::test("2:4");
-        // let sel2 = A1Selection::test("B2:C3");
-        // assert!(
-        //     sel1.overlaps_a1_selection(&sel2),
-        //     "Row should overlap with intersecting rectangle"
-        // );
-
-        // todo(ayush): make this work
+        let sel1 = A1Selection::test_a1("2:4");
+        let sel2 = A1Selection::test_a1("B2:C3");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "Row should overlap with intersecting rectangle"
+        );
 
         // Column overlapping with rectangle
-        // let sel1 = A1Selection::test("B:D");
-        // let sel2 = A1Selection::test("B2:C3");
-        // assert!(
-        //     sel1.overlaps_a1_selection(&sel2),
-        //     "Column should overlap with intersecting rectangle"
-        // );
+        let sel1 = A1Selection::test_a1("B:D");
+        let sel2 = A1Selection::test_a1("B2:C3");
+        assert!(
+            sel1.overlaps_a1_selection(&sel2),
+            "Column should overlap with intersecting rectangle"
+        );
     }
 
     #[test]
