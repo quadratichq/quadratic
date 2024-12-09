@@ -228,6 +228,9 @@ impl A1Selection {
 
     /// Finds intersection of two Selections.
     pub fn intersection(&self, other: &Self) -> Option<Self> {
+        if self.sheet_id != other.sheet_id {
+            return None;
+        }
         let mut ranges = vec![];
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
@@ -249,20 +252,37 @@ impl A1Selection {
         if ranges.is_empty() {
             None
         } else {
-            Some(Self {
+            let mut result = Self {
                 sheet_id: self.sheet_id,
                 cursor: self.cursor,
                 ranges,
-            })
+            };
+
+            // try to find a better cursor position
+            result.cursor = if result.contains_pos(self.cursor) {
+                self.cursor
+            } else if result.contains_pos(other.cursor) {
+                other.cursor
+            } else {
+                let pos = result.last_selection_end();
+                if result.contains_pos(pos) {
+                    pos
+                } else {
+                    let pos = result.last_selection_end();
+                    if result.contains_pos(pos) {
+                        pos
+                    } else {
+                        // give up and just use the cursor even though it's wrong
+                        self.cursor
+                    }
+                }
+            };
+            Some(result)
         }
     }
 
     /// Returns `true` if the two selections overlap.
     pub fn overlaps_a1_selection(&self, other: &Self) -> bool {
-        dbgjs!(format!(
-            "todo(ayush): replace this with Contiguous2D, make more efficient"
-        ));
-
         self.intersection(other).is_some()
     }
 
@@ -743,7 +763,7 @@ mod intersection_tests {
         let intersection = sel1.intersection(&sel2).unwrap();
         assert_eq!(
             intersection.test_to_string(),
-            "B,C",
+            "B:C",
             "Overlapping columns intersection failed"
         );
 
@@ -762,7 +782,7 @@ mod intersection_tests {
         let intersection = sel1.intersection(&sel2).unwrap();
         assert_eq!(
             intersection.test_to_string(),
-            "2,3",
+            "2:3",
             "Overlapping rows intersection failed"
         );
 
