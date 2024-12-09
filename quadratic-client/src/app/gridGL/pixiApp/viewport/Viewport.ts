@@ -77,6 +77,8 @@ export class Viewport extends PixiViewport {
     this.on('zoomed', this.viewportChanged);
     this.on('wait-for-zoom-end', this.handleWaitForZoomEnd);
     this.on('zoom-end', this.handleZoomEnd);
+    this.on('pinch-start', this.handleWaitForZoomEnd);
+    this.on('pinch-end', this.handleZoomEnd);
     this.on('snap-end', this.handleSnapEnd);
   }
 
@@ -89,6 +91,8 @@ export class Viewport extends PixiViewport {
     this.off('zoomed', this.viewportChanged);
     this.off('wait-for-zoom-end', this.handleWaitForZoomEnd);
     this.off('zoom-end', this.handleZoomEnd);
+    this.off('pinch-start', this.handleWaitForZoomEnd);
+    this.off('pinch-end', this.handleZoomEnd);
     this.off('snap-end', this.handleSnapEnd);
   }
 
