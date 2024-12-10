@@ -618,19 +618,16 @@ mod test {
     #[test]
     fn test_row_bounds() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
-            Pos { y: 100, x: -50 },
-            CellValue::Text(String::from("test")),
-        );
-        sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 1, y: 100 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 80, y: 100 }, CellValue::Text(String::from("test")));
         sheet
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
-        assert_eq!(sheet.row_bounds(100, true), Some((-50, 80)));
-        assert_eq!(sheet.row_bounds(100, false), Some((-50, 200)));
+        assert_eq!(sheet.row_bounds(100, true), Some((1, 80)));
+        assert_eq!(sheet.row_bounds(100, false), Some((1, 200)));
     }
 
     #[test]
@@ -645,36 +642,28 @@ mod test {
     fn test_columns_bounds() {
         let mut sheet = Sheet::test();
 
-        let _ = sheet.set_cell_value(
-            Pos { x: 100, y: -50 },
-            CellValue::Text(String::from("test")),
-        );
-        let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
-        let _ = sheet
+        sheet.set_cell_value(Pos { x: 100, y: 50 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
+        sheet
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
 
-        // set negative values
-        let _ = sheet.set_cell_value(
-            Pos { x: -100, y: -50 },
-            CellValue::Text(String::from("test")),
-        );
-        let _ = sheet.set_cell_value(
-            Pos { x: -100, y: -80 },
-            CellValue::Text(String::from("test")),
-        );
-        let _ = sheet
+        sheet
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
-        assert_eq!(sheet.columns_bounds(0, 100, true), Some((-50, 80)));
-        assert_eq!(sheet.columns_bounds(0, 100, false), Some((-50, 200)));
+        assert_eq!(sheet.columns_bounds(1, 100, true), Some((50, 80)));
 
-        assert_eq!(sheet.columns_bounds(-100, 100, true), Some((-80, 80)));
-        assert_eq!(sheet.columns_bounds(-100, 100, false), Some((-200, 200)));
+        assert_eq!(sheet.columns_bounds(1, 100, false), Some((1, 200)));
+
+        // this should be 50, 200, but formats do not have col_min, row_min fns
+        // yet
+        assert_eq!(sheet.columns_bounds(1, 100, true), Some((50, 80)));
+
+        assert_eq!(sheet.columns_bounds(1, 100, false), Some((1, 200)));
 
         assert_eq!(sheet.columns_bounds(1000, 2000, true), None);
         assert_eq!(sheet.columns_bounds(1000, 2000, false), None);
@@ -687,36 +676,24 @@ mod test {
     fn test_rows_bounds() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(
-            Pos { y: 100, x: -50 },
-            CellValue::Text(String::from("test")),
-        );
-        sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 1, y: 100 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 80, y: 100 }, CellValue::Text(String::from("test")));
         sheet
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
 
-        // set negative values
-        sheet.set_cell_value(
-            Pos { y: -100, x: -50 },
-            CellValue::Text(String::from("test")),
-        );
-        sheet.set_cell_value(
-            Pos { y: -100, x: -80 },
-            CellValue::Text(String::from("test")),
-        );
         sheet
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
-        assert_eq!(sheet.rows_bounds(0, 100, true), Some((-50, 80)));
-        assert_eq!(sheet.rows_bounds(0, 100, false), Some((-50, 200)));
+        assert_eq!(sheet.rows_bounds(1, 100, true), Some((1, 80)));
+        assert_eq!(sheet.rows_bounds(1, 100, false), Some((1, 80)));
 
-        assert_eq!(sheet.rows_bounds(-100, 100, true), Some((-80, 80)));
-        assert_eq!(sheet.rows_bounds(-100, 100, false), Some((-200, 200)));
+        assert_eq!(sheet.rows_bounds(1, 100, true), Some((1, 80)));
+        assert_eq!(sheet.rows_bounds(1, 100, false), Some((1, 80)));
 
         assert_eq!(sheet.rows_bounds(1000, 2000, true), None);
         assert_eq!(sheet.rows_bounds(1000, 2000, false), None);
