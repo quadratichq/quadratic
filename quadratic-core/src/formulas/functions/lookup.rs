@@ -958,8 +958,8 @@ mod tests {
     /// Test XLOOKUP's various search modes.
     #[test]
     #[parallel]
-    // TODO(ddimaria): @HactarCE fix broken test
     fn test_xlookup_search_modes() {
+        // #[track_caller]
         fn test_exact_xlookup_with_array(
             array: &Array,
             columns_to_search: &[i64],
@@ -969,27 +969,24 @@ mod tests {
             let h = array.height() as i64;
             let grid_vlookup = Grid::from_array(pos![A1], array);
             let grid_hlookup = Grid::from_array(pos![A1], &array.transpose());
+
             for &col in columns_to_search {
                 for if_not_found in [CellValue::Blank, "default-value".into()] {
                     let if_not_found_repr = if_not_found.repr();
 
                     // Prepare vertical XLOOKUP call
-                    let haystack_start = Pos { x: col, y: 1 }.a1_string();
-                    let haystack_end = Pos { x: col, y: h }.a1_string();
-                    let returns = Pos { x: w - 1, y: h }.a1_string();
+                    let haystack_start = Pos { x: col + 1, y: 1 }.a1_string();
+                    let haystack_end = Pos { x: col + 1, y: h }.a1_string();
+                    let returns = Pos { x: w, y: h }.a1_string();
                     let v_params = format!(
                         "{haystack_start}:{haystack_end}, A1:{returns}, \
                          {if_not_found_repr}, {extra_params}",
                     );
 
                     // Prepare horizontal XLOOKUP call
-                    let haystack_start = Pos { x: 0, y: col + 1 }.a1_string();
-                    let haystack_end = Pos {
-                        x: h - 1,
-                        y: col + 1,
-                    }
-                    .a1_string();
-                    let returns = Pos { x: h - 1, y: w }.a1_string();
+                    let haystack_start = Pos { x: 1, y: col + 1 }.a1_string();
+                    let haystack_end = Pos { x: h, y: col + 1 }.a1_string();
+                    let returns = Pos { x: h, y: w }.a1_string();
                     let h_params = format!(
                         "{haystack_start}:{haystack_end}, A1:{returns}, \
                          {if_not_found_repr}, {extra_params}",
@@ -1004,6 +1001,7 @@ mod tests {
 
                         // Test vertical lookup
                         let formula = format!("XLOOKUP({needle}, {v_params})");
+                        println!("Testing formula {formula:?}");
                         expect_val(expected.clone(), &grid_vlookup, &formula);
 
                         // Test horizontal lookup
@@ -1207,13 +1205,12 @@ mod tests {
 
     #[test]
     #[parallel]
-    // TODO(ddimaria): @HactarCE fix broken test
     fn test_xlookup() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
         for y in 1..=6 {
-            let _ = sheet.set_cell_value(Pos { x: 0, y }, y);
-            let _ = sheet.set_cell_value(Pos { x: 1, y }, format!("cell #{y}"));
+            let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
+            let _ = sheet.set_cell_value(Pos { x: 2, y }, format!("cell #{y}"));
         }
 
         // Test lookup in sorted array
@@ -1226,9 +1223,8 @@ mod tests {
     }
 
     #[test]
-    // TODO(ddimaria): @HactarCE fix broken test
     fn test_match() {
-        let mut g = Grid::new();
+        let mut g = Grid::test();
         let sheet = &mut g.sheets_mut()[0];
 
         // Produce the following grid:
@@ -1244,29 +1240,31 @@ mod tests {
             }
         }
 
+        // crate::test_util::print_table_sheet(sheet, Rect::new_span(pos![A1], pos![F6]));
+
         // next smaller (horizontal)
         assert_eq!(
             RunErrorMsg::NoMatch,
-            eval_to_err(&g, "MATCH(10, B1:B6)").msg
+            eval_to_err(&g, "MATCH(10, A1:A6)").msg
         );
-        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1:B6)"));
-        assert_eq!("2", eval_to_string(&g, "MATCH(12.9, B1:B6)"));
-        assert_eq!("6", eval_to_string(&g, "MATCH(99999, B1:B6)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, A1:A6)"));
+        assert_eq!("2", eval_to_string(&g, "MATCH(12.9, A1:A6)"));
+        assert_eq!("6", eval_to_string(&g, "MATCH(99999, A1:A6)"));
 
         // next smaller (vertical)
-        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1:G1)"));
-        assert_eq!("4", eval_to_string(&g, "MATCH(50, B1:G1)"));
-        assert_eq!("6", eval_to_string(&g, "MATCH(99999, B1:G1)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, A1:F1)"));
+        assert_eq!("4", eval_to_string(&g, "MATCH(50, A1:F1)"));
+        assert_eq!("6", eval_to_string(&g, "MATCH(99999, A1:F1)"));
 
         // single cell range
-        assert_eq!(RunErrorMsg::NoMatch, eval_to_err(&g, "MATCH(10, B1)").msg);
-        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1)"));
-        assert_eq!("1", eval_to_string(&g, "MATCH(12, B1)"));
+        assert_eq!(RunErrorMsg::NoMatch, eval_to_err(&g, "MATCH(10, A1)").msg);
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, A1)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(12, A1)"));
 
         // error on bad range
         assert_eq!(
             RunErrorMsg::NonLinearArray,
-            eval_to_err(&g, "MATCH(99999, B1:G6)").msg,
+            eval_to_err(&g, "MATCH(99999, A1:F6)").msg,
         );
 
         // next larger
@@ -1282,17 +1280,17 @@ mod tests {
         // equal
         assert_eq!(
             RunErrorMsg::NoMatch,
-            eval_to_err(&g, "MATCH(0, C3:C5, 0)").msg,
+            eval_to_err(&g, "MATCH(0, B3:B5, 0)").msg,
         );
-        assert_eq!("1", eval_to_string(&g, "MATCH(23, C3:C5, 0)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(23, B3:B5, 0)"));
         assert_eq!(
             RunErrorMsg::NoMatch,
-            eval_to_err(&g, "MATCH(24.5, C3:C5, 0)").msg,
+            eval_to_err(&g, "MATCH(24.5, B3:B5, 0)").msg,
         );
-        assert_eq!("3", eval_to_string(&g, "MATCH(25, C3:C5, 0)"));
+        assert_eq!("3", eval_to_string(&g, "MATCH(25, B3:B5, 0)"));
         assert_eq!(
             RunErrorMsg::NoMatch,
-            eval_to_err(&g, "MATCH(99999, C3:C5, 0)").msg,
+            eval_to_err(&g, "MATCH(99999, B3:B5, 0)").msg,
         );
 
         // wildcard
