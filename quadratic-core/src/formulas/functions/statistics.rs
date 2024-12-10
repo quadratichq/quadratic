@@ -222,15 +222,15 @@ mod tests {
         {
             let mut g = Grid::new();
             let sheet = &mut g.sheets_mut()[0];
-            for y in 0..=10 {
-                let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
+            for y in 1..=11 {
+                let _ = sheet.set_cell_value(Pos { x: 1, y }, y - 1);
             }
-            assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(Bn5:B10, \"<=5\")"));
+            assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(A1:A10, \"<=5\")"));
         }
         let g = Grid::new();
         assert_eq!(
             "7.5",
-            eval_to_string(&g, "AVERAGEIF({0, 0, 0}, \"<=5\", {5, 10, B3})"),
+            eval_to_string(&g, "AVERAGEIF({0, 0, 0}, \"<=5\", {5, 10, A2})"),
         );
 
         // Error on range size mismatch.
