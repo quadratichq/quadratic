@@ -1228,7 +1228,7 @@ mod tests {
     #[test]
     // TODO(ddimaria): @HactarCE fix broken test
     fn test_match() {
-        let mut g = Grid::new();
+        let mut g = Grid::test();
         let sheet = &mut g.sheets_mut()[0];
 
         // Produce the following grid:
@@ -1244,29 +1244,31 @@ mod tests {
             }
         }
 
+        // crate::test_util::print_table_sheet(sheet, Rect::new_span(pos![A1], pos![F6]));
+
         // next smaller (horizontal)
         assert_eq!(
             RunErrorMsg::NoMatch,
-            eval_to_err(&g, "MATCH(10, B1:B6)").msg
+            eval_to_err(&g, "MATCH(10, A1:A6)").msg
         );
-        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1:B6)"));
-        assert_eq!("2", eval_to_string(&g, "MATCH(12.9, B1:B6)"));
-        assert_eq!("6", eval_to_string(&g, "MATCH(99999, B1:B6)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, A1:A6)"));
+        assert_eq!("2", eval_to_string(&g, "MATCH(12.9, A1:A6)"));
+        assert_eq!("6", eval_to_string(&g, "MATCH(99999, A1:A6)"));
 
         // next smaller (vertical)
-        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1:G1)"));
-        assert_eq!("4", eval_to_string(&g, "MATCH(50, B1:G1)"));
-        assert_eq!("6", eval_to_string(&g, "MATCH(99999, B1:G1)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, A1:F1)"));
+        assert_eq!("4", eval_to_string(&g, "MATCH(50, A1:F1)"));
+        assert_eq!("6", eval_to_string(&g, "MATCH(99999, A1:F1)"));
 
         // single cell range
-        assert_eq!(RunErrorMsg::NoMatch, eval_to_err(&g, "MATCH(10, B1)").msg);
-        assert_eq!("1", eval_to_string(&g, "MATCH(11, B1)"));
-        assert_eq!("1", eval_to_string(&g, "MATCH(12, B1)"));
+        assert_eq!(RunErrorMsg::NoMatch, eval_to_err(&g, "MATCH(10, A1)").msg);
+        assert_eq!("1", eval_to_string(&g, "MATCH(11, A1)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(12, A1)"));
 
         // error on bad range
         assert_eq!(
             RunErrorMsg::NonLinearArray,
-            eval_to_err(&g, "MATCH(99999, B1:G6)").msg,
+            eval_to_err(&g, "MATCH(99999, A1:F6)").msg,
         );
 
         // next larger
@@ -1282,17 +1284,17 @@ mod tests {
         // equal
         assert_eq!(
             RunErrorMsg::NoMatch,
-            eval_to_err(&g, "MATCH(0, C3:C5, 0)").msg,
+            eval_to_err(&g, "MATCH(0, B3:B5, 0)").msg,
         );
-        assert_eq!("1", eval_to_string(&g, "MATCH(23, C3:C5, 0)"));
+        assert_eq!("1", eval_to_string(&g, "MATCH(23, B3:B5, 0)"));
         assert_eq!(
             RunErrorMsg::NoMatch,
-            eval_to_err(&g, "MATCH(24.5, C3:C5, 0)").msg,
+            eval_to_err(&g, "MATCH(24.5, B3:B5, 0)").msg,
         );
-        assert_eq!("3", eval_to_string(&g, "MATCH(25, C3:C5, 0)"));
+        assert_eq!("3", eval_to_string(&g, "MATCH(25, B3:B5, 0)"));
         assert_eq!(
             RunErrorMsg::NoMatch,
-            eval_to_err(&g, "MATCH(99999, C3:C5, 0)").msg,
+            eval_to_err(&g, "MATCH(99999, B3:B5, 0)").msg,
         );
 
         // wildcard
