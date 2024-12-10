@@ -6,7 +6,7 @@ use crate::grid::file::{shift_negative_offsets::IMPORT_OFFSET_START_FOR_INFINITE
 
 use super::{
     schema::{self as current, BorderStyleCellSchema},
-    BordersA1Upgrade, SheetFormattingUpgrade,
+    BordersUpgrade, SheetFormattingUpgrade,
 };
 
 fn upgrade_cells_accessed(
@@ -245,7 +245,7 @@ fn upgrade_validations(validations: current::ValidationsSchema) -> v1_7_1::Valid
 }
 
 fn apply_left_right_cell_borders(
-    borders_upgrade: &mut BordersA1Upgrade,
+    borders_upgrade: &mut BordersUpgrade,
     borders: impl IntoIterator<
         Item = (
             i64,
@@ -268,7 +268,7 @@ fn apply_left_right_cell_borders(
 }
 
 fn apply_top_bottom_cell_borders(
-    borders_upgrade: &mut BordersA1Upgrade,
+    borders_upgrade: &mut BordersUpgrade,
     borders: impl IntoIterator<
         Item = (
             i64,
@@ -292,8 +292,8 @@ fn apply_top_bottom_cell_borders(
 
 type BordersColumnRow = (BorderStyleCellSchema, (Option<i64>, Option<i64>));
 
-fn upgrade_borders(borders: current::BordersSchema) -> v1_7_1::BordersA1Schema {
-    let mut borders_upgrade = BordersA1Upgrade::default();
+fn upgrade_borders(borders: current::BordersSchema) -> v1_7_1::BordersSchema {
+    let mut borders_upgrade = BordersUpgrade::default();
 
     // apply all borders
     borders_upgrade.apply_borders(
@@ -614,7 +614,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
         offsets,
         rows_resize,
         validations: upgrade_validations(validations),
-        borders_a1: upgrade_borders(borders),
+        borders: upgrade_borders(borders),
         formats,
         code_runs: upgrade_code_runs(code_runs),
         columns,

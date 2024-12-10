@@ -102,13 +102,13 @@ pub fn shift_negative_offsets(grid: &mut Grid) -> HashMap<String, (i64, i64)> {
         }
     }
 
-    // remove the import offset from the formats and borders_a1
+    // remove the import offset from the formats and borders
     for sheet in grid.sheets.iter_mut() {
         sheet
             .formats
             .translate_in_place(-IMPORT_OFFSET, -IMPORT_OFFSET);
         sheet
-            .borders_a1
+            .borders
             .translate_in_place(-IMPORT_OFFSET, -IMPORT_OFFSET);
         sheet.recalculate_bounds();
     }
@@ -127,7 +127,7 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{file::import, sheet::borders_a1::CellBorderLine},
+        grid::{file::import, sheet::borders::CellBorderLine},
         CellValue, Pos,
     };
 
@@ -166,7 +166,7 @@ mod test {
             Some("rgb(241, 196, 15)".to_string())
         );
 
-        let borders = sheet.borders_a1.get_style_cell(pos![A1]);
+        let borders = sheet.borders.get_style_cell(pos![A1]);
         assert_eq!(borders.top.unwrap().line, CellBorderLine::default());
         assert_eq!(borders.left.unwrap().line, CellBorderLine::default());
         assert_eq!(borders.bottom.unwrap().line, CellBorderLine::default());

@@ -4,7 +4,7 @@ use crate::{
     grid::{
         formats::SheetFormatUpdates,
         series::{find_auto_complete, SeriesOptions},
-        sheet::borders_a1::BordersA1Updates,
+        sheet::borders::BordersUpdates,
         SheetId,
     },
     util::maybe_reverse,
@@ -179,7 +179,7 @@ impl GridController {
         up_range: Option<Rect>,
     ) -> Result<Vec<Operation>> {
         let mut formats = SheetFormatUpdates::default();
-        let mut borders = BordersA1Updates::default();
+        let mut borders = BordersUpdates::default();
         let mut values = vec![];
 
         let mut ops = initial_range
@@ -257,7 +257,7 @@ impl GridController {
         up_range: Option<Rect>,
     ) -> Result<Vec<Operation>> {
         let mut formats = SheetFormatUpdates::default();
-        let mut borders = BordersA1Updates::default();
+        let mut borders = BordersUpdates::default();
         let mut values = vec![];
 
         let mut ops = initial_range
@@ -339,7 +339,7 @@ impl GridController {
         final_range: &Rect,
     ) -> Result<Vec<Operation>> {
         let mut formats = SheetFormatUpdates::default();
-        let mut borders = BordersA1Updates::default();
+        let mut borders = BordersUpdates::default();
 
         let mut ops = initial_range
             .x_range()
@@ -394,7 +394,7 @@ impl GridController {
         final_range: &Rect,
     ) -> Result<Vec<Operation>> {
         let mut formats = SheetFormatUpdates::default();
-        let mut borders = BordersA1Updates::default();
+        let mut borders = BordersUpdates::default();
 
         let mut ops = initial_range
             .x_range()
@@ -457,7 +457,7 @@ impl GridController {
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
         let mut formats = SheetFormatUpdates::default();
-        let mut borders = BordersA1Updates::default();
+        let mut borders = BordersUpdates::default();
 
         let height = values.len() as i64 / width;
         let mut ops = final_range
@@ -537,7 +537,7 @@ impl GridController {
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
         let mut formats = SheetFormatUpdates::default();
-        let mut borders = BordersA1Updates::default();
+        let mut borders = BordersUpdates::default();
 
         let height = values.len() as i64 / width;
 
@@ -695,7 +695,7 @@ impl GridController {
         sheet_id: SheetId,
         start_pos: Pos,
         border_rect: Rect,
-        borders: &mut BordersA1Updates,
+        borders: &mut BordersUpdates,
     ) {
         if let Some(sheet) = self.try_sheet(sheet_id) {
             for (x, x_pos) in border_rect.x_range().enumerate() {
@@ -706,7 +706,7 @@ impl GridController {
                     borders.set_style_cell(
                         target_pos,
                         sheet
-                            .borders_a1
+                            .borders
                             .get_style_cell_override_border(source_pos, false),
                     );
                 }

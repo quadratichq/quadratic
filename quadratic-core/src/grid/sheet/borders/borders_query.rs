@@ -2,7 +2,7 @@ use crate::{grid::GridBounds, Pos, Rect};
 
 use super::*;
 
-impl BordersA1 {
+impl Borders {
     /// Returns the finite bounds of the borders.
     pub fn finite_bounds(&self) -> Option<Rect> {
         let mut bounds = GridBounds::default();
@@ -41,7 +41,7 @@ impl BordersA1 {
     }
 
     /// Returns true if the borders update is already applied to the sheet.
-    pub fn is_toggle_borders(&self, border_update: &BordersA1Updates) -> bool {
+    pub fn is_toggle_borders(&self, border_update: &BordersUpdates) -> bool {
         if let Some(update_left) = border_update.left.as_ref() {
             if !self
                 .left
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn test_finite_bounds() {
-        let mut borders = BordersA1::default();
+        let mut borders = Borders::default();
 
         // Empty borders should return None
         assert_eq!(borders.finite_bounds(), None);

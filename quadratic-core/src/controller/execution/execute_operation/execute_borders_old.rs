@@ -3,12 +3,12 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::sheet::borders_a1::{borders_old::BorderStyleCellUpdates, BordersA1Updates},
+    grid::sheet::borders::{borders_old::BorderStyleCellUpdates, BordersUpdates},
 };
 
 impl GridController {
     fn migrate_borders(
-        borders_a1: &mut BordersA1Updates,
+        borders_a1: &mut BordersUpdates,
         borders: &BorderStyleCellUpdates,
         x1: i64,
         y1: i64,
@@ -57,7 +57,7 @@ impl GridController {
     ) {
         unwrap_op!(let SetBordersSelection { selection, borders } = op);
 
-        let mut borders_a1 = BordersA1Updates::default();
+        let mut borders_a1 = BordersUpdates::default();
 
         if selection.all {
             GridController::migrate_borders(&mut borders_a1, &borders, 1, 1, None, None);

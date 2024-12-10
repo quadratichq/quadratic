@@ -1,6 +1,6 @@
 use crate::{
     controller::{active_transactions::transaction_name::TransactionName, GridController},
-    grid::sheet::borders_a1::{BorderSelection, BorderStyle},
+    grid::sheet::borders::{BorderSelection, BorderStyle},
     A1Selection,
 };
 
@@ -22,7 +22,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::sheet::borders_a1::{BorderSelection, BorderStyle};
+    use crate::grid::sheet::borders::{BorderSelection, BorderStyle};
 
     use super::*;
 
@@ -42,7 +42,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let borders = sheet.borders_a1.borders_in_sheet().unwrap();
+        let borders = sheet.borders.borders_in_sheet().unwrap();
         assert_eq!(borders.horizontal.unwrap().len(), 4);
         assert_eq!(borders.vertical.unwrap().len(), 4);
     }

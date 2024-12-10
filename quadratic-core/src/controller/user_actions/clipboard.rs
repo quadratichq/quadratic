@@ -144,9 +144,7 @@ mod test {
 
     use super::*;
     use crate::grid::js_types::JsClipboard;
-    use crate::grid::sheet::borders_a1::{
-        BorderSelection, BorderSide, BorderStyle, CellBorderLine,
-    };
+    use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
     use crate::{
         controller::GridController,
         grid::{js_types::CellFormatSummary, CodeCellLanguage, CodeCellValue, SheetId},
@@ -514,7 +512,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
-                .borders_a1
+                .borders
                 .get(BorderSide::Top, Pos { x: 3, y: 3 })
                 .unwrap()
                 .line,
@@ -539,7 +537,7 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id_1);
-        let borders = sheet.borders_a1.borders_in_sheet().unwrap();
+        let borders = sheet.borders.borders_in_sheet().unwrap();
         let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
         let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
 
@@ -578,7 +576,7 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id_2);
-        let borders = sheet.borders_a1.borders_in_sheet().unwrap();
+        let borders = sheet.borders.borders_in_sheet().unwrap();
         let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
         let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
 

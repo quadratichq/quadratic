@@ -53,7 +53,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            sheet::borders_a1::{BorderSelection, BorderStyle},
+            sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, SheetId,
         },
         wasm_bindings::{
@@ -280,7 +280,7 @@ mod test {
         // should send borders for the duplicated sheet
         let borders = gc
             .sheet(duplicated_sheet_id)
-            .borders_a1
+            .borders
             .borders_in_sheet()
             .unwrap();
         let borders_str = serde_json::to_string(&borders).unwrap();

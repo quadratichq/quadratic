@@ -1,5 +1,5 @@
 use crate::{
-    grid::{formats::SheetFormatUpdates, sheet::borders_a1::BordersA1Updates, SheetId},
+    grid::{formats::SheetFormatUpdates, sheet::borders::BordersUpdates, SheetId},
     A1Selection, Rect, SheetPos, SheetRect,
 };
 
@@ -59,7 +59,7 @@ impl GridController {
     /// Returns whether the thumbnail contains any intersection with
     /// `borders`. If this method returns `true`, then updates in `borders`
     /// must force the thumbnail to update.
-    pub fn thumbnail_dirty_borders(&self, sheet_id: SheetId, borders: &BordersA1Updates) -> bool {
+    pub fn thumbnail_dirty_borders(&self, sheet_id: SheetId, borders: &BordersUpdates) -> bool {
         if sheet_id != self.grid().first_sheet_id() {
             return false;
         }
@@ -76,7 +76,7 @@ mod test {
         controller::GridController,
         grid::{
             formats::{FormatUpdate, SheetFormatUpdates},
-            sheet::borders_a1::{BorderStyleCell, BorderStyleTimestamp, BordersA1Updates},
+            sheet::borders::{BorderStyleCell, BorderStyleTimestamp, BordersUpdates},
             SheetId,
         },
         A1Selection, Pos, Rect, SheetPos, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH,
@@ -181,12 +181,12 @@ mod test {
         let wrong_sheet_id = SheetId::new();
 
         // Test with empty formats
-        let empty_borders = BordersA1Updates::default();
+        let empty_borders = BordersUpdates::default();
         assert!(!gc.thumbnail_dirty_borders(wrong_sheet_id, &empty_borders));
         assert!(!gc.thumbnail_dirty_borders(sheet_id, &empty_borders));
 
         // Test with formats that intersect thumbnail
-        let mut intersecting_borders = BordersA1Updates::default();
+        let mut intersecting_borders = BordersUpdates::default();
         intersecting_borders.set_style_cell(
             pos![A1],
             BorderStyleCell {
@@ -201,7 +201,7 @@ mod test {
 
         // Test with borders outside thumbnail bounds
         let sheet = gc.sheet(sheet_id);
-        let mut non_intersecting_borders = BordersA1Updates::default();
+        let mut non_intersecting_borders = BordersUpdates::default();
         non_intersecting_borders.set_style_cell(
             (
                 sheet.offsets.thumbnail().max.x + 1,

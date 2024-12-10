@@ -53,7 +53,7 @@ impl Sheet {
 
     /// Creates reverse operations for borders within the column.
     fn reverse_borders_ops_for_column(&self, column: i64) -> Vec<Operation> {
-        if let Some(borders) = self.borders_a1.copy_column(column) {
+        if let Some(borders) = self.borders.copy_column(column) {
             if borders.is_empty() {
                 return vec![];
             }
@@ -144,7 +144,7 @@ impl Sheet {
         transaction.fill_cells.insert(self.id);
 
         // remove the column's borders from the sheet
-        self.borders_a1.remove_column(column);
+        self.borders.remove_column(column);
         transaction.sheet_borders.insert(self.id);
 
         self.columns.remove(&column);
@@ -289,7 +289,7 @@ impl Sheet {
         transaction.fill_cells.insert(self.id);
 
         // signal client ot update the borders for changed columns
-        self.borders_a1.insert_column(column, copy_formats);
+        self.borders.insert_column(column, copy_formats);
         transaction.sheet_borders.insert(self.id);
 
         // mark hashes of new columns dirty
@@ -313,9 +313,7 @@ mod tests {
     use crate::{
         controller::execution::TransactionSource,
         grid::{
-            sheet::borders_a1::{
-                BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine,
-            },
+            sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
             CellWrap,
         },
         CellValue, DEFAULT_COLUMN_WIDTH,
@@ -381,7 +379,7 @@ mod tests {
     fn insert_column_start() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 3, 1, vec!["A", "B", "C"]);
-        sheet.borders_a1.set_style_cell(
+        sheet.borders.set_style_cell(
             pos![A1],
             BorderStyleCell {
                 top: Some(BorderStyleTimestamp::default()),
@@ -390,7 +388,7 @@ mod tests {
                 right: Some(BorderStyleTimestamp::default()),
             },
         );
-        sheet.borders_a1.set_style_cell(
+        sheet.borders.set_style_cell(
             pos![B1],
             BorderStyleCell {
                 top: Some(BorderStyleTimestamp::default()),
@@ -399,7 +397,7 @@ mod tests {
                 right: Some(BorderStyleTimestamp::default()),
             },
         );
-        sheet.borders_a1.set_style_cell(
+        sheet.borders.set_style_cell(
             pos![C1],
             BorderStyleCell {
                 top: Some(BorderStyleTimestamp::default()),
@@ -427,20 +425,20 @@ mod tests {
             Some(CellValue::Text("C".to_string()))
         );
 
-        assert_eq!(sheet.borders_a1.get_side(BorderSide::Top, pos![A1]), None);
+        assert_eq!(sheet.borders.get_side(BorderSide::Top, pos![A1]), None);
         assert_eq!(
-            sheet.borders_a1.get_style_cell(pos![B1]).top.unwrap().line,
+            sheet.borders.get_style_cell(pos![B1]).top.unwrap().line,
             CellBorderLine::default()
         );
         assert_eq!(
-            sheet.borders_a1.get_style_cell(pos![C1]).top.unwrap().line,
+            sheet.borders.get_style_cell(pos![C1]).top.unwrap().line,
             CellBorderLine::default()
         );
         assert_eq!(
-            sheet.borders_a1.get_style_cell(pos![D1]).top.unwrap().line,
+            sheet.borders.get_style_cell(pos![D1]).top.unwrap().line,
             CellBorderLine::default()
         );
-        assert_eq!(sheet.borders_a1.get_side(BorderSide::Top, pos![E1]), None);
+        assert_eq!(sheet.borders.get_side(BorderSide::Top, pos![E1]), None);
     }
 
     #[test]

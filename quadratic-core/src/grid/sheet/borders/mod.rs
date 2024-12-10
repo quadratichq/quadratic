@@ -22,17 +22,17 @@ pub mod sides;
 
 pub use borders_style::*;
 
-pub type BordersA1Type = Contiguous2D<Option<BorderStyleTimestamp>>;
+pub type BordersType = Contiguous2D<Option<BorderStyleTimestamp>>;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct BordersA1 {
-    pub(crate) left: BordersA1Type,
-    pub(crate) right: BordersA1Type,
-    pub(crate) top: BordersA1Type,
-    pub(crate) bottom: BordersA1Type,
+pub struct Borders {
+    pub(crate) left: BordersType,
+    pub(crate) right: BordersType,
+    pub(crate) top: BordersType,
+    pub(crate) bottom: BordersType,
 }
 
-impl BordersA1 {
+impl Borders {
     /// Returns the border style for the given position.
     pub fn get_style_cell(&self, pos: Pos) -> BorderStyleCell {
         BorderStyleCell {
@@ -86,17 +86,17 @@ impl BordersA1 {
     }
 }
 
-pub type BordersA1UpdatesType = Option<Contiguous2D<Option<ClearOption<BorderStyleTimestamp>>>>;
+pub type BordersUpdatesType = Option<Contiguous2D<Option<ClearOption<BorderStyleTimestamp>>>>;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct BordersA1Updates {
-    pub(crate) left: BordersA1UpdatesType,
-    pub(crate) right: BordersA1UpdatesType,
-    pub(crate) top: BordersA1UpdatesType,
-    pub(crate) bottom: BordersA1UpdatesType,
+pub struct BordersUpdates {
+    pub(crate) left: BordersUpdatesType,
+    pub(crate) right: BordersUpdatesType,
+    pub(crate) top: BordersUpdatesType,
+    pub(crate) bottom: BordersUpdatesType,
 }
 
-impl BordersA1Updates {
+impl BordersUpdates {
     pub fn set_style_cell(&mut self, pos: Pos, style: BorderStyleCell) {
         if let Some(top) = style.top {
             self.top
@@ -152,18 +152,18 @@ impl BordersA1Updates {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::A1Selection;
-
     use super::*;
+
+    use crate::A1Selection;
 
     #[test]
     fn test_is_empty() {
-        let updates = BordersA1Updates::default();
+        let updates = BordersUpdates::default();
         assert!(updates.is_empty());
 
-        let updates = BordersA1Updates {
+        let updates = BordersUpdates {
             left: Contiguous2D::new_from_opt_selection(
-                &A1Selection::test_a1("A1"),
+                &&A1Selection::test_a1("A1"),
                 Some(ClearOption::Some(BorderStyleTimestamp::default())),
             ),
             ..Default::default()

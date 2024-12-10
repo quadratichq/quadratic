@@ -30,7 +30,7 @@ mod tests {
     use crate::{
         array,
         grid::{
-            sheet::borders_a1::{BorderSelection, BorderStyle},
+            sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
         },
         test_util::{
@@ -655,10 +655,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(
-            sheet.borders_a1.finite_bounds(),
-            Some(Rect::new(1, 1, 5, 3))
-        );
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::new(1, 1, 5, 3)));
     }
 
     #[test]
@@ -679,10 +676,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(
-            sheet.borders_a1.finite_bounds(),
-            Some(Rect::new(1, 1, 5, 1))
-        );
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::new(1, 1, 5, 1)));
     }
 
     #[test]
@@ -703,10 +697,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(
-            sheet.borders_a1.finite_bounds(),
-            Some(Rect::new(1, 1, 1, 5))
-        );
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::new(1, 1, 1, 5)));
     }
 
     #[test]
@@ -727,10 +718,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(
-            sheet.borders_a1.finite_bounds(),
-            Some(Rect::new(1, 1, 1, 5))
-        );
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::new(1, 1, 1, 5)));
     }
 
     #[test]

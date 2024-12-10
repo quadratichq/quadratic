@@ -1,18 +1,18 @@
-use crate::grid::file::v1_7_1::{BorderStyleTimestampSchema, BordersA1Schema};
+use crate::grid::file::v1_7_1::{BorderStyleTimestampSchema, BordersSchema};
 
 use super::{schema::BorderStyleCellSchema, Contiguous2DUpgrade};
 
 use crate::grid::file::add_import_offset_to_contiguous_2d_rect;
 
 #[derive(Default)]
-pub struct BordersA1Upgrade {
+pub struct BordersUpgrade {
     pub left: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
     pub right: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
     pub top: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
     pub bottom: Contiguous2DUpgrade<Option<BorderStyleTimestampSchema>>,
 }
 
-impl BordersA1Upgrade {
+impl BordersUpgrade {
     pub fn apply_borders(
         &mut self,
         x1: i64,
@@ -37,8 +37,8 @@ impl BordersA1Upgrade {
         }
     }
 
-    pub fn to_schema(self) -> BordersA1Schema {
-        BordersA1Schema {
+    pub fn to_schema(self) -> BordersSchema {
+        BordersSchema {
             left: self.left.to_schema(),
             right: self.right.to_schema(),
             top: self.top.to_schema(),

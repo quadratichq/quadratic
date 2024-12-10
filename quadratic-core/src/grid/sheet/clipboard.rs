@@ -91,7 +91,7 @@ impl Sheet {
                     let underline = summary.underline.unwrap_or(false);
                     let strike_through = summary.strike_through.unwrap_or(false);
 
-                    let cell_border = self.borders_a1.get_style_cell(pos);
+                    let cell_border = self.borders.get_style_cell(pos);
 
                     if bold
                         || italic
@@ -261,7 +261,7 @@ impl Sheet {
 
         let formats = self.formats.to_clipboard(self, selection);
 
-        let borders = self.borders_a1.to_clipboard(self, selection);
+        let borders = self.borders.to_clipboard(self, selection);
 
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
 
@@ -295,7 +295,7 @@ mod tests {
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::GridController;
     use crate::grid::js_types::JsClipboard;
-    use crate::grid::sheet::borders_a1::{BorderSelection, BorderStyle, CellBorderLine};
+    use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
     use crate::{A1Selection, Pos, Rect};
 
     #[test]
@@ -355,7 +355,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let border = sheet.borders_a1.get_style_cell(pos![B2]);
+        let border = sheet.borders.get_style_cell(pos![B2]);
         assert_eq!(border.top.unwrap().line, CellBorderLine::default());
         assert_eq!(border.bottom.unwrap().line, CellBorderLine::default());
         assert_eq!(border.left.unwrap().line, CellBorderLine::default());

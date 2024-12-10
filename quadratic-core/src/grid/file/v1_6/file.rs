@@ -8,7 +8,7 @@ use crate::{
             v1_6::borders_upgrade::export_borders,
             v1_7::schema::{self as v1_7},
         },
-        sheet::borders_a1::{borders_old::OldBorders, BorderStyle, CellBorderLine},
+        sheet::borders::{borders_old::OldBorders, BorderStyle, CellBorderLine},
     },
 };
 
@@ -302,7 +302,7 @@ mod tests {
         controller::GridController,
         grid::{
             file::{export, import},
-            sheet::borders_a1::CellBorderLine,
+            sheet::borders::CellBorderLine,
         },
     };
 
@@ -334,7 +334,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
 
-        let border_5_10 = sheet.borders_a1.get_style_cell(pos![E10]);
+        let border_5_10 = sheet.borders.get_style_cell(pos![E10]);
         assert_eq!(border_5_10.left, None);
         assert_eq!(border_5_10.top, None);
         assert_eq!(border_5_10.bottom.unwrap().line, CellBorderLine::Line1);

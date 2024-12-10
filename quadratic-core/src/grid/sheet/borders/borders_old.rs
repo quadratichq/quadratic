@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use crate::grid::{block::SameValue, ColumnData};
 use crate::Pos;
-use crate::{grid::sheet::borders_a1::BorderStyleTimestamp, RunLengthEncoding};
+use crate::{grid::sheet::borders::BorderStyleTimestamp, RunLengthEncoding};
 
 use super::{BorderStyle, BorderStyleCell};
 

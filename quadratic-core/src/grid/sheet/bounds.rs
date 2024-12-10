@@ -502,7 +502,7 @@ mod test {
         controller::GridController,
         grid::{
             sheet::{
-                borders_a1::{BorderSelection, BorderStyle},
+                borders::{BorderSelection, BorderStyle},
                 validations::{
                     validation::Validation,
                     validation_rules::{validation_logical::ValidationLogical, ValidationRule},

@@ -2,7 +2,7 @@ use std::collections::{btree_map, BTreeMap, HashSet};
 use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, RoundingMode};
-use borders_a1::BordersA1;
+use borders::Borders;
 use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,7 @@ use crate::sheet_offsets::SheetOffsets;
 use crate::{A1Selection, Array, CellValue, Pos, Rect};
 
 pub mod a1_selection;
-pub mod borders_a1;
+pub mod borders;
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
@@ -72,7 +72,7 @@ pub struct Sheet {
 
     pub(super) rows_resize: ResizeMap,
 
-    pub borders_a1: BordersA1,
+    pub borders: Borders,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -90,7 +90,7 @@ impl Sheet {
             format_bounds: GridBounds::Empty,
             validations: Validations::default(),
             rows_resize: ResizeMap::default(),
-            borders_a1: BordersA1::default(),
+            borders: Borders::default(),
         }
     }
 

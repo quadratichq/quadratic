@@ -1,13 +1,13 @@
 use crate::{grid::Sheet, A1Selection, Pos};
 
-use super::{BordersA1, BordersA1Updates};
+use super::{Borders, BordersUpdates};
 
-impl BordersA1 {
+impl Borders {
     /// Prepares borders within the selection for copying to the clipboard.
     ///
     /// Returns `None` if there are no borders to copy.
-    pub fn to_clipboard(&self, sheet: &Sheet, selection: &A1Selection) -> Option<BordersA1Updates> {
-        let mut updates = BordersA1Updates::default();
+    pub fn to_clipboard(&self, sheet: &Sheet, selection: &A1Selection) -> Option<BordersUpdates> {
+        let mut updates = BordersUpdates::default();
         for rect in sheet.selection_to_rects(selection) {
             for x in rect.x_range() {
                 for y in rect.y_range() {
@@ -32,7 +32,7 @@ mod tests {
     use crate::{
         color::Rgba,
         controller::GridController,
-        grid::sheet::borders_a1::{BorderSelection, BorderStyle, CellBorderLine},
+        grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine},
         SheetRect,
     };
 
@@ -52,7 +52,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let clipboard = gc
             .sheet(sheet_id)
-            .borders_a1
+            .borders
             .to_clipboard(sheet, &A1Selection::test_a1("A1:C3"))
             .unwrap();
 
@@ -161,7 +161,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         let copy = sheet
-            .borders_a1
+            .borders
             .to_clipboard(
                 sheet,
                 &A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),

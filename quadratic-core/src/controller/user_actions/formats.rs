@@ -326,7 +326,7 @@ impl GridController {
 #[serial_test::parallel]
 mod test {
     use crate::controller::GridController;
-    use crate::grid::sheet::borders_a1::{BorderSelection, BorderStyle};
+    use crate::grid::sheet::borders::{BorderSelection, BorderStyle};
     use crate::grid::{CellWrap, RenderSize};
     use crate::{A1Selection, Pos};
 
@@ -736,14 +736,14 @@ mod test {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders_a1.horizontal_borders().is_some());
-        assert!(sheet.borders_a1.vertical_borders().is_some());
+        assert!(sheet.borders.horizontal_borders().is_some());
+        assert!(sheet.borders.vertical_borders().is_some());
 
         gc.clear_format_borders(&A1Selection::test_a1("A1:B2"), None);
 
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders_a1.horizontal_borders().is_none());
-        assert!(sheet.borders_a1.vertical_borders().is_none());
+        assert!(sheet.borders.horizontal_borders().is_none());
+        assert!(sheet.borders.vertical_borders().is_none());
     }
 
     #[test]

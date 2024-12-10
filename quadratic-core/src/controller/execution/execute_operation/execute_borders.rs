@@ -15,7 +15,7 @@ impl GridController {
 
         transaction
             .reverse_operations
-            .extend(sheet.borders_a1.set_borders_a1(sheet_id, &borders));
+            .extend(sheet.borders.set_borders_a1(sheet_id, &borders));
 
         transaction
             .forward_operations

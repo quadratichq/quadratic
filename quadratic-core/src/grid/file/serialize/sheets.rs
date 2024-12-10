@@ -3,7 +3,7 @@ use std::str::FromStr;
 use anyhow::Result;
 
 use crate::{
-    grid::{sheet::borders_a1::BordersA1, GridBounds, Sheet, SheetFormatting, SheetId},
+    grid::{sheet::borders::Borders, GridBounds, Sheet, SheetFormatting, SheetId},
     sheet_offsets::SheetOffsets,
 };
 
@@ -26,7 +26,7 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         offsets: SheetOffsets::import(sheet.offsets),
         rows_resize: import_rows_resize(sheet.rows_resize),
         validations: import_validations(sheet.validations),
-        borders_a1: import_borders(sheet.borders_a1),
+        borders: import_borders(sheet.borders),
         formats: import_formats(sheet.formats),
         code_runs: import_code_cell_builder(sheet.code_runs)?,
         columns: import_column_builder(sheet.columns)?,
@@ -48,7 +48,7 @@ pub(crate) fn export_sheet(sheet: Sheet) -> current::SheetSchema {
         offsets: sheet.offsets.export(),
         rows_resize: export_rows_size(sheet.rows_resize),
         validations: export_validations(sheet.validations),
-        borders_a1: export_borders(sheet.borders_a1),
+        borders: export_borders(sheet.borders),
         formats: export_formats(sheet.formats),
         code_runs: export_rows_code_runs(sheet.code_runs),
         columns: export_column_builder(sheet.columns),

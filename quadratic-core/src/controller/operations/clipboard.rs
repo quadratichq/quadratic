@@ -12,7 +12,7 @@ use crate::formulas::replace_internal_cell_references;
 use crate::grid::formats::Format;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
-use crate::grid::sheet::borders_a1::BordersA1Updates;
+use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::CodeCellLanguage;
 use crate::{A1Selection, CellValue, Pos, SheetPos, SheetRect};
@@ -71,7 +71,7 @@ pub struct Clipboard {
     pub formats: Option<SheetFormatUpdates>,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub borders: Option<BordersA1Updates>,
+    pub borders: Option<BordersUpdates>,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub validations: Option<ClipboardValidations>,

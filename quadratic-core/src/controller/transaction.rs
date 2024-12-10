@@ -114,7 +114,7 @@ mod tests {
     use serial_test::parallel;
 
     use crate::{
-        grid::{sheet::borders_a1::borders_old::BorderStyleCellUpdate, SheetId},
+        grid::{sheet::borders::borders_old::BorderStyleCellUpdate, SheetId},
         selection::OldSelection,
         RunLengthEncoding,
     };

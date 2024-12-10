@@ -5,7 +5,7 @@ use crate::{
     grid::{
         block::SameValue,
         file::v1_7,
-        sheet::borders_a1::{
+        sheet::borders::{
             borders_old::OldBorders, BorderStyleCell, BorderStyleTimestamp, CellBorderLine,
         },
         ColumnData,

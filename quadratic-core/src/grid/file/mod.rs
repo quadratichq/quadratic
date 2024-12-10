@@ -203,7 +203,7 @@ mod tests {
     use crate::{
         controller::GridController,
         grid::{
-            sheet::borders_a1::{BorderSelection, BorderStyle},
+            sheet::borders::{BorderSelection, BorderStyle},
             CodeCellLanguage, CodeCellValue,
         },
         A1Selection, ArraySize, CellValue, Pos,

@@ -1,6 +1,6 @@
 use crate::{
     grid::{
-        sheet::borders_a1::{JsBorderHorizontal, JsBorderVertical},
+        sheet::borders::{JsBorderHorizontal, JsBorderVertical},
         SheetId,
     },
     wasm_bindings::js::jsBordersSheet,
@@ -8,7 +8,7 @@ use crate::{
 
 use super::*;
 
-impl BordersA1 {
+impl Borders {
     /// Returns horizontal borders in a rect
     pub(crate) fn horizontal_borders(&self) -> Option<Vec<JsBorderHorizontal>> {
         let mut horizontal_rects = self
@@ -190,8 +190,8 @@ mod tests {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1.horizontal_borders(), None);
-        assert_eq!(sheet.borders_a1.vertical_borders(), None);
+        assert_eq!(sheet.borders.horizontal_borders(), None);
+        assert_eq!(sheet.borders.vertical_borders(), None);
     }
 
     #[test]
@@ -205,9 +205,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders_a1.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders().unwrap();
         assert_eq!(horizontal.len(), 6);
-        let vertical = sheet.borders_a1.vertical_borders().unwrap();
+        let vertical = sheet.borders.vertical_borders().unwrap();
         assert_eq!(vertical.len(), 6);
     }
 
@@ -222,9 +222,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders_a1.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders().unwrap();
         assert_eq!(horizontal.len(), 1);
-        assert!(sheet.borders_a1.vertical_borders().is_none());
+        assert!(sheet.borders.vertical_borders().is_none());
     }
 
     #[test]
@@ -238,9 +238,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders_a1.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders().unwrap();
         assert_eq!(horizontal.len(), 1);
-        assert!(sheet.borders_a1.vertical_borders().is_none());
+        assert!(sheet.borders.vertical_borders().is_none());
     }
 
     #[test]
@@ -254,8 +254,8 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders_a1.horizontal_borders().is_none());
-        let vertical = sheet.borders_a1.vertical_borders().unwrap();
+        assert!(sheet.borders.horizontal_borders().is_none());
+        let vertical = sheet.borders.vertical_borders().unwrap();
         assert_eq!(vertical.len(), 1);
     }
 
@@ -270,8 +270,8 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders_a1.horizontal_borders().is_none());
-        let vertical = sheet.borders_a1.vertical_borders().unwrap();
+        assert!(sheet.borders.horizontal_borders().is_none());
+        let vertical = sheet.borders.vertical_borders().unwrap();
         assert_eq!(vertical.len(), 1);
     }
 
@@ -286,9 +286,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders_a1.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders().unwrap();
         assert_eq!(horizontal.len(), 2);
-        let vertical = sheet.borders_a1.vertical_borders().unwrap();
+        let vertical = sheet.borders.vertical_borders().unwrap();
         assert_eq!(vertical.len(), 2);
     }
 
@@ -303,9 +303,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders_a1.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders().unwrap();
         assert_eq!(horizontal.len(), 4);
-        let vertical = sheet.borders_a1.vertical_borders().unwrap();
+        let vertical = sheet.borders.vertical_borders().unwrap();
         assert_eq!(vertical.len(), 4);
     }
 
@@ -320,9 +320,9 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        let horizontal = sheet.borders_a1.horizontal_borders().unwrap();
+        let horizontal = sheet.borders.horizontal_borders().unwrap();
         assert_eq!(horizontal.len(), 4);
-        assert!(sheet.borders_a1.vertical_borders().is_none());
+        assert!(sheet.borders.vertical_borders().is_none());
     }
 
     #[test]
@@ -336,8 +336,8 @@ mod tests {
             None,
         );
         let sheet = gc.sheet(sheet_id);
-        assert!(sheet.borders_a1.horizontal_borders().is_none());
-        let vertical = sheet.borders_a1.vertical_borders().unwrap();
+        assert!(sheet.borders.horizontal_borders().is_none());
+        let vertical = sheet.borders.vertical_borders().unwrap();
         assert_eq!(vertical.len(), 4);
     }
 }

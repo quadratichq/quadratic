@@ -3,9 +3,9 @@
 
 use crate::CopyFormats;
 
-use super::{BordersA1, BordersA1Type, BordersA1Updates, BordersA1UpdatesType};
+use super::{Borders, BordersType, BordersUpdates, BordersUpdatesType};
 
-impl BordersA1 {
+impl Borders {
     pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
         self.left.insert_column(column, copy_formats);
         self.right.insert_column(column, copy_formats);
@@ -13,13 +13,13 @@ impl BordersA1 {
         self.bottom.insert_column(column, copy_formats);
     }
 
-    pub fn remove_column(&mut self, column: i64) -> BordersA1Updates {
-        let remove_column_item = |item: &mut BordersA1Type| -> BordersA1UpdatesType {
+    pub fn remove_column(&mut self, column: i64) -> BordersUpdates {
+        let remove_column_item = |item: &mut BordersType| -> BordersUpdatesType {
             item.remove_column(column)
                 .map(|c| c.map_ref(|c| c.map(Into::into)))
         };
 
-        BordersA1Updates {
+        BordersUpdates {
             left: remove_column_item(&mut self.left),
             right: remove_column_item(&mut self.right),
             top: remove_column_item(&mut self.top),
@@ -27,13 +27,13 @@ impl BordersA1 {
         }
     }
 
-    pub fn copy_column(&self, column: i64) -> Option<BordersA1Updates> {
-        let copy_column_item = |item: &BordersA1Type| -> BordersA1UpdatesType {
+    pub fn copy_column(&self, column: i64) -> Option<BordersUpdates> {
+        let copy_column_item = |item: &BordersType| -> BordersUpdatesType {
             item.copy_column(column)
                 .map(|c| c.map_ref(|c| c.map(Into::into)))
         };
 
-        let updates = BordersA1Updates {
+        let updates = BordersUpdates {
             left: copy_column_item(&self.left),
             right: copy_column_item(&self.right),
             top: copy_column_item(&self.top),
@@ -54,13 +54,13 @@ impl BordersA1 {
         self.bottom.insert_row(row, copy_formats);
     }
 
-    pub fn remove_row(&mut self, row: i64) -> BordersA1Updates {
-        let remove_row_item = |item: &mut BordersA1Type| -> BordersA1UpdatesType {
+    pub fn remove_row(&mut self, row: i64) -> BordersUpdates {
+        let remove_row_item = |item: &mut BordersType| -> BordersUpdatesType {
             item.remove_row(row)
                 .map(|c| c.map_ref(|c| c.map(Into::into)))
         };
 
-        BordersA1Updates {
+        BordersUpdates {
             left: remove_row_item(&mut self.left),
             right: remove_row_item(&mut self.right),
             top: remove_row_item(&mut self.top),
@@ -68,12 +68,12 @@ impl BordersA1 {
         }
     }
 
-    pub fn copy_row(&self, row: i64) -> Option<BordersA1Updates> {
-        let copy_row_item = |item: &BordersA1Type| -> BordersA1UpdatesType {
+    pub fn copy_row(&self, row: i64) -> Option<BordersUpdates> {
+        let copy_row_item = |item: &BordersType| -> BordersUpdatesType {
             item.copy_row(row).map(|c| c.map_ref(|c| c.map(Into::into)))
         };
 
-        let updates = BordersA1Updates {
+        let updates = BordersUpdates {
             left: copy_row_item(&self.left),
             right: copy_row_item(&self.right),
             top: copy_row_item(&self.top),
@@ -94,7 +94,7 @@ mod tests {
     use crate::{
         controller::GridController,
         grid::{
-            sheet::borders_a1::{BorderSelection, BorderStyle, BordersA1},
+            sheet::borders::{BorderSelection, BorderStyle, Borders},
             CodeCellLanguage,
         },
         A1Selection, CellValue, CopyFormats,
@@ -102,16 +102,16 @@ mod tests {
 
     #[test]
     fn insert_column_empty() {
-        let mut borders = BordersA1::default();
+        let mut borders = Borders::default();
         borders.insert_column(1, CopyFormats::None);
-        assert_eq!(borders, BordersA1::default());
+        assert_eq!(borders, Borders::default());
     }
 
     #[test]
     fn delete_column_empty() {
-        let mut borders = BordersA1::default();
+        let mut borders = Borders::default();
         borders.remove_column(1);
-        assert_eq!(borders, BordersA1::default());
+        assert_eq!(borders, Borders::default());
     }
 
     #[test]
@@ -127,7 +127,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.insert_column(1, CopyFormats::None);
+        sheet.borders.insert_column(1, CopyFormats::None);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -138,7 +138,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -154,7 +154,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.insert_column(5, CopyFormats::None);
+        sheet.borders.insert_column(5, CopyFormats::None);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -171,7 +171,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -187,7 +187,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.insert_column(11, CopyFormats::None);
+        sheet.borders.insert_column(11, CopyFormats::None);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -198,7 +198,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -214,7 +214,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.remove_column(1);
+        sheet.borders.remove_column(1);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -225,7 +225,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -241,7 +241,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.remove_column(5);
+        sheet.borders.remove_column(5);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -252,7 +252,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -268,7 +268,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.remove_column(10);
+        sheet.borders.remove_column(10);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -279,14 +279,14 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
     fn insert_row_empty() {
-        let mut borders = BordersA1::default();
+        let mut borders = Borders::default();
         borders.insert_row(0, CopyFormats::None);
-        assert_eq!(borders, BordersA1::default());
+        assert_eq!(borders, Borders::default());
     }
 
     #[test]
@@ -302,7 +302,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.insert_row(1, CopyFormats::None);
+        sheet.borders.insert_row(1, CopyFormats::None);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -313,7 +313,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -329,7 +329,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.insert_row(5, CopyFormats::None);
+        sheet.borders.insert_row(5, CopyFormats::None);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -346,7 +346,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -362,7 +362,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.insert_row(11, CopyFormats::None);
+        sheet.borders.insert_row(11, CopyFormats::None);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -373,14 +373,14 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
     fn remove_row_empty() {
-        let mut borders = BordersA1::default();
+        let mut borders = Borders::default();
         borders.remove_row(0);
-        assert_eq!(borders, BordersA1::default());
+        assert_eq!(borders, Borders::default());
     }
 
     #[test]
@@ -396,7 +396,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.remove_row(1);
+        sheet.borders.remove_row(1);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -407,7 +407,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -423,7 +423,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.remove_row(5);
+        sheet.borders.remove_row(5);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -434,7 +434,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -450,7 +450,7 @@ mod tests {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.borders_a1.remove_row(10);
+        sheet.borders.remove_row(10);
 
         let mut gc_expected = GridController::test();
         let sheet_id = gc_expected.sheet_ids()[0];
@@ -461,7 +461,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -516,7 +516,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
 
         // this will reinsert the row
         gc.undo(None);
@@ -544,7 +544,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 
     #[test]
@@ -604,7 +604,7 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
 
         // this will remove the inserted row
         gc.undo(None);
@@ -633,6 +633,6 @@ mod tests {
             None,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
-        assert_eq!(sheet.borders_a1, sheet_expected.borders_a1);
+        assert_eq!(sheet.borders, sheet_expected.borders);
     }
 }

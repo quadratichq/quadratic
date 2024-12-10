@@ -9,7 +9,7 @@ use crate::{
     color::Rgba,
     grid::{
         block::SameValue,
-        sheet::borders_a1::{BorderStyleCell, BorderStyleTimestamp, BordersA1, CellBorderLine},
+        sheet::borders::{BorderStyleCell, BorderStyleTimestamp, Borders, CellBorderLine},
         Contiguous2D,
     },
     small_timestamp::SmallTimestamp,
@@ -50,8 +50,8 @@ fn import_border_style_timestamp(
     }
 }
 
-pub(crate) fn import_borders(borders: current::BordersA1Schema) -> BordersA1 {
-    BordersA1 {
+pub(crate) fn import_borders(borders: current::BordersSchema) -> Borders {
+    Borders {
         left: import_contiguous_2d(borders.left, opt_fn(import_border_style_timestamp)),
         right: import_contiguous_2d(borders.right, opt_fn(import_border_style_timestamp)),
         top: import_contiguous_2d(borders.top, opt_fn(import_border_style_timestamp)),
@@ -96,17 +96,17 @@ fn export_border_style_timestamp(
 
 fn export_border_side(
     side: Contiguous2D<Option<BorderStyleTimestamp>>,
-) -> current::BordersA1SideSchema {
+) -> current::BordersSideSchema {
     export_contiguous_2d(side, |border_style_timestamp| {
         border_style_timestamp.map(export_border_style_timestamp)
     })
 }
 
-pub(crate) fn export_borders(borders_a1: BordersA1) -> current::BordersA1Schema {
-    current::BordersA1Schema {
-        left: export_border_side(borders_a1.left),
-        right: export_border_side(borders_a1.right),
-        top: export_border_side(borders_a1.top),
-        bottom: export_border_side(borders_a1.bottom),
+pub(crate) fn export_borders(borders: Borders) -> current::BordersSchema {
+    current::BordersSchema {
+        left: export_border_side(borders.left),
+        right: export_border_side(borders.right),
+        top: export_border_side(borders.top),
+        bottom: export_border_side(borders.bottom),
     }
 }

@@ -13,15 +13,15 @@ use quadratic_core::grid::js_types::{
     JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
     JsSummarizeSelectionResult, JsValidationWarning,
 };
-use quadratic_core::grid::sheet::borders_a1::BorderSelection;
-use quadratic_core::grid::sheet::borders_a1::BorderSide;
-use quadratic_core::grid::sheet::borders_a1::BorderStyle;
-use quadratic_core::grid::sheet::borders_a1::BorderStyleCell;
-use quadratic_core::grid::sheet::borders_a1::BorderStyleTimestamp;
-use quadratic_core::grid::sheet::borders_a1::CellBorderLine;
-use quadratic_core::grid::sheet::borders_a1::JsBorderHorizontal;
-use quadratic_core::grid::sheet::borders_a1::JsBorderVertical;
-use quadratic_core::grid::sheet::borders_a1::JsBordersSheet;
+use quadratic_core::grid::sheet::borders::BorderSelection;
+use quadratic_core::grid::sheet::borders::BorderSide;
+use quadratic_core::grid::sheet::borders::BorderStyle;
+use quadratic_core::grid::sheet::borders::BorderStyleCell;
+use quadratic_core::grid::sheet::borders::BorderStyleTimestamp;
+use quadratic_core::grid::sheet::borders::CellBorderLine;
+use quadratic_core::grid::sheet::borders::JsBorderHorizontal;
+use quadratic_core::grid::sheet::borders::JsBorderVertical;
+use quadratic_core::grid::sheet::borders::JsBordersSheet;
 use quadratic_core::grid::sheet::jump_cursor::JumpDirection;
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::validation::{

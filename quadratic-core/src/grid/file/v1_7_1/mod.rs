@@ -74,7 +74,7 @@ pub struct SheetSchema {
     pub offsets: OffsetsSchema,
     pub validations: ValidationsSchema,
     pub rows_resize: RowsResizeSchema,
-    pub borders_a1: BordersA1Schema,
+    pub borders: BordersSchema,
     pub formats: SheetFormattingSchema,
     pub code_runs: CodeRunsSchema,
     pub columns: ColumnsSchema,

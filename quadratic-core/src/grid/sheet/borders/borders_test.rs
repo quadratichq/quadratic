@@ -9,7 +9,7 @@ const EMPTY: char = ' ';
 const INFINITE: i64 = 100000;
 
 #[allow(unused)]
-impl BordersA1 {
+impl Borders {
     fn has_horizontal(horizontal: &[JsBorderHorizontal], x: i64, y: i64) -> bool {
         horizontal
             .iter()
@@ -112,7 +112,7 @@ mod tests {
                 None,
             );
             let sheet = gc.sheet(SheetId::TEST);
-            sheet.borders_a1.print(Some(Rect::new(1, 1, 6, 6)));
+            sheet.borders.print(Some(Rect::new(1, 1, 6, 6)));
         }
     }
 }

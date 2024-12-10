@@ -1,19 +1,19 @@
 use crate::{
     controller::GridController,
-    grid::sheet::borders_a1::{BorderSelection, BorderStyle, BordersA1Updates},
+    grid::sheet::borders::{BorderSelection, BorderStyle, BordersUpdates},
     A1Selection, CellRefRange, ClearOption, RefRangeBounds,
 };
 
 use super::operation::Operation;
 
 impl GridController {
-    /// Populates the BordersA1Updates for a range.
+    /// Populates the BordersUpdates for a range.
     fn a1_border_style_range(
         &self,
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
         range: &RefRangeBounds,
-        borders: &mut BordersA1Updates,
+        borders: &mut BordersUpdates,
     ) {
         let style = style.map(|s| ClearOption::Some(s.into()));
         let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
@@ -161,7 +161,7 @@ impl GridController {
 
     /// Creates border operations to clear the selection of any borders.
     pub fn clear_borders_a1_operations(&self, selection: &A1Selection) -> Vec<Operation> {
-        let mut borders: BordersA1Updates = BordersA1Updates::default();
+        let mut borders: BordersUpdates = BordersUpdates::default();
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
@@ -208,7 +208,7 @@ impl GridController {
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
     ) -> Option<Vec<Operation>> {
-        let mut borders: BordersA1Updates = BordersA1Updates::default();
+        let mut borders: BordersUpdates = BordersUpdates::default();
 
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
@@ -220,8 +220,8 @@ impl GridController {
         // instead of setting the style
         if style.is_some() {
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                if sheet.borders_a1.is_toggle_borders(&borders) {
-                    borders = BordersA1Updates::default();
+                if sheet.borders.is_toggle_borders(&borders) {
+                    borders = BordersUpdates::default();
                     selection.ranges.iter().for_each(|range| match range {
                         CellRefRange::Sheet { range } => {
                             self.a1_border_style_range(border_selection, None, range, &mut borders);
@@ -250,7 +250,7 @@ mod tests {
 
     use super::*;
 
-    fn assert_borders(borders: &BordersA1Updates, pos: Pos, side: &str) {
+    fn assert_borders(borders: &BordersUpdates, pos: Pos, side: &str) {
         let top = side.contains("top");
         let bottom = side.contains("bottom");
         let left = side.contains("left");
