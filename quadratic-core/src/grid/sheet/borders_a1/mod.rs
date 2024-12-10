@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::Contiguous2D, Pos};
+use crate::{grid::Contiguous2D, Pos, Rect};
 
 pub mod borders_clipboard;
 pub mod borders_col_row;
@@ -122,6 +122,19 @@ impl BordersA1Updates {
             && self.right.as_ref().is_none_or(|c| c.is_all_default())
             && self.top.as_ref().is_none_or(|c| c.is_all_default())
             && self.bottom.as_ref().is_none_or(|c| c.is_all_default())
+    }
+
+    pub fn intersects(&self, rect: Rect) -> bool {
+        self.left.as_ref().is_some_and(|left| left.intersects(rect))
+            || self
+                .right
+                .as_ref()
+                .is_some_and(|right| right.intersects(rect))
+            || self.top.as_ref().is_some_and(|top| top.intersects(rect))
+            || self
+                .bottom
+                .as_ref()
+                .is_some_and(|bottom| bottom.intersects(rect))
     }
 
     pub fn translate_in_place(&mut self, x: i64, y: i64) {

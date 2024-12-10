@@ -1,5 +1,5 @@
 use crate::{
-    grid::{formats::SheetFormatUpdates, SheetId},
+    grid::{formats::SheetFormatUpdates, sheet::borders_a1::BordersA1Updates, SheetId},
     selection::OldSelection,
     A1Selection, Rect, SheetPos, SheetRect,
 };
@@ -82,6 +82,19 @@ impl GridController {
             return false;
         };
         formats.intersects(sheet.offsets.thumbnail())
+    }
+
+    /// Returns whether the thumbnail contains any intersection with
+    /// `borders`. If this method returns `true`, then updates in `borders`
+    /// must force the thumbnail to update.
+    pub fn thumbnail_dirty_borders(&self, sheet_id: SheetId, borders: &BordersA1Updates) -> bool {
+        if sheet_id != self.grid().first_sheet_id() {
+            return false;
+        }
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return false;
+        };
+        borders.intersects(sheet.offsets.thumbnail())
     }
 }
 
