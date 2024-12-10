@@ -273,8 +273,20 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
     pub fn copy_column(&self, column: i64) -> Option<Contiguous2D<Option<T>>> {
         let column = convert_coord(column)?;
 
-        let mut ret = Contiguous2D::new();
-        let column_data = self.0.get(column).cloned().unwrap_or_default().map(Some);
+        let mut ret: Contiguous2D<Option<T>> = Contiguous2D::new();
+
+        // Old code, left in to compare with new code for David Fignater
+        // let column_data = self.0.get(column).cloned().unwrap_or_default().map(|v| Some(v));
+
+        let column_data =
+            self.0
+                .get(column)
+                .cloned()
+                .unwrap_or_default()
+                .map(|v| match v == T::default() {
+                    true => None,
+                    false => Some(v),
+                });
         ret.0.set(column, column_data);
         Some(ret)
     }
