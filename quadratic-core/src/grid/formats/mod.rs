@@ -14,7 +14,7 @@ use std::ops::{Deref, DerefMut};
 
 pub use format::Format;
 pub use format_update::FormatUpdate;
-pub use sheet_format_updates::SheetFormatUpdates;
+pub use sheet_format_updates::{SheetFormatUpdates, SheetFormatUpdatesType};
 
 /// Run-length encoded changes to apply to formatting.
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]

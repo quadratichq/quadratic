@@ -2,7 +2,12 @@
 
 use super::*;
 
-use crate::{grid::formats::SheetFormatUpdates, CopyFormats};
+use std::fmt::Debug;
+
+use crate::{
+    grid::formats::{SheetFormatUpdates, SheetFormatUpdatesType},
+    CopyFormats,
+};
 
 impl SheetFormatting {
     pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
@@ -39,42 +44,62 @@ impl SheetFormatting {
         self.strike_through.insert_row(row, copy_formats);
     }
 
+    fn remove_column_item<T>(
+        item: &mut SheetFormattingType<T>,
+        column: i64,
+    ) -> SheetFormatUpdatesType<T>
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        item.remove_column(column)
+            .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.into())))
+    }
+
     pub fn remove_column(&mut self, column: i64) -> SheetFormatUpdates {
         SheetFormatUpdates {
-            align: self.align.remove_column(column),
-            vertical_align: self.vertical_align.remove_column(column),
-            wrap: self.wrap.remove_column(column),
-            numeric_format: self.numeric_format.remove_column(column),
-            numeric_decimals: self.numeric_decimals.remove_column(column),
-            numeric_commas: self.numeric_commas.remove_column(column),
-            bold: self.bold.remove_column(column),
-            italic: self.italic.remove_column(column),
-            text_color: self.text_color.remove_column(column),
-            fill_color: self.fill_color.remove_column(column),
-            render_size: self.render_size.remove_column(column),
-            date_time: self.date_time.remove_column(column),
-            underline: self.underline.remove_column(column),
-            strike_through: self.strike_through.remove_column(column),
+            align: Self::remove_column_item(&mut self.align, column),
+            vertical_align: Self::remove_column_item(&mut self.vertical_align, column),
+            wrap: Self::remove_column_item(&mut self.wrap, column),
+            numeric_format: Self::remove_column_item(&mut self.numeric_format, column),
+            numeric_decimals: Self::remove_column_item(&mut self.numeric_decimals, column),
+            numeric_commas: Self::remove_column_item(&mut self.numeric_commas, column),
+            bold: Self::remove_column_item(&mut self.bold, column),
+            italic: Self::remove_column_item(&mut self.italic, column),
+            text_color: Self::remove_column_item(&mut self.text_color, column),
+            fill_color: Self::remove_column_item(&mut self.fill_color, column),
+            render_size: Self::remove_column_item(&mut self.render_size, column),
+            date_time: Self::remove_column_item(&mut self.date_time, column),
+            underline: Self::remove_column_item(&mut self.underline, column),
+            strike_through: Self::remove_column_item(&mut self.strike_through, column),
         }
+    }
+
+    fn copy_column_item<T>(item: &SheetFormattingType<T>, column: i64) -> SheetFormatUpdatesType<T>
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        item.copy_column(column)
+            .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.into())))
     }
 
     pub fn copy_column(&self, column: i64) -> Option<SheetFormatUpdates> {
         let updates = SheetFormatUpdates {
-            align: self.align.copy_column(column),
-            vertical_align: self.vertical_align.copy_column(column),
-            wrap: self.wrap.copy_column(column),
-            numeric_format: self.numeric_format.copy_column(column),
-            numeric_decimals: self.numeric_decimals.copy_column(column),
-            numeric_commas: self.numeric_commas.copy_column(column),
-            bold: self.bold.copy_column(column),
-            italic: self.italic.copy_column(column),
-            text_color: self.text_color.copy_column(column),
-            fill_color: self.fill_color.copy_column(column),
-            render_size: self.render_size.copy_column(column),
-            date_time: self.date_time.copy_column(column),
-            underline: self.underline.copy_column(column),
-            strike_through: self.strike_through.copy_column(column),
+            align: Self::copy_column_item(&self.align, column),
+            vertical_align: Self::copy_column_item(&self.vertical_align, column),
+            wrap: Self::copy_column_item(&self.wrap, column),
+            numeric_format: Self::copy_column_item(&self.numeric_format, column),
+            numeric_decimals: Self::copy_column_item(&self.numeric_decimals, column),
+            numeric_commas: Self::copy_column_item(&self.numeric_commas, column),
+            bold: Self::copy_column_item(&self.bold, column),
+            italic: Self::copy_column_item(&self.italic, column),
+            text_color: Self::copy_column_item(&self.text_color, column),
+            fill_color: Self::copy_column_item(&self.fill_color, column),
+            render_size: Self::copy_column_item(&self.render_size, column),
+            date_time: Self::copy_column_item(&self.date_time, column),
+            underline: Self::copy_column_item(&self.underline, column),
+            strike_through: Self::copy_column_item(&self.strike_through, column),
         };
+
         if updates.is_default() {
             None
         } else {
@@ -82,42 +107,59 @@ impl SheetFormatting {
         }
     }
 
+    fn remove_row_item<T>(item: &mut SheetFormattingType<T>, row: i64) -> SheetFormatUpdatesType<T>
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        item.remove_row(row)
+            .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.into())))
+    }
+
     pub fn remove_row(&mut self, row: i64) -> SheetFormatUpdates {
         SheetFormatUpdates {
-            align: self.align.remove_row(row),
-            vertical_align: self.vertical_align.remove_row(row),
-            wrap: self.wrap.remove_row(row),
-            numeric_format: self.numeric_format.remove_row(row),
-            numeric_decimals: self.numeric_decimals.remove_row(row),
-            numeric_commas: self.numeric_commas.remove_row(row),
-            bold: self.bold.remove_row(row),
-            italic: self.italic.remove_row(row),
-            text_color: self.text_color.remove_row(row),
-            fill_color: self.fill_color.remove_row(row),
-            render_size: self.render_size.remove_row(row),
-            date_time: self.date_time.remove_row(row),
-            underline: self.underline.remove_row(row),
-            strike_through: self.strike_through.remove_row(row),
+            align: Self::remove_row_item(&mut self.align, row),
+            vertical_align: Self::remove_row_item(&mut self.vertical_align, row),
+            wrap: Self::remove_row_item(&mut self.wrap, row),
+            numeric_format: Self::remove_row_item(&mut self.numeric_format, row),
+            numeric_decimals: Self::remove_row_item(&mut self.numeric_decimals, row),
+            numeric_commas: Self::remove_row_item(&mut self.numeric_commas, row),
+            bold: Self::remove_row_item(&mut self.bold, row),
+            italic: Self::remove_row_item(&mut self.italic, row),
+            text_color: Self::remove_row_item(&mut self.text_color, row),
+            fill_color: Self::remove_row_item(&mut self.fill_color, row),
+            render_size: Self::remove_row_item(&mut self.render_size, row),
+            date_time: Self::remove_row_item(&mut self.date_time, row),
+            underline: Self::remove_row_item(&mut self.underline, row),
+            strike_through: Self::remove_row_item(&mut self.strike_through, row),
         }
+    }
+
+    fn copy_row_item<T>(item: &SheetFormattingType<T>, row: i64) -> SheetFormatUpdatesType<T>
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        item.copy_row(row)
+            .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.into())))
     }
 
     pub fn copy_row(&self, row: i64) -> Option<SheetFormatUpdates> {
         let updates = SheetFormatUpdates {
-            align: self.align.copy_row(row),
-            vertical_align: self.vertical_align.copy_row(row),
-            wrap: self.wrap.copy_row(row),
-            numeric_format: self.numeric_format.copy_row(row),
-            numeric_decimals: self.numeric_decimals.copy_row(row),
-            numeric_commas: self.numeric_commas.copy_row(row),
-            bold: self.bold.copy_row(row),
-            italic: self.italic.copy_row(row),
-            text_color: self.text_color.copy_row(row),
-            fill_color: self.fill_color.copy_row(row),
-            render_size: self.render_size.copy_row(row),
-            date_time: self.date_time.copy_row(row),
-            underline: self.underline.copy_row(row),
-            strike_through: self.strike_through.copy_row(row),
+            align: Self::copy_row_item(&self.align, row),
+            vertical_align: Self::copy_row_item(&self.vertical_align, row),
+            wrap: Self::copy_row_item(&self.wrap, row),
+            numeric_format: Self::copy_row_item(&self.numeric_format, row),
+            numeric_decimals: Self::copy_row_item(&self.numeric_decimals, row),
+            numeric_commas: Self::copy_row_item(&self.numeric_commas, row),
+            bold: Self::copy_row_item(&self.bold, row),
+            italic: Self::copy_row_item(&self.italic, row),
+            text_color: Self::copy_row_item(&self.text_color, row),
+            fill_color: Self::copy_row_item(&self.fill_color, row),
+            render_size: Self::copy_row_item(&self.render_size, row),
+            date_time: Self::copy_row_item(&self.date_time, row),
+            underline: Self::copy_row_item(&self.underline, row),
+            strike_through: Self::copy_row_item(&self.strike_through, row),
         };
+
         if updates.is_default() {
             None
         } else {
@@ -129,6 +171,8 @@ impl SheetFormatting {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::ClearOption;
+
     use super::*;
 
     #[test]
@@ -237,19 +281,19 @@ mod tests {
         let updates = formatting.copy_column(1).unwrap();
         assert_eq!(
             updates.bold.as_ref().unwrap().get(pos![A1]),
-            Some(Some(true))
+            Some(ClearOption::Some(true))
         );
         assert_eq!(
             updates.italic.as_ref().unwrap().get(pos![A2]),
-            Some(Some(true))
+            Some(ClearOption::Some(true))
         );
         assert_eq!(
             updates.text_color.as_ref().unwrap().get(pos![A3]),
-            Some(Some("red".to_string()))
+            Some(ClearOption::Some("red".to_string()))
         );
         assert_eq!(
             updates.align.as_ref().unwrap().get(pos![A4]),
-            Some(Some(CellAlign::Center))
+            Some(ClearOption::Some(CellAlign::Center))
         );
         assert_eq!(updates.align.as_ref().unwrap().get(pos![B1]), None);
     }
@@ -265,19 +309,19 @@ mod tests {
         let updates = formatting.copy_row(1).unwrap();
         assert_eq!(
             updates.bold.as_ref().unwrap().get(pos![A1]),
-            Some(Some(true))
+            Some(ClearOption::Some(true))
         );
         assert_eq!(
             updates.italic.as_ref().unwrap().get(pos![B1]),
-            Some(Some(true))
+            Some(ClearOption::Some(true))
         );
         assert_eq!(
             updates.text_color.as_ref().unwrap().get(pos![C1]),
-            Some(Some("red".to_string()))
+            Some(ClearOption::Some("red".to_string()))
         );
         assert_eq!(
             updates.align.as_ref().unwrap().get(pos![D1]),
-            Some(Some(CellAlign::Center))
+            Some(ClearOption::Some(CellAlign::Center))
         );
         assert_eq!(updates.align.as_ref().unwrap().get(pos![A1]), None);
     }

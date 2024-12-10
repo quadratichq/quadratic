@@ -726,7 +726,7 @@ mod test {
     }
 
     #[test]
-    fn clear_borders() {
+    fn test_clear_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_borders(
@@ -735,10 +735,15 @@ mod test {
             Some(BorderStyle::default()),
             None,
         );
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.borders_a1.horizontal_borders().is_some());
+        assert!(sheet.borders_a1.vertical_borders().is_some());
+
         gc.clear_format_borders(&A1Selection::test_a1("A1:B2"), None);
 
         let sheet = gc.sheet(sheet_id);
-        assert!(!sheet.borders_a1.is_default());
+        assert!(sheet.borders_a1.horizontal_borders().is_none());
+        assert!(sheet.borders_a1.vertical_borders().is_none());
     }
 
     #[test]
