@@ -958,8 +958,8 @@ mod tests {
     /// Test XLOOKUP's various search modes.
     #[test]
     #[parallel]
-    // TODO(ddimaria): @HactarCE fix broken test
     fn test_xlookup_search_modes() {
+        // #[track_caller]
         fn test_exact_xlookup_with_array(
             array: &Array,
             columns_to_search: &[i64],
@@ -969,27 +969,24 @@ mod tests {
             let h = array.height() as i64;
             let grid_vlookup = Grid::from_array(pos![A1], array);
             let grid_hlookup = Grid::from_array(pos![A1], &array.transpose());
+
             for &col in columns_to_search {
                 for if_not_found in [CellValue::Blank, "default-value".into()] {
                     let if_not_found_repr = if_not_found.repr();
 
                     // Prepare vertical XLOOKUP call
-                    let haystack_start = Pos { x: col, y: 1 }.a1_string();
-                    let haystack_end = Pos { x: col, y: h }.a1_string();
-                    let returns = Pos { x: w - 1, y: h }.a1_string();
+                    let haystack_start = Pos { x: col + 1, y: 1 }.a1_string();
+                    let haystack_end = Pos { x: col + 1, y: h }.a1_string();
+                    let returns = Pos { x: w, y: h }.a1_string();
                     let v_params = format!(
                         "{haystack_start}:{haystack_end}, A1:{returns}, \
                          {if_not_found_repr}, {extra_params}",
                     );
 
                     // Prepare horizontal XLOOKUP call
-                    let haystack_start = Pos { x: 0, y: col + 1 }.a1_string();
-                    let haystack_end = Pos {
-                        x: h - 1,
-                        y: col + 1,
-                    }
-                    .a1_string();
-                    let returns = Pos { x: h - 1, y: w }.a1_string();
+                    let haystack_start = Pos { x: 1, y: col + 1 }.a1_string();
+                    let haystack_end = Pos { x: h, y: col + 1 }.a1_string();
+                    let returns = Pos { x: h, y: w }.a1_string();
                     let h_params = format!(
                         "{haystack_start}:{haystack_end}, A1:{returns}, \
                          {if_not_found_repr}, {extra_params}",
@@ -1004,6 +1001,7 @@ mod tests {
 
                         // Test vertical lookup
                         let formula = format!("XLOOKUP({needle}, {v_params})");
+                        println!("Testing formula {formula:?}");
                         expect_val(expected.clone(), &grid_vlookup, &formula);
 
                         // Test horizontal lookup
@@ -1207,13 +1205,12 @@ mod tests {
 
     #[test]
     #[parallel]
-    // TODO(ddimaria): @HactarCE fix broken test
     fn test_xlookup() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
         for y in 1..=6 {
-            let _ = sheet.set_cell_value(Pos { x: 0, y }, y);
-            let _ = sheet.set_cell_value(Pos { x: 1, y }, format!("cell #{y}"));
+            let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
+            let _ = sheet.set_cell_value(Pos { x: 2, y }, format!("cell #{y}"));
         }
 
         // Test lookup in sorted array
@@ -1226,7 +1223,6 @@ mod tests {
     }
 
     #[test]
-    // TODO(ddimaria): @HactarCE fix broken test
     fn test_match() {
         let mut g = Grid::test();
         let sheet = &mut g.sheets_mut()[0];
