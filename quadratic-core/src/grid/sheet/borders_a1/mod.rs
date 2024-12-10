@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::Contiguous2D, Pos, Rect};
+use crate::{grid::Contiguous2D, ClearOption, Pos, Rect};
 
 pub mod borders_clipboard;
 pub mod borders_col_row;
@@ -22,12 +22,14 @@ pub mod sides;
 
 pub use borders_style::*;
 
+pub type BordersA1Type = Contiguous2D<Option<BorderStyleTimestamp>>;
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct BordersA1 {
-    pub(crate) left: Contiguous2D<Option<BorderStyleTimestamp>>,
-    pub(crate) right: Contiguous2D<Option<BorderStyleTimestamp>>,
-    pub(crate) top: Contiguous2D<Option<BorderStyleTimestamp>>,
-    pub(crate) bottom: Contiguous2D<Option<BorderStyleTimestamp>>,
+    pub(crate) left: BordersA1Type,
+    pub(crate) right: BordersA1Type,
+    pub(crate) top: BordersA1Type,
+    pub(crate) bottom: BordersA1Type,
 }
 
 impl BordersA1 {
@@ -84,12 +86,14 @@ impl BordersA1 {
     }
 }
 
+pub type BordersA1UpdatesType = Option<Contiguous2D<Option<ClearOption<BorderStyleTimestamp>>>>;
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct BordersA1Updates {
-    pub(crate) left: Option<Contiguous2D<Option<Option<BorderStyleTimestamp>>>>,
-    pub(crate) right: Option<Contiguous2D<Option<Option<BorderStyleTimestamp>>>>,
-    pub(crate) top: Option<Contiguous2D<Option<Option<BorderStyleTimestamp>>>>,
-    pub(crate) bottom: Option<Contiguous2D<Option<Option<BorderStyleTimestamp>>>>,
+    pub(crate) left: BordersA1UpdatesType,
+    pub(crate) right: BordersA1UpdatesType,
+    pub(crate) top: BordersA1UpdatesType,
+    pub(crate) bottom: BordersA1UpdatesType,
 }
 
 impl BordersA1Updates {
@@ -97,22 +101,22 @@ impl BordersA1Updates {
         if let Some(top) = style.top {
             self.top
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(Some(top)));
+                .set(pos, Some(ClearOption::Some(top)));
         }
         if let Some(bottom) = style.bottom {
             self.bottom
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(Some(bottom)));
+                .set(pos, Some(ClearOption::Some(bottom)));
         }
         if let Some(left) = style.left {
             self.left
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(Some(left)));
+                .set(pos, Some(ClearOption::Some(left)));
         }
         if let Some(right) = style.right {
             self.right
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(Some(right)));
+                .set(pos, Some(ClearOption::Some(right)));
         }
     }
 
@@ -160,7 +164,7 @@ mod tests {
         let updates = BordersA1Updates {
             left: Contiguous2D::new_from_opt_selection(
                 &A1Selection::test_a1("A1"),
-                Some(Some(BorderStyleTimestamp::default())),
+                Some(ClearOption::Some(BorderStyleTimestamp::default())),
             ),
             ..Default::default()
         };

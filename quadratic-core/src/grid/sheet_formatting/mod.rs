@@ -22,20 +22,22 @@ pub mod sheet_formatting_col_row;
 pub mod sheet_formatting_query;
 pub mod sheet_formatting_update;
 
+pub type SheetFormattingType<T> = Contiguous2D<Option<T>>;
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct SheetFormatting {
-    pub align: Contiguous2D<Option<CellAlign>>,
-    pub vertical_align: Contiguous2D<Option<CellVerticalAlign>>,
-    pub wrap: Contiguous2D<Option<CellWrap>>,
-    pub numeric_format: Contiguous2D<Option<NumericFormat>>,
-    pub numeric_decimals: Contiguous2D<Option<i16>>,
-    pub numeric_commas: Contiguous2D<Option<bool>>,
-    pub bold: Contiguous2D<Option<bool>>,
+    pub align: SheetFormattingType<CellAlign>,
+    pub vertical_align: SheetFormattingType<CellVerticalAlign>,
+    pub wrap: SheetFormattingType<CellWrap>,
+    pub numeric_format: SheetFormattingType<NumericFormat>,
+    pub numeric_decimals: SheetFormattingType<i16>,
+    pub numeric_commas: SheetFormattingType<bool>,
+    pub bold: SheetFormattingType<bool>,
     pub italic: Contiguous2D<Option<bool>>,
-    pub text_color: Contiguous2D<Option<String>>,
-    pub fill_color: Contiguous2D<Option<String>>,
-    pub render_size: Contiguous2D<Option<RenderSize>>,
-    pub date_time: Contiguous2D<Option<String>>,
-    pub underline: Contiguous2D<Option<bool>>,
-    pub strike_through: Contiguous2D<Option<bool>>,
+    pub text_color: SheetFormattingType<String>,
+    pub fill_color: SheetFormattingType<String>,
+    pub render_size: SheetFormattingType<RenderSize>,
+    pub date_time: SheetFormattingType<String>,
+    pub underline: SheetFormattingType<bool>,
+    pub strike_through: SheetFormattingType<bool>,
 }

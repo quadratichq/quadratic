@@ -33,6 +33,7 @@ impl SheetFormatting {
 #[serial_test::parallel]
 mod tests {
     use crate::controller::GridController;
+    use crate::ClearOption;
     use crate::{A1Selection, Pos};
 
     #[test]
@@ -50,19 +51,19 @@ mod tests {
 
         assert_eq!(
             clipboard.clone().bold.unwrap().get(Pos::new(1, 1)).unwrap(),
-            Some(true)
+            ClearOption::Some(true)
         );
         assert_eq!(
             clipboard.clone().bold.unwrap().get(Pos::new(1, 2)).unwrap(),
-            Some(true)
+            ClearOption::Some(true)
         );
         assert_eq!(
             clipboard.clone().bold.unwrap().get(Pos::new(2, 1)).unwrap(),
-            Some(true)
+            ClearOption::Some(true)
         );
         assert_eq!(
             clipboard.clone().bold.unwrap().get(Pos::new(2, 2)).unwrap(),
-            Some(true)
+            ClearOption::Some(true)
         );
         assert_eq!(clipboard.bold.unwrap().get(Pos::new(3, 3)), None);
     }

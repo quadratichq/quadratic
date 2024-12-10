@@ -12,6 +12,10 @@ pub mod ref_range_bounds_intersection;
 pub mod ref_range_bounds_query;
 pub mod ref_range_bounds_translate;
 
+// todo: this should be reworked so start and end are both CellRefRangeEnds and
+// we use i64::MAX to represent unbounded ranges. For single positions, start
+// and end are the same.
+
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(test, proptest(filter = "|range| range.is_valid()"))]

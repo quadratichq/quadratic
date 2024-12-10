@@ -10,7 +10,7 @@ impl RefRangeBounds {
 
     /// Returns whether `self` is a single column or a column range.
     pub fn is_column_range(&self) -> bool {
-        self.start.row.is_none() || self.end.map_or(false, |end| end.row.is_none())
+        self.start.row.is_none() && self.end.map_or(true, |end| end.row.is_none())
     }
 
     /// Returns whether `self` is a multi-cursor.
@@ -30,45 +30,37 @@ impl RefRangeBounds {
     }
 
     /// Returns whether `self` contains the column `col` in its column range.
-    pub fn has_column(&self, col: i64) -> bool {
-        if self.start.row.is_some() || self.end.map_or(false, |end| end.row.is_some()) {
+    pub fn has_column_range(&self, col: i64) -> bool {
+        if !self.is_column_range() {
             return false;
         }
-        if let (Some(start_col), Some(end_col)) = (self.start.col, self.end.and_then(|end| end.col))
-        {
-            let min = start_col.coord.min(end_col.coord);
-            let max = start_col.coord.max(end_col.coord);
-            min <= col && col <= max
-        } else if let Some(start_col) = self.start.col {
-            start_col.coord == col
-        } else if let Some(end_col) = self.end.and_then(|end| end.col) {
-            end_col.coord == col
+        let min = self.start.col.map_or(1, |c| c.coord);
+
+        if let Some(end) = self.end {
+            let max = end.col.map_or(i64::MAX, |c| c.coord);
+            col >= min && col <= max
         } else {
-            false
+            col == min
         }
     }
 
     /// Returns whether `self` is a single row or a row range.
     pub fn is_row_range(&self) -> bool {
-        self.start.col.is_none() || self.end.map_or(false, |end| end.col.is_none())
+        self.start.col.is_none() && self.end.map_or(true, |end| end.col.is_none())
     }
 
     /// Returns whether `self` contains the row `row` in its row range.
-    pub fn has_row(&self, row: i64) -> bool {
-        if self.start.col.is_some() || self.end.map_or(false, |end| end.col.is_some()) {
+    pub fn has_row_range(&self, row: i64) -> bool {
+        if !self.is_row_range() {
             return false;
         }
-        if let (Some(start_row), Some(end_row)) = (self.start.row, self.end.and_then(|end| end.row))
-        {
-            let min = start_row.coord.min(end_row.coord);
-            let max = start_row.coord.max(end_row.coord);
-            min <= row && row <= max
-        } else if let Some(start_row) = self.start.row {
-            start_row.coord == row
-        } else if let Some(end_row) = self.end.and_then(|end| end.row) {
-            end_row.coord == row
+        let min = self.start.row.map_or(1, |r| r.coord);
+
+        if let Some(end) = self.end {
+            let max = end.row.map_or(i64::MAX, |r| r.coord);
+            row >= min && row <= max
         } else {
-            false
+            row == min
         }
     }
 
@@ -269,6 +261,7 @@ mod tests {
         assert!(RefRangeBounds::test_a1("A:C").is_column_range());
         assert!(RefRangeBounds::test_a1("A1:C").is_column_range());
         assert!(RefRangeBounds::test_a1("A:C1").is_column_range());
+        assert!(RefRangeBounds::test_a1("*").is_column_range());
     }
 
     #[test]
@@ -278,35 +271,61 @@ mod tests {
         assert!(!RefRangeBounds::test_a1("A1:C3").is_row_range());
         assert!(RefRangeBounds::test_a1("1").is_row_range());
         assert!(RefRangeBounds::test_a1("1:3").is_row_range());
-        assert!(RefRangeBounds::test_a1("A1:3").is_row_range());
-        assert!(RefRangeBounds::test_a1("1:C3").is_row_range());
+
+        // technically, this is the same as 1:3, but not worth the edge case
+        assert!(!RefRangeBounds::test_a1("A1:3").is_row_range());
+
+        assert!(!RefRangeBounds::test_a1("1:C3").is_row_range());
+        assert!(RefRangeBounds::test_a1("*").is_row_range());
     }
 
     #[test]
-    fn test_has_column() {
-        assert!(RefRangeBounds::test_a1("A").has_column(1));
-        assert!(!RefRangeBounds::test_a1("A").has_column(2));
-        assert!(RefRangeBounds::test_a1("A:B").has_column(1));
-        assert!(RefRangeBounds::test_a1("A:B").has_column(2));
-        assert!(!RefRangeBounds::test_a1("A:B").has_column(3));
+    fn test_has_column_range() {
+        assert!(RefRangeBounds::test_a1("A").has_column_range(1));
+        assert!(!RefRangeBounds::test_a1("A").has_column_range(2));
+        assert!(RefRangeBounds::test_a1("A:B").has_column_range(1));
+        assert!(RefRangeBounds::test_a1("A:B").has_column_range(2));
+        assert!(!RefRangeBounds::test_a1("A:B").has_column_range(3));
 
-        assert!(!RefRangeBounds::test_a1("A1").has_column(1));
-        assert!(!RefRangeBounds::test_a1("1").has_column(1));
-        assert!(!RefRangeBounds::test_a1("A1:C3").has_column(2));
+        assert!(!RefRangeBounds::test_a1("A1").has_column_range(1));
+        assert!(!RefRangeBounds::test_a1("1").has_column_range(1));
+
+        // technically, this is the same as A:C, but not worth the edge case
+        assert!(!RefRangeBounds::test_a1("A1:C").has_column_range(2));
+
+        assert!(!RefRangeBounds::test_a1("A1:C3").has_column_range(2));
+
+        assert!(RefRangeBounds::test_a1("A:").has_column_range(1));
+        assert!(!RefRangeBounds::test_a1("D:").has_column_range(1));
+        assert!(RefRangeBounds::test_a1("D:").has_column_range(col![E]));
+
+        assert!(RefRangeBounds::test_a1("*").has_column_range(col![E]));
+        assert!(!RefRangeBounds::test_a1("1:").has_column_range(col![A]));
     }
 
     #[test]
-    fn test_has_row() {
-        assert!(RefRangeBounds::test_a1("1").has_row(1));
-        assert!(!RefRangeBounds::test_a1("1").has_row(2));
-        assert!(RefRangeBounds::test_a1("1:3").has_row(1));
-        assert!(RefRangeBounds::test_a1("1:3").has_row(2));
-        assert!(RefRangeBounds::test_a1("1:3").has_row(3));
-        assert!(!RefRangeBounds::test_a1("1:3").has_row(4));
+    fn test_has_row_range() {
+        assert!(RefRangeBounds::test_a1("1").has_row_range(1));
+        assert!(!RefRangeBounds::test_a1("1").has_row_range(2));
+        assert!(RefRangeBounds::test_a1("1:3").has_row_range(1));
+        assert!(RefRangeBounds::test_a1("1:3").has_row_range(2));
+        assert!(RefRangeBounds::test_a1("1:3").has_row_range(3));
+        assert!(!RefRangeBounds::test_a1("1:3").has_row_range(4));
 
-        assert!(!RefRangeBounds::test_a1("A1").has_row(1));
-        assert!(!RefRangeBounds::test_a1("A").has_row(1));
-        assert!(!RefRangeBounds::test_a1("A1:C3").has_row(2));
+        assert!(!RefRangeBounds::test_a1("A1").has_row_range(1));
+        assert!(!RefRangeBounds::test_a1("A").has_row_range(1));
+        assert!(!RefRangeBounds::test_a1("A1:C3").has_row_range(2));
+
+        assert!(RefRangeBounds::test_a1("1:").has_row_range(1));
+        assert!(RefRangeBounds::test_a1("1:").has_row_range(2));
+        assert!(RefRangeBounds::test_a1("1:3").has_row_range(1));
+        assert!(!RefRangeBounds::test_a1("1:3").has_row_range(4));
+
+        assert!(RefRangeBounds::test_a1("*").has_row_range(1));
+        assert!(RefRangeBounds::test_a1("*").has_row_range(100));
+
+        assert!(!RefRangeBounds::test_a1("A:B").has_row_range(1));
+        assert!(!RefRangeBounds::test_a1("B:").has_row_range(2));
     }
 
     #[test]

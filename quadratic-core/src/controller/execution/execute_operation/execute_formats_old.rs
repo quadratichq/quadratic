@@ -13,10 +13,13 @@ impl GridController {
     ) {
         if let Some(format) = formats.iter_values().next() {
             if let Some(align) = format.align {
-                formats_a1
-                    .align
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(align));
+                formats_a1.align.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(align.into()),
+                );
             }
             if let Some(vertical_align) = format.vertical_align {
                 formats_a1.vertical_align.get_or_insert_default().set_rect(
@@ -24,14 +27,14 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(vertical_align),
+                    Some(vertical_align.into()),
                 );
             }
             if let Some(wrap) = format.wrap {
                 formats_a1
                     .wrap
                     .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(wrap));
+                    .set_rect(x1, y1, x2, y2, Some(wrap.into()));
             }
             if let Some(numeric_format) = &format.numeric_format {
                 formats_a1.numeric_format.get_or_insert_default().set_rect(
@@ -39,14 +42,14 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(numeric_format.clone()),
+                    Some(numeric_format.clone().into()),
                 );
             }
             if let Some(numeric_decimals) = format.numeric_decimals {
                 formats_a1
                     .numeric_decimals
                     .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(numeric_decimals));
+                    .set_rect(x1, y1, x2, y2, Some(numeric_decimals.into()));
             }
             if let Some(numeric_commas) = format.numeric_commas {
                 formats_a1.numeric_commas.get_or_insert_default().set_rect(
@@ -54,20 +57,23 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(numeric_commas),
+                    Some(numeric_commas.into()),
                 );
             }
             if let Some(bold) = format.bold {
                 formats_a1
                     .bold
                     .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(bold));
+                    .set_rect(x1, y1, x2, y2, Some(bold.into()));
             }
             if let Some(italic) = format.italic {
-                formats_a1
-                    .italic
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(italic));
+                formats_a1.italic.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(italic.into()),
+                );
             }
             if let Some(text_color) = &format.text_color {
                 formats_a1.text_color.get_or_insert_default().set_rect(
@@ -75,7 +81,7 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(text_color.clone()),
+                    Some(text_color.clone().into()),
                 );
             }
             if let Some(fill_color) = &format.fill_color {
@@ -84,7 +90,7 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(fill_color.clone()),
+                    Some(fill_color.clone().into()),
                 );
             }
             if let Some(render_size) = &format.render_size {
@@ -93,7 +99,7 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(render_size.clone()),
+                    Some(render_size.clone().into()),
                 );
             }
             if let Some(date_time) = &format.date_time {
@@ -102,7 +108,7 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(date_time.clone()),
+                    Some(date_time.clone().into()),
                 );
             }
             if let Some(underline) = format.underline {
@@ -111,7 +117,7 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(underline),
+                    Some(underline.into()),
                 );
             }
             if let Some(strike_through) = format.strike_through {
@@ -120,7 +126,7 @@ impl GridController {
                     y1,
                     x2,
                     y2,
-                    Some(strike_through),
+                    Some(strike_through.into()),
                 );
             }
         }
