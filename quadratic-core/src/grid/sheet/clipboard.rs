@@ -91,6 +91,8 @@ impl Sheet {
                     let underline = summary.underline.unwrap_or(false);
                     let strike_through = summary.strike_through.unwrap_or(false);
 
+                    let cell_border = self.borders_a1.get_style_cell(pos);
+
                     if bold
                         || italic
                         || underline
@@ -100,6 +102,7 @@ impl Sheet {
                         || cell_align.is_some()
                         || cell_vertical_align.is_some()
                         || cell_wrap.is_some()
+                        || !cell_border.is_empty()
                     {
                         style.push_str("style=\"");
 
@@ -148,29 +151,46 @@ impl Sheet {
                             style.push_str("text-decoration:underline line-through;");
                         }
 
-                        dbgjs!("todo(ayush): implement cell_border");
-                        // if let Some(cell_border) = cell_border {
-                        //     for (side, border) in cell_border.borders.iter().enumerate() {
-                        //         let side = match side {
-                        //             0 => "-left",
-                        //             1 => "-top",
-                        //             2 => "-right",
-                        //             3 => "-bottom",
-                        //             _ => "",
-                        //         };
-                        //         if let Some(border) = border {
-                        //             style.push_str(
-                        //                 format!(
-                        //                     "border{}: {} {};",
-                        //                     side,
-                        //                     border.line.as_css_string(),
-                        //                     border.color.as_rgb_hex()
-                        //                 )
-                        //                 .as_str(),
-                        //             );
-                        //         }
-                        //     }
-                        // }
+                        if cell_border.left.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-left: {} {};",
+                                    cell_border.left.unwrap().line.as_css_string(),
+                                    cell_border.left.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                        if cell_border.top.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-top: {} {};",
+                                    cell_border.top.unwrap().line.as_css_string(),
+                                    cell_border.top.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                        if cell_border.right.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-right: {} {};",
+                                    cell_border.right.unwrap().line.as_css_string(),
+                                    cell_border.right.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                        if cell_border.bottom.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-bottom: {} {};",
+                                    cell_border.bottom.unwrap().line.as_css_string(),
+                                    cell_border.bottom.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
 
                         style.push('"');
                     }
@@ -275,9 +295,8 @@ mod tests {
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::GridController;
     use crate::grid::js_types::JsClipboard;
-    use crate::grid::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::selection::OldSelection;
-    use crate::{A1Selection, Pos, Rect, SheetRect};
+    use crate::grid::sheet::borders_a1::{BorderSelection, BorderStyle, CellBorderLine};
+    use crate::{A1Selection, Pos, Rect};
 
     #[test]
     #[parallel]
@@ -315,22 +334,20 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
-        // todo: this is temporary until all is moved to A1Selection
-        let new_selection = A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
-
-        gc.set_borders_selection(
-            selection.clone(),
+        gc.set_borders(
+            A1Selection::test_a1("A1"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
-        let JsClipboard { html, .. } = sheet.copy_to_clipboard(&new_selection).unwrap();
+        let JsClipboard { html, .. } = sheet
+            .copy_to_clipboard(&A1Selection::test_a1("A1"))
+            .unwrap();
 
         gc.paste_from_clipboard(
-            &A1Selection::from_xy(2, 2, sheet_id),
+            &A1Selection::test_a1("B2"),
             None,
             Some(html),
             PasteSpecial::None,
@@ -338,7 +355,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let border = sheet.borders.get(2, 2);
+        let border = sheet.borders_a1.get_style_cell(pos![B2]);
         assert_eq!(border.top.unwrap().line, CellBorderLine::default());
         assert_eq!(border.bottom.unwrap().line, CellBorderLine::default());
         assert_eq!(border.left.unwrap().line, CellBorderLine::default());

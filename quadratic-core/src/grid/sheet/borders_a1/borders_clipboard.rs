@@ -30,6 +30,7 @@ mod tests {
 
     use super::*;
     use crate::{
+        color::Rgba,
         controller::GridController,
         grid::sheet::borders_a1::{BorderSelection, BorderStyle, CellBorderLine},
         SheetRect,
@@ -42,19 +43,107 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders(
-            A1Selection::from_rect(SheetRect::new(1, 1, 10, 10, sheet_id)),
+            A1Selection::test_a1("A1:B2"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
-        let copy = sheet.borders_a1.to_clipboard(
-            sheet,
-            &A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
-        );
+        let clipboard = gc
+            .sheet(sheet_id)
+            .borders_a1
+            .to_clipboard(sheet, &A1Selection::test_a1("A1:C3"))
+            .unwrap();
 
-        dbg!(&copy);
+        assert_eq!(
+            clipboard
+                .clone()
+                .top
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .top
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .color,
+            Rgba::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .left
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .left
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .color,
+            Rgba::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .bottom
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .bottom
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .color,
+            Rgba::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .right
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .line,
+            CellBorderLine::default()
+        );
+        assert_eq!(
+            clipboard
+                .clone()
+                .right
+                .unwrap()
+                .get(Pos::new(1, 1))
+                .unwrap()
+                .unwrap()
+                .color,
+            Rgba::default()
+        );
     }
 
     #[test]

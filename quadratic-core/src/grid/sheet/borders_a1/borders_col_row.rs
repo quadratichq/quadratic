@@ -444,43 +444,6 @@ mod tests {
     }
 
     #[test]
-    fn to_clipboard() {
-        todo!();
-
-        // let mut gc = GridController::test();
-        // let sheet_id = gc.sheet_ids()[0];
-
-        // gc.set_borders(
-        //     A1Selection::test_a1("A1:B2"),
-        //     BorderSelection::All,
-        //     Some(BorderStyle::default()),
-        //     None,
-        // );
-
-        // let clipboard = gc
-        //     .sheet(sheet_id)
-        //     .borders_a1
-        //     .to_clipboard(&A1Selection::test_a1("A1:C3"))
-        //     .unwrap();
-
-        // let entry = clipboard.get_at(6).unwrap();
-        // assert_eq!(entry.top.unwrap().unwrap().line, CellBorderLine::default());
-        // assert_eq!(entry.top.unwrap().unwrap().color, Rgba::default());
-        // assert_eq!(entry.left.unwrap().unwrap().line, CellBorderLine::default());
-        // assert_eq!(entry.left.unwrap().unwrap().color, Rgba::default());
-        // assert_eq!(
-        //     entry.bottom.unwrap().unwrap().line,
-        //     CellBorderLine::default()
-        // );
-        // assert_eq!(entry.bottom.unwrap().unwrap().color, Rgba::default());
-        // assert_eq!(
-        //     entry.right.unwrap().unwrap().line,
-        //     CellBorderLine::default()
-        // );
-        // assert_eq!(entry.right.unwrap().unwrap().color, Rgba::default());
-    }
-
-    #[test]
     fn delete_row_undo_code() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

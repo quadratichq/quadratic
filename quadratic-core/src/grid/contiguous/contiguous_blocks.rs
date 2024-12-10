@@ -512,13 +512,17 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         let mut new_map = BTreeMap::new();
         for (mut key, mut block) in std::mem::take(&mut self.0).into_iter() {
             if delta < 0 {
-                key = key.saturating_sub(delta.unsigned_abs());
-                block.start = block.start.saturating_sub(delta.unsigned_abs());
-                block.end = block.end.saturating_sub(delta.unsigned_abs());
+                key = key.saturating_sub(delta.unsigned_abs()).max(1);
+                block.start = block.start.saturating_sub(delta.unsigned_abs()).max(1);
+                if block.end != u64::MAX {
+                    block.end = block.end.saturating_sub(delta.unsigned_abs()).max(1);
+                }
             } else {
-                key = key.saturating_add(delta as u64);
-                block.start = block.start.saturating_add(delta as u64);
-                block.end = block.end.saturating_add(delta as u64);
+                key = key.saturating_add(delta as u64).max(1);
+                block.start = block.start.saturating_add(delta as u64).max(1);
+                if block.end != u64::MAX {
+                    block.end = block.end.saturating_add(delta as u64).max(1);
+                }
             }
             new_map.insert(key, block);
         }

@@ -152,6 +152,12 @@ pub struct BorderStyleCell {
     pub right: Option<BorderStyleTimestamp>,
 }
 
+impl BorderStyleCell {
+    pub fn is_empty(&self) -> bool {
+        self.top.is_none() && self.bottom.is_none() && self.left.is_none() && self.right.is_none()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
 pub struct JsBorder {
     pub color: Rgba,
