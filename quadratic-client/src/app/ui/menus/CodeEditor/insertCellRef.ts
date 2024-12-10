@@ -15,7 +15,7 @@ export const insertCellRef = (selectedCellSheet: string, mode?: CodeCellLanguage
   if (language === 'Formula') {
     ref = a1Notation;
   } else if (language === 'Python' || language === 'Javascript') {
-    ref = `q.cells('${a1Notation}')`;
+    ref = `q.cells("${a1Notation}")`;
   } else if (language === 'Connection') {
     ref = `{{${a1Notation}}}`;
   }
