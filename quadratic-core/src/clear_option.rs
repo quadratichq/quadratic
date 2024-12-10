@@ -30,10 +30,20 @@ impl<T> From<Option<T>> for ClearOption<T> {
 }
 
 impl<T> ClearOption<T> {
+    #[cfg(test)]
     pub fn unwrap(self) -> T {
         match self {
             ClearOption::Some(value) => value,
             ClearOption::Clear => panic!("ClearOption is Clear"),
+        }
+    }
+}
+
+impl<T: Clone> From<&Option<T>> for ClearOption<T> {
+    fn from(opt: &Option<T>) -> Self {
+        match opt {
+            None => ClearOption::Clear,
+            Some(v) => ClearOption::Some(v.clone()),
         }
     }
 }
