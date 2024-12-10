@@ -316,7 +316,7 @@ impl Rect {
     #[cfg(test)]
     /// Creates a rectangle from a string like "A1:B2".
     pub fn test_a1(s: &str) -> Self {
-        crate::CellRefRange::test(s).to_rect().unwrap()
+        crate::CellRefRange::test_a1(s).to_rect().unwrap()
     }
 }
 

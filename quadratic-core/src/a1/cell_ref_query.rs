@@ -84,39 +84,39 @@ mod tests {
 
     #[test]
     fn test_only_column() {
-        assert!(CellRefRange::test("A").only_column(1));
-        assert!(CellRefRange::test("A2:A5").only_column(1));
+        assert!(CellRefRange::test_a1("A").only_column(1));
+        assert!(CellRefRange::test_a1("A2:A5").only_column(1));
 
-        assert!(!CellRefRange::test("A").only_column(2));
-        assert!(!CellRefRange::test("A:B").only_column(2));
-        assert!(!CellRefRange::test("A1").only_column(2));
-        assert!(!CellRefRange::test("A1:D1").only_column(1));
+        assert!(!CellRefRange::test_a1("A").only_column(2));
+        assert!(!CellRefRange::test_a1("A:B").only_column(2));
+        assert!(!CellRefRange::test_a1("A1").only_column(2));
+        assert!(!CellRefRange::test_a1("A1:D1").only_column(1));
     }
 
     #[test]
     fn test_only_row() {
-        assert!(CellRefRange::test("2").only_row(2));
-        assert!(CellRefRange::test("A2:D2").only_row(2));
+        assert!(CellRefRange::test_a1("2").only_row(2));
+        assert!(CellRefRange::test_a1("A2:D2").only_row(2));
 
-        assert!(!CellRefRange::test("2").only_row(1));
-        assert!(!CellRefRange::test("1:2").only_row(1));
-        assert!(!CellRefRange::test("A2").only_row(1));
-        assert!(!CellRefRange::test("A2:D2").only_row(1));
+        assert!(!CellRefRange::test_a1("2").only_row(1));
+        assert!(!CellRefRange::test_a1("1:2").only_row(1));
+        assert!(!CellRefRange::test_a1("A2").only_row(1));
+        assert!(!CellRefRange::test_a1("A2:D2").only_row(1));
     }
 
     #[test]
     fn test_is_pos_range() {
-        assert!(CellRefRange::test("A1").is_pos_range(Pos { x: 1, y: 1 }, None));
-        assert!(!CellRefRange::test("A1").is_pos_range(Pos { x: 2, y: 1 }, None));
-        assert!(!CellRefRange::test("A1").is_pos_range(Pos { x: 1, y: 2 }, None));
+        assert!(CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 1 }, None));
+        assert!(!CellRefRange::test_a1("A1").is_pos_range(Pos { x: 2, y: 1 }, None));
+        assert!(!CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 2 }, None));
         assert!(
-            CellRefRange::test("A1:B2").is_pos_range(Pos { x: 1, y: 1 }, Some(Pos { x: 2, y: 2 }))
+            CellRefRange::test_a1("A1:B2").is_pos_range(Pos { x: 1, y: 1 }, Some(Pos { x: 2, y: 2 }))
         );
         assert!(
-            !CellRefRange::test("A1").is_pos_range(Pos { x: 2, y: 1 }, Some(Pos { x: 1, y: 1 }))
+            !CellRefRange::test_a1("A1").is_pos_range(Pos { x: 2, y: 1 }, Some(Pos { x: 1, y: 1 }))
         );
         assert!(
-            !CellRefRange::test("A1").is_pos_range(Pos { x: 1, y: 2 }, Some(Pos { x: 1, y: 1 }))
+            !CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 2 }, Some(Pos { x: 1, y: 1 }))
         );
     }
 }

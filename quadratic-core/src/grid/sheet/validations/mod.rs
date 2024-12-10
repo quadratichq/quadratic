@@ -262,7 +262,7 @@ mod tests {
             validations.display_sheet(),
             Some(ValidationDisplaySheet {
                 displays: vec![ValidationDisplay {
-                    range: CellRefRange::test("*"),
+                    range: CellRefRange::test_a1("*"),
                     checkbox: true,
                     list: false
                 }]
@@ -304,17 +304,17 @@ mod tests {
             display_sheet.displays,
             vec![
                 ValidationDisplay {
-                    range: CellRefRange::test("A"),
+                    range: CellRefRange::test_a1("A"),
                     checkbox: true,
                     list: false
                 },
                 ValidationDisplay {
-                    range: CellRefRange::test("B"),
+                    range: CellRefRange::test_a1("B"),
                     checkbox: true,
                     list: false
                 },
                 ValidationDisplay {
-                    range: CellRefRange::test("C"),
+                    range: CellRefRange::test_a1("C"),
                     checkbox: true,
                     list: false
                 }
@@ -356,17 +356,17 @@ mod tests {
             display_sheet.displays,
             vec![
                 ValidationDisplay {
-                    range: CellRefRange::test("1"),
+                    range: CellRefRange::test_a1("1"),
                     checkbox: true,
                     list: false
                 },
                 ValidationDisplay {
-                    range: CellRefRange::test("2"),
+                    range: CellRefRange::test_a1("2"),
                     checkbox: true,
                     list: false
                 },
                 ValidationDisplay {
-                    range: CellRefRange::test("3"),
+                    range: CellRefRange::test_a1("3"),
                     checkbox: true,
                     list: false
                 }

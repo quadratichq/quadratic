@@ -541,10 +541,10 @@ mod test {
         assert_eq!(
             selection.ranges,
             vec![
-                CellRefRange::test("A1:C1"),
-                CellRefRange::test("A3:C3"),
-                CellRefRange::test("A2"),
-                CellRefRange::test("C2"),
+                CellRefRange::test_a1("A1:C1"),
+                CellRefRange::test_a1("A3:C3"),
+                CellRefRange::test_a1("A2"),
+                CellRefRange::test_a1("C2"),
             ]
         );
     }
@@ -552,7 +552,7 @@ mod test {
     fn test_exclude_cells_from_top_left() {
         let mut selection = A1Selection::test_a1("A1:C3");
         selection.exclude_cells(pos![A1], Some(pos![C2]));
-        assert_eq!(selection.ranges, vec![CellRefRange::test("A3:C3")]);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A3:C3")]);
     }
 
     #[test]
@@ -562,17 +562,20 @@ mod test {
         assert_eq!(
             selection.ranges,
             vec![
-                CellRefRange::test("A1:C1"),
-                CellRefRange::test("A3:C3"),
-                CellRefRange::test("A2"),
-                CellRefRange::test("C2"),
-                CellRefRange::test("E5:F7"),
+                CellRefRange::test_a1("A1:C1"),
+                CellRefRange::test_a1("A3:C3"),
+                CellRefRange::test_a1("A2"),
+                CellRefRange::test_a1("C2"),
+                CellRefRange::test_a1("E5:F7"),
             ]
         );
         selection.exclude_cells(pos![A2], Some(pos![C3]));
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test("A1:C1"), CellRefRange::test("E5:F7")]
+            vec![
+                CellRefRange::test_a1("A1:C1"),
+                CellRefRange::test_a1("E5:F7")
+            ]
         );
     }
 
@@ -580,17 +583,17 @@ mod test {
     fn test_exclude_cells_column() {
         let mut selection = A1Selection::test_a1("C");
         selection.exclude_cells(pos![C1], None);
-        assert_eq!(selection.ranges, vec![CellRefRange::test("C2:C")]);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("C2:C")]);
 
         let mut selection = A1Selection::test_a1("C");
         selection.exclude_cells(pos![C1], Some(pos![D5]));
-        assert_eq!(selection.ranges, vec![CellRefRange::test("C6:C")]);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("C6:C")]);
 
         let mut selection = A1Selection::test_a1("C");
         selection.exclude_cells(pos![C2], Some(pos![E5]));
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test("C1"), CellRefRange::test("C6:C")]
+            vec![CellRefRange::test_a1("C1"), CellRefRange::test_a1("C6:C")]
         );
     }
 
@@ -600,7 +603,10 @@ mod test {
         selection.exclude_cells(pos![C1], None);
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test("C2:E"), CellRefRange::test("D1:E1")]
+            vec![
+                CellRefRange::test_a1("C2:E"),
+                CellRefRange::test_a1("D1:E1")
+            ]
         );
 
         let mut selection = A1Selection::test_a1("C:F");
@@ -608,10 +614,10 @@ mod test {
         assert_eq!(
             selection.ranges,
             vec![
-                CellRefRange::test("C1:F1"),
-                CellRefRange::test("C4:F"),
-                CellRefRange::test("C2:C3"),
-                CellRefRange::test("F2:F3")
+                CellRefRange::test_a1("C1:F1"),
+                CellRefRange::test_a1("C4:F"),
+                CellRefRange::test_a1("C2:C3"),
+                CellRefRange::test_a1("F2:F3")
             ]
         );
     }
@@ -620,13 +626,13 @@ mod test {
     fn test_exclude_cells_row() {
         let mut selection = A1Selection::test_a1("1");
         selection.exclude_cells(pos![A1], None);
-        assert_eq!(selection.ranges, vec![CellRefRange::test("B1:1")]);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B1:1")]);
 
         let mut selection = A1Selection::test_a1("2");
         selection.exclude_cells(pos![B1], Some(pos![C5]));
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test("A2"), CellRefRange::test("D2:2")]
+            vec![CellRefRange::test_a1("A2"), CellRefRange::test_a1("D2:2")]
         );
     }
 
@@ -637,9 +643,9 @@ mod test {
         assert_eq!(
             selection.ranges,
             vec![
-                CellRefRange::test("3:5"),
-                CellRefRange::test("A2"),
-                CellRefRange::test("C2:2")
+                CellRefRange::test_a1("3:5"),
+                CellRefRange::test_a1("A2"),
+                CellRefRange::test_a1("C2:2")
             ]
         );
 
@@ -648,10 +654,10 @@ mod test {
         assert_eq!(
             selection.ranges,
             vec![
-                CellRefRange::test("2"),
-                CellRefRange::test("5"),
-                CellRefRange::test("A3:A4"),
-                CellRefRange::test("D3:4")
+                CellRefRange::test_a1("2"),
+                CellRefRange::test_a1("5"),
+                CellRefRange::test_a1("A3:A4"),
+                CellRefRange::test_a1("D3:4")
             ]
         );
 
@@ -660,9 +666,9 @@ mod test {
         assert_eq!(
             selection.ranges,
             vec![
-                CellRefRange::test("2"),
-                CellRefRange::test("A3:A5"),
-                CellRefRange::test("D3:5"),
+                CellRefRange::test_a1("2"),
+                CellRefRange::test_a1("A3:A5"),
+                CellRefRange::test_a1("D3:5"),
             ]
         );
     }
@@ -673,7 +679,10 @@ mod test {
         selection.exclude_cells(pos![C4], None);
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test("C1:C3"), CellRefRange::test("C5:C")]
+            vec![
+                CellRefRange::test_a1("C1:C3"),
+                CellRefRange::test_a1("C5:C")
+            ]
         );
     }
 
@@ -683,7 +692,10 @@ mod test {
         selection.exclude_cells(pos![D2], None);
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test("A2:C2"), CellRefRange::test("E2:2")]
+            vec![
+                CellRefRange::test_a1("A2:C2"),
+                CellRefRange::test_a1("E2:2")
+            ]
         );
     }
 
@@ -693,7 +705,7 @@ mod test {
         selection.exclude_cells(pos![C7], None);
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test("B8:C8"), CellRefRange::test("B7")]
+            vec![CellRefRange::test_a1("B8:C8"), CellRefRange::test_a1("B7")]
         );
     }
 
@@ -703,7 +715,7 @@ mod test {
         selection.exclude_cells(pos![C8], None);
         assert_eq!(
             selection.ranges,
-            vec![CellRefRange::test("B7:C7"), CellRefRange::test("B8")]
+            vec![CellRefRange::test_a1("B7:C7"), CellRefRange::test_a1("B8")]
         );
     }
 }

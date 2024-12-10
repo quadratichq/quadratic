@@ -27,6 +27,6 @@ mod test {
             .unwrap();
         assert_eq!(selection.sheet_id, sheet_id);
         assert_eq!(selection.cursor, pos![A1]);
-        assert_eq!(selection.ranges, vec![CellRefRange::test("A1:B2")]);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
     }
 }
