@@ -147,6 +147,7 @@ impl Sheet {
             };
             ai_context_rects.push(js_cell_value_pos_ai_context);
         }
+        dbgjs!("");
         ai_context_rects
     }
 
@@ -267,14 +268,9 @@ impl Sheet {
             .collect()
     }
 
-    /// Returns the content and formatting bounds for a Selection.
-    ///
-    /// * For all, it returns the data+formatting bounds for the sheet.
-    /// * For rects, it returns the largest bounds around the rects.
-    /// * For columns or rows, it returns the data+formatting bounds around the
-    ///   columns and/or rows.
+    /// Returns the smallest rect that contains all the ranges in the selection.
+    /// Infinite selections are clamped at sheet data bounds.
     pub fn selection_bounds(&self, selection: &A1Selection) -> Option<Rect> {
-        dbgjs!("todo(ayush): add tests for this and update description");
         let rects = self.selection_to_rects(selection);
         if rects.is_empty() {
             None
@@ -312,7 +308,7 @@ mod tests {
 
     use crate::{
         grid::{
-            js_types::{JsCodeCell, JsReturnInfo},
+            js_types::{JsCellValuePosAIContext, JsCodeCell, JsReturnInfo},
             CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult,
         },
         A1Selection, Array, CellRefRange, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetRect,
@@ -322,96 +318,95 @@ mod tests {
     use super::Sheet;
 
     #[test]
-    fn get_ai_context_rects_in_sheet_rect() {
-        todo!()
-        // let mut sheet = Sheet::test();
-        // sheet.set_cell_values(
-        //     Rect {
-        //         min: Pos { x: 1, y: 1 },
-        //         max: Pos { x: 10, y: 1000 },
-        //     },
-        //     &Array::from(
-        //         (1..=1000)
-        //             .map(|row| {
-        //                 (1..=10)
-        //                     .map(|_| {
-        //                         if row == 1 {
-        //                             "heading1".to_string()
-        //                         } else {
-        //                             "value1".to_string()
-        //                         }
-        //                     })
-        //                     .collect::<Vec<String>>()
-        //             })
-        //             .collect::<Vec<Vec<String>>>(),
-        //     ),
-        // );
+    fn get_ai_context_rects_in_selection() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_values(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10, y: 1000 },
+            },
+            &Array::from(
+                (1..=1000)
+                    .map(|row| {
+                        (1..=10)
+                            .map(|_| {
+                                if row == 1 {
+                                    "heading1".to_string()
+                                } else {
+                                    "value1".to_string()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            ),
+        );
 
-        // sheet.set_cell_values(
-        //     Rect {
-        //         min: Pos { x: 31, y: 101 },
-        //         max: Pos { x: 40, y: 1100 },
-        //     },
-        //     &Array::from(
-        //         (1..=1000)
-        //             .map(|row| {
-        //                 (1..=10)
-        //                     .map(|_| {
-        //                         if row == 1 {
-        //                             "heading2".to_string()
-        //                         } else {
-        //                             "value3".to_string()
-        //                         }
-        //                     })
-        //                     .collect::<Vec<String>>()
-        //             })
-        //             .collect::<Vec<Vec<String>>>(),
-        //     ),
-        // );
+        sheet.set_cell_values(
+            Rect {
+                min: Pos { x: 31, y: 101 },
+                max: Pos { x: 40, y: 1100 },
+            },
+            &Array::from(
+                (1..=1000)
+                    .map(|row| {
+                        (1..=10)
+                            .map(|_| {
+                                if row == 1 {
+                                    "heading2".to_string()
+                                } else {
+                                    "value3".to_string()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                    })
+                    .collect::<Vec<Vec<String>>>(),
+            ),
+        );
 
-        // let selection = A1Selection::from_rect(SheetRect::new(1, 1, 10000, 10000, sheet.id));
-        // let ai_context_rects_in_selection =
-        //     sheet.get_ai_context_rects_in_selection(selection, None);
+        let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 1300, sheet.id));
+        let ai_context_rects_in_selection =
+            sheet.get_ai_context_rects_in_selection(selection, None);
 
-        // let max_rows = 3;
+        let max_rows = 3;
 
-        // let expected_ai_context_rects_in_selection = vec![
-        //     JsCellValuePosAIContext {
-        //         sheet_name: sheet.name.clone(),
-        //         rect_origin: Pos { x: 1, y: 1 }.a1_string(),
-        //         rect_width: 10,
-        //         rect_height: 1000,
-        //         starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
-        //             Rect {
-        //                 min: Pos { x: 1, y: 1 },
-        //                 max: Pos { x: 10, y: 1000 },
-        //             },
-        //             Some(max_rows),
-        //         ),
-        //     },
-        //     JsCellValuePosAIContext {
-        //         sheet_name: sheet.name.clone(),
-        //         rect_origin: Pos { x: 31, y: 101 }.a1_string(),
-        //         rect_width: 10,
-        //         rect_height: 1000,
-        //         starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
-        //             Rect {
-        //                 min: Pos { x: 31, y: 101 },
-        //                 max: Pos { x: 40, y: 1100 },
-        //             },
-        //             Some(max_rows),
-        //         ),
-        //     },
-        // ];
+        let expected_ai_context_rects_in_selection = vec![
+            JsCellValuePosAIContext {
+                sheet_name: sheet.name.clone(),
+                rect_origin: Pos { x: 1, y: 1 }.a1_string(),
+                rect_width: 10,
+                rect_height: 1000,
+                starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
+                    Rect {
+                        min: Pos { x: 1, y: 1 },
+                        max: Pos { x: 10, y: 1000 },
+                    },
+                    Some(max_rows),
+                ),
+            },
+            JsCellValuePosAIContext {
+                sheet_name: sheet.name.clone(),
+                rect_origin: Pos { x: 31, y: 101 }.a1_string(),
+                rect_width: 10,
+                rect_height: 1000,
+                starting_rect_values: sheet.get_js_cell_value_pos_in_rect(
+                    Rect {
+                        min: Pos { x: 31, y: 101 },
+                        max: Pos { x: 40, y: 1100 },
+                    },
+                    Some(max_rows),
+                ),
+            },
+        ];
 
-        // assert_eq!(
-        //     ai_context_rects_in_selection,
-        //     expected_ai_context_rects_in_selection
-        // );
+        assert_eq!(
+            ai_context_rects_in_selection,
+            expected_ai_context_rects_in_selection
+        );
     }
 
     #[test]
-    fn get_errored_code_cell_rect() {
+    fn get_errored_code_cells_in_selection() {
         let mut sheet = Sheet::test();
 
         let code_run_1 = CodeRun {
@@ -595,12 +590,18 @@ mod tests {
         let finite_selection = sheet.finitize_selection(&selection);
         assert_eq!(
             finite_selection.ranges,
-            vec![CellRefRange::test_a1("A1:C3"), CellRefRange::test_a1("E5:J10"),]
+            vec![
+                CellRefRange::test_a1("A1:C3"),
+                CellRefRange::test_a1("E5:J10"),
+            ]
         );
 
         // Test select all
         let selection = A1Selection::test_a1("*");
         let finite_selection = sheet.finitize_selection(&selection);
-        assert_eq!(finite_selection.ranges, vec![CellRefRange::test_a1("A1:J10")]);
+        assert_eq!(
+            finite_selection.ranges,
+            vec![CellRefRange::test_a1("A1:J10")]
+        );
     }
 }

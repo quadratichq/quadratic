@@ -1206,8 +1206,8 @@ mod test {
             ),
         );
 
-        let tabular_data_rects = sheet
-            .find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10000, 10000)], None);
+        let tabular_data_rects =
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 50, 1300)], None);
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![
