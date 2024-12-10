@@ -368,11 +368,11 @@ mod tests {
     #[test]
     fn test_cursor_pos_from_last_range() {
         assert_eq!(
-            cursor_pos_from_last_range(&CellRefRange::test("A1")),
+            cursor_pos_from_last_range(&CellRefRange::test_a1("A1")),
             pos![A1]
         );
         assert_eq!(
-            cursor_pos_from_last_range(&CellRefRange::test("A1:C3")),
+            cursor_pos_from_last_range(&CellRefRange::test_a1("A1:C3")),
             pos![A1]
         );
     }
@@ -593,7 +593,7 @@ mod tests {
         let selection = A1Selection {
             sheet_id: SheetId::test(),
             cursor: Pos { x: 1, y: 1 },
-            ranges: vec![CellRefRange::test("A1:A1")],
+            ranges: vec![CellRefRange::test_a1("A1:A1")],
         };
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &HashMap::new()),

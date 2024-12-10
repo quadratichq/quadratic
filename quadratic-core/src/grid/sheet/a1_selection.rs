@@ -540,12 +540,12 @@ mod tests {
         sheet.recalculate_bounds();
 
         // Test fully specified range
-        let range = CellRefRange::test("A1:E5");
+        let range = CellRefRange::test_a1("A1:E5");
         let rect = sheet.cell_ref_range_to_rect(range);
         assert_eq!(rect, Rect::new(1, 1, 5, 5));
 
         // Test unbounded end
-        let range = CellRefRange::test("B2:");
+        let range = CellRefRange::test_a1("B2:");
         let rect = sheet.cell_ref_range_to_rect(range);
         assert_eq!(rect, Rect::new(2, 2, 5, 5)); // Should extend to sheet bounds
     }
@@ -568,19 +568,19 @@ mod tests {
         sheet.recalculate_bounds();
 
         // Test unbounded range
-        let range = CellRefRange::test("B2:");
+        let range = CellRefRange::test_a1("B2:");
         let finite_range = sheet.finitize_cell_ref_range(range);
-        assert_eq!(finite_range, CellRefRange::test("B2:J10"));
+        assert_eq!(finite_range, CellRefRange::test_a1("B2:J10"));
 
         // Test already bounded range (should remain unchanged)
-        let range = CellRefRange::test("C3:E5");
+        let range = CellRefRange::test_a1("C3:E5");
         let finite_range = sheet.finitize_cell_ref_range(range);
-        assert_eq!(finite_range, CellRefRange::test("C3:E5"));
+        assert_eq!(finite_range, CellRefRange::test_a1("C3:E5"));
 
         // Test select all
-        let range = CellRefRange::test("*");
+        let range = CellRefRange::test_a1("*");
         let finite_range = sheet.finitize_cell_ref_range(range);
-        assert_eq!(finite_range, CellRefRange::test("A1:J10"));
+        assert_eq!(finite_range, CellRefRange::test_a1("A1:J10"));
     }
 
     #[test]
@@ -595,12 +595,12 @@ mod tests {
         let finite_selection = sheet.finitize_selection(&selection);
         assert_eq!(
             finite_selection.ranges,
-            vec![CellRefRange::test("A1:C3"), CellRefRange::test("E5:J10"),]
+            vec![CellRefRange::test_a1("A1:C3"), CellRefRange::test_a1("E5:J10"),]
         );
 
         // Test select all
         let selection = A1Selection::test_a1("*");
         let finite_selection = sheet.finitize_selection(&selection);
-        assert_eq!(finite_selection.ranges, vec![CellRefRange::test("A1:J10")]);
+        assert_eq!(finite_selection.ranges, vec![CellRefRange::test_a1("A1:J10")]);
     }
 }

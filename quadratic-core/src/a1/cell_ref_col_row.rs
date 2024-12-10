@@ -138,162 +138,162 @@ mod tests {
     #[test]
     fn test_removed_column() {
         // Basic case - removing a column in range
-        let mut range = CellRefRange::test("A1:B2");
+        let mut range = CellRefRange::test_a1("A1:B2");
         assert!(range.removed_column(1));
-        assert_eq!(range, CellRefRange::test("A1:A2"));
+        assert_eq!(range, CellRefRange::test_a1("A1:A2"));
 
         // Removing column affects coordinates above it
-        range = CellRefRange::test("D2:E5");
+        range = CellRefRange::test_a1("D2:E5");
         assert!(range.removed_column(1));
-        assert_eq!(range, CellRefRange::test("C2:D5"));
+        assert_eq!(range, CellRefRange::test_a1("C2:D5"));
 
         // Removing a column not in the range
-        range = CellRefRange::test("C1:D2");
+        range = CellRefRange::test_a1("C1:D2");
         assert!(range.removed_column(1));
-        assert_eq!(range, CellRefRange::test("B1:C2"));
+        assert_eq!(range, CellRefRange::test_a1("B1:C2"));
 
         // Removing the start column
-        range = CellRefRange::test("B1:D2");
+        range = CellRefRange::test_a1("B1:D2");
         assert!(range.removed_column(2));
-        assert_eq!(range, CellRefRange::test("B1:C2"));
+        assert_eq!(range, CellRefRange::test_a1("B1:C2"));
 
         // Removing the end column
-        range = CellRefRange::test("B1:D2");
+        range = CellRefRange::test_a1("B1:D2");
         assert!(range.removed_column(4));
-        assert_eq!(range, CellRefRange::test("B1:C2"));
+        assert_eq!(range, CellRefRange::test_a1("B1:C2"));
 
         // Test minimum column boundary
-        range = CellRefRange::test("A1:A2");
+        range = CellRefRange::test_a1("A1:A2");
         assert!(range.removed_column(1));
-        assert_eq!(range, CellRefRange::test("A1:A2"));
+        assert_eq!(range, CellRefRange::test_a1("A1:A2"));
 
         // Test when start and end become equal
-        range = CellRefRange::test("A1:B1");
+        range = CellRefRange::test_a1("A1:B1");
         assert!(range.removed_column(2));
-        assert_eq!(range, CellRefRange::test("A1"));
+        assert_eq!(range, CellRefRange::test_a1("A1"));
     }
 
     #[test]
     fn test_removed_row() {
         // Basic case - removing a row in range
-        let mut range = CellRefRange::test("A1:B2");
+        let mut range = CellRefRange::test_a1("A1:B2");
         assert!(range.removed_row(1));
-        assert_eq!(range, CellRefRange::test("A1:B1"));
+        assert_eq!(range, CellRefRange::test_a1("A1:B1"));
 
         // Removing row affects coordinates above it
-        range = CellRefRange::test("D2:E5");
+        range = CellRefRange::test_a1("D2:E5");
         assert!(range.removed_row(1));
-        assert_eq!(range, CellRefRange::test("D1:E4"));
+        assert_eq!(range, CellRefRange::test_a1("D1:E4"));
 
         // Removing a row not in the range
-        range = CellRefRange::test("C3:D4");
+        range = CellRefRange::test_a1("C3:D4");
         assert!(range.removed_row(1));
-        assert_eq!(range, CellRefRange::test("C2:D3"));
+        assert_eq!(range, CellRefRange::test_a1("C2:D3"));
 
         // Removing the start row
-        range = CellRefRange::test("B2:D4");
+        range = CellRefRange::test_a1("B2:D4");
         assert!(range.removed_row(2));
-        assert_eq!(range, CellRefRange::test("B2:D3"));
+        assert_eq!(range, CellRefRange::test_a1("B2:D3"));
 
         // Removing the end row
-        range = CellRefRange::test("B2:D4");
+        range = CellRefRange::test_a1("B2:D4");
         assert!(range.removed_row(4));
-        assert_eq!(range, CellRefRange::test("B2:D3"));
+        assert_eq!(range, CellRefRange::test_a1("B2:D3"));
 
         // Test minimum row boundary
-        range = CellRefRange::test("A1:B1");
+        range = CellRefRange::test_a1("A1:B1");
         assert!(range.removed_row(1));
-        assert_eq!(range, CellRefRange::test("A1:B1"));
+        assert_eq!(range, CellRefRange::test_a1("A1:B1"));
 
         // Test when start and end become equal
-        range = CellRefRange::test("A1:A2");
+        range = CellRefRange::test_a1("A1:A2");
         assert!(range.removed_row(2));
-        assert_eq!(range, CellRefRange::test("A1"));
+        assert_eq!(range, CellRefRange::test_a1("A1"));
     }
 
     #[test]
     fn test_inserted_column() {
         // Basic case - inserting a column before range
-        let mut range = CellRefRange::test("B1:C2");
+        let mut range = CellRefRange::test_a1("B1:C2");
         assert!(range.inserted_column(1));
-        assert_eq!(range, CellRefRange::test("C1:D2"));
+        assert_eq!(range, CellRefRange::test_a1("C1:D2"));
 
         // Inserting column at start of range
-        range = CellRefRange::test("B1:D2");
+        range = CellRefRange::test_a1("B1:D2");
         assert!(range.inserted_column(2));
-        assert_eq!(range, CellRefRange::test("C1:E2"));
+        assert_eq!(range, CellRefRange::test_a1("C1:E2"));
 
         // Inserting column in middle of range
-        range = CellRefRange::test("B1:D2");
+        range = CellRefRange::test_a1("B1:D2");
         assert!(range.inserted_column(3));
-        assert_eq!(range, CellRefRange::test("B1:E2"));
+        assert_eq!(range, CellRefRange::test_a1("B1:E2"));
 
         // Inserting column at end of range
-        range = CellRefRange::test("B1:D2");
+        range = CellRefRange::test_a1("B1:D2");
         assert!(range.inserted_column(4));
-        assert_eq!(range, CellRefRange::test("B1:E2"));
+        assert_eq!(range, CellRefRange::test_a1("B1:E2"));
 
         // Inserting column after range - should not affect range
-        range = CellRefRange::test("B1:D2");
+        range = CellRefRange::test_a1("B1:D2");
         assert!(!range.inserted_column(5));
-        assert_eq!(range, CellRefRange::test("B1:D2"));
+        assert_eq!(range, CellRefRange::test_a1("B1:D2"));
 
         // Single cell reference
-        range = CellRefRange::test("B1");
+        range = CellRefRange::test_a1("B1");
         assert!(range.inserted_column(2));
-        assert_eq!(range, CellRefRange::test("C1"));
+        assert_eq!(range, CellRefRange::test_a1("C1"));
 
         // Single cell reference - insert after
-        range = CellRefRange::test("B1");
+        range = CellRefRange::test_a1("B1");
         assert!(!range.inserted_column(3));
-        assert_eq!(range, CellRefRange::test("B1"));
+        assert_eq!(range, CellRefRange::test_a1("B1"));
 
         // Testing with column-only references
-        range = CellRefRange::test("B:D");
+        range = CellRefRange::test_a1("B:D");
         assert!(range.inserted_column(2));
-        assert_eq!(range, CellRefRange::test("C:E"));
+        assert_eq!(range, CellRefRange::test_a1("C:E"));
     }
 
     #[test]
     fn test_inserted_row() {
         // Basic case - inserting a row before range
-        let mut range = CellRefRange::test("A2:B3");
+        let mut range = CellRefRange::test_a1("A2:B3");
         assert!(range.inserted_row(1));
-        assert_eq!(range, CellRefRange::test("A3:B4"));
+        assert_eq!(range, CellRefRange::test_a1("A3:B4"));
 
         // Inserting row at start of range
-        range = CellRefRange::test("A2:B4");
+        range = CellRefRange::test_a1("A2:B4");
         assert!(range.inserted_row(2));
-        assert_eq!(range, CellRefRange::test("A3:B5"));
+        assert_eq!(range, CellRefRange::test_a1("A3:B5"));
 
         // Inserting row in middle of range
-        range = CellRefRange::test("A2:B4");
+        range = CellRefRange::test_a1("A2:B4");
         assert!(range.inserted_row(3));
-        assert_eq!(range, CellRefRange::test("A2:B5"));
+        assert_eq!(range, CellRefRange::test_a1("A2:B5"));
 
         // Inserting row at end of range
-        range = CellRefRange::test("A2:B4");
+        range = CellRefRange::test_a1("A2:B4");
         assert!(range.inserted_row(4));
-        assert_eq!(range, CellRefRange::test("A2:B5"));
+        assert_eq!(range, CellRefRange::test_a1("A2:B5"));
 
         // Inserting row after range - should not affect range
-        range = CellRefRange::test("A2:B4");
+        range = CellRefRange::test_a1("A2:B4");
         assert!(!range.inserted_row(5));
-        assert_eq!(range, CellRefRange::test("A2:B4"));
+        assert_eq!(range, CellRefRange::test_a1("A2:B4"));
 
         // Single cell reference
-        range = CellRefRange::test("A2");
+        range = CellRefRange::test_a1("A2");
         assert!(range.inserted_row(2));
-        assert_eq!(range, CellRefRange::test("A3"));
+        assert_eq!(range, CellRefRange::test_a1("A3"));
 
         // Single cell reference - insert after
-        range = CellRefRange::test("A2");
+        range = CellRefRange::test_a1("A2");
         assert!(!range.inserted_row(3));
-        assert_eq!(range, CellRefRange::test("A2"));
+        assert_eq!(range, CellRefRange::test_a1("A2"));
 
         // Testing with row-only references
-        range = CellRefRange::test("2:4");
+        range = CellRefRange::test_a1("2:4");
         assert!(range.inserted_row(2));
-        assert_eq!(range, CellRefRange::test("3:5"));
+        assert_eq!(range, CellRefRange::test_a1("3:5"));
     }
 }
