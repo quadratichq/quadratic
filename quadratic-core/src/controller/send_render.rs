@@ -5,7 +5,6 @@ use itertools::Itertools;
 use crate::{
     grid::{js_types::JsOffset, SheetId},
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-    selection::OldSelection,
     viewport::ViewportBuffer,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     A1Selection, CellValue, Pos, Rect, SheetPos, SheetRect,
@@ -223,22 +222,6 @@ impl GridController {
 
         if cfg!(target_family = "wasm") && recalculated {
             if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-                if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
-                    crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
-                }
-            }
-        };
-    }
-
-    pub fn send_updated_bounds_selection(&mut self, selection: &OldSelection, format: bool) {
-        let recalculated = if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-            sheet.recalculate_add_bounds_selection(selection, format)
-        } else {
-            false
-        };
-
-        if cfg!(target_family = "wasm") && recalculated {
-            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
                     crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
                 }

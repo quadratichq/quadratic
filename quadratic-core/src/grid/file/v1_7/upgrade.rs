@@ -614,7 +614,6 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_7_1::SheetSchema {
         offsets,
         rows_resize,
         validations: upgrade_validations(validations),
-        borders: borders.clone(),
         borders_a1: upgrade_borders(borders),
         formats,
         code_runs: upgrade_code_runs(code_runs),

@@ -10,10 +10,13 @@ use crate::{
         formatting::CellFmtArray,
         js_types::JsRowHeight,
         sheet::{
-            borders::BorderStyleCellUpdates, borders_a1::BordersA1Updates,
+            borders_a1::{
+                borders_old::{BorderStyleCellUpdates, SheetBorders},
+                BordersA1Updates,
+            },
             validations::validation::Validation,
         },
-        CodeRun, CodeRunOld, Sheet, SheetBorders, SheetId,
+        CodeRun, CodeRunOld, Sheet, SheetId,
     },
     selection::OldSelection,
     A1Selection, CopyFormats, SheetPos, SheetRect,

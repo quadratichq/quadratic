@@ -13,8 +13,12 @@ use quadratic_core::grid::js_types::{
     JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
     JsSummarizeSelectionResult, JsValidationWarning,
 };
-use quadratic_core::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp};
+use quadratic_core::grid::sheet::borders_a1::BorderSelection;
 use quadratic_core::grid::sheet::borders_a1::BorderSide;
+use quadratic_core::grid::sheet::borders_a1::BorderStyle;
+use quadratic_core::grid::sheet::borders_a1::BorderStyleCell;
+use quadratic_core::grid::sheet::borders_a1::BorderStyleTimestamp;
+use quadratic_core::grid::sheet::borders_a1::CellBorderLine;
 use quadratic_core::grid::sheet::borders_a1::JsBorderHorizontal;
 use quadratic_core::grid::sheet::borders_a1::JsBorderVertical;
 use quadratic_core::grid::sheet::borders_a1::JsBordersSheet;
@@ -38,11 +42,9 @@ use quadratic_core::grid::sheet::validations::validation_rules::validation_text:
 };
 use quadratic_core::grid::sheet::validations::validation_rules::ValidationRule;
 use quadratic_core::grid::{
-    BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
-};
-use quadratic_core::grid::{
     CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
+use quadratic_core::grid::{CodeCellLanguage, ConnectionKind};
 use quadratic_core::grid::{JsCellsAccessed, RenderSize};
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;

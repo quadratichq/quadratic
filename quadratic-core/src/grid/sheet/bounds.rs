@@ -3,7 +3,6 @@
 
 use crate::{
     grid::{Column, GridBounds},
-    selection::OldSelection,
     CellValue, Pos, Rect,
 };
 use std::cmp::Reverse;
@@ -66,35 +65,6 @@ impl Sheet {
             self.data_bounds.add(rect.min);
             self.data_bounds.add(rect.max);
             old_data_bounds != self.data_bounds.to_bounds_rect()
-        }
-    }
-
-    /// Adds a Selection to the bounds of the sheet.
-    ///
-    /// Returns whether any of the sheet's bounds has changed
-    pub fn recalculate_add_bounds_selection(
-        &mut self,
-        selection: &OldSelection,
-        format: bool,
-    ) -> bool {
-        if selection.all || selection.columns.is_some() || selection.rows.is_some() {
-            false
-        } else if let Some(rects) = &selection.rects {
-            let old_data_bounds = self.data_bounds.to_bounds_rect();
-            let old_format_bounds = self.format_bounds.to_bounds_rect();
-            for rect in rects {
-                if format {
-                    self.format_bounds.add(rect.min);
-                    self.format_bounds.add(rect.max);
-                } else {
-                    self.data_bounds.add(rect.min);
-                    self.data_bounds.add(rect.max);
-                }
-            }
-            old_data_bounds != self.data_bounds.to_bounds_rect()
-                || old_format_bounds != self.format_bounds.to_bounds_rect()
-        } else {
-            false
         }
     }
 
@@ -531,13 +501,15 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{
-            sheet::validations::{
-                validation::Validation,
-                validation_rules::{validation_logical::ValidationLogical, ValidationRule},
+            sheet::{
+                borders_a1::{BorderSelection, BorderStyle},
+                validations::{
+                    validation::Validation,
+                    validation_rules::{validation_logical::ValidationLogical, ValidationRule},
+                },
             },
-            BorderSelection, BorderStyle, CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
+            CellAlign, CellWrap, CodeCellLanguage, GridBounds, Sheet,
         },
-        selection::OldSelection,
         A1Selection, Array, CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
@@ -1069,8 +1041,8 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_borders_selection(
-            OldSelection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id)),
+        gc.set_borders(
+            A1Selection::test_a1("A1"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,

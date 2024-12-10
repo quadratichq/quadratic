@@ -25,6 +25,7 @@ macro_rules! unwrap_op {
 }
 
 mod execute_borders;
+mod execute_borders_old;
 mod execute_code;
 mod execute_col_rows;
 mod execute_cursor;

@@ -202,9 +202,11 @@ mod tests {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{BorderSelection, BorderStyle, CodeCellLanguage, CodeCellValue},
-        selection::OldSelection,
-        ArraySize, CellValue, Pos, SheetPos,
+        grid::{
+            sheet::borders_a1::{BorderSelection, BorderStyle},
+            CodeCellLanguage, CodeCellValue,
+        },
+        A1Selection, ArraySize, CellValue, Pos,
     };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
@@ -331,24 +333,6 @@ mod tests {
         // println!("{:#?}", imported.sheets()[0].borders);
         let _exported = export(imported).unwrap();
         // println!("{}", _exported);
-    }
-
-    #[test]
-    #[parallel]
-    fn process_a_v1_4_borders_file() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-
-        gc.set_borders_selection(
-            OldSelection::sheet_pos(SheetPos::new(sheet_id, 0, 0)),
-            BorderSelection::Bottom,
-            Some(BorderStyle::default()),
-            None,
-        );
-
-        let exported = export(gc.grid().clone()).unwrap();
-        let imported = import(exported).unwrap();
-        assert_eq!(imported, gc.grid().clone());
     }
 
     #[test]
@@ -643,5 +627,22 @@ mod tests {
                 code: "return q.cells(\"A1:A14\");".to_string(),
             })
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn process_a_v1_7_1_borders_file() {
+        let mut gc = GridController::test();
+
+        gc.set_borders(
+            A1Selection::test_a1("A1:J10"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        let exported = export(gc.grid().clone()).unwrap();
+        let imported = import(exported).unwrap();
+        assert_eq!(imported, gc.grid().clone());
     }
 }

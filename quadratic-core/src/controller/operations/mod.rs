@@ -3,7 +3,6 @@
 //! Only execute_operations should change the Grid.
 
 pub mod autocomplete;
-pub mod borders;
 pub mod borders_a1;
 pub mod cell_value;
 pub mod clipboard;

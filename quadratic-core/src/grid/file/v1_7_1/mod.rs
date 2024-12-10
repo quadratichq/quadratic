@@ -56,7 +56,6 @@ pub type RgbaSchema = v1_7::RgbaSchema;
 pub type CellBorderLineSchema = v1_7::CellBorderLineSchema;
 pub type BorderStyleTimestampSchema = v1_7::BorderStyleTimestampSchema;
 pub type BorderStyleCellSchema = v1_7::BorderStyleCellSchema;
-pub type BordersSchema = v1_7::BordersSchema;
 
 pub type RowsResizeSchema = Vec<(i64, ResizeSchema)>;
 
@@ -75,7 +74,6 @@ pub struct SheetSchema {
     pub offsets: OffsetsSchema,
     pub validations: ValidationsSchema,
     pub rows_resize: RowsResizeSchema,
-    pub borders: BordersSchema,
     pub borders_a1: BordersA1Schema,
     pub formats: SheetFormattingSchema,
     pub code_runs: CodeRunsSchema,

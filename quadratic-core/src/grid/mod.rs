@@ -1,7 +1,3 @@
-pub use borders::{
-    BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide, IdSpaceBorders,
-    SheetBorders,
-};
 pub use bounds::GridBounds;
 pub use cells_accessed::*;
 pub use code_cell::*;
@@ -27,7 +23,6 @@ use crate::CellValue;
 use crate::{Array, Pos};
 
 mod block;
-mod borders;
 mod bounds;
 mod cells_accessed;
 mod code_cell;
