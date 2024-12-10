@@ -681,7 +681,7 @@ mod tests {
 
         assert_eq!(
             sheet.borders_a1.finite_bounds(),
-            Some(Rect::new(1, 1, 6, 1))
+            Some(Rect::new(1, 1, 5, 1))
         );
     }
 
@@ -705,7 +705,7 @@ mod tests {
 
         assert_eq!(
             sheet.borders_a1.finite_bounds(),
-            Some(Rect::new(1, 1, 1, 6))
+            Some(Rect::new(1, 1, 1, 5))
         );
     }
 
@@ -729,7 +729,7 @@ mod tests {
 
         assert_eq!(
             sheet.borders_a1.finite_bounds(),
-            Some(Rect::new(1, 1, 1, 6))
+            Some(Rect::new(1, 1, 1, 5))
         );
     }
 

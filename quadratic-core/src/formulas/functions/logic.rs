@@ -113,14 +113,14 @@ mod tests {
     fn test_formula_if() {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, "q");
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, "q");
+        sheet.set_cell_value(Pos { x: 2, y: 1 }, "w");
         let sheet_id = sheet.id;
 
         let s = "IF(A1='q', 'yep', 'nope')";
         let pos = pos![A0].to_sheet_pos(sheet_id);
         assert_eq!("yep", eval_to_string_at(&g, pos, s));
-        let pos = pos![B0].to_sheet_pos(sheet_id);
+        let pos = pos![B1].to_sheet_pos(sheet_id);
         assert_eq!("nope", eval_to_string_at(&g, pos, s));
 
         // Test short-circuiting

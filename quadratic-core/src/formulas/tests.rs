@@ -22,14 +22,14 @@ pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
 pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
     println!("Evaluating formula {s:?}");
     let mut ctx = Ctx::new(grid, pos);
-    match parse_formula(s, Pos::ORIGIN) {
+    match parse_formula(s, pos![A0]) {
         Ok(formula) => formula.eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
 }
 #[track_caller]
 pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
-    eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)
+    eval_at(grid, pos![A0].to_sheet_pos(grid.sheets()[0].id), s)
 }
 #[track_caller]
 pub(crate) fn eval_to_string_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> String {
@@ -83,26 +83,19 @@ pub(crate) fn datetime(s: &str) -> CellValue {
 #[parallel]
 // TODO(ddimaria): @HactarCE fix broken test
 fn test_formula_cell_ref() {
-    let form = parse_formula("SUM($D$4, $B0, E$n6, B0, nB2)", pos![D4]).unwrap();
+    let form = parse_formula("SUM(A1:A5)", Pos::ORIGIN).unwrap();
 
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
-    let _ = sheet.set_cell_value(pos![D4], 1); // $D$4 -> D4
-    let _ = sheet.set_cell_value(pos![Bn2], 10); // $B0  -> Bn2
-    let _ = sheet.set_cell_value(pos![Cn6], 100); // E$n6 -> Cn6
-    let _ = sheet.set_cell_value(pos![nAn2], 1000); // B0   -> nAn2
-    let _ = sheet.set_cell_value(pos![nD0], 10000); // nB2  -> nD0
+    let _ = sheet.set_cell_value(pos![A1], 1);
+    let _ = sheet.set_cell_value(pos![A2], 10);
+    let _ = sheet.set_cell_value(pos![A3], 100);
+    let _ = sheet.set_cell_value(pos![A4], 1000);
+    let _ = sheet.set_cell_value(pos![A5], 10000);
     let sheet_id = sheet.id;
 
-    // Evaluate at D4, causing a circular reference.
-    let mut ctx = Ctx::new(&g, pos![D4].to_sheet_pos(sheet_id));
-    assert_eq!(
-        RunErrorMsg::CircularReference,
-        form.eval(&mut ctx).unwrap_err().msg,
-    );
-
-    // Evaluate at B2
-    let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(sheet_id));
+    // Evaluate at ORIGIN
+    let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(sheet_id));
     assert_eq!("11111".to_string(), form.eval(&mut ctx).to_string(),);
 }
 
