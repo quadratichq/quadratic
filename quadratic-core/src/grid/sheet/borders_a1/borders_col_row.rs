@@ -16,7 +16,7 @@ impl BordersA1 {
     pub fn remove_column(&mut self, column: i64) -> BordersA1Updates {
         let remove_column_item = |item: &mut BordersA1Type| -> BordersA1UpdatesType {
             item.remove_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into())))
+                .map(|c| c.map_ref(|c| c.map(Into::into)))
         };
 
         BordersA1Updates {
@@ -30,7 +30,7 @@ impl BordersA1 {
     pub fn copy_column(&self, column: i64) -> Option<BordersA1Updates> {
         let copy_column_item = |item: &BordersA1Type| -> BordersA1UpdatesType {
             item.copy_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into())))
+                .map(|c| c.map_ref(|c| c.map(Into::into)))
         };
 
         let updates = BordersA1Updates {
@@ -40,7 +40,11 @@ impl BordersA1 {
             bottom: copy_column_item(&self.bottom),
         };
 
-        updates.is_empty().then_some(updates)
+        if updates.is_empty() {
+            None
+        } else {
+            Some(updates)
+        }
     }
 
     pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
@@ -53,7 +57,7 @@ impl BordersA1 {
     pub fn remove_row(&mut self, row: i64) -> BordersA1Updates {
         let remove_row_item = |item: &mut BordersA1Type| -> BordersA1UpdatesType {
             item.remove_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into())))
+                .map(|c| c.map_ref(|c| c.map(Into::into)))
         };
 
         BordersA1Updates {
@@ -66,8 +70,7 @@ impl BordersA1 {
 
     pub fn copy_row(&self, row: i64) -> Option<BordersA1Updates> {
         let copy_row_item = |item: &BordersA1Type| -> BordersA1UpdatesType {
-            item.copy_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into())))
+            item.copy_row(row).map(|c| c.map_ref(|c| c.map(Into::into)))
         };
 
         let updates = BordersA1Updates {
@@ -77,7 +80,11 @@ impl BordersA1 {
             bottom: copy_row_item(&self.bottom),
         };
 
-        updates.is_empty().then_some(updates)
+        if updates.is_empty() {
+            None
+        } else {
+            Some(updates)
+        }
     }
 }
 

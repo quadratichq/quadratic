@@ -100,7 +100,11 @@ impl SheetFormatting {
             strike_through: Self::copy_column_item(&self.strike_through, column),
         };
 
-        updates.is_default().then_some(updates)
+        if updates.is_default() {
+            None
+        } else {
+            Some(updates)
+        }
     }
 
     fn remove_row_item<T>(item: &mut SheetFormattingType<T>, row: i64) -> SheetFormatUpdatesType<T>
@@ -156,7 +160,11 @@ impl SheetFormatting {
             strike_through: Self::copy_row_item(&self.strike_through, row),
         };
 
-        updates.is_default().then_some(updates)
+        if updates.is_default() {
+            None
+        } else {
+            Some(updates)
+        }
     }
 }
 
