@@ -11,53 +11,130 @@ impl SheetFormatting {
             align: updates
                 .align
                 .as_ref()
-                .map(|value| self.align.set_from(value)),
+                .map(|value| {
+                    self.align
+                        .set_from(&value.map_ref(|value| value.map(|value| value.into())))
+                })
+                .map(|value| value.map_ref(|value| value.map(|value| value.into()))),
             vertical_align: updates
                 .vertical_align
                 .as_ref()
-                .map(|value| self.vertical_align.set_from(value)),
-            wrap: updates.wrap.as_ref().map(|value| self.wrap.set_from(value)),
+                .map(|value| {
+                    self.vertical_align
+                        .set_from(&value.map_ref(|value| value.map(|value| value.into())))
+                })
+                .map(|value| value.map_ref(|value| value.map(|value| value.into()))),
+            wrap: updates
+                .wrap
+                .as_ref()
+                .map(|value| {
+                    self.wrap
+                        .set_from(&value.map_ref(|value| value.map(|value| value.into())))
+                })
+                .map(|value| value.map_ref(|value| value.map(|value| value.into()))),
             numeric_format: updates
                 .numeric_format
                 .as_ref()
-                .map(|value| self.numeric_format.set_from(value)),
+                .map(|value| {
+                    self.numeric_format.set_from(
+                        &value.map_ref(|value| value.as_ref().map(|value| value.clone().into())),
+                    )
+                })
+                .map(|value| {
+                    value.map_ref(|value| value.as_ref().map(|value| value.clone().into()))
+                }),
             numeric_decimals: updates
                 .numeric_decimals
                 .as_ref()
-                .map(|value| self.numeric_decimals.set_from(value)),
+                .map(|value| {
+                    self.numeric_decimals
+                        .set_from(&value.map_ref(|value| value.map(|value| value.into())))
+                })
+                .map(|value| value.map_ref(|value| value.map(|value| value.into()))),
             numeric_commas: updates
                 .numeric_commas
                 .as_ref()
-                .map(|value| self.numeric_commas.set_from(value)),
-            bold: updates.bold.as_ref().map(|value| self.bold.set_from(value)),
+                .map(|value| {
+                    self.numeric_commas
+                        .set_from(&value.map_ref(|value| value.map(|value| value.into())))
+                })
+                .map(|value| value.map_ref(|value| value.map(|value| value.into()))),
+            bold: updates
+                .bold
+                .as_ref()
+                .map(|value| {
+                    self.bold
+                        .set_from(&value.map_ref(|value| value.map(|value| value.into())))
+                })
+                .map(|value| value.map_ref(|value| value.map(|value| value.into()))),
             italic: updates
                 .italic
                 .as_ref()
-                .map(|value| self.italic.set_from(value)),
+                .map(|value| {
+                    self.italic
+                        .set_from(&value.map_ref(|value| value.map(|value| value.into())))
+                })
+                .map(|value| value.map_ref(|value| value.map(|value| value.into()))),
             underline: updates
                 .underline
                 .as_ref()
-                .map(|value| self.underline.set_from(value)),
+                .map(|value| {
+                    self.underline
+                        .set_from(&value.map_ref(|value| value.map(|value| value.into())))
+                })
+                .map(|value| value.map_ref(|value| value.map(|value| value.into()))),
             text_color: updates
                 .text_color
                 .as_ref()
-                .map(|value| self.text_color.set_from(value)),
+                .map(|value| {
+                    self.text_color.set_from(
+                        &value.map_ref(|value| value.as_ref().map(|value| value.clone().into())),
+                    )
+                })
+                .map(|value| {
+                    value.map_ref(|value| value.as_ref().map(|value| value.clone().into()))
+                }),
             date_time: updates
                 .date_time
                 .as_ref()
-                .map(|value| self.date_time.set_from(value)),
+                .map(|value| {
+                    self.date_time.set_from(
+                        &value.map_ref(|value| value.as_ref().map(|value| value.clone().into())),
+                    )
+                })
+                .map(|value| {
+                    value.map_ref(|value| value.as_ref().map(|value| value.clone().into()))
+                }),
             fill_color: updates
                 .fill_color
                 .as_ref()
-                .map(|value| self.fill_color.set_from(value)),
+                .map(|value| {
+                    self.fill_color.set_from(
+                        &value.map_ref(|value| value.as_ref().map(|value| value.clone().into())),
+                    )
+                })
+                .map(|value| {
+                    value.map_ref(|value| value.as_ref().map(|value| value.clone().into()))
+                }),
             render_size: updates
                 .render_size
                 .as_ref()
-                .map(|value| self.render_size.set_from(value)),
+                .map(|value| {
+                    self.render_size.set_from(
+                        &value.map_ref(|value| value.as_ref().map(|value| value.clone().into())),
+                    )
+                })
+                .map(|value| {
+                    value.map_ref(|value| value.as_ref().map(|value| value.clone().into()))
+                }),
             strike_through: updates
                 .strike_through
                 .as_ref()
-                .map(|value| self.strike_through.set_from(value)),
+                .map(|value| {
+                    self.strike_through
+                        .set_from(&value.map_ref(|value| value.map(|value| value.into())))
+                })
+                .map(|value| value.map_ref(|value| value.map(|value| value.into()))),
         }
     }
 

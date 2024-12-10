@@ -229,6 +229,7 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
+        clear_option::ClearOption,
         grid::{formats::SheetFormatUpdates, Contiguous2D},
         wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
         A1Selection, CellValue,
@@ -328,7 +329,7 @@ mod test {
         sheet.set_formats_a1(&SheetFormatUpdates {
             bold: Contiguous2D::new_from_opt_selection(
                 &A1Selection::test_a1("A1"),
-                Some(Some(true)),
+                Some(ClearOption::Some(true)),
             ),
             ..Default::default()
         });

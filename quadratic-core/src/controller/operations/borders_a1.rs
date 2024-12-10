@@ -1,7 +1,7 @@
 use crate::{
     controller::GridController,
     grid::sheet::borders_a1::{BorderSelection, BorderStyle, BordersA1Updates},
-    A1Selection, CellRefRange, RefRangeBounds,
+    A1Selection, CellRefRange, ClearOption, RefRangeBounds,
 };
 
 use super::operation::Operation;
@@ -15,7 +15,7 @@ impl GridController {
         range: &RefRangeBounds,
         borders: &mut BordersA1Updates,
     ) {
-        let style = style.map(|s| Some(s.into()));
+        let style = style.map(|s| ClearOption::Some(s.into()));
         let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
         match border_selection {
             BorderSelection::All => {
@@ -165,22 +165,34 @@ impl GridController {
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
-                borders
-                    .top
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(None));
-                borders
-                    .bottom
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(None));
-                borders
-                    .left
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(None));
-                borders
-                    .right
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(None));
+                borders.top.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.bottom.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.left.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.right.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
             }
         });
         vec![Operation::SetBordersA1 {

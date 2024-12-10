@@ -15,19 +15,43 @@ impl BordersA1 {
 
     pub fn remove_column(&mut self, column: i64) -> BordersA1Updates {
         BordersA1Updates {
-            left: self.left.remove_column(column),
-            right: self.right.remove_column(column),
-            top: self.top.remove_column(column),
-            bottom: self.bottom.remove_column(column),
+            left: self
+                .left
+                .remove_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            right: self
+                .right
+                .remove_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            top: self
+                .top
+                .remove_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            bottom: self
+                .bottom
+                .remove_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
         }
     }
 
     pub fn copy_column(&self, column: i64) -> Option<BordersA1Updates> {
         let updates = BordersA1Updates {
-            left: self.left.copy_column(column),
-            right: self.right.copy_column(column),
-            top: self.top.copy_column(column),
-            bottom: self.bottom.copy_column(column),
+            left: self
+                .left
+                .copy_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            right: self
+                .right
+                .copy_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            top: self
+                .top
+                .copy_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            bottom: self
+                .bottom
+                .copy_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
         };
         if updates.is_empty() {
             None
@@ -45,19 +69,43 @@ impl BordersA1 {
 
     pub fn remove_row(&mut self, row: i64) -> BordersA1Updates {
         BordersA1Updates {
-            left: self.left.remove_row(row),
-            right: self.right.remove_row(row),
-            top: self.top.remove_row(row),
-            bottom: self.bottom.remove_row(row),
+            left: self
+                .left
+                .remove_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            right: self
+                .right
+                .remove_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            top: self
+                .top
+                .remove_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            bottom: self
+                .bottom
+                .remove_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
         }
     }
 
     pub fn copy_row(&self, row: i64) -> Option<BordersA1Updates> {
         let updates = BordersA1Updates {
-            left: self.left.copy_row(row),
-            right: self.right.copy_row(row),
-            top: self.top.copy_row(row),
-            bottom: self.bottom.copy_row(row),
+            left: self
+                .left
+                .copy_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            right: self
+                .right
+                .copy_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            top: self
+                .top
+                .copy_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            bottom: self
+                .bottom
+                .copy_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
         };
         if updates.is_empty() {
             None

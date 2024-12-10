@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    clear_option::ClearOption,
     grid::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, RenderSize},
     A1Selection, Pos, Rect,
 };
@@ -11,49 +12,66 @@ use super::FormatUpdate;
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
 pub struct SheetFormatUpdates {
-    pub align: Option<Contiguous2D<Option<Option<CellAlign>>>>,
-    pub vertical_align: Option<Contiguous2D<Option<Option<CellVerticalAlign>>>>,
-    pub wrap: Option<Contiguous2D<Option<Option<CellWrap>>>>,
-    pub numeric_format: Option<Contiguous2D<Option<Option<NumericFormat>>>>,
-    pub numeric_decimals: Option<Contiguous2D<Option<Option<i16>>>>,
-    pub numeric_commas: Option<Contiguous2D<Option<Option<bool>>>>,
-    pub bold: Option<Contiguous2D<Option<Option<bool>>>>,
-    pub italic: Option<Contiguous2D<Option<Option<bool>>>>,
-    pub text_color: Option<Contiguous2D<Option<Option<String>>>>,
-    pub fill_color: Option<Contiguous2D<Option<Option<String>>>>,
-    pub render_size: Option<Contiguous2D<Option<Option<RenderSize>>>>,
-    pub date_time: Option<Contiguous2D<Option<Option<String>>>>,
-    pub underline: Option<Contiguous2D<Option<Option<bool>>>>,
-    pub strike_through: Option<Contiguous2D<Option<Option<bool>>>>,
+    pub align: Option<Contiguous2D<Option<ClearOption<CellAlign>>>>,
+    pub vertical_align: Option<Contiguous2D<Option<ClearOption<CellVerticalAlign>>>>,
+    pub wrap: Option<Contiguous2D<Option<ClearOption<CellWrap>>>>,
+    pub numeric_format: Option<Contiguous2D<Option<ClearOption<NumericFormat>>>>,
+    pub numeric_decimals: Option<Contiguous2D<Option<ClearOption<i16>>>>,
+    pub numeric_commas: Option<Contiguous2D<Option<ClearOption<bool>>>>,
+    pub bold: Option<Contiguous2D<Option<ClearOption<bool>>>>,
+    pub italic: Option<Contiguous2D<Option<ClearOption<bool>>>>,
+    pub text_color: Option<Contiguous2D<Option<ClearOption<String>>>>,
+    pub fill_color: Option<Contiguous2D<Option<ClearOption<String>>>>,
+    pub render_size: Option<Contiguous2D<Option<ClearOption<RenderSize>>>>,
+    pub date_time: Option<Contiguous2D<Option<ClearOption<String>>>>,
+    pub underline: Option<Contiguous2D<Option<ClearOption<bool>>>>,
+    pub strike_through: Option<Contiguous2D<Option<ClearOption<bool>>>>,
 }
 impl SheetFormatUpdates {
     /// Constructs a format update that applies the same formatting to every
     /// affected cell.
+    ///
+    /// The mapping is used to turn Option<Option<T>> into
+    /// Option<ClearOption<T>> so it properly serializes.
     pub fn from_selection(selection: &A1Selection, update: FormatUpdate) -> Self {
         Self {
-            align: Contiguous2D::new_from_opt_selection(selection, update.align),
-            vertical_align: Contiguous2D::new_from_opt_selection(selection, update.vertical_align),
-            wrap: Contiguous2D::new_from_opt_selection(selection, update.wrap),
+            align: Contiguous2D::new_from_opt_selection(selection, update.align)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            vertical_align: Contiguous2D::new_from_opt_selection(selection, update.vertical_align)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            wrap: Contiguous2D::new_from_opt_selection(selection, update.wrap)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
             numeric_format: Contiguous2D::new_from_opt_selection(
                 selection,
                 update.numeric_format.clone(),
-            ),
+            )
+            .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.clone().into()))),
             numeric_decimals: Contiguous2D::new_from_opt_selection(
                 selection,
                 update.numeric_decimals,
-            ),
-            numeric_commas: Contiguous2D::new_from_opt_selection(selection, update.numeric_commas),
-            bold: Contiguous2D::new_from_opt_selection(selection, update.bold),
-            italic: Contiguous2D::new_from_opt_selection(selection, update.italic),
-            text_color: Contiguous2D::new_from_opt_selection(selection, update.text_color.clone()),
-            fill_color: Contiguous2D::new_from_opt_selection(selection, update.fill_color.clone()),
+            )
+            .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            numeric_commas: Contiguous2D::new_from_opt_selection(selection, update.numeric_commas)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            bold: Contiguous2D::new_from_opt_selection(selection, update.bold)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            italic: Contiguous2D::new_from_opt_selection(selection, update.italic)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            text_color: Contiguous2D::new_from_opt_selection(selection, update.text_color.clone())
+                .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.clone().into()))),
+            fill_color: Contiguous2D::new_from_opt_selection(selection, update.fill_color.clone())
+                .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.clone().into()))),
             render_size: Contiguous2D::new_from_opt_selection(
                 selection,
                 update.render_size.clone(),
-            ),
-            date_time: Contiguous2D::new_from_opt_selection(selection, update.date_time.clone()),
-            underline: Contiguous2D::new_from_opt_selection(selection, update.underline),
-            strike_through: Contiguous2D::new_from_opt_selection(selection, update.strike_through),
+            )
+            .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.clone().into()))),
+            date_time: Contiguous2D::new_from_opt_selection(selection, update.date_time.clone())
+                .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.clone().into()))),
+            underline: Contiguous2D::new_from_opt_selection(selection, update.underline)
+                .map(|c| c.map_ref(|c| c.as_ref().map(|c| c.clone().into()))),
+            strike_through: Contiguous2D::new_from_opt_selection(selection, update.strike_through)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
         }
     }
 
@@ -132,127 +150,134 @@ impl SheetFormatUpdates {
         update.align.map(|align| {
             self.align
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(align))
+                .set(pos, Some(align.into()))
         });
         update.vertical_align.map(|vertical_align| {
             self.vertical_align
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(vertical_align))
+                .set(pos, Some(vertical_align.into()))
         });
         update.wrap.map(|wrap| {
             self.wrap
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(wrap))
+                .set(pos, Some(wrap.into()))
         });
         update.numeric_format.map(|numeric_format| {
             self.numeric_format
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(numeric_format))
+                .set(pos, Some(numeric_format.into()))
         });
         update.numeric_decimals.map(|numeric_decimals| {
             self.numeric_decimals
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(numeric_decimals))
+                .set(pos, Some(numeric_decimals.into()))
         });
         update.numeric_commas.map(|numeric_commas| {
             self.numeric_commas
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(numeric_commas))
+                .set(pos, Some(numeric_commas.into()))
         });
         update.bold.map(|bold| {
             self.bold
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(bold))
+                .set(pos, Some(bold.into()))
         });
         update.italic.map(|italic| {
             self.italic
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(italic))
+                .set(pos, Some(italic.into()))
         });
         update.text_color.map(|text_color| {
             self.text_color
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(text_color))
+                .set(pos, Some(text_color.into()))
         });
         update.fill_color.map(|fill_color| {
             self.fill_color
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(fill_color))
+                .set(pos, Some(fill_color.into()))
         });
         update.render_size.map(|render_size| {
             self.render_size
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(render_size))
+                .set(pos, Some(render_size.into()))
         });
         update.date_time.map(|date_time| {
             self.date_time
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(date_time))
+                .set(pos, Some(date_time.into()))
         });
         update.underline.map(|underline| {
             self.underline
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(underline))
+                .set(pos, Some(underline.into()))
         });
         update.strike_through.map(|strike_through| {
             self.strike_through
                 .get_or_insert_with(Default::default)
-                .set(pos, Some(strike_through))
+                .set(pos, Some(strike_through.into()))
         });
     }
 
     /// Returns the format for a cell within the SheetFormatUpdates.
     pub fn format_update(&self, pos: Pos) -> FormatUpdate {
         FormatUpdate {
-            align: self.align.as_ref().and_then(|align| align.get(pos)),
+            align: self
+                .align
+                .as_ref()
+                .and_then(|align| align.get(pos).map(|c| c.into())),
             vertical_align: self
                 .vertical_align
                 .as_ref()
-                .and_then(|vertical_align| vertical_align.get(pos)),
-            wrap: self.wrap.as_ref().and_then(|wrap| wrap.get(pos)),
+                .and_then(|vertical_align| vertical_align.get(pos).map(|c| c.into())),
+            wrap: self
+                .wrap
+                .as_ref()
+                .and_then(|wrap| wrap.get(pos).map(|c| c.into())),
             numeric_format: self
                 .numeric_format
                 .as_ref()
-                .and_then(|numeric_format| numeric_format.get(pos))
-                .clone(),
+                .and_then(|numeric_format| numeric_format.get(pos).map(|c| c.into())),
             numeric_decimals: self
                 .numeric_decimals
                 .as_ref()
-                .and_then(|numeric_decimals| numeric_decimals.get(pos)),
+                .and_then(|numeric_decimals| numeric_decimals.get(pos).map(|c| c.into())),
             numeric_commas: self
                 .numeric_commas
                 .as_ref()
-                .and_then(|numeric_commas| numeric_commas.get(pos)),
-            bold: self.bold.as_ref().and_then(|bold| bold.get(pos)),
-            italic: self.italic.as_ref().and_then(|italic| italic.get(pos)),
+                .and_then(|numeric_commas| numeric_commas.get(pos).map(|c| c.into())),
+            bold: self
+                .bold
+                .as_ref()
+                .and_then(|bold| bold.get(pos).map(|c| c.into())),
+            italic: self
+                .italic
+                .as_ref()
+                .and_then(|italic| italic.get(pos).map(|c| c.into())),
             text_color: self
                 .text_color
                 .as_ref()
-                .and_then(|text_color| text_color.get(pos))
-                .clone(),
+                .and_then(|text_color| text_color.get(pos).map(|c| c.into())),
             fill_color: self
                 .fill_color
                 .as_ref()
-                .and_then(|fill_color| fill_color.get(pos))
-                .clone(),
+                .and_then(|fill_color| fill_color.get(pos).map(|c| c.into())),
             render_size: self
                 .render_size
                 .as_ref()
-                .and_then(|render_size| render_size.get(pos))
-                .clone(),
+                .and_then(|render_size| render_size.get(pos).map(|c| c.into())),
             date_time: self
                 .date_time
                 .as_ref()
-                .and_then(|date_time| date_time.get(pos))
-                .clone(),
+                .and_then(|date_time| date_time.get(pos).map(|c| c.into())),
             underline: self
                 .underline
                 .as_ref()
-                .and_then(|underline| underline.get(pos)),
+                .and_then(|underline| underline.get(pos).map(|c| c.into())),
             strike_through: self
                 .strike_through
                 .as_ref()
-                .and_then(|strike_through| strike_through.get(pos)),
+                .and_then(|strike_through| strike_through.get(pos).map(|c| c.into())),
         }
     }
 
@@ -263,7 +288,7 @@ impl SheetFormatUpdates {
                 rect.min.y,
                 Some(rect.max.x),
                 Some(rect.max.y),
-                Some(align),
+                Some(align.into()),
             )
         });
         update.vertical_align.map(|vertical_align| {
@@ -274,7 +299,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(vertical_align),
+                    Some(vertical_align.into()),
                 )
         });
         update.wrap.map(|wrap| {
@@ -283,7 +308,7 @@ impl SheetFormatUpdates {
                 rect.min.y,
                 Some(rect.max.x),
                 Some(rect.max.y),
-                Some(wrap),
+                Some(wrap.into()),
             )
         });
         update.numeric_format.map(|numeric_format| {
@@ -294,7 +319,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(numeric_format),
+                    Some(numeric_format.into()),
                 )
         });
         update.numeric_decimals.map(|numeric_decimals| {
@@ -305,7 +330,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(numeric_decimals),
+                    Some(numeric_decimals.into()),
                 )
         });
         update.numeric_commas.map(|numeric_commas| {
@@ -316,7 +341,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(numeric_commas),
+                    Some(numeric_commas.into()),
                 )
         });
         update.bold.map(|bold| {
@@ -325,7 +350,7 @@ impl SheetFormatUpdates {
                 rect.min.y,
                 Some(rect.max.x),
                 Some(rect.max.y),
-                Some(bold),
+                Some(bold.into()),
             )
         });
         update.italic.map(|italic| {
@@ -334,7 +359,7 @@ impl SheetFormatUpdates {
                 rect.min.y,
                 Some(rect.max.x),
                 Some(rect.max.y),
-                Some(italic),
+                Some(italic.into()),
             )
         });
         update.text_color.map(|text_color| {
@@ -345,7 +370,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(text_color),
+                    Some(text_color.into()),
                 )
         });
         update.fill_color.map(|fill_color| {
@@ -356,7 +381,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(fill_color),
+                    Some(fill_color.into()),
                 )
         });
         update.render_size.map(|render_size| {
@@ -367,7 +392,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(render_size),
+                    Some(render_size.into()),
                 )
         });
         update.date_time.map(|date_time| {
@@ -378,7 +403,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(date_time),
+                    Some(date_time.into()),
                 )
         });
         update.underline.map(|underline| {
@@ -389,7 +414,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(underline),
+                    Some(underline.into()),
                 )
         });
         update.strike_through.map(|strike_through| {
@@ -400,7 +425,7 @@ impl SheetFormatUpdates {
                     rect.min.y,
                     Some(rect.max.x),
                     Some(rect.max.y),
-                    Some(strike_through),
+                    Some(strike_through.into()),
                 )
         });
     }
@@ -459,7 +484,7 @@ mod tests {
 
         s.align = Contiguous2D::new_from_opt_selection(
             &A1Selection::test_a1("A1:B2"),
-            Some(Some(CellAlign::Center)),
+            Some(ClearOption::Some(CellAlign::Center)),
         );
         assert!(!s.is_default());
     }

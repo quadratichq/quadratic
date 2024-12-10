@@ -1,4 +1,7 @@
-use crate::{controller::operations::operation::Operation, grid::formats::SheetFormatUpdates};
+use crate::{
+    clear_option::ClearOption, controller::operations::operation::Operation,
+    grid::formats::SheetFormatUpdates,
+};
 
 use super::*;
 
@@ -48,7 +51,7 @@ impl Sheet {
                     dirty_hashes.extend(Rect::new(x1, y1, x2, y2).to_hashes());
 
                     // check if new formats is wrap
-                    if value == Some(CellWrap::Wrap) {
+                    if value == ClearOption::Some(CellWrap::Wrap) {
                         for y in y1..=y2 {
                             if self.row_bounds(y, true).is_some() {
                                 resize_rows.insert(y);
@@ -61,7 +64,7 @@ impl Sheet {
             wrap.to_rects_with_bounds(sheet_bounds, columns_bounds, rows_bounds, true)
                 .for_each(|(_, y1, _, y2, value)| {
                     // check if old formats is wrap
-                    if value == Some(CellWrap::Wrap) {
+                    if value == ClearOption::Some(CellWrap::Wrap) {
                         for y in y1..=y2 {
                             if self.row_bounds(y, true).is_some() {
                                 resize_rows.insert(y);
@@ -205,7 +208,10 @@ impl Sheet {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::grid::{CellAlign, Contiguous2D};
+    use crate::{
+        clear_option::ClearOption,
+        grid::{CellAlign, Contiguous2D},
+    };
 
     use super::*;
 
@@ -223,7 +229,13 @@ mod tests {
         let mut reverse_formats = SheetFormatUpdates::default();
 
         let mut align = Contiguous2D::new();
-        align.set_rect(1, 1, Some(5), Some(5), Some(Some(CellAlign::Center)));
+        align.set_rect(
+            1,
+            1,
+            Some(5),
+            Some(5),
+            Some(ClearOption::Some(CellAlign::Center)),
+        );
         formats.align = Some(align);
 
         let mut reverse_align = Contiguous2D::new();
@@ -231,7 +243,13 @@ mod tests {
         reverse_formats.align = Some(reverse_align);
 
         let mut wrap = Contiguous2D::new();
-        wrap.set_rect(1, 1, Some(5), Some(5), Some(Some(CellWrap::Wrap)));
+        wrap.set_rect(
+            1,
+            1,
+            Some(5),
+            Some(5),
+            Some(ClearOption::Some(CellWrap::Wrap)),
+        );
         formats.wrap = Some(wrap);
 
         let mut reverse_wrap = Contiguous2D::new();
@@ -239,7 +257,7 @@ mod tests {
         reverse_formats.wrap = Some(reverse_wrap);
 
         let mut bold = Contiguous2D::new();
-        bold.set_rect(1, 1, Some(5), Some(5), Some(Some(true)));
+        bold.set_rect(1, 1, Some(5), Some(5), Some(ClearOption::Some(true)));
         formats.bold = Some(bold);
 
         let mut reverse_bold = Contiguous2D::new();
@@ -252,7 +270,7 @@ mod tests {
             1,
             Some(5),
             Some(5),
-            Some(Some("rgb(231, 76, 60)".to_string())),
+            Some(ClearOption::Some("rgb(231, 76, 60)".to_string())),
         );
         formats.fill_color = Some(fill_color);
 
