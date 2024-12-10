@@ -3,7 +3,7 @@ use crate::grid::formats::{Formats, SheetFormatUpdates};
 use super::*;
 
 impl GridController {
-    fn set_format(
+    fn migrate_formats(
         formats_a1: &mut SheetFormatUpdates,
         formats: &Formats,
         x1: i64,
@@ -145,11 +145,11 @@ impl GridController {
         {
             let mut formats_a1 = SheetFormatUpdates::default();
             if selection.all {
-                GridController::set_format(&mut formats_a1, &old_formats, 1, 1, None, None);
+                GridController::migrate_formats(&mut formats_a1, &old_formats, 1, 1, None, None);
             } else {
                 if let Some(columns) = selection.columns {
                     for col in columns {
-                        GridController::set_format(
+                        GridController::migrate_formats(
                             &mut formats_a1,
                             &old_formats,
                             col,
@@ -161,7 +161,7 @@ impl GridController {
                 }
                 if let Some(rows) = selection.rows {
                     for row in rows {
-                        GridController::set_format(
+                        GridController::migrate_formats(
                             &mut formats_a1,
                             &old_formats,
                             1,
@@ -173,7 +173,7 @@ impl GridController {
                 }
                 if let Some(rects) = selection.rects {
                     for rect in rects {
-                        GridController::set_format(
+                        GridController::migrate_formats(
                             &mut formats_a1,
                             &old_formats,
                             rect.min.x,

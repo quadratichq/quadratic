@@ -20,25 +20,31 @@ impl GridController {
                 borders_a1
                     .top
                     .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(top));
+                    .set_rect(x1, y1, x2, y2, Some(top.into()));
             }
             if let Some(bottom) = border.bottom {
-                borders_a1
-                    .bottom
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(bottom));
+                borders_a1.bottom.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(bottom.into()),
+                );
             }
             if let Some(left) = border.left {
                 borders_a1
                     .left
                     .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(left));
+                    .set_rect(x1, y1, x2, y2, Some(left.into()));
             }
             if let Some(right) = border.right {
-                borders_a1
-                    .right
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, Some(right));
+                borders_a1.right.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(right.into()),
+                );
             }
         }
     }

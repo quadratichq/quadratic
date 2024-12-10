@@ -47,11 +47,11 @@ impl SheetFormatting {
             ),
             bold: Self::apply_updates_item(&updates.bold, &mut self.bold),
             italic: Self::apply_updates_item(&updates.italic, &mut self.italic),
-            underline: Self::apply_updates_item(&updates.underline, &mut self.underline),
             text_color: Self::apply_updates_item(&updates.text_color, &mut self.text_color),
             date_time: Self::apply_updates_item(&updates.date_time, &mut self.date_time),
             fill_color: Self::apply_updates_item(&updates.fill_color, &mut self.fill_color),
             render_size: Self::apply_updates_item(&updates.render_size, &mut self.render_size),
+            underline: Self::apply_updates_item(&updates.underline, &mut self.underline),
             strike_through: Self::apply_updates_item(
                 &updates.strike_through,
                 &mut self.strike_through,
