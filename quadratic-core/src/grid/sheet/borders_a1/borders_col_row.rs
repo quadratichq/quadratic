@@ -3,7 +3,7 @@
 
 use crate::CopyFormats;
 
-use super::{BordersA1, BordersA1Updates};
+use super::{BordersA1, BordersA1Type, BordersA1Updates, BordersA1UpdatesType};
 
 impl BordersA1 {
     pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
@@ -14,50 +14,33 @@ impl BordersA1 {
     }
 
     pub fn remove_column(&mut self, column: i64) -> BordersA1Updates {
+        let remove_column_item = |item: &mut BordersA1Type| -> BordersA1UpdatesType {
+            item.remove_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into())))
+        };
+
         BordersA1Updates {
-            left: self
-                .left
-                .remove_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            right: self
-                .right
-                .remove_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            top: self
-                .top
-                .remove_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            bottom: self
-                .bottom
-                .remove_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            left: remove_column_item(&mut self.left),
+            right: remove_column_item(&mut self.right),
+            top: remove_column_item(&mut self.top),
+            bottom: remove_column_item(&mut self.bottom),
         }
     }
 
     pub fn copy_column(&self, column: i64) -> Option<BordersA1Updates> {
-        let updates = BordersA1Updates {
-            left: self
-                .left
-                .copy_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            right: self
-                .right
-                .copy_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            top: self
-                .top
-                .copy_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            bottom: self
-                .bottom
-                .copy_column(column)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+        let copy_column_item = |item: &BordersA1Type| -> BordersA1UpdatesType {
+            item.copy_column(column)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into())))
         };
-        if updates.is_empty() {
-            None
-        } else {
-            Some(updates)
-        }
+
+        let updates = BordersA1Updates {
+            left: copy_column_item(&self.left),
+            right: copy_column_item(&self.right),
+            top: copy_column_item(&self.top),
+            bottom: copy_column_item(&self.bottom),
+        };
+
+        updates.is_empty().then_some(updates)
     }
 
     pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
@@ -68,50 +51,33 @@ impl BordersA1 {
     }
 
     pub fn remove_row(&mut self, row: i64) -> BordersA1Updates {
+        let remove_row_item = |item: &mut BordersA1Type| -> BordersA1UpdatesType {
+            item.remove_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into())))
+        };
+
         BordersA1Updates {
-            left: self
-                .left
-                .remove_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            right: self
-                .right
-                .remove_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            top: self
-                .top
-                .remove_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            bottom: self
-                .bottom
-                .remove_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+            left: remove_row_item(&mut self.left),
+            right: remove_row_item(&mut self.right),
+            top: remove_row_item(&mut self.top),
+            bottom: remove_row_item(&mut self.bottom),
         }
     }
 
     pub fn copy_row(&self, row: i64) -> Option<BordersA1Updates> {
-        let updates = BordersA1Updates {
-            left: self
-                .left
-                .copy_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            right: self
-                .right
-                .copy_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            top: self
-                .top
-                .copy_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
-            bottom: self
-                .bottom
-                .copy_row(row)
-                .map(|c| c.map_ref(|c| c.map(|c| c.into()))),
+        let copy_row_item = |item: &BordersA1Type| -> BordersA1UpdatesType {
+            item.copy_row(row)
+                .map(|c| c.map_ref(|c| c.map(|c| c.into())))
         };
-        if updates.is_empty() {
-            None
-        } else {
-            Some(updates)
-        }
+
+        let updates = BordersA1Updates {
+            left: copy_row_item(&self.left),
+            right: copy_row_item(&self.right),
+            top: copy_row_item(&self.top),
+            bottom: copy_row_item(&self.bottom),
+        };
+
+        updates.is_empty().then_some(updates)
     }
 }
 

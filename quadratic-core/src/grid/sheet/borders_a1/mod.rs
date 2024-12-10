@@ -22,12 +22,14 @@ pub mod sides;
 
 pub use borders_style::*;
 
+pub type BordersA1Type = Contiguous2D<Option<BorderStyleTimestamp>>;
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct BordersA1 {
-    pub(crate) left: Contiguous2D<Option<BorderStyleTimestamp>>,
-    pub(crate) right: Contiguous2D<Option<BorderStyleTimestamp>>,
-    pub(crate) top: Contiguous2D<Option<BorderStyleTimestamp>>,
-    pub(crate) bottom: Contiguous2D<Option<BorderStyleTimestamp>>,
+    pub(crate) left: BordersA1Type,
+    pub(crate) right: BordersA1Type,
+    pub(crate) top: BordersA1Type,
+    pub(crate) bottom: BordersA1Type,
 }
 
 impl BordersA1 {
@@ -84,12 +86,14 @@ impl BordersA1 {
     }
 }
 
+pub type BordersA1UpdatesType = Option<Contiguous2D<Option<ClearOption<BorderStyleTimestamp>>>>;
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct BordersA1Updates {
-    pub(crate) left: Option<Contiguous2D<Option<ClearOption<BorderStyleTimestamp>>>>,
-    pub(crate) right: Option<Contiguous2D<Option<ClearOption<BorderStyleTimestamp>>>>,
-    pub(crate) top: Option<Contiguous2D<Option<ClearOption<BorderStyleTimestamp>>>>,
-    pub(crate) bottom: Option<Contiguous2D<Option<ClearOption<BorderStyleTimestamp>>>>,
+    pub(crate) left: BordersA1UpdatesType,
+    pub(crate) right: BordersA1UpdatesType,
+    pub(crate) top: BordersA1UpdatesType,
+    pub(crate) bottom: BordersA1UpdatesType,
 }
 
 impl BordersA1Updates {
