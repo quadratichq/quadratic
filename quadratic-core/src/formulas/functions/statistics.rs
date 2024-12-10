@@ -210,7 +210,6 @@ mod tests {
 
     #[test]
     #[parallel]
-    // TODO(ddimaria): @HactarCE fix broken test
     fn test_averageif() {
         let g = Grid::new();
 
@@ -318,17 +317,17 @@ mod tests {
     #[test]
     #[parallel]
     fn test_countif() {
-        let g = Grid::new();
+        let g: Grid = Grid::new();
         assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
         assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
 
         // Test that blank cells are ignored
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        for y in 0..=10 {
-            let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
+        for y in 1..=11 {
+            let _ = sheet.set_cell_value(Pos { x: 1, y }, y - 1);
         }
-        assert_eq!("6", eval_to_string(&g, "COUNTIF(Bn5:B10, \"<=5\")"));
+        assert_eq!("6", eval_to_string(&g, "COUNTIF(A1:A10, \"<=5\")"));
     }
 
     #[test]
