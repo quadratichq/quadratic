@@ -22,14 +22,14 @@ pub(crate) fn try_check_syntax(grid: &Grid, s: &str) -> CodeResult<()> {
 pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
     println!("Evaluating formula {s:?}");
     let mut ctx = Ctx::new(grid, pos);
-    match parse_formula(s, Pos::ORIGIN) {
+    match parse_formula(s, pos![A0]) {
         Ok(formula) => formula.eval(&mut ctx).inner,
         Err(e) => e.into(),
     }
 }
 #[track_caller]
 pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
-    eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)
+    eval_at(grid, pos![A0].to_sheet_pos(grid.sheets()[0].id), s)
 }
 #[track_caller]
 pub(crate) fn eval_to_string_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> String {

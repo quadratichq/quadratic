@@ -29,7 +29,7 @@ pub struct Pos {
 }
 
 impl Pos {
-    pub const ORIGIN: Self = Self { x: 0, y: 0 };
+    pub const ORIGIN: Self = Self { x: 1, y: 0 };
 
     pub fn new(x: i64, y: i64) -> Self {
         Self { x, y }
