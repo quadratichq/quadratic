@@ -11,7 +11,7 @@ use crate::{
 
 use super::FormatUpdate;
 
-type SheetFormatUpdatesType<T> = Option<Contiguous2D<Option<ClearOption<T>>>>;
+pub type SheetFormatUpdatesType<T> = Option<Contiguous2D<Option<ClearOption<T>>>>;
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
 pub struct SheetFormatUpdates {
