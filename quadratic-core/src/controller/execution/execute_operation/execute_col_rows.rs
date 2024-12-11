@@ -3,167 +3,155 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{GridBounds, SheetId},
+    formulas::{replace_cell_references_with, CellRefCoord},
+    grid::{CodeCellLanguage, CodeCellValue, GridBounds, SheetId},
+    CellValue, Pos,
 };
 
 impl GridController {
-    /// Change cell references in a formula when pasting.
-    ///
-    /// Tentative guess at how this works:
-    /// - If `column` is `Some`, then everything after that column should be
-    ///   adjusted by `delta`.
-    /// - If `row` is `Some`, then everything after that column should be
-    ///   adjusted by `delta`.
-    fn adjust_formulas(
+    pub fn adjust_formula_column_row(
+        code_cell: &CodeCellValue,
+        sheet_name: &String,
+        code_cell_pos: &Pos,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
+    ) -> String {
+        if let Some(column) = column {
+            let new_code = replace_cell_references_with(
+                &code_cell.code,
+                *code_cell_pos,
+                |coord_sheet_name, cell_ref| {
+                    let coord_sheet_name = coord_sheet_name.as_ref().unwrap_or(sheet_name);
+                    if coord_sheet_name == sheet_name {
+                        match cell_ref {
+                            CellRefCoord::Relative(x) => {
+                                if x + code_cell_pos.x >= column {
+                                    CellRefCoord::Relative(x + delta)
+                                } else {
+                                    CellRefCoord::Relative(x)
+                                }
+                            }
+                            CellRefCoord::Absolute(x) => {
+                                if x >= column {
+                                    CellRefCoord::Absolute(x + delta)
+                                } else {
+                                    CellRefCoord::Absolute(x)
+                                }
+                            }
+                        }
+                    } else {
+                        cell_ref
+                    }
+                },
+                |_, cell_ref| cell_ref,
+            );
+            new_code
+        } else if let Some(row) = row {
+            let new_code = replace_cell_references_with(
+                &code_cell.code,
+                *code_cell_pos,
+                |_, cell_ref| cell_ref,
+                |coord_sheet_name, cell_ref| {
+                    let coord_sheet_name = coord_sheet_name.as_ref().unwrap_or(sheet_name);
+                    if coord_sheet_name == sheet_name {
+                        match cell_ref {
+                            CellRefCoord::Relative(y) => {
+                                if y + code_cell_pos.y >= row {
+                                    CellRefCoord::Relative(y + delta)
+                                } else {
+                                    CellRefCoord::Relative(y)
+                                }
+                            }
+                            CellRefCoord::Absolute(y) => {
+                                if y >= row {
+                                    CellRefCoord::Absolute(y + delta)
+                                } else {
+                                    CellRefCoord::Absolute(y)
+                                }
+                            }
+                        }
+                    } else {
+                        cell_ref
+                    }
+                },
+            );
+            new_code
+        } else {
+            code_cell.code.clone()
+        }
+    }
+
+    fn adjust_code_cells_column_row(
         &self,
-        _transaction: &mut PendingTransaction,
-        _sheet_id: SheetId,
-        _sheet_name: String,
-        _column: Option<i64>,
-        _row: Option<i64>,
-        _delta: i64,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
     ) {
-        dbgjs!("todo: implement adjust_formulas");
-        // self.grid.sheets().iter().for_each(|sheet| {
-        //     sheet.code_runs.iter().for_each(|(_pos, _code_run)| {
-        //         if let Some(column) = column {
-        //             if code_run.cells_accessed.sheet_iter(sheet_id).any(|range| {
-        //                 // if the cells accessed is beyond the column that was deleted
-        //                 match range {
-        //                     &A1RangeType::Pos(pos) => pos.x.index as i64 >= column,
-        //                     A1RangeType::Rect(rect) => {
-        //                         rect.min.x.index as i64 >= column
-        //                             || rect.max.x.index as i64 >= column
-        //                     }
-        //                     A1RangeType::Column(col) => col.index as i64 >= column,
-        //                     A1RangeType::ColumnRange(col_range) => {
-        //                         col_range.min.index as i64 >= column
-        //                             || col_range.max.index as i64 >= column
-        //                     }
-        //                     A1RangeType::All | A1RangeType::Row(_) | A1RangeType::RowRange(_) => {
-        //                         false
-        //                     }
-        //                 }
-        //             }) {
-        //                 // only update formulas (for now)
-        //                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {
-        //                     let new_code = replace_cell_references_with(
-        //                         &code.code,
-        //                         *pos,
-        //                         |coord_sheet_name, cell_ref| {
-        //                             let coord_sheet_name =
-        //                                 coord_sheet_name.as_ref().unwrap_or(&sheet.name);
-        //                             if *coord_sheet_name == sheet_name {
-        //                                 match cell_ref {
-        //                                     CellRefCoord::Relative(x) => {
-        //                                         if x + pos.x >= column {
-        //                                             CellRefCoord::Relative(x + delta)
-        //                                         } else {
-        //                                             CellRefCoord::Relative(x)
-        //                                         }
-        //                                     }
-        //                                     CellRefCoord::Absolute(x) => {
-        //                                         if x >= column {
-        //                                             CellRefCoord::Absolute(x + delta)
-        //                                         } else {
-        //                                             CellRefCoord::Absolute(x)
-        //                                         }
-        //                                     }
-        //                                 }
-        //                             } else {
-        //                                 cell_ref
-        //                             }
-        //                         },
-        //                         |_, cell_ref| cell_ref,
-        //                     );
-        //                     if new_code != code.code {
-        //                         let code_cell_value = CellValue::Code(CodeCellValue {
-        //                             code: new_code,
-        //                             ..code.clone()
-        //                         });
-        //                         transaction.operations.push_back(Operation::SetCellValues {
-        //                             sheet_pos: pos.to_sheet_pos(sheet_id),
-        //                             values: code_cell_value.into(),
-        //                         });
-        //                     }
-        //                 }
-        //             }
-        //         } else if let Some(row) = row {
-        //             if code_run.cells_accessed.sheet_iter(sheet_id).any(|range| {
-        //                 // if the cells accessed is beyond the row that was deleted
-        //                 match range {
-        //                     A1RangeType::Pos(pos) => pos.y.index as i64 >= row,
-        //                     A1RangeType::Rect(rect) => {
-        //                         rect.min.y.index as i64 >= row || rect.max.y.index as i64 >= row
-        //                     }
-        //                     A1RangeType::Row(rel_row) => rel_row.index as i64 >= row,
-        //                     A1RangeType::RowRange(row_range) => {
-        //                         row_range.min.index as i64 >= row
-        //                             || row_range.max.index as i64 >= row
-        //                     }
-        //                     A1RangeType::All
-        //                     | A1RangeType::Column(_)
-        //                     | A1RangeType::ColumnRange(_) => false,
-        //                 }
-        //             }) {
-        //                 // only update formulas (for now)
-        //                 if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {
-        //                     let new_code = replace_cell_references_with(
-        //                         &code.code,
-        //                         *pos,
-        //                         |_, cell_ref| cell_ref,
-        //                         |coord_sheet_name, cell_ref| {
-        //                             let coord_sheet_name =
-        //                                 coord_sheet_name.as_ref().unwrap_or(&sheet.name);
-        //                             if *coord_sheet_name == sheet_name {
-        //                                 match cell_ref {
-        //                                     CellRefCoord::Relative(y) => {
-        //                                         if y + pos.y >= row {
-        //                                             CellRefCoord::Relative(y + delta)
-        //                                         } else {
-        //                                             CellRefCoord::Relative(y)
-        //                                         }
-        //                                     }
-        //                                     CellRefCoord::Absolute(y) => {
-        //                                         if y >= row {
-        //                                             CellRefCoord::Absolute(y + delta)
-        //                                         } else {
-        //                                             CellRefCoord::Absolute(y)
-        //                                         }
-        //                                     }
-        //                                 }
-        //                             } else {
-        //                                 cell_ref
-        //                             }
-        //                         },
-        //                     );
-        //                     if new_code != code.code {
-        //                         let code_cell_value = CellValue::Code(CodeCellValue {
-        //                             code: new_code,
-        //                             ..code.clone()
-        //                         });
-        //                         let sheet_pos = pos.to_sheet_pos(sheet_id);
-        //                         transaction.operations.push_back(Operation::SetCellValues {
-        //                             sheet_pos,
-        //                             values: code_cell_value.into(),
-        //                         });
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     });
-        // });
+        for sheet in self.grid.sheets().iter() {
+            for (pos, code_run) in sheet.code_runs.iter() {
+                if let Some(cells_ranges) = code_run.cells_accessed.cells.get(&sheet_id) {
+                    let Some(sheet) = self.try_sheet(sheet_id) else {
+                        continue;
+                    };
+
+                    for cells_range in cells_ranges.iter() {
+                        let cells_rect = sheet.cell_ref_range_to_rect(*cells_range);
+
+                        if cells_rect.max.x < column.unwrap_or(i64::MAX)
+                            && cells_rect.max.y < row.unwrap_or(i64::MAX)
+                        {
+                            continue;
+                        }
+
+                        if let Some(CellValue::Code(code)) = sheet.cell_value_ref(*pos) {
+                            let new_code = match code.language {
+                                CodeCellLanguage::Formula => {
+                                    GridController::adjust_formula_column_row(
+                                        &code,
+                                        &sheet.name,
+                                        pos,
+                                        column,
+                                        row,
+                                        delta,
+                                    )
+                                }
+                                _ => {
+                                    let mut new_code = code.clone();
+                                    new_code.adjust_cell_references(column, row, delta);
+                                    new_code.code
+                                }
+                            };
+                            if new_code != code.code {
+                                let code_cell_value = CellValue::Code(CodeCellValue {
+                                    code: new_code,
+                                    ..code.clone()
+                                });
+                                let sheet_pos = pos.to_sheet_pos(sheet.id);
+                                transaction.operations.push_back(Operation::SetCellValues {
+                                    sheet_pos,
+                                    values: code_cell_value.into(),
+                                });
+                                transaction
+                                    .operations
+                                    .push_back(Operation::ComputeCode { sheet_pos });
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     pub fn execute_delete_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteColumn { sheet_id, column } = op.clone() {
-            let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 sheet.delete_column(transaction, column);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
-                sheet_name = sheet.name.clone();
             } else {
                 // nothing more can be done
                 return;
@@ -172,7 +160,7 @@ impl GridController {
             if transaction.is_user() {
                 // adjust formulas to account for deleted column (needs to be
                 // here since it's across sheets)
-                self.adjust_formulas(transaction, sheet_id, sheet_name, Some(column), None, -1);
+                self.adjust_code_cells_column_row(transaction, sheet_id, Some(column), None, -1);
 
                 // update information for all cells to the right of the deleted column
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -194,13 +182,11 @@ impl GridController {
 
     pub fn execute_delete_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
         if let Operation::DeleteRow { sheet_id, row } = op.clone() {
-            let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 sheet.delete_row(transaction, row);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
-                sheet_name = sheet.name.clone();
             } else {
                 // nothing more can be done
                 return;
@@ -209,7 +195,7 @@ impl GridController {
             if transaction.is_user() {
                 // adjust formulas to account for deleted column (needs to be
                 // here since it's across sheets)
-                self.adjust_formulas(transaction, sheet_id, sheet_name, None, Some(row), -1);
+                self.adjust_code_cells_column_row(transaction, sheet_id, None, Some(row), -1);
 
                 // update information for all cells below the deleted row
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -236,13 +222,11 @@ impl GridController {
             copy_formats,
         } = op
         {
-            let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 sheet.insert_column(transaction, column, copy_formats);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
-                sheet_name = sheet.name.clone();
             } else {
                 // nothing more can be done
                 return;
@@ -251,7 +235,7 @@ impl GridController {
             if transaction.is_user() {
                 // adjust formulas to account for inserted column (needs to be
                 // here since it's across sheets)
-                self.adjust_formulas(transaction, sheet_id, sheet_name, Some(column), None, 1);
+                self.adjust_code_cells_column_row(transaction, sheet_id, Some(column), None, 1);
 
                 // update information for all cells to the right of the inserted column
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -278,13 +262,11 @@ impl GridController {
             copy_formats,
         } = op
         {
-            let sheet_name: String;
             if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 sheet.insert_row(transaction, row, copy_formats);
                 transaction.forward_operations.push(op);
 
                 sheet.recalculate_bounds();
-                sheet_name = sheet.name.clone();
             } else {
                 // nothing more can be done
                 return;
@@ -293,7 +275,7 @@ impl GridController {
             if transaction.is_user() {
                 // adjust formulas to account for deleted column (needs to be
                 // here since it's across sheets)
-                self.adjust_formulas(transaction, sheet_id, sheet_name, None, Some(row), 1);
+                self.adjust_code_cells_column_row(transaction, sheet_id, None, Some(row), 1);
 
                 // update information for all cells below the deleted row
                 if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -337,22 +319,19 @@ mod tests {
     fn adjust_formulas_nothing() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet(sheet_id);
         let column = 0;
         let row = 0;
         let delta = 1;
-        gc.adjust_formulas(
+        gc.adjust_code_cells_column_row(
             &mut PendingTransaction::default(),
             sheet_id,
-            sheet.name.clone(),
             Some(column),
             None,
             delta,
         );
-        gc.adjust_formulas(
+        gc.adjust_code_cells_column_row(
             &mut PendingTransaction::default(),
             sheet_id,
-            sheet.name.clone(),
             None,
             Some(row),
             delta,
@@ -373,6 +352,15 @@ mod tests {
             "1".into(),
             None,
         );
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 2,
+                y: 2,
+            },
+            "2".into(),
+            None,
+        );
         gc.set_code_cell(
             SheetPos {
                 sheet_id,
@@ -380,27 +368,20 @@ mod tests {
                 y: 1,
             },
             CodeCellLanguage::Formula,
-            "B1".into(),
+            "B1 + B2".into(),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
-            "1".to_string()
+            "3".to_string()
         );
 
         let mut transaction = PendingTransaction::default();
-        gc.adjust_formulas(
-            &mut transaction,
-            sheet_id,
-            sheet.name.clone(),
-            Some(1),
-            None,
-            1,
-        );
+        gc.adjust_code_cells_column_row(&mut transaction, sheet_id, None, Some(2), 1);
 
-        assert_eq!(transaction.operations.len(), 1);
+        assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
             transaction.operations[0],
             Operation::SetCellValues {
@@ -411,7 +392,7 @@ mod tests {
                 },
                 values: CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Formula,
-                    code: "R[0]C[2]".to_string()
+                    code: "R[0]C[1] + R[2]C[1]".to_string()
                 })
                 .into(),
             }

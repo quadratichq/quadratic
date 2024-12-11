@@ -15,6 +15,24 @@ impl RefRangeBounds {
         range.translate_in_place(x, y);
         range
     }
+
+    pub fn adjust_column_row_in_place(
+        &mut self,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
+    ) {
+        self.start.adjust_column_row_in_place(column, row, delta);
+        if let Some(end) = self.end.as_mut() {
+            end.adjust_column_row_in_place(column, row, delta);
+        }
+    }
+
+    pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
+        let mut range = *self;
+        range.adjust_column_row_in_place(column, row, delta);
+        range
+    }
 }
 
 #[cfg(test)]

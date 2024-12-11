@@ -672,6 +672,6 @@ mod tests {
 
         // Mixed finite and infinite selections
         let mixed = A1Selection::test_a1("B2:C3,D:D,4:4");
-        assert_eq!(sheet.selection_bounds(&mixed), Some(Rect::new(2, 2, 4, 4)));
+        assert_eq!(sheet.selection_bounds(&mixed), Some(Rect::new(1, 1, 4, 4)));
     }
 }

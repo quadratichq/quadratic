@@ -5,7 +5,9 @@ use crate::compression::{
 
 use super::Grid;
 use anyhow::{anyhow, Result};
-use migrate_code_cell_references::migrate_code_cell_references;
+use migrate_code_cell_references::{
+    migrate_code_cell_references, replace_formula_a1_references_to_r1c1,
+};
 use serde::{Deserialize, Serialize};
 pub use shift_negative_offsets::add_import_offset_to_contiguous_2d_rect;
 use shift_negative_offsets::shift_negative_offsets;
@@ -154,6 +156,7 @@ fn handle_negative_offsets(grid: &mut Result<Grid>, check_for_negative_offsets: 
     }
 
     if let Ok(grid) = grid {
+        replace_formula_a1_references_to_r1c1(grid);
         let shifted_offsets = shift_negative_offsets(grid);
         migrate_code_cell_references(grid, &shifted_offsets);
     }

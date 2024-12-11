@@ -142,6 +142,34 @@ impl CellRefRangeEnd {
         }
     }
 
+    pub fn adjust_column_row_in_place(
+        &mut self,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
+    ) {
+        if let Some(column) = column {
+            if let Some(c) = self.col.as_mut() {
+                if c.coord >= column {
+                    c.coord = c.coord.saturating_add(delta).max(1);
+                }
+            }
+        }
+        if let Some(row) = row {
+            if let Some(r) = self.row.as_mut() {
+                if r.coord >= row {
+                    r.coord = r.coord.saturating_add(delta).max(1);
+                }
+            }
+        }
+    }
+
+    pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
+        let mut range = *self;
+        range.adjust_column_row_in_place(column, row, delta);
+        range
+    }
+
     /// Returns whether the range end is missing a row or column number.
     pub fn is_multi_range(self) -> bool {
         self.col.is_none() || self.row.is_none()

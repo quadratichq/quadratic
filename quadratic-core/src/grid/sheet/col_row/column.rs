@@ -188,12 +188,11 @@ impl Sheet {
             }
         }
         for old_pos in code_runs_to_move {
+            let new_pos = Pos {
+                x: old_pos.x - 1,
+                y: old_pos.y,
+            };
             if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
-                let new_pos = Pos {
-                    x: old_pos.x - 1,
-                    y: old_pos.y,
-                };
-
                 // signal html and image cells to update
                 if code_run.is_html() {
                     transaction.add_html_cell(self.id, old_pos);
@@ -358,9 +357,7 @@ mod tests {
         };
         sheet.delete_column(&mut transaction, 1);
 
-        // this should be 3--need to wait until Contiguous2D::copy_column
-        // properly removes column blocks.
-        assert_eq!(transaction.reverse_operations.len(), 4);
+        assert_eq!(transaction.reverse_operations.len(), 3);
 
         assert_eq!(sheet.columns.len(), 3);
 

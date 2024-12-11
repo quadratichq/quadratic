@@ -203,12 +203,11 @@ impl Sheet {
         }
         code_runs_to_move.sort_unstable();
         for old_pos in code_runs_to_move {
+            let new_pos = Pos {
+                x: old_pos.x,
+                y: old_pos.y - 1,
+            };
             if let Some(code_run) = self.code_runs.shift_remove(&old_pos) {
-                let new_pos = Pos {
-                    x: old_pos.x,
-                    y: old_pos.y - 1,
-                };
-
                 // signal html and image cells to update
                 if code_run.is_html() {
                     transaction.add_html_cell(self.id, old_pos);
