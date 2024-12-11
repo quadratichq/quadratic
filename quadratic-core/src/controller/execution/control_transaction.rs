@@ -301,8 +301,9 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             };
 
-            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
+            transaction.cells_accessed.clear();
             transaction.waiting_for_async = None;
+            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
         }

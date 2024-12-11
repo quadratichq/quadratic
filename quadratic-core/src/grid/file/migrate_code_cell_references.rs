@@ -4,6 +4,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
+    formulas::replace_a1_notation,
     grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds},
     CellRefRange, CellValue, Pos, Rect,
 };
@@ -45,6 +46,28 @@ lazy_static! {
         Regex::new(JAVASCRIPT_RELCELLS_REGEX).expect("Failed to compile JAVASCRIPT_RELCELLS_REGEX");
     static ref POS_REGEX_COMPILED: Regex =
         Regex::new(POS_REGEX).expect("Failed to compile POS_REGEX");
+}
+
+pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
+    for sheet in grid.sheets.iter_mut() {
+        if let GridBounds::NonEmpty(bounds) = sheet.bounds(false) {
+            for x in bounds.x_range() {
+                if let Some(column) = sheet.get_column_mut(x) {
+                    for y in bounds.y_range() {
+                        if let Some(CellValue::Code(code_cell)) = column.values.get_mut(&y) {
+                            match code_cell.language {
+                                CodeCellLanguage::Formula => {
+                                    code_cell.code =
+                                        replace_a1_notation(&code_cell.code, (x + 1, y).into());
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 pub fn migrate_code_cell_references(

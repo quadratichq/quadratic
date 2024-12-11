@@ -285,7 +285,6 @@ export class Cursor extends Container {
     const cursor = sheets.sheet.cursor;
     const columnRow = cursor.isColumnRow();
     if (this.dirty || (viewportDirty && columnRow)) {
-      console.log(cursor.jsSelection.toA1String(sheets.sheet.id, sheets.getSheetIdNameMap()));
       this.dirty = false;
       this.graphics.clear();
       while (this.children.length > 1) {

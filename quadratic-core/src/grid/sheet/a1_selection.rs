@@ -582,4 +582,74 @@ mod tests {
             vec![CellRefRange::test_a1("A1:J10")]
         );
     }
+
+    #[test]
+    fn test_selection_bounds() {
+        let mut sheet = Sheet::test();
+
+        // Setup some data to establish sheet bounds
+        sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
+        sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
+        sheet.recalculate_bounds();
+
+        // Single cell selection
+        let single_cell = A1Selection::test_a1("B2");
+        assert_eq!(
+            sheet.selection_bounds(&single_cell),
+            Some(Rect::new(2, 2, 2, 2))
+        );
+
+        // Regular rectangular selection
+        let rect_selection = A1Selection::test_a1("B2:D4");
+        assert_eq!(
+            sheet.selection_bounds(&rect_selection),
+            Some(Rect::new(2, 2, 4, 4))
+        );
+
+        // Multiple disjoint rectangles
+        let multi_rect = A1Selection::test_a1("A1:B2,D4:E5");
+        assert_eq!(
+            sheet.selection_bounds(&multi_rect),
+            Some(Rect::new(1, 1, 5, 5))
+        );
+
+        // Overlapping rectangles
+        let overlapping = A1Selection::test_a1("B2:D4,C3:E5");
+        assert_eq!(
+            sheet.selection_bounds(&overlapping),
+            Some(Rect::new(2, 2, 5, 5))
+        );
+
+        // Infinite column selection (should be clamped to sheet bounds)
+        let infinite_col = A1Selection::test_a1("C:C");
+        assert_eq!(
+            sheet.selection_bounds(&infinite_col),
+            Some(Rect::new(3, 1, 3, 1))
+        );
+
+        // Infinite row selection (should be clamped to sheet bounds)
+        let infinite_row = A1Selection::test_a1("3:3");
+        assert_eq!(
+            sheet.selection_bounds(&infinite_row),
+            Some(Rect::new(1, 3, 1, 3))
+        );
+
+        // Select all (should be clamped to sheet bounds)
+        let select_all = A1Selection::test_a1("*");
+        assert_eq!(
+            sheet.selection_bounds(&select_all),
+            Some(Rect::new(1, 1, 5, 5))
+        );
+
+        // Multiple infinite selections (should be clamped to sheet bounds)
+        let multi_infinite = A1Selection::test_a1("A:B,2:3");
+        assert_eq!(
+            sheet.selection_bounds(&multi_infinite),
+            Some(Rect::new(1, 1, 2, 3))
+        );
+
+        // Mixed finite and infinite selections
+        let mixed = A1Selection::test_a1("B2:C3,D:D,4:4");
+        assert_eq!(sheet.selection_bounds(&mixed), Some(Rect::new(1, 1, 4, 4)));
+    }
 }

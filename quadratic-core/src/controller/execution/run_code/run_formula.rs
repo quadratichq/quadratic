@@ -35,6 +35,7 @@ impl GridController {
                     line_number: None,
                     output_type: None,
                 };
+                transaction.cells_accessed.clear();
                 self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
             }
             Err(error) => {

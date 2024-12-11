@@ -202,6 +202,25 @@ impl CellRefRange {
         }
     }
 
+    pub fn adjust_column_row_in_place(
+        &mut self,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
+    ) {
+        match self {
+            Self::Sheet { range } => range.adjust_column_row_in_place(column, row, delta),
+        }
+    }
+
+    pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
+        match self {
+            Self::Sheet { range } => Self::Sheet {
+                range: range.adjust_column_row(column, row, delta),
+            },
+        }
+    }
+
     pub fn try_to_pos(&self) -> Option<Pos> {
         match self {
             Self::Sheet { range } => range.try_to_pos(),

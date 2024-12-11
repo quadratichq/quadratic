@@ -166,7 +166,7 @@ impl CellRef {
             ///                      (n?)           group 4: optional `n`
             ///                          (\d+)?     group 5: row number
             pub static ref A1_CELL_REFERENCE_REGEX: Regex =
-                Regex::new(r"^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)?$").unwrap();
+                Regex::new(r"^(\$?)(n?[a-zA-Z]+)(\$?)(n?)(\d+)?$").unwrap();
         }
 
         let captures = A1_CELL_REFERENCE_REGEX.captures(rest.trim())?;
@@ -339,5 +339,15 @@ mod tests {
                 y: CellRefCoord::Relative(i64::MAX)
             })
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_a1_case_insensitive_parsing() {
+        let parse = |s: &str| CellRef::parse_a1(s, pos![A1]);
+
+        assert_eq!(parse("a1"), parse("A1"));
+        assert_eq!(parse("aa1"), parse("AA1"));
+        assert_eq!(parse("Aa1"), parse("aA1"));
     }
 }

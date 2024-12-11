@@ -157,6 +157,77 @@ impl CellRefRangeEnd {
     pub fn is_unbounded(self) -> bool {
         self.col.coord == UNBOUNDED || self.row.coord == UNBOUNDED
     }
+
+    // pub fn new_infinite_col(col: i64) -> Self {
+    //     CellRefRangeEnd {
+    //         col: CellRefCoord::new_rel(col),
+    //         row: None,
+    //     }
+    // }
+
+    // pub fn new_relative_xy(x: i64, y: i64) -> Self {
+    //     let col = Some(CellRefCoord::new_rel(x));
+    //     let row = Some(CellRefCoord::new_rel(y));
+    //     CellRefRangeEnd { col, row }
+    // }
+    // pub fn new_relative_pos(pos: Pos) -> Self {
+    //     Self::new_relative_xy(pos.x, pos.y)
+    // }
+
+    // pub fn new_relative_column(x: i64) -> Self {
+    //     let col = Some(CellRefCoord::new_rel(x));
+    //     CellRefRangeEnd { col, row: None }
+    // }
+
+    // pub fn new_relative_row(y: i64) -> Self {
+    //     let row = Some(CellRefCoord::new_rel(y));
+    //     CellRefRangeEnd { col: None, row }
+    // }
+
+    // pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) {
+    //     if let Some(c) = self.col.as_mut() {
+    //         c.translate_in_place(delta_x);
+    //     }
+    //     if let Some(r) = self.row.as_mut() {
+    //         r.translate_in_place(delta_y);
+    //     }
+    // }
+
+    // pub fn translate(self, delta_x: i64, delta_y: i64) -> Self {
+    //     CellRefRangeEnd {
+    //         col: self.col.map(|c| c.translate(delta_x)),
+    //         row: self.row.map(|r| r.translate(delta_y)),
+    //     }
+    // }
+
+    pub fn adjust_column_row_in_place(
+        &mut self,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
+    ) {
+        if let Some(column) = column {
+            if self.col() >= column {
+                self.col.coord = self.col.coord.saturating_add(delta).max(1);
+            }
+        }
+        if let Some(row) = row {
+            if self.row() >= row {
+                self.row.coord = self.row.coord.saturating_add(delta).max(1);
+            }
+        }
+    }
+
+    pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {
+        let mut range = *self;
+        range.adjust_column_row_in_place(column, row, delta);
+        range
+    }
+
+    /// Returns whether the range end is missing a row or column number.
+    pub fn is_multi_range(self) -> bool {
+        self.col.is_unbounded() || self.row.is_unbounded()
+    }
 }
 
 #[cfg(test)]

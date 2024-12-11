@@ -30,33 +30,73 @@ impl CodeCellValue {
 
         // translate q.cells("A1:B2" cell references by delta_x and delta_y for
         // python and javascript code cells
-        if self.language == CodeCellLanguage::Python
-            || self.language == CodeCellLanguage::Javascript
+        if self.language != CodeCellLanguage::Python
+            && self.language != CodeCellLanguage::Javascript
         {
-            self.code = Q_CELLS_A1_REGEX_COMPILED
-                .replace_all(&self.code, |caps: &regex::Captures<'_>| {
-                    let full_match = &caps[0]; // Capture the entire match
-                    let start_quote = &caps[1]; // The quote type used at the start
-                    let cell_ref_str = &caps[2]; // Capture the first argument inside quotes
-                    let end_quote = &caps[3]; // The quote type used at the end
-
-                    // if the quotes are mismatched, return the original string
-                    if start_quote != end_quote {
-                        return full_match.to_string();
-                    }
-
-                    match CellRefRange::from_str(cell_ref_str) {
-                        Ok(mut cell_ref_range) => {
-                            cell_ref_range.translate_in_place(delta_x, delta_y);
-                            // Replace only the first argument, keep the rest unchanged
-                            format!("q.cells({0}{1}{0}", start_quote, cell_ref_range)
-                        }
-                        // If the cell reference is invalid, return the original string
-                        Err(_) => full_match.to_string(),
-                    }
-                })
-                .to_string();
+            return;
         }
+
+        self.code = Q_CELLS_A1_REGEX_COMPILED
+            .replace_all(&self.code, |caps: &regex::Captures<'_>| {
+                let full_match = &caps[0]; // Capture the entire match
+                let start_quote = &caps[1]; // The quote type used at the start
+                let cell_ref_str = &caps[2]; // Capture the first argument inside quotes
+                let end_quote = &caps[3]; // The quote type used at the end
+
+                // if the quotes are mismatched, return the original string
+                if start_quote != end_quote {
+                    return full_match.to_string();
+                }
+
+                match CellRefRange::from_str(cell_ref_str) {
+                    Ok(mut cell_ref_range) => {
+                        cell_ref_range.translate_in_place(delta_x, delta_y);
+                        // Replace only the first argument, keep the rest unchanged
+                        format!("q.cells({0}{1}{0}", start_quote, cell_ref_range)
+                    }
+                    // If the cell reference is invalid, return the original string
+                    Err(_) => full_match.to_string(),
+                }
+            })
+            .to_string();
+    }
+
+    pub fn adjust_cell_references(&mut self, column: Option<i64>, row: Option<i64>, delta: i64) {
+        if delta == 0 {
+            return;
+        }
+
+        // adjust q.cells("A1:B2" cell references by delta for python and
+        // javascript code cells
+        if self.language != CodeCellLanguage::Python
+            && self.language != CodeCellLanguage::Javascript
+        {
+            return;
+        }
+
+        self.code = Q_CELLS_A1_REGEX_COMPILED
+            .replace_all(&self.code, |caps: &regex::Captures<'_>| {
+                let full_match = &caps[0]; // Capture the entire match
+                let start_quote = &caps[1]; // The quote type used at the start
+                let cell_ref_str = &caps[2]; // Capture the first argument inside quotes
+                let end_quote = &caps[3]; // The quote type used at the end
+
+                // if the quotes are mismatched, return the original string
+                if start_quote != end_quote {
+                    return full_match.to_string();
+                }
+
+                match CellRefRange::from_str(cell_ref_str) {
+                    Ok(mut cell_ref_range) => {
+                        cell_ref_range.adjust_column_row_in_place(column, row, delta);
+                        // Replace only the first argument, keep the rest unchanged
+                        format!("q.cells({0}{1}{0}", start_quote, cell_ref_range)
+                    }
+                    // If the cell reference is invalid, return the original string
+                    Err(_) => full_match.to_string(),
+                }
+            })
+            .to_string();
     }
 }
 
