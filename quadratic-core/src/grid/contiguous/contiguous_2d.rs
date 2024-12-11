@@ -69,26 +69,19 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
         let mut c: Contiguous2D<T> = Contiguous2D::new();
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
-                let start = range.start.unpack_xy_default(1);
-                if let Some(end) = range.end {
-                    let end = end.unpack_xy();
-                    c.set_rect(start[0], start[1], end[0], end[1], value.clone());
+                let start_col = range.start.col();
+                let start_row = range.start.row();
+                let end_col = if range.end.col.is_unbounded() {
+                    None
                 } else {
-                    match (range.start.col, range.start.row) {
-                        (Some(_), Some(_)) => {
-                            c.set(start.into(), value.clone());
-                        }
-                        (Some(_), None) => {
-                            c.set_rect(start[0], start[1], Some(start[0]), None, value.clone());
-                        }
-                        (None, Some(_)) => {
-                            c.set_rect(start[0], start[1], None, Some(start[1]), value.clone());
-                        }
-                        (None, None) => {
-                            c.set_rect(start[0], start[1], None, None, value.clone());
-                        }
-                    }
-                }
+                    Some(range.end.col())
+                };
+                let end_row = if range.end.row.is_unbounded() {
+                    None
+                } else {
+                    Some(range.end.row())
+                };
+                c.set_rect(start_col, start_row, end_col, end_row, value.clone());
             }
         });
         c

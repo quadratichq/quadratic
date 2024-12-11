@@ -59,20 +59,18 @@ impl Pos {
 
     /// Returns an A1-style relative reference to the cell position.
     pub fn a1_string(self) -> String {
-        let col = crate::a1::column_name(self.x as u64);
+        let col = crate::a1::column_name(self.x);
         let row = self.y;
         format!("{col}{row}")
     }
 
     // TODO: rename this method (`from_str`?)
     pub fn try_a1_string(a1: &str) -> Option<Self> {
-        if let Ok(end) = CellRefRangeEnd::from_str(a1) {
-            if let (Some(col), Some(row)) = (end.col, end.row) {
-                return Some(Pos {
-                    x: col.coord,
-                    y: row.coord,
-                });
-            }
+        if let Ok(end) = CellRefRangeEnd::parse_start(a1) {
+            return Some(Pos {
+                x: end.col(),
+                y: end.row(),
+            });
         }
         None
     }

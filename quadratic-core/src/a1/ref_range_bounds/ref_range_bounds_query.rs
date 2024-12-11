@@ -1,27 +1,19 @@
+use crate::UNBOUNDED;
+
 use super::*;
 
 impl RefRangeBounds {
-    /// Returns whether the range is **valid**.
-    ///
-    /// A range is valid if it can be represented using a nonempty string.
-    pub fn is_valid(self) -> bool {
-        self.start.col.is_some() || self.start.row.is_some() || self.end.is_some()
-    }
-
     /// Returns whether `self` is a single column or a column range.
     pub fn is_column_range(&self) -> bool {
-        self.start.row.is_none() && self.end.map_or(true, |end| end.row.is_none())
+        self.start.row() == 1 && self.end.row() == UNBOUNDED
     }
 
     /// Returns whether `self` is a multi-cursor.
     pub fn is_multi_cursor(&self) -> bool {
-        if self.start.is_multi_range() {
+        if self.start.is_unbounded() {
             return true;
         }
-        if let Some(end) = self.end {
-            return self.start != end;
-        }
-        false
+        self.start != self.end
     }
 
     /// Returns whether `self` is the entire range.
@@ -34,19 +26,18 @@ impl RefRangeBounds {
         if !self.is_column_range() {
             return false;
         }
-        let min = self.start.col.map_or(1, |c| c.coord);
-
-        if let Some(end) = self.end {
-            let max = end.col.map_or(i64::MAX, |c| c.coord);
-            col >= min && col <= max
+        let min = if self.start.col.is_unbounded() {
+            1
         } else {
-            col == min
-        }
+            self.start.col()
+        };
+        let max = self.end.col().max(self.start.col());
+        col >= min && col <= max
     }
 
     /// Returns whether `self` is a single row or a row range.
     pub fn is_row_range(&self) -> bool {
-        self.start.col.is_none() && self.end.map_or(true, |end| end.col.is_none())
+        self.start.col() == 1 && self.end.col() == UNBOUNDED
     }
 
     /// Returns whether `self` contains the row `row` in its row range.
@@ -54,28 +45,26 @@ impl RefRangeBounds {
         if !self.is_row_range() {
             return false;
         }
-        let min = self.start.row.map_or(1, |r| r.coord);
-
-        if let Some(end) = self.end {
-            let max = end.row.map_or(i64::MAX, |r| r.coord);
-            row >= min && row <= max
+        let min = if self.start.row.is_unbounded() {
+            1
         } else {
-            row == min
-        }
+            self.start.row()
+        };
+        let max = self.end.row().max(self.start.row());
+        row >= min && row <= max
     }
 
     /// Returns whether `self` is a finite range.
     pub fn is_finite(&self) -> bool {
-        self.start.col.is_some()
-            && self.start.row.is_some()
-            && self
-                .end
-                .is_none_or(|end| end.col.is_some() && end.row.is_some())
+        self.start.col() != UNBOUNDED
+            && self.start.row() != UNBOUNDED
+            && self.end.col() != UNBOUNDED
+            && self.end.row() != UNBOUNDED
     }
 
     /// Returns true if the range is a single cell.
     pub fn is_single_cell(&self) -> bool {
-        self.start.col.is_some() && self.start.row.is_some() && self.end.is_none()
+        self.start == self.end && !self.start.col.is_unbounded() && !self.start.row.is_unbounded()
     }
 
     /// Tries to convert the range to a single cell position. This will only
@@ -83,8 +72,8 @@ impl RefRangeBounds {
     pub fn try_to_pos(&self) -> Option<Pos> {
         if self.is_single_cell() {
             Some(Pos {
-                x: self.start.col.unwrap().coord,
-                y: self.start.row.unwrap().coord,
+                x: self.start.col(),
+                y: self.start.row(),
             })
         } else {
             None
@@ -93,24 +82,13 @@ impl RefRangeBounds {
 
     /// Returns a rectangle that bounds a finite range.
     pub fn to_rect(&self) -> Option<Rect> {
-        if let (Some(start_col), Some(start_row)) = (self.start.col, self.start.row) {
-            if let Some(end) = self.end {
-                if let (Some(end_col), Some(end_row)) = (end.col, end.row) {
-                    Some(Rect::new(
-                        start_col.coord,
-                        start_row.coord,
-                        end_col.coord,
-                        end_row.coord,
-                    ))
-                } else {
-                    None
-                }
-            } else {
-                Some(Rect::single_pos(Pos {
-                    x: start_col.coord,
-                    y: start_row.coord,
-                }))
-            }
+        if self.is_finite() {
+            Some(Rect::new(
+                self.start.col(),
+                self.start.row(),
+                self.end.col(),
+                self.end.row(),
+            ))
         } else {
             None
         }
@@ -119,14 +97,10 @@ impl RefRangeBounds {
     /// Returns only the finite columns in the range.
     pub fn selected_columns_finite(&self) -> Vec<i64> {
         let mut columns = vec![];
-        if let Some(start_col) = self.start.col {
-            if let Some(end) = self.end {
-                if let Some(end_col) = end.col {
-                    columns.extend(start_col.coord..=end_col.coord);
-                }
-            } else {
-                columns.push(start_col.coord);
-            }
+        if !self.end.is_unbounded() {
+            let min = self.start.col().min(self.end.col());
+            let max = self.start.col().max(self.end.col());
+            columns.extend(min..=max);
         }
         columns
     }
@@ -134,24 +108,10 @@ impl RefRangeBounds {
     /// Returns the selected columns in the range that fall between `from` and `to`.
     pub fn selected_columns(&self, from: i64, to: i64) -> Vec<i64> {
         let mut columns = vec![];
-        if let Some(start_col) = self.start.col {
-            if let Some(end) = self.end {
-                if let Some(end_col) = end.col {
-                    columns.extend(start_col.coord.max(from)..=end_col.coord.min(to));
-                } else {
-                    columns.extend(start_col.coord.max(from)..=to);
-                }
-            } else if start_col.coord >= from && start_col.coord <= to {
-                columns.push(start_col.coord);
-            }
-        } else if let Some(end) = self.end {
-            if let Some(end_col) = end.col {
-                columns.extend(end_col.coord.max(from)..=to);
-            } else {
-                columns.extend(from..=to);
-            }
-        } else {
-            columns.extend(from..=to);
+        let min = self.start.col().min(self.end.col()).max(from);
+        let max = self.end.col().max(self.end.col()).min(to);
+        if min <= max {
+            columns.extend(min..=max);
         }
         columns
     }
@@ -159,14 +119,15 @@ impl RefRangeBounds {
     /// Returns only the finite rows in the range.
     pub fn selected_rows_finite(&self) -> Vec<i64> {
         let mut rows = vec![];
-        if let Some(start_row) = self.start.row {
-            if let Some(end) = self.end {
-                if let Some(end_row) = end.row {
-                    rows.extend(start_row.coord..=end_row.coord);
-                }
-            } else {
-                rows.push(start_row.coord);
-            }
+        if self.end.row.is_unbounded() {
+            return rows;
+        }
+        if self.start.row.is_unbounded() {
+            rows.extend(1..=self.end.row());
+        } else {
+            let min = self.start.row().min(self.end.row());
+            let max = self.start.row().max(self.end.row());
+            rows.extend(min..=max);
         }
         rows
     }
@@ -174,53 +135,38 @@ impl RefRangeBounds {
     /// Returns the selected rows in the range that fall between `from` and `to`.
     pub fn selected_rows(&self, from: i64, to: i64) -> Vec<i64> {
         let mut rows = vec![];
-        if let Some(start_row) = self.start.row {
-            if let Some(end) = self.end {
-                if let Some(end_row) = end.row {
-                    rows.extend(start_row.coord.max(from)..=end_row.coord.min(to));
-                } else {
-                    rows.extend(start_row.coord.max(from)..=to);
-                }
-            } else if start_row.coord >= from && start_row.coord <= to {
-                rows.push(start_row.coord);
-            }
-        } else if let Some(end) = self.end {
-            if let Some(end_row) = end.row {
-                rows.extend(end_row.coord.max(from)..=to);
-            } else {
-                rows.extend(from..=to);
-            }
-        } else {
-            rows.extend(from..=to);
+        let min = self.start.row().min(self.end.row()).max(from);
+        let max = self.end.row().max(self.end.row()).min(to);
+        if min <= max {
+            rows.extend(min..=max);
         }
         rows
     }
 
     /// Converts the CellRefRange to coordinates to be used in Contiguous2D.
     pub fn to_contiguous2d_coords(&self) -> (i64, i64, Option<i64>, Option<i64>) {
-        if let Some(end) = self.end {
-            (
-                self.start.col_or(1),
-                self.start.row_or(1),
-                end.col.map(|c| c.coord),
-                end.row.map(|r| r.coord),
-            )
-        } else {
-            if self.start.col.is_none() && self.start.row.is_none() {
-                (1, 1, None, None)
-            } else if self.start.col.is_none() {
-                (1, self.start.row_or(1), None, Some(self.start.row_or(1)))
-            } else if self.start.row.is_none() {
-                (self.start.col_or(1), 1, Some(self.start.col_or(1)), None)
+        (
+            if self.start.col.is_unbounded() {
+                1
             } else {
-                (
-                    self.start.col_or(1),
-                    self.start.row_or(1),
-                    Some(self.start.col_or(1)),
-                    Some(self.start.row_or(1)),
-                )
-            }
-        }
+                self.start.col()
+            },
+            if self.start.row.is_unbounded() {
+                1
+            } else {
+                self.start.row()
+            },
+            if self.end.is_unbounded() {
+                None
+            } else {
+                Some(self.end.col())
+            },
+            if self.end.is_unbounded() {
+                None
+            } else {
+                Some(self.end.row())
+            },
+        )
     }
 }
 
@@ -233,7 +179,11 @@ mod tests {
     fn test_is_finite() {
         assert!(RefRangeBounds::test_a1("A1").is_finite());
         assert!(!RefRangeBounds::test_a1("A").is_finite());
+        assert!(!RefRangeBounds::test_a1("A:").is_finite());
         assert!(!RefRangeBounds::test_a1("1").is_finite());
+        assert!(!RefRangeBounds::test_a1("1:").is_finite());
+        assert!(!RefRangeBounds::test_a1("*").is_finite());
+        assert!(!RefRangeBounds::test_a1("A3:").is_finite());
     }
 
     #[test]
@@ -249,7 +199,7 @@ mod tests {
         assert_eq!(RefRangeBounds::test_a1("A:B").to_rect(), None);
         assert_eq!(RefRangeBounds::test_a1("1:2").to_rect(), None);
         assert_eq!(RefRangeBounds::test_a1("A1:C").to_rect(), None);
-        assert_eq!(RefRangeBounds::test_a1("A:C3").to_rect(), None);
+        assert_eq!(RefRangeBounds::test_a1("C3:A").to_rect(), None);
         assert_eq!(RefRangeBounds::test_a1("*").to_rect(), None);
     }
 
@@ -259,8 +209,8 @@ mod tests {
         assert!(RefRangeBounds::test_a1("A").is_column_range());
         assert!(!RefRangeBounds::test_a1("A1:C3").is_column_range());
         assert!(RefRangeBounds::test_a1("A:C").is_column_range());
-        assert!(!RefRangeBounds::test_a1("A1:C").is_column_range());
-        assert!(!RefRangeBounds::test_a1("A:C1").is_column_range());
+        assert!(RefRangeBounds::test_a1("A1:C").is_column_range());
+        assert!(RefRangeBounds::test_a1("C1:A").is_column_range());
         assert!(RefRangeBounds::test_a1("*").is_column_range());
     }
 
@@ -268,14 +218,11 @@ mod tests {
     fn test_is_row_range() {
         assert!(!RefRangeBounds::test_a1("A1").is_row_range());
         assert!(!RefRangeBounds::test_a1("A").is_row_range());
-        assert!(!RefRangeBounds::test_a1("A1:C3").is_row_range());
+        assert!(!RefRangeBounds::test_a1("C3:A").is_row_range());
         assert!(RefRangeBounds::test_a1("1").is_row_range());
         assert!(RefRangeBounds::test_a1("1:3").is_row_range());
-
-        // technically, this is the same as 1:3, but not worth the edge case
-        assert!(!RefRangeBounds::test_a1("A1:3").is_row_range());
-
-        assert!(!RefRangeBounds::test_a1("1:C3").is_row_range());
+        assert!(RefRangeBounds::test_a1("A1:3").is_row_range());
+        assert!(!RefRangeBounds::test_a1("C3:1").is_row_range());
         assert!(RefRangeBounds::test_a1("*").is_row_range());
     }
 
@@ -289,9 +236,7 @@ mod tests {
 
         assert!(!RefRangeBounds::test_a1("A1").has_column_range(1));
         assert!(!RefRangeBounds::test_a1("1").has_column_range(1));
-
-        // technically, this is the same as A:C, but not worth the edge case
-        assert!(!RefRangeBounds::test_a1("A1:C").has_column_range(2));
+        assert!(RefRangeBounds::test_a1("A1:C").has_column_range(2));
 
         assert!(!RefRangeBounds::test_a1("A1:C3").has_column_range(2));
 
@@ -300,7 +245,10 @@ mod tests {
         assert!(RefRangeBounds::test_a1("D:").has_column_range(col![E]));
 
         assert!(RefRangeBounds::test_a1("*").has_column_range(col![E]));
-        assert!(!RefRangeBounds::test_a1("1:").has_column_range(col![A]));
+        assert!(!RefRangeBounds::test_a1("3:").has_column_range(col![A]));
+
+        // since this is the same as * it should be true
+        assert!(RefRangeBounds::test_a1("1:").has_column_range(col![A]));
     }
 
     #[test]
@@ -326,6 +274,9 @@ mod tests {
 
         assert!(!RefRangeBounds::test_a1("A:B").has_row_range(1));
         assert!(!RefRangeBounds::test_a1("B:").has_row_range(2));
+
+        // since this is the same as * it should be true
+        assert!(RefRangeBounds::test_a1("1:").has_row_range(1));
     }
 
     #[test]

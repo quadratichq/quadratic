@@ -1,59 +1,39 @@
-use crate::Pos;
+use crate::{Pos, UNBOUNDED};
 
 use super::CellRefRange;
 
 impl CellRefRange {
+    /// Returns true if the range is a single column range.
     pub fn only_column(&self, column: i64) -> bool {
         match self {
             Self::Sheet { range } => {
-                // if there is no start column, then it's not a single column range
-                let Some(start_col) = range.start.col else {
-                    return false;
-                };
-
-                // if the start column is not the column we're checking for, then it's not a
-                // single column range
-                if start_col.coord != column {
+                if range.start.col() != column || range.end.col() != column {
                     return false;
                 }
 
-                // if there is no end column, then it's a single column range
-                let Some(end) = range.end.as_ref().and_then(|end| end.col) else {
-                    return true;
-                };
+                if range.start.row() != 1 || range.end.row() != UNBOUNDED {
+                    return false;
+                }
 
-                end.coord == column
+                return true;
             }
         }
     }
 
+    /// Returns true if the range is a single row range.
     pub fn only_row(&self, row: i64) -> bool {
         match self {
             Self::Sheet { range } => {
-                // if there is not start row, then it's not a single row range
-                let Some(start_row) = range.start.row else {
-                    return false;
-                };
-
-                // if the start row is not the row we're checking for, then it's not a
-                // single row range
-                if start_row.coord != row {
+                if range.start.row() != row || range.end.row() != row {
                     return false;
                 }
 
-                // if there is no end row, then it's a single row range
-                let Some(end) = range.end.as_ref().and_then(|end| end.row) else {
-                    return true;
-                };
+                if range.start.col() != 1 || range.end.col() != UNBOUNDED {
+                    return false;
+                }
 
-                end.coord == row
+                return true;
             }
-        }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        match self {
-            Self::Sheet { range } => range.start.row.is_none() && range.start.col.is_none(),
         }
     }
 
@@ -61,16 +41,11 @@ impl CellRefRange {
     pub fn is_pos_range(&self, p1: Pos, p2: Option<Pos>) -> bool {
         match self {
             Self::Sheet { range } => {
-                if range.start.is_pos(p1) {
-                    if let Some(p2) = p2 {
-                        range.end.is_some_and(|end| end.is_pos(p2))
-                    } else {
-                        p2.is_none() && range.end.is_none()
-                    }
-                } else if range.end.is_some_and(|end| end.is_pos(p1)) {
-                    p2.is_some_and(|p2| range.start.is_pos(p2))
+                if let Some(p2) = p2 {
+                    range.start.is_pos(p1) && range.end.is_pos(p2)
+                        || range.end.is_pos(p1) && range.start.is_pos(p2)
                 } else {
-                    false
+                    range.start.is_pos(p1) && range.end.is_pos(p1)
                 }
             }
         }
@@ -109,9 +84,8 @@ mod tests {
         assert!(CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 1 }, None));
         assert!(!CellRefRange::test_a1("A1").is_pos_range(Pos { x: 2, y: 1 }, None));
         assert!(!CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 2 }, None));
-        assert!(
-            CellRefRange::test_a1("A1:B2").is_pos_range(Pos { x: 1, y: 1 }, Some(Pos { x: 2, y: 2 }))
-        );
+        assert!(CellRefRange::test_a1("A1:B2")
+            .is_pos_range(Pos { x: 1, y: 1 }, Some(Pos { x: 2, y: 2 })));
         assert!(
             !CellRefRange::test_a1("A1").is_pos_range(Pos { x: 2, y: 1 }, Some(Pos { x: 1, y: 1 }))
         );

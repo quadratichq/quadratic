@@ -15,7 +15,7 @@ export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" |
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, }
 export interface CellRefCoord { coord: bigint, is_absolute: boolean, }
 export type CellRefRange = { range: RefRangeBounds, };
-export interface CellRefRangeEnd { col: CellRefCoord | null, row: CellRefCoord | null, }
+export interface CellRefRangeEnd { col: CellRefCoord, row: CellRefCoord, }
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript";
@@ -55,7 +55,7 @@ export interface NumericFormat { type: NumericFormatKind, symbol: string | null,
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";
 export type PasteSpecial = "None" | "Values" | "Formats";
 export interface Pos { x: bigint, y: bigint, }
-export interface RefRangeBounds { start: CellRefRangeEnd, end: CellRefRangeEnd | null, }
+export interface RefRangeBounds { start: CellRefRangeEnd, end: CellRefRangeEnd, }
 export interface Rect { min: Pos, max: Pos, }
 export interface RenderSize { w: string, h: string, }
 export interface Rgba { red: number, green: number, blue: number, alpha: number, }

@@ -1,11 +1,8 @@
 use indexmap::IndexMap;
 
 use crate::{
-    grid::{
-        js_types::{JsCellValuePosAIContext, JsCodeCell},
-        GridBounds,
-    },
-    A1Selection, CellRefRange, CellValue, Pos, Rect, RefRangeBounds,
+    grid::js_types::{JsCellValuePosAIContext, JsCodeCell},
+    A1Selection, CellRefRange, CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -191,65 +188,46 @@ impl Sheet {
     pub fn cell_ref_range_to_rect(&self, cell_ref_range: CellRefRange) -> Rect {
         match cell_ref_range {
             CellRefRange::Sheet { range } => {
-                let RefRangeBounds { start, end } = range;
-
-                let rect_start: Pos = start.unpack_xy_default(1).into();
-
-                let ignore_formatting = false;
-                let bounds = match self.bounds(ignore_formatting) {
-                    GridBounds::Empty => Rect::single_pos(rect_start),
-                    GridBounds::NonEmpty(rect) => rect,
+                let start = range.start;
+                let end = range.end;
+                // ensure start is not unbounded (it shouldn't be)
+                let rect_start: Pos = Pos {
+                    x: if start.col.is_unbounded() {
+                        1
+                    } else {
+                        start.col()
+                    },
+                    y: if start.row.is_unbounded() {
+                        1
+                    } else {
+                        start.row()
+                    },
                 };
 
-                let rect_end = match end {
+                let ignore_formatting = false;
+                let rect_end = if end.is_unbounded() {
                     // if there is an end, then calculate the end, goes up to bounds.max if infinite
-                    Some(end) => {
-                        let end_col = end.col.map(|c| c.coord);
-                        let end_row = end.row.map(|r| r.coord);
-                        Pos {
-                            x: end_col.unwrap_or_else(|| {
-                                let a = start.row.map_or(bounds.min.y, |c| c.coord);
-                                let b = end_row.unwrap_or(bounds.max.y);
-                                // get max column for the range of rows
-                                self.rows_bounds(
-                                    std::cmp::min(a, b),
-                                    std::cmp::max(a, b),
-                                    ignore_formatting,
-                                )
+                    Pos {
+                        x: if end.col.is_unbounded() {
+                            // get max column for the range of rows
+                            self.rows_bounds(start.row(), end.row(), ignore_formatting)
                                 .map_or(rect_start.x, |(_, hi)| hi.max(rect_start.x))
-                            }),
-                            y: end_row.unwrap_or_else(|| {
-                                let a = start.col.map_or(bounds.min.x, |c| c.coord);
-                                let b = end_col.unwrap_or(bounds.max.x);
-                                // get max row for the range of columns
-                                self.columns_bounds(
-                                    std::cmp::min(a, b),
-                                    std::cmp::max(a, b),
-                                    ignore_formatting,
-                                )
+                        } else {
+                            end.col()
+                        },
+                        y: if end.row.is_unbounded() {
+                            // get max row for the range of columns
+                            self.columns_bounds(start.col(), end.col(), ignore_formatting)
                                 .map_or(rect_start.y, |(_, hi)| hi.max(rect_start.y))
-                            }),
-                        }
+                        } else {
+                            end.row()
+                        },
                     }
-                    // if no end, build end same as start, if start is infinite then end is infinite
-                    None => match (start.col, start.row) {
-                        (None, None) => bounds.max,
-                        (Some(_), None) => Pos {
-                            x: rect_start.x,
-                            // get max column for the row
-                            y: self
-                                .column_bounds(rect_start.x, ignore_formatting)
-                                .map_or(rect_start.y, |(_, hi)| hi),
-                        },
-                        (None, Some(_)) => Pos {
-                            // get max row for the column
-                            x: self
-                                .row_bounds(rect_start.y, ignore_formatting)
-                                .map_or(rect_start.x, |(_, hi)| hi),
-                            y: rect_start.y,
-                        },
-                        (Some(_), Some(_)) => rect_start,
-                    },
+                } else {
+                    Pos {
+                        x: end.col(),
+                        y: end.row(),
+                    }
                 };
 
                 Rect::new_span(rect_start, rect_end)

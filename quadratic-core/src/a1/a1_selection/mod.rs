@@ -9,6 +9,11 @@ use crate::{
     grid::SheetId, selection::OldSelection, A1Error, Pos, SheetNameIdMap, SheetPos, SheetRect,
 };
 
+pub mod a1_selection_exclude;
+pub mod a1_selection_mutate;
+pub mod a1_selection_query;
+pub mod a1_selection_select;
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct A1Selection {
@@ -340,17 +345,8 @@ impl A1Selection {
 fn cursor_pos_from_last_range(last_range: &CellRefRange) -> Pos {
     match last_range {
         CellRefRange::Sheet { range } => {
-            let default_coord = 1;
-            let x = range
-                .start
-                .col
-                .or_else(|| range.end.and_then(|end| end.col))
-                .map_or(default_coord, |col| col.coord);
-            let y = range
-                .start
-                .row
-                .or_else(|| range.end.and_then(|end| end.row))
-                .map_or(default_coord, |row| row.coord);
+            let x = range.start.col();
+            let y = range.start.row();
             Pos { x, y }
         }
     }
@@ -361,7 +357,7 @@ fn cursor_pos_from_last_range(last_range: &CellRefRange) -> Pos {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::{CellRefRangeEnd, Rect, RefRangeBounds};
+    use crate::{Rect, RefRangeBounds};
 
     use super::*;
 
@@ -416,10 +412,7 @@ mod tests {
     #[test]
     fn test_from_a1_rect() {
         let sheet_id = SheetId::test();
-        let d1a5 = RefRangeBounds {
-            start: CellRefRangeEnd::new_relative_xy(4, 1),
-            end: Some(CellRefRangeEnd::new_relative_xy(1, 5)),
-        };
+        let d1a5 = RefRangeBounds::new_relative(4, 1, 1, 5);
         assert_eq!(
             A1Selection::from_str("A1:B2", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id))),
@@ -487,10 +480,7 @@ mod tests {
             A1Selection::from_str("1:", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_range(
                 CellRefRange::Sheet {
-                    range: RefRangeBounds {
-                        start: CellRefRangeEnd::new_relative_row(1),
-                        end: Some(CellRefRangeEnd::UNBOUNDED),
-                    }
+                    range: RefRangeBounds::new_infinite_row(1)
                 },
                 sheet_id,
             )),

@@ -5,11 +5,13 @@ use ts_rs::TS;
 
 use crate::{Pos, Rect, RefRangeBounds};
 
-use super::{A1Error, CellRefRangeEnd};
+use super::{A1Error, UNBOUNDED};
+
+pub mod cell_ref_col_row;
+pub mod cell_ref_query;
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(test, proptest(filter = "|range| range.is_valid()"))]
 #[serde(untagged)]
 pub enum CellRefRange {
     Sheet { range: RefRangeBounds },
@@ -48,12 +50,6 @@ impl CellRefRange {
 }
 
 impl CellRefRange {
-    pub fn is_valid(self) -> bool {
-        match self {
-            Self::Sheet { range } => range.is_valid(),
-        }
-    }
-
     pub fn new_relative_all_from(pos: Pos) -> Self {
         Self::Sheet {
             range: RefRangeBounds::new_relative_all_from(pos),
@@ -62,19 +58,13 @@ impl CellRefRange {
 
     pub fn new_relative_row_from(row: i64, min_col: i64) -> Self {
         Self::Sheet {
-            range: RefRangeBounds {
-                start: CellRefRangeEnd::new_relative_xy(min_col, row),
-                end: Some(CellRefRangeEnd::new_infinite_row(row)),
-            },
+            range: RefRangeBounds::new_relative(min_col, row, UNBOUNDED, row),
         }
     }
 
     pub fn new_relative_column_from(col: i64, min_row: i64) -> Self {
         Self::Sheet {
-            range: RefRangeBounds {
-                start: CellRefRangeEnd::new_relative_xy(col, min_row),
-                end: Some(CellRefRangeEnd::new_infinite_col(col)),
-            },
+            range: RefRangeBounds::new_relative(col, min_row, UNBOUNDED, min_row),
         }
     }
 
@@ -92,7 +82,7 @@ impl CellRefRange {
 
     pub fn new_relative_column(x: i64) -> Self {
         Self::Sheet {
-            range: RefRangeBounds::new_relative_column(x),
+            range: RefRangeBounds::new_relative_col(x),
         }
     }
 
@@ -244,14 +234,7 @@ mod tests {
     proptest! {
         #[test]
         fn proptest_cell_ref_range_parsing(cell_ref_range: CellRefRange) {
-            // We skip tests where start = end since we remove the end when parsing
-            match cell_ref_range {
-                CellRefRange::Sheet { range } => {
-                    if range.end.is_none_or(|end| end != range.start) {
-                        assert_eq!(cell_ref_range, cell_ref_range.to_string().parse().unwrap());
-                    }
-                }
-            };
+            assert_eq!(cell_ref_range, cell_ref_range.to_string().parse().unwrap());
         }
     }
 

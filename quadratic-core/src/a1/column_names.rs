@@ -2,9 +2,9 @@ use smallvec::SmallVec;
 
 /// Returns a column's name from its number in A1 notation (where A=1, and
 /// negative columns are not allowed).
-pub fn column_name(mut column: u64) -> String {
+pub fn column_name(mut column: i64) -> String {
     let mut result_bytes_reversed = SmallVec::<[u8; 16]>::new();
-    let total_alphabet_chars = (b'Z' - b'A' + 1) as u64;
+    let total_alphabet_chars = (b'Z' - b'A' + 1) as i64;
 
     while column > 0 {
         column -= 1;

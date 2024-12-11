@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
+pub const UNBOUNDED: i64 = i64::MAX;
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -13,14 +15,29 @@ pub struct CellRefCoord {
     pub is_absolute: bool,
 }
 impl CellRefCoord {
+    pub const START: Self = Self {
+        coord: 1,
+        is_absolute: false,
+    };
+    pub const UNBOUNDED: Self = Self {
+        coord: UNBOUNDED,
+        is_absolute: false,
+    };
+
     pub(crate) fn fmt_as_column(self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.coord == UNBOUNDED {
+            return Ok(());
+        }
         if self.is_absolute {
             write!(f, "$")?;
         }
-        write!(f, "{}", super::column_name(self.coord as u64))
+        write!(f, "{}", super::column_name(self.coord))
     }
 
     pub(crate) fn fmt_as_row(self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.coord == UNBOUNDED {
+            return Ok(());
+        }
         if self.is_absolute {
             write!(f, "$")?;
         }
@@ -38,7 +55,7 @@ impl CellRefCoord {
     }
 
     pub fn translate_in_place(&mut self, delta: i64) {
-        if !self.is_absolute {
+        if !self.is_absolute && !self.is_unbounded() {
             self.coord = self.coord.saturating_add(delta).max(1);
         }
     }
@@ -48,35 +65,24 @@ impl CellRefCoord {
         coord.translate_in_place(delta);
         coord
     }
+
+    pub fn is_unbounded(&self) -> bool {
+        self.coord == i64::MAX
+    }
 }
 
 /// Returns whether `range` might intersect the region from `start` to `end`.
 pub(crate) fn range_might_intersect(
     range: RangeInclusive<i64>,
-    mut start: Option<CellRefCoord>,
-    mut end: Option<CellRefCoord>,
+    mut start: CellRefCoord,
+    mut end: CellRefCoord,
 ) -> bool {
-    if let (Some(a), Some(b)) = (start, end) {
-        if b.coord < a.coord {
-            std::mem::swap(&mut start, &mut end);
-        }
+    if end.coord < start.coord {
+        std::mem::swap(&mut start, &mut end);
     }
-    let range_excluded_by_start = start.map_or(false, |a| *range.end() < a.coord);
-    let range_excluded_by_end = end.map_or(false, |b| b.coord < *range.start());
+    let range_excluded_by_start = *range.end() < start.coord;
+    let range_excluded_by_end = end.coord < *range.start();
     !range_excluded_by_start && !range_excluded_by_end
-}
-
-/// Returns whether `range` might contain `coord`.
-///
-/// If `coord` is `None`, returns `true`.
-pub(crate) fn range_might_contain_coord(
-    range: RangeInclusive<i64>,
-    coord: Option<CellRefCoord>,
-) -> bool {
-    match coord {
-        Some(a) => range.contains(&a.coord),
-        None => true,
-    }
 }
 
 #[cfg(test)]
@@ -114,85 +120,43 @@ mod tests {
         // No intersection when range is before start
         assert!(!range_might_intersect(
             range.clone(),
-            Some(CellRefCoord::new_rel(15)),
-            Some(CellRefCoord::new_rel(20))
+            CellRefCoord::new_rel(15),
+            CellRefCoord::new_rel(20)
         ));
 
         // No intersection when range is after end
         assert!(!range_might_intersect(
             range.clone(),
-            Some(CellRefCoord::new_rel(1)),
-            Some(CellRefCoord::new_rel(3))
+            CellRefCoord::new_rel(1),
+            CellRefCoord::new_rel(3)
         ));
 
         // Intersection when range overlaps
         assert!(range_might_intersect(
             range.clone(),
-            Some(CellRefCoord::new_rel(3)),
-            Some(CellRefCoord::new_rel(7))
+            CellRefCoord::new_rel(3),
+            CellRefCoord::new_rel(7)
         ));
 
         // Intersection when range is contained
         assert!(range_might_intersect(
             range.clone(),
-            Some(CellRefCoord::new_rel(4)),
-            Some(CellRefCoord::new_rel(12))
+            CellRefCoord::new_rel(4),
+            CellRefCoord::new_rel(12)
         ));
 
         // Handles swapped start/end coordinates
         assert!(range_might_intersect(
             range.clone(),
-            Some(CellRefCoord::new_rel(12)),
-            Some(CellRefCoord::new_rel(4))
+            CellRefCoord::new_rel(4),
+            CellRefCoord::new_rel(12),
         ));
-
-        // Handles None values
-        assert!(range_might_intersect(
-            range.clone(),
-            None,
-            Some(CellRefCoord::new_rel(7))
-        ));
-        assert!(range_might_intersect(
-            range.clone(),
-            Some(CellRefCoord::new_rel(7)),
-            None
-        ));
-        assert!(range_might_intersect(range, None, None));
     }
 
     #[test]
-    fn test_range_might_contain_coord() {
-        let range = 5..=10;
-
-        // Contains coordinate within range
-        assert!(range_might_contain_coord(
-            range.clone(),
-            Some(CellRefCoord::new_rel(7))
-        ));
-
-        // Does not contain coordinate before range
-        assert!(!range_might_contain_coord(
-            range.clone(),
-            Some(CellRefCoord::new_rel(3))
-        ));
-
-        // Does not contain coordinate after range
-        assert!(!range_might_contain_coord(
-            range.clone(),
-            Some(CellRefCoord::new_rel(12))
-        ));
-
-        // Contains edge cases
-        assert!(range_might_contain_coord(
-            range.clone(),
-            Some(CellRefCoord::new_rel(5))
-        ));
-        assert!(range_might_contain_coord(
-            range.clone(),
-            Some(CellRefCoord::new_rel(10))
-        ));
-
-        // Handles None case
-        assert!(range_might_contain_coord(range, None));
+    fn test_is_unbounded() {
+        assert!(CellRefCoord::UNBOUNDED.is_unbounded());
+        assert!(!CellRefCoord::new_rel(1).is_unbounded());
+        assert!(!CellRefCoord::new_abs(1).is_unbounded());
     }
 }

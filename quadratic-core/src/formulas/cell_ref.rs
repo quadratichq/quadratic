@@ -255,7 +255,7 @@ impl CellRefCoord {
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a column coordinate.
     fn col_string(self, base: i64) -> String {
-        let col = crate::a1::column_name(self.resolve_from(base) as u64);
+        let col = crate::a1::column_name(self.resolve_from(base) as i64);
         format!("{}{col}", self.prefix())
     }
     /// Returns the human-friendly string representing this coordinate, if it is

@@ -3,11 +3,6 @@ use super::*;
 impl RefRangeBounds {
     /// Find intersection between two CellRefRanges.
     pub fn intersection(&self, other: &RefRangeBounds) -> Option<Self> {
-        // If either range is empty/invalid, no intersection
-        if !self.is_valid() || !other.is_valid() {
-            return None;
-        }
-
         // Handle all-* cases
         if self.is_all() {
             return Some(*other);
@@ -57,7 +52,7 @@ impl RefRangeBounds {
                     let end_row = if max_row == i64::MAX && min_row == 1 {
                         i64::MAX
                     } else {
-                        i64::MAX
+                        max_row
                     };
                     Some(RefRangeBounds::new_relative(
                         min_col,
@@ -71,7 +66,7 @@ impl RefRangeBounds {
                     let end_col = if max_col == i64::MAX && min_col == 1 {
                         i64::MAX
                     } else {
-                        i64::MAX
+                        max_col
                     };
                     Some(RefRangeBounds::new_relative(
                         min_col,
@@ -103,47 +98,11 @@ impl RefRangeBounds {
 
     // Helper methods to get bounds.
     fn column_bounds(&self) -> (i64, i64) {
-        if self.is_column_range() {
-            let start_col = self.start.col.map(|c| c.coord).unwrap_or(1);
-            let end_col = self
-                .end
-                .as_ref()
-                .and_then(|e| e.col.map(|c| c.coord))
-                .unwrap_or(start_col);
-            (start_col.min(end_col), start_col.max(end_col))
-        } else if self.start.col.is_some() {
-            let start_col = self.start.col.map(|c| c.coord).unwrap();
-            let end_col = self
-                .end
-                .as_ref()
-                .and_then(|e| e.col.map(|c| c.coord))
-                .unwrap_or(start_col);
-            (start_col.min(end_col), start_col.max(end_col))
-        } else {
-            (0, i64::MAX)
-        }
+        (self.start.col(), self.end.col())
     }
 
     fn row_bounds(&self) -> (i64, i64) {
-        if self.is_row_range() {
-            let start_row = self.start.row.map(|r| r.coord).unwrap_or(1);
-            let end_row = self
-                .end
-                .as_ref()
-                .and_then(|e| e.row.map(|r| r.coord))
-                .unwrap_or(start_row);
-            (start_row.min(end_row), start_row.max(end_row))
-        } else if self.start.row.is_some() {
-            let start_row = self.start.row.map(|r| r.coord).unwrap();
-            let end_row = self
-                .end
-                .as_ref()
-                .and_then(|e| e.row.map(|r| r.coord))
-                .unwrap_or(start_row);
-            (start_row.min(end_row), start_row.max(end_row))
-        } else {
-            (0, i64::MAX)
-        }
+        (self.start.row(), self.end.row())
     }
 }
 
@@ -331,6 +290,18 @@ mod tests {
         assert_eq!(
             RefRangeBounds::test_a1("2:4").intersection(&RefRangeBounds::test_a1("A3:5")),
             Some(RefRangeBounds::test_a1("A3:4"))
+        );
+    }
+
+    #[test]
+    fn test_intersection_partial_edge_cases() {
+        assert_eq!(
+            RefRangeBounds::test_a1("A:").intersection(&RefRangeBounds::test_a1("A1:C3")),
+            Some(RefRangeBounds::test_a1("A1:A3"))
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("3:").intersection(&RefRangeBounds::test_a1("A1:C5")),
+            Some(RefRangeBounds::test_a1("A3:C5"))
         );
     }
 }

@@ -170,7 +170,7 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "getLargestRectangle")]
     pub fn get_largest_rectangle(&self) -> Result<Rect, String> {
-        Ok(self.selection.largest_rect())
+        Ok(self.selection.largest_rect_finite())
     }
 
     #[wasm_bindgen(js_name = "getSingleRectangle")]
