@@ -1,5 +1,6 @@
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Page404 from '@/routes/404';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
@@ -86,6 +87,17 @@ export const router = createBrowserRouter(
               shouldRevalidate={dontRevalidateDialogs}
             />
             <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
+
+            <Route
+              path="connections"
+              Component={() => {
+                const data = useDashboardRouteLoaderData();
+                // This renders
+                return <div>Hello</div>;
+                // This triggers a route boundary error
+                return <Navigate to={`/teams/${data.activeTeam.team.uuid}/connections`} replace />;
+              }}
+            />
 
             <Route path="teams">
               <Route path="create" lazy={() => import('./routes/teams.create')} />
