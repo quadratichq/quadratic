@@ -259,8 +259,8 @@ mod tests {
         assert!(RefRangeBounds::test_a1("A").is_column_range());
         assert!(!RefRangeBounds::test_a1("A1:C3").is_column_range());
         assert!(RefRangeBounds::test_a1("A:C").is_column_range());
-        assert!(RefRangeBounds::test_a1("A1:C").is_column_range());
-        assert!(RefRangeBounds::test_a1("A:C1").is_column_range());
+        assert!(!RefRangeBounds::test_a1("A1:C").is_column_range());
+        assert!(!RefRangeBounds::test_a1("A:C1").is_column_range());
         assert!(RefRangeBounds::test_a1("*").is_column_range());
     }
 
