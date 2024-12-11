@@ -64,7 +64,6 @@ export class CellsFills extends Container {
 
   private handleSheetMetaFills = (sheetId: string, fills: JsSheetFill[]) => {
     if (sheetId === this.cellsSheet.sheetId) {
-      console.log(sheetId, fills);
       if (fills.length === 0) {
         this.sheetFills = undefined;
         this.meta.clear();

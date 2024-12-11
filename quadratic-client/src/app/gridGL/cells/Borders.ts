@@ -114,7 +114,6 @@ export class Borders extends Container {
   }
 
   drawSheetCells = (sheetId: string, borders?: JsBordersSheet): void => {
-    console.log(borders);
     if (sheetId === this.cellsSheet.sheetId) {
       if (borders) {
         this.bordersFinite = {
