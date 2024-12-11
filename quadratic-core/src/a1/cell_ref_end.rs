@@ -350,4 +350,31 @@ mod tests {
         assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).row_or(1), 3);
         assert_eq!(CellRefRangeEnd::UNBOUNDED.row_or(1), 1);
     }
+
+    #[test]
+    fn test_adjust_column_row() {
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        ref_end.adjust_column_row_in_place(Some(2), None, 1);
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(3, 3));
+
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        ref_end.adjust_column_row_in_place(None, Some(2), 1);
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 4));
+
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        ref_end.adjust_column_row_in_place(Some(3), None, 1);
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
+
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(2, 3);
+        ref_end.adjust_column_row_in_place(None, Some(4), 1);
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(2, 3));
+
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(1, 3);
+        ref_end.adjust_column_row_in_place(Some(1), None, -1);
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 3));
+
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(i64::MAX, 3);
+        ref_end.adjust_column_row_in_place(Some(1), None, 1);
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(i64::MAX, 3));
+    }
 }

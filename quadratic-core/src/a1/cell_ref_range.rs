@@ -555,4 +555,31 @@ mod tests {
         assert_eq!(translated.to_string(), "A1");
         assert_eq!(cell, CellRefRange::test_a1("A1"));
     }
+
+    #[test]
+    fn test_adjust_column_row() {
+        let mut range = CellRefRange::test_a1("B3");
+        range.adjust_column_row_in_place(Some(2), None, 1);
+        assert_eq!(range.to_string(), "C3");
+
+        let mut range = CellRefRange::test_a1("B3");
+        range.adjust_column_row_in_place(None, Some(2), 1);
+        assert_eq!(range.to_string(), "B4");
+
+        let mut range = CellRefRange::test_a1("B3");
+        range.adjust_column_row_in_place(Some(3), None, 1);
+        assert_eq!(range.to_string(), "B3");
+
+        let mut range = CellRefRange::test_a1("B3");
+        range.adjust_column_row_in_place(None, Some(4), 1);
+        assert_eq!(range.to_string(), "B3");
+
+        let mut range = CellRefRange::test_a1("B3");
+        range.adjust_column_row_in_place(Some(1), None, -1);
+        assert_eq!(range.to_string(), "A3");
+
+        let mut range = CellRefRange::test_a1("B3");
+        range.adjust_column_row_in_place(None, Some(1), -1);
+        assert_eq!(range.to_string(), "B2");
+    }
 }

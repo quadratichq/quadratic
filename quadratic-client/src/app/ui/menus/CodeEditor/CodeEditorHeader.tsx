@@ -62,7 +62,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   const connectionsFetcher = useConnectionsFetcher();
 
   const a1Pos = useMemo(
-    () => xyToA1(BigInt(codeCellState.pos.x), BigInt(codeCellState.pos.y)),
+    () => xyToA1(codeCellState.pos.x, codeCellState.pos.y),
     [codeCellState.pos.x, codeCellState.pos.y]
   );
 
