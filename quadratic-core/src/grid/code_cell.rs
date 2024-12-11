@@ -61,7 +61,15 @@ impl CodeCellValue {
             .to_string();
     }
 
-    pub fn adjust_cell_references(&mut self, column: Option<i64>, row: Option<i64>, delta: i64) {
+    /// Adjusts the code cell references by the given delta. Updates only relative
+    /// cell references. Used for adjusting code cell references when the column
+    /// or row is inserted or deleted.
+    pub fn adjust_code_cell_column_row(
+        &mut self,
+        column: Option<i64>,
+        row: Option<i64>,
+        delta: i64,
+    ) {
         if delta == 0 {
             return;
         }
@@ -88,6 +96,7 @@ impl CodeCellValue {
 
                 match CellRefRange::from_str(cell_ref_str) {
                     Ok(mut cell_ref_range) => {
+                        // adjust the range by delta
                         cell_ref_range.adjust_column_row_in_place(column, row, delta);
                         // Replace only the first argument, keep the rest unchanged
                         format!("q.cells({0}{1}{0}", start_quote, cell_ref_range)

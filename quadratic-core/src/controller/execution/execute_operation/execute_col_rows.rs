@@ -120,7 +120,7 @@ impl GridController {
                                 }
                                 _ => {
                                     let mut new_code = code.clone();
-                                    new_code.adjust_cell_references(column, row, delta);
+                                    new_code.adjust_code_cell_column_row(column, row, delta);
                                     new_code.code
                                 }
                             };
@@ -300,23 +300,25 @@ impl GridController {
 mod tests {
     use std::collections::HashMap;
 
+    use chrono::Utc;
     use serial_test::{parallel, serial};
     use uuid::Uuid;
 
     use crate::{
         grid::{
             sheet::validations::{validation::Validation, validation_rules::ValidationRule},
-            CodeCellLanguage, CodeCellValue,
+            CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, CodeRunResult,
         },
         wasm_bindings::js::{clear_js_calls, expect_js_call_count, expect_js_offsets},
-        A1Selection, CellValue, Pos, Rect, SheetPos, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT,
+        A1Selection, Array, CellValue, Pos, Rect, SheetPos, SheetRect, Value, DEFAULT_COLUMN_WIDTH,
+        DEFAULT_ROW_HEIGHT,
     };
 
     use super::*;
 
     #[test]
     #[parallel]
-    fn adjust_formulas_nothing() {
+    fn adjust_code_cells_nothing() {
         let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let column = 0;
@@ -340,7 +342,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn adjust_formulas() {
+    fn adjust_code_cells_formula() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
@@ -393,6 +395,158 @@ mod tests {
                 values: CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code: "R[0]C[1] + R[2]C[1]".to_string()
+                })
+                .into(),
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn adjust_code_cells_python() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 2,
+                y: 1,
+            },
+            "1".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 2,
+                y: 2,
+            },
+            "2".into(),
+            None,
+        );
+
+        let sheet_pos = SheetPos {
+            sheet_id,
+            x: 1,
+            y: 1,
+        };
+
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Python,
+            "q.cells('B1:B2')".into(),
+            None,
+        );
+
+        let mut cells_accessed = CellsAccessed::default();
+        cells_accessed.add_sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["3"]]))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            spill_error: false,
+            last_modified: Utc::now(),
+            cells_accessed,
+            formatted_code_string: None,
+        };
+        let transaction = &mut PendingTransaction::default();
+        gc.finalize_code_run(transaction, sheet_pos, Some(code_run), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
+            "3".to_string()
+        );
+
+        let mut transaction = PendingTransaction::default();
+        gc.adjust_code_cells_column_row(&mut transaction, sheet_id, None, Some(2), 1);
+        assert_eq!(transaction.operations.len(), 2);
+        assert_eq!(
+            transaction.operations[0],
+            Operation::SetCellValues {
+                sheet_pos,
+                values: CellValue::Code(CodeCellValue {
+                    language: CodeCellLanguage::Python,
+                    code: "q.cells('B1:B3')".to_string()
+                })
+                .into(),
+            }
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn adjust_code_cells_javascript() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 2,
+                y: 1,
+            },
+            "1".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                sheet_id,
+                x: 2,
+                y: 2,
+            },
+            "2".into(),
+            None,
+        );
+
+        let sheet_pos = SheetPos {
+            sheet_id,
+            x: 1,
+            y: 1,
+        };
+
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Javascript,
+            "return q.cells('B1:B2');".into(),
+            None,
+        );
+
+        let mut cells_accessed = CellsAccessed::default();
+        cells_accessed.add_sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["3"]]))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            spill_error: false,
+            last_modified: Utc::now(),
+            cells_accessed,
+            formatted_code_string: None,
+        };
+        let transaction = &mut PendingTransaction::default();
+        gc.finalize_code_run(transaction, sheet_pos, Some(code_run), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.rendered_value(Pos { x: 1, y: 1 }).unwrap(),
+            "3".to_string()
+        );
+
+        let mut transaction = PendingTransaction::default();
+        gc.adjust_code_cells_column_row(&mut transaction, sheet_id, None, Some(2), 1);
+        assert_eq!(transaction.operations.len(), 2);
+        assert_eq!(
+            transaction.operations[0],
+            Operation::SetCellValues {
+                sheet_pos,
+                values: CellValue::Code(CodeCellValue {
+                    language: CodeCellLanguage::Javascript,
+                    code: "return q.cells('B1:B3');".to_string()
                 })
                 .into(),
             }
