@@ -42,6 +42,13 @@ export const PixiAppEffects = () => {
   const [codeEditorState, setCodeEditorState] = useRecoilState(codeEditorAtom);
   useEffect(() => {
     pixiAppSettings.updateCodeEditorState(codeEditorState, setCodeEditorState);
+
+    const unsavedChanges = codeEditorState.editorContent !== codeEditorState.codeString;
+    if (unsavedChanges) {
+      pixiAppSettings.unsavedEditorChanges = codeEditorState.editorContent;
+    } else {
+      pixiAppSettings.unsavedEditorChanges = undefined;
+    }
   }, [codeEditorState, setCodeEditorState]);
 
   const { addGlobalSnackbar } = useGlobalSnackbar();
