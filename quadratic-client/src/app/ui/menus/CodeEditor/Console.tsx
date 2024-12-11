@@ -4,11 +4,12 @@ import {
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { useMemo } from 'react';
-import { useRecoilValue } from 'recoil';
 import Linkify from 'react-linkify';
+import { useRecoilValue } from 'recoil';
 
 export function Console() {
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
@@ -49,7 +50,7 @@ export function Console() {
               {spillError.length > 1 ? 's' : ''}{' '}
               {spillError.map(
                 (pos, index) =>
-                  `(${pos.x}, ${pos.y})${
+                  `${xyToA1(pos.x, pos.y)}${
                     index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'
                   }`
               )}

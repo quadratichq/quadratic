@@ -28,7 +28,7 @@ export function useCodeCellContextMessages() {
       }
       const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
 
-      const a1Pos = xyToA1(BigInt(pos.x), BigInt(pos.y));
+      const a1Pos = xyToA1(pos.x, pos.y);
       const language = getConnectionKind(cellLanguage);
       const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
 

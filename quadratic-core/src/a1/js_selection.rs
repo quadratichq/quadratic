@@ -357,14 +357,14 @@ pub fn a1_selection_value_to_selection(a1_selection: JsValue) -> Result<JsSelect
 }
 
 #[wasm_bindgen(js_name = "xyToA1")]
-pub fn xy_to_a1(x: i64, y: i64) -> Result<String, String> {
-    let pos = Pos::new(x, y);
+pub fn xy_to_a1(x: i32, y: i32) -> Result<String, String> {
+    let pos = Pos::new(x as i64, y as i64);
     Ok(pos.a1_string())
 }
 
 #[wasm_bindgen(js_name = "xyxyToA1")]
-pub fn xyxy_to_a1(x0: i64, y0: i64, x1: i64, y1: i64) -> Result<String, String> {
-    let rect = Rect::new(x0, y0, x1, y1);
+pub fn xyxy_to_a1(x0: i32, y0: i32, x1: i32, y1: i32) -> Result<String, String> {
+    let rect = Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64);
     Ok(rect.a1_string())
 }
 
