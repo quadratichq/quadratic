@@ -235,7 +235,7 @@ mod tests {
     }
 
     #[test]
-    fn validation_all() {
+    fn test_validation_all() {
         let validation = Validation {
             id: Default::default(),
             selection: A1Selection::test_a1("*"),
@@ -269,7 +269,7 @@ mod tests {
             })
         );
         assert_eq!(
-            validations.render_special_pos((0, 0).into()),
+            validations.render_special_pos(pos![A1]),
             Some(JsRenderCellSpecial::Checkbox)
         );
     }

@@ -239,7 +239,7 @@ mod tests {
 
         let mut selection = A1Selection::test_a1("A1:A1,2,D:E");
         assert!(selection.removed_row(1));
-        assert_eq!(selection, A1Selection::test_a1("2,D:E"));
+        assert_eq!(selection, A1Selection::test_a1("1,D:E"));
     }
 
     #[test]
