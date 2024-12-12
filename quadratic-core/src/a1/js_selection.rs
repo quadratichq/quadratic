@@ -189,30 +189,30 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getRanges")]
-    pub fn get_ranges(&self) -> Result<JsValue, String> {
-        serde_wasm_bindgen::to_value(&self.selection.ranges).map_err(|e| e.to_string())
+    pub fn get_ranges(&self) -> Result<String, String> {
+        serde_json::to_string(&self.selection.ranges).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "getFiniteRanges")]
-    pub fn get_finite_ranges(&self) -> Result<JsValue, String> {
+    pub fn get_finite_ranges(&self) -> Result<String, String> {
         let ranges = self
             .selection
             .ranges
             .iter()
             .filter(|r| r.is_finite())
             .collect::<Vec<_>>();
-        serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
+        serde_json::to_string(&ranges).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "getInfiniteRanges")]
-    pub fn get_infinite_ranges(&self) -> Result<JsValue, String> {
+    pub fn get_infinite_ranges(&self) -> Result<String, String> {
         let ranges = self
             .selection
             .ranges
             .iter()
             .filter(|r| !r.is_finite())
             .collect::<Vec<_>>();
-        serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
+        serde_json::to_string(&ranges).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "isColumnRow")]

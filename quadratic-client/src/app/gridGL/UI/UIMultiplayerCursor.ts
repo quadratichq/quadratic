@@ -86,7 +86,13 @@ export class UIMultiPlayerCursor extends Graphics {
             cursor: player.parsedSelection?.getCursor(),
           });
 
-          const ranges: CellRefRange[] = player.parsedSelection.getRanges();
+          const rangesStringified = player.parsedSelection.getRanges();
+          let ranges: CellRefRange[] = [];
+          try {
+            ranges = JSON.parse(rangesStringified);
+          } catch (e) {
+            console.error(e);
+          }
           drawFiniteSelection(this, color, FILL_ALPHA, ranges);
           drawInfiniteSelection({
             g: this,

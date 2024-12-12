@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::formulas::{escape_string, parse_sheet_name};
-use crate::Pos;
+use crate::{Pos, UNBOUNDED};
 
 /// A reference to a cell or a range of cells.
 ///
@@ -183,7 +183,7 @@ impl CellRef {
         let row_is_negative = !captures[4].is_empty();
         let mut row = captures
             .get(5)
-            .map_or(Some(i64::MAX), |m| m.as_str().parse::<i64>().ok())?;
+            .map_or(Some(UNBOUNDED), |m| m.as_str().parse::<i64>().ok())?;
         if row_is_negative {
             row = -row;
         }
@@ -336,7 +336,7 @@ mod tests {
             Some(CellRef {
                 sheet: None,
                 x: CellRefCoord::Relative(0),
-                y: CellRefCoord::Relative(i64::MAX)
+                y: CellRefCoord::Relative(UNBOUNDED)
             })
         );
     }

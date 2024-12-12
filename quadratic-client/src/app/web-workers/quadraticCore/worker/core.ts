@@ -5,6 +5,7 @@
  * directly accessed by its siblings.
  */
 
+import { bigIntReplacer } from '@/app/bigint';
 import { debugWebWorkers } from '@/app/debugFlags';
 import {
   BorderSelection,
@@ -58,12 +59,6 @@ import {
 import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import { Rectangle } from 'pixi.js';
-
-// Used to coerce bigints to numbers for JSON.stringify; see
-// https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
-export const bigIntReplacer = (_key: string, value: any): any => {
-  return typeof value === 'bigint' ? Number(value) : value;
-};
 
 class Core {
   gridController?: GridController;

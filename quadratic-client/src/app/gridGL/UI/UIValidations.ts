@@ -53,8 +53,9 @@ export class UIValidations extends Container<SpecialSprite> {
       if (v.selection.sheet_id.id !== sheets.sheet.id || !type) continue;
 
       const jsSelection = A1SelectionValueToSelection(v.selection);
-      const ranges: CellRefRange[] = jsSelection.getInfiniteRanges();
-      ranges.forEach((range) => this.drawInfiniteRange(range, type));
+      const infiniteRangesStringified = jsSelection.getInfiniteRanges();
+      const infiniteRanges: CellRefRange[] = JSON.parse(infiniteRangesStringified);
+      infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
     }
   }
 

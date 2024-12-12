@@ -1,3 +1,5 @@
+use crate::UNBOUNDED;
+
 use super::*;
 
 impl RefRangeBounds {
@@ -49,8 +51,8 @@ impl RefRangeBounds {
             ) {
                 // Both are column ranges (including partial)
                 (true, false, true, false) => {
-                    let end_row = if max_row == i64::MAX && min_row == 1 {
-                        i64::MAX
+                    let end_row = if max_row == UNBOUNDED && min_row == 1 {
+                        UNBOUNDED
                     } else {
                         max_row
                     };
@@ -63,8 +65,8 @@ impl RefRangeBounds {
                 }
                 // Both are row ranges (including partial)
                 (false, true, false, true) => {
-                    let end_col = if max_col == i64::MAX && min_col == 1 {
-                        i64::MAX
+                    let end_col = if max_col == UNBOUNDED && min_col == 1 {
+                        UNBOUNDED
                     } else {
                         max_col
                     };

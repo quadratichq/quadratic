@@ -5,21 +5,14 @@ import { Rectangle } from 'pixi.js';
 // returns rectangle representing the range in col/row coordinates
 export function getRangeRectangleFromCellRefRange({ range }: CellRefRange): Rectangle {
   const { col, row } = range.start;
-  const startCol = Number(col?.coord ?? 1);
-  const startRow = Number(row?.coord ?? 1);
+  const startCol = Number(col.coord);
+  const startRow = Number(row.coord);
 
-  const end = range.end ? { col: range.end.col, row: range.end.row } : undefined;
-  let endCol = Number(end?.col?.coord ?? Infinity);
-  let endRow = Number(end?.row?.coord ?? Infinity);
-
-  if (!end) {
-    if (col && col.coord !== undefined) {
-      endCol = startCol;
-    }
-    if (row && row.coord !== undefined) {
-      endRow = startRow;
-    }
-  }
+  const end = range.end;
+  let endCol = Number(end.col.coord);
+  if (endCol === -1) endCol = Infinity;
+  let endRow = Number(end.row.coord);
+  if (endRow === -1) endRow = Infinity;
 
   // normalize the coordinates
   const minCol = Math.min(startCol, endCol);

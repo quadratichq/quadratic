@@ -4,9 +4,10 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
+// need to round a bit since i64::MAX is too big for JS's BigInt
 pub const UNBOUNDED: i64 = i64::MAX;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct CellRefCoord {
@@ -14,6 +15,54 @@ pub struct CellRefCoord {
     pub coord: i64,
     pub is_absolute: bool,
 }
+
+// Add custom serialization implementation
+impl Serialize for CellRefCoord {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("CellRefCoord", 2)?;
+        // Convert UNBOUNDED to -1 during serialization
+        let coord = if self.coord == UNBOUNDED {
+            -1
+        } else {
+            self.coord
+        };
+        state.serialize_field("coord", &coord)?;
+        state.serialize_field("is_absolute", &self.is_absolute)?;
+        state.end()
+    }
+}
+
+// Add custom deserialization implementation
+impl<'de> Deserialize<'de> for CellRefCoord {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper {
+            coord: i64,
+            is_absolute: bool,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+        // Convert -1 back to UNBOUNDED during deserialization
+        let coord = if helper.coord == -1 {
+            UNBOUNDED
+        } else {
+            helper.coord
+        };
+
+        Ok(CellRefCoord {
+            coord,
+            is_absolute: helper.is_absolute,
+        })
+    }
+}
+
 impl CellRefCoord {
     pub const START: Self = Self {
         coord: 1,
@@ -67,7 +116,7 @@ impl CellRefCoord {
     }
 
     pub fn is_unbounded(&self) -> bool {
-        self.coord == i64::MAX
+        self.coord == UNBOUNDED
     }
 }
 
@@ -158,5 +207,20 @@ mod tests {
         assert!(CellRefCoord::UNBOUNDED.is_unbounded());
         assert!(!CellRefCoord::new_rel(1).is_unbounded());
         assert!(!CellRefCoord::new_abs(1).is_unbounded());
+    }
+
+    #[test]
+    fn test_serializer() {
+        let coord = CellRefCoord::new_rel(1);
+        let serialized = serde_json::to_string(&coord).unwrap();
+        assert_eq!(coord, serde_json::from_str(&serialized).unwrap());
+
+        let coord = CellRefCoord::new_abs(1);
+        let serialized = serde_json::to_string(&coord).unwrap();
+        assert_eq!(coord, serde_json::from_str(&serialized).unwrap());
+
+        let coord = CellRefCoord::UNBOUNDED;
+        let serialized = serde_json::to_string(&coord).unwrap();
+        assert_eq!(coord, serde_json::from_str(&serialized).unwrap());
     }
 }

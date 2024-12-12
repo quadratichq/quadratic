@@ -1,11 +1,11 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useValidationsData } from '@/app/ui/menus/Validations/Validations/useValidationsData';
 import { ValidationEntry } from '@/app/ui/menus/Validations/Validations/ValidationEntry';
 import { ValidationsHeader } from '@/app/ui/menus/Validations/Validations/ValidationsHeader';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { bigIntReplacer } from '@/app/web-workers/quadraticCore/worker/core';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useCallback, useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';

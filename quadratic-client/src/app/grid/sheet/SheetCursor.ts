@@ -6,7 +6,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { A1Selection, JsCoordinate } from '@/app/quadratic-core-types';
+import { A1Selection, CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -216,7 +216,7 @@ export class SheetCursor {
   }
 
   isMultiRange(): boolean {
-    return this.jsSelection.getRanges().length > 1;
+    return this.rangeCount() > 1;
   }
 
   isColumnRow(): boolean {
@@ -250,6 +250,26 @@ export class SheetCursor {
   }
 
   rangeCount(): number {
-    return this.jsSelection.getRanges().length;
+    return this.getFiniteRanges().length + this.getInfiniteRanges().length;
+  }
+
+  getFiniteRanges(): CellRefRange[] {
+    const ranges = this.jsSelection.getFiniteRanges();
+    try {
+      return JSON.parse(ranges);
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }
+
+  getInfiniteRanges(): CellRefRange[] {
+    const ranges = this.jsSelection.getInfiniteRanges();
+    try {
+      return JSON.parse(ranges);
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
   }
 }

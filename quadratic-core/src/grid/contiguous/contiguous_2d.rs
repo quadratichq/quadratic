@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{grid::GridBounds, A1Selection, CellRefRange, CopyFormats, Pos, Rect};
+use crate::{grid::GridBounds, A1Selection, CellRefRange, CopyFormats, Pos, Rect, UNBOUNDED};
 
 use serde::{Deserialize, Serialize};
 
@@ -224,7 +224,7 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
 
         // `.try_into()` will only fail if there are finite values beyond
         // `i64::MAX`. In that case there's no correct answer.
-        column_data.finite_max().try_into().unwrap_or(i64::MAX)
+        column_data.finite_max().try_into().unwrap_or(UNBOUNDED)
     }
 
     /// Returns the upper bound on the finite regions in the given row. Returns
@@ -249,7 +249,7 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
             // `.try_into()` will only fail if there are finite values beyond
             // `i64::MAX`. In that case there's no correct answer.
             .try_into()
-            .unwrap_or(i64::MAX)
+            .unwrap_or(UNBOUNDED)
     }
 
     /// Removes a column and returns the values that used to inhabit it. Returns

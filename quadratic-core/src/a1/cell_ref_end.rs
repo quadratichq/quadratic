@@ -165,12 +165,12 @@ impl CellRefRangeEnd {
         delta: i64,
     ) {
         if let Some(column) = column {
-            if self.col() >= column {
+            if !self.col.is_unbounded() && self.col() >= column {
                 self.col.coord = self.col.coord.saturating_add(delta).max(1);
             }
         }
         if let Some(row) = row {
-            if self.row() >= row {
+            if !self.row.is_unbounded() && self.row() >= row {
                 self.row.coord = self.row.coord.saturating_add(delta).max(1);
             }
         }
@@ -380,8 +380,8 @@ mod tests {
         ref_end.adjust_column_row_in_place(Some(1), None, -1);
         assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 3));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(i64::MAX, 3);
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3);
         ref_end.adjust_column_row_in_place(Some(1), None, 1);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(i64::MAX, 3));
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3));
     }
 }
