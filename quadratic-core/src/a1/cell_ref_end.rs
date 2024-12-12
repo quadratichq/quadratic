@@ -186,16 +186,6 @@ impl CellRefRangeEnd {
     pub fn is_multi_range(self) -> bool {
         self.col.is_unbounded() || self.row.is_unbounded()
     }
-
-    /// Returns whether the range end is missing a row number.
-    pub fn is_only_column(self) -> bool {
-        self.row.is_unbounded() && !self.col.is_unbounded()
-    }
-
-    /// Returns whether the range end is missing a column number.
-    pub fn is_only_row(self) -> bool {
-        !self.col.is_unbounded() && self.row.is_unbounded()
-    }
 }
 
 #[cfg(test)]
@@ -393,13 +383,5 @@ mod tests {
         let mut ref_end = CellRefRangeEnd::new_relative_xy(i64::MAX, 3);
         ref_end.adjust_column_row_in_place(Some(1), None, 1);
         assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(i64::MAX, 3));
-    }
-
-    #[test]
-    fn test_only() {
-        assert!(CellRefRangeEnd::new_relative_xy(1, 1).is_only_column());
-        assert!(CellRefRangeEnd::new_relative_xy(1, UNBOUNDED).is_only_row());
-        assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_only_row());
-        assert!(!CellRefRangeEnd::new_relative_xy(UNBOUNDED, 1).is_only_column());
     }
 }

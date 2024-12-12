@@ -66,7 +66,10 @@ impl Pos {
 
     // TODO: rename this method (`from_str`?)
     pub fn try_a1_string(a1: &str) -> Option<Self> {
-        if let Ok(end) = CellRefRangeEnd::parse_start(a1) {
+        if let Ok(end) = CellRefRangeEnd::parse_end(a1) {
+            if end.is_unbounded() {
+                return None;
+            }
             return Some(Pos {
                 x: end.col(),
                 y: end.row(),
@@ -330,6 +333,7 @@ mod test {
         assert_eq!(Pos::try_a1_string("d5"), Some(Pos { x: 4, y: 5 }));
         assert_eq!(Pos::try_a1_string("A"), None);
         assert_eq!(Pos::try_a1_string("1"), None);
+        assert_eq!(Pos::try_a1_string("A:B"), None);
     }
 
     #[test]

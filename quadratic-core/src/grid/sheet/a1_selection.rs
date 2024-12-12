@@ -1,7 +1,10 @@
 use indexmap::IndexMap;
 
 use crate::{
-    grid::js_types::{JsCellValuePosAIContext, JsCodeCell},
+    grid::{
+        js_types::{JsCellValuePosAIContext, JsCodeCell},
+        GridBounds,
+    },
     A1Selection, CellRefRange, CellValue, Pos, Rect,
 };
 
@@ -206,22 +209,32 @@ impl Sheet {
 
                 let ignore_formatting = false;
                 let rect_end = if end.is_unbounded() {
-                    // if there is an end, then calculate the end, goes up to bounds.max if infinite
-                    Pos {
-                        x: if end.col.is_unbounded() {
-                            // get max column for the range of rows
-                            self.rows_bounds(start.row(), end.row(), ignore_formatting)
-                                .map_or(rect_start.x, |(_, hi)| hi.max(rect_start.x))
-                        } else {
-                            end.col()
-                        },
-                        y: if end.row.is_unbounded() {
-                            // get max row for the range of columns
-                            self.columns_bounds(start.col(), end.col(), ignore_formatting)
-                                .map_or(rect_start.y, |(_, hi)| hi.max(rect_start.y))
-                        } else {
-                            end.row()
-                        },
+                    if end.col.is_unbounded() && end.row.is_unbounded() {
+                        match self.bounds(ignore_formatting) {
+                            GridBounds::NonEmpty(bounds) => Pos {
+                                x: bounds.max.x,
+                                y: bounds.max.y,
+                            },
+                            GridBounds::Empty => rect_start,
+                        }
+                    } else {
+                        // if there is an end, then calculate the end, goes up to bounds.max if infinite
+                        Pos {
+                            x: if end.col.is_unbounded() {
+                                // get max column for the range of rows
+                                self.rows_bounds(start.row(), end.row(), ignore_formatting)
+                                    .map_or(rect_start.x, |(_, hi)| hi.max(rect_start.x))
+                            } else {
+                                end.col()
+                            },
+                            y: if end.row.is_unbounded() {
+                                // get max row for the range of columns
+                                self.columns_bounds(start.col(), end.col(), ignore_formatting)
+                                    .map_or(rect_start.y, |(_, hi)| hi.max(rect_start.y))
+                            } else {
+                                end.row()
+                            },
+                        }
                     }
                 } else {
                     Pos {
