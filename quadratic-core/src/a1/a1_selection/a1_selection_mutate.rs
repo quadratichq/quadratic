@@ -161,6 +161,10 @@ mod tests {
         let mut selection = A1Selection::test_a1("B2:B4,B2");
         assert!(selection.removed_column(2));
         assert!(selection.ranges.is_empty());
+
+        let mut selection = A1Selection::test_a1("A1:A1,A,2:5");
+        assert!(selection.removed_column(1));
+        assert_eq!(selection, A1Selection::test_a1("2:5"));
     }
 
     #[test]
@@ -232,6 +236,10 @@ mod tests {
         let mut selection = A1Selection::test_a1("A2:C2,2");
         assert!(selection.removed_row(2));
         assert!(selection.ranges.is_empty());
+
+        let mut selection = A1Selection::test_a1("A1:A1,2,D:E");
+        assert!(selection.removed_row(1));
+        assert_eq!(selection, A1Selection::test_a1("2,D:E"));
     }
 
     #[test]

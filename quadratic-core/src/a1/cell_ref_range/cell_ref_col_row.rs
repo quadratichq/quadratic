@@ -10,18 +10,21 @@ impl CellRefRange {
 
         match self {
             Self::Sheet { range } => {
-                // Check if the start column needs to be adjusted
-                if range.start.col() > column {
-                    let old = range.start.col();
-                    range.start.col.coord = range.start.col.coord.saturating_sub(1).max(1);
-                    changed = old != range.start.col();
-                }
+                // do nothing if the column range is unbounded
+                if !(range.start.col() == 1 && range.end.col.is_unbounded()) {
+                    // Check if the start column needs to be adjusted
+                    if range.start.col() > column {
+                        let old = range.start.col();
+                        range.start.col.coord = range.start.col.coord.saturating_sub(1).max(1);
+                        changed = old != range.start.col();
+                    }
 
-                // Check if the end column needs to be adjusted
-                if range.end.col() >= column {
-                    let old = range.end.col();
-                    range.end.col.coord = range.end.col.coord.saturating_sub(1).max(1);
-                    changed = old != range.end.col();
+                    // Check if the end column needs to be adjusted
+                    if !range.end.col.is_unbounded() && range.end.col() >= column {
+                        let old = range.end.col();
+                        range.end.col.coord = range.end.col.coord.saturating_sub(1).max(1);
+                        changed = old != range.end.col();
+                    }
                 }
             }
         }
@@ -37,18 +40,20 @@ impl CellRefRange {
 
         match self {
             Self::Sheet { range } => {
-                // Check if the start row needs to be adjusted
-                if range.start.row() > row {
-                    let old = range.start.row();
-                    range.start.row.coord = range.start.row().saturating_sub(1).max(1);
-                    changed = old != range.start.row();
-                }
+                if !(range.start.row() == 1 && range.end.row.is_unbounded()) {
+                    // Check if the start row needs to be adjusted
+                    if range.start.row() > row {
+                        let old = range.start.row();
+                        range.start.row.coord = range.start.row().saturating_sub(1).max(1);
+                        changed = old != range.start.row();
+                    }
 
-                // Check if the end row needs to be adjusted{
-                if range.end.row() >= row {
-                    let old = range.end.row();
-                    range.end.row.coord = range.end.row().saturating_sub(1).max(1);
-                    changed = old != range.end.row();
+                    // Check if the end row needs to be adjusted{
+                    if !range.end.row.is_unbounded() && range.end.row() >= row {
+                        let old = range.end.row();
+                        range.end.row.coord = range.end.row().saturating_sub(1).max(1);
+                        changed = old != range.end.row();
+                    }
                 }
             }
         }
@@ -138,6 +143,9 @@ mod tests {
         range = CellRefRange::test_a1("A1:B1");
         assert!(range.removed_column(2));
         assert_eq!(range, CellRefRange::test_a1("A1"));
+
+        range = CellRefRange::test_a1("5:10");
+        assert!(!range.removed_column(1));
     }
 
     #[test]
@@ -175,6 +183,9 @@ mod tests {
         range = CellRefRange::test_a1("A1:A2");
         assert!(range.removed_row(2));
         assert_eq!(range, CellRefRange::test_a1("A1"));
+
+        range = CellRefRange::test_a1("B:D");
+        assert!(!range.removed_row(1));
     }
 
     #[test]
