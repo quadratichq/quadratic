@@ -28,6 +28,13 @@ import { useRecoilCallback } from 'recoil';
 
 const MAX_TOOL_CALL_ITERATIONS = 5;
 
+export type SubmitAIAnalystPromptArgs = {
+  userPrompt: string;
+  context: Context;
+  messageIndex?: number;
+  clearMessages?: boolean;
+};
+
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getQuadraticContext } = useQuadraticContextMessages();
@@ -79,17 +86,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({
-        userPrompt,
-        context,
-        messageIndex,
-        clearMessages,
-      }: {
-        userPrompt: string;
-        context: Context;
-        messageIndex?: number;
-        clearMessages?: boolean;
-      }) => {
+      async ({ userPrompt, context, messageIndex, clearMessages }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 

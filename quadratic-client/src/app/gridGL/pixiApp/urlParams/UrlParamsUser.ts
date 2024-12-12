@@ -13,7 +13,7 @@ export class UrlParamsUser {
     this.loadSheet(params);
     this.loadCursor(params);
     this.loadCode(params);
-    this.setupListeners();
+    this.setupListeners(params);
   }
 
   private loadSheet(params: URLSearchParams) {
@@ -65,10 +65,31 @@ export class UrlParamsUser {
     }
   }
 
-  private setupListeners() {
+  private loadAIAnalystPrompt = (params: URLSearchParams) => {
+    const prompt = params.get('prompt');
+    if (!prompt) return;
+
+    const { submitAIAnalystPrompt } = pixiAppSettings;
+    if (!submitAIAnalystPrompt) {
+      throw new Error('Expected submitAIAnalystPrompt to be set in urlParams.loadAIAnalystPrompt');
+    }
+
+    submitAIAnalystPrompt({
+      userPrompt: prompt,
+      context: {
+        sheets: [],
+        currentSheet: sheets.sheet.name,
+        selection: undefined,
+      },
+      clearMessages: true,
+    });
+  };
+
+  private setupListeners(params: URLSearchParams) {
     events.on('cursorPosition', this.setDirty);
     events.on('changeSheet', this.setDirty);
     events.on('codeEditor', this.setDirty);
+    events.on('aiAnalystInitialized', () => this.loadAIAnalystPrompt(params));
   }
 
   private setDirty = () => {
