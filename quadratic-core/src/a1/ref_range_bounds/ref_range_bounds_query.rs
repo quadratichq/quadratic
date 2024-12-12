@@ -97,7 +97,7 @@ impl RefRangeBounds {
     /// Returns only the finite columns in the range.
     pub fn selected_columns_finite(&self) -> Vec<i64> {
         let mut columns = vec![];
-        if !self.end.is_unbounded() {
+        if !self.end.col.is_unbounded() {
             let min = self.start.col().min(self.end.col());
             let max = self.start.col().max(self.end.col());
             columns.extend(min..=max);
@@ -119,12 +119,7 @@ impl RefRangeBounds {
     /// Returns only the finite rows in the range.
     pub fn selected_rows_finite(&self) -> Vec<i64> {
         let mut rows = vec![];
-        if self.end.row.is_unbounded() {
-            return rows;
-        }
-        if self.start.row.is_unbounded() {
-            rows.extend(1..=self.end.row());
-        } else {
+        if !self.end.row.is_unbounded() {
             let min = self.start.row().min(self.end.row());
             let max = self.start.row().max(self.end.row());
             rows.extend(min..=max);
@@ -156,12 +151,12 @@ impl RefRangeBounds {
             } else {
                 self.start.row()
             },
-            if self.end.is_unbounded() {
+            if self.end.col.is_unbounded() {
                 None
             } else {
                 Some(self.end.col())
             },
-            if self.end.is_unbounded() {
+            if self.end.row.is_unbounded() {
                 None
             } else {
                 Some(self.end.row())
@@ -302,10 +297,6 @@ mod tests {
             vec![1, 2, 3, 4]
         );
         assert_eq!(
-            RefRangeBounds::test_a1("1:D").selected_columns(1, 10),
-            vec![4, 5, 6, 7, 8, 9, 10]
-        );
-        assert_eq!(
             RefRangeBounds::test_a1("A1:C3").selected_columns(1, 10),
             vec![1, 2, 3]
         );
@@ -319,15 +310,22 @@ mod tests {
         );
         assert_eq!(
             RefRangeBounds::test_a1(":D").selected_columns(2, 5),
-            vec![4, 5]
+            vec![2, 3, 4]
         );
         assert_eq!(
             RefRangeBounds::test_a1("10").selected_columns(2, 5),
             vec![2, 3, 4, 5]
         );
+        // same as A1:D
+        assert_eq!(
+            RefRangeBounds::test_a1("1:D").selected_columns(1, 10),
+            vec![1, 2, 3, 4]
+        );
+        // same as A4:E
+        dbg!(RefRangeBounds::test_a1("4:E"));
         assert_eq!(
             RefRangeBounds::test_a1("4:E").selected_columns(2, 5),
-            vec![5]
+            vec![2, 3, 4, 5]
         );
     }
 
@@ -361,7 +359,7 @@ mod tests {
         );
         assert_eq!(
             RefRangeBounds::test_a1(":4").selected_rows(2, 10),
-            vec![4, 5, 6, 7, 8, 9, 10]
+            vec![ 2, 3, 4]
         );
         assert_eq!(
             RefRangeBounds::test_a1("*").selected_rows(2, 5),
@@ -373,7 +371,7 @@ mod tests {
         );
         assert_eq!(
             RefRangeBounds::test_a1("C:E5").selected_rows(1, 10),
-            vec![5, 6, 7, 8, 9, 10]
+            vec![1, 2, 3, 4, 5]
         );
         assert_eq!(
             RefRangeBounds::test_a1("E5:C").selected_rows(1, 10),
@@ -409,9 +407,10 @@ mod tests {
         assert!(RefRangeBounds::test_a1("*")
             .selected_columns_finite()
             .is_empty());
-        assert!(RefRangeBounds::test_a1(":B")
-            .selected_columns_finite()
-            .is_empty());
+        assert_eq!(
+            RefRangeBounds::test_a1(":B").selected_columns_finite(),
+            vec![1, 2]
+        );
     }
 
     #[test]
@@ -431,14 +430,18 @@ mod tests {
         assert!(RefRangeBounds::test_a1("*")
             .selected_rows_finite()
             .is_empty());
-        assert!(RefRangeBounds::test_a1(":3")
-            .selected_rows_finite()
-            .is_empty());
+        assert_eq!(
+            RefRangeBounds::test_a1(":3").selected_rows_finite(),
+            vec![1, 2, 3]
+        );
     }
 
     #[test]
     fn test_is_all() {
         assert!(RefRangeBounds::test_a1("*").is_all());
+        assert!(RefRangeBounds::test_a1("A:").is_all());
+        assert!(RefRangeBounds::test_a1("1:").is_all());
+        assert!(RefRangeBounds::test_a1("A1:").is_all());
         assert!(!RefRangeBounds::test_a1("A1").is_all());
         assert!(!RefRangeBounds::test_a1("A1:B2").is_all());
     }

@@ -60,8 +60,8 @@ mod tests {
     #[test]
     fn test_only_column() {
         assert!(CellRefRange::test_a1("A").only_column(1));
-        assert!(CellRefRange::test_a1("A2:A5").only_column(1));
-
+        assert!(CellRefRange::test_a1("B").only_column(2));
+        assert!(!CellRefRange::test_a1("A2:A5").only_column(1));
         assert!(!CellRefRange::test_a1("A").only_column(2));
         assert!(!CellRefRange::test_a1("A:B").only_column(2));
         assert!(!CellRefRange::test_a1("A1").only_column(2));
@@ -71,8 +71,8 @@ mod tests {
     #[test]
     fn test_only_row() {
         assert!(CellRefRange::test_a1("2").only_row(2));
-        assert!(CellRefRange::test_a1("A2:D2").only_row(2));
-
+        assert!(CellRefRange::test_a1("5").only_row(5));
+        assert!(!CellRefRange::test_a1("A2:D2").only_row(2));
         assert!(!CellRefRange::test_a1("2").only_row(1));
         assert!(!CellRefRange::test_a1("1:2").only_row(1));
         assert!(!CellRefRange::test_a1("A2").only_row(1));

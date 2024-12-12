@@ -3,6 +3,9 @@ use super::*;
 impl RefRangeBounds {
     /// Translates the range in place by the given delta.
     pub fn translate_in_place(&mut self, x: i64, y: i64) {
+        if self.is_all() {
+            return;
+        }
         self.start.translate_in_place(x, y);
         self.end.translate_in_place(x, y);
     }

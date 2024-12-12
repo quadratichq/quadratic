@@ -77,18 +77,7 @@ impl RefRangeBounds {
                 }
                 // Mixed types (including partial ranges)
                 _ => Some(RefRangeBounds::new_relative(
-                    min_col,
-                    min_row,
-                    if max_col == i64::MAX {
-                        i64::MAX
-                    } else {
-                        max_col
-                    },
-                    if max_row == i64::MAX {
-                        i64::MAX
-                    } else {
-                        max_row
-                    },
+                    min_col, min_row, max_col, max_row,
                 )),
             }
         } else {
@@ -98,11 +87,17 @@ impl RefRangeBounds {
 
     // Helper methods to get bounds.
     fn column_bounds(&self) -> (i64, i64) {
-        (self.start.col(), self.end.col())
+        (
+            self.start.col().min(self.end.col()),
+            self.start.col().max(self.end.col()),
+        )
     }
 
     fn row_bounds(&self) -> (i64, i64) {
-        (self.start.row(), self.end.row())
+        (
+            self.start.row().min(self.end.row()),
+            self.start.row().max(self.end.row()),
+        )
     }
 }
 
@@ -297,11 +292,23 @@ mod tests {
     fn test_intersection_partial_edge_cases() {
         assert_eq!(
             RefRangeBounds::test_a1("A:").intersection(&RefRangeBounds::test_a1("A1:C3")),
-            Some(RefRangeBounds::test_a1("A1:A3"))
+            Some(RefRangeBounds::test_a1("A1:C3"))
         );
         assert_eq!(
             RefRangeBounds::test_a1("3:").intersection(&RefRangeBounds::test_a1("A1:C5")),
             Some(RefRangeBounds::test_a1("A3:C5"))
         );
+    }
+
+    #[test]
+    fn test_column_bounds() {
+        assert_eq!(RefRangeBounds::test_a1("A:C").column_bounds(), (1, 3));
+        assert_eq!(RefRangeBounds::test_a1("C:A").column_bounds(), (1, 3));
+    }
+
+    #[test]
+    fn test_row_bounds() {
+        assert_eq!(RefRangeBounds::test_a1("1:3").row_bounds(), (1, 3));
+        assert_eq!(RefRangeBounds::test_a1("3:1").row_bounds(), (1, 3));
     }
 }

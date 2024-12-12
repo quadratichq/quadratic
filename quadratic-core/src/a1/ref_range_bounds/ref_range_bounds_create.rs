@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn test_new_relative_all_from() {
         let range = RefRangeBounds::new_relative_all_from(Pos { x: 1, y: 2 });
-        assert_eq!(range.to_string(), "A2:");
+        assert_eq!(range.to_string(), "2:");
     }
 
     #[test]
