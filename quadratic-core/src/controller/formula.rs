@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{formulas, Pos, Span, Spanned};
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct FormulaParseResult {
     pub parse_error_msg: Option<String>,
     pub parse_error_span: Option<Span>,
@@ -10,7 +10,7 @@ pub struct FormulaParseResult {
     pub cell_refs: Vec<CellRefSpan>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CellRefSpan {
     pub span: Span,
     pub cell_ref: formulas::RangeRef,
@@ -131,5 +131,14 @@ mod tests {
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);
         // `cell_refs` output is tested elsewhere
+    }
+
+    #[test]
+    #[parallel]
+    fn text_parse_formula_case_insensitive() {
+        let parse = |s| parse_formula(s, crate::Pos::ORIGIN);
+
+        assert_eq!(parse("A1:A2"), parse("a1:a2"));
+        assert_eq!(parse("A1:AA2"), parse("a1:aa2"));
     }
 }
