@@ -1,6 +1,5 @@
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Page404 from '@/routes/404';
-import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
@@ -69,6 +68,10 @@ export const router = createBrowserRouter(
             />
           </Route>
 
+          {/* Helper routes, e.g. /connections -> /teams/:uuid/connections */}
+
+          <Route path="files/new" lazy={() => import('./routes/new')} />
+
           {/* Dashboard UI routes */}
           <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route
@@ -88,16 +91,15 @@ export const router = createBrowserRouter(
             />
             <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
 
-            <Route
-              path="connections"
-              Component={() => {
-                const data = useDashboardRouteLoaderData();
-                // This renders
-                return <div>Hello</div>;
-                // This triggers a route boundary error
-                return <Navigate to={`/teams/${data.activeTeam.team.uuid}/connections`} replace />;
-              }}
-            />
+            {/* TODO: handle these
+            <Route path="connections" lazy={() => import('./routes/_teams-redirect')} />
+            <Route path="settings" lazy={() => import('./routes/_teams-redirect')} />
+            <Route path="members" lazy={() => import('./routes/_teams-redirect')} />
+            <Route path="files">
+              <Route index lazy={() => import('./routes/_teams-redirect')} />
+              <Route path="create" lazy={() => import('./routes/files.create')} />
+              <Route path="private" lazy={() => import('./routes/_teams-redirect')} />
+            </Route>*/}
 
             <Route path="teams">
               <Route path="create" lazy={() => import('./routes/teams.create')} />

@@ -12,9 +12,7 @@ export const useNewFileFromStatePythonApi = ({ isPrivate, teamUuid }: { isPrivat
     language: 'Python' as CodeCellLanguage,
   };
 
-  const to = isPrivate
-    ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateUrlParam)
-    : ROUTES.CREATE_FILE(teamUuid, stateUrlParam);
+  const to = ROUTES.CREATE_FILE(teamUuid, { state: stateUrlParam, private: isPrivate });
 
   return to;
 };
@@ -40,9 +38,7 @@ export const newNewFileFromStateConnection = ({
     language: { Connection: { kind: connectionType, id: connectionUuid } },
   };
 
-  const to = isPrivate
-    ? ROUTES.CREATE_FILE_PRIVATE(teamUuid, stateUrlParam)
-    : ROUTES.CREATE_FILE(teamUuid, stateUrlParam);
+  const to = ROUTES.CREATE_FILE(teamUuid, { state: stateUrlParam, private: isPrivate });
 
   return to;
 };

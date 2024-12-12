@@ -12,14 +12,30 @@ export const ROUTES = {
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: (uuid: string) => `/file/${uuid}`,
 
-  CREATE_FILE: (teamUuid: string, state?: UrlParamsDevState['insertAndRunCodeInNewSheet']) =>
-    `/teams/${teamUuid}/files/create` +
-    (state ? `?state=${btoa(JSON.stringify({ insertAndRunCodeInNewSheet: state }))}` : ''),
+  CREATE_FILE: (
+    teamUuid: string,
+    searchParams: {
+      state?: UrlParamsDevState['insertAndRunCodeInNewSheet'];
+      prompt?: string | null;
+      private?: boolean;
+    } = {}
+  ) => {
+    let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
+
+    if (searchParams.state) {
+      url.searchParams.set('state', btoa(JSON.stringify({ insertAndRunCodeInNewSheet: searchParams.state })));
+    }
+    if (searchParams.prompt) {
+      url.searchParams.set('prompt', searchParams.prompt);
+    }
+    if (searchParams.private) {
+      url.searchParams.set('private', 'true');
+    }
+
+    return url.toString();
+  },
   CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string, isPrivate: boolean) =>
     `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}${isPrivate ? '&private' : ''}`,
-  CREATE_FILE_PRIVATE: (teamUuid: string, state?: UrlParamsDevState['insertAndRunCodeInNewSheet']) =>
-    `/teams/${teamUuid}/files/create?private` +
-    (state ? `&state=${btoa(JSON.stringify({ insertAndRunCodeInNewSheet: state }))}` : ''),
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
@@ -38,6 +54,7 @@ export const ROUTES = {
   TEAM_SHORTCUT: {
     CONNECTIONS: `/?team-shortcut=connections`,
   },
+  CONNECTIONS: '/connections',
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   EXAMPLES: '/examples',
   ACCOUNT: '/account',
