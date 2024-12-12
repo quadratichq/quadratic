@@ -9,7 +9,6 @@ impl A1Selection {
             if let Some(last) = self.ranges.last_mut() {
                 match last {
                     CellRefRange::Sheet { range } => {
-                        range.start = RefRangeBounds::ALL.start;
                         range.end = RefRangeBounds::ALL.end;
                     }
                 }
@@ -405,9 +404,9 @@ mod tests {
         selection.select_all(false);
         assert_eq!(selection.test_to_string(), "*");
 
-        selection = A1Selection::test_a1("B1");
+        selection = A1Selection::test_a1("B2");
         selection.select_all(true);
-        assert_eq!(selection.test_to_string(), "B1:");
+        assert_eq!(selection.test_to_string(), "B2:");
     }
 
     #[test]
@@ -446,7 +445,7 @@ mod tests {
 
         let mut selection = A1Selection::test_a1("2:3");
         selection.set_columns_selected();
-        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_column(1)]);
+        assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
     }
 
     #[test]
@@ -471,7 +470,7 @@ mod tests {
 
         let mut selection = A1Selection::test_a1("C:D");
         selection.set_rows_selected();
-        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(1)]);
+        assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
     }
 
     #[test]

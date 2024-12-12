@@ -480,7 +480,7 @@ mod tests {
             A1Selection::from_str("1:", &sheet_id, &HashMap::new()),
             Ok(A1Selection::from_range(
                 CellRefRange::Sheet {
-                    range: RefRangeBounds::new_infinite_row(1)
+                    range: RefRangeBounds::ALL
                 },
                 sheet_id,
             )),

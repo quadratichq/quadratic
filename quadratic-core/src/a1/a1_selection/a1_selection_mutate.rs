@@ -1,5 +1,7 @@
 //! Mutation methods that insert or delete columns and rows from a selection.
 
+use crate::CellRefRange;
+
 use super::A1Selection;
 
 impl A1Selection {
@@ -8,7 +10,7 @@ impl A1Selection {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
-            if range.only_column(column) {
+            if range.contains_only_column(column) {
                 changed = true;
                 false
             } else {
@@ -17,6 +19,10 @@ impl A1Selection {
             }
         });
 
+        if self.ranges.is_empty() {
+            self.ranges
+                .push(CellRefRange::new_relative_pos(self.cursor));
+        }
         self.update_cursor();
 
         changed
@@ -27,7 +33,7 @@ impl A1Selection {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
-            if range.only_row(row) {
+            if range.contains_only_row(row) {
                 changed = true;
                 false
             } else {
@@ -35,7 +41,10 @@ impl A1Selection {
                 true
             }
         });
-
+        if self.ranges.is_empty() {
+            self.ranges
+                .push(CellRefRange::new_relative_pos(self.cursor));
+        }
         self.update_cursor();
 
         changed
@@ -96,7 +105,7 @@ mod tests {
         // Remove single cell selection
         let mut selection = A1Selection::test_a1("A1");
         assert!(selection.removed_column(1));
-        assert!(selection.ranges.is_empty());
+        assert_eq!(selection, A1Selection::test_a1("A1"));
 
         // Basic removal of a column in the middle of a range
         let mut selection = A1Selection::test_a1("A1:C3");
@@ -160,10 +169,10 @@ mod tests {
         assert!(selection.removed_row(2));
         assert_eq!(selection, A1Selection::test_a1("A1:B1"));
 
-        // Remove single cell selection
+        // Remove single cell selection--returns cursor as range
         let mut selection = A1Selection::test_a1("A1");
         assert!(selection.removed_row(1));
-        assert!(selection.ranges.is_empty());
+        assert_eq!(selection, A1Selection::test_a1("A1"));
 
         // Remove row in the middle of a range
         let mut selection = A1Selection::test_a1("A1:B3");

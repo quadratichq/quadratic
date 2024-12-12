@@ -3,6 +3,20 @@ use crate::{Pos, UNBOUNDED};
 use super::CellRefRange;
 
 impl CellRefRange {
+    /// Range only contains a selection within a single column
+    pub fn contains_only_column(&self, column: i64) -> bool {
+        match self {
+            Self::Sheet { range } => range.start.col() == column && range.end.col() == column,
+        }
+    }
+
+    /// Range only contains a selection within a single row
+    pub fn contains_only_row(&self, row: i64) -> bool {
+        match self {
+            Self::Sheet { range } => range.start.row() == row && range.end.row() == row,
+        }
+    }
+
     /// Returns true if the range is a single column range.
     pub fn only_column(&self, column: i64) -> bool {
         match self {
@@ -92,5 +106,19 @@ mod tests {
         assert!(
             !CellRefRange::test_a1("A1").is_pos_range(Pos { x: 1, y: 2 }, Some(Pos { x: 1, y: 1 }))
         );
+    }
+
+    #[test]
+    fn test_contains_only_column() {
+        assert!(CellRefRange::test_a1("A1").contains_only_column(1));
+        assert!(CellRefRange::test_a1("A1:A3").contains_only_column(1));
+        assert!(!CellRefRange::test_a1("A1").contains_only_column(2));
+    }
+
+    #[test]
+    fn test_contains_only_row() {
+        assert!(CellRefRange::test_a1("A1").contains_only_row(1));
+        assert!(CellRefRange::test_a1("A1:B1").contains_only_row(1));
+        assert!(!CellRefRange::test_a1("A1").contains_only_row(2));
     }
 }

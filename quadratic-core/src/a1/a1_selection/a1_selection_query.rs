@@ -116,12 +116,12 @@ impl A1Selection {
                     let x = if range.end.is_unbounded() {
                         self.cursor.x
                     } else {
-                        range.end.col()
+                        range.end.col().max(range.start.col())
                     };
                     let y = if range.end.row.is_unbounded() {
                         self.cursor.y
                     } else {
-                        range.end.row()
+                        range.end.row().max(range.start.row())
                     };
                     Pos { x, y }
                 }
@@ -350,10 +350,8 @@ mod tests {
         let selection = A1Selection::test_a1("1:3");
         assert!(selection.is_column_row());
 
-        // probably should be true, but not implemented. will fix it when
-        // refactoring to remove Options
         let selection = A1Selection::test_a1("A1:3");
-        assert!(!selection.is_column_row());
+        assert!(selection.is_column_row());
         let selection = A1Selection::test_a1("1:C3");
         assert!(!selection.is_column_row());
     }
