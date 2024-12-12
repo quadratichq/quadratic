@@ -131,18 +131,24 @@ export function javascriptConvertOutputArray(
   // 2D array of values
   else {
     const longest = Math.max(...value.map((v) => v.length));
-    const defaultOutput = { output: ['', 'blank'] as [string, string], displayType: 'blank' };
 
     for (const [y, v] of value.entries()) {
+      output.push([]);
+
       for (let i = 0; i < longest; i++) {
-        const outputType = javascriptConvertOutputType(message, v[i], column, row, i, y) ?? defaultOutput;
-
-        if (output[i] === undefined) {
-          output[i] = [];
+        if (v.length <= i) {
+          output[y].push(['', 'blank']);
+          types.add('undefined');
+        } else {
+          const v2 = v[i];
+          const outputValue = javascriptConvertOutputType(message, v2, column, row, i, y);
+          if (outputValue) {
+            types.add(outputValue.displayType);
+            output[y].push(outputValue.output);
+          } else {
+            output[y].push(['', 'blank']);
+          }
         }
-
-        output[i][y] = outputType.output;
-        types.add(outputType.displayType);
       }
     }
   }

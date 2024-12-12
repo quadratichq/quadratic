@@ -80,7 +80,7 @@ ${erroredCodeCells[0].map(({ x, y, language, code_string, std_out, std_err }) =>
     std_err: std_err ?? '',
   };
   return `
-The code cell type is ${language}. The code cell is located at ${xyToA1(BigInt(x), BigInt(y))}.\n
+The code cell type is ${language}. The code cell is located at ${xyToA1(Number(x), Number(y))}.\n
 
 The code in the code cell is:\n
 \`\`\`${language}\n${code_string}\n\`\`\`
