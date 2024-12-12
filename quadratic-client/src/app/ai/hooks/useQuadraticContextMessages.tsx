@@ -17,9 +17,9 @@ You are a helpful assistant inside of a spreadsheet application called Quadratic
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}\n\n
 ${language === 'Python' || language === undefined ? PythonDocs : ''}\n
-${language === 'Javascript' || language === undefined ? JavascriptDocs : ''}\n
+${language === 'Javascript' ? JavascriptDocs : ''}\n
 ${language === 'Formula' || language === undefined ? FormulaDocs : ''}\n
-${language === 'Connection' || language === undefined ? ConnectionDocs : ''}\n
+${language === 'Connection' ? ConnectionDocs : ''}\n
 ${
   language
     ? `Provide your response in ${language} language.`
