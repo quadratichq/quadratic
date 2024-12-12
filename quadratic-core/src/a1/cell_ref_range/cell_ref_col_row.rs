@@ -12,14 +12,16 @@ impl CellRefRange {
             Self::Sheet { range } => {
                 // Check if the start column needs to be adjusted
                 if range.start.col() > column {
+                    let old = range.start.col();
                     range.start.col.coord = range.start.col.coord.saturating_sub(1).max(1);
-                    changed = true;
+                    changed = old != range.start.col();
                 }
 
                 // Check if the end column needs to be adjusted
                 if range.end.col() >= column {
+                    let old = range.end.col();
                     range.end.col.coord = range.end.col.coord.saturating_sub(1).max(1);
-                    changed = true;
+                    changed = old != range.end.col();
                 }
             }
         }
@@ -37,14 +39,16 @@ impl CellRefRange {
             Self::Sheet { range } => {
                 // Check if the start row needs to be adjusted
                 if range.start.row() > row {
+                    let old = range.start.row();
                     range.start.row.coord = range.start.row().saturating_sub(1).max(1);
-                    changed = true;
+                    changed = old != range.start.row();
                 }
 
                 // Check if the end row needs to be adjusted{
                 if range.end.row() >= row {
+                    let old = range.end.row();
                     range.end.row.coord = range.end.row().saturating_sub(1).max(1);
-                    changed = true;
+                    changed = old != range.end.row();
                 }
             }
         }
@@ -128,8 +132,7 @@ mod tests {
 
         // Test minimum column boundary
         range = CellRefRange::test_a1("A1:A2");
-        assert!(range.removed_column(1));
-        assert_eq!(range, CellRefRange::test_a1("A1:A2"));
+        assert!(!range.removed_column(1));
 
         // Test when start and end become equal
         range = CellRefRange::test_a1("A1:B1");
@@ -166,8 +169,7 @@ mod tests {
 
         // Test minimum row boundary
         range = CellRefRange::test_a1("A1:B1");
-        assert!(range.removed_row(1));
-        assert_eq!(range, CellRefRange::test_a1("A1:B1"));
+        assert!(!range.removed_row(1));
 
         // Test when start and end become equal
         range = CellRefRange::test_a1("A1:A2");
