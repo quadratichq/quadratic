@@ -44,7 +44,7 @@ export const SetCellValues = ({ args, loading }: SetCellValuesProps) => {
 
   const { top_left_position, cell_values } = toolArgs.data;
   const rows = cell_values.length;
-  const cols = cell_values[0]?.length ?? 0;
+  const cols = cell_values.reduce((max, row) => Math.max(max, row.length), 0);
   return (
     <ToolCard icon={icon} label={label} description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`} />
   );
