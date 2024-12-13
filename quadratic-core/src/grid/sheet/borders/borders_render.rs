@@ -54,6 +54,7 @@ impl Borders {
                     x: x1 as i64,
                     y: y1 as i64,
                     width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
+                    unbounded: false,
                 });
             } else if let Some(y2) = y2 {
                 for y in y1..=y2 {
@@ -63,6 +64,7 @@ impl Borders {
                         x: x1 as i64,
                         y: y as i64,
                         width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
+                        unbounded: false,
                     });
                 }
             } else {
@@ -73,6 +75,7 @@ impl Borders {
                     x: x1 as i64,
                     y: y1 as i64,
                     width: None,
+                    unbounded: y2.is_none(),
                 });
             }
         });
@@ -119,6 +122,7 @@ impl Borders {
                     x: x1 as i64,
                     y: y1 as i64,
                     height: y2.map(|y2| y2 as i64 - y1 as i64 + 1),
+                    unbounded: false,
                 });
             } else if let Some(x2) = x2 {
                 for x in x1..=x2 {
@@ -128,6 +132,7 @@ impl Borders {
                         x: x as i64,
                         y: y1 as i64,
                         height: y2.map(|y2| y2 as i64 - y1 as i64 + 1),
+                        unbounded: false,
                     });
                 }
             } else {
@@ -138,6 +143,7 @@ impl Borders {
                     x: x1 as i64,
                     y: y1 as i64,
                     height: None,
+                    unbounded: x2.is_none(),
                 });
             }
         });
@@ -339,5 +345,39 @@ mod tests {
         assert!(sheet.borders.horizontal_borders().is_none());
         let vertical = sheet.borders.vertical_borders().unwrap();
         assert_eq!(vertical.len(), 5);
+    }
+
+    #[test]
+    fn test_render_borders_infinite_all() {
+        let mut gc = GridController::test();
+        gc.set_borders(
+            A1Selection::test_a1("a3:b4"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+        let sheet = gc.sheet(SheetId::TEST);
+        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        assert_eq!(horizontal.len(), 3);
+        assert!(!horizontal[0].unbounded);
+
+        let vertical = sheet.borders.vertical_borders().unwrap();
+        assert_eq!(vertical.len(), 3);
+        assert!(!vertical[0].unbounded);
+
+        let mut gc = GridController::test();
+        gc.set_borders(
+            A1Selection::test_a1("*"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+        let sheet = gc.sheet(SheetId::TEST);
+        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        assert_eq!(horizontal.len(), 1);
+        assert!(horizontal[0].unbounded);
+        let vertical = sheet.borders.vertical_borders().unwrap();
+        assert_eq!(vertical.len(), 1);
+        assert!(vertical[0].unbounded);
     }
 }

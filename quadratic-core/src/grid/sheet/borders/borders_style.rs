@@ -190,6 +190,9 @@ pub struct JsBorderHorizontal {
     pub x: i64,
     pub y: i64,
     pub width: Option<i64>,
+
+    // whether there are unbounded horizontal lines below this
+    pub unbounded: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
@@ -199,6 +202,9 @@ pub struct JsBorderVertical {
     pub x: i64,
     pub y: i64,
     pub height: Option<i64>,
+
+    // whether there are unbounded vertical lines to the right
+    pub unbounded: bool,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, TS)]
