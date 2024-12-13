@@ -70,7 +70,7 @@ export const router = createBrowserRouter(
 
           {/* Helper routes, e.g. /connections -> /teams/:uuid/connections */}
 
-          <Route path="files/new" lazy={() => import('./routes/new')} />
+          <Route path="files/create" lazy={() => import('./routes/new')} />
 
           {/* Dashboard UI routes */}
           <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
