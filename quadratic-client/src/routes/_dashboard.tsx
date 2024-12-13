@@ -57,7 +57,6 @@ type LoaderData = {
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-// getActiveTeam()
 export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
   /**
    * Get the initial data
@@ -83,14 +82,6 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   if (url.pathname === '/') {
     // If there are search params, keep 'em
     return redirect(ROUTES.TEAM(teamUuid) + url.search);
-  }
-  // TODO: replace this with /connections -> /teams/:uuid/connections
-  // If it was a shortcut team route, redirect there
-  // e.g. /?team-shortcut=connections
-  const teamShortcut = url.searchParams.get('team-shortcut');
-  if (teamShortcut) {
-    url.searchParams.delete('team-shortcut');
-    return redirect(ROUTES.TEAM_CONNECTIONS(teamUuid) + url.search);
   }
 
   /**

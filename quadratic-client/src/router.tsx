@@ -68,9 +68,8 @@ export const router = createBrowserRouter(
             />
           </Route>
 
-          {/* Helper routes, e.g. /connections -> /teams/:uuid/connections */}
-
-          <Route path="files/create" lazy={() => import('./routes/new')} />
+          {/* Route to redirect to a new file in the app */}
+          <Route path="files/create" lazy={() => import('./routes/files.create')} />
 
           {/* Dashboard UI routes */}
           <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
@@ -90,16 +89,6 @@ export const router = createBrowserRouter(
               shouldRevalidate={dontRevalidateDialogs}
             />
             <Route path={ROUTES.LABS} lazy={() => import('./routes/labs')} />
-
-            {/* TODO: handle these
-            <Route path="connections" lazy={() => import('./routes/_teams-redirect')} />
-            <Route path="settings" lazy={() => import('./routes/_teams-redirect')} />
-            <Route path="members" lazy={() => import('./routes/_teams-redirect')} />
-            <Route path="files">
-              <Route index lazy={() => import('./routes/_teams-redirect')} />
-              <Route path="create" lazy={() => import('./routes/files.create')} />
-              <Route path="private" lazy={() => import('./routes/_teams-redirect')} />
-            </Route>*/}
 
             <Route path="teams">
               <Route path="create" lazy={() => import('./routes/teams.create')} />

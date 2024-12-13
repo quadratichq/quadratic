@@ -48,13 +48,6 @@ export const ROUTES = {
   TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
-  // This is a way to navigate to a team route without necessariliy knowing
-  // the teamUuid upfront. It’s useful from the app-side when you want to navigate
-  // back to the dashboard.
-  TEAM_SHORTCUT: {
-    CONNECTIONS: `/?team-shortcut=connections`,
-  },
-  CONNECTIONS: '/connections',
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
   EXAMPLES: '/examples',
   ACCOUNT: '/account',
