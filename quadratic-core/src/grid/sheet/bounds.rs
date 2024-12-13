@@ -38,14 +38,14 @@ impl Sheet {
             self.data_bounds.add(output_rect.max);
         });
 
-        self.validations.validations.iter().for_each(|validation| {
+        for validation in self.validations.validations.iter() {
             if validation.render_special().is_some() {
-                // todo: this might not work properly.
-                let rect = validation.selection.largest_rect_finite();
-                self.data_bounds.add(rect.min);
-                self.data_bounds.add(rect.max);
+                if let Some(rect) = self.selection_bounds(&validation.selection) {
+                    self.data_bounds.add(rect.min);
+                    self.data_bounds.add(rect.max);
+                }
             }
-        });
+        }
 
         old_data_bounds != self.data_bounds.to_bounds_rect()
             || old_format_bounds != self.format_bounds.to_bounds_rect()
