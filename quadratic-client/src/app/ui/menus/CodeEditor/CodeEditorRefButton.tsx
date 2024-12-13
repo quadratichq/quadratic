@@ -48,7 +48,7 @@ export const CodeEditorRefButton = () => {
       !disabled
         ? `Insert ${relative ? 'relative ' : ''}cell reference`
         : codeCellIsAConnection(codeEditor.language)
-        ? `Select one cell on the grid to insert cell reference.`
+        ? `Select only one cell to insert cell reference.`
         : `Select cells on the grid to insert cell reference.`,
     [codeEditor.language, disabled, relative]
   );
@@ -59,7 +59,7 @@ export const CodeEditorRefButton = () => {
         <Button
           variant="ghost"
           size="icon-sm"
-          className="text-muted-foreground"
+          className={`text-muted-foreground ${disabled ? 'opacity-50' : ''}`}
           onClick={() => {
             if (disabled) return;
             insertCellRef(codeCell.sheetId, codeCell.language, false);
