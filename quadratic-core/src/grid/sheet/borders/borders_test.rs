@@ -11,15 +11,19 @@ const INFINITE: i64 = 100000;
 #[allow(unused)]
 impl Borders {
     fn has_horizontal(horizontal: &[JsBorderHorizontal], x: i64, y: i64) -> bool {
-        horizontal
-            .iter()
-            .any(|h| y == h.y && x >= h.x && x < h.x + h.width.unwrap_or(INFINITE))
+        horizontal.iter().any(|h| {
+            (y == h.y || h.unbounded && y >= h.y)
+                && x >= h.x
+                && x < h.x + h.width.unwrap_or(INFINITE)
+        })
     }
 
     fn has_vertical(vertical: &[JsBorderVertical], x: i64, y: i64) -> bool {
-        vertical
-            .iter()
-            .any(|v| x == v.x && y >= v.y && y < v.y + v.height.unwrap_or(INFINITE))
+        vertical.iter().any(|v| {
+            (x == v.x || v.unbounded && x >= v.x)
+                && y >= v.y
+                && y < v.y + v.height.unwrap_or(INFINITE)
+        })
     }
 
     pub(crate) fn print(&self, rect: Option<Rect>) {
@@ -33,7 +37,7 @@ impl Borders {
             // Print x-axis coordinates
             print!("   ");
             for col in rect.x_range() {
-                print!("{:1} ", col % 10);
+                print!("{} ", (b'A' + (col % 26 - 1) as u8) as char);
             }
             println!();
 

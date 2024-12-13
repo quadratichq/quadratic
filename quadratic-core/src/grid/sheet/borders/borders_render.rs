@@ -68,7 +68,7 @@ impl Borders {
                     line: border.line,
                     x: x1 as i64,
                     y: y1 as i64,
-                    width: None,
+                    width: x2.map(|x2| x2 as i64 - x1 as i64 + 1),
                     unbounded: y2.is_none(),
                 });
             }
@@ -137,7 +137,7 @@ impl Borders {
                     line: border.line,
                     x: x1 as i64,
                     y: y1 as i64,
-                    height: None,
+                    height: y2.map(|y2| y2 as i64 - y1 as i64 + 1),
                     unbounded: x2.is_none(),
                 });
             }
@@ -370,5 +370,42 @@ mod tests {
         let vertical = sheet.borders.vertical_borders().unwrap();
         assert_eq!(vertical.len(), 1);
         assert!(vertical[0].unbounded);
+    }
+
+    #[test]
+    fn test_render_border_column() {
+        let mut gc = GridController::test();
+        gc.set_borders(
+            A1Selection::test_a1("C"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+        let sheet = gc.sheet(SheetId::TEST);
+        assert_eq!(sheet.borders.horizontal_borders().unwrap().len(), 1);
+        assert_eq!(sheet.borders.vertical_borders().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_render_borders_gap_in_all() {
+        let mut gc = GridController::test();
+        gc.set_borders(
+            A1Selection::test_a1("*"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
+        gc.clear_format_borders(&A1Selection::test_a1("b5:c6"), None);
+
+        let sheet = gc.sheet(SheetId::TEST);
+
+        assert_eq!(sheet.borders.get_side(BorderSide::Top, pos![b5]), None);
+        assert_eq!(sheet.borders.get_side(BorderSide::Bottom, pos![b5]), None);
+        assert_eq!(sheet.borders.get_side(BorderSide::Left, pos![b5]), None);
+        assert_eq!(sheet.borders.get_side(BorderSide::Right, pos![b5]), None);
+
+        let horizontal = sheet.borders.horizontal_borders().unwrap();
+        assert_eq!(horizontal.len(), 4);
     }
 }

@@ -123,12 +123,12 @@ export class Borders extends Container {
     if (sheetId === this.cellsSheet.sheetId) {
       if (borders) {
         this.bordersFinite = {
-          horizontal: borders.horizontal?.filter((border) => border.width !== null) || null,
-          vertical: borders.vertical?.filter((border) => border.height !== null) || null,
+          horizontal: borders.horizontal?.filter((border) => border.width !== null && !border.unbounded) || null,
+          vertical: borders.vertical?.filter((border) => border.height !== null && !border.unbounded) || null,
         };
         this.bordersInfinite = {
-          horizontal: borders.horizontal?.filter((border) => border.width === null) || null,
-          vertical: borders.vertical?.filter((border) => border.height === null) || null,
+          horizontal: borders.horizontal?.filter((border) => border.width === null || border.unbounded) || null,
+          vertical: borders.vertical?.filter((border) => border.height === null || border.unbounded) || null,
         };
       }
       this.cellLines.removeChildren();
