@@ -227,6 +227,16 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
         column_data.finite_max().try_into().unwrap_or(UNBOUNDED)
     }
 
+    pub fn col_min(&self, column: i64) -> i64 {
+        let Some(column) = convert_coord(column) else {
+            return 0;
+        };
+        let Some(column_data) = self.0.get(column) else {
+            return 0;
+        };
+        column_data.min().unwrap_or(0) as i64
+    }
+
     /// Returns the upper bound on the finite regions in the given row. Returns
     /// 0 if there are no values.
     pub fn row_max(&self, row: i64) -> i64 {
@@ -250,6 +260,23 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
             // `i64::MAX`. In that case there's no correct answer.
             .try_into()
             .unwrap_or(UNBOUNDED)
+    }
+
+    /// Returns the lower bound on the finite regions in the given row. Returns
+    /// 0 if there are no values.
+    pub fn row_min(&self, row: i64) -> i64 {
+        let Some(row) = convert_coord(row) else {
+            return 0;
+        };
+        // Find the first block of columns that has a non-default value at the
+        // given row, then return `min()` for that block.
+        self.0
+            .iter()
+            .find_map(|column_block| {
+                let column_data = &column_block.value;
+                (*column_data.get(row)? != T::default()).then(|| column_block.start)
+            })
+            .unwrap_or(0) as i64
     }
 
     /// Removes a column and returns the values that used to inhabit it. Returns
@@ -931,5 +958,25 @@ mod tests {
         c.set_rect(1, 1, Some(3), Some(3), Some(true));
         c.set_rect(1, 1, None, None, None);
         assert!(c.is_all_default());
+    }
+
+    #[test]
+    fn test_col_min() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(5, 2, Some(10), Some(3), Some(true));
+        assert_eq!(c.col_min(1), 0);
+        assert_eq!(c.col_min(5), 2);
+        assert_eq!(c.col_min(10), 2);
+        assert_eq!(c.col_min(11), 0);
+    }
+
+    #[test]
+    fn test_row_min() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(5, 2, Some(10), Some(3), Some(true));
+        assert_eq!(c.row_min(1), 0);
+        assert_eq!(c.row_min(2), 5);
+        assert_eq!(c.row_min(3), 5);
+        assert_eq!(c.row_min(4), 0);
     }
 }

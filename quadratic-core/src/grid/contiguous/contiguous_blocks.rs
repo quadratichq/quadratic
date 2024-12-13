@@ -158,6 +158,18 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
             None => Some(0), // no values
         }
     }
+
+    /// Returns the lower bound on the finite regions. Returns 0 if there are no
+    pub fn min(&self) -> Option<u64>
+    where
+        T: Default,
+    {
+        self.non_default_blocks()
+            .rev()
+            .last()
+            .map(|block| block.start)
+    }
+
     /// Returns the block containing `coordinate`, if any.
     pub(crate) fn get_block_containing(&self, coordinate: u64) -> Option<&Block<T>> {
         self.0
