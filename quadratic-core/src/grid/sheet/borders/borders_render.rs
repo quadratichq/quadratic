@@ -9,7 +9,7 @@ use crate::{
 use super::*;
 
 impl Borders {
-    /// Returns horizontal borders in a rect
+    /// Returns horizontal borders for rendering.
     pub(crate) fn horizontal_borders(&self) -> Option<Vec<JsBorderHorizontal>> {
         let mut horizontal_rects = self
             .top
@@ -19,13 +19,7 @@ impl Borders {
                     x1,
                     y1.saturating_add(1),
                     x2,
-                    y2.map(|y2| {
-                        if y2 < u64::MAX {
-                            y2.saturating_add(1)
-                        } else {
-                            y2
-                        }
-                    }),
+                    y2.map(|y2| y2.saturating_add(1)),
                     border,
                 )
             }))
@@ -86,6 +80,7 @@ impl Borders {
         }
     }
 
+    /// Returns vertical borders for rendering.
     pub(crate) fn vertical_borders(&self) -> Option<Vec<JsBorderVertical>> {
         let mut vertical_rects = self
             .left
@@ -159,14 +154,10 @@ impl Borders {
         let horizontal = self.horizontal_borders();
         let vertical = self.vertical_borders();
 
-        if horizontal.is_none() && vertical.is_none() {
-            None
-        } else {
-            Some(JsBordersSheet {
-                horizontal,
-                vertical,
-            })
-        }
+        Some(JsBordersSheet {
+            horizontal,
+            vertical,
+        })
     }
 
     /// Sends the borders for the sheet to the client.

@@ -921,9 +921,15 @@ mod tests {
         c.set_rect(1, 1, Some(3), Some(3), None);
         assert!(c.is_all_default());
 
-        dbg!(&c);
         let copy = c.copy_column(3).unwrap();
-        dbg!(&copy);
         assert!(copy.is_all_default());
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(1, 1, Some(3), Some(3), Some(true));
+        c.set_rect(1, 1, None, None, None);
+        assert!(c.is_all_default());
     }
 }
