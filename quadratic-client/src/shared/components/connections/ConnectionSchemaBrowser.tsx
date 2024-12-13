@@ -28,7 +28,6 @@ export const ConnectionSchemaBrowser = ({
 }) => {
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid });
   const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
-  console.log('data', data);
 
   if (type === undefined || uuid === undefined) return null;
 
@@ -191,7 +190,6 @@ function TableListItem({
 }
 
 function getTableQuery({ table: { name, schema }, connectionKind }: { table: Table; connectionKind: string }) {
-  console.log('connectionKind', connectionKind);
   switch (connectionKind) {
     case 'POSTGRES':
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
