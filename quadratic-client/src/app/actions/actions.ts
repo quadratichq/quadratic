@@ -114,7 +114,7 @@ export enum Action {
   JumpCursorContentRight = 'jump_cursor_content_right',
   ExpandSelectionRight = 'expand_selection_right',
   ExpandSelectionContentRight = 'expand_selection_content_right',
-  GotoA0 = 'goto_A0',
+  GotoA1 = 'goto_A1',
   GotoBottomRight = 'goto_bottom_right',
   GotoRowStart = 'goto_row_start',
   GotoRowEnd = 'goto_row_end',

@@ -25,7 +25,7 @@ type SelectionActionSpec = Pick<
   | Action.ExpandSelectionRight
   | Action.ExpandSelectionContentRight
   | Action.MoveCursorRightWithSelection
-  | Action.GotoA0
+  | Action.GotoA1
   | Action.GotoBottomRight
   | Action.GotoRowStart
   | Action.GotoRowEnd
@@ -130,8 +130,8 @@ export const selectionActionsSpec: SelectionActionSpec = {
       cursor.selectTo(selectionEnd.x + 1, selectionEnd.y, false);
     },
   },
-  [Action.GotoA0]: {
-    label: 'Goto A0',
+  [Action.GotoA1]: {
+    label: 'Goto A1',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
   [Action.GotoBottomRight]: {
