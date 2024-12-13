@@ -45,16 +45,21 @@ export class Borders extends Container {
     this.spriteLines = [];
 
     events.on('bordersSheet', this.drawSheetCells);
-    events.on('sheetOffsets', this.setDirty);
+    events.on('sheetOffsets', this.sheetOffsetsChanged);
   }
 
   destroy() {
     events.off('bordersSheet', this.drawSheetCells);
-    events.off('sheetOffsets', this.setDirty);
+    events.off('sheetOffsets', this.sheetOffsetsChanged);
     super.destroy();
   }
 
-  setDirty = () => (this.dirty = true);
+  sheetOffsetsChanged = (sheetId: string) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      this.draw();
+      this.dirty = true;
+    }
+  };
 
   private get sheet(): Sheet {
     const sheet = sheets.getById(this.cellsSheet.sheetId);
@@ -72,7 +77,7 @@ export class Borders extends Container {
         ...drawCellBorder({
           position: new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y),
           horizontal: { type: border.line, color },
-          getSprite: this.getSprite,
+          getSprite: border.unbounded ? this.getSpriteSheet : this.getSprite,
         })
       );
       return end.y;
@@ -100,7 +105,7 @@ export class Borders extends Container {
         ...drawCellBorder({
           position: new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y),
           vertical: { type: border.line, color: border.color },
-          getSprite: this.getSprite,
+          getSprite: border.unbounded ? this.getSpriteSheet : this.getSprite,
         })
       );
       return end.x;
@@ -131,13 +136,17 @@ export class Borders extends Container {
           vertical: borders.vertical?.filter((border) => border.height === null || border.unbounded) || null,
         };
       }
-      this.cellLines.removeChildren();
-      const bounds = pixiApp.viewport.getVisibleBounds();
-      this.bordersFinite?.horizontal?.forEach((border) => this.drawHorizontal(border, bounds));
-      this.bordersFinite?.vertical?.forEach((border) => this.drawVertical(border, bounds));
+      this.draw();
       this.dirty = true;
     }
   };
+
+  private draw() {
+    this.cellLines.removeChildren();
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    this.bordersFinite?.horizontal?.forEach((border) => this.drawHorizontal(border, bounds));
+    this.bordersFinite?.vertical?.forEach((border) => this.drawVertical(border, bounds));
+  }
 
   private cull() {
     const bounds = pixiApp.viewport.getVisibleBounds();
