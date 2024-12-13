@@ -40,27 +40,6 @@ class Python {
     return pythonCore.sendGetCellsA1(this.transactionId, a1, lineNumber);
   };
 
-  private getCells = (
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
-    sheet?: string,
-    lineNumber?: number
-  ): JsGetCellResponse[] | undefined => {
-    if (!this.transactionId) {
-      throw new Error('No transactionId in getCells');
-    }
-    const cells = pythonCore.getCells(this.transactionId, x0, y0, x1 - x0 + 1, y1 - y0 + 1, sheet, lineNumber);
-    if (!cells) {
-      // we reload pyodide if there is an error getting cells
-      this.init();
-      pythonClient.sendPythonState('ready');
-    } else {
-      return cells;
-    }
-  };
-
   private init = async () => {
     const jwt = await pythonClient.getJwt();
 
@@ -134,7 +113,6 @@ class Python {
       ],
     });
 
-    this.pyodide.registerJsModule('getCellsDB', this.getCells);
     this.pyodide.registerJsModule('getCellsA1', this.getCellsA1);
 
     // patch requests https://github.com/koenvo/pyodide-http

@@ -59,25 +59,12 @@ class CorePython {
         core.calculationComplete(codeResult);
         break;
 
-      case 'pythonCoreGetCellsLength':
-        this.sendGetCellsLength(
-          e.data.sharedBuffer,
-          e.data.transactionId,
-          e.data.x,
-          e.data.y,
-          e.data.w,
-          e.data.h,
-          e.data.sheet,
-          e.data.lineNumber
-        );
-        break;
-
       case 'pythonCoreGetCellsA1Length':
         this.sendGetCellsA1Length(e.data.sharedBuffer, e.data.transactionId, e.data.a1, e.data.lineNumber);
         break;
 
-      case 'pythonCoreGetCellsData':
-        this.sendGetCellsData(e.data.id, e.data.sharedBuffer);
+      case 'pythonCoreGetCellsA1Data':
+        this.sendGetCellsA1Data(e.data.id, e.data.sharedBuffer);
         break;
 
       default:
@@ -91,36 +78,6 @@ class CorePython {
       return;
     }
     this.corePythonPort.postMessage(message);
-  }
-
-  private sendGetCellsLength(
-    sharedBuffer: SharedArrayBuffer,
-    transactionId: string,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    sheet?: string,
-    lineNumber?: number
-  ) {
-    const int32View = new Int32Array(sharedBuffer, 0, 3);
-    try {
-      const cells = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
-
-      // need to get the bytes of the string (which covers unicode characters)
-      const length = new Blob([cells]).size;
-
-      Atomics.store(int32View, 1, length);
-      if (length !== 0) {
-        const id = this.id++;
-        this.getCellsResponses[id] = cells;
-        Atomics.store(int32View, 2, id);
-      }
-      Atomics.store(int32View, 0, 1);
-    } catch (e) {
-      console.warn('[corePython] Error getting cells:', e);
-    }
-    Atomics.notify(int32View, 0, 1);
   }
 
   private sendGetCellsA1Length(
@@ -149,7 +106,7 @@ class CorePython {
     Atomics.notify(int32View, 0, 1);
   }
 
-  private sendGetCellsData(id: number, sharedBuffer: SharedArrayBuffer) {
+  private sendGetCellsA1Data(id: number, sharedBuffer: SharedArrayBuffer) {
     const cellsString = this.getCellsResponses[id];
     delete this.getCellsResponses[id];
     const int32View = new Int32Array(sharedBuffer, 0, 1);

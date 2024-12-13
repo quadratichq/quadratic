@@ -1,6 +1,5 @@
 from typing import Tuple
 
-import getCellsDB
 import getCellsA1
 
 from pandas import DataFrame, Series
@@ -62,41 +61,6 @@ def getCells(
     old = f"cells({p0[0]},{ p0[1]}, {p1[0]}, {p1[1]})"
     new = f'q.cells("{a1_0}:{a1_1}")'
     q.conversion_error(old, new)
-
-    # # Get Cells
-    # cells = getCellsDB(p0[0], p0[1], p1[0], p1[1], sheet, int(stack_line_number()))
-    # cell_range_width = p1[0] - p0[0] + 1
-    # cell_range_height = p1[1] - p0[1] + 1
-
-    # # TODO(ddimaria): consider removing after team decides this is the right approach
-    # # for always returning a dataframe.
-    # #
-    # # return a panda series for a 1d vertical array of cells
-    # # if cell_range_width == 1:
-    # #     cell_list = [result_to_value(cell) for cell in cells]
-    # #     return Series(cell_list)
-
-    # # Create empty df of the correct size
-    # df = DataFrame(
-    #     index=range(cell_range_height),
-    #     columns=range(cell_range_width),
-    # )
-
-    # # Fill DF
-    # x_offset = p0[0]
-    # y_offset = p0[1]
-
-    # for cell in cells:
-    #     value = to_python_type_df(cell.value, cell.type_name)
-    #     df.at[cell.y - y_offset, cell.x - x_offset] = value
-
-    # # Move the first row to the header
-    # if first_row_header:
-    #     df.rename(columns=df.iloc[0], inplace=True)
-    #     df.drop(df.index[0], inplace=True)
-    #     df.reset_index(drop=True, inplace=True)
-
-    # return df
 
 
 def cells(
