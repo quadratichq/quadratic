@@ -9,23 +9,23 @@ impl Borders {
 
         self.top.to_rects().for_each(|(x1, y1, x2, y2, _)| {
             if let (Some(x2), Some(y2)) = (x2, y2) {
-                bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64))
+                bounds.add_rect(Rect::new(x1, y1, x2, y2));
             }
         });
         self.bottom.to_rects().for_each(|(x1, y1, x2, y2, _)| {
             if let (Some(x2), Some(y2)) = (x2, y2) {
-                bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64))
+                bounds.add_rect(Rect::new(x1, y1, x2, y2));
             }
         });
 
         self.left.to_rects().for_each(|(x1, y1, x2, y2, _)| {
             if let (Some(x2), Some(y2)) = (x2, y2) {
-                bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64))
+                bounds.add_rect(Rect::new(x1, y1, x2, y2));
             }
         });
         self.right.to_rects().for_each(|(x1, y1, x2, y2, _)| {
             if let (Some(x2), Some(y2)) = (x2, y2) {
-                bounds.add_rect(Rect::new(x1 as i64, y1 as i64, x2 as i64, y2 as i64))
+                bounds.add_rect(Rect::new(x1, y1, x2, y2));
             }
         });
 

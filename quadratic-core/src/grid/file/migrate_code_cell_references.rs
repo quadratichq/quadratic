@@ -55,12 +55,9 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
                 if let Some(column) = sheet.get_column_mut(x) {
                     for y in bounds.y_range() {
                         if let Some(CellValue::Code(code_cell)) = column.values.get_mut(&y) {
-                            match code_cell.language {
-                                CodeCellLanguage::Formula => {
-                                    code_cell.code =
-                                        replace_a1_notation(&code_cell.code, (x + 1, y).into());
-                                }
-                                _ => {}
+                            if code_cell.language == CodeCellLanguage::Formula {
+                                code_cell.code =
+                                    replace_a1_notation(&code_cell.code, (x + 1, y).into());
                             }
                         }
                     }

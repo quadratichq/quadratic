@@ -85,22 +85,22 @@ impl SheetFormattingUpgrade {
         }
     }
 
-    pub fn to_schema(self) -> SheetFormattingSchema {
+    pub fn upgrade_schema(self) -> SheetFormattingSchema {
         SheetFormattingSchema {
-            align: self.align.to_schema(),
-            vertical_align: self.vertical_align.to_schema(),
-            wrap: self.wrap.to_schema(),
-            numeric_format: self.numeric_format.to_schema(),
-            numeric_decimals: self.numeric_decimals.to_schema(),
-            numeric_commas: self.numeric_commas.to_schema(),
-            bold: self.bold.to_schema(),
-            italic: self.italic.to_schema(),
-            text_color: self.text_color.to_schema(),
-            fill_color: self.fill_color.to_schema(),
-            render_size: self.render_size.to_schema(),
-            date_time: self.date_time.to_schema(),
-            underline: self.underline.to_schema(),
-            strike_through: self.strike_through.to_schema(),
+            align: self.align.upgrade_schema(),
+            vertical_align: self.vertical_align.upgrade_schema(),
+            wrap: self.wrap.upgrade_schema(),
+            numeric_format: self.numeric_format.upgrade_schema(),
+            numeric_decimals: self.numeric_decimals.upgrade_schema(),
+            numeric_commas: self.numeric_commas.upgrade_schema(),
+            bold: self.bold.upgrade_schema(),
+            italic: self.italic.upgrade_schema(),
+            text_color: self.text_color.upgrade_schema(),
+            fill_color: self.fill_color.upgrade_schema(),
+            render_size: self.render_size.upgrade_schema(),
+            date_time: self.date_time.upgrade_schema(),
+            underline: self.underline.upgrade_schema(),
+            strike_through: self.strike_through.upgrade_schema(),
         }
     }
 }

@@ -35,7 +35,7 @@ impl Borders {
                     *y1 as i64,
                     x2.map(|x2| x2 as i64),
                     y2.map(|y2| y2 as i64),
-                    Some(border.clone()),
+                    Some(*border),
                 );
             });
 
@@ -104,7 +104,7 @@ impl Borders {
                 *y1 as i64,
                 x2.map(|x2| x2 as i64),
                 y2.map(|y2| y2 as i64),
-                Some(border.clone()),
+                Some(*border),
             );
         });
 

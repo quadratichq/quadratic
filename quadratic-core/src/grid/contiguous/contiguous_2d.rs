@@ -274,7 +274,7 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
             .iter()
             .find_map(|column_block| {
                 let column_data = &column_block.value;
-                (*column_data.get(row)? != T::default()).then(|| column_block.start)
+                (*column_data.get(row)? != T::default()).then_some(column_block.start)
             })
             .unwrap_or(0) as i64
     }

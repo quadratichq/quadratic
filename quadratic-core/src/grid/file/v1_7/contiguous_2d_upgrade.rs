@@ -114,7 +114,7 @@ impl<T: Default + Clone + PartialEq> Contiguous2DUpgrade<T> {
         self.set_from(&Contiguous2DUpgrade::from_rect(x1, y1, x2, y2, Some(value)))
     }
 
-    pub fn to_schema(self) -> Contiguous2DSchema<T> {
+    pub fn upgrade_schema(self) -> Contiguous2DSchema<T> {
         self.into_xy_blocks()
             .map(|x_block| BlockSchema {
                 start: x_block.start,

@@ -28,10 +28,9 @@ impl CellRefRange {
                 if range.start.row() != 1 || range.end.row() != UNBOUNDED {
                     return false;
                 }
-
-                return true;
             }
         }
+        true
     }
 
     /// Returns true if the range is a single row range.
@@ -45,10 +44,9 @@ impl CellRefRange {
                 if range.start.col() != 1 || range.end.col() != UNBOUNDED {
                     return false;
                 }
-
-                return true;
             }
         }
+        true
     }
 
     /// Returns true if the range is a single position or a range that contains the given position.

@@ -417,7 +417,7 @@ fn upgrade_borders(borders: current::BordersSchema) -> v1_7_1::BordersSchema {
         }
     });
 
-    borders_upgrade.to_schema()
+    borders_upgrade.upgrade_schema()
 }
 
 fn upgrade_column(values: HashMap<String, v1_7_1::CellValueSchema>) -> v1_7_1::ColumnSchema {
@@ -614,7 +614,7 @@ fn upgrade_columns_formats(
         columns.push((x, upgrade_column(column.values)));
     }
 
-    let formats = formats_upgrade.to_schema();
+    let formats = formats_upgrade.upgrade_schema();
 
     (columns, formats)
 }

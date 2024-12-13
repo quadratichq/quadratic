@@ -27,9 +27,8 @@ impl A1Selection {
             let mut ranges = vec![];
             self.ranges.iter().for_each(|range| {
                 if !range.has_column_range(col) {
-                    ranges.push(range.clone());
+                    ranges.push(*range);
                 } else {
-                    let range = range.clone();
                     match range {
                         CellRefRange::Sheet { mut range } => {
                             if range.start.col() == range.end.col() {
@@ -137,9 +136,8 @@ impl A1Selection {
             let mut ranges = vec![];
             self.ranges.iter().for_each(|range| {
                 if !range.has_row_range(row) {
-                    ranges.push(range.clone());
+                    ranges.push(*range);
                 } else {
-                    let range = range.clone();
                     match range {
                         CellRefRange::Sheet { mut range } => {
                             if range.start.row() == range.end.row() {
@@ -363,7 +361,7 @@ impl A1Selection {
             return;
         };
         let last = match last {
-            CellRefRange::Sheet { range } => range.clone(),
+            CellRefRange::Sheet { range } => *range,
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
@@ -381,7 +379,7 @@ impl A1Selection {
             return;
         };
         let last = match last {
-            CellRefRange::Sheet { range } => range.clone(),
+            CellRefRange::Sheet { range } => *range,
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {

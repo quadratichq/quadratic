@@ -37,12 +37,12 @@ impl BordersUpgrade {
         }
     }
 
-    pub fn to_schema(self) -> BordersSchema {
+    pub fn upgrade_schema(self) -> BordersSchema {
         BordersSchema {
-            left: self.left.to_schema(),
-            right: self.right.to_schema(),
-            top: self.top.to_schema(),
-            bottom: self.bottom.to_schema(),
+            left: self.left.upgrade_schema(),
+            right: self.right.upgrade_schema(),
+            top: self.top.upgrade_schema(),
+            bottom: self.bottom.upgrade_schema(),
         }
     }
 }

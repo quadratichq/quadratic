@@ -110,7 +110,7 @@ impl GridController {
                             let new_code = match code.language {
                                 CodeCellLanguage::Formula => {
                                     GridController::adjust_formula_column_row(
-                                        &code,
+                                        code,
                                         &sheet.name,
                                         pos,
                                         column,
