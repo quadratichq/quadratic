@@ -83,6 +83,12 @@ export class UrlParamsUser {
       },
       clearMessages: true,
     });
+
+    // Remove the `prompt` param when we're done
+    const url = new URL(window.location.href);
+    params.delete('prompt');
+    url.search = params.toString();
+    window.history.replaceState(null, '', url.toString());
   };
 
   private setupListeners(params: URLSearchParams) {
