@@ -139,22 +139,34 @@ impl GridController {
                 }
             }
             BorderSelection::Clear => {
-                borders
-                    .top
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, None);
-                borders
-                    .bottom
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, None);
-                borders
-                    .left
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, None);
-                borders
-                    .right
-                    .get_or_insert_default()
-                    .set_rect(x1, y1, x2, y2, None);
+                borders.top.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.bottom.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.left.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
+                borders.right.get_or_insert_default().set_rect(
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    Some(ClearOption::Clear),
+                );
             }
         }
     }
@@ -250,6 +262,7 @@ mod tests {
 
     use super::*;
 
+    #[track_caller]
     fn assert_borders(borders: &BordersUpdates, pos: Pos, side: &str) {
         let top = side.contains("top");
         let bottom = side.contains("bottom");

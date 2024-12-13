@@ -48,7 +48,7 @@ mod tests {
     }
 
     #[test]
-    fn test_clear_borders() {
+    fn test_clear_format_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_borders(
@@ -84,6 +84,31 @@ mod tests {
 
         gc.clear_format_borders(&A1Selection::test_a1("*"), None);
 
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.borders.horizontal_borders().is_none());
+        assert!(sheet.borders.vertical_borders().is_none());
+    }
+
+    #[test]
+    fn test_clear_borders() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_borders(
+            A1Selection::test_a1("B3:D5"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.borders.horizontal_borders().is_some());
+        assert!(sheet.borders.vertical_borders().is_some());
+
+        gc.set_borders(
+            A1Selection::test_a1("B3:D5"),
+            BorderSelection::Clear,
+            None,
+            None,
+        );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders().is_none());
         assert!(sheet.borders.vertical_borders().is_none());
