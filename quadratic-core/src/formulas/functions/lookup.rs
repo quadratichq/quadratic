@@ -683,7 +683,7 @@ mod tests {
         let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
         assert_eq!(
             RunErrorMsg::CircularReference,
-            form.eval(&mut ctx).unwrap_err().msg,
+            form.eval(&mut ctx, None).unwrap_err().msg,
         );
 
         assert_eq!("35".to_string(), eval_to_string(&g, "INDIRECT(\"D5\")"));

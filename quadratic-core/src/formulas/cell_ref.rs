@@ -265,7 +265,14 @@ impl CellRefCoord {
     /// a row coordinate.
     fn row_string(self, base: i64) -> String {
         let row = self.resolve_from(base);
-        format!("{}{row}", self.prefix())
+        format!("{}{}", Self::remove_unbounded(row), self.prefix())
+    }
+    fn remove_unbounded(value: i64) -> String {
+        if value == UNBOUNDED {
+            return "".to_string();
+        }
+
+        value.to_string()
     }
 
     /// Returns whether the coordinate is relative (i.e., no '$' prefix).
