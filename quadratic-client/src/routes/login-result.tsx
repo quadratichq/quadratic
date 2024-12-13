@@ -15,7 +15,6 @@ export const loader = async () => {
 
       // Special case for first-time users
       if (userCreated) {
-        console.log('First-time user created');
         try {
           // @ts-expect-error
           window.dataLayer.push({
