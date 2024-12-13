@@ -261,7 +261,6 @@ Target location is the top left corner of the target location on the currently o
         if (!sourceRect) {
           return 'Invalid source selection, this should be a single rectangle, not a range';
         }
-        console.log(sourceRect);
         const sheetRect: SheetRect = {
           min: {
             x: sourceRect.min.x,
@@ -275,7 +274,6 @@ Target location is the top left corner of the target location on the currently o
             id: sheets.current,
           },
         };
-        console.log(sheetRect);
 
         const targetSelection = stringToSelection(target_top_left_position, sheets.current, sheets.getSheetIdNameMap());
         if (!targetSelection.isSingleSelection()) {

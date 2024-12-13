@@ -163,8 +163,10 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::GridController, grid::CodeCellLanguage,
-        wasm_bindings::js::expect_js_call_count, CellValue, Pos, SheetPos,
+        controller::GridController,
+        grid::CodeCellLanguage,
+        wasm_bindings::js::{clear_js_calls, expect_js_call_count},
+        CellValue, Pos, SheetPos,
     };
     use serial_test::{parallel, serial};
 
@@ -233,6 +235,8 @@ mod tests {
     #[test]
     #[serial]
     fn execute_code() {
+        clear_js_calls();
+
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(

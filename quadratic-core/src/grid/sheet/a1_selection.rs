@@ -147,7 +147,6 @@ impl Sheet {
             };
             ai_context_rects.push(js_cell_value_pos_ai_context);
         }
-        dbgjs!("");
         ai_context_rects
     }
 
