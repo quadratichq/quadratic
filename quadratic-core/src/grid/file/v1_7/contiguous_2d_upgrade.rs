@@ -132,6 +132,14 @@ impl<T: Default + Clone + PartialEq> Contiguous2DUpgrade<T> {
     }
 }
 
+// normalizes the bounds so that the first is always less than the second
+fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
+    match b {
+        Some(b) if b < a => (b, Some(a)),
+        _ => (a, b),
+    }
+}
+
 /// Casts an `i64` rectangle that INCLUDES both bounds to a `u64` rectangle that
 /// INCLUDES the starts and EXCLUDES the ends. Clamps the results to greater
 /// than 1. Returns `None` if there is no part of the rectangle that intersects
@@ -146,6 +154,9 @@ fn convert_rect(
     x2: Option<i64>,
     y2: Option<i64>,
 ) -> Option<(u64, u64, u64, u64)> {
+    let (x1, x2) = sort_bounds(x1, x2);
+    let (y1, y2) = sort_bounds(y1, y2);
+
     let x1 = x1.try_into().unwrap_or(0).max(1);
     let x2 = x2
         .map(|x| x.try_into().unwrap_or(0))

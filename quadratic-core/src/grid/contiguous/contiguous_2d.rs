@@ -551,6 +551,14 @@ fn convert_coord(x: i64) -> Option<u64> {
     x.try_into().ok().filter(|&x| x >= 1)
 }
 
+// normalizes the bounds so that the first is always less than the second
+fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
+    match b {
+        Some(b) if b < a => (b, Some(a)),
+        _ => (a, b),
+    }
+}
+
 /// Casts an `i64` rectangle that INCLUDES both bounds to a `u64` rectangle that
 /// INCLUDES the starts and EXCLUDES the ends. Clamps the results to greater
 /// than 1. Returns `None` if there is no part of the rectangle that intersects
@@ -565,6 +573,9 @@ fn convert_rect(
     x2: Option<i64>,
     y2: Option<i64>,
 ) -> Option<(u64, u64, u64, u64)> {
+    let (x1, x2) = sort_bounds(x1, x2);
+    let (y1, y2) = sort_bounds(y1, y2);
+
     let x1 = x1.try_into().unwrap_or(0).max(1);
     let x2 = x2
         .map(|x| x.try_into().unwrap_or(0))
@@ -758,6 +769,19 @@ mod tests {
     fn test_new_from_selection() {
         let c = Contiguous2D::<Option<bool>>::new_from_selection(
             &A1Selection::test_a1("A1:B2"),
+            Some(true),
+        );
+        assert_eq!(c.get(pos![A1]), Some(true));
+        assert_eq!(c.get(pos![A2]), Some(true));
+        assert_eq!(c.get(pos![B1]), Some(true));
+        assert_eq!(c.get(pos![B2]), Some(true));
+        assert_eq!(c.get(pos![C1]), None);
+    }
+
+    #[test]
+    fn test_new_from_reverse_selection() {
+        let c = Contiguous2D::<Option<bool>>::new_from_selection(
+            &A1Selection::test_a1("B2:A1"),
             Some(true),
         );
         assert_eq!(c.get(pos![A1]), Some(true));
