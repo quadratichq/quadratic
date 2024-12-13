@@ -8,29 +8,6 @@ use crate::{
 };
 
 impl SheetFormatting {
-    /// Returns the maximum value in the column for which formatting exists.
-    pub fn column_max(&self, column: i64) -> Option<i64> {
-        [
-            self.align.col_max(column),
-            self.vertical_align.col_max(column),
-            self.wrap.col_max(column),
-            self.numeric_format.col_max(column),
-            self.numeric_decimals.col_max(column),
-            self.numeric_commas.col_max(column),
-            self.bold.col_max(column),
-            self.italic.col_max(column),
-            self.text_color.col_max(column),
-            self.fill_color.col_max(column),
-            self.render_size.col_max(column),
-            self.date_time.col_max(column),
-            self.underline.col_max(column),
-            self.strike_through.col_max(column),
-        ]
-        .iter()
-        .copied()
-        .max()
-    }
-
     pub fn has_format_in_column(&self, column: i64) -> bool {
         self.align.col_max(column) > 0
             || self.vertical_align.col_max(column) > 0
@@ -149,6 +126,32 @@ impl SheetFormatting {
         bounds.into()
     }
 
+    /// Returns the minimum value in the column for which formatting exists.
+    pub fn col_min(&self, column: i64) -> Option<i64> {
+        let col_mins = vec![
+            self.align.col_min(column),
+            self.vertical_align.col_min(column),
+            self.wrap.col_min(column),
+            self.numeric_format.col_min(column),
+            self.numeric_decimals.col_min(column),
+            self.numeric_commas.col_min(column),
+            self.bold.col_min(column),
+            self.italic.col_min(column),
+            self.text_color.col_min(column),
+            self.fill_color.col_min(column),
+            self.render_size.col_min(column),
+            self.date_time.col_min(column),
+            self.underline.col_min(column),
+            self.strike_through.col_min(column),
+        ];
+        let min = col_mins.iter().filter(|&&x| x != 0).min()?;
+        if *min == 0 {
+            None
+        } else {
+            Some(*min)
+        }
+    }
+
     /// Returns the maximum value in the column for which formatting exists.
     pub fn col_max(&self, column: i64) -> Option<i64> {
         let col_maxes = vec![
@@ -172,6 +175,31 @@ impl SheetFormatting {
             None
         } else {
             Some(*max)
+        }
+    }
+
+    pub fn row_min(&self, row: i64) -> Option<i64> {
+        let row_mins = vec![
+            self.align.row_min(row),
+            self.vertical_align.row_min(row),
+            self.wrap.row_min(row),
+            self.numeric_format.row_min(row),
+            self.numeric_decimals.row_min(row),
+            self.numeric_commas.row_min(row),
+            self.bold.row_min(row),
+            self.italic.row_min(row),
+            self.text_color.row_min(row),
+            self.fill_color.row_min(row),
+            self.render_size.row_min(row),
+            self.date_time.row_min(row),
+            self.underline.row_min(row),
+            self.strike_through.row_min(row),
+        ];
+        let min = row_mins.iter().filter(|&&x| x != 0).min()?;
+        if *min == 0 {
+            None
+        } else {
+            Some(*min)
         }
     }
 
@@ -220,14 +248,6 @@ mod tests {
     }
 
     #[test]
-    fn test_column_max() {
-        let formatting = create_test_formatting();
-        assert_eq!(formatting.column_max(1), Some(2)); // Column 0 has entries up to row 2
-        assert_eq!(formatting.column_max(2), Some(1));
-        assert_eq!(formatting.column_max(3), Some(0)); // Column 2 has no entries
-    }
-
-    #[test]
     fn test_format() {
         let formatting = create_test_formatting();
 
@@ -268,5 +288,71 @@ mod tests {
 
         assert!(formatting.row_has_wrap(1));
         assert!(!formatting.row_has_wrap(4));
+    }
+
+    #[test]
+    fn test_row_min() {
+        let formatting = create_test_formatting();
+        assert_eq!(formatting.row_min(1), Some(1));
+        assert_eq!(formatting.row_min(2), Some(1));
+        assert_eq!(formatting.row_min(3), None);
+    }
+
+    #[test]
+    fn test_has_format_in_column() {
+        let formatting = create_test_formatting();
+
+        // Column A (1) has align formatting
+        assert!(formatting.has_format_in_column(1));
+        // Column C (3) has no formatting
+        assert!(!formatting.has_format_in_column(3));
+    }
+
+    #[test]
+    fn test_has_format_in_row() {
+        let formatting = create_test_formatting();
+
+        // Row 1 has align, bold, and wrap formatting
+        assert!(formatting.has_format_in_row(1));
+        // Row 3 has no formatting
+        assert!(!formatting.has_format_in_row(3));
+    }
+
+    #[test]
+    fn test_finite_bounds() {
+        let formatting = create_test_formatting();
+
+        let bounds = formatting.finite_bounds().unwrap();
+        // Should include A1, B1, D1, and A2
+        assert_eq!(bounds.min.x, 1); // Column A
+        assert_eq!(bounds.max.x, 4); // Column D
+        assert_eq!(bounds.min.y, 1); // Row 1
+        assert_eq!(bounds.max.y, 2); // Row 2
+    }
+
+    #[test]
+    fn test_col_min() {
+        let formatting = create_test_formatting();
+
+        assert_eq!(formatting.col_min(1), Some(1));
+        assert_eq!(formatting.col_min(2), Some(1));
+    }
+
+    #[test]
+    fn test_col_max() {
+        let formatting = create_test_formatting();
+
+        assert_eq!(formatting.col_max(1), Some(2));
+        assert_eq!(formatting.col_max(3), None);
+    }
+
+    #[test]
+    fn test_row_max() {
+        let formatting = create_test_formatting();
+
+        // Row 1 has formatting up to column D (4)
+        assert_eq!(formatting.row_max(1), Some(4));
+        // Row 3 has no formatting
+        assert_eq!(formatting.row_max(3), None);
     }
 }
