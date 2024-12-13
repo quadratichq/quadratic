@@ -101,9 +101,8 @@ export const router = createBrowserRouter(
               </Route>
             </Route>
           </Route>
+          <Route path="*" Component={Page404.Component} />
         </Route>
-
-        <Route path="*" Component={Page404.Component} />
       </Route>
       <Route path={ROUTES.LOGIN} loader={Login.loader} />
       <Route path={ROUTES.LOGIN_RESULT} loader={LoginResult.loader} />
