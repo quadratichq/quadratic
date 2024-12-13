@@ -1,37 +1,84 @@
-use std::fmt;
-use std::str::FromStr;
-
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 use super::{A1Error, CellRefCoord};
-use crate::Pos;
+use crate::{Pos, UNBOUNDED};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct CellRefRangeEnd {
-    pub col: Option<CellRefCoord>,
-    pub row: Option<CellRefCoord>,
+    pub col: CellRefCoord,
+    pub row: CellRefCoord,
 }
 impl fmt::Display for CellRefRangeEnd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(col) = self.col {
-            col.fmt_as_column(f)?;
-        }
-        if let Some(row) = self.row {
-            row.fmt_as_row(f)?;
-        }
+        self.col.fmt_as_column(f)?;
+        self.row.fmt_as_row(f)?;
         Ok(())
     }
 }
-impl FromStr for CellRefRangeEnd {
-    type Err = A1Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl CellRefRangeEnd {
+    pub const START: Self = Self {
+        col: CellRefCoord::START,
+        row: CellRefCoord::START,
+    };
+    pub const UNBOUNDED: Self = Self {
+        col: CellRefCoord::UNBOUNDED,
+        row: CellRefCoord::UNBOUNDED,
+    };
+
+    pub fn new_relative_xy(x: i64, y: i64) -> Self {
+        let col = CellRefCoord::new_rel(x);
+        let row = CellRefCoord::new_rel(y);
+        CellRefRangeEnd { col, row }
+    }
+    pub fn new_relative_pos(pos: Pos) -> Self {
+        Self::new_relative_xy(pos.x, pos.y)
+    }
+
+    pub fn new_infinite_col_end(x: i64) -> Self {
+        Self::new_relative_xy(x, UNBOUNDED)
+    }
+
+    pub fn new_infinite_row_end(y: i64) -> Self {
+        Self::new_relative_xy(UNBOUNDED, y)
+    }
+
+    pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) {
+        self.col.translate_in_place(delta_x);
+        self.row.translate_in_place(delta_y);
+    }
+
+    pub fn translate(self, delta_x: i64, delta_y: i64) -> Self {
+        CellRefRangeEnd {
+            col: self.col.translate(delta_x),
+            row: self.row.translate(delta_y),
+        }
+    }
+
+    // TODO: `impl PartialEq<Pos> for CellRefRangeEnd`
+    pub fn is_pos(self, pos: Pos) -> bool {
+        self.col.coord == pos.x && self.row.coord == pos.y
+    }
+
+    /// Unpacks the x coordinate
+    pub fn col(self) -> i64 {
+        self.col.coord
+    }
+
+    /// Unpacks the y coordinate
+    pub fn row(self) -> i64 {
+        self.row.coord
+    }
+
+    /// Parses the components of a CellRefRangeEnd.
+    fn parse_components(s: &str) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
         lazy_static! {
             static ref A1_REGEX: Regex =
                 Regex::new(r#"(\$?)([A-Za-z]*)(\$?)(\d*)"#).expect("bad regex");
@@ -52,14 +99,14 @@ impl FromStr for CellRefRangeEnd {
             std::mem::swap(&mut row_is_absolute, &mut col_is_absolute);
         }
 
-        let col: Option<i64> = match col_str {
+        let col = match col_str {
             "" => None,
             _ => Some(
                 super::column_from_name(col_str)
                     .ok_or_else(|| A1Error::InvalidColumn(col_str.to_owned()))?,
             ),
         };
-        let row = match row_str {
+        let row: Option<i64> = match row_str {
             "" => None,
             _ => Some(
                 row_str
@@ -74,72 +121,41 @@ impl FromStr for CellRefRangeEnd {
             return Err(A1Error::SpuriousDollarSign(s.to_owned()));
         }
 
+        Ok((col, col_is_absolute, row, row_is_absolute))
+    }
+
+    /// Parses the components of a CellRefRangeEnd.
+    pub fn parse_start(s: &str) -> Result<CellRefRangeEnd, A1Error> {
+        let (col, col_is_absolute, row, row_is_absolute) = Self::parse_components(s)?;
         Ok(CellRefRangeEnd {
-            col: col.map(|coord| {
-                let is_absolute = col_is_absolute;
-                CellRefCoord { coord, is_absolute }
-            }),
-            row: row.map(|coord| {
-                let is_absolute = row_is_absolute;
-                CellRefCoord { coord, is_absolute }
-            }),
+            col: CellRefCoord {
+                coord: col.unwrap_or(1),
+                is_absolute: col_is_absolute,
+            },
+            row: CellRefCoord {
+                coord: row.unwrap_or(1),
+                is_absolute: row_is_absolute,
+            },
         })
     }
-}
-impl CellRefRangeEnd {
-    /// End of a range that is unbounded on both axes.
-    pub const UNBOUNDED: Self = Self {
-        col: None,
-        row: None,
-    };
 
-    pub fn new_infinite_row(row: i64) -> Self {
-        CellRefRangeEnd {
-            col: None,
-            row: Some(CellRefCoord::new_rel(row)),
-        }
+    /// Parses the components of a CellRefRangeEnd.
+    pub fn parse_end(s: &str) -> Result<CellRefRangeEnd, A1Error> {
+        let (col, col_is_absolute, row, row_is_absolute) = Self::parse_components(s)?;
+        Ok(CellRefRangeEnd {
+            col: CellRefCoord {
+                coord: col.unwrap_or(UNBOUNDED),
+                is_absolute: col_is_absolute,
+            },
+            row: CellRefCoord {
+                coord: row.unwrap_or(UNBOUNDED),
+                is_absolute: row_is_absolute,
+            },
+        })
     }
 
-    pub fn new_infinite_col(col: i64) -> Self {
-        CellRefRangeEnd {
-            col: Some(CellRefCoord::new_rel(col)),
-            row: None,
-        }
-    }
-
-    pub fn new_relative_xy(x: i64, y: i64) -> Self {
-        let col = Some(CellRefCoord::new_rel(x));
-        let row = Some(CellRefCoord::new_rel(y));
-        CellRefRangeEnd { col, row }
-    }
-    pub fn new_relative_pos(pos: Pos) -> Self {
-        Self::new_relative_xy(pos.x, pos.y)
-    }
-
-    pub fn new_relative_column(x: i64) -> Self {
-        let col = Some(CellRefCoord::new_rel(x));
-        CellRefRangeEnd { col, row: None }
-    }
-
-    pub fn new_relative_row(y: i64) -> Self {
-        let row = Some(CellRefCoord::new_rel(y));
-        CellRefRangeEnd { col: None, row }
-    }
-
-    pub fn translate_in_place(&mut self, delta_x: i64, delta_y: i64) {
-        if let Some(c) = self.col.as_mut() {
-            c.translate_in_place(delta_x);
-        }
-        if let Some(r) = self.row.as_mut() {
-            r.translate_in_place(delta_y);
-        }
-    }
-
-    pub fn translate(self, delta_x: i64, delta_y: i64) -> Self {
-        CellRefRangeEnd {
-            col: self.col.map(|c| c.translate(delta_x)),
-            row: self.row.map(|r| r.translate(delta_y)),
-        }
+    pub fn is_unbounded(self) -> bool {
+        self.col.coord == UNBOUNDED || self.row.coord == UNBOUNDED
     }
 
     pub fn adjust_column_row_in_place(
@@ -149,17 +165,13 @@ impl CellRefRangeEnd {
         delta: i64,
     ) {
         if let Some(column) = column {
-            if let Some(c) = self.col.as_mut() {
-                if c.coord >= column {
-                    c.coord = c.coord.saturating_add(delta).max(1);
-                }
+            if !self.col.is_unbounded() && self.col() >= column {
+                self.col.coord = self.col.coord.saturating_add(delta).max(1);
             }
         }
         if let Some(row) = row {
-            if let Some(r) = self.row.as_mut() {
-                if r.coord >= row {
-                    r.coord = r.coord.saturating_add(delta).max(1);
-                }
+            if !self.row.is_unbounded() && self.row() >= row {
+                self.row.coord = self.row.coord.saturating_add(delta).max(1);
             }
         }
     }
@@ -172,35 +184,7 @@ impl CellRefRangeEnd {
 
     /// Returns whether the range end is missing a row or column number.
     pub fn is_multi_range(self) -> bool {
-        self.col.is_none() || self.row.is_none()
-    }
-
-    // TODO: `impl PartialEq<Pos> for CellRefRangeEnd`
-    pub fn is_pos(self, pos: Pos) -> bool {
-        self.col.map_or(false, |col| col.coord == pos.x)
-            && self.row.map_or(false, |row| row.coord == pos.y)
-    }
-
-    /// Returns the XY coordinates of a range.
-    pub fn unpack_xy(self) -> [Option<i64>; 2] {
-        [self.col.map(|c| c.coord), self.row.map(|c| c.coord)]
-    }
-
-    pub fn unpack_xy_default(self, default: i64) -> [i64; 2] {
-        [
-            self.col.map_or(default, |c| c.coord),
-            self.row.map_or(default, |c| c.coord),
-        ]
-    }
-
-    /// Unpacks the x coordinate or returns 1
-    pub fn col_or(self, default: i64) -> i64 {
-        self.col.map_or(default, |c| c.coord)
-    }
-
-    /// Unpacks the y coordinate or returns 1
-    pub fn row_or(self, default: i64) -> i64 {
-        self.row.map_or(default, |c| c.coord)
+        self.col.is_unbounded() || self.row.is_unbounded()
     }
 }
 
@@ -210,59 +194,100 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_is_multi_range() {
-        assert!(CellRefRangeEnd::new_relative_column(1).is_multi_range());
-        assert!(CellRefRangeEnd::new_relative_row(1).is_multi_range());
-        assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_multi_range());
-    }
-
-    #[test]
     fn test_cell_ref_range_end_is_pos() {
         assert!(CellRefRangeEnd::new_relative_xy(1, 2).is_pos(Pos { x: 1, y: 2 }));
         assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_pos(Pos { x: 2, y: 1 }));
         assert!(!CellRefRangeEnd::new_relative_xy(1, 1).is_pos(Pos { x: 1, y: 2 }));
-        assert!(!CellRefRangeEnd::new_relative_column(1).is_pos(Pos { x: 1, y: 1 }));
-        assert!(!CellRefRangeEnd::new_relative_row(1).is_pos(Pos { x: 1, y: 1 }));
     }
 
     #[test]
-    fn test_parse_cell_ref_range_end() {
+    fn test_parse_cell_ref_range_end_start() {
         assert_eq!(
-            "A1".parse::<CellRefRangeEnd>().unwrap(),
+            CellRefRangeEnd::parse_start("A1").unwrap(),
             CellRefRangeEnd::new_relative_xy(1, 1)
         );
         assert_eq!(
-            "$A$1".parse::<CellRefRangeEnd>().unwrap(),
+            CellRefRangeEnd::parse_start("$A$1").unwrap(),
             CellRefRangeEnd {
-                col: Some(CellRefCoord::new_abs(1)),
-                row: Some(CellRefCoord::new_abs(1))
+                col: CellRefCoord::new_abs(1),
+                row: CellRefCoord::new_abs(1)
             }
         );
         assert_eq!(
-            "A".parse::<CellRefRangeEnd>().unwrap(),
-            CellRefRangeEnd::new_relative_column(1)
-        );
-        assert_eq!(
-            "1".parse::<CellRefRangeEnd>().unwrap(),
-            CellRefRangeEnd::new_relative_row(1)
-        );
-        assert_eq!(
-            "$1".parse::<CellRefRangeEnd>().unwrap(),
+            CellRefRangeEnd::parse_start("A").unwrap(),
             CellRefRangeEnd {
-                col: None,
-                row: Some(CellRefCoord::new_abs(1))
+                col: CellRefCoord::new_rel(1),
+                row: CellRefCoord::START,
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_start("1").unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::new_rel(1),
+                row: CellRefCoord::new_rel(1)
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_start("$1").unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::new_rel(1),
+                row: CellRefCoord::new_abs(1)
             }
         );
     }
 
     #[test]
-    fn test_parse_invalid_cell_ref_range_end() {
-        assert!("$".parse::<CellRefRangeEnd>().is_err());
-        assert!("A0".parse::<CellRefRangeEnd>().is_err());
-        assert!("0".parse::<CellRefRangeEnd>().is_err());
-        assert!("$A$".parse::<CellRefRangeEnd>().is_err());
+    fn test_parse_cell_ref_range_end_end() {
+        assert_eq!(
+            CellRefRangeEnd::parse_end("A1").unwrap(),
+            CellRefRangeEnd::new_relative_xy(1, 1)
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("$A$1").unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::new_abs(1),
+                row: CellRefCoord::new_abs(1)
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("1").unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::new_rel(UNBOUNDED),
+                row: CellRefCoord::START,
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("1").unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::new_rel(1)
+            }
+        );
+        assert_eq!(
+            CellRefRangeEnd::parse_end("$1").unwrap(),
+            CellRefRangeEnd {
+                col: CellRefCoord::new_rel(UNBOUNDED),
+                row: CellRefCoord::new_abs(1)
+            }
+        );
+    }
 
-        assert!("".parse::<CellRefRangeEnd>().is_ok());
+    #[test]
+    fn test_parse_invalid_cell_ref_range_end_start() {
+        assert!(CellRefRangeEnd::parse_start("$").is_err());
+        assert!(CellRefRangeEnd::parse_start("A0").is_err());
+        assert!(CellRefRangeEnd::parse_start("0").is_err());
+        assert!(CellRefRangeEnd::parse_start("$A$").is_err());
+        assert!(CellRefRangeEnd::parse_start("").is_ok());
+    }
+
+    #[test]
+    fn test_parse_invalid_cell_ref_range_end_end() {
+        assert!(CellRefRangeEnd::parse_end("$").is_err());
+        assert!(CellRefRangeEnd::parse_end("A0").is_err());
+        assert!(CellRefRangeEnd::parse_end("0").is_err());
+        assert!(CellRefRangeEnd::parse_end("$A$").is_err());
+        assert!(CellRefRangeEnd::parse_end("").is_ok());
     }
 
     #[test]
@@ -270,14 +295,23 @@ mod tests {
         assert_eq!(CellRefRangeEnd::new_relative_xy(1, 1).to_string(), "A1");
         assert_eq!(
             CellRefRangeEnd {
-                col: Some(CellRefCoord::new_abs(1)),
-                row: Some(CellRefCoord::new_abs(1))
+                col: CellRefCoord::new_abs(1),
+                row: CellRefCoord::new_abs(1)
             }
             .to_string(),
             "$A$1"
         );
-        assert_eq!(CellRefRangeEnd::new_relative_column(1).to_string(), "A");
-        assert_eq!(CellRefRangeEnd::new_relative_row(1).to_string(), "1");
+        assert_eq!(
+            CellRefRangeEnd {
+                col: CellRefCoord::new_rel(1),
+                row: CellRefCoord::UNBOUNDED
+            }
+            .to_string(),
+            "A"
+        );
+        assert_eq!(CellRefRangeEnd::new_infinite_col_end(1).to_string(), "A");
+        assert_eq!(CellRefRangeEnd::new_infinite_col_end(1).to_string(), "A");
+        assert_eq!(CellRefRangeEnd::new_infinite_row_end(1).to_string(), "1");
     }
 
     #[test]
@@ -307,48 +341,21 @@ mod tests {
 
     #[test]
     fn test_unbounded() {
-        assert_eq!(CellRefRangeEnd::UNBOUNDED.col, None);
-        assert_eq!(CellRefRangeEnd::UNBOUNDED.row, None);
-        assert!(CellRefRangeEnd::UNBOUNDED.is_multi_range());
+        assert_eq!(CellRefRangeEnd::UNBOUNDED.col.coord, UNBOUNDED);
+        assert_eq!(CellRefRangeEnd::UNBOUNDED.row.coord, UNBOUNDED);
+        assert!(CellRefRangeEnd::UNBOUNDED.is_unbounded());
     }
 
     #[test]
-    fn test_unpack_xy() {
-        assert_eq!(
-            CellRefRangeEnd::new_relative_xy(2, 2).unpack_xy(),
-            [Some(2), Some(2)]
-        );
-        assert_eq!(CellRefRangeEnd::UNBOUNDED.unpack_xy(), [None, None]);
+    fn test_col() {
+        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).col(), 2);
+        assert_eq!(CellRefRangeEnd::UNBOUNDED.col(), UNBOUNDED);
     }
 
     #[test]
-    fn test_unpack_xy_default() {
-        assert_eq!(
-            CellRefRangeEnd::new_relative_xy(2, 2).unpack_xy_default(1),
-            [2, 2]
-        );
-        assert_eq!(CellRefRangeEnd::UNBOUNDED.unpack_xy_default(1), [1, 1]);
-
-        assert_eq!(
-            CellRefRangeEnd::new_relative_column(2).unpack_xy_default(1),
-            [2, 1]
-        );
-        assert_eq!(
-            CellRefRangeEnd::new_relative_row(2).unpack_xy_default(1),
-            [1, 2]
-        );
-    }
-
-    #[test]
-    fn test_x_or() {
-        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).col_or(1), 2);
-        assert_eq!(CellRefRangeEnd::UNBOUNDED.col_or(1), 1);
-    }
-
-    #[test]
-    fn test_y_or() {
-        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).row_or(1), 3);
-        assert_eq!(CellRefRangeEnd::UNBOUNDED.row_or(1), 1);
+    fn test_row() {
+        assert_eq!(CellRefRangeEnd::new_relative_xy(2, 3).row(), 3);
+        assert_eq!(CellRefRangeEnd::UNBOUNDED.row(), UNBOUNDED);
     }
 
     #[test]
@@ -373,8 +380,8 @@ mod tests {
         ref_end.adjust_column_row_in_place(Some(1), None, -1);
         assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(1, 3));
 
-        let mut ref_end = CellRefRangeEnd::new_relative_xy(i64::MAX, 3);
+        let mut ref_end = CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3);
         ref_end.adjust_column_row_in_place(Some(1), None, 1);
-        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(i64::MAX, 3));
+        assert_eq!(ref_end, CellRefRangeEnd::new_relative_xy(UNBOUNDED, 3));
     }
 }

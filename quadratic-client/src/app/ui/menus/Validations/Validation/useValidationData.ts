@@ -6,6 +6,7 @@ import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateShowValidationAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { bigIntReplacer } from '@/app/bigint';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Validation, ValidationRule } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -57,12 +58,6 @@ export const useValidationData = (): ValidationData => {
     setMoreOptions((old) => !old);
   }, []);
 
-  // Used to coerce bigints to numbers for JSON.stringify; see
-  // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
-  const bigIntReplacer = (_key: string, value: any): any => {
-    return typeof value === 'bigint' ? Number(value) : value;
-  };
-
   const unsaved = useMemo(() => {
     if (originalValidation && validation) {
       return JSON.stringify(originalValidation, bigIntReplacer) !== JSON.stringify(validation, bigIntReplacer);
@@ -78,13 +73,6 @@ export const useValidationData = (): ValidationData => {
       setTriggerError(true);
       return false;
     }
-
-    // todo...
-    // // if selection is empty, then show error
-    // if (getSelectionString(validation.selection) === '') {
-    //   setTriggerError(true);
-    //   return false;
-    // }
 
     if (validation.rule === 'None') {
       return true;

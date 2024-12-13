@@ -298,17 +298,16 @@ export class Cursor extends Container {
       this.drawInlineCursorModeIndicator();
 
       if (!pixiAppSettings.input.show) {
-        const ranges: CellRefRange[] = cursor.jsSelection.getRanges();
-        this.drawFiniteCursor(ranges);
-        if (columnRow) {
-          drawInfiniteSelection({
-            g: this.graphics,
-            color: pixiApp.accentColor,
-            alpha: FILL_ALPHA,
-            ranges,
-          });
-        }
-        if (!columnRow && cursor.rangeCount() === 1) {
+        const finiteRanges: CellRefRange[] = cursor.getFiniteRanges();
+        this.drawFiniteCursor(finiteRanges);
+        const infiniteRanges: CellRefRange[] = cursor.getInfiniteRanges();
+        drawInfiniteSelection({
+          g: this.graphics,
+          color: pixiApp.accentColor,
+          alpha: FILL_ALPHA,
+          ranges: infiniteRanges,
+        });
+        if (!columnRow && cursor.rangeCount() === 1 && !cursor.getInfiniteRanges().length) {
           this.drawCursorIndicator();
         }
       }

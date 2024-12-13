@@ -3,10 +3,11 @@ use super::*;
 impl RefRangeBounds {
     /// Translates the range in place by the given delta.
     pub fn translate_in_place(&mut self, x: i64, y: i64) {
-        self.start.translate_in_place(x, y);
-        if let Some(end) = self.end.as_mut() {
-            end.translate_in_place(x, y);
+        if self.is_all() {
+            return;
         }
+        self.start.translate_in_place(x, y);
+        self.end.translate_in_place(x, y);
     }
 
     /// Returns a new range translated by the given delta.
@@ -23,9 +24,7 @@ impl RefRangeBounds {
         delta: i64,
     ) {
         self.start.adjust_column_row_in_place(column, row, delta);
-        if let Some(end) = self.end.as_mut() {
-            end.adjust_column_row_in_place(column, row, delta);
-        }
+        self.end.adjust_column_row_in_place(column, row, delta);
     }
 
     pub fn adjust_column_row(&self, column: Option<i64>, row: Option<i64>, delta: i64) -> Self {

@@ -116,8 +116,8 @@ export class Sheet {
     return new Rectangle(
       Number(bounds.min.x),
       Number(bounds.min.y),
-      Number(bounds.max.x) - Number(bounds.min.x),
-      Number(bounds.max.y) - Number(bounds.min.y)
+      Number(bounds.max.x) - Number(bounds.min.x) + 1,
+      Number(bounds.max.y) - Number(bounds.min.y) + 1
     );
   }
 

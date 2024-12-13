@@ -17,6 +17,7 @@ import {
   aiAnalystShowChatHistoryAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import {
   AIMessage,
   AIMessagePrompt,
@@ -128,9 +129,9 @@ export function useSubmitAIAnalystPrompt() {
             content: userPrompt,
             contextType: 'userPrompt' as const,
             context: {
-              ...context,
               sheets: context.currentSheet ? [context.currentSheet, ...context.sheets] : context.sheets,
               currentSheet: '',
+              selection: context.selection ?? sheets.sheet.cursor.save(),
             },
           },
         ]);

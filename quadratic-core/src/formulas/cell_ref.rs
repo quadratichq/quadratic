@@ -14,10 +14,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::formulas::{escape_string, parse_sheet_name};
-use crate::Pos;
-
-// pub const UNBOUNDED_CELL_REF: i64 = i64::MAX;
-pub const UNBOUNDED_CELL_REF: i64 = 9999;
+use crate::{Pos, UNBOUNDED};
 
 /// A reference to a cell or a range of cells.
 ///
@@ -160,8 +157,6 @@ impl CellRef {
     pub fn parse_a1(s: &str, base: Pos) -> Option<CellRef> {
         let (sheet, rest) = parse_sheet_name(s);
 
-        println!("parse_a1: {}", s);
-
         lazy_static! {
             /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)?$
             /// ^                             $     match full string
@@ -180,7 +175,7 @@ impl CellRef {
         let column_name = &captures[2];
         let mut col = crate::a1::column_from_name(column_name)? as i64;
         if col == 0 {
-            col = UNBOUNDED_CELL_REF;
+            col = UNBOUNDED;
         }
         let col_ref = match column_is_absolute {
             true => CellRefCoord::Absolute(col),
@@ -189,8 +184,8 @@ impl CellRef {
 
         let row_is_absolute = !captures[3].is_empty();
         let row_is_negative = !captures[4].is_empty();
-        let mut row = captures.get(5).map_or(UNBOUNDED_CELL_REF, |m| {
-            m.as_str().parse::<i64>().unwrap_or(UNBOUNDED_CELL_REF)
+        let mut row = captures.get(5).map_or(UNBOUNDED, |m| {
+            m.as_str().parse::<i64>().unwrap_or(UNBOUNDED)
         });
         if row_is_negative {
             row = -row;
@@ -263,7 +258,7 @@ impl CellRefCoord {
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a column coordinate.
     fn col_string(self, base: i64) -> String {
-        let col = crate::a1::column_name(self.resolve_from(base) as u64);
+        let col = crate::a1::column_name(self.resolve_from(base));
         format!("{}{col}", self.prefix())
     }
     /// Returns the human-friendly string representing this coordinate, if it is
@@ -344,7 +339,7 @@ mod tests {
             Some(CellRef {
                 sheet: None,
                 x: CellRefCoord::Relative(0),
-                y: CellRefCoord::Relative(i64::MAX)
+                y: CellRefCoord::Relative(UNBOUNDED)
             })
         );
     }

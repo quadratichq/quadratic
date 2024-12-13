@@ -175,7 +175,7 @@ impl SheetFormatUpdates {
     ) where
         T: Clone + Debug + PartialEq,
     {
-        value.map(|value| {
+        if let Some(value) = value {
             item.get_or_insert_with(Default::default).set_rect(
                 rect.min.x,
                 rect.min.y,
@@ -183,7 +183,7 @@ impl SheetFormatUpdates {
                 Some(rect.max.y),
                 Some(value.into()),
             );
-        });
+        };
     }
 
     pub fn set_format_rect(&mut self, rect: Rect, update: FormatUpdate) {

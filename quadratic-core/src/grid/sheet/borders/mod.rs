@@ -142,10 +142,18 @@ impl BordersUpdates {
     }
 
     pub fn translate_in_place(&mut self, x: i64, y: i64) {
-        self.left.as_mut().map(|c| c.translate_in_place(x, y));
-        self.right.as_mut().map(|c| c.translate_in_place(x, y));
-        self.top.as_mut().map(|c| c.translate_in_place(x, y));
-        self.bottom.as_mut().map(|c| c.translate_in_place(x, y));
+        if let Some(left) = self.left.as_mut() {
+            left.translate_in_place(x, y);
+        }
+        if let Some(right) = self.right.as_mut() {
+            right.translate_in_place(x, y);
+        }
+        if let Some(top) = self.top.as_mut() {
+            top.translate_in_place(x, y);
+        }
+        if let Some(bottom) = self.bottom.as_mut() {
+            bottom.translate_in_place(x, y);
+        }
     }
 }
 

@@ -4,15 +4,18 @@ use super::A1Selection;
 
 impl A1Selection {
     /// Potentially shrinks a selection after the removal of a column.
+    /// A1Selection may have no ranges after the removal.
     pub fn removed_column(&mut self, column: i64) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
-            if range.only_column(column) {
+            if range.contains_only_column(column) {
                 changed = true;
                 false
             } else {
-                changed |= range.removed_column(column);
+                if range.removed_column(column) {
+                    changed = true;
+                }
                 true
             }
         });
@@ -23,15 +26,18 @@ impl A1Selection {
     }
 
     /// Potentially shrinks a selection after the removal of a row.
+    /// A1Selection may have no ranges after the removal.///
     pub fn removed_row(&mut self, row: i64) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
-            if range.only_row(row) {
+            if range.contains_only_row(row) {
                 changed = true;
                 false
             } else {
-                changed |= range.removed_row(row);
+                if range.removed_row(row) {
+                    changed = true;
+                }
                 true
             }
         });
@@ -151,6 +157,14 @@ mod tests {
         assert!(!selection.removed_column(3));
         assert_eq!(selection.cursor.x, 1);
         assert_eq!(selection, A1Selection::test_a1("A1:B3"));
+
+        let mut selection = A1Selection::test_a1("B2:B4,B2");
+        assert!(selection.removed_column(2));
+        assert!(selection.ranges.is_empty());
+
+        let mut selection = A1Selection::test_a1("A1:A1,A,2:5");
+        assert!(selection.removed_column(1));
+        assert_eq!(selection, A1Selection::test_a1("2:5"));
     }
 
     #[test]
@@ -160,7 +174,7 @@ mod tests {
         assert!(selection.removed_row(2));
         assert_eq!(selection, A1Selection::test_a1("A1:B1"));
 
-        // Remove single cell selection
+        // Remove single cell selection--returns cursor as range
         let mut selection = A1Selection::test_a1("A1");
         assert!(selection.removed_row(1));
         assert!(selection.ranges.is_empty());
@@ -218,6 +232,14 @@ mod tests {
         assert!(!selection.removed_row(4));
         assert_eq!(selection.cursor.y, 1);
         assert_eq!(selection, A1Selection::test_a1("A1:B3"));
+
+        let mut selection = A1Selection::test_a1("A2:C2,2");
+        assert!(selection.removed_row(2));
+        assert!(selection.ranges.is_empty());
+
+        let mut selection = A1Selection::test_a1("A1:A1,2,D:E");
+        assert!(selection.removed_row(1));
+        assert_eq!(selection, A1Selection::test_a1("1,D:E"));
     }
 
     #[test]

@@ -45,16 +45,21 @@ export class Borders extends Container {
     this.spriteLines = [];
 
     events.on('bordersSheet', this.drawSheetCells);
-    events.on('sheetOffsets', this.setDirty);
+    events.on('sheetOffsets', this.sheetOffsetsChanged);
   }
 
   destroy() {
     events.off('bordersSheet', this.drawSheetCells);
-    events.off('sheetOffsets', this.setDirty);
+    events.off('sheetOffsets', this.sheetOffsetsChanged);
     super.destroy();
   }
 
-  setDirty = () => (this.dirty = true);
+  sheetOffsetsChanged = (sheetId: string) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      this.draw();
+      this.dirty = true;
+    }
+  };
 
   private get sheet(): Sheet {
     const sheet = sheets.getById(this.cellsSheet.sheetId);
@@ -62,7 +67,8 @@ export class Borders extends Container {
     return sheet;
   }
 
-  private drawHorizontal(border: JsBorderHorizontal, bounds: Rectangle) {
+  // Draws horizontal border and returns the y offset of the current border
+  private drawHorizontal(border: JsBorderHorizontal, bounds: Rectangle): number {
     if (border.width !== null) {
       const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.getCellOffsets(Number(border.x + border.width), Number(border.y));
@@ -71,24 +77,27 @@ export class Borders extends Container {
         ...drawCellBorder({
           position: new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y),
           horizontal: { type: border.line, color },
-          getSprite: this.getSprite,
+          getSprite: border.unbounded ? this.getSpriteSheet : this.getSprite,
         })
       );
+      return end.y;
     } else {
       const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
       const xStart = Math.max(start.x, bounds.left);
       const xEnd = bounds.right;
       const yStart = Math.max(start.y, bounds.top);
-      if (yStart > bounds.bottom || yStart < bounds.top || xStart > bounds.right) return;
+      if (yStart > bounds.bottom || yStart < bounds.top || xStart > bounds.right) return Infinity;
       drawCellBorder({
         position: new Rectangle(xStart, yStart, xEnd - xStart, 0),
         horizontal: { type: border.line, color: border.color },
         getSprite: this.getSpriteSheet,
       });
+      return yStart;
     }
   }
 
-  private drawVertical(border: JsBorderVertical, bounds: Rectangle) {
+  // Draws vertical border and returns the x offset of the current border
+  private drawVertical(border: JsBorderVertical, bounds: Rectangle): number {
     if (border.height !== null) {
       const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.getCellOffsets(Number(border.x), Number(border.y + border.height));
@@ -96,20 +105,22 @@ export class Borders extends Container {
         ...drawCellBorder({
           position: new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y),
           vertical: { type: border.line, color: border.color },
-          getSprite: this.getSprite,
+          getSprite: border.unbounded ? this.getSpriteSheet : this.getSprite,
         })
       );
+      return end.x;
     } else {
       const start = this.sheet.getCellOffsets(Number(border.x), Number(border.y));
       const xStart = Math.max(start.x, bounds.left);
       const yStart = Math.max(start.y, bounds.top);
       const yEnd = bounds.bottom;
-      if (xStart > bounds.right || xStart < bounds.left || yStart > bounds.bottom) return;
+      if (xStart > bounds.right || xStart < bounds.left || yStart > bounds.bottom) return Infinity;
       drawCellBorder({
         position: new Rectangle(xStart, yStart, 0, yEnd - yStart),
         vertical: { type: border.line, color: border.color },
         getSprite: this.getSpriteSheet,
       });
+      return xStart;
     }
   }
 
@@ -117,21 +128,25 @@ export class Borders extends Container {
     if (sheetId === this.cellsSheet.sheetId) {
       if (borders) {
         this.bordersFinite = {
-          horizontal: borders.horizontal?.filter((border) => border.width !== null) || null,
-          vertical: borders.vertical?.filter((border) => border.height !== null) || null,
+          horizontal: borders.horizontal?.filter((border) => border.width !== null && !border.unbounded) || null,
+          vertical: borders.vertical?.filter((border) => border.height !== null && !border.unbounded) || null,
         };
         this.bordersInfinite = {
-          horizontal: borders.horizontal?.filter((border) => border.width === null) || null,
-          vertical: borders.vertical?.filter((border) => border.height === null) || null,
+          horizontal: borders.horizontal?.filter((border) => border.width === null || border.unbounded) || null,
+          vertical: borders.vertical?.filter((border) => border.height === null || border.unbounded) || null,
         };
       }
-      this.cellLines.removeChildren();
-      const bounds = pixiApp.viewport.getVisibleBounds();
-      this.bordersFinite?.horizontal?.forEach((border) => this.drawHorizontal(border, bounds));
-      this.bordersFinite?.vertical?.forEach((border) => this.drawVertical(border, bounds));
+      this.draw();
       this.dirty = true;
     }
   };
+
+  private draw() {
+    this.cellLines.removeChildren();
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    this.bordersFinite?.horizontal?.forEach((border) => this.drawHorizontal(border, bounds));
+    this.bordersFinite?.vertical?.forEach((border) => this.drawVertical(border, bounds));
+  }
 
   private cull() {
     const bounds = pixiApp.viewport.getVisibleBounds();
@@ -149,8 +164,30 @@ export class Borders extends Container {
       this.sheetLines.removeChildren();
       this.sheetLines.visible = true;
       const bounds = pixiApp.viewport.getVisibleBounds();
-      this.bordersInfinite?.horizontal?.forEach((border) => this.drawHorizontal(border, bounds));
-      this.bordersInfinite?.vertical?.forEach((border) => this.drawVertical(border, bounds));
+      this.bordersInfinite?.horizontal?.forEach((border) => {
+        if (border.unbounded) {
+          let yOffset = 0,
+            y = border.y;
+          while (yOffset < bounds.bottom) {
+            yOffset = this.drawHorizontal({ ...border, y }, bounds);
+            y++;
+          }
+        } else {
+          this.drawHorizontal(border, bounds);
+        }
+      });
+      this.bordersInfinite?.vertical?.forEach((border) => {
+        if (border.unbounded) {
+          let xOffset = 0,
+            x = border.x;
+          while (xOffset < bounds.right) {
+            xOffset = this.drawVertical({ ...border, x }, bounds);
+            x++;
+          }
+        } else {
+          this.drawVertical(border, bounds);
+        }
+      });
       if (pixiApp.viewport.scale.x < SCALE_TO_SHOW_SHEET_BORDERS + FADE_SCALE) {
         this.sheetLines.alpha = (pixiApp.viewport.scale.x - SCALE_TO_SHOW_SHEET_BORDERS) / FADE_SCALE;
       } else {

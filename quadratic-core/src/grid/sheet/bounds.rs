@@ -38,14 +38,14 @@ impl Sheet {
             self.data_bounds.add(output_rect.max);
         });
 
-        self.validations.validations.iter().for_each(|validation| {
+        for validation in self.validations.validations.iter() {
             if validation.render_special().is_some() {
-                // todo: this might not work properly.
-                let rect = validation.selection.largest_rect_finite();
-                self.data_bounds.add(rect.min);
-                self.data_bounds.add(rect.max);
+                if let Some(rect) = self.selection_bounds(&validation.selection) {
+                    self.data_bounds.add(rect.min);
+                    self.data_bounds.add(rect.max);
+                }
             }
-        });
+        }
 
         old_data_bounds != self.data_bounds.to_bounds_rect()
             || old_format_bounds != self.format_bounds.to_bounds_rect()
@@ -188,7 +188,7 @@ impl Sheet {
             true => column.has_data_in_row(row),
             false => column.has_data_in_row(row) || self.formats.has_format_in_row(row),
         };
-        let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
+        let mut min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
             Some(*index)
         } else {
             None
@@ -200,7 +200,14 @@ impl Sheet {
         };
 
         if !ignore_formatting {
-            max = max.max(self.formats.row_max(row));
+            min = match self.formats.row_min(row) {
+                Some(formats_min) => Some(min.map_or(formats_min, |m| m.min(formats_min))),
+                None => min,
+            };
+            max = match self.formats.row_max(row) {
+                Some(formats_max) => Some(max.map_or(formats_max, |m| m.max(formats_max))),
+                None => max,
+            };
         }
 
         let code_range = self.code_rows_bounds(row, row);
@@ -219,8 +226,12 @@ impl Sheet {
 
     /// Returns the lower and upper bounds of formatting in a row, or `None` if
     /// the row has no formatting.
-    pub fn row_bounds_formats(&self, _row: i64) -> Option<(i64, i64)> {
-        self.formats.row_max(_row).map(|max| (1, max))
+    pub fn row_bounds_formats(&self, row: i64) -> Option<(i64, i64)> {
+        if let (Some(min), Some(max)) = (self.formats.row_min(row), self.formats.row_max(row)) {
+            Some((min, max))
+        } else {
+            None
+        }
     }
 
     /// Returns the lower and upper bounds of a range of rows, or 'None' if the rows are empty
@@ -595,7 +606,7 @@ mod test {
         sheet
             .formats
             .align
-            .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
+            .set(Pos { x: 200, y: 100 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.row_bounds(100, true), Some((1, 80)));
@@ -950,21 +961,22 @@ mod test {
     }
 
     #[test]
-    fn row_bounds() {
+    fn test_row_bounds_with_formats() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
+        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
         gc.set_code_cell(
-            (1, 0, sheet_id).into(),
+            (2, 1, sheet_id).into(),
             CodeCellLanguage::Formula,
             "[['c','d']]".into(),
             None,
         );
-        gc.set_cell_value((3, 0, sheet_id).into(), "d".into(), None);
-
+        gc.set_cell_value((3, 1, sheet_id).into(), "d".into(), None);
+        gc.set_bold(&A1Selection::test_a1("D1"), true, None)
+            .unwrap();
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.row_bounds(0, true), Some((0, 3)));
-        assert_eq!(sheet.row_bounds(0, false), Some((0, 3)));
+        assert_eq!(sheet.row_bounds(1, true), Some((1, 3)));
+        assert_eq!(sheet.row_bounds(1, false), Some((1, 4)));
     }
 
     #[test]

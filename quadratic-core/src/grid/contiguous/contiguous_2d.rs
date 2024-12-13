@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{grid::GridBounds, A1Selection, CellRefRange, CopyFormats, Pos, Rect};
+use crate::{grid::GridBounds, A1Selection, CellRefRange, CopyFormats, Pos, Rect, UNBOUNDED};
 
 use serde::{Deserialize, Serialize};
 
@@ -69,26 +69,19 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
         let mut c: Contiguous2D<T> = Contiguous2D::new();
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
-                let start = range.start.unpack_xy_default(1);
-                if let Some(end) = range.end {
-                    let end = end.unpack_xy();
-                    c.set_rect(start[0], start[1], end[0], end[1], value.clone());
+                let start_col = range.start.col();
+                let start_row = range.start.row();
+                let end_col = if range.end.col.is_unbounded() {
+                    None
                 } else {
-                    match (range.start.col, range.start.row) {
-                        (Some(_), Some(_)) => {
-                            c.set(start.into(), value.clone());
-                        }
-                        (Some(_), None) => {
-                            c.set_rect(start[0], start[1], Some(start[0]), None, value.clone());
-                        }
-                        (None, Some(_)) => {
-                            c.set_rect(start[0], start[1], None, Some(start[1]), value.clone());
-                        }
-                        (None, None) => {
-                            c.set_rect(start[0], start[1], None, None, value.clone());
-                        }
-                    }
-                }
+                    Some(range.end.col())
+                };
+                let end_row = if range.end.row.is_unbounded() {
+                    None
+                } else {
+                    Some(range.end.row())
+                };
+                c.set_rect(start_col, start_row, end_col, end_row, value.clone());
             }
         });
         c
@@ -231,7 +224,17 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
 
         // `.try_into()` will only fail if there are finite values beyond
         // `i64::MAX`. In that case there's no correct answer.
-        column_data.finite_max().try_into().unwrap_or(i64::MAX)
+        column_data.finite_max().try_into().unwrap_or(UNBOUNDED)
+    }
+
+    pub fn col_min(&self, column: i64) -> i64 {
+        let Some(column) = convert_coord(column) else {
+            return 0;
+        };
+        let Some(column_data) = self.0.get(column) else {
+            return 0;
+        };
+        column_data.min().unwrap_or(0) as i64
     }
 
     /// Returns the upper bound on the finite regions in the given row. Returns
@@ -256,7 +259,24 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
             // `.try_into()` will only fail if there are finite values beyond
             // `i64::MAX`. In that case there's no correct answer.
             .try_into()
-            .unwrap_or(i64::MAX)
+            .unwrap_or(UNBOUNDED)
+    }
+
+    /// Returns the lower bound on the finite regions in the given row. Returns
+    /// 0 if there are no values.
+    pub fn row_min(&self, row: i64) -> i64 {
+        let Some(row) = convert_coord(row) else {
+            return 0;
+        };
+        // Find the first block of columns that has a non-default value at the
+        // given row, then return `min()` for that block.
+        self.0
+            .iter()
+            .find_map(|column_block| {
+                let column_data = &column_block.value;
+                (*column_data.get(row)? != T::default()).then_some(column_block.start)
+            })
+            .unwrap_or(0) as i64
     }
 
     /// Removes a column and returns the values that used to inhabit it. Returns
@@ -558,6 +578,14 @@ fn convert_coord(x: i64) -> Option<u64> {
     x.try_into().ok().filter(|&x| x >= 1)
 }
 
+// normalizes the bounds so that the first is always less than the second
+fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
+    match b {
+        Some(b) if b < a => (b, Some(a)),
+        _ => (a, b),
+    }
+}
+
 /// Casts an `i64` rectangle that INCLUDES both bounds to a `u64` rectangle that
 /// INCLUDES the starts and EXCLUDES the ends. Clamps the results to greater
 /// than 1. Returns `None` if there is no part of the rectangle that intersects
@@ -572,6 +600,9 @@ fn convert_rect(
     x2: Option<i64>,
     y2: Option<i64>,
 ) -> Option<(u64, u64, u64, u64)> {
+    let (x1, x2) = sort_bounds(x1, x2);
+    let (y1, y2) = sort_bounds(y1, y2);
+
     let x1 = x1.try_into().unwrap_or(0).max(1);
     let x2 = x2
         .map(|x| x.try_into().unwrap_or(0))
@@ -775,6 +806,19 @@ mod tests {
     }
 
     #[test]
+    fn test_new_from_reverse_selection() {
+        let c = Contiguous2D::<Option<bool>>::new_from_selection(
+            &A1Selection::test_a1("B2:A1"),
+            Some(true),
+        );
+        assert_eq!(c.get(pos![A1]), Some(true));
+        assert_eq!(c.get(pos![A2]), Some(true));
+        assert_eq!(c.get(pos![B1]), Some(true));
+        assert_eq!(c.get(pos![B2]), Some(true));
+        assert_eq!(c.get(pos![C1]), None);
+    }
+
+    #[test]
     fn test_copy_column() {
         let mut c = Contiguous2D::<Option<bool>>::new();
         c.set_rect(2, 2, Some(10), Some(10), Some(true));
@@ -904,9 +948,35 @@ mod tests {
         c.set_rect(1, 1, Some(3), Some(3), None);
         assert!(c.is_all_default());
 
-        dbg!(&c);
         let copy = c.copy_column(3).unwrap();
-        dbg!(&copy);
         assert!(copy.is_all_default());
+    }
+
+    #[test]
+    fn test_clear() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(1, 1, Some(3), Some(3), Some(true));
+        c.set_rect(1, 1, None, None, None);
+        assert!(c.is_all_default());
+    }
+
+    #[test]
+    fn test_col_min() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(5, 2, Some(10), Some(3), Some(true));
+        assert_eq!(c.col_min(1), 0);
+        assert_eq!(c.col_min(5), 2);
+        assert_eq!(c.col_min(10), 2);
+        assert_eq!(c.col_min(11), 0);
+    }
+
+    #[test]
+    fn test_row_min() {
+        let mut c = Contiguous2D::<Option<bool>>::new();
+        c.set_rect(5, 2, Some(10), Some(3), Some(true));
+        assert_eq!(c.row_min(1), 0);
+        assert_eq!(c.row_min(2), 5);
+        assert_eq!(c.row_min(3), 5);
+        assert_eq!(c.row_min(4), 0);
     }
 }

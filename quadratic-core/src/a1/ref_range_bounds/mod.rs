@@ -3,7 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 use ts_rs::TS;
 
-use super::{range_might_contain_coord, range_might_intersect, A1Error, CellRefRangeEnd};
+use super::{range_might_intersect, A1Error, CellRefRangeEnd};
 use crate::{Pos, Rect};
 
 pub mod ref_range_bounds_contains;
@@ -12,16 +12,11 @@ pub mod ref_range_bounds_intersection;
 pub mod ref_range_bounds_query;
 pub mod ref_range_bounds_translate;
 
-// todo: this should be reworked so start and end are both CellRefRangeEnds and
-// we use i64::MAX to represent unbounded ranges. For single positions, start
-// and end are the same.
-
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(test, proptest(filter = "|range| range.is_valid()"))]
 pub struct RefRangeBounds {
     pub start: CellRefRangeEnd,
-    pub end: Option<CellRefRangeEnd>,
+    pub end: CellRefRangeEnd,
 }
 
 impl fmt::Debug for RefRangeBounds {
@@ -37,13 +32,28 @@ impl fmt::Display for RefRangeBounds {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if *self == Self::ALL {
             write!(f, "*")?;
+        } else if self.is_column_range() {
+            if self.start.col() == self.end.col() {
+                self.start.col.fmt_as_column(f)?;
+            } else {
+                self.start.col.fmt_as_column(f)?;
+                write!(f, ":")?;
+                self.end.col.fmt_as_column(f)?;
+            }
+        } else if self.is_row_range() {
+            if self.start.row() == self.end.row() {
+                self.start.row.fmt_as_row(f)?;
+            } else {
+                self.start.row.fmt_as_row(f)?;
+                write!(f, ":")?;
+                self.end.row.fmt_as_row(f)?;
+            }
         } else {
             write!(f, "{}", self.start)?;
-            if let Some(end) = self.end {
-                // we don't need to print the end range if start == end
-                if end != self.start {
-                    write!(f, ":{end}")?;
-                }
+            // we don't need to print the end range if start == end
+            if self.start != self.end {
+                let end = self.end.to_string();
+                write!(f, ":{end}")?;
             }
         }
         Ok(())
@@ -53,9 +63,47 @@ impl fmt::Display for RefRangeBounds {
 impl RefRangeBounds {
     /// Range that contains the entire sheet.
     pub const ALL: Self = Self {
-        start: CellRefRangeEnd::UNBOUNDED,
-        end: Some(CellRefRangeEnd::UNBOUNDED),
+        start: CellRefRangeEnd::START,
+        end: CellRefRangeEnd::UNBOUNDED,
     };
+
+    /// Creates a new range bounds from relative coordinates.
+    pub fn new_relative(start_col: i64, start_row: i64, end_col: i64, end_row: i64) -> Self {
+        Self {
+            start: CellRefRangeEnd::new_relative_xy(start_col, start_row),
+            end: CellRefRangeEnd::new_relative_xy(end_col, end_row),
+        }
+    }
+
+    /// Creates a new infinite row.
+    pub fn new_infinite_row(row: i64) -> Self {
+        Self {
+            start: CellRefRangeEnd::new_relative_xy(1, row),
+            end: CellRefRangeEnd::new_infinite_row_end(row),
+        }
+    }
+
+    pub fn new_infinite_rows(start_row: i64, end_row: i64) -> Self {
+        Self {
+            start: CellRefRangeEnd::new_relative_xy(1, start_row),
+            end: CellRefRangeEnd::new_infinite_row_end(end_row),
+        }
+    }
+
+    /// Creates a new infinite column.
+    pub fn new_infinite_col(col: i64) -> Self {
+        Self {
+            start: CellRefRangeEnd::new_relative_xy(col, 1),
+            end: CellRefRangeEnd::new_infinite_col_end(col),
+        }
+    }
+
+    pub fn new_infinite_cols(start_col: i64, end_col: i64) -> Self {
+        Self {
+            start: CellRefRangeEnd::new_relative_xy(start_col, 1),
+            end: CellRefRangeEnd::new_infinite_col_end(end_col),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -69,9 +117,54 @@ mod tests {
         #[test]
         fn proptest_cell_ref_range_parsing(ref_range_bounds: RefRangeBounds) {
             // We skip tests where start = end since we remove the end when parsing
-            if ref_range_bounds.end.is_none_or(|end| end != ref_range_bounds.start) {
+            if ref_range_bounds.end != ref_range_bounds.start {
                 assert_eq!(ref_range_bounds, ref_range_bounds.to_string().parse().unwrap());
             }
         }
+    }
+
+    #[test]
+    fn test_new_relative() {
+        let range = RefRangeBounds::new_relative(1, 2, 3, 4);
+        assert_eq!(range.start.col.coord, 1);
+        assert_eq!(range.start.row.coord, 2);
+        assert_eq!(range.end.col.coord, 3);
+        assert_eq!(range.end.row.coord, 4);
+    }
+
+    #[test]
+    fn test_new_infinite_row() {
+        let range = RefRangeBounds::new_infinite_row(1);
+        assert_eq!(range.start.col.coord, 1);
+        assert_eq!(range.start.row.coord, 1);
+        assert_eq!(range.end.row.coord, 1);
+        assert!(range.end.col.is_unbounded());
+    }
+
+    #[test]
+    fn test_new_infinite_col() {
+        let range = RefRangeBounds::new_infinite_col(1);
+        assert_eq!(range.start.col.coord, 1);
+        assert_eq!(range.start.row.coord, 1);
+        assert_eq!(range.end.col.coord, 1);
+        assert!(range.end.row.is_unbounded());
+    }
+
+    #[test]
+    fn test_new_infinite_rows() {
+        let range = RefRangeBounds::new_infinite_rows(1, 2);
+        assert_eq!(range.start.col.coord, 1);
+        assert_eq!(range.start.row.coord, 1);
+        assert_eq!(range.end.row.coord, 2);
+        assert!(range.end.col.is_unbounded());
+    }
+
+    #[test]
+    fn test_new_infinite_cols() {
+        let range = RefRangeBounds::new_infinite_cols(1, 2);
+        assert_eq!(range.start.col.coord, 1);
+        assert_eq!(range.start.row.coord, 1);
+        assert_eq!(range.end.col.coord, 2);
+        assert!(range.end.row.is_unbounded());
     }
 }

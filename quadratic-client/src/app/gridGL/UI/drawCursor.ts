@@ -11,6 +11,16 @@ import { Graphics } from 'pixi.js';
 const SECTION_OUTLINE_WIDTH = 1;
 const SECTION_OUTLINE_NATIVE = true;
 
+export const isStart = (coord: bigint): boolean => {
+  // eslint-disable-next-line eqeqeq
+  return coord == 1n;
+};
+
+export const isUnbounded = (coord: bigint): boolean => {
+  // eslint-disable-next-line eqeqeq
+  return coord == -1n;
+};
+
 export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordinate) => {
   const outline = sheets.sheet.getCellOffsets(cursor.x, cursor.y);
   g.lineStyle({ width: CURSOR_THICKNESS, color, alignment: 0 });
@@ -20,25 +30,24 @@ export const drawCursorOutline = (g: Graphics, color: number, cursor: JsCoordina
 // Draws a cursor with a finite number of cells (this is drawn once for each
 // selection setting).
 export const drawFiniteSelection = (g: Graphics, color: number, alpha: number, ranges: CellRefRange[]) => {
+  if (ranges.length === 0) return;
+
   g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 0, native: SECTION_OUTLINE_NATIVE });
   g.beginFill(color, alpha);
 
   const sheet = sheets.sheet;
   ranges.forEach(({ range }) => {
-    const { col, row } = range.start;
-    const end = range.end ? { col: range.end.col, row: range.end.row } : undefined;
+    const start = range.start;
+    const end = range.end;
 
     // we have all four points, just draw a rectangle
-    if (col && row && end?.col && end?.row) {
-      const startX = Math.min(Number(col.coord), Number(end.col.coord));
-      const startY = Math.min(Number(row.coord), Number(end.row.coord));
-      const width = Math.abs(Number(end.col.coord) - Number(col.coord)) + 1;
-      const height = Math.abs(Number(end.row.coord) - Number(row.coord)) + 1;
-      const rect = sheet.getScreenRectangle(startX, startY, width, height);
-      g.drawShape(rect);
-    } else if (col && row && !end) {
-      if (ranges.length !== 1) {
-        const rect = sheet.getScreenRectangle(Number(col.coord), Number(row.coord), 1, 1);
+    if (!isUnbounded(end.col.coord) && !isUnbounded(end.row.coord)) {
+      const startX = Math.min(Number(start.col.coord), Number(end.col.coord));
+      const startY = Math.min(Number(start.row.coord), Number(end.row.coord));
+      const width = Math.abs(Number(end.col.coord) - Number(start.col.coord)) + 1;
+      const height = Math.abs(Number(end.row.coord) - Number(start.row.coord)) + 1;
+      if (width > 1 || height > 1) {
+        const rect = sheet.getScreenRectangle(startX, startY, width, height);
         g.drawShape(rect);
       }
     }
@@ -55,6 +64,8 @@ export const drawInfiniteSelection = (options: {
   ranges: CellRefRange[];
 }) => {
   const { g, color, alpha, ranges } = options;
+  if (ranges.length === 0) return;
+
   const sheet = sheets.sheet;
 
   // we use headingSize to avoid getting column/row 0 from the viewport in
@@ -66,17 +77,18 @@ export const drawInfiniteSelection = (options: {
   bounds.y = Math.max(bounds.y, 0);
 
   ranges.forEach(({ range }) => {
-    const { col, row } = range.start;
-    const end = range.end ? { col: range.end.col, row: range.end.row } : undefined;
-
-    // we've already drawn this range in the drawFiniteCursor function
-    if (col && row && end?.col && end?.row) return;
+    const start = range.start;
+    const end = range.end;
 
     g.lineStyle();
     g.beginFill(color, alpha);
-
     // the entire sheet is selected
-    if (!col && !row && !end?.col && !end?.row) {
+    if (
+      isStart(start.col.coord) &&
+      isStart(start.row.coord) &&
+      isUnbounded(end.col.coord) &&
+      isUnbounded(end.row.coord)
+    ) {
       g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
       g.endFill();
       g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
@@ -87,8 +99,8 @@ export const drawInfiniteSelection = (options: {
     }
 
     // the entire sheet is selected starting from the start location
-    else if ((col || row) && end && !end.col && !end.row) {
-      const rect = sheet.getCellOffsets(col?.coord ?? 1, row?.coord ?? 1);
+    else if (isUnbounded(end.col.coord) && isUnbounded(end.row.coord)) {
+      const rect = sheet.getCellOffsets(start.col.coord, start.row.coord);
       rect.x = Math.max(rect.x, bounds.x);
       rect.y = Math.max(rect.y, bounds.y);
       rect.width = bounds.right - rect.x;
@@ -103,43 +115,10 @@ export const drawInfiniteSelection = (options: {
       }
     }
 
-    // the entire sheet is selected ending at the end location
-    else if (!col && !row && end && (end.col || end.row)) {
-      const rect = sheet.getCellOffsets(end.col?.coord ?? 1, end.row?.coord ?? 1);
-      rect.x = Math.max(rect.x, bounds.x);
-      rect.y = Math.max(rect.y, bounds.y);
-      rect.width = bounds.right - rect.x;
-      rect.height = bounds.bottom - rect.y;
-      if (intersects.rectangleRectangle(rect, bounds)) {
-        g.drawShape(rect);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
-        g.moveTo(bounds.right, rect.y);
-        g.lineTo(rect.x, rect.y);
-        g.lineTo(rect.x, bounds.bottom);
-      }
-    }
-
-    // one column is selected
-    else if (col && !row && !end) {
-      const { position, size } = sheet.offsets.getColumnPlacement(Number(col.coord));
-      if (intersects.rectangleRectangle({ x: position, y: bounds.y, width: size, height: bounds.height }, bounds)) {
-        g.drawRect(position, bounds.y, size, bounds.height);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
-        g.moveTo(position, 0);
-        g.lineTo(position + size, 0);
-        g.moveTo(position, bounds.top);
-        g.lineTo(position, bounds.bottom);
-        g.moveTo(position + size, bounds.top);
-        g.lineTo(position + size, bounds.bottom);
-      }
-    }
-
-    // multiple columns are selected
-    else if (col && !row && end && end.col && !end.row) {
-      const startX = Math.min(Number(col.coord), Number(end.col.coord));
-      const width = Math.abs(Number(end.col.coord) - Number(col.coord)) + 1;
+    // column(s) selected
+    else if (isStart(start.row.coord) && isUnbounded(end.row.coord)) {
+      const startX = Math.min(Number(start.col.coord), Number(end.col.coord));
+      const width = Math.abs(Number(end.col.coord) - Number(start.col.coord)) + 1;
       const rect = sheet.getScreenRectangle(startX, headingSize.height, width, 0);
       rect.y = Math.max(0, bounds.y);
       rect.height = bounds.height;
@@ -157,36 +136,14 @@ export const drawInfiniteSelection = (options: {
     }
 
     // multiple columns are selected starting on a row
-    else if (col && row && end && end.col && !end.row) {
-      const startX = Math.min(Number(col.coord), Number(end.col.coord));
-      const endX = Math.max(Number(col.coord), Number(end.col.coord));
-      const rect = sheet.getScreenRectangle(startX, Number(row.coord), endX - startX + 1, Number(row.coord));
-      if (rect.y > bounds.bottom) return;
-
-      rect.y = Math.max(rect.top, bounds.top);
-      rect.height = bounds.bottom - rect.y;
-      if (intersects.rectangleRectangle(rect, bounds)) {
-        g.drawShape(rect);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
-        g.moveTo(rect.left, rect.top);
-        g.lineTo(rect.right, rect.top);
-        g.moveTo(rect.left, rect.top);
-        g.lineTo(rect.left, bounds.bottom);
-        g.moveTo(rect.right, rect.top);
-        g.lineTo(rect.right, bounds.bottom);
-      }
-    }
-
-    // multiple columns are selected ending on a row
-    else if (col && !row && end && end.col && end.row) {
-      const startX = Math.min(Number(col.coord), Number(end.col.coord));
-      const endX = Math.max(Number(col.coord), Number(end.col.coord));
+    else if (!isUnbounded(end.col.coord) && isUnbounded(end.row.coord)) {
+      const startX = Math.min(Number(start.col.coord), Number(end.col.coord));
+      const endX = Math.max(Number(start.col.coord), Number(end.col.coord));
       const rect = sheet.getScreenRectangle(
         startX,
-        Number(end.row.coord),
+        Number(start.row.coord),
         endX - startX + 1,
-        Number(end.row.coord) - headingSize.height
+        Number(start.row.coord)
       );
       if (rect.y > bounds.bottom) return;
 
@@ -205,26 +162,10 @@ export const drawInfiniteSelection = (options: {
       }
     }
 
-    // one row is selected
-    else if (!col && row && !end) {
-      const { position, size } = sheet.offsets.getRowPlacement(Number(row.coord));
-      if (intersects.rectangleRectangle({ x: bounds.x, y: position, width: bounds.width, height: size }, bounds)) {
-        g.drawRect(bounds.x, position, bounds.width, size);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
-        g.moveTo(0, position);
-        g.lineTo(0, position + size);
-        g.moveTo(bounds.left, position);
-        g.lineTo(bounds.right, position);
-        g.moveTo(bounds.left, position + size);
-        g.lineTo(bounds.right, position + size);
-      }
-    }
-
-    // multiple rows are selected
-    else if (!col && row && end && end.row && !end.col) {
-      const startY = Math.min(Number(row.coord), Number(end.row.coord));
-      const height = Math.abs(Number(end.row.coord) - Number(row.coord)) + 1;
+    // row(s) selected
+    else if (isStart(start.col.coord) && isUnbounded(end.col.coord)) {
+      const startY = Math.min(Number(start.row.coord), Number(end.row.coord));
+      const height = Math.abs(Number(end.row.coord) - Number(start.row.coord)) + 1;
       const rect = sheet.getScreenRectangle(headingSize.width, startY, 0, height);
       rect.x = Math.max(0, bounds.x);
       rect.width = bounds.width;
@@ -242,10 +183,15 @@ export const drawInfiniteSelection = (options: {
     }
 
     // multiple rows are selected starting on a column
-    else if (row && col && end && end.row && !end.col) {
-      const startY = Math.min(Number(row.coord), Number(end.row.coord));
-      const endY = Math.max(Number(row.coord), Number(end.row.coord));
-      const rect = sheet.getScreenRectangle(Number(col.coord), startY, Number(col.coord), endY - startY + 1);
+    else if (!isUnbounded(end.row.coord) && isUnbounded(end.col.coord)) {
+      const startY = Math.min(Number(start.row.coord), Number(end.row.coord));
+      const endY = Math.max(Number(start.row.coord), Number(end.row.coord));
+      const rect = sheet.getScreenRectangle(
+        Number(start.col.coord),
+        startY,
+        Number(start.col.coord),
+        endY - startY + 1
+      );
       if (rect.x > bounds.right) return;
 
       rect.x = Math.max(rect.left, bounds.x);
@@ -258,26 +204,6 @@ export const drawInfiniteSelection = (options: {
         g.lineTo(rect.left, rect.bottom);
         g.moveTo(rect.left, rect.top);
         g.lineTo(bounds.right, rect.top);
-        g.moveTo(rect.left, rect.bottom);
-        g.lineTo(rect.right, rect.bottom);
-      }
-    }
-
-    // multiple rows are selected ending on a column
-    else if (row && !col && end && end.row && end.col) {
-      const startY = Math.min(Number(row.coord), Number(end.row.coord));
-      const endY = Math.max(Number(row.coord), Number(end.row.coord));
-      const rect = sheet.getScreenRectangle(Number(end.col.coord), startY, Number(end.col.coord), endY - startY + 1);
-      rect.x = Math.max(rect.left, bounds.x);
-      rect.width = bounds.right - rect.x;
-      if (intersects.rectangleRectangle(rect, bounds)) {
-        g.drawShape(rect);
-        g.endFill();
-        g.lineStyle({ width: SECTION_OUTLINE_WIDTH, color, alignment: 1, native: SECTION_OUTLINE_NATIVE });
-        g.moveTo(rect.left, rect.top);
-        g.lineTo(rect.left, rect.bottom);
-        g.moveTo(rect.left, rect.top);
-        g.lineTo(rect.right, rect.top);
         g.moveTo(rect.left, rect.bottom);
         g.lineTo(rect.right, rect.bottom);
       }

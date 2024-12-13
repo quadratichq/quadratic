@@ -273,7 +273,7 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.ArrowRight]],
     windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.ArrowRight]],
   },
-  [Action.GotoA0]: {
+  [Action.GotoA1]: {
     mac: [[MacModifiers.Cmd, Keys.Home]],
     windows: [[WindowsModifiers.Ctrl, Keys.Home]],
   },

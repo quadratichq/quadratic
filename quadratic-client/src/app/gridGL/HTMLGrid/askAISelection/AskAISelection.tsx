@@ -141,7 +141,6 @@ export function AskAISelection() {
         left: `${displayPos.x}px`,
         top: `${displayPos.y}px`,
         fontSize: 'small',
-        transform: 'translate(-50%, -50%)',
       }}
     >
       <DropdownMenu>

@@ -10,30 +10,24 @@ impl CellRefRange {
 
         match self {
             Self::Sheet { range } => {
-                // Check if the start column needs to be adjusted
-                if let Some(start_col) = range.start.col.as_mut() {
-                    if start_col.coord > column {
-                        start_col.coord = start_col.coord.saturating_sub(1).max(1);
-                        changed = true;
+                // do nothing if the column range is unbounded
+                if !(range.start.col() == 1 && range.end.col.is_unbounded()) {
+                    // Check if the start column needs to be adjusted
+                    if range.start.col() > column {
+                        let old = range.start.col();
+                        range.start.col.coord = range.start.col.coord.saturating_sub(1).max(1);
+                        changed = old != range.start.col();
                     }
-                }
 
-                // Check if the end column needs to be adjusted
-                if let Some(end) = range.end.as_mut() {
-                    if let Some(end_col) = end.col.as_mut() {
-                        if end_col.coord >= column {
-                            end_col.coord = end_col.coord.saturating_sub(1).max(1);
-                            changed = true;
-                        }
+                    // Check if the end column needs to be adjusted
+                    if !range.end.col.is_unbounded() && range.end.col() >= column {
+                        let old = range.end.col();
+                        range.end.col.coord = range.end.col.coord.saturating_sub(1).max(1);
+                        changed = old != range.end.col();
                     }
-                }
-                // clean up end if it's the same as start
-                if range.end.is_some_and(|end| end == range.start) {
-                    range.end = None;
                 }
             }
         }
-
         changed
     }
 
@@ -46,30 +40,23 @@ impl CellRefRange {
 
         match self {
             Self::Sheet { range } => {
-                // Check if the start row needs to be adjusted
-                if let Some(start_row) = range.start.row.as_mut() {
-                    if start_row.coord > row {
-                        start_row.coord = start_row.coord.saturating_sub(1).max(1);
-                        changed = true;
+                if !(range.start.row() == 1 && range.end.row.is_unbounded()) {
+                    // Check if the start row needs to be adjusted
+                    if range.start.row() > row {
+                        let old = range.start.row();
+                        range.start.row.coord = range.start.row().saturating_sub(1).max(1);
+                        changed = old != range.start.row();
                     }
-                }
 
-                // Check if the end row needs to be adjusted
-                if let Some(end) = range.end.as_mut() {
-                    if let Some(end_row) = end.row.as_mut() {
-                        if end_row.coord >= row {
-                            end_row.coord = end_row.coord.saturating_sub(1).max(1);
-                            changed = true;
-                        }
+                    // Check if the end row needs to be adjusted{
+                    if !range.end.row.is_unbounded() && range.end.row() >= row {
+                        let old = range.end.row();
+                        range.end.row.coord = range.end.row().saturating_sub(1).max(1);
+                        changed = old != range.end.row();
                     }
-                }
-                // clean up end if it's the same as start
-                if range.end.is_some_and(|end| end == range.start) {
-                    range.end = None;
                 }
             }
         }
-
         changed
     }
 
@@ -79,25 +66,18 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => {
                 // Check if the start column needs to be adjusted
-                if let Some(start_col) = range.start.col.as_mut() {
-                    if start_col.coord >= column {
-                        start_col.coord = start_col.coord.saturating_add(1);
-                        changed = true;
-                    }
+                if range.start.col() >= column {
+                    range.start.col.coord = range.start.col.coord.saturating_add(1);
+                    changed = true;
                 }
 
                 // Check if the end column needs to be adjusted
-                if let Some(end) = range.end.as_mut() {
-                    if let Some(end_col) = end.col.as_mut() {
-                        if end_col.coord >= column {
-                            end_col.coord = end_col.coord.saturating_add(1);
-                            changed = true;
-                        }
-                    }
+                if range.end.col() >= column {
+                    range.end.col.coord = range.end.col.coord.saturating_add(1);
+                    changed = true;
                 }
             }
         }
-
         changed
     }
 
@@ -107,25 +87,18 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => {
                 // Check if the start row needs to be adjusted
-                if let Some(start_row) = range.start.row.as_mut() {
-                    if start_row.coord >= row {
-                        start_row.coord = start_row.coord.saturating_add(1);
-                        changed = true;
-                    }
+                if range.start.row() >= row {
+                    range.start.row.coord = range.start.row().saturating_add(1);
+                    changed = true;
                 }
 
                 // Check if the end row needs to be adjusted
-                if let Some(end) = range.end.as_mut() {
-                    if let Some(end_row) = end.row.as_mut() {
-                        if end_row.coord >= row {
-                            end_row.coord = end_row.coord.saturating_add(1);
-                            changed = true;
-                        }
-                    }
+                if range.end.row() >= row {
+                    range.end.row.coord = range.end.row().saturating_add(1);
+                    changed = true;
                 }
             }
         }
-
         changed
     }
 }
@@ -164,13 +137,15 @@ mod tests {
 
         // Test minimum column boundary
         range = CellRefRange::test_a1("A1:A2");
-        assert!(range.removed_column(1));
-        assert_eq!(range, CellRefRange::test_a1("A1:A2"));
+        assert!(!range.removed_column(1));
 
         // Test when start and end become equal
         range = CellRefRange::test_a1("A1:B1");
         assert!(range.removed_column(2));
         assert_eq!(range, CellRefRange::test_a1("A1"));
+
+        range = CellRefRange::test_a1("5:10");
+        assert!(!range.removed_column(1));
     }
 
     #[test]
@@ -202,13 +177,15 @@ mod tests {
 
         // Test minimum row boundary
         range = CellRefRange::test_a1("A1:B1");
-        assert!(range.removed_row(1));
-        assert_eq!(range, CellRefRange::test_a1("A1:B1"));
+        assert!(!range.removed_row(1));
 
         // Test when start and end become equal
         range = CellRefRange::test_a1("A1:A2");
         assert!(range.removed_row(2));
         assert_eq!(range, CellRefRange::test_a1("A1"));
+
+        range = CellRefRange::test_a1("B:D");
+        assert!(!range.removed_row(1));
     }
 
     #[test]

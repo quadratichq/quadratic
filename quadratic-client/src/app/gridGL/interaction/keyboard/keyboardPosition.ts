@@ -158,7 +158,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
   }
 
   // Move cursor to A0, reset viewport position with A0 at top left
-  if (matchShortcut(Action.GotoA0, event)) {
+  if (matchShortcut(Action.GotoA1, event)) {
     setCursorPosition(1, 1);
     moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
     return true;
@@ -169,17 +169,17 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
     const sheet = sheets.sheet;
     const bounds = sheet.getBounds(true);
     if (bounds) {
-      const y = bounds.bottom;
+      const y = bounds.bottom - 1;
       quadraticCore
         .findNextColumn({
           sheetId: sheet.id,
-          columnStart: bounds.right,
+          columnStart: bounds.right - 1,
           row: y,
           reverse: true,
           withContent: true,
         })
         .then((x) => {
-          x = x ?? bounds.right;
+          x = x ?? bounds.right - 1;
           setCursorPosition(x, y);
         });
     }
@@ -201,13 +201,13 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
       quadraticCore
         .findNextColumn({
           sheetId: sheet.id,
-          columnStart: bounds.right,
+          columnStart: bounds.right - 1,
           row: y,
           reverse: true,
           withContent: true,
         })
         .then((x) => {
-          x = x ?? bounds.right;
+          x = x ?? bounds.right - 1;
           quadraticCore.cellHasContent(sheet.id, x, y).then((hasContent) => {
             if (hasContent) {
               setCursorPosition(x, y);

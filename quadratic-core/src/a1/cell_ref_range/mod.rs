@@ -5,11 +5,13 @@ use ts_rs::TS;
 
 use crate::{Pos, Rect, RefRangeBounds};
 
-use super::{A1Error, CellRefRangeEnd};
+use super::{A1Error, UNBOUNDED};
+
+pub mod cell_ref_col_row;
+pub mod cell_ref_query;
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(test, proptest(filter = "|range| range.is_valid()"))]
 #[serde(untagged)]
 pub enum CellRefRange {
     Sheet { range: RefRangeBounds },
@@ -48,12 +50,6 @@ impl CellRefRange {
 }
 
 impl CellRefRange {
-    pub fn is_valid(self) -> bool {
-        match self {
-            Self::Sheet { range } => range.is_valid(),
-        }
-    }
-
     pub fn new_relative_all_from(pos: Pos) -> Self {
         Self::Sheet {
             range: RefRangeBounds::new_relative_all_from(pos),
@@ -62,19 +58,13 @@ impl CellRefRange {
 
     pub fn new_relative_row_from(row: i64, min_col: i64) -> Self {
         Self::Sheet {
-            range: RefRangeBounds {
-                start: CellRefRangeEnd::new_relative_xy(min_col, row),
-                end: Some(CellRefRangeEnd::new_infinite_row(row)),
-            },
+            range: RefRangeBounds::new_relative(min_col, row, UNBOUNDED, row),
         }
     }
 
     pub fn new_relative_column_from(col: i64, min_row: i64) -> Self {
         Self::Sheet {
-            range: RefRangeBounds {
-                start: CellRefRangeEnd::new_relative_xy(col, min_row),
-                end: Some(CellRefRangeEnd::new_infinite_col(col)),
-            },
+            range: RefRangeBounds::new_relative(col, min_row, UNBOUNDED, min_row),
         }
     }
 
@@ -92,7 +82,7 @@ impl CellRefRange {
 
     pub fn new_relative_column(x: i64) -> Self {
         Self::Sheet {
-            range: RefRangeBounds::new_relative_column(x),
+            range: RefRangeBounds::new_relative_col(x),
         }
     }
 
@@ -263,14 +253,7 @@ mod tests {
     proptest! {
         #[test]
         fn proptest_cell_ref_range_parsing(cell_ref_range: CellRefRange) {
-            // We skip tests where start = end since we remove the end when parsing
-            match cell_ref_range {
-                CellRefRange::Sheet { range } => {
-                    if range.end.is_none_or(|end| end != range.start) {
-                        assert_eq!(cell_ref_range, cell_ref_range.to_string().parse().unwrap());
-                    }
-                }
-            };
+            assert_eq!(cell_ref_range, cell_ref_range.to_string().parse().unwrap());
         }
     }
 
@@ -294,7 +277,10 @@ mod tests {
         assert_eq!(CellRefRange::test_a1("A:B").to_rect(), None);
         assert_eq!(CellRefRange::test_a1("1:2").to_rect(), None);
         assert_eq!(CellRefRange::test_a1("A1:C").to_rect(), None);
-        assert_eq!(CellRefRange::test_a1("A:C3").to_rect(), None);
+        assert_eq!(
+            CellRefRange::test_a1("A:C3").to_rect(),
+            Some(Rect::new(1, 1, 3, 3))
+        );
         assert_eq!(CellRefRange::test_a1("*").to_rect(), None);
     }
 
@@ -304,10 +290,7 @@ mod tests {
         assert!(CellRefRange::test_a1("A").is_column_range());
         assert!(!CellRefRange::test_a1("A1:C3").is_column_range());
         assert!(CellRefRange::test_a1("A:C").is_column_range());
-
-        // both should be true, but not implemented. will fix it when
-        // refactoring to remove Options
-        assert!(!CellRefRange::test_a1("A1:C").is_column_range());
+        assert!(CellRefRange::test_a1("A1:C").is_column_range());
         assert!(!CellRefRange::test_a1("A:C1").is_column_range());
     }
 
@@ -318,10 +301,7 @@ mod tests {
         assert!(!CellRefRange::test_a1("A1:C3").is_row_range());
         assert!(CellRefRange::test_a1("1").is_row_range());
         assert!(CellRefRange::test_a1("1:3").is_row_range());
-
-        // both should be true, but not implemented. will fix it when
-        // refactoring to remove Options
-        assert!(!CellRefRange::test_a1("A1:3").is_row_range());
+        assert!(CellRefRange::test_a1("A1:3").is_row_range());
         assert!(!CellRefRange::test_a1("1:C3").is_row_range());
     }
 
@@ -368,9 +348,10 @@ mod tests {
             CellRefRange::test_a1("A1:D1").selected_columns(1, 10),
             vec![1, 2, 3, 4]
         );
+        // same as A1:D
         assert_eq!(
             CellRefRange::test_a1("1:D").selected_columns(1, 10),
-            vec![4, 5, 6, 7, 8, 9, 10]
+            vec![1, 2, 3, 4]
         );
         assert_eq!(
             CellRefRange::test_a1("A1:C3").selected_columns(1, 10),
@@ -384,15 +365,20 @@ mod tests {
             CellRefRange::test_a1("*").selected_columns(2, 5),
             vec![2, 3, 4, 5]
         );
+        // same as A1:D
         assert_eq!(
             CellRefRange::test_a1(":D").selected_columns(2, 5),
-            vec![4, 5]
+            vec![2, 3, 4]
         );
         assert_eq!(
             CellRefRange::test_a1("10").selected_columns(2, 5),
             vec![2, 3, 4, 5]
         );
-        assert_eq!(CellRefRange::test_a1("4:E").selected_columns(2, 5), vec![5]);
+        // same as A1:E
+        assert_eq!(
+            CellRefRange::test_a1("4:E").selected_columns(2, 5),
+            vec![2, 3, 4, 5]
+        );
     }
 
     #[test]
@@ -423,9 +409,10 @@ mod tests {
             CellRefRange::test_a1("A1:").selected_rows(1, 10),
             vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         );
+        // same as A1:4
         assert_eq!(
             CellRefRange::test_a1(":4").selected_rows(2, 10),
-            vec![4, 5, 6, 7, 8, 9, 10]
+            vec![2, 3, 4]
         );
         assert_eq!(
             CellRefRange::test_a1("*").selected_rows(2, 5),
@@ -437,7 +424,7 @@ mod tests {
         );
         assert_eq!(
             CellRefRange::test_a1("C:E5").selected_rows(1, 10),
-            vec![5, 6, 7, 8, 9, 10]
+            vec![1, 2, 3, 4, 5]
         );
         assert_eq!(
             CellRefRange::test_a1("E5:C").selected_rows(1, 10),
@@ -473,9 +460,10 @@ mod tests {
         assert!(CellRefRange::test_a1("*")
             .selected_columns_finite()
             .is_empty());
-        assert!(CellRefRange::test_a1(":B")
-            .selected_columns_finite()
-            .is_empty());
+        assert_eq!(
+            CellRefRange::test_a1(":B").selected_columns_finite(),
+            vec![1, 2]
+        );
     }
 
     #[test]
@@ -490,9 +478,10 @@ mod tests {
             .selected_rows_finite()
             .is_empty());
         assert!(CellRefRange::test_a1("*").selected_rows_finite().is_empty());
-        assert!(CellRefRange::test_a1(":3")
-            .selected_rows_finite()
-            .is_empty());
+        assert_eq!(
+            CellRefRange::test_a1(":3").selected_rows_finite(),
+            vec![1, 2, 3]
+        );
     }
 
     #[test]

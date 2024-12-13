@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use crate::grid::file::{shift_negative_offsets::IMPORT_OFFSET_START_FOR_INFINITE, v1_7_1};
+use crate::grid::file::{
+    shift_negative_offsets::IMPORT_OFFSET_START_FOR_INFINITE,
+    v1_7_1::{self, CellRefCoordSchema},
+};
 
 use super::{
     schema::{self as current, BorderStyleCellSchema},
@@ -22,25 +25,25 @@ fn upgrade_cells_accessed(
         vec.push(v1_7_1::CellRefRangeSchema::Sheet(
             v1_7_1::RefRangeBoundsSchema {
                 start: v1_7_1::CellRefRangeEndSchema {
-                    col: Some(v1_7_1::CellRefCoordSchema {
+                    col: v1_7_1::CellRefCoordSchema {
                         coord: cell_access.min.x,
                         is_absolute: false,
-                    }),
-                    row: Some(v1_7_1::CellRefCoordSchema {
+                    },
+                    row: v1_7_1::CellRefCoordSchema {
                         coord: cell_access.min.y,
                         is_absolute: false,
-                    }),
+                    },
                 },
-                end: Some(v1_7_1::CellRefRangeEndSchema {
-                    col: Some(v1_7_1::CellRefCoordSchema {
+                end: v1_7_1::CellRefRangeEndSchema {
+                    col: v1_7_1::CellRefCoordSchema {
                         coord: cell_access.max.x,
                         is_absolute: false,
-                    }),
-                    row: Some(v1_7_1::CellRefCoordSchema {
+                    },
+                    row: v1_7_1::CellRefCoordSchema {
                         coord: cell_access.max.y,
                         is_absolute: false,
-                    }),
-                }),
+                    },
+                },
             },
         ));
     }
@@ -82,13 +85,19 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
         ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
             v1_7_1::RefRangeBoundsSchema {
                 start: v1_7_1::CellRefRangeEndSchema {
-                    col: None,
-                    row: None,
+                    col: CellRefCoordSchema {
+                        coord: 1,
+                        is_absolute: false,
+                    },
+                    row: CellRefCoordSchema {
+                        coord: 1,
+                        is_absolute: false,
+                    },
                 },
-                end: Some(v1_7_1::CellRefRangeEndSchema {
-                    col: None,
-                    row: None,
-                }),
+                end: v1_7_1::CellRefRangeEndSchema {
+                    col: CellRefCoordSchema::UNBOUNDED,
+                    row: CellRefCoordSchema::UNBOUNDED,
+                },
             },
         ));
     } else {
@@ -97,13 +106,25 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
                 ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
                     v1_7_1::RefRangeBoundsSchema {
                         start: v1_7_1::CellRefRangeEndSchema {
-                            row: Some(v1_7_1::CellRefCoordSchema {
+                            row: v1_7_1::CellRefCoordSchema {
                                 coord: row,
                                 is_absolute: false,
-                            }),
-                            col: None,
+                            },
+                            col: v1_7_1::CellRefCoordSchema {
+                                coord: 1,
+                                is_absolute: false,
+                            },
                         },
-                        end: None,
+                        end: v1_7_1::CellRefRangeEndSchema {
+                            row: v1_7_1::CellRefCoordSchema {
+                                coord: row,
+                                is_absolute: false,
+                            },
+                            col: v1_7_1::CellRefCoordSchema {
+                                coord: 1,
+                                is_absolute: false,
+                            },
+                        },
                     },
                 ));
                 cursor.x = 1;
@@ -116,13 +137,19 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
                 ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
                     v1_7_1::RefRangeBoundsSchema {
                         start: v1_7_1::CellRefRangeEndSchema {
-                            col: Some(v1_7_1::CellRefCoordSchema {
+                            col: v1_7_1::CellRefCoordSchema {
                                 coord: column,
                                 is_absolute: false,
-                            }),
-                            row: None,
+                            },
+                            row: v1_7_1::CellRefCoordSchema::UNBOUNDED,
                         },
-                        end: None,
+                        end: v1_7_1::CellRefRangeEndSchema {
+                            col: v1_7_1::CellRefCoordSchema {
+                                coord: column,
+                                is_absolute: false,
+                            },
+                            row: v1_7_1::CellRefCoordSchema::UNBOUNDED,
+                        },
                     },
                 ));
                 cursor.x = column;
@@ -135,27 +162,25 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
                 ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
                     v1_7_1::RefRangeBoundsSchema {
                         start: v1_7_1::CellRefRangeEndSchema {
-                            col: Some(v1_7_1::CellRefCoordSchema {
+                            col: v1_7_1::CellRefCoordSchema {
                                 coord: rect.min.x,
                                 is_absolute: false,
-                            }),
-                            row: Some(v1_7_1::CellRefCoordSchema {
+                            },
+                            row: v1_7_1::CellRefCoordSchema {
                                 coord: rect.min.y,
                                 is_absolute: false,
-                            }),
-                        },
-                        end: (rect.max.x != rect.min.x || rect.max.y != rect.min.y).then_some(
-                            v1_7_1::CellRefRangeEndSchema {
-                                col: Some(v1_7_1::CellRefCoordSchema {
-                                    coord: rect.max.x,
-                                    is_absolute: false,
-                                }),
-                                row: Some(v1_7_1::CellRefCoordSchema {
-                                    coord: rect.max.y,
-                                    is_absolute: false,
-                                }),
                             },
-                        ),
+                        },
+                        end: v1_7_1::CellRefRangeEndSchema {
+                            col: v1_7_1::CellRefCoordSchema {
+                                coord: rect.max.x,
+                                is_absolute: false,
+                            },
+                            row: v1_7_1::CellRefCoordSchema {
+                                coord: rect.max.y,
+                                is_absolute: false,
+                            },
+                        },
                     },
                 ));
                 cursor.x = rect.min.x;
@@ -168,16 +193,25 @@ fn upgrade_selection(selection: current::SelectionSchema) -> v1_7_1::A1Selection
         ranges.push(v1_7_1::CellRefRangeSchema::Sheet(
             v1_7_1::RefRangeBoundsSchema {
                 start: v1_7_1::CellRefRangeEndSchema {
-                    col: Some(v1_7_1::CellRefCoordSchema {
+                    col: v1_7_1::CellRefCoordSchema {
                         coord: selection.x,
                         is_absolute: false,
-                    }),
-                    row: Some(v1_7_1::CellRefCoordSchema {
+                    },
+                    row: v1_7_1::CellRefCoordSchema {
                         coord: selection.y,
                         is_absolute: false,
-                    }),
+                    },
                 },
-                end: None,
+                end: v1_7_1::CellRefRangeEndSchema {
+                    col: v1_7_1::CellRefCoordSchema {
+                        coord: selection.x,
+                        is_absolute: false,
+                    },
+                    row: v1_7_1::CellRefCoordSchema {
+                        coord: selection.y,
+                        is_absolute: false,
+                    },
+                },
             },
         ));
     }
@@ -383,7 +417,7 @@ fn upgrade_borders(borders: current::BordersSchema) -> v1_7_1::BordersSchema {
         }
     });
 
-    borders_upgrade.to_schema()
+    borders_upgrade.upgrade_schema()
 }
 
 fn upgrade_column(values: HashMap<String, v1_7_1::CellValueSchema>) -> v1_7_1::ColumnSchema {
@@ -580,7 +614,7 @@ fn upgrade_columns_formats(
         columns.push((x, upgrade_column(column.values)));
     }
 
-    let formats = formats_upgrade.to_schema();
+    let formats = formats_upgrade.upgrade_schema();
 
     (columns, formats)
 }

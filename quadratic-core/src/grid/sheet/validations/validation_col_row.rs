@@ -160,7 +160,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn remove_column() {
+    fn test_remove_column() {
         let mut validations = Validations::default();
 
         // rect and columns to be updated
@@ -186,7 +186,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1("A1:A1,A,1:4"),
+            selection: A1Selection::test_a1("A1:A1,A,5:10"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -199,7 +199,6 @@ mod tests {
         // remove column 2
         validations.remove_column(&mut transaction, sheet_id, 2);
         assert_eq!(transaction.reverse_operations.len(), 2);
-
         assert_eq!(validations.validations.len(), 2);
 
         let selection = A1Selection::test_a1("A1:B3,A:B");
@@ -214,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn remove_row() {
+    fn test_remove_row() {
         let mut validations = Validations::default();
 
         // rect and columns to be updated
@@ -240,7 +239,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1("A1:A1,A:D,1"),
+            selection: A1Selection::test_a1("A1:A1,A1:D1,1"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -252,7 +251,6 @@ mod tests {
         let sheet_id = SheetId::test();
         validations.remove_row(&mut transaction, sheet_id, 2);
         assert_eq!(transaction.reverse_operations.len(), 2);
-
         assert_eq!(validations.validations.len(), 2);
 
         assert_eq!(

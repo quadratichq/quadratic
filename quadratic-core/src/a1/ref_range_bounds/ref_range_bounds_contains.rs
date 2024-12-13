@@ -6,17 +6,8 @@ impl RefRangeBounds {
     /// It's impossible to give an exact answer without knowing the bounds of
     /// each column and row.
     pub fn might_intersect_rect(self, rect: Rect) -> bool {
-        let start = self.start;
-        match self.end {
-            Some(end) => {
-                range_might_intersect(rect.x_range(), start.col, end.col)
-                    && range_might_intersect(rect.y_range(), start.row, end.row)
-            }
-            None => {
-                range_might_contain_coord(rect.x_range(), start.col)
-                    && range_might_contain_coord(rect.y_range(), start.row)
-            }
-        }
+        range_might_intersect(rect.x_range(), self.start.col, self.end.col)
+            && range_might_intersect(rect.y_range(), self.start.row, self.end.row)
     }
 
     /// Returns whether `self` might contain `pos`.
@@ -31,76 +22,22 @@ impl RefRangeBounds {
     /// `start..=end`. Infinite ranges are allowed and return true.
     pub fn might_contain_cols(&self, start: i64, end: i64) -> bool {
         // If the start is past the end, it can't include any columns
-        if self
-            .start
-            .col
-            .is_some_and(|start_col| start_col.coord > end)
-        {
-            return false;
-        }
-        // If the self.end is before the start, then it includes the range
-        if let Some(end_range) = self.end {
-            end_range.col.map_or(true, |end_col| end_col.coord >= start)
-        } else {
-            true
-        }
+        self.start.col() <= end && self.end.col() >= start
     }
 
     /// Returns whether `self` might include the rows in the range
     /// `start..=end`. Infinite ranges are allowed and return true.
     pub fn might_contain_rows(&self, start: i64, end: i64) -> bool {
-        if self
-            .start
-            .row
-            .is_some_and(|start_row| start_row.coord > end)
-        {
-            return false;
-        }
-        if let Some(end_range) = self.end {
-            end_range.row.map_or(true, |end_row| end_row.coord >= start)
-        } else {
-            true
-        }
+        self.start.row() <= end && self.end.row() >= start
     }
 
     /// Returns whether `self` contains `pos` regardless of data bounds.
     pub fn contains_pos(self, pos: Pos) -> bool {
-        let start = self.start;
-        match self.end {
-            Some(end) => {
-                // For columns: if col is None, it matches any x coordinate
-                let x_in_range = match (start.col, end.col) {
-                    (None, None) => true,
-                    (Some(start_col), None) => pos.x >= start_col.coord,
-                    (None, Some(end_col)) => pos.x <= end_col.coord,
-                    (Some(start_col), Some(end_col)) => {
-                        let min = start_col.coord.min(end_col.coord);
-                        let max = start_col.coord.max(end_col.coord);
-                        pos.x >= min && pos.x <= max
-                    }
-                };
-
-                // For rows: if row is None, it matches any y coordinate
-                let y_in_range = match (start.row, end.row) {
-                    (None, None) => true,
-                    (Some(start_row), None) => pos.y >= start_row.coord,
-                    (None, Some(end_row)) => pos.y <= end_row.coord,
-                    (Some(start_row), Some(end_row)) => {
-                        let min = start_row.coord.min(end_row.coord);
-                        let max = start_row.coord.max(end_row.coord);
-                        pos.y >= min && pos.y <= max
-                    }
-                };
-
-                x_in_range && y_in_range
-            }
-            None => {
-                // Without an end range, both coordinates must match if specified
-                let x_matches = start.col.map_or(true, |col| pos.x == col.coord);
-                let y_matches = start.row.map_or(true, |row| pos.y == row.coord);
-                x_matches && y_matches
-            }
+        if pos.x < self.start.col() || pos.x > self.end.col() {
+            return false;
         }
+
+        pos.y >= self.start.row() && pos.y <= self.end.row()
     }
 }
 

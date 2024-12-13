@@ -1,6 +1,6 @@
-use crate::Pos;
+use crate::{CellRefCoord, CellRefRangeEnd, Pos, RefRangeBounds, UNBOUNDED};
 
-use super::{A1Selection, CellRefRange, CellRefRangeEnd, RefRangeBounds};
+use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
     /// Selects the entire sheet.
@@ -8,7 +8,9 @@ impl A1Selection {
         if append {
             if let Some(last) = self.ranges.last_mut() {
                 match last {
-                    CellRefRange::Sheet { range } => range.end = Some(CellRefRangeEnd::UNBOUNDED),
+                    CellRefRange::Sheet { range } => {
+                        range.end = RefRangeBounds::ALL.end;
+                    }
                 }
             }
         } else {
@@ -25,61 +27,55 @@ impl A1Selection {
             let mut ranges = vec![];
             self.ranges.iter().for_each(|range| {
                 if !range.has_column_range(col) {
-                    ranges.push(range.clone());
+                    ranges.push(*range);
                 } else {
-                    let range = range.clone();
                     match range {
                         CellRefRange::Sheet { mut range } => {
-                            let start_col = range.start.col.map_or(1, |col| col.coord);
-                            // if there is an end, then end_col = the end column of the range or i64::MAX if unbounded
-                            let end_col = range
-                                .end
-                                .map(|end| end.col.map(|col| col.coord).or(Some(i64::MAX)))
-                                .flatten();
-
-                            if let Some(end_col) = end_col {
-                                if start_col == end_col {
-                                    // if the range is a single column, then we
-                                    // should do nothing to remove the range
-                                }
-                                // handle case where start_col is deleted
-                                else if start_col == col {
-                                    range.start = CellRefRangeEnd::new_relative_column(col + 1);
+                            if range.start.col() == range.end.col() {
+                                // if the range is a single column, then we
+                                // should do nothing to remove the range
+                            }
+                            // handle case where start_col is deleted
+                            else if range.start.col() == col {
+                                range.start = CellRefRangeEnd::new_relative_xy(col + 1, 1);
+                                ranges.push(CellRefRange::Sheet { range });
+                            }
+                            // handle case where end_col is deleted
+                            else if range.end.col() == col {
+                                // if start_col is the column right before the
+                                // one being deleted, then the end range is same
+                                // as the start range
+                                if range.start.col() == col - 1 {
+                                    range.end = range.start;
                                     ranges.push(CellRefRange::Sheet { range });
                                 }
-                                // handle case where end_col is deleted
-                                else if end_col == col {
-                                    // if start_col is the column right before the one being deleted, then we no
-                                    // longer have an end range
-                                    if start_col == col - 1 {
-                                        range.end = None;
-                                        ranges.push(CellRefRange::Sheet { range });
-                                    }
-                                    // otherwise we move the end to the previous column
-                                    else {
-                                        range.end =
-                                            Some(CellRefRangeEnd::new_relative_column(col - 1));
-                                        ranges.push(CellRefRange::Sheet { range });
+                                // otherwise we move the end to the previous column
+                                else {
+                                    range.end =
+                                        CellRefRangeEnd::new_relative_xy(col - 1, UNBOUNDED);
+                                    ranges.push(CellRefRange::Sheet { range });
+                                }
+                            } else {
+                                let first = CellRefRange::new_relative_column_range(
+                                    range.start.col(),
+                                    col - 1,
+                                );
+                                let second = if range.end.col.is_unbounded() {
+                                    CellRefRange::Sheet {
+                                        range: RefRangeBounds {
+                                            start: CellRefRangeEnd::new_relative_xy(col + 1, 1),
+                                            end: CellRefRangeEnd::UNBOUNDED,
+                                        },
                                     }
                                 } else {
-                                    let first =
-                                        CellRefRange::new_relative_column_range(start_col, col - 1);
-                                    let second = if end_col == i64::MAX {
-                                        CellRefRange::Sheet {
-                                            range: RefRangeBounds {
-                                                start: CellRefRangeEnd::new_relative_column(
-                                                    col + 1,
-                                                ),
-                                                end: Some(CellRefRangeEnd::UNBOUNDED),
-                                            },
-                                        }
-                                    } else {
-                                        CellRefRange::new_relative_column_range(col + 1, end_col)
-                                    };
-                                    ranges.push(first);
-                                    ranges.push(second);
+                                    CellRefRange::new_relative_column_range(
+                                        col + 1,
+                                        range.end.col(),
+                                    )
                                 };
-                            }
+                                ranges.push(first);
+                                ranges.push(second);
+                            };
                         }
                     }
                 }
@@ -118,10 +114,10 @@ impl A1Selection {
             match last {
                 CellRefRange::Sheet { range } => {
                     if range.is_column_range() {
-                        range.end = Some(CellRefRangeEnd::new_relative_column(col));
+                        range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
                     } else {
-                        range.end = Some(CellRefRangeEnd::new_relative_column(col));
-                        self.cursor.y = range.start.row.map_or(top, |r| r.coord);
+                        range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
+                        self.cursor.y = range.start.row();
                     }
                 }
             }
@@ -140,58 +136,50 @@ impl A1Selection {
             let mut ranges = vec![];
             self.ranges.iter().for_each(|range| {
                 if !range.has_row_range(row) {
-                    ranges.push(range.clone());
+                    ranges.push(*range);
                 } else {
-                    let range = range.clone();
                     match range {
                         CellRefRange::Sheet { mut range } => {
-                            let start_row = range.start.row.map_or(1, |row| row.coord);
-                            let end_row = range
-                                .end
-                                .map(|end| end.row.map(|row| row.coord).or(Some(i64::MAX)))
-                                .flatten();
-
-                            if let Some(end_row) = end_row {
-                                if start_row == end_row {
-                                    // if the range is a single row, then we
-                                    // should do nothing to remove the range
-                                }
-                                // handle case where start_row is deleted
-                                else if start_row == row {
-                                    range.start = CellRefRangeEnd::new_relative_row(row + 1);
+                            if range.start.row() == range.end.row() {
+                                // if the range is a single row, then we
+                                // should do nothing to remove the range
+                            }
+                            // handle case where start_row is deleted
+                            else if range.start.row() == row {
+                                range.start = CellRefRangeEnd::new_relative_xy(1, row + 1);
+                                ranges.push(CellRefRange::Sheet { range });
+                            }
+                            // handle case where end_row is deleted
+                            else if range.end.row() == row {
+                                // if start_row is the row right before the one
+                                // being deleted, then end becomes same as start
+                                if range.start.row() == row - 1 {
+                                    range.end = range.start;
                                     ranges.push(CellRefRange::Sheet { range });
                                 }
-                                // handle case where end_row is deleted
-                                else if end_row == row {
-                                    // if start_row is the row right before the one being deleted, then we no
-                                    // longer have an end range
-                                    if start_row == row - 1 {
-                                        range.end = None;
-                                        ranges.push(CellRefRange::Sheet { range });
-                                    }
-                                    // otherwise we move the end to the previous row
-                                    else {
-                                        range.end =
-                                            Some(CellRefRangeEnd::new_relative_row(row - 1));
-                                        ranges.push(CellRefRange::Sheet { range });
-                                    }
-                                } else {
-                                    let first =
-                                        CellRefRange::new_relative_row_range(start_row, row - 1);
-                                    let second = if end_row == i64::MAX {
-                                        CellRefRange::Sheet {
-                                            range: RefRangeBounds {
-                                                start: CellRefRangeEnd::new_relative_row(row + 1),
-                                                end: Some(CellRefRangeEnd::UNBOUNDED),
-                                            },
-                                        }
-                                    } else {
-                                        CellRefRange::new_relative_row_range(row + 1, end_row)
-                                    };
-                                    ranges.push(first);
-                                    ranges.push(second);
+                                // otherwise we move the end to the previous row
+                                else {
+                                    range.end =
+                                        CellRefRangeEnd::new_relative_xy(UNBOUNDED, row - 1);
+                                    ranges.push(CellRefRange::Sheet { range });
+                                }
+                            } else {
+                                let first = CellRefRange::new_relative_row_range(
+                                    range.start.row(),
+                                    row - 1,
+                                );
+                                let second = CellRefRange::Sheet {
+                                    range: RefRangeBounds {
+                                        start: CellRefRangeEnd {
+                                            col: CellRefCoord::new_rel(1),
+                                            row: CellRefCoord::new_rel(row + 1),
+                                        },
+                                        end: range.end,
+                                    },
                                 };
-                            }
+                                ranges.push(first);
+                                ranges.push(second);
+                            };
                         }
                     }
                 }
@@ -268,11 +256,12 @@ impl A1Selection {
             match last {
                 CellRefRange::Sheet { range } => {
                     if range.is_row_range() {
-                        range.end = Some(CellRefRangeEnd::new_relative_row(row));
-                    } else {
-                        range.end = Some(CellRefRangeEnd::new_relative_row(row));
-                        self.cursor.x = range.start.col.map_or(left, |c| c.coord);
+                        self.cursor.x = range.start.col();
                     }
+                    range.end = CellRefRangeEnd {
+                        col: CellRefCoord::UNBOUNDED,
+                        row: CellRefCoord::new_rel(row),
+                    };
                 }
             }
         } else {
@@ -320,7 +309,7 @@ impl A1Selection {
             self.ranges.push(CellRefRange::Sheet {
                 range: RefRangeBounds {
                     start: CellRefRangeEnd::new_relative_xy(left, top),
-                    end: Some(CellRefRangeEnd::new_relative_xy(right, bottom)),
+                    end: CellRefRangeEnd::new_relative_xy(right, bottom),
                 },
             });
         }
@@ -350,18 +339,12 @@ impl A1Selection {
         if let Some(last) = self.ranges.last_mut() {
             match last {
                 CellRefRange::Sheet { range } => {
-                    range.end = Some(CellRefRangeEnd::new_relative_xy(column, row));
-                    if range.start.row.is_none() {
+                    range.end = CellRefRangeEnd::new_relative_xy(column, row);
+                    if range.start.row.is_unbounded() {
                         self.cursor.y = row;
                     }
-                    if range.start.col.is_none() {
+                    if range.start.col.is_unbounded() {
                         self.cursor.x = column;
-                    }
-                    // we don't need an end if it's the same as the start
-                    if range.start.col.is_some_and(|start| start.coord == column)
-                        && range.start.row.is_some_and(|start| start.coord == row)
-                    {
-                        range.end = None;
                     }
                 }
             }
@@ -374,33 +357,17 @@ impl A1Selection {
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
     /// checks the last range (the same as Excel and Sheets)
     pub fn set_columns_selected(&mut self) {
-        let start: i64;
-        let mut end: Option<i64> = None;
-        if let Some(last) = self.ranges.last_mut() {
-            match last {
-                CellRefRange::Sheet { range } => {
-                    if let Some(end_col) = range.end.as_ref().and_then(|end| end.col) {
-                        if let Some(start_col) = range.start.col {
-                            start = start_col.coord;
-                            end = Some(end_col.coord);
-                        } else {
-                            start = end_col.coord;
-                        }
-                    } else if let Some(col) = range.start.col {
-                        start = col.coord;
-                    } else {
-                        start = self.cursor.x;
-                    }
-                }
-            }
-        } else {
-            start = self.cursor.x;
-        }
+        let Some(last) = self.ranges.last() else {
+            return;
+        };
+        let last = match last {
+            CellRefRange::Sheet { range } => *range,
+        };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
             range: RefRangeBounds {
-                start: CellRefRangeEnd::new_relative_column(start),
-                end: end.map(CellRefRangeEnd::new_relative_column),
+                start: CellRefRangeEnd::new_relative_xy(last.start.col(), 1),
+                end: CellRefRangeEnd::new_relative_xy(last.end.col(), UNBOUNDED),
             },
         });
     }
@@ -408,33 +375,17 @@ impl A1Selection {
     /// Changes the selection to select all rows that have a selection (used by shift+space). It only
     /// checks the last range (the same as Excel and Sheets)
     pub fn set_rows_selected(&mut self) {
-        let start: i64;
-        let mut end: Option<i64> = None;
-        if let Some(last) = self.ranges.last() {
-            match last {
-                CellRefRange::Sheet { range } => {
-                    if let Some(end_row) = range.end.as_ref().and_then(|end| end.row) {
-                        if let Some(start_row) = range.start.row {
-                            start = start_row.coord;
-                            end = Some(end_row.coord);
-                        } else {
-                            start = end_row.coord;
-                        }
-                    } else if let Some(row) = range.start.row {
-                        start = row.coord;
-                    } else {
-                        start = self.cursor.y;
-                    }
-                }
-            }
-        } else {
-            start = self.cursor.y;
-        }
+        let Some(last) = self.ranges.last() else {
+            return;
+        };
+        let last = match last {
+            CellRefRange::Sheet { range } => *range,
+        };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
             range: RefRangeBounds {
-                start: CellRefRangeEnd::new_relative_row(start),
-                end: end.map(CellRefRangeEnd::new_relative_row),
+                start: CellRefRangeEnd::new_relative_xy(1, last.start.row()),
+                end: CellRefRangeEnd::new_relative_xy(UNBOUNDED, last.end.row()),
             },
         });
     }
@@ -451,9 +402,9 @@ mod tests {
         selection.select_all(false);
         assert_eq!(selection.test_to_string(), "*");
 
-        selection = A1Selection::test_a1("B1");
+        selection = A1Selection::test_a1("B2");
         selection.select_all(true);
-        assert_eq!(selection.test_to_string(), "B1:");
+        assert_eq!(selection.test_to_string(), "B2:");
     }
 
     #[test]
@@ -492,7 +443,7 @@ mod tests {
 
         let mut selection = A1Selection::test_a1("2:3");
         selection.set_columns_selected();
-        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_column(1)]);
+        assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
     }
 
     #[test]
@@ -517,7 +468,7 @@ mod tests {
 
         let mut selection = A1Selection::test_a1("C:D");
         selection.set_rows_selected();
-        assert_eq!(selection.ranges, vec![CellRefRange::new_relative_row(1)]);
+        assert_eq!(selection.ranges, vec![CellRefRange::ALL]);
     }
 
     #[test]

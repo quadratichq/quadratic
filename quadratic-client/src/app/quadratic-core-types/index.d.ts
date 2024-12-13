@@ -15,7 +15,7 @@ export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" |
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, }
 export interface CellRefCoord { coord: bigint, is_absolute: boolean, }
 export type CellRefRange = { range: RefRangeBounds, };
-export interface CellRefRangeEnd { col: CellRefCoord | null, row: CellRefCoord | null, }
+export interface CellRefRangeEnd { col: CellRefCoord, row: CellRefCoord, }
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: ConnectionKind, id: string, } } | "Javascript";
@@ -25,8 +25,8 @@ export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { 
 export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, date_time: string | null, underline: boolean | null, strike_through: boolean | null, }
 export type GridBounds = { "type": "empty" } | { "type": "nonEmpty" } & Rect;
 export interface JsBordersSheet { horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
-export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint | null, }
-export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint | null, }
+export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint | null, unbounded: boolean, }
+export interface JsBorderVertical { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, height: bigint | null, unbounded: boolean, }
 export interface JsCellsAccessed { sheetId: string, ranges: Array<CellRefRange>, }
 export interface JsCellValue { value: string, kind: string, }
 export interface JsCellValuePos { value: string, kind: string, pos: string, }
@@ -55,7 +55,7 @@ export interface NumericFormat { type: NumericFormatKind, symbol: string | null,
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";
 export type PasteSpecial = "None" | "Values" | "Formats";
 export interface Pos { x: bigint, y: bigint, }
-export interface RefRangeBounds { start: CellRefRangeEnd, end: CellRefRangeEnd | null, }
+export interface RefRangeBounds { start: CellRefRangeEnd, end: CellRefRangeEnd, }
 export interface Rect { min: Pos, max: Pos, }
 export interface RenderSize { w: string, h: string, }
 export interface Rgba { red: number, green: number, blue: number, alpha: number, }

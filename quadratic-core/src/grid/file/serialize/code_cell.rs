@@ -27,13 +27,13 @@ fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellRefRange {
         current::CellRefRangeSchema::Sheet(ref_range_bounds) => CellRefRange::Sheet {
             range: RefRangeBounds {
                 start: CellRefRangeEnd {
-                    col: ref_range_bounds.start.col.map(import_cell_ref_coord),
-                    row: ref_range_bounds.start.row.map(import_cell_ref_coord),
+                    col: import_cell_ref_coord(ref_range_bounds.start.col),
+                    row: import_cell_ref_coord(ref_range_bounds.start.row),
                 },
-                end: ref_range_bounds.end.map(|end| CellRefRangeEnd {
-                    col: end.col.map(import_cell_ref_coord),
-                    row: end.row.map(import_cell_ref_coord),
-                }),
+                end: CellRefRangeEnd {
+                    col: import_cell_ref_coord(ref_range_bounds.end.col),
+                    row: import_cell_ref_coord(ref_range_bounds.end.row),
+                },
             },
         },
     }
@@ -112,13 +112,13 @@ fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRangeSchema {
         CellRefRange::Sheet { range } => {
             current::CellRefRangeSchema::Sheet(current::RefRangeBoundsSchema {
                 start: current::CellRefRangeEndSchema {
-                    col: range.start.col.map(export_cell_ref_coord),
-                    row: range.start.row.map(export_cell_ref_coord),
+                    col: export_cell_ref_coord(range.start.col),
+                    row: export_cell_ref_coord(range.start.row),
                 },
-                end: range.end.map(|end| current::CellRefRangeEndSchema {
-                    col: end.col.map(export_cell_ref_coord),
-                    row: end.row.map(export_cell_ref_coord),
-                }),
+                end: current::CellRefRangeEndSchema {
+                    col: export_cell_ref_coord(range.end.col),
+                    row: export_cell_ref_coord(range.end.row),
+                },
             })
         }
     }

@@ -315,8 +315,6 @@ impl Token {
             _ => Self::Unknown,
         };
 
-        println!("token: {:?}", token);
-
         let rest_of_input = &input_str[end..];
 
         // Special workaround for `<integer>..<number>`. This fails on `1...5`,

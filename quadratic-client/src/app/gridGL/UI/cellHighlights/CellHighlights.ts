@@ -78,7 +78,6 @@ export class CellHighlights extends Container {
     this.highlights.clear();
 
     const highlightedCells = [...this.highlightedCells];
-    console.log('highlightedCells', highlightedCells);
     const highlightedCellIndex = this.highlightedCellIndex;
     highlightedCells
       .filter((cells) => cells.sheet === sheets.current)

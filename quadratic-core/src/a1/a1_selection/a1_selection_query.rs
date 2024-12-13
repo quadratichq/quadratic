@@ -54,52 +54,16 @@ impl A1Selection {
         let mut rect = Rect::single_pos(self.cursor);
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
-                if let Some(end) = range.end {
-                    let (Some(end_col), Some(end_row)) = (end.col, end.row) else {
-                        return;
-                    };
-                    let (Some(start_col), Some(start_row)) = (range.start.col, range.start.row)
-                    else {
-                        return;
-                    };
+                if !range.end.is_unbounded() {
                     rect = rect.union(&Rect::new(
-                        start_col.coord,
-                        start_row.coord,
-                        end_col.coord,
-                        end_row.coord,
+                        range.start.col(),
+                        range.start.row(),
+                        range.end.col(),
+                        range.end.row(),
                     ));
                 }
             }
         });
-        rect
-    }
-
-    /// Returns the largest rectangle that can be formed by the selection.
-    pub fn largest_rect(&self) -> Rect {
-        let mut rect = Rect::single_pos(self.cursor);
-        self.ranges.iter().for_each(|range| match range {
-            CellRefRange::Sheet { range } => {
-                if let Some(col) = range.start.col {
-                    rect.min.x = rect.min.x.min(col.coord);
-                    rect.max.x = rect.max.x.max(col.coord);
-                }
-                if let Some(row) = range.start.row {
-                    rect.min.y = rect.min.y.min(row.coord);
-                    rect.max.y = rect.max.y.max(row.coord);
-                }
-                if let Some(end) = range.end {
-                    if let Some(end_col) = end.col {
-                        rect.min.x = rect.min.x.min(end_col.coord);
-                        rect.max.x = rect.max.x.max(end_col.coord);
-                    }
-                    if let Some(end_row) = end.row {
-                        rect.min.y = rect.min.y.min(end_row.coord);
-                        rect.max.y = rect.max.y.max(end_row.coord);
-                    }
-                }
-            }
-        });
-
         rect
     }
 
@@ -149,29 +113,17 @@ impl A1Selection {
         if let Some(range) = self.ranges.last() {
             match range {
                 CellRefRange::Sheet { range } => {
-                    // Get the start coordinates
-                    let mut max_x = range
-                        .start
-                        .col
-                        .map(|col| col.coord)
-                        .unwrap_or(self.cursor.x);
-                    let mut max_y = range
-                        .start
-                        .row
-                        .map(|row| row.coord)
-                        .unwrap_or(self.cursor.y);
-
-                    // If there's an end position, compare with start to find max
-                    if let Some(end) = &range.end {
-                        if let Some(col) = &end.col {
-                            max_x = max_x.max(col.coord);
-                        }
-                        if let Some(row) = &end.row {
-                            max_y = max_y.max(row.coord);
-                        }
-                    }
-
-                    Pos { x: max_x, y: max_y }
+                    let x = if range.end.is_unbounded() {
+                        self.cursor.x
+                    } else {
+                        range.end.col().max(range.start.col())
+                    };
+                    let y = if range.end.row.is_unbounded() {
+                        self.cursor.y
+                    } else {
+                        range.end.row().max(range.start.row())
+                    };
+                    Pos { x, y }
                 }
             }
         } else {
@@ -185,21 +137,24 @@ impl A1Selection {
         if let Some(range) = self.ranges.last() {
             match range {
                 CellRefRange::Sheet { range } => {
-                    let end_or_start = range.end.unwrap_or(range.start);
-                    let x = end_or_start
-                        .col
-                        .map(|col| col.coord)
-                        .unwrap_or(self.cursor.x);
-                    let y = end_or_start
-                        .row
-                        .map(|row| row.coord)
-                        .unwrap_or(self.cursor.y);
-                    Pos { x, y }
+                    if range.end.is_unbounded() {
+                        self.cursor
+                    } else {
+                        Pos {
+                            x: range.end.col(),
+                            y: range.end.row(),
+                        }
+                    }
                 }
             }
         } else {
             self.cursor
         }
+    }
+
+    /// Returns true if the selection is the entire sheet.
+    pub fn is_all_selected(&self) -> bool {
+        self.ranges.contains(&CellRefRange::ALL)
     }
 
     /// Returns true if all the selected columns are finite.
@@ -356,7 +311,7 @@ mod tests {
     #[test]
     fn test_largest_rect() {
         let selection = A1Selection::test_a1("A1,B1:D2,E:G,2:3,5:7,F6:G8,4");
-        assert_eq!(selection.largest_rect(), Rect::new(1, 1, 7, 8));
+        assert_eq!(selection.largest_rect_finite(), Rect::new(1, 1, 7, 8));
     }
 
     #[test]
@@ -400,10 +355,8 @@ mod tests {
         let selection = A1Selection::test_a1("1:3");
         assert!(selection.is_column_row());
 
-        // probably should be true, but not implemented. will fix it when
-        // refactoring to remove Options
         let selection = A1Selection::test_a1("A1:3");
-        assert!(!selection.is_column_row());
+        assert!(selection.is_column_row());
         let selection = A1Selection::test_a1("1:C3");
         assert!(!selection.is_column_row());
     }
@@ -442,6 +395,9 @@ mod tests {
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(selection.selected_column_ranges(2, 5), vec![2, 2, 4, 5]);
+
+        let selection = A1Selection::test_a1("C:A");
+        assert_eq!(selection.selected_column_ranges(1, 10), vec![1, 3]);
     }
 
     #[test]
@@ -515,5 +471,13 @@ mod tests {
         );
         assert_eq!(A1Selection::test_a1("A").single_rect_or_cursor(), None);
         assert_eq!(A1Selection::test_a1("2:5").single_rect_or_cursor(), None);
+    }
+
+    #[test]
+    fn test_is_all_selected() {
+        assert!(A1Selection::test_a1("*").is_all_selected());
+        assert!(A1Selection::test_a1("A1:D5, A1:").is_all_selected());
+        assert!(!A1Selection::test_a1("A1:A").is_all_selected());
+        assert!(!A1Selection::test_a1("A1:1").is_all_selected());
     }
 }
