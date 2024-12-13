@@ -171,7 +171,7 @@ mod tests {
 
         let updates = BordersUpdates {
             left: Contiguous2D::new_from_opt_selection(
-                &&A1Selection::test_a1("A1"),
+                &A1Selection::test_a1("A1"),
                 Some(ClearOption::Some(BorderStyleTimestamp::default())),
             ),
             ..Default::default()

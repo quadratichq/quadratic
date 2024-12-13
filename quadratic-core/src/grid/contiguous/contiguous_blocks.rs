@@ -692,6 +692,7 @@ mod tests {
                                 expected.len()
                             }
                         };
+                        #[allow(clippy::needless_range_loop)]
                         for i in start..end {
                             expected[i] = expected[i].wrapping_add(1);
                         }

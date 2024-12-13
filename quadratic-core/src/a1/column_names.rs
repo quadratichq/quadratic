@@ -85,7 +85,7 @@ mod tests {
         // Test that converting from number to name and back gives the same number
         for i in 1..1000 {
             let name = column_name(i);
-            assert_eq!(column_from_name(&name), Some(i as i64));
+            assert_eq!(column_from_name(&name), Some(i));
         }
     }
 }
