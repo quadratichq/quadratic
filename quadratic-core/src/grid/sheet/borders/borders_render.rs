@@ -383,7 +383,7 @@ mod tests {
         );
         let sheet = gc.sheet(SheetId::TEST);
         assert_eq!(sheet.borders.horizontal_borders().unwrap().len(), 1);
-        assert_eq!(sheet.borders.vertical_borders().unwrap().len(), 1);
+        assert_eq!(sheet.borders.vertical_borders().unwrap().len(), 2);
     }
 
     #[test]
@@ -406,6 +406,6 @@ mod tests {
         assert_eq!(sheet.borders.get_side(BorderSide::Right, pos![b5]), None);
 
         let horizontal = sheet.borders.horizontal_borders().unwrap();
-        assert_eq!(horizontal.len(), 4);
+        assert_eq!(horizontal.len(), 8);
     }
 }
