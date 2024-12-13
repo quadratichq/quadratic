@@ -152,6 +152,11 @@ impl A1Selection {
         }
     }
 
+    /// Returns true if the selection is the entire sheet.
+    pub fn is_all_selected(&self) -> bool {
+        self.ranges.contains(&CellRefRange::ALL)
+    }
+
     /// Returns true if all the selected columns are finite.
     pub fn is_selected_columns_finite(&self) -> bool {
         self.ranges
@@ -463,5 +468,13 @@ mod tests {
         );
         assert_eq!(A1Selection::test_a1("A").single_rect_or_cursor(), None);
         assert_eq!(A1Selection::test_a1("2:5").single_rect_or_cursor(), None);
+    }
+
+    #[test]
+    fn test_is_all_selected() {
+        assert!(A1Selection::test_a1("*").is_all_selected());
+        assert!(A1Selection::test_a1("A1:D5, A1:").is_all_selected());
+        assert!(!A1Selection::test_a1("A1:A").is_all_selected());
+        assert!(!A1Selection::test_a1("A1:1").is_all_selected());
     }
 }

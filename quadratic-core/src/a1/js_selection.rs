@@ -235,6 +235,11 @@ impl JsSelection {
         }
     }
 
+    #[wasm_bindgen(js_name = "isAllSelected")]
+    pub fn is_all_selected(&self) -> bool {
+        self.selection.is_all_selected()
+    }
+
     #[wasm_bindgen(js_name = "isSelectedColumnsFinite")]
     pub fn is_selected_columns_finite(&self) -> bool {
         self.selection.is_selected_columns_finite()

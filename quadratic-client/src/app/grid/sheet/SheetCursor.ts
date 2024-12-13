@@ -174,7 +174,23 @@ export class SheetCursor {
   }
 
   selectAll(append?: boolean) {
-    this.jsSelection.selectAll(append ?? false);
+    if (this.jsSelection.isAllSelected()) {
+      const bounds = sheets.sheet.boundsWithoutFormatting;
+      if (bounds.type === 'nonEmpty') {
+        this.jsSelection.selectRect(
+          Number(bounds.min.x),
+          Number(bounds.min.y),
+          Number(bounds.max.x),
+          Number(bounds.max.y),
+          false
+        );
+      } else {
+        this.jsSelection.selectRect(1, 1, 1, 1, false);
+      }
+    } else {
+      this.jsSelection.selectAll(append ?? false);
+    }
+
     this.updatePosition(true);
   }
 
