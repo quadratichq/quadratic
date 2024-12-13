@@ -109,7 +109,7 @@ impl RefRangeBounds {
     pub fn selected_columns(&self, from: i64, to: i64) -> Vec<i64> {
         let mut columns = vec![];
         let min = self.start.col().min(self.end.col()).max(from);
-        let max = self.end.col().max(self.end.col()).min(to);
+        let max = self.start.col().max(self.end.col()).min(to);
         if min <= max {
             columns.extend(min..=max);
         }
@@ -131,7 +131,7 @@ impl RefRangeBounds {
     pub fn selected_rows(&self, from: i64, to: i64) -> Vec<i64> {
         let mut rows = vec![];
         let min = self.start.row().min(self.end.row()).max(from);
-        let max = self.end.row().max(self.end.row()).min(to);
+        let max = self.start.row().max(self.end.row()).min(to);
         if min <= max {
             rows.extend(min..=max);
         }
@@ -322,10 +322,21 @@ mod tests {
             vec![1, 2, 3, 4]
         );
         // same as A4:E
-        dbg!(RefRangeBounds::test_a1("4:E"));
         assert_eq!(
             RefRangeBounds::test_a1("4:E").selected_columns(2, 5),
             vec![2, 3, 4, 5]
+        );
+    }
+
+    #[test]
+    fn test_selected_reverse() {
+        assert_eq!(
+            RefRangeBounds::test_a1("C:A").selected_columns(1, 10),
+            vec![1, 2, 3]
+        );
+        assert_eq!(
+            RefRangeBounds::test_a1("3:1").selected_rows(1, 10),
+            vec![1, 2, 3]
         );
     }
 
@@ -359,7 +370,7 @@ mod tests {
         );
         assert_eq!(
             RefRangeBounds::test_a1(":4").selected_rows(2, 10),
-            vec![ 2, 3, 4]
+            vec![2, 3, 4]
         );
         assert_eq!(
             RefRangeBounds::test_a1("*").selected_rows(2, 5),

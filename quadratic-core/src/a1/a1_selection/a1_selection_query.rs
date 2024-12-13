@@ -395,6 +395,9 @@ mod tests {
 
         let selection = A1Selection::test_a1("A1,B2,D4:E5,F6:G7,H8");
         assert_eq!(selection.selected_column_ranges(2, 5), vec![2, 2, 4, 5]);
+
+        let selection = A1Selection::test_a1("C:A");
+        assert_eq!(selection.selected_column_ranges(1, 10), vec![1, 3]);
     }
 
     #[test]
