@@ -75,6 +75,12 @@ impl From<CellsAccessed> for Vec<JsCellsAccessed> {
 }
 
 impl CellsAccessed {
+    pub fn new() -> Self {
+        Self {
+            cells: HashMap::new(),
+        }
+    }
+
     /// Add a range to the set of cells accessed for a given sheet.
     pub fn add(&mut self, sheet_id: SheetId, range: CellRefRange) {
         self.cells.entry(sheet_id).or_default().insert(range);

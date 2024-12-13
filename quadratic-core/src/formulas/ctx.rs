@@ -3,9 +3,9 @@ use smallvec::{smallvec, SmallVec};
 
 use super::*;
 use crate::{
-    grid::{CellsAccessed, Grid},
+    grid::{CellsAccessed, Grid, GridBounds},
     Array, CellValue, CodeResult, CodeResultExt, Pos, RunErrorMsg, SheetPos, SheetRect, Span,
-    Spanned, Value,
+    Spanned, Value, UNBOUNDED,
 };
 
 /// Formula execution context.
@@ -117,13 +117,29 @@ impl<'ctx> Ctx<'ctx> {
 
     /// Fetches the contents of the cell array at `rect`, or returns an error in
     /// the case of a circular reference.
-    pub fn get_cell_array(&mut self, rect: SheetRect, span: Span) -> CodeResult<Spanned<Array>> {
+    pub fn get_cell_array(
+        &mut self,
+        rect: SheetRect,
+        span: Span,
+        bounds: Option<GridBounds>,
+    ) -> CodeResult<Spanned<Array>> {
         if self.skip_computation {
             return Ok(CellValue::Blank.into()).with_span(span);
         }
 
-        let sheet_id = rect.sheet_id;
-        let array_size = rect.size();
+        let mut bounded_rect = rect.clone();
+
+        if let Some(bounds) = bounds {
+            if bounded_rect.max.x == UNBOUNDED {
+                bounded_rect.max.x = bounds.last_column().unwrap_or(0);
+            }
+            if bounded_rect.max.y == UNBOUNDED {
+                bounded_rect.max.y = bounds.last_row().unwrap_or(0);
+            }
+        }
+
+        let sheet_id = bounded_rect.sheet_id;
+        let array_size = bounded_rect.size();
         if std::cmp::max(array_size.w, array_size.h).get() > crate::limits::CELL_RANGE_LIMIT {
             return Err(RunErrorMsg::ArrayTooBig.with_span(span));
         }
@@ -131,12 +147,15 @@ impl<'ctx> Ctx<'ctx> {
         let mut flat_array = smallvec![];
         // Reuse the same `CellRef` object so that we don't have to
         // clone `sheet_name.`
-        for y in rect.y_range() {
-            for x in rect.x_range() {
+        for y in bounded_rect.y_range() {
+            for x in bounded_rect.x_range() {
                 // TODO: record array dependency instead of many individual cell dependencies
                 flat_array.push(self.get_cell(SheetPos { x, y, sheet_id }, span).inner);
             }
         }
+
+        self.cells_accessed
+            .add_sheet_rect(SheetRect::new_pos_span(rect.min, rect.max, sheet_id));
 
         Ok(Array::new_row_major(array_size, flat_array)?).with_span(span)
     }

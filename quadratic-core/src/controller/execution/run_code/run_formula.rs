@@ -17,10 +17,14 @@ impl GridController {
     ) {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         transaction.current_sheet_pos = Some(sheet_pos);
+        let sheet = self.grid().try_sheet(sheet_pos.sheet_id).unwrap();
+        let bounds = sheet.bounds(true);
+
         match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
-                let output = parsed.eval(&mut ctx).into_non_tuple();
+                let output = parsed.eval(&mut ctx, Some(bounds)).into_non_tuple();
                 let errors = output.inner.errors();
+
                 transaction.cells_accessed = ctx.cells_accessed;
                 let new_code_run = CodeRun {
                     std_out: None,

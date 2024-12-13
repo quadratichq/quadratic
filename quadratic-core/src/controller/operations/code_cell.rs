@@ -20,6 +20,8 @@ impl GridController {
             _ => code,
         };
 
+        dbgjs!(&code);
+
         vec![
             Operation::SetCellValues {
                 sheet_pos,
