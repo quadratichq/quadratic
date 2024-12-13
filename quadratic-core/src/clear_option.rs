@@ -95,6 +95,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::clone_on_copy)]
     fn test_clone() {
         let clear_opt = ClearOption::Some(42);
         let cloned = clear_opt.clone();

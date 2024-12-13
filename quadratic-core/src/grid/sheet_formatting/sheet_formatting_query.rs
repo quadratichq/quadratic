@@ -87,48 +87,54 @@ impl SheetFormatting {
     /// Returns the finite bounds of the formatting.
     pub fn finite_bounds(&self) -> Option<Rect> {
         let mut bounds = GridBounds::default();
-        self.align.finite_bounds().map(|rect| bounds.add_rect(rect));
-        self.vertical_align
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.wrap.finite_bounds().map(|rect| bounds.add_rect(rect));
-        self.numeric_format
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.numeric_decimals
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.numeric_commas
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.bold.finite_bounds().map(|rect| bounds.add_rect(rect));
-        self.italic
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.text_color
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.fill_color
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.render_size
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.date_time
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.underline
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
-        self.strike_through
-            .finite_bounds()
-            .map(|rect| bounds.add_rect(rect));
+        if let Some(rect) = self.align.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.vertical_align.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.wrap.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.numeric_format.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.numeric_decimals.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.numeric_commas.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.bold.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.italic.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.text_color.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.fill_color.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.render_size.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.date_time.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.underline.finite_bounds() {
+            bounds.add_rect(rect);
+        }
+        if let Some(rect) = self.strike_through.finite_bounds() {
+            bounds.add_rect(rect);
+        }
         bounds.into()
     }
 
     /// Returns the minimum value in the column for which formatting exists.
     pub fn col_min(&self, column: i64) -> Option<i64> {
-        let col_mins = vec![
+        let col_mins = [
             self.align.col_min(column),
             self.vertical_align.col_min(column),
             self.wrap.col_min(column),
@@ -154,7 +160,7 @@ impl SheetFormatting {
 
     /// Returns the maximum value in the column for which formatting exists.
     pub fn col_max(&self, column: i64) -> Option<i64> {
-        let col_maxes = vec![
+        let col_maxes = [
             self.align.col_max(column),
             self.vertical_align.col_max(column),
             self.wrap.col_max(column),
@@ -179,7 +185,7 @@ impl SheetFormatting {
     }
 
     pub fn row_min(&self, row: i64) -> Option<i64> {
-        let row_mins = vec![
+        let row_mins = [
             self.align.row_min(row),
             self.vertical_align.row_min(row),
             self.wrap.row_min(row),
@@ -205,7 +211,7 @@ impl SheetFormatting {
 
     /// Returns the maximum value in the row for which formatting exists.
     pub fn row_max(&self, row: i64) -> Option<i64> {
-        let row_maxes = vec![
+        let row_maxes = [
             self.align.row_max(row),
             self.vertical_align.row_max(row),
             self.wrap.row_max(row),

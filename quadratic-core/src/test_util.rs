@@ -110,7 +110,7 @@ pub fn assert_cell_format_bold(
     let sheet = grid_controller.sheet(sheet_id);
     let has_bold = sheet.formats.bold.get(Pos { x, y });
     assert!(
-        has_bold == Some(expect_bold) || (has_bold.is_none() && expect_bold == false),
+        has_bold == Some(expect_bold) || (has_bold.is_none() && !expect_bold),
         "Cell at ({}, {}) should be bold={}, but is actually bold={}",
         x,
         y,

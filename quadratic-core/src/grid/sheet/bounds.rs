@@ -28,9 +28,9 @@ impl Sheet {
             }
         }
 
-        self.formats
-            .finite_bounds()
-            .map(|rect| self.format_bounds.add_rect(rect));
+        if let Some(rect) = self.formats.finite_bounds() {
+            self.format_bounds.add_rect(rect);
+        }
 
         self.code_runs.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);
