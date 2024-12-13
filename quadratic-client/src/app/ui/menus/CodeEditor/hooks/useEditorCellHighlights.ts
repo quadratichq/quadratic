@@ -98,7 +98,7 @@ export const useEditorCellHighlights = (
       ) {
         pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed);
       } else if (codeCell.language === 'Formula') {
-        const parsed = parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y) as ParseFormulaReturnType;
+        const parsed = JSON.parse(parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
         if (parsed) {
           pixiApp.cellHighlights.fromFormula(parsed, codeCell.pos, codeCell.sheetId);
           const extractedCells = extractCellsFromParseFormula(parsed, codeCell.pos, codeCell.sheetId);

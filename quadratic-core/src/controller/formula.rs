@@ -63,7 +63,7 @@ impl From<Spanned<formulas::RangeRef>> for CellRefSpan {
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
 pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
-    let parse_error = formulas::parse_formula(formula_string, pos).err();
+    let parse_error: Option<crate::RunError> = formulas::parse_formula(formula_string, pos).err();
 
     let result = FormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
@@ -84,6 +84,12 @@ mod tests {
     use crate::formulas::{CellRef, CellRefCoord, RangeRef};
     use crate::Span;
     use serial_test::parallel;
+
+    fn parse(s: &str) -> FormulaParseResult {
+        println!("Parsing {s}");
+        let parsed = parse_formula(s, crate::Pos::ORIGIN);
+        parsed
+    }
 
     /// Run this test with `--nocapture` to generate the example for the
     /// `parse_formula()` docs.
@@ -125,8 +131,8 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn text_parse_formula_output() {
-        let result = parse_formula("'Sheet 2'!A0", crate::Pos::ORIGIN);
+    fn test_parse_formula_output() {
+        let result = parse("'Sheet 2'!A0");
         assert_eq!(result.parse_error_msg, None);
         assert_eq!(result.parse_error_span, None);
         assert_eq!(result.cell_refs.len(), 1);
@@ -135,10 +141,22 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn text_parse_formula_case_insensitive() {
-        let parse = |s| parse_formula(s, crate::Pos::ORIGIN);
-
+    fn test_parse_formula_case_insensitive() {
         assert_eq!(parse("A1:A2"), parse("a1:a2"));
         assert_eq!(parse("A1:AA2"), parse("a1:aa2"));
+    }
+
+    #[test]
+    #[parallel]
+    fn test_parse_formula_column() {
+        // println!("{:?}", parse("A1").cell_refs);
+        // println!("{:?}", parse("A").cell_refs);
+        // println!("{:?}", parse("1:2").cell_refs);
+        // println!("{:?}", parse("A1:A2").cell_refs);
+        // println!("{:?}", parse("SUM(A1:A)").cell_refs);
+        // println!("{:?}", parse("SUM(1)").cell_refs);
+        // println!("{:?}", parse("SUM(A2,B$5, C8)").cell_refs);
+        // println!("{:?}", parse("SUM(R[0]C[-1])").cell_refs);
+        println!("{:?}", parse("SUM(A1:A12)"));
     }
 }

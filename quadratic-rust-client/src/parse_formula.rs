@@ -66,7 +66,7 @@ impl From<Spanned<formulas::RangeRef>> for JsCellRefSpan {
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
 #[wasm_bindgen(js_name = "parseFormula")]
-pub fn parse_formula(formula_string: &str, x: f64, y: f64) -> JsValue {
+pub fn parse_formula(formula_string: &str, x: f64, y: f64) -> String {
     let x = x as i64;
     let y = y as i64;
     let pos = Pos { x, y };
@@ -83,7 +83,7 @@ pub fn parse_formula(formula_string: &str, x: f64, y: f64) -> JsValue {
             .collect(),
     };
 
-    serde_wasm_bindgen::to_value(&result).unwrap()
+    serde_json::to_string(&result).unwrap()
 }
 
 #[wasm_bindgen(js_name = "checkFormula")]

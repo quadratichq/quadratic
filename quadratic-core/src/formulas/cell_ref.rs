@@ -16,6 +16,9 @@ use ts_rs::TS;
 use crate::formulas::{escape_string, parse_sheet_name};
 use crate::Pos;
 
+// pub const UNBOUNDED_CELL_REF: i64 = i64::MAX;
+pub const UNBOUNDED_CELL_REF: i64 = 9999;
+
 /// A reference to a cell or a range of cells.
 ///
 /// TODO: replace with `CellRangeRef`
@@ -157,6 +160,8 @@ impl CellRef {
     pub fn parse_a1(s: &str, base: Pos) -> Option<CellRef> {
         let (sheet, rest) = parse_sheet_name(s);
 
+        println!("parse_a1: {}", s);
+
         lazy_static! {
             /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)?$
             /// ^                             $     match full string
@@ -166,14 +171,17 @@ impl CellRef {
             ///                      (n?)           group 4: optional `n`
             ///                          (\d+)?     group 5: row number
             pub static ref A1_CELL_REFERENCE_REGEX: Regex =
-                Regex::new(r"^(\$?)(n?[a-zA-Z]+)(\$?)(n?)(\d+)?$").unwrap();
+                Regex::new(r"^(\$?)(n?[a-zA-Z]*)(\$?)(n?)(\d*)?$").unwrap();
         }
 
         let captures = A1_CELL_REFERENCE_REGEX.captures(rest.trim())?;
 
         let column_is_absolute = !captures[1].is_empty();
         let column_name = &captures[2];
-        let col = crate::a1::column_from_name(column_name)? as i64;
+        let mut col = crate::a1::column_from_name(column_name)? as i64;
+        if col == 0 {
+            col = UNBOUNDED_CELL_REF;
+        }
         let col_ref = match column_is_absolute {
             true => CellRefCoord::Absolute(col),
             false => CellRefCoord::Relative(col - base.x),
@@ -181,9 +189,9 @@ impl CellRef {
 
         let row_is_absolute = !captures[3].is_empty();
         let row_is_negative = !captures[4].is_empty();
-        let mut row = captures
-            .get(5)
-            .map_or(Some(i64::MAX), |m| m.as_str().parse::<i64>().ok())?;
+        let mut row = captures.get(5).map_or(UNBOUNDED_CELL_REF, |m| {
+            m.as_str().parse::<i64>().unwrap_or(UNBOUNDED_CELL_REF)
+        });
         if row_is_negative {
             row = -row;
         }

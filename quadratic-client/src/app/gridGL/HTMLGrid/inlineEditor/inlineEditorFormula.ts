@@ -24,7 +24,7 @@ class InlineEditorFormula {
   }
 
   cellHighlights(location: SheetPosTS, formula: string) {
-    const parsed = parseFormula(formula, location.x, location.y) as ParseFormulaReturnType;
+    const parsed = JSON.parse(parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
     if (parsed) {
       pixiApp.cellHighlights.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
 
