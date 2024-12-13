@@ -34,7 +34,7 @@ Each cell value is a JSON object having the following properties:\n
 
 This is being shared so that you can understand the table format, size and value types inside the data rectangle.\n
 
-Data from cells can be referenced by Formulas, Python, Javascript or SQL code. In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells. Sheet name is always enclosed in single quotes. The complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`\n
+Data from cells can be referenced by Formulas, Python, Javascript or SQL code. In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`. In formula, string quotes are not to be used. Example: \`=SUM('Sheet 1'!A1:B2)\`\n
 To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
 Use this selection data in the context of following messages. Refer to cells if required in code.\n\n
 
@@ -43,7 +43,7 @@ Current selection data is:\n
 ${JSON.stringify(selectionContext[0])}
 \`\`\`
 
-Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells. Sheet name is always enclosed in single quotes. The complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`\n\n
+Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code. Always use sheet name in a1 notation to reference cells. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`. In formula, string quotes are not to be used. Example: \`=SUM('Sheet 1'!A1:B2)\`\n\n
 `
     : ``
 }
