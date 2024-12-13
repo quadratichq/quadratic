@@ -307,7 +307,7 @@ export class Cursor extends Container {
           alpha: FILL_ALPHA,
           ranges: infiniteRanges,
         });
-        if (!columnRow && cursor.rangeCount() === 1) {
+        if (!columnRow && cursor.rangeCount() === 1 && !cursor.getInfiniteRanges().length) {
           this.drawCursorIndicator();
         }
       }
