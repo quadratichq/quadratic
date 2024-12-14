@@ -7,12 +7,17 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 
 export class UrlParamsUser {
+  private pixiAppSettingsInitialized = false;
+  private aiAnalystInitialized = false;
+  private aiAnalystPromptLoaded = false;
+
   dirty = false;
 
   constructor(params: URLSearchParams) {
     this.loadSheet(params);
     this.loadCursor(params);
     this.loadCode(params);
+    this.loadAIAnalystPrompt(params);
     this.setupListeners(params);
   }
 
@@ -66,6 +71,9 @@ export class UrlParamsUser {
   }
 
   private loadAIAnalystPrompt = (params: URLSearchParams) => {
+    if (!this.pixiAppSettingsInitialized || !this.aiAnalystInitialized) return;
+    if (this.aiAnalystPromptLoaded) return;
+
     const prompt = params.get('prompt');
     if (!prompt) return;
 
@@ -89,13 +97,23 @@ export class UrlParamsUser {
     params.delete('prompt');
     url.search = params.toString();
     window.history.replaceState(null, '', url.toString());
+
+    this.aiAnalystPromptLoaded = true;
   };
 
   private setupListeners(params: URLSearchParams) {
     events.on('cursorPosition', this.setDirty);
     events.on('changeSheet', this.setDirty);
     events.on('codeEditor', this.setDirty);
-    events.on('aiAnalystInitialized', () => this.loadAIAnalystPrompt(params));
+
+    events.on('pixiAppSettingsInitialized', () => {
+      this.pixiAppSettingsInitialized = true;
+      this.loadAIAnalystPrompt(params);
+    });
+    events.on('aiAnalystInitialized', () => {
+      this.aiAnalystInitialized = true;
+      this.loadAIAnalystPrompt(params);
+    });
   }
 
   private setDirty = () => {

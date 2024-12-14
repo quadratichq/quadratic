@@ -135,6 +135,8 @@ interface EventTypes {
   codeEditorCodeCell: (codeCell?: CodeCell) => void;
 
   aiAnalystInitialized: () => void;
+
+  pixiAppSettingsInitialized: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

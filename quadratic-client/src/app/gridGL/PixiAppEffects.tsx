@@ -4,6 +4,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { gridPanModeAtom } from '@/app/atoms/gridPanModeAtom';
 import { gridSettingsAtom, presentationModeAtom, showHeadingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
+import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
@@ -72,6 +73,10 @@ export const PixiAppEffects = () => {
   useEffect(() => {
     pixiAppSettings.updateAIAnalystState(aiAnalystState, setAIAnalystState, submitPrompt);
   }, [aiAnalystState, setAIAnalystState, submitPrompt]);
+
+  useEffect(() => {
+    events.emit('pixiAppSettingsInitialized');
+  }, []);
 
   useEffect(() => {
     const handleMouseUp = () => {
