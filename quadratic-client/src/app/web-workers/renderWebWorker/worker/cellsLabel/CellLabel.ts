@@ -218,7 +218,8 @@ export class CellLabel {
   };
 
   private updateCellLimits = () => {
-    this.cellClipLeft = this.wrap === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.cellClipLeft =
+      (this.wrap === 'clip' && this.align !== 'left') || this.location.x <= 1 ? this.AABB.left : undefined;
     this.cellClipRight = this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;
