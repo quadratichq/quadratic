@@ -16,7 +16,7 @@ type Selected = 'all' | number[] | undefined;
 export type IntersectsHeadings = { column: number | null; row: number | null; corner?: true };
 
 // Constants for headers
-export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.7;
+export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.9;
 export const LABEL_MAXIMUM_HEIGHT_PERCENT = 0.5;
 export const LABEL_PADDING_ROWS = 2;
 export const GRID_HEADER_FONT_SIZE = 10;
@@ -24,7 +24,7 @@ export const ROW_DIGIT_OFFSET = { x: 0, y: -1 };
 const GRID_HEADING_RESIZE_TOLERANCE = 3;
 
 // this is the number of digits to use when calculating what horizontal headings are hidden
-export const LABEL_DIGITS_TO_CALCULATE_SKIP = 4;
+export const LABEL_DIGITS_TO_CALCULATE_SKIP = 3;
 
 export class GridHeadings extends Container {
   private characterSize?: Size;
@@ -101,15 +101,15 @@ export class GridHeadings extends Container {
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
     this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
-    const selectedColumns = cursor.getSelectedColumnRanges(leftColumn, rightColumn);
-    for (let i = 0; i < selectedColumns.length; i += 2) {
-      const startPlacement = offsets.getColumnPlacement(selectedColumns[i]);
+    this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn, rightColumn);
+    for (let i = 0; i < this.selectedColumns.length; i += 2) {
+      const startPlacement = offsets.getColumnPlacement(this.selectedColumns[i]);
       const start = startPlacement.position;
       let end: number;
-      if (selectedColumns[i] === selectedColumns[i + 1]) {
+      if (this.selectedColumns[i] === this.selectedColumns[i + 1]) {
         end = start + startPlacement.size;
       } else {
-        const endPlacement = offsets.getColumnPlacement(selectedColumns[i + 1]);
+        const endPlacement = offsets.getColumnPlacement(this.selectedColumns[i + 1]);
         end = endPlacement.position + endPlacement.size;
       }
       this.headingsGraphics.drawRect(start, viewport.top, end - start, cellHeight);
@@ -177,7 +177,7 @@ export class GridHeadings extends Container {
           currentWidth > charactersWidth ||
           pixiApp.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha
         ) {
-          // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
+          // don't show numbers if it overlaps with the selected value (eg, hides B if selected A overlaps it)
           let xPosition = x + currentWidth / 2;
           const left = xPosition - charactersWidth / 2;
           const right = xPosition + charactersWidth / 2;
@@ -188,7 +188,14 @@ export class GridHeadings extends Container {
           // leave only the first.
           let intersectsLast =
             lastLabel && intersects.lineLineOneDimension(lastLabel.left, lastLabel.right, left, right);
-          const selectedColumns = Array.isArray(this.selectedColumns) ? [...this.selectedColumns] : [];
+          const selectedColumns = [];
+          if (this.selectedColumns) {
+            for (let i = 0; i < this.selectedColumns.length; i += 2) {
+              for (let j = Number(this.selectedColumns[i]); j <= Number(this.selectedColumns[i + 1]); j++) {
+                selectedColumns.push(j);
+              }
+            }
+          }
           if (
             intersectsLast &&
             selected &&
@@ -251,15 +258,15 @@ export class GridHeadings extends Container {
     const bottomRow = sheet.getRowFromScreen(top + bounds.height);
     this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
-    const selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
-    for (let i = 0; i < selectedRows.length; i += 2) {
-      const startPlacement = offsets.getRowPlacement(selectedRows[i]);
+    this.selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
+    for (let i = 0; i < this.selectedRows.length; i += 2) {
+      const startPlacement = offsets.getRowPlacement(this.selectedRows[i]);
       const start = startPlacement.position;
       let end: number;
-      if (selectedRows[i] === selectedRows[i + 1]) {
+      if (this.selectedRows[i] === this.selectedRows[i + 1]) {
         end = start + startPlacement.size;
       } else {
-        const endPlacement = offsets.getRowPlacement(selectedRows[i + 1]);
+        const endPlacement = offsets.getRowPlacement(this.selectedRows[i + 1]);
         end = endPlacement.position + endPlacement.size;
       }
       this.headingsGraphics.drawRect(bounds.left, start, this.rowWidth, end - start);
@@ -300,6 +307,15 @@ export class GridHeadings extends Container {
 
     const halfCharacterHeight = this.characterSize.height / scale;
 
+    const selectedRows = [];
+    if (this.selectedRows) {
+      for (let i = 0; i < this.selectedRows.length; i += 2) {
+        for (let j = this.selectedRows[i]; j <= this.selectedRows[i + 1]; j++) {
+          selectedRows.push(j);
+        }
+      }
+    }
+
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
@@ -316,13 +332,11 @@ export class GridHeadings extends Container {
       }
 
       // show selected numbers
-      const selected = Array.isArray(this.selectedRows) ? this.selectedRows.includes(row) : false;
+      const selected = selectedRows.includes(row);
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || row % mod === 0) {
         // only show labels that will fit (unless grid lines are hidden)
-        // if (currentHeight > halfCharacterHeight * 2 || pixiApp.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha) {
-        // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
         let yPosition = y + currentHeight / 2;
         const top = yPosition - halfCharacterHeight / 2;
         const bottom = yPosition + halfCharacterHeight / 2;
@@ -332,7 +346,6 @@ export class GridHeadings extends Container {
         // selections, unless there is only two selections, in which case we
         // leave only the first.
         let intersectsLast = lastLabel && intersects.lineLineOneDimension(lastLabel.top, lastLabel.bottom, top, bottom);
-        const selectedRows = Array.isArray(this.selectedRows) ? [...this.selectedRows] : [];
         if (
           intersectsLast &&
           selected &&
