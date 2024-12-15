@@ -923,11 +923,6 @@ class Core {
     this.gridController.connectionComplete(transactionId, new Uint8Array(data), std_out, std_err, extra);
   }
 
-  getCells(transactionId: string, x: number, y: number, w: number, h?: number, sheet?: string, lineNumber?: number) {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
-  }
-
   // Returns true if the transaction was applied successfully.
   applyOfflineUnsavedTransaction(transactionId: string, transactions: string): boolean {
     if (!this.gridController) throw new Error('Expected gridController to be defined');

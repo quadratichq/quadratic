@@ -406,6 +406,6 @@ mod tests {
         assert_eq!(sheet.borders.get_side(BorderSide::Right, pos![b5]), None);
 
         let horizontal = sheet.borders.horizontal_borders().unwrap();
-        assert_eq!(horizontal.len(), 8);
+        assert_eq!(horizontal.len(), 7);
     }
 }

@@ -75,6 +75,7 @@ mod tests {
     use serial_test::serial;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
+    use crate::controller::execution::run_code::get_cells::CellA1Response;
     use crate::controller::execution::run_code::get_cells::JsGetCellResponse;
     use crate::controller::operations::operation::Operation;
     use crate::controller::transaction_types::JsCodeResult;
@@ -494,17 +495,22 @@ mod tests {
         assert_eq!(transaction.has_async, 1);
         let transaction_id = transaction.id;
 
-        let cells =
-            gc.calculation_get_cells(transaction_id.to_string(), 1, 1, 1, Some(1), None, None);
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         assert!(cells.is_ok());
         assert_eq!(
             cells,
-            Ok(vec![JsGetCellResponse {
+            Ok(CellA1Response {
+                cells: vec![JsGetCellResponse {
+                    x: 1,
+                    y: 1,
+                    value: "9".into(),
+                    type_name: "number".into(),
+                }],
                 x: 1,
                 y: 1,
-                value: "9".into(),
-                type_name: "number".into(),
-            }])
+                w: 1,
+                h: 1,
+            })
         );
         // pending cal
         let transaction = gc.async_transactions().first().unwrap();

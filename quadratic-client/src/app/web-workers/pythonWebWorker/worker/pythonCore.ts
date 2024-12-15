@@ -82,7 +82,7 @@ export class PythonCore {
       const cells = JSON.parse(cellsStringified) as CellA1Response;
       return { cells: cells.cells, x: Number(cells.x), y: Number(cells.y), w: Number(cells.w), h: Number(cells.h) };
     } catch (e) {
-      console.warn('[pythonCore] getCells error', e);
+      console.warn('[pythonCore] getCellsA1 error', e);
     }
     return undefined;
   }

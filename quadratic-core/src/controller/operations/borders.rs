@@ -42,10 +42,13 @@ impl GridController {
                     .get_or_insert_default()
                     .set_rect(x1 + 1, y1, x2, y2, style);
                 if let Some(x2) = x2 {
-                    borders
-                        .right
-                        .get_or_insert_default()
-                        .set_rect(x1, y1, Some(x2 - 1), y2, style);
+                    borders.right.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        Some((x2 - 1).max(1)),
+                        y2,
+                        style,
+                    );
                 }
                 borders
                     .top
@@ -56,7 +59,7 @@ impl GridController {
                         x1,
                         y1,
                         x2,
-                        Some(y2 - 1),
+                        Some((y2 - 1).max(1)),
                         style,
                     );
                 }
@@ -89,7 +92,7 @@ impl GridController {
                         x1,
                         y2,
                         x2,
-                        Some(y2 - 1),
+                        Some((y2 - 1).max(1)),
                         style,
                     );
                 }
@@ -100,10 +103,13 @@ impl GridController {
             }
             BorderSelection::Vertical => {
                 if let Some(x2) = x2 {
-                    borders
-                        .right
-                        .get_or_insert_default()
-                        .set_rect(x2, y1, Some(x2 - 1), y2, style);
+                    borders.right.get_or_insert_default().set_rect(
+                        x2,
+                        y1,
+                        Some((x2 - 1).max(1)),
+                        y2,
+                        style,
+                    );
                 }
                 borders
                     .left
@@ -138,17 +144,19 @@ impl GridController {
                         .set_rect(x1, y2, x2, Some(y2), style);
                 }
             }
+            // for clear, we need to remove any borders that are at the edges of
+            // the range--eg, the left border at the next column to the right of the range
             BorderSelection::Clear => {
                 borders.top.get_or_insert_default().set_rect(
                     x1,
                     y1,
                     x2,
-                    y2,
+                    y2.map(|y2| y2 + 1),
                     Some(ClearOption::Clear),
                 );
                 borders.bottom.get_or_insert_default().set_rect(
                     x1,
-                    y1,
+                    (y1 - 1).max(1),
                     x2,
                     y2,
                     Some(ClearOption::Clear),
@@ -156,12 +164,12 @@ impl GridController {
                 borders.left.get_or_insert_default().set_rect(
                     x1,
                     y1,
-                    x2,
+                    x2.map(|x2| x2 + 1),
                     y2,
                     Some(ClearOption::Clear),
                 );
                 borders.right.get_or_insert_default().set_rect(
-                    x1,
+                    (x1 - 1).max(1),
                     y1,
                     x2,
                     y2,
@@ -181,12 +189,12 @@ impl GridController {
                     x1,
                     y1,
                     x2,
-                    y2,
+                    y2.map(|y2| y2 + 1),
                     Some(ClearOption::Clear),
                 );
                 borders.bottom.get_or_insert_default().set_rect(
                     x1,
-                    y1,
+                    (y1 - 1).max(1),
                     x2,
                     y2,
                     Some(ClearOption::Clear),
@@ -194,12 +202,12 @@ impl GridController {
                 borders.left.get_or_insert_default().set_rect(
                     x1,
                     y1,
-                    x2,
+                    x2.map(|x2| x2 + 1),
                     y2,
                     Some(ClearOption::Clear),
                 );
                 borders.right.get_or_insert_default().set_rect(
-                    x1,
+                    (x1 - 1).max(1),
                     y1,
                     x2,
                     y2,
