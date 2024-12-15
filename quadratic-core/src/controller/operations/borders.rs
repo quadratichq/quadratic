@@ -189,12 +189,12 @@ impl GridController {
                     x1,
                     y1,
                     x2,
-                    y2,
+                    y2.map(|y2| y2 + 1),
                     Some(ClearOption::Clear),
                 );
                 borders.bottom.get_or_insert_default().set_rect(
                     x1,
-                    y1,
+                    (y1 - 1).max(1),
                     x2,
                     y2,
                     Some(ClearOption::Clear),
@@ -202,12 +202,12 @@ impl GridController {
                 borders.left.get_or_insert_default().set_rect(
                     x1,
                     y1,
-                    x2,
+                    x2.map(|x2| x2 + 1),
                     y2,
                     Some(ClearOption::Clear),
                 );
                 borders.right.get_or_insert_default().set_rect(
-                    x1,
+                    (x1 - 1).max(1),
                     y1,
                     x2,
                     y2,
