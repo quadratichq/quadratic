@@ -1017,7 +1017,8 @@ mod tests {
 
     #[test]
     #[serial]
-    fn render_images() {
+    fn test_render_images() {
+        clear_js_calls();
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
