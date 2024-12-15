@@ -35,25 +35,23 @@ function clampZoom(center: Point, scale: number) {
   });
 }
 
-export async function zoomToFit() {
-  const viewport = pixiApp.viewport;
-  const sheet = sheets.sheet;
-  const gridBounds = sheet.getBounds(false);
+export function zoomToFit() {
+  const gridBounds = sheets.sheet.getBounds(false);
   if (gridBounds) {
-    const screenRectangle = sheet.getScreenRectangleFromRect(gridBounds);
+    const screenRectangle = sheets.sheet.getScreenRectangleFromRect(gridBounds);
+    const { screenWidth, screenHeight } = pixiApp.viewport;
     const headingSize = pixiApp.headings.headingSize;
 
-    // calc scale, and leave a little room on the top and sides
-    let scale = viewport.findFit(
-      screenRectangle.width + headingSize.width,
-      screenRectangle.height + headingSize.height
-    );
+    const sx = (screenWidth - headingSize.width) / screenRectangle.width;
+    const sy = (screenHeight - headingSize.height) / screenRectangle.height;
+    let scale = Math.min(sx, sy);
+
     // Don't zoom in more than a factor of 2
     scale = Math.min(scale, 2);
 
     const screenCenter = new Point(
-      screenRectangle.x + screenRectangle.width / 2,
-      screenRectangle.y + screenRectangle.height / 2
+      screenRectangle.x + screenRectangle.width / 2 - headingSize.width / 2 / scale,
+      screenRectangle.y + screenRectangle.height / 2 - headingSize.height / 2 / scale
     );
 
     const center = new Point(screenCenter.x - headingSize.width, screenCenter.y - headingSize.height);
