@@ -14,7 +14,7 @@ use crate::{
     CopyFormats,
 };
 
-pub const IMPORT_OFFSET: i64 = 1000000;
+const IMPORT_OFFSET: i64 = 1000000;
 
 pub const IMPORT_OFFSET_START_FOR_INFINITE: i64 = 1 - IMPORT_OFFSET;
 
