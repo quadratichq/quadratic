@@ -20,14 +20,14 @@ export const SelectionSummary = () => {
   // Run async calculations to get the count/avg/sum meta info
   const showSelectionSummary = useCallback(async () => {
     const cursor = sheets.sheet.cursor;
-    if (!cursor.multiCursor && !cursor.columnRow) {
+    if (!cursor.isMultiCursor() && !cursor.isColumnRow()) {
       setCount(undefined);
       setSum(undefined);
       setAvg(undefined);
       return;
     }
 
-    let result = await quadraticCore.summarizeSelection(DECIMAL_PLACES, cursor.getRustSelection());
+    let result = await quadraticCore.summarizeSelection(DECIMAL_PLACES, sheets.getRustSelection());
     if (result) {
       setCount(result.count.toString());
       setSum(result.sum === null ? undefined : result.sum.toString());
@@ -72,7 +72,9 @@ export const SelectionSummary = () => {
   const tooltipTitle = useMemo(() => (copied ? 'Copied!' : 'Copy to clipboard'), [copied]);
 
   if (!isBigEnoughForActiveSelectionStats) return null;
-  if (!sheets.sheet.cursor.multiCursor && !sheets.sheet.cursor.columnRow) return null;
+
+  const cursor = sheets.sheet.cursor;
+  if (!cursor.isMultiCursor() && !cursor.isColumnRow()) return null;
 
   return (
     <>

@@ -576,8 +576,8 @@ mod tests {
         assert_eq!(
             pos![M2], // If this changes, update all the formulas too
             crate::Pos {
-                x: source_data.height() as i64 - 1, // minus 1 because range is inclusive and we start at column 0
-                y: source_data.width() as i64, // minus 1 because range is inclusive, plus 1 because we start at row 1
+                x: source_data.height() as i64,
+                y: source_data.width() as i64,
             },
         );
 

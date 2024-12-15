@@ -87,7 +87,33 @@ impl GridController {
             index,
         } = op
         {
-            self.finalize_code_run(transaction, sheet_pos, code_run, Some(index));
+            let op = Operation::SetCodeRunVersion {
+                sheet_pos,
+                code_run: code_run.map(|code_run| code_run.into()),
+                index,
+                version: 1,
+            };
+            self.execute_set_code_run_version(transaction, op);
+        }
+    }
+
+    pub(super) fn execute_set_code_run_version(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetCodeRunVersion {
+            sheet_pos,
+            code_run,
+            index,
+            version,
+        } = op
+        {
+            if version == 1 {
+                self.finalize_code_run(transaction, sheet_pos, code_run, Some(index));
+            } else {
+                dbgjs!("Expected SetCodeRunVersion version to be 1");
+            }
         }
     }
 
@@ -141,8 +167,10 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::GridController, grid::CodeCellLanguage,
-        wasm_bindings::js::expect_js_call_count, CellValue, Pos, SheetPos,
+        controller::GridController,
+        grid::CodeCellLanguage,
+        wasm_bindings::js::{clear_js_calls, expect_js_call_count},
+        CellValue, Pos, SheetPos,
     };
     use serial_test::{parallel, serial};
 
@@ -152,41 +180,41 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("one".into()));
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Text("two".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("one".into()));
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("two".into()));
         gc.set_code_cell(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "A0:A1".to_string(),
+            "A1:A2".to_string(),
             None,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("one".into()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("two".into()))
         );
-        assert_eq!(sheet.display_value(Pos { x: 0, y: 2 }), None);
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 3 }), None);
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Text("one".into()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 2, y: 2 }),
             Some(CellValue::Text("two".into()))
         );
 
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 1,
+                x: 2,
+                y: 2,
                 sheet_id,
             },
             "cause spill".to_string(),
@@ -195,22 +223,24 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 2, y: 2 }),
             Some(CellValue::Text("cause spill".into()))
         );
 
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Blank)
         );
 
-        let code_cell = sheet.code_run(Pos { x: 1, y: 0 });
+        let code_cell = sheet.code_run(Pos { x: 2, y: 1 });
         assert!(code_cell.unwrap().spill_error);
     }
 
     #[test]
     #[serial]
     fn execute_code() {
+        clear_js_calls();
+
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(

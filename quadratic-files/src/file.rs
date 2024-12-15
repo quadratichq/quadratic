@@ -76,7 +76,6 @@ pub(crate) async fn process_transactions(
         checkpoint_sequence_num,
     )
     .await?;
-
     let key = key(file_id, final_sequence_num);
 
     apply_transaction(&mut grid, operations);

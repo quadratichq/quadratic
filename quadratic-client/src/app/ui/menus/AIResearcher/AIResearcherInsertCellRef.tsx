@@ -3,7 +3,7 @@ import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
+import { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
@@ -16,30 +16,12 @@ export const AIResearcherInsertCellRef = () => {
   const [refCell, setRefCell] = useRecoilState(aiResearcherRefCellAtom);
 
   const insertCellRef = useCallback(() => {
-    let sheet = '';
-    if (codeCell.sheetId !== sheets.sheet.id) {
-      sheet = `'${sheets.sheet.name}'!`;
-    }
-
-    let a1Notation = '';
-    const cursor = sheets.sheet.cursor;
-    if (cursor.multiCursor) {
-      cursor.multiCursor.forEach((cell, i) => {
-        const start = getA1Notation(cell.left, cell.top);
-        const end = getA1Notation(cell.right - 1, cell.bottom - 1);
-        a1Notation += `${start}:${end}${i !== cursor.multiCursor!.length - 1 ? ',' : ''}`;
-      });
-    } else {
-      const location = cursor.getCursor();
-      a1Notation = getA1Notation(location.x, location.y);
-    }
-
-    setRefCell(`${sheet}${a1Notation}`);
+    setRefCell(sheets.getA1String(codeCell.sheetId));
   }, [codeCell.sheetId, setRefCell]);
 
   useEffect(() => {
     if (refCell) {
-      const parsed = parseFormula(refCell, codeCell.pos.x, codeCell.pos.y);
+      const parsed = JSON.parse(parseFormula(refCell, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
       pixiApp.cellHighlights.fromFormula(parsed, codeCell.pos, codeCell.sheetId);
     } else {
       pixiApp.cellHighlights.clear();
@@ -49,17 +31,11 @@ export const AIResearcherInsertCellRef = () => {
   const [disabled, setDisabled] = useState(true);
   useEffect(() => {
     const checkDisabled = () => {
-      if (
-        (sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) ||
-        sheets.sheet.cursor.columnRow !== undefined
-      ) {
+      if (sheets.sheet.cursor.rangeCount() > 1) {
         setDisabled(true);
       } else {
         setDisabled(
-          !sheets.sheet.cursor.multiCursor &&
-            codeCell.sheetId === sheets.sheet.id &&
-            codeCell.pos.x === sheets.sheet.cursor.cursorPosition.x &&
-            codeCell.pos.y === sheets.sheet.cursor.cursorPosition.y
+          codeCell.sheetId === sheets.sheet.id && sheets.sheet.cursor.contains(codeCell.pos.x, codeCell.pos.y)
         );
       }
     };

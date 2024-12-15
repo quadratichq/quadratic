@@ -44,74 +44,70 @@ export const CodeEditor = () => {
         (codeCell.language === 'AIResearcher' ? (
           <AIResearcher />
         ) : (
-          <div
-            ref={codeEditorRef}
-            className={cn(
-              'relative flex h-full bg-background',
-              codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
-            )}
-            style={{
-              width: `${
-                codeEditorPanelData.editorWidth +
-                (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
-              }px`,
-              borderLeft: '1px solid black',
-            }}
-            onCopy={(e) => e.stopPropagation()}
-            onCut={(e) => e.stopPropagation()}
-            onPaste={(e) => e.stopPropagation()}
-          >
+          <div className="relative flex h-full flex-col">
+            <CodeEditorHeader editorInst={editorInst} />
             <div
-              id="QuadraticCodeEditorID"
+              ref={codeEditorRef}
               className={cn(
-                'flex min-h-0 shrink select-none flex-col',
-                codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
+                'relative -mt-[1px] flex h-full flex-col overflow-auto border-t border-transparent bg-background',
+                codeEditorPanelData.panelPosition === 'left' ? 'flex-row border-t border-border' : 'flex-col'
               )}
               style={{
-                width: `${codeEditorPanelData.editorWidth}px`,
-                height:
-                  codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
-                    ? '100%'
-                    : `${codeEditorPanelData.editorHeightPercentage}%`,
+                width: `${
+                  codeEditorPanelData.editorWidth +
+                  (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
+                }px`,
               }}
-              onKeyDownCapture={onKeyDownCodeEditor}
-              onPointerEnter={() => {
-                // todo: handle multiplayer code editor here
-                multiplayer.sendMouseMove();
-              }}
+              onCopy={(e) => e.stopPropagation()}
+              onCut={(e) => e.stopPropagation()}
+              onPaste={(e) => e.stopPropagation()}
             >
-              <SaveChangesAlert editorInst={editorInst} />
+              <div
+                id="QuadraticCodeEditorID"
+                className={cn(
+                  'flex min-h-0 shrink select-none flex-col',
+                  codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
+                )}
+                style={{
+                  width: `${codeEditorPanelData.editorWidth}px`,
+                  height:
+                    codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
+                      ? '100%'
+                      : `${codeEditorPanelData.editorHeightPercentage}%`,
+                }}
+                onKeyDownCapture={onKeyDownCodeEditor}
+                onPointerEnter={() => {
+                  // todo: handle multiplayer code editor here
+                  multiplayer.sendMouseMove();
+                }}
+              >
+                <SaveChangesAlert editorInst={editorInst} />
+                <CodeEditorDiffButtons />
+                <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
+                <CodeEditorEmptyState editorInst={editorInst} />
+                <ReturnTypeInspector />
+              </div>
 
-              <CodeEditorHeader editorInst={editorInst} />
+              <div
+                className={cn(
+                  codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
+                  'relative flex flex-col bg-background'
+                )}
+                style={{
+                  width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
+                  height:
+                    codeEditorPanelData.panelPosition === 'left'
+                      ? '100%'
+                      : codeEditorPanelData.bottomHidden
+                      ? 'auto'
+                      : 100 - codeEditorPanelData.editorHeightPercentage + '%',
+                }}
+              >
+                <CodeEditorPanel editorInst={editorInst} codeEditorRef={codeEditorRef} />
+              </div>
 
-              <CodeEditorDiffButtons />
-
-              <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
-
-              <CodeEditorEmptyState editorInst={editorInst} />
-
-              <ReturnTypeInspector />
+              <CodeEditorPanels codeEditorRef={codeEditorRef} />
             </div>
-
-            <div
-              className={cn(
-                codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
-                'relative flex flex-col bg-background'
-              )}
-              style={{
-                width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
-                height:
-                  codeEditorPanelData.panelPosition === 'left'
-                    ? '100%'
-                    : codeEditorPanelData.bottomHidden
-                    ? 'auto'
-                    : 100 - codeEditorPanelData.editorHeightPercentage + '%',
-              }}
-            >
-              <CodeEditorPanel editorInst={editorInst} codeEditorRef={codeEditorRef} />
-            </div>
-
-            <CodeEditorPanels codeEditorRef={codeEditorRef} />
           </div>
         ))}
     </>

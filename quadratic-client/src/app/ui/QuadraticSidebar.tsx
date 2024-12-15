@@ -1,7 +1,7 @@
 import { isAvailableBecauseCanEditFile, isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
-import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
+import { incrementAiAnalystOpenCount, showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
   editorInteractionStateShowCommandPaletteAtom,
@@ -75,7 +75,19 @@ export const QuadraticSidebar = () => {
       <div className="mt-2 flex flex-col items-center gap-1">
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label={toggleAIChat.label} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
-            <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
+            <SidebarToggle
+              pressed={showAIAnalyst}
+              onPressedChange={() => {
+                setShowAIAnalyst((prevShowAiAnalyst) => {
+                  // if it's hidden and therefore being opened by the user, count it!
+                  if (prevShowAiAnalyst === false) {
+                    incrementAiAnalystOpenCount();
+                  }
+
+                  return !prevShowAiAnalyst;
+                });
+              }}
+            >
               <AIIcon />
             </SidebarToggle>
           </SidebarTooltip>

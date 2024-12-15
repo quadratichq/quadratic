@@ -5,6 +5,7 @@ import {
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { FileDragDropWrapper } from '@/app/ui/components/FileDragDropWrapper';
@@ -28,7 +29,8 @@ import { useRootRouteLoaderData } from '@/routes/_root';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
-import { useMemo } from 'react';
+import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
+import { useEffect, useMemo } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -42,6 +44,25 @@ export default function QuadraticUI() {
   const presentationMode = useRecoilValue(presentationModeAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
+
+  // Show negative_offsets warning if present in URL (the result of an imported
+  // file)
+  useEffect(() => {
+    const url = new URLSearchParams(window.location.search);
+    if (url.has('negative_offsets')) {
+      setTimeout(() =>
+        pixiAppSettings.snackbar('File automatically updated for A1 notation.', {
+          stayOpen: true,
+          button: {
+            title: 'Learn more',
+            callback: () => window.open(COMMUNITY_A1_FILE_UPDATE_URL, '_blank'),
+          },
+        })
+      );
+      url.delete('negative_offsets');
+      window.history.replaceState({}, '', `${window.location.pathname}${url.toString() ? `?${url}` : ''}`);
+    }
+  }, []);
 
   return (
     <div

@@ -16,6 +16,7 @@ export const AIResearcher = () => {
   const codeEditorLoading = useRecoilValue(codeEditorLoadingAtom);
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const autoFocusRef = useRef(true);
   const { panelWidth, setPanelWidth } = useAIResearcherPanelWidth();
 
   const handleKeyDown = useRecoilCallback(
@@ -69,7 +70,7 @@ export const AIResearcher = () => {
         <div className="px-2 py-0.5">
           <AIResearcherUserMessageForm
             ref={textareaRef}
-            autoFocus={true}
+            autoFocusRef={autoFocusRef}
             textareaRef={textareaRef}
             collapseAfterSubmit={false}
             disableBackspaceIcon={true}

@@ -6,6 +6,7 @@ import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGr
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { User, authClient, parseDomain } from '@/auth/auth';
@@ -202,7 +203,8 @@ export class Multiplayer {
   cellIsBeingEdited(x: number, y: number, sheetId: string): { codeEditor: boolean; user: string } | undefined {
     for (const player of this.users.values()) {
       if (player.sheet_id === sheetId && player.cell_edit.active && player.parsedSelection) {
-        if (player.parsedSelection.cursorPosition.x === x && player.parsedSelection.cursorPosition.y === y) {
+        const cursor = player.parsedSelection.getCursor();
+        if (cursor.x === x && cursor.y === y) {
           const user = displayName(player, false);
           return { codeEditor: player.cell_edit.code_editor, user };
         }
@@ -321,7 +323,7 @@ export class Multiplayer {
 
     if (update.selection) {
       player.selection = update.selection;
-      player.parsedSelection = player.selection ? JSON.parse(player.selection) : undefined;
+      player.parsedSelection = player.selection ? JsSelection.load(player.selection) : undefined;
       if (player.sheet_id === sheets.sheet.id) {
         pixiApp.multiplayerCursor.dirty = true;
       }
@@ -332,12 +334,8 @@ export class Multiplayer {
       if (!update.cell_edit.code_editor) {
         if (player.parsedSelection) {
           // hide the label if the player is editing the cell
-          pixiApp.cellsSheets.showLabel(
-            player.parsedSelection.cursorPosition.x,
-            player.parsedSelection.cursorPosition.y,
-            player.sheet_id,
-            !player.cell_edit.active
-          );
+          const cursor = player.parsedSelection.getCursor();
+          pixiApp.cellsSheets.showLabel(cursor.x, cursor.y, player.sheet_id, !player.cell_edit.active);
         }
         events.emit('multiplayerCellEdit', update.cell_edit, player);
       }
@@ -385,7 +383,7 @@ export class Multiplayer {
           player.image = user.image;
           player.sheet_id = user.sheet_id;
           player.selection = user.selection;
-          player.parsedSelection = user.selection ? JSON.parse(user.selection) : undefined;
+          player.parsedSelection = user.selection ? JsSelection.load(user.selection) : undefined;
           remaining.delete(user.session_id);
           if (debugShowMultiplayer) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
         } else {
@@ -399,7 +397,7 @@ export class Multiplayer {
             image: user.image,
             sheet_id: user.sheet_id,
             selection: user.selection,
-            parsedSelection: user.selection ? JSON.parse(user.selection) : undefined,
+            parsedSelection: user.selection ? JsSelection.load(user.selection) : undefined,
             cell_edit: user.cell_edit,
             x: 0,
             y: 0,

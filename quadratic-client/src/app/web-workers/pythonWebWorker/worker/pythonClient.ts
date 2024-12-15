@@ -47,7 +47,7 @@ class PythonClient {
             this.waitingForResponse[e.data.id](e.data);
             delete this.waitingForResponse[e.data.id];
           } else {
-            console.warn('No resolve for message in pythonClient', e.data.id);
+            console.warn('No resolve for message in pythonClient', e.data.type);
           }
         } else {
           console.warn('[pythonClient] Unhandled message type', e.data);

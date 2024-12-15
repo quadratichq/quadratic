@@ -62,14 +62,10 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
       normalContainer.style.transform = transform;
     };
     updateTransform();
-    viewport.on('moved', updateTransform);
-    viewport.on('moved-end', updateTransform);
-    viewport.on('zoomed', updateTransform);
+    events.on('viewportChangedReady', updateTransform);
     window.addEventListener('resize', updateTransform);
     return () => {
-      viewport.off('moved', updateTransform);
-      viewport.off('moved-end', updateTransform);
-      viewport.off('zoomed', updateTransform);
+      events.off('viewportChangedReady', updateTransform);
       window.removeEventListener('resize', updateTransform);
     };
   }, [normalContainer, parent, zoomContainer]);
@@ -77,6 +73,11 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
   const { leftHeading, topHeading } = useHeadingSize();
 
   if (!parent) return null;
+
+  if (isNaN(leftHeading) || isNaN(topHeading)) {
+    console.log('todo in HTMLGridContainer', { leftHeading, topHeading });
+    return null;
+  }
 
   return (
     <>

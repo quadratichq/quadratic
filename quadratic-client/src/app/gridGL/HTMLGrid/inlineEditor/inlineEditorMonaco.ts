@@ -4,6 +4,7 @@ import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEdi
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -61,12 +62,12 @@ class InlineEditorMonaco {
   }
 
   // Gets the value of the inline editor.
-  get(): string {
+  get = (): string => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in getValue');
     }
     return this.editor.getValue();
-  }
+  };
 
   // Sets the value of the inline editor and moves the cursor to the end.
   set(s: string, select?: boolean | number) {
@@ -284,7 +285,7 @@ class InlineEditorMonaco {
     return this.editor.getValue().length + 1;
   }
 
-  getPosition(): monaco.Position {
+  getPosition = (): monaco.Position => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in getPosition');
     }
@@ -293,7 +294,7 @@ class InlineEditorMonaco {
       throw new Error('Expected position to be defined in getPosition');
     }
     return position;
-  }
+  };
 
   getCursorColumn(): number {
     if (!this.editor) {
@@ -332,13 +333,13 @@ class InlineEditorMonaco {
     return { bounds, position };
   }
 
-  getNonWhitespaceCharBeforeCursor(): string {
-    const formula = inlineEditorMonaco.get();
+  getNonWhitespaceCharBeforeCursor = (): string => {
+    const formula = this.get();
 
     // If there is a selection then use the start of the selection; otherwise
     // use the cursor position.
-    const selection = inlineEditorMonaco.editor?.getSelection()?.getStartPosition();
-    const position = selection ?? inlineEditorMonaco.getPosition();
+    const selection = this.editor?.getSelection()?.getStartPosition();
+    const position = selection ?? this.getPosition();
 
     const line = formula.split('\n')[position.lineNumber - 1];
     const lastCharacter =
@@ -347,7 +348,7 @@ class InlineEditorMonaco {
         .trimEnd()
         .at(-1) ?? '';
     return lastCharacter;
-  }
+  };
 
   createDecorationsCollection(newDecorations: editor.IModelDeltaDecoration[]) {
     if (!this.editor) {
@@ -471,7 +472,10 @@ class InlineEditorMonaco {
       inlineEditorKeyboard.keyDown(e.browserEvent);
     });
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onMouseDown(() => inlineEditorKeyboard.resetKeyboardPosition());
+    this.editor.onMouseDown(() => {
+      inlineEditorKeyboard.resetKeyboardPosition();
+      pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
+    });
     this.editor.onDidChangeModelContent(() => inlineEditorEvents.emit('valueChanged', this.get()));
   }
 

@@ -11,6 +11,7 @@ import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { getCodeCell, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -294,9 +295,7 @@ function HoverCellSpillError({ codeCell: codeCellCore, onClick }: { codeCell: Js
         To fix: remove content in {pluralize('cell', spillError.length)}{' '}
         {spillError.map((pos, index) => (
           <span key={`${pos.x},${pos.y}`}>
-            <code className="hover-cell-code">
-              ({String(pos.x)}, {String(pos.y)})
-            </code>
+            <code className="hover-cell-code">{xyToA1(Number(pos.x), Number(pos.y))}</code>
 
             {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
           </span>

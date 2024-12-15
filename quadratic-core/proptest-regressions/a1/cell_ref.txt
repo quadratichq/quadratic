@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 671d8ac438ba84d4c305966a0f8d9081ca1baf9b839651d2faf5f7d53c0e0ef4 # shrinks to cell_ref_range = CellRefRange { start: CellRefRangeEnd { col: None, row: None }, end: None }
+cc ece44ab109fcb34750afc3239b24a91fa5290c299034f645b6c6723373aa2e8f # shrinks to cell_ref_range = CellRefRange(O)

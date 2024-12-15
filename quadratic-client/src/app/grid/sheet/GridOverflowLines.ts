@@ -1,6 +1,6 @@
 //! Keeps track of which grid lines should not be drawn within the sheet because of overflow.
 
-import { Coordinate } from '@/app/gridGL/types/size';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 
 export class GridOverflowLines {
   private overflowLines: Map<string, string>;
@@ -10,7 +10,7 @@ export class GridOverflowLines {
   }
 
   // Updates a hash with a list of overflow lines
-  updateHash(hashKey: string, coordinates: Coordinate[]) {
+  updateHash(hashKey: string, coordinates: JsCoordinate[]) {
     // first remove all overflowLines from this hash
     this.overflowLines.forEach((value, key) => {
       if (value === hashKey) {

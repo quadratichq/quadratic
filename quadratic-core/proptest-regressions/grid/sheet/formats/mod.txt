@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 8d9d40fbb8ece00a6d61b84e42969f052c601f16a1f6a107e38314e2647436eb # shrinks to subspaces_1 = A1Subspaces { all: None, cols: {}, rows: {}, rects: [] }, new_format_1 = Format { align: None, vertical_align: None, wrap: None, numeric_format: None, numeric_decimals: None, numeric_commas: None, bold: None, italic: None, text_color: None, fill_color: None, render_size: None, date_time: None, underline: None, strike_through: None }, subspaces_2 = A1Subspaces { all: None, cols: {}, rows: {}, rects: [] }, new_format_2 = Format { align: None, vertical_align: None, wrap: None, numeric_format: None, numeric_decimals: None, numeric_commas: None, bold: None, italic: None, text_color: None, fill_color: None, render_size: None, date_time: None, underline: None, strike_through: None }

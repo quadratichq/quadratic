@@ -5,7 +5,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
-import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco, PADDING_FOR_INLINE_EDITOR } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -145,8 +145,9 @@ class InlineEditorHandler {
     }
 
     if (x || y) {
-      pixiApp.viewport.x += x * scale;
-      pixiApp.viewport.y += y * scale;
+      const { width, height } = pixiApp.headings.headingSize;
+      pixiApp.viewport.x = Math.min(pixiApp.viewport.x + x * scale, width);
+      pixiApp.viewport.y = Math.min(pixiApp.viewport.y + y * scale, height);
       pixiApp.setViewportDirty();
     }
   };
@@ -171,7 +172,7 @@ class InlineEditorHandler {
   };
 
   // Handler for the changeInput event.
-  private changeInput = async (input: boolean, initialValue?: string) => {
+  private changeInput = async (input: boolean, initialValue?: string, cursorMode?: CursorMode) => {
     if (!input && !this.open) return;
 
     if (initialValue) {
@@ -187,7 +188,7 @@ class InlineEditorHandler {
     if (input) {
       this.open = true;
       const sheet = sheets.sheet;
-      const cursor = sheet.cursor.getCursor();
+      const cursor = sheet.cursor.position;
       this.location = {
         sheetId: sheet.id,
         x: cursor.x,
@@ -197,7 +198,7 @@ class InlineEditorHandler {
       let changeToFormula = false;
       if (initialValue) {
         value = initialValue;
-        this.changeToFormula(value[0] === '=');
+        changeToFormula = value[0] === '=';
       } else {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
         if (formula?.language === 'Formula') {
@@ -205,13 +206,26 @@ class InlineEditorHandler {
           changeToFormula = true;
         } else {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
+          changeToFormula = false;
         }
       }
+
+      if (cursorMode === undefined) {
+        if (changeToFormula) {
+          cursorMode = value.length > 1 ? CursorMode.Edit : CursorMode.Enter;
+        } else {
+          cursorMode = value ? CursorMode.Edit : CursorMode.Enter;
+        }
+      }
+      pixiAppSettings.setInlineEditorState?.((prev) => ({
+        ...prev,
+        editMode: cursorMode === CursorMode.Edit,
+      }));
+
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
-        this.location.y,
-        true
+        this.location.y
       );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
@@ -358,8 +372,8 @@ class InlineEditorHandler {
     pixiAppSettings.setInlineEditorState((prev) => ({
       ...prev,
       left: this.x,
-      top: this.y + OPEN_SANS_FIX.y / 3,
-      lineHeight: this.height,
+      top: this.y,
+      height: this.height,
     }));
 
     pixiApp.cursor.dirty = true;
@@ -484,16 +498,8 @@ class InlineEditorHandler {
 
     // Update Grid Interaction state, reset input value state
     if (deltaX || deltaY) {
-      const position = sheets.sheet.cursor.cursorPosition;
-      sheets.sheet.cursor.changePosition({
-        multiCursor: null,
-        columnRow: null,
-        cursorPosition: {
-          x: position.x + deltaX,
-          y: position.y + deltaY,
-        },
-        ensureVisible: true,
-      });
+      const position = sheets.sheet.cursor.position;
+      sheets.sheet.cursor.moveTo(position.x + deltaX, position.y + deltaY);
     }
 
     // Set focus back to Grid
@@ -502,8 +508,7 @@ class InlineEditorHandler {
   };
 
   // Handler for the click for the expand code editor button.
-  openCodeEditor = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    e.stopPropagation();
+  openCodeEditor = () => {
     if (!pixiAppSettings.setCodeEditorState) {
       throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
     }

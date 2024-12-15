@@ -7,6 +7,7 @@
 import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import {
   BorderSelection,
   BorderStyle,
@@ -18,20 +19,19 @@ import {
   Format,
   JsCellValue,
   JsCellValuePosAIContext,
+  JsClipboard,
   JsCodeCell,
-  JsPos,
+  JsCoordinate,
   JsRenderCell,
-  MinMax,
+  JsSummarizeSelectionResult,
+  JumpDirection,
   PasteSpecial,
   SearchOptions,
-  Selection,
   SheetPos,
   SheetRect,
-  SummarizeSelectionResult,
   Validation,
 } from '@/app/quadratic-core-types';
-import { authClient } from '@/auth/auth';
-import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
+import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
 import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
@@ -47,6 +47,7 @@ import {
   ClientCoreUpgradeGridFile,
   CoreClientFindNextColumnForRect,
   CoreClientFindNextRowForRect,
+  CoreClientFiniteRectFromSelection,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
@@ -57,6 +58,7 @@ import {
   CoreClientGetRowsBounds,
   CoreClientGetValidationList,
   CoreClientHasRenderCells,
+  CoreClientJumpCursor,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -65,12 +67,19 @@ import {
   CoreClientSearch,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
-} from './coreClientMessages';
+} from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
+import { authClient } from '@/auth/auth';
+import { Rectangle } from 'pixi.js';
 
 class QuadraticCore {
   private worker?: Worker;
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
+
+  // This is a hack to get import files to properly show negative offsets dialog
+  // after importing from dashboard. This can be removed in the future.
+  receivedClientMessage = false;
 
   initWorker() {
     if (!this.worker) {
@@ -103,6 +112,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSetCursor') {
       events.emit('setCursor', e.data.cursor);
+      return;
+    } else if (e.data.type === 'coreClientSetCursorSelection') {
+      events.emit('setCursor', e.data.selection);
       return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
       events.emit('sheetOffsets', e.data.sheetId, e.data.offsets);
@@ -169,9 +181,6 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetMetaFills') {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
       return;
-    } else if (e.data.type === 'coreClientSetCursorSelection') {
-      events.emit('setCursor', undefined, e.data.selection);
-      return;
     } else if (e.data.type === 'coreClientSheetValidations') {
       events.emit('sheetValidations', e.data.sheetId, e.data.validations);
       return;
@@ -183,6 +192,14 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientBordersSheet') {
       events.emit('bordersSheet', e.data.sheetId, e.data.borders);
+      return;
+    } else if (e.data.type === 'coreClientClientMessage') {
+      pixiAppSettings.snackbar(e.data.message, { severity: e.data.error ? 'error' : 'success' });
+
+      // This is a hack to get import files to properly show negative offsets dialog
+      // after importing from dashboard. This can be removed in the future.
+      this.receivedClientMessage = true;
+
       return;
     } else if (e.data.type === 'coreClientRequestAIResearcherResult') {
       events.emit(
@@ -383,8 +400,8 @@ class QuadraticCore {
     });
   }
 
-  getAIContextRectsInSheetRects(
-    sheetRects: SheetRect[],
+  getAIContextRectsInSelections(
+    selections: string[],
     maxRects?: number
   ): Promise<JsCellValuePosAIContext[][] | undefined> {
     return new Promise((resolve) => {
@@ -392,17 +409,17 @@ class QuadraticCore {
       this.waitingForResponse[id] = (message: { value: JsCellValuePosAIContext[][] | undefined }) => {
         resolve(message.value);
       };
-      this.send({ type: 'clientCoreGetAIContextRectsInSheetRects', sheetRects, maxRects, id });
+      this.send({ type: 'clientCoreGetAIContextRectsInSelections', selections, maxRects, id });
     });
   }
 
-  getErroredCodeCellsInSheetRects(sheetRects: SheetRect[]): Promise<JsCodeCell[][] | undefined> {
+  getErroredCodeCellsInSelections(selections: string[]): Promise<JsCodeCell[][] | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { value: JsCodeCell[][] | undefined }) => {
         resolve(message.value);
       };
-      this.send({ type: 'clientCoreGetErroredCodeCellsInSheetRects', sheetRects, id });
+      this.send({ type: 'clientCoreGetErroredCodeCellsInSelections', selections, id });
     });
   }
 
@@ -461,7 +478,8 @@ class QuadraticCore {
     });
   }
 
-  getCellFormatSummary(sheetId: string, x: number, y: number, withSheetInfo: boolean): Promise<CellFormatSummary> {
+  // todo: we should probably only have getFormatCell and not this one...
+  getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
     return new Promise((resolve) => {
       const id = this.id++;
       const message: ClientCoreGetCellFormatSummary = {
@@ -470,56 +488,11 @@ class QuadraticCore {
         sheetId,
         x,
         y,
-        withSheetInfo,
       };
       this.waitingForResponse[id] = (message: CoreClientGetCellFormatSummary) => {
         resolve(message.formatSummary);
       };
       this.send(message);
-    });
-  }
-
-  getFormatAll(sheetId: string): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
-        resolve(message.format);
-      };
-      this.send({
-        type: 'clientCoreGetFormatAll',
-        sheetId,
-        id,
-      });
-    });
-  }
-
-  getFormatColumn(sheetId: string, column: number): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
-        resolve(message.format);
-      };
-      this.send({
-        type: 'clientCoreGetFormatColumn',
-        sheetId,
-        column,
-        id,
-      });
-    });
-  }
-
-  getFormatRow(sheetId: string, row: number): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
-        resolve(message.format);
-      };
-      this.send({
-        type: 'clientCoreGetFormatRow',
-        sheetId,
-        row,
-        id,
-      });
     });
   }
 
@@ -589,7 +562,7 @@ class QuadraticCore {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
   }
 
-  summarizeSelection(decimalPlaces: number, selection: Selection): Promise<SummarizeSelectionResult | undefined> {
+  summarizeSelection(decimalPlaces: number, selection: string): Promise<JsSummarizeSelectionResult | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       const message: ClientCoreSummarizeSelection = {
@@ -605,7 +578,7 @@ class QuadraticCore {
     });
   }
 
-  setCellBold(selection: Selection, bold: boolean, cursor?: string) {
+  setBold(selection: string, bold: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellBold',
       selection,
@@ -614,7 +587,7 @@ class QuadraticCore {
     });
   }
 
-  setCellFillColor(selection: Selection, fillColor?: string, cursor?: string) {
+  setFillColor(selection: string, fillColor?: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellFillColor',
       selection,
@@ -623,7 +596,7 @@ class QuadraticCore {
     });
   }
 
-  setCellItalic(selection: Selection, italic: boolean, cursor?: string) {
+  setItalic(selection: string, italic: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellItalic',
       selection,
@@ -632,7 +605,7 @@ class QuadraticCore {
     });
   }
 
-  setCellTextColor(selection: Selection, color?: string, cursor?: string) {
+  setTextColor(selection: string, color?: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellTextColor',
       selection,
@@ -641,7 +614,7 @@ class QuadraticCore {
     });
   }
 
-  setCellUnderline(selection: Selection, underline: boolean, cursor?: string) {
+  setUnderline(selection: string, underline: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellUnderline',
       selection,
@@ -650,7 +623,7 @@ class QuadraticCore {
     });
   }
 
-  setCellStrikeThrough(selection: Selection, strikeThrough: boolean, cursor?: string) {
+  setStrikeThrough(selection: string, strikeThrough: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellStrikeThrough',
       selection,
@@ -659,7 +632,7 @@ class QuadraticCore {
     });
   }
 
-  setCellAlign(selection: Selection, align: CellAlign, cursor?: string) {
+  setAlign(selection: string, align: CellAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellAlign',
       selection,
@@ -668,7 +641,7 @@ class QuadraticCore {
     });
   }
 
-  setCellVerticalAlign(selection: Selection, verticalAlign: CellVerticalAlign, cursor?: string) {
+  setVerticalAlign(selection: string, verticalAlign: CellVerticalAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellVerticalAlign',
       selection,
@@ -677,7 +650,7 @@ class QuadraticCore {
     });
   }
 
-  setCellWrap(selection: Selection, wrap: CellWrap, cursor?: string) {
+  setWrap(selection: string, wrap: CellWrap, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellWrap',
       selection,
@@ -686,7 +659,7 @@ class QuadraticCore {
     });
   }
 
-  setCellCurrency(selection: Selection, symbol: string, cursor?: string) {
+  setCellCurrency(selection: string, symbol: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCurrency',
       selection,
@@ -695,7 +668,7 @@ class QuadraticCore {
     });
   }
 
-  setCellPercentage(selection: Selection, cursor?: string) {
+  setCellPercentage(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetPercentage',
       selection,
@@ -703,7 +676,7 @@ class QuadraticCore {
     });
   }
 
-  setCellExponential(selection: Selection, cursor?: string) {
+  setCellExponential(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetExponential',
       selection,
@@ -711,7 +684,7 @@ class QuadraticCore {
     });
   }
 
-  removeCellNumericFormat(selection: Selection, cursor?: string) {
+  removeNumericFormat(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreRemoveCellNumericFormat',
       selection,
@@ -719,7 +692,7 @@ class QuadraticCore {
     });
   }
 
-  changeDecimalPlaces(selection: Selection, delta: number, cursor?: string) {
+  changeDecimalPlaces(selection: string, delta: number, cursor?: string) {
     this.send({
       type: 'clientCoreChangeDecimals',
       selection,
@@ -728,7 +701,7 @@ class QuadraticCore {
     });
   }
 
-  clearFormatting(selection: Selection, cursor?: string) {
+  clearFormatting(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreClearFormatting',
       selection,
@@ -736,7 +709,7 @@ class QuadraticCore {
     });
   }
 
-  setCommas(selection: Selection, commas: boolean, cursor?: string) {
+  setCommas(selection: string, commas: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCommas',
       selection,
@@ -745,7 +718,7 @@ class QuadraticCore {
     });
   }
 
-  setDateTimeFormat(selection: Selection, format: string, cursor: string) {
+  setDateTimeFormat(selection: string, format: string, cursor: string) {
     this.send({
       type: 'clientCoreSetDateTimeFormat',
       selection,
@@ -754,7 +727,7 @@ class QuadraticCore {
     });
   }
 
-  deleteCellValues(selection: Selection, cursor?: string) {
+  deleteCellValues(selection: string, cursor?: string) {
     this.send({
       type: 'clientCoreDeleteCellValues',
       selection,
@@ -845,10 +818,10 @@ class QuadraticCore {
 
   //#region Clipboard
 
-  copyToClipboard(selection: Selection): Promise<{ plainText: string; html: string }> {
+  copyToClipboard(selection: string): Promise<JsClipboard> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
+      this.waitingForResponse[id] = (message: JsClipboard) => {
         resolve(message);
       };
       this.send({
@@ -859,10 +832,10 @@ class QuadraticCore {
     });
   }
 
-  cutToClipboard(selection: Selection, cursor: string): Promise<{ plainText: string; html: string }> {
+  cutToClipboard(selection: string, cursor: string): Promise<JsClipboard> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
+      this.waitingForResponse[id] = (message: JsClipboard) => {
         resolve(message);
       };
       this.send({
@@ -875,8 +848,7 @@ class QuadraticCore {
   }
 
   pasteFromClipboard(options: {
-    sheetId: string;
-    selection: Selection;
+    selection: string;
     plainText: string | undefined;
     html: string | undefined;
     special: PasteSpecial;
@@ -892,7 +864,7 @@ class QuadraticCore {
 
   //#region Borders
 
-  setBorders(selection: Selection, borderSelection: BorderSelection, style?: BorderStyle) {
+  setBorders(selection: string, borderSelection: BorderSelection, style?: BorderStyle) {
     this.send({
       type: 'clientCoreSetBorders',
       selection,
@@ -944,7 +916,7 @@ class QuadraticCore {
     });
   }
 
-  exportCsvSelection(selection: Selection): Promise<string> {
+  exportCsvSelection(selection: string): Promise<string> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: { csv: string }) => {
@@ -981,7 +953,7 @@ class QuadraticCore {
     y: number;
     sheetEnd: boolean;
     reverse: boolean;
-  }): Promise<JsPos> {
+  }): Promise<Pos> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellVertically) => {
@@ -1012,7 +984,7 @@ class QuadraticCore {
     y: number;
     sheetEnd: boolean;
     reverse: boolean;
-  }): Promise<JsPos> {
+  }): Promise<Pos> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellHorizontally) => {
@@ -1065,6 +1037,22 @@ class QuadraticCore {
         end,
         id,
         ignoreFormatting,
+      });
+    });
+  }
+
+  jumpCursor(sheetId: string, current: JsCoordinate, direction: JumpDirection): Promise<JsCoordinate | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
+        resolve(message.coordinate);
+      };
+      this.send({
+        type: 'clientCoreJumpCursor',
+        sheetId,
+        current,
+        direction,
+        id,
       });
     });
   }
@@ -1190,6 +1178,18 @@ class QuadraticCore {
       row,
       size,
       cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  finiteRectFromSelection(selection: string): Promise<Rectangle | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientFiniteRectFromSelection) => resolve(message.rect);
+      this.send({
+        type: 'clientCoreFiniteRectFromSelection',
+        id,
+        selection,
+      });
     });
   }
 

@@ -36,11 +36,14 @@ export const aiAnalystAtom = atom<AIAnalystState>({
   effects: [
     async ({ getPromise, setSelf, trigger }) => {
       if (trigger === 'get') {
+        // Determine if we want to override the default showAIAnalyst value on initialization
+        const aiAnalystOpenCount = getAiAnalystOpenCount();
         const isSheetEmpty = sheets.sheet.bounds.type === 'empty';
-        if (isSheetEmpty) {
+        const showAIAnalyst = aiAnalystOpenCount <= 3 ? true : isSheetEmpty;
+        if (showAIAnalyst) {
           setSelf({
             ...defaultAIAnalystState,
-            showAIAnalyst: true,
+            showAIAnalyst,
           });
         }
 
@@ -52,7 +55,7 @@ export const aiAnalystAtom = atom<AIAnalystState>({
             const chats = await aiAnalystOfflineChats.loadChats();
             setSelf({
               ...defaultAIAnalystState,
-              showAIAnalyst: isSheetEmpty,
+              showAIAnalyst,
               chats,
             });
           } catch (error) {
@@ -271,3 +274,14 @@ export const aiAnalystCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAnalystCurrentChatMessagesCountAtom',
   get: ({ get }) => getPromptMessages(get(aiAnalystCurrentChatAtom).messages).length,
 });
+
+const STORAGE_KEY = 'aiAnalystOpenCount';
+export function getAiAnalystOpenCount() {
+  const count = window.localStorage.getItem(STORAGE_KEY);
+  return count ? parseInt(count) : 0;
+}
+export function incrementAiAnalystOpenCount() {
+  const count = getAiAnalystOpenCount();
+  const newCount = count + 1;
+  window.localStorage.setItem(STORAGE_KEY, newCount.toString());
+}

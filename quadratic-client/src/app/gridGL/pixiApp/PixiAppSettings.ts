@@ -7,9 +7,10 @@ import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditor
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { SetterOrUpdater } from 'recoil';
 
@@ -28,6 +29,10 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: Input;
+  private waitingForSnackbar: {
+    message: JSX.Element | string;
+    options: SnackbarOptions;
+  }[] = [];
 
   // Keeps track of code editor content. This is used when moving code cells to
   // keep track of any unsaved changes, and keyboardCell.
@@ -80,7 +85,6 @@ class PixiAppSettings {
       this.settings = defaultGridSettings;
     }
     pixiApp.gridLines.dirty = true;
-    pixiApp.axesLines.dirty = true;
     pixiApp.headings.dirty = true;
 
     if (
@@ -145,9 +149,6 @@ class PixiAppSettings {
   get showGridLines(): boolean {
     return !this.settings.presentationMode && this.settings.showGridLines;
   }
-  get showGridAxes(): boolean {
-    return !this.settings.presentationMode && this.settings.showGridAxes;
-  }
   get showHeadings(): boolean {
     return !this.settings.presentationMode && this.settings.showHeadings;
   }
@@ -186,7 +187,7 @@ class PixiAppSettings {
     }
   }
 
-  changeInput(input: boolean, initialValue?: string) {
+  changeInput(input: boolean, initialValue?: string, cursorMode?: CursorMode) {
     if (input === false) {
       multiplayer.sendEndCellEdit();
     }
@@ -199,8 +200,8 @@ class PixiAppSettings {
       pixiApp.cellsSheets.showLabel(this._input.x, this._input.y, this._input.sheetId, true);
     }
     if (input === true) {
-      const x = sheets.sheet.cursor.cursorPosition.x;
-      const y = sheets.sheet.cursor.cursorPosition.y;
+      const x = sheets.sheet.cursor.position.x;
+      const y = sheets.sheet.cursor.position.y;
       if (multiplayer.cellIsBeingEdited(x, y, sheets.sheet.id)) {
         this._input = { show: false };
       } else {
@@ -213,7 +214,7 @@ class PixiAppSettings {
     this.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility
-    events.emit('changeInput', input, initialValue);
+    events.emit('changeInput', input, initialValue, cursorMode);
   }
 
   get input() {
@@ -222,6 +223,22 @@ class PixiAppSettings {
 
   get panMode() {
     return this._panMode;
+  }
+
+  setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) {
+    this.addGlobalSnackbar = addGlobalSnackbar;
+    for (const snackbar of this.waitingForSnackbar) {
+      this.addGlobalSnackbar(snackbar.message, snackbar.options);
+    }
+    this.waitingForSnackbar = [];
+  }
+
+  snackbar(message: string, options: SnackbarOptions) {
+    if (this.addGlobalSnackbar) {
+      this.addGlobalSnackbar(message, options);
+    } else {
+      this.waitingForSnackbar.push({ message, options });
+    }
   }
 }
 

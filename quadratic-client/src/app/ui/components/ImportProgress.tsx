@@ -14,7 +14,7 @@ export const ImportProgress = () => {
   const abortController = files[currentFileIndex].abortController;
 
   return (
-    <div className="fixed bottom-16 left-8 z-10 h-[92px] w-[403px] select-none border border-slate-200 bg-white pb-2 pl-4 pr-4 pt-2 tracking-tight shadow-[0_2px_5px_0px_rgba(0,0,0,0.15)]">
+    <div className="fixed bottom-16 left-8 z-50 h-[92px] w-[403px] select-none border border-slate-200 bg-white pb-2 pl-4 pr-4 pt-2 tracking-tight shadow-[0_2px_5px_0px_rgba(0,0,0,0.15)]">
       <div className="flex justify-between">
         <div className="min-w-0">
           <div className="text-base font-medium">

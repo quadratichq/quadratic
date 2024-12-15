@@ -2,6 +2,7 @@ import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
+import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { CloseIcon } from '@/shared/components/Icons';
@@ -46,7 +47,7 @@ export const AIResearcherHeader = () => {
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
-          AI Researcher - Cell ({codeCellState.pos.x}, {codeCellState.pos.y})
+          AI Researcher - Cell {xyToA1(codeCellState.pos.x, codeCellState.pos.y)}
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}

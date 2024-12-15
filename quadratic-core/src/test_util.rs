@@ -1,7 +1,7 @@
 use crate::{
     controller::GridController,
     formulas::replace_internal_cell_references,
-    grid::{Bold, CodeCellLanguage, FillColor, GridBounds, Sheet, SheetId},
+    grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
     CellValue, Pos, Rect,
 };
 use std::collections::HashMap;
@@ -13,6 +13,7 @@ use tabled::{
 
 /// Run an assertion that a cell value is equal to the given value
 #[cfg(test)]
+#[track_caller]
 pub fn assert_display_cell_value(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -58,6 +59,7 @@ pub fn assert_code_cell_value(
 
 /// Run an assertion that cell values in a given row are equal to the given value
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_value_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -76,6 +78,7 @@ pub fn assert_cell_value_row(
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_format_bold_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -96,6 +99,7 @@ pub fn assert_cell_format_bold_row(
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_format_bold(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -104,19 +108,20 @@ pub fn assert_cell_format_bold(
     expect_bold: bool,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
-    let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
+    let has_bold = sheet.formats.bold.get(Pos { x, y });
     assert!(
-        has_bold == expect_bold,
+        has_bold == Some(expect_bold) || (has_bold.is_none() && !expect_bold),
         "Cell at ({}, {}) should be bold={}, but is actually bold={}",
         x,
         y,
         expect_bold,
-        has_bold
+        has_bold.unwrap_or(false)
     );
 }
 
 // TODO(ddimaria): refactor all format assertions into a generic function
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_format_cell_fill_color_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -137,6 +142,7 @@ pub fn assert_cell_format_cell_fill_color_row(
 }
 
 #[cfg(test)]
+#[track_caller]
 pub fn assert_cell_format_fill_color(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -145,7 +151,7 @@ pub fn assert_cell_format_fill_color(
     expect_fill_color: &str,
 ) {
     let sheet = grid_controller.sheet(sheet_id);
-    let fill_color = sheet.get_formatting_value::<FillColor>(Pos { x, y });
+    let fill_color = sheet.formats.fill_color.get(Pos { x, y });
     assert!(
         fill_color == Some(expect_fill_color.to_string()),
         "Cell at ({}, {}) should be fill_color={:?}, but is actually fill_color={:?}",
@@ -196,11 +202,11 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
         rect.x_range().for_each(|x| {
             let pos: Pos = Pos { x, y };
 
-            if sheet.get_formatting_value::<Bold>(pos).is_some() {
+            if sheet.formats.bold.get(pos).is_some_and(|bold| bold) {
                 bolds.push((count_y + 1, count_x + 1));
             }
 
-            if let Some(fill_color) = sheet.get_formatting_value::<FillColor>(pos) {
+            if let Some(fill_color) = sheet.formats.fill_color.get(pos) {
                 fill_colors.push((count_y + 1, count_x + 1, fill_color));
             }
 
@@ -283,7 +289,7 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
     for y in rect.y_range() {
         let mut vals = vec![y.to_string()];
         for x in rect.x_range() {
-            let format = sheet.format_cell(x, y, false);
+            let format = sheet.formats.format(Pos { x, y });
             vals.push(format.to_string());
         }
         builder.push_record(vals);
@@ -296,8 +302,6 @@ pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
 
 #[cfg(test)]
 mod test {
-    use crate::grid::formats::format_update::FormatUpdate;
-
     use super::*;
     use serial_test::parallel;
 
@@ -307,55 +311,17 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_format_cell(
-            Pos { x: 0, y: 0 },
-            &FormatUpdate {
-                bold: Some(Some(true)),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 1, y: 1 },
-            &FormatUpdate {
-                bold: Some(Some(true)),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 2, y: 2 },
-            &FormatUpdate {
-                bold: Some(Some(true)),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 0, y: 1 },
-            &FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 1, y: 2 },
-            &FormatUpdate {
-                fill_color: Some(Some("blue".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
-        sheet.set_format_cell(
-            Pos { x: 2, y: 0 },
-            &FormatUpdate {
-                fill_color: Some(Some("green".to_string())),
-                ..Default::default()
-            },
-            false,
-        );
-        let rect = Rect::new(0, 0, 3, 3);
-        print_table_sheet_formats(sheet, rect);
+        sheet.formats.bold.set(pos![A1], Some(true));
+        sheet.formats.bold.set(pos![B2], Some(true));
+        sheet.formats.italic.set(pos![A2], Some(true));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![B3], Some("blue".to_string()));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![C3], Some("green".to_string()));
+        print_table_sheet_formats(sheet, Rect::test_a1("A1:C3"));
     }
 }

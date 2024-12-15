@@ -31,12 +31,13 @@ const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_](\.?[A-Za-z_\d])*\(";
 
 /// A1-style cell reference.
 ///
-/// \$?n?[A-Z]+\$?n?\d+
+/// \$?n?[a-zA-Z]+\$?n?\d+
 /// \$?        \$?            optional `$`s
 ///    n?         n?          optional `n`s
-///      [A-Z]+               letters
+///      [a-zA-Z]+            letters
 ///                 \d+       digits
-const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
+// const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
+const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?([a-zA-Z]+\$?n?\d*|\d+)";
 const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R([\[|\{]-?\d+[\]|\}])C([\[|\{]-?\d+[\]|\}])";
 
 /// Floating-point or integer number, without leading sign.
@@ -87,10 +88,10 @@ const TOKEN_PATTERNS: &[&str] = &[
     FUNCTION_CALL_PATTERN,
     // Boolean literal (case-insensitive).
     r#"false|true"#,
-    // Reference to a cell.
-    A1_CELL_REFERENCE_PATTERN,
     // Internal cell reference.
     INTERNAL_CELL_REFERENCE_PATTERN,
+    // Reference to a cell.
+    A1_CELL_REFERENCE_PATTERN,
     // Whitespace.
     r"\s+",
     // Any other single Unicode character.
@@ -303,9 +304,11 @@ impl Token {
             s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => Self::UnterminatedStringLiteral,
             s if s.eq_ignore_ascii_case("false") => Self::False,
             s if s.eq_ignore_ascii_case("true") => Self::True,
-            s if NUMERIC_LITERAL_REGEX.is_match(s) => Self::NumericLiteral,
-            s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
+            s if NUMERIC_LITERAL_REGEX.is_match(s) && !input_str[..start].ends_with(':') => {
+                Self::NumericLiteral
+            }
             s if INTERNAL_CELL_REFERENCE_REGEX.is_match(s) => Self::InternalCellRef,
+            s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
             s if s.trim().is_empty() => Self::Whitespace,
 
             // Give up.

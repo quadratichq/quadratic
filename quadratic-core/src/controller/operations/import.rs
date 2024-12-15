@@ -6,8 +6,8 @@ use chrono::{NaiveDate, NaiveTime};
 use crate::{
     cell_values::CellValues,
     controller::GridController,
-    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, Sheet, SheetId},
-    CellValue, CodeCellValue, Pos, SheetPos,
+    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, CodeCellValue, Sheet, SheetId},
+    CellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -143,11 +143,9 @@ impl GridController {
                 bail!("Sheet with name {} already exists", sheet_name);
             }
         }
-        // first cell in excel is A1, but first cell in quadratic is A0
-        // so we need to offset rows by 1, so that values are inserted in the original A1 notations cell
-        // this is required so that cell references (A1 notations) in formulas are correct
+
         let xlsx_range_to_pos = |(row, col)| Pos {
-            x: col as i64,
+            x: col as i64 + 1,
             y: row as i64 + 1,
         };
 
@@ -171,7 +169,7 @@ impl GridController {
 
             // values
             let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
-            let insert_at = range.start().map_or_else(Pos::default, xlsx_range_to_pos);
+            let insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     let cell_value = match cell {
@@ -285,7 +283,7 @@ impl GridController {
             }
             // add new sheets
             ops.push(Operation::AddSheetSchema {
-                schema: export_sheet(sheet),
+                schema: Box::new(export_sheet(sheet)),
             });
             ops.extend(formula_compute_ops);
         }
@@ -414,7 +412,7 @@ mod test {
     fn imports_a_simple_csv() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = pos![A1];
 
         const SIMPLE_CSV: &str =
             "city,region,country,population\nSouthborough,MA,United States,a lot of people";
@@ -430,8 +428,8 @@ mod test {
             ops.unwrap()[0],
             Operation::SetCellValues {
                 sheet_pos: SheetPos {
-                    x: 0,
-                    y: 0,
+                    x: 1,
+                    y: 1,
                     sheet_id
                 },
                 values: CellValues::from(vec![
@@ -494,25 +492,25 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
 
-        let pos = Pos { x: 0, y: 0 };
+        let pos = pos![A1];
         let csv = "2024-12-21,13:23:00,2024-12-21 13:23:00\n".to_string();
         gc.import_csv(sheet_id, csv.as_bytes().to_vec(), "csv", pos, None)
             .unwrap();
 
         assert_eq!(
-            gc.sheet(sheet_id).cell_value((0, 0).into()),
+            gc.sheet(sheet_id).cell_value((1, 1).into()),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            gc.sheet(sheet_id).cell_value((1, 0).into()),
+            gc.sheet(sheet_id).cell_value((2, 1).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            gc.sheet(sheet_id).cell_value((2, 0).into()),
+            gc.sheet(sheet_id).cell_value((3, 1).into()),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 21)
                     .unwrap()
@@ -533,22 +531,22 @@ mod test {
         let sheet = gc.sheet(sheet_id);
 
         assert_eq!(
-            sheet.cell_value((0, 1).into()),
+            sheet.cell_value((1, 1).into()),
             Some(CellValue::Number(1.into()))
         );
         assert_eq!(
-            sheet.cell_value((2, 10).into()),
+            sheet.cell_value((3, 10).into()),
             Some(CellValue::Number(12.into()))
         );
-        assert_eq!(sheet.cell_value((0, 6).into()), None);
+        assert_eq!(sheet.cell_value((1, 6).into()), None);
         assert_eq!(
-            sheet.cell_value((3, 2).into()),
+            sheet.cell_value((4, 2).into()),
             Some(CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Formula,
                 code: "C1:C5".into()
             }))
         );
-        assert_eq!(sheet.cell_value((3, 1).into()), None);
+        assert_eq!(sheet.cell_value((4, 1).into()), None);
     }
 
     #[test]
@@ -566,7 +564,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
         let file = include_bytes!("../../../test-files/date_time_formats_arrow.parquet");
-        let pos = Pos { x: 0, y: 0 };
+        let pos = pos![A1];
         gc.import_parquet(sheet_id, file.to_vec(), "parquet", pos, None)
             .unwrap();
 
@@ -574,19 +572,19 @@ mod test {
 
         // date
         assert_eq!(
-            sheet.cell_value((0, 1).into()),
+            sheet.cell_value((1, 2).into()),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((0, 2).into()),
+            sheet.cell_value((1, 3).into()),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-22", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((0, 3).into()),
+            sheet.cell_value((1, 4).into()),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-23", "%Y-%m-%d").unwrap()
             ))
@@ -594,19 +592,19 @@ mod test {
 
         // time
         assert_eq!(
-            sheet.cell_value((1, 1).into()),
+            sheet.cell_value((2, 2).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((1, 2).into()),
+            sheet.cell_value((2, 3).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("14:45:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((1, 3).into()),
+            sheet.cell_value((2, 4).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("16:30:00", "%H:%M:%S").unwrap()
             ))
@@ -614,7 +612,7 @@ mod test {
 
         // date time
         assert_eq!(
-            sheet.cell_value((2, 1).into()),
+            sheet.cell_value((3, 2).into()),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 21)
                     .unwrap()
@@ -623,7 +621,7 @@ mod test {
             ))
         );
         assert_eq!(
-            sheet.cell_value((2, 2).into()),
+            sheet.cell_value((3, 3).into()),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 22)
                     .unwrap()
@@ -632,7 +630,7 @@ mod test {
             ))
         );
         assert_eq!(
-            sheet.cell_value((2, 3).into()),
+            sheet.cell_value((3, 4).into()),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 23)
                     .unwrap()
@@ -653,19 +651,19 @@ mod test {
 
         // date
         assert_eq!(
-            sheet.cell_value((0, 2).into()),
+            sheet.cell_value((1, 2).into()),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("1990-12-21", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((0, 3).into()),
+            sheet.cell_value((1, 3).into()),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("1990-12-22", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((0, 4).into()),
+            sheet.cell_value((1, 4).into()),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("1990-12-23", "%Y-%m-%d").unwrap()
             ))
@@ -673,19 +671,19 @@ mod test {
 
         // date time
         assert_eq!(
-            sheet.cell_value((1, 2).into()),
+            sheet.cell_value((2, 2).into()),
             Some(CellValue::DateTime(
                 NaiveDateTime::parse_from_str("2021-1-5 15:45", "%Y-%m-%d %H:%M").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((1, 3).into()),
+            sheet.cell_value((2, 3).into()),
             Some(CellValue::DateTime(
                 NaiveDateTime::parse_from_str("2021-1-6 15:45", "%Y-%m-%d %H:%M").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((1, 4).into()),
+            sheet.cell_value((2, 4).into()),
             Some(CellValue::DateTime(
                 NaiveDateTime::parse_from_str("2021-1-7 15:45", "%Y-%m-%d %H:%M").unwrap()
             ))
@@ -693,19 +691,19 @@ mod test {
 
         // time
         assert_eq!(
-            sheet.cell_value((2, 2).into()),
+            sheet.cell_value((3, 2).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((2, 3).into()),
+            sheet.cell_value((3, 3).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("14:23:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            sheet.cell_value((2, 4).into()),
+            sheet.cell_value((3, 4).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("15:23:00", "%H:%M:%S").unwrap()
             ))

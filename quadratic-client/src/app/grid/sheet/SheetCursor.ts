@@ -2,15 +2,16 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Rect, Selection } from '@/app/quadratic-core-types';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { A1Selection, CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
+import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { Coordinate } from '../../gridGL/types/size';
-import { Sheet } from './Sheet';
-import { selectionOverlapsSelection } from './sheetCursorUtils';
 
 // Select column and/or row for the entire sheet.
 export interface ColumnRowCursor {
@@ -29,8 +30,8 @@ export interface RectangleLike {
 // Save object for the cursor state.
 export interface SheetCursorSave {
   sheetId: string;
-  keyboardMovePosition: Coordinate;
-  cursorPosition: Coordinate;
+  keyboardMovePosition: JsCoordinate;
+  cursorPosition: JsCoordinate;
   multiCursor?: RectangleLike[];
   columnRow?: ColumnRowCursor;
 }
@@ -38,21 +39,14 @@ export interface SheetCursorSave {
 export class SheetCursor {
   private _viewport?: IViewportTransformState;
 
-  sheetId: string;
+  jsSelection: JsSelection;
 
   // used to determine if the boxCells (ie, autocomplete) is active
   boxCells: boolean;
 
-  keyboardMovePosition: Coordinate;
-  cursorPosition: Coordinate;
-  multiCursor?: Rectangle[];
-  columnRow?: ColumnRowCursor;
-
   constructor(sheet: Sheet) {
-    this.sheetId = sheet.id;
+    this.jsSelection = new JsSelection(sheet.id);
     this.boxCells = false;
-    this.keyboardMovePosition = { x: 0, y: 0 };
-    this.cursorPosition = { x: 0, y: 0 };
   }
 
   set viewport(save: IViewportTransformState) {
@@ -61,114 +55,39 @@ export class SheetCursor {
 
   get viewport(): IViewportTransformState {
     if (!this._viewport) {
-      const { x, y } = pixiApp.getStartingViewport();
-      return { x, y, scaleX: 1, scaleY: 1 };
+      const heading = pixiApp.headings.headingSize;
+      return { x: heading.width, y: heading.height, scaleX: 1, scaleY: 1 };
     }
     return this._viewport;
   }
 
-  save(): SheetCursorSave {
-    return {
-      sheetId: this.sheetId,
-      keyboardMovePosition: this.keyboardMovePosition,
-      cursorPosition: this.cursorPosition,
-      multiCursor: this.multiCursor?.map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })),
-      columnRow: this.columnRow,
-    };
+  selection(): A1Selection {
+    return this.jsSelection.selection();
   }
 
-  load(value: SheetCursorSave): void {
-    this.keyboardMovePosition = value.keyboardMovePosition;
-    this.cursorPosition = value.cursorPosition;
-    this.multiCursor = value.multiCursor?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
-    this.columnRow = value.columnRow;
-    multiplayer.sendSelection(this.getMultiplayerSelection());
+  save(): string {
+    return this.jsSelection.save();
+  }
+
+  load(selectionString: string): void {
+    this.jsSelection = JsSelection.load(selectionString);
+    multiplayer.sendSelection(this.save());
     pixiApp.cursor.dirty = true;
   }
 
-  loadFromSelection(selection: Selection, skipMultiplayer = false) {
-    this.cursorPosition = { x: Number(selection.x), y: Number(selection.y) };
-
-    if (
-      selection.rects?.length === 1 &&
-      selection.rects[0].min.x === selection.rects[0].max.x &&
-      selection.rects[0].min.y === selection.rects[0].max.y
-    ) {
-      // This is a single cell selection
-      this.multiCursor = undefined;
-    } else {
-      this.multiCursor = selection.rects?.map(
-        (rect) =>
-          new Rectangle(
-            Number(rect.min.x),
-            Number(rect.min.y),
-            Number(rect.max.x) - Number(rect.min.x) + 1,
-            Number(rect.max.y) - Number(rect.min.y) + 1
-          )
-      );
-    }
-
-    if (selection.columns === null && selection.rows === null && selection.all === false) {
-      this.columnRow = undefined;
-    } else {
-      this.columnRow = {
-        columns: selection.columns?.map((x) => Number(x)),
-        rows: selection.rows?.map((y) => Number(y)),
-        all: selection.all === true ? true : undefined,
-      };
-    }
-
+  loadFromSelection(jsSelection: JsSelection, skipMultiplayer = false) {
+    this.jsSelection = jsSelection;
     if (!skipMultiplayer) {
-      multiplayer.sendSelection(this.getMultiplayerSelection());
+      multiplayer.sendSelection(this.save());
     }
     pixiApp.cursor.dirty = true;
   }
 
-  // Changes the cursor position. If multiCursor or columnRow is set to null,
-  // then it will be cleared.
-  changePosition(
-    options: {
-      multiCursor?: Rectangle[] | null;
-      columnRow?: ColumnRowCursor | null;
-      cursorPosition?: Coordinate;
-      keyboardMovePosition?: Coordinate;
-      ensureVisible?: boolean | Coordinate;
-    },
-    test?: boolean
-  ) {
-    if (options.columnRow) {
-      this.columnRow = options.columnRow;
-    } else if (options.columnRow === null) {
-      this.columnRow = undefined;
+  updatePosition(ensureVisible = true) {
+    pixiApp.updateCursorPosition(ensureVisible);
+    if (!inlineEditorHandler.cursorIsMoving) {
+      multiplayer.sendSelection(this.save());
     }
-
-    if (options.multiCursor) {
-      this.multiCursor = options.multiCursor;
-    } else if (options.multiCursor === null) {
-      this.multiCursor = undefined;
-    }
-
-    if (options.cursorPosition) {
-      this.cursorPosition = options.cursorPosition;
-      this.keyboardMovePosition = options.keyboardMovePosition ?? this.cursorPosition;
-    } else if (options.keyboardMovePosition) {
-      this.keyboardMovePosition = options.keyboardMovePosition;
-    }
-    if (!test) {
-      pixiApp.updateCursorPosition(options.ensureVisible ?? true);
-      if (!inlineEditorHandler.cursorIsMoving) {
-        multiplayer.sendSelection(this.getMultiplayerSelection());
-      }
-    }
-  }
-
-  // gets a stringified selection string for multiplayer
-  getMultiplayerSelection(): string {
-    return JSON.stringify({
-      cursorPosition: this.cursorPosition,
-      multiCursor: this.multiCursor,
-      columnRow: this.columnRow,
-    });
   }
 
   changeBoxCells(boxCells: boolean) {
@@ -177,126 +96,196 @@ export class SheetCursor {
     }
   }
 
-  getCursor(): Coordinate {
-    return this.cursorPosition;
+  // Returns the cursor position.
+  get position(): JsCoordinate {
+    return this.jsSelection.getCursor();
   }
 
-  // Gets all cursor Rectangles (either multiCursor or single cursor)
-  getRectangles(): Rectangle[] {
-    if (this.multiCursor) {
-      return this.multiCursor;
-    } else {
-      return [new Rectangle(this.cursorPosition.x, this.cursorPosition.y, 1, 1)];
-    }
+  // Returns the last selection's end cell.
+  get selectionEnd(): JsCoordinate {
+    return this.jsSelection.getSelectionEnd();
   }
 
-  getRustSelection(): Selection {
-    const sheet_id = { id: this.sheetId };
-    const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;
-    const rows = this.columnRow?.rows ? this.columnRow.rows.map((y) => BigInt(y)) : null;
-    const all = this.columnRow?.all ?? false;
-    let rects: Rect[] | null = null;
-    if (this.multiCursor) {
-      rects = this.multiCursor.map((rect) => ({
-        min: { x: BigInt(rect.x), y: BigInt(rect.y) },
-        max: { x: BigInt(rect.x + rect.width - 1), y: BigInt(rect.y + rect.height - 1) },
-      }));
-    } else if (!this.columnRow) {
-      rects = [
-        {
-          min: { x: BigInt(this.cursorPosition.x), y: BigInt(this.cursorPosition.y) },
-          max: { x: BigInt(this.cursorPosition.x), y: BigInt(this.cursorPosition.y) },
-        },
-      ];
-    }
-    return {
-      sheet_id,
-      x: BigInt(this.cursorPosition.x),
-      y: BigInt(this.cursorPosition.y),
-      rects,
-      columns,
-      rows,
-      all,
-    };
+  // Returns the columns that are selected via ranges [c1_start, c1_end, c2_start, c2_end, ...].
+  getSelectedColumnRanges(from: number, to: number): number[] {
+    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to));
+  }
+
+  // Returns the rows that are selected via ranges [r1_start, r1_end, r2_start, r2_end, ...].
+  getSelectedRowRanges(from: number, to: number): number[] {
+    return Array.from(this.jsSelection.getSelectedRowRanges(from, to));
+  }
+
+  // Returns the bottom-right cell for the selection.
+  get bottomRight(): JsCoordinate {
+    return this.jsSelection.getBottomRightCell();
   }
 
   // Returns the largest rectangle that contains all the multiCursor rectangles
-  getLargestMultiCursorRectangle(): Rectangle {
-    if (!this.multiCursor) {
-      return new Rectangle(this.cursorPosition.x, this.cursorPosition.y, 1, 1);
-    }
-    let left = Infinity;
-    let top = Infinity;
-    let right = -Infinity;
-    let bottom = -Infinity;
-    this.multiCursor.forEach((rect) => {
-      left = Math.min(left, rect.x);
-      top = Math.min(top, rect.y);
-      right = Math.max(right, rect.x + rect.width);
-      bottom = Math.max(bottom, rect.y + rect.height);
-    });
-    return new Rectangle(left, top, right - left, bottom - top);
+  getLargestRectangle(): Rectangle {
+    const rect = this.jsSelection.getLargestRectangle();
+    return rectToRectangle(rect);
   }
 
-  overlapsSelection(selection: Selection): boolean {
-    return selectionOverlapsSelection(this.getRustSelection(), selection);
+  // Returns rectangle in case of single finite range selection having more than one cell
+  // Returns undefined if there are multiple ranges or infinite range selection
+  getSingleRectangle(): Rectangle | undefined {
+    const rect = this.jsSelection.getSingleRectangle();
+    return rect ? rectToRectangle(rect) : undefined;
   }
 
+  // Returns rectangle in case of single finite range selection, otherwise returns a rectangle that represents the cursor
+  // Returns undefined if there are multiple ranges or infinite range selection
+  getSingleRectangleOrCursor(): Rectangle | undefined {
+    const rect = this.jsSelection.getSingleRectangleOrCursor();
+    return rect ? rectToRectangle(rect) : undefined;
+  }
+
+  overlapsSelection(a1Selection: string): boolean {
+    return this.jsSelection.overlapsA1Selection(a1Selection);
+  }
+
+  // Returns true if the selection is a single cell or a single column or single row.
   hasOneColumnRowSelection(oneCell?: boolean): boolean {
-    return (
-      !this.columnRow?.all &&
-      !!(
-        (this.columnRow?.columns && this.columnRow.columns.length === 1) ||
-        (this.columnRow?.rows && this.columnRow.rows.length === 1) ||
-        (oneCell && !this.multiCursor)
-      )
-    );
+    return this.jsSelection.hasOneColumnRowSelection(oneCell ?? false);
   }
 
-  includesCell(column: number, row: number): boolean {
-    if (this.multiCursor) {
-      return this.multiCursor.some((rect) => rect.contains(column, row));
-    } else {
-      return this.cursorPosition.x === column && this.cursorPosition.y === row;
-    }
+  isSelectedColumnsFinite(): boolean {
+    return this.jsSelection.isSelectedColumnsFinite();
+  }
+
+  isSelectedRowsFinite(): boolean {
+    return this.jsSelection.isSelectedRowsFinite();
   }
 
   // Returns the columns that are selected.
-  getColumnsSelection(): number[] {
-    const columns = new Set<number>();
-    if (this.columnRow?.columns) {
-      this.columnRow.columns.forEach((column) => columns.add(column));
-    }
-    if (this.multiCursor) {
-      for (const rect of this.multiCursor) {
-        for (let x = rect.x; x < rect.x + rect.width; x++) {
-          columns.add(x);
-        }
-      }
-    }
-    columns.add(this.cursorPosition.x);
-    return Array.from(columns);
+  getSelectedColumns(): number[] {
+    return Array.from(this.jsSelection.getSelectedColumns());
   }
 
   // Returns the rows that are selected.
-  getRowsSelection(): number[] {
-    const rows = new Set<number>();
-    if (this.columnRow?.rows) {
-      this.columnRow.rows.forEach((row) => rows.add(row));
-    }
-    if (this.multiCursor) {
-      for (const rect of this.multiCursor) {
-        for (let y = rect.y; y < rect.y + rect.height; y++) {
-          rows.add(y);
-        }
-      }
-    }
-    rows.add(this.cursorPosition.y);
-    return Array.from(rows);
+  getSelectedRows(): number[] {
+    return Array.from(this.jsSelection.getSelectedRows());
   }
 
   // Returns true if the cursor is only selecting a single cell
-  onlySingleSelection(): boolean {
-    return !this.multiCursor?.length && !this.columnRow;
+  isSingleSelection(): boolean {
+    return this.jsSelection.isSingleSelection();
+  }
+
+  selectAll(append?: boolean) {
+    if (this.jsSelection.isAllSelected()) {
+      const bounds = sheets.sheet.boundsWithoutFormatting;
+      if (bounds.type === 'nonEmpty') {
+        this.jsSelection.selectRect(
+          Number(bounds.min.x),
+          Number(bounds.min.y),
+          Number(bounds.max.x),
+          Number(bounds.max.y),
+          false
+        );
+      } else {
+        this.jsSelection.selectRect(1, 1, 1, 1, false);
+      }
+    } else {
+      this.jsSelection.selectAll(append ?? false);
+    }
+
+    this.updatePosition(true);
+  }
+
+  // Moves the cursor to the given position. This replaces any selection.
+  moveTo(x: number, y: number, append = false, ensureVisible = true) {
+    this.jsSelection.moveTo(x, y, append);
+    this.updatePosition(ensureVisible);
+  }
+
+  selectTo(x: number, y: number, append: boolean, ensureVisible = true) {
+    this.jsSelection.selectTo(x, y, append);
+    this.updatePosition(ensureVisible);
+  }
+
+  // Selects columns that have a current selection (used by cmd+space)
+  setColumnsSelected() {
+    this.jsSelection.setColumnsSelected();
+    this.updatePosition(true);
+  }
+
+  // Selects rows that have a current selection (used by shift+cmd+space)
+  setRowsSelected() {
+    this.jsSelection.setRowsSelected();
+    this.updatePosition(true);
+  }
+
+  selectColumn(column: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean, top: number) {
+    this.jsSelection.selectColumn(column, ctrlKey || shiftKey, shiftKey, isRightClick, top);
+    this.updatePosition(true);
+  }
+
+  selectRow(row: number, ctrlKey: boolean, shiftKey: boolean, isRightClick: boolean, left: number) {
+    this.jsSelection.selectRow(row, ctrlKey || shiftKey, shiftKey, isRightClick, left);
+    this.updatePosition(true);
+  }
+
+  isMultiCursor(): boolean {
+    return this.jsSelection.isMultiCursor();
+  }
+
+  isMultiRange(): boolean {
+    return this.rangeCount() > 1;
+  }
+
+  isColumnRow(): boolean {
+    return this.jsSelection.isColumnRow();
+  }
+
+  toA1String(sheetId = sheets.current): string {
+    return this.jsSelection.toA1String(sheetId, sheets.getSheetIdNameMap());
+  }
+
+  toCursorA1(): string {
+    return this.jsSelection.toCursorA1();
+  }
+
+  contains(x: number, y: number): boolean {
+    return this.jsSelection.contains(x, y);
+  }
+
+  selectRect(left: number, top: number, right: number, bottom: number, append = false, ensureVisible = true) {
+    this.jsSelection.selectRect(left, top, right, bottom, append);
+    this.updatePosition(ensureVisible);
+  }
+
+  a1String(): string {
+    return this.jsSelection.toA1String(sheets.sheet.id, sheets.getSheetIdNameMap());
+  }
+
+  excludeCells(x0: number, y0: number, x1: number, y1: number, ensureVisible = true) {
+    this.jsSelection.excludeCells(x0, y0, x1, y1);
+    this.updatePosition(ensureVisible);
+  }
+
+  rangeCount(): number {
+    return this.getFiniteRanges().length + this.getInfiniteRanges().length;
+  }
+
+  getFiniteRanges(): CellRefRange[] {
+    const ranges = this.jsSelection.getFiniteRanges();
+    try {
+      return JSON.parse(ranges);
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }
+
+  getInfiniteRanges(): CellRefRange[] {
+    const ranges = this.jsSelection.getInfiniteRanges();
+    try {
+      return JSON.parse(ranges);
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
   }
 }

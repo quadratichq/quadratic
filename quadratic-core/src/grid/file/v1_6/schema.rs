@@ -15,7 +15,7 @@ pub struct GridSchema {
     pub version: Option<String>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
 pub struct Id {
     pub id: String,
 }

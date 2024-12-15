@@ -1,71 +1,51 @@
 use super::operation::Operation;
 use crate::{
     controller::GridController,
-    grid::{
-        formats::{format_update::FormatUpdate, Formats},
-        sheet::borders::BorderStyleCellUpdate,
-    },
-    selection::Selection,
-    RunLengthEncoding,
+    grid::formats::{FormatUpdate, SheetFormatUpdates},
+    A1Selection,
 };
 
 impl GridController {
-    pub(crate) fn clear_format_selection_operations(
+    pub(crate) fn clear_format_borders_operations(
         &self,
-        selection: &Selection,
+        selection: &A1Selection,
     ) -> Vec<Operation> {
-        vec![
-            Operation::SetCellFormatsSelection {
-                selection: selection.clone(),
-                formats: Formats::repeat(FormatUpdate::cleared(), selection.count()),
-            },
-            Operation::SetBordersSelection {
-                selection: selection.clone(),
-                borders: RunLengthEncoding::repeat(
-                    BorderStyleCellUpdate::clear(false),
-                    selection.count(),
-                ),
-            },
-        ]
+        let sheet_id = selection.sheet_id;
+        let mut ops = vec![Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: SheetFormatUpdates::from_selection(selection, FormatUpdate::cleared()),
+        }];
+        ops.extend(self.clear_borders_a1_operations(selection));
+        ops
     }
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
+    use crate::grid::SheetId;
+
     use super::*;
-    use crate::Rect;
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
-    fn clear_format_selection_operations() {
+    fn test_clear_format_selection_operations() {
         let gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let selection = Selection {
-            sheet_id,
-            x: 0,
-            y: 0,
-            rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-            rows: None,
-            columns: None,
-            all: false,
-        };
-        let ops = gc.clear_format_selection_operations(&selection);
+        let sheet_id = SheetId::TEST;
+        let selection = A1Selection::test_a1("A1");
+        let ops = gc.clear_format_borders_operations(&selection);
+
+        assert_eq!(ops.len(), 2);
         assert_eq!(
-            ops,
-            vec![
-                Operation::SetCellFormatsSelection {
-                    selection: selection.clone(),
-                    formats: Formats::repeat(FormatUpdate::cleared(), 1),
-                },
-                Operation::SetBordersSelection {
-                    selection: selection.clone(),
-                    borders: RunLengthEncoding::repeat(
-                        BorderStyleCellUpdate::clear(false),
-                        selection.count(),
-                    ),
-                },
-            ]
+            ops.first().unwrap(),
+            &Operation::SetCellFormatsA1 {
+                sheet_id,
+                formats: SheetFormatUpdates::from_selection(&selection, FormatUpdate::cleared()),
+            }
         );
+        let Operation::SetBordersA1 { sheet_id, borders } = ops.last().unwrap() else {
+            panic!("last operation is not SetBordersA1");
+        };
+        assert_eq!(sheet_id, &SheetId::TEST);
+        assert!(!borders.is_empty());
     }
 }

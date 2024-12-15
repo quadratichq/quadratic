@@ -4,14 +4,14 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::formats::format::Format;
+use super::cells_accessed::JsCellsAccessed;
+use super::formats::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat};
-use crate::{Pos, SheetPos, SheetRect};
+use crate::{Pos, SheetPos};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum JsRenderCellSpecial {
     Chart,
     SpillError,
@@ -62,20 +62,19 @@ pub struct JsCellValue {
 pub struct JsCellValuePos {
     pub value: String,
     pub kind: String,
-    pub pos: JsPos,
+    pub pos: String,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsCellValuePosAIContext {
     pub sheet_name: String,
-    pub rect_origin: JsPos,
+    pub rect_origin: String,
     pub rect_width: u32,
     pub rect_height: u32,
     pub starting_rect_values: Vec<Vec<JsCellValuePos>>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
     pub x: i64,
@@ -133,7 +132,7 @@ impl From<Pos> for JsRenderCell {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ts_rs::TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct JsRenderFill {
     pub x: i64,
     pub y: i64,
@@ -143,11 +142,13 @@ pub struct JsRenderFill {
     pub color: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, ts_rs::TS, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsSheetFill {
-    pub columns: Vec<(i64, (String, i64))>,
-    pub rows: Vec<(i64, (String, i64))>,
-    pub all: Option<String>,
+    pub x: u32,
+    pub y: u32,
+    pub w: Option<u32>,
+    pub h: Option<u32>,
+    pub color: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
@@ -177,15 +178,13 @@ pub struct CellFormatSummary {
     pub strike_through: Option<bool>,
 }
 
-#[derive(Serialize, PartialEq, Debug)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, PartialEq, Debug, TS)]
 pub struct JsReturnInfo {
     pub line_number: Option<u32>,
     pub output_type: Option<String>,
 }
 
-#[derive(Serialize, PartialEq, Debug)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, PartialEq, Debug, TS)]
 pub struct JsCodeCell {
     pub x: i64,
     pub y: i64,
@@ -196,11 +195,10 @@ pub struct JsCodeCell {
     pub evaluation_result: Option<String>,
     pub spill_error: Option<Vec<Pos>>,
     pub return_info: Option<JsReturnInfo>,
-    pub cells_accessed: Option<Vec<SheetRect>>,
+    pub cells_accessed: Option<Vec<JsCellsAccessed>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct JsRenderCodeCell {
     pub x: i32,
     pub y: i32,
@@ -211,8 +209,7 @@ pub struct JsRenderCodeCell {
     pub spill_error: Option<Vec<Pos>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsHtmlOutput {
     pub sheet_id: String,
     pub x: i64,
@@ -222,8 +219,7 @@ pub struct JsHtmlOutput {
     pub h: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
 pub enum JsRenderCodeCellState {
     NotYetRun,
     RunError,
@@ -231,8 +227,7 @@ pub enum JsRenderCodeCellState {
     Success,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsClipboard {
     pub plain_text: String,
@@ -249,8 +244,7 @@ pub struct JsValidationSheet {
     errors: Vec<(Pos, String)>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsRowHeight {
     pub row: i64,
@@ -263,8 +257,7 @@ impl fmt::Display for JsRowHeight {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct JsOffset {
     pub column: Option<i32>,
@@ -279,29 +272,6 @@ impl fmt::Display for JsOffset {
             "JsOffset(column: {:?}, row: {:?}, size: {})",
             self.column, self.row, self.size
         )
-    }
-}
-
-#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
-pub struct JsPos {
-    pub x: i64,
-    pub y: i64,
-}
-impl fmt::Display for JsPos {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "JsPos(x: {}, y: {})", self.x, self.y)
-    }
-}
-impl From<Pos> for JsPos {
-    fn from(pos: Pos) -> Self {
-        JsPos { x: pos.x, y: pos.y }
-    }
-}
-impl From<SheetPos> for JsPos {
-    fn from(pos: SheetPos) -> Self {
-        JsPos { x: pos.x, y: pos.y }
     }
 }
 
@@ -321,14 +291,6 @@ pub struct JsSheetPos {
     pub sheet_id: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
-#[serde(rename_all = "camelCase")]
-pub struct JsCodeRun {
-    pub transaction_id: String,
-    pub sheet_pos: JsSheetPos,
-    pub code: String,
-}
-
 impl From<SheetPos> for JsSheetPos {
     fn from(sheet_pos: SheetPos) -> Self {
         JsSheetPos {
@@ -339,12 +301,27 @@ impl From<SheetPos> for JsSheetPos {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[serde(rename_all = "camelCase")]
+pub struct JsCodeRun {
+    pub transaction_id: String,
+    pub sheet_pos: JsSheetPos,
+    pub code: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub struct JsSummarizeSelectionResult {
+    pub count: i64,
+    pub sum: Option<f64>,
+    pub average: Option<f64>,
+}
+
 #[cfg(test)]
 mod test {
     use serial_test::parallel;
 
     use super::{JsNumber, JsSheetPos};
-    use crate::grid::formats::format::Format;
+    use crate::grid::formats::Format;
     use crate::grid::{NumericFormat, SheetId};
     use crate::SheetPos;
 

@@ -8,15 +8,15 @@ use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     error_core,
     formulas::{parse_formula, Ctx},
-    grid::{js_types::JsCodeRun, CodeCellLanguage, CodeRun, CodeRunResult},
-    CellValue, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
+    grid::{js_types::JsCodeRun, CellsAccessed, CodeCellLanguage, CodeRun, CodeRunResult},
+    CellValue, RunError, RunErrorMsg, SheetPos, Value,
 };
 
 #[derive(Debug, PartialEq)]
 struct ParsedAIResearcherCode {
     query: String,
     ref_cell_values: Vec<String>,
-    cells_accessed: HashSet<SheetRect>,
+    cells_accessed: CellsAccessed,
 }
 
 impl GridController {
@@ -55,9 +55,10 @@ impl GridController {
         }
 
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
+        let bounds = sheet.bounds(true);
         match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
-                if let Value::Tuple(vec) = parsed.eval(&mut ctx).inner {
+                if let Value::Tuple(vec) = parsed.eval(&mut ctx, Some(bounds)).inner {
                     if let Some((query, values_array)) = vec.into_iter().next_tuple() {
                         if let Ok(query) = query.into_cell_value() {
                             let mut referenced_cell_has_error = false;
@@ -143,77 +144,79 @@ impl GridController {
 
                     let mut seen_code_cells = HashSet::new();
                     seen_code_cells.insert(sheet_pos.to_owned());
-                    let mut cells_accessed_to_check = cells_accessed.iter().collect::<Vec<_>>();
 
-                    // check if this ai researcher code cell is dependent on
-                    // 1. any other code cell that has an error
-                    // 2. another ai researcher request
-                    // 3. has a circular reference
-                    while let Some(cell_accessed) = cells_accessed_to_check.pop() {
-                        if referenced_cell_has_error || has_circular_reference || is_dependent {
-                            break;
-                        }
+                    todo!();
+                    // let mut cells_accessed_to_check = cells_accessed.iter().collect::<Vec<_>>();
 
-                        // circular reference to itself
-                        has_circular_reference |= cell_accessed
-                            .intersects(SheetRect::single_sheet_pos(sheet_pos.to_owned()));
+                    // // check if this ai researcher code cell is dependent on
+                    // // 1. any other code cell that has an error
+                    // // 2. another ai researcher request
+                    // // 3. has a circular reference
+                    // while let Some(cell_accessed) = cells_accessed_to_check.pop() {
+                    //     if referenced_cell_has_error || has_circular_reference || is_dependent {
+                    //         break;
+                    //     }
 
-                        // dependent on another ai researcher request
-                        is_dependent |= all_ai_researcher.iter().any(|ai_researcher| {
-                            cell_accessed
-                                .intersects(SheetRect::single_sheet_pos(ai_researcher.to_owned()))
-                        });
+                    //     // circular reference to itself
+                    //     has_circular_reference |= cell_accessed
+                    //         .intersects(SheetRect::single_sheet_pos(sheet_pos.to_owned()));
 
-                        let sheet_id = cell_accessed.sheet_id;
-                        if let Some(sheet) = self.try_sheet(sheet_id) {
-                            for (output_rect, code_run) in
-                                sheet.iter_code_output_in_rect(cell_accessed.to_owned().into())
-                            {
-                                let code_cell_pos = output_rect.min;
-                                if !seen_code_cells.insert(code_cell_pos.to_sheet_pos(sheet_id)) {
-                                    continue;
-                                }
+                    //     // dependent on another ai researcher request
+                    //     is_dependent |= all_ai_researcher.iter().any(|ai_researcher| {
+                    //         cell_accessed
+                    //             .intersects(SheetRect::single_sheet_pos(ai_researcher.to_owned()))
+                    //     });
 
-                                if code_run.spill_error || code_run.result.as_std_ref().is_err() {
-                                    referenced_cell_has_error = true;
-                                    break;
-                                }
+                    //     let sheet_id = cell_accessed.sheet_id;
+                    //     if let Some(sheet) = self.try_sheet(sheet_id) {
+                    //         for (output_rect, code_run) in
+                    //             sheet.iter_code_output_in_rect(cell_accessed.to_owned().into())
+                    //         {
+                    //             let code_cell_pos = output_rect.min;
+                    //             if !seen_code_cells.insert(code_cell_pos.to_sheet_pos(sheet_id)) {
+                    //                 continue;
+                    //             }
 
-                                let new_cells_accessed = code_run
-                                    .cells_accessed
-                                    .difference(&cells_accessed)
-                                    .collect::<Vec<_>>();
-                                cells_accessed_to_check.extend(new_cells_accessed);
-                            }
-                        }
-                    }
+                    //             if code_run.spill_error || code_run.result.as_std_ref().is_err() {
+                    //                 referenced_cell_has_error = true;
+                    //                 break;
+                    //             }
 
-                    if referenced_cell_has_error {
-                        transaction.pending_ai_researcher.remove(sheet_pos);
-                        let run_error = RunError {
-                            span: None,
-                            msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
-                        };
-                        transaction.current_sheet_pos = Some(sheet_pos.to_owned());
-                        let _ = self.code_cell_sheet_error(transaction, &run_error);
-                    } else if has_circular_reference {
-                        transaction.pending_ai_researcher.remove(sheet_pos);
-                        let run_error = RunError {
-                            span: None,
-                            msg: RunErrorMsg::CircularReference,
-                        };
-                        transaction.current_sheet_pos = Some(sheet_pos.to_owned());
-                        let _ = self.code_cell_sheet_error(transaction, &run_error);
-                    } else if is_dependent {
-                        dependent_ai_researcher.insert(sheet_pos.to_owned());
-                    } else {
-                        self.request_ai_researcher_result(
-                            transaction,
-                            sheet_pos.to_owned(),
-                            query,
-                            ref_cell_values,
-                        );
-                    }
+                    //             // let new_cells_accessed = code_run
+                    //             //     .cells_accessed
+                    //             //     .difference(&cells_accessed)
+                    //             //     .collect::<Vec<_>>();
+                    //             // cells_accessed_to_check.extend(new_cells_accessed);
+                    //         }
+                    //     }
+                    // }
+
+                    // if referenced_cell_has_error {
+                    //     transaction.pending_ai_researcher.remove(sheet_pos);
+                    //     let run_error = RunError {
+                    //         span: None,
+                    //         msg: RunErrorMsg::CodeRunError("Error in referenced cell(s)".into()),
+                    //     };
+                    //     transaction.current_sheet_pos = Some(sheet_pos.to_owned());
+                    //     let _ = self.code_cell_sheet_error(transaction, &run_error);
+                    // } else if has_circular_reference {
+                    //     transaction.pending_ai_researcher.remove(sheet_pos);
+                    //     let run_error = RunError {
+                    //         span: None,
+                    //         msg: RunErrorMsg::CircularReference,
+                    //     };
+                    //     transaction.current_sheet_pos = Some(sheet_pos.to_owned());
+                    //     let _ = self.code_cell_sheet_error(transaction, &run_error);
+                    // } else if is_dependent {
+                    //     dependent_ai_researcher.insert(sheet_pos.to_owned());
+                    // } else {
+                    //     self.request_ai_researcher_result(
+                    //         transaction,
+                    //         sheet_pos.to_owned(),
+                    //         query,
+                    //         ref_cell_values,
+                    //     );
+                    // }
                 }
                 Err(error) => {
                     transaction.pending_ai_researcher.remove(sheet_pos);
@@ -384,17 +387,15 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use serial_test::{parallel, serial};
 
-    use super::ParsedAIResearcherCode;
+    // use super::ParsedAIResearcherCode;
 
     use crate::{
         controller::GridController,
         grid::{js_types::JsCodeRun, CodeCellLanguage, CodeRunResult, SheetId},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
-        CellValue, RunError, RunErrorMsg, SheetRect, Span,
+        CellValue, RunError, RunErrorMsg, Span,
     };
 
     fn assert_no_pending_async_transaction(gc: &GridController) {
@@ -428,20 +429,22 @@ mod test {
             Some(CellValue::Text("result".to_string()))
         );
 
-        let parsed_ai_researcher_code =
-            gc.parse_ai_researcher_code(pos![B4].to_sheet_pos(sheet_id));
-        assert_eq!(
-            parsed_ai_researcher_code,
-            Ok(ParsedAIResearcherCode {
-                query: "query".to_string(),
-                ref_cell_values: vec!["1".to_string(), "2".to_string(), "3".to_string()],
-                cells_accessed: HashSet::from([
-                    SheetRect::new(1, 1, 1, 1, sheet_id),
-                    SheetRect::new(1, 2, 1, 2, sheet_id),
-                    SheetRect::new(1, 3, 1, 3, sheet_id),
-                ]),
-            })
-        );
+        todo!();
+
+        // let parsed_ai_researcher_code =
+        //     gc.parse_ai_researcher_code(pos![B4].to_sheet_pos(sheet_id));
+        // assert_eq!(
+        //     parsed_ai_researcher_code,
+        //     Ok(ParsedAIResearcherCode {
+        //         query: "query".to_string(),
+        //         ref_cell_values: vec!["1".to_string(), "2".to_string(), "3".to_string()],
+        //         cells_accessed: HashSet::from([
+        //             SheetRect::new(1, 1, 1, 1, sheet_id),
+        //             SheetRect::new(1, 2, 1, 2, sheet_id),
+        //             SheetRect::new(1, 3, 1, 3, sheet_id),
+        //         ]),
+        //     })
+        // );
         assert_no_pending_async_transaction(&gc);
 
         // incorrect argument

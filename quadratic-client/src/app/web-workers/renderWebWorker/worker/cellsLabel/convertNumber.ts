@@ -16,12 +16,16 @@ export const convertNumber = (n: string, format: JsNumber, currentFractionDigits
   const isPercent = format.format?.type === 'PERCENTAGE';
 
   // set commas
-  if (!isScientific && !isPercent && (format.commas || (format.commas === null && isCurrency))) {
+  if (
+    !isScientific &&
+    !isPercent &&
+    (format.commas || ((format.commas === null || format.commas === undefined) && isCurrency))
+  ) {
     options.groupSize = 3;
   }
 
   if (currentFractionDigits === undefined) {
-    if (format.decimals !== null) {
+    if (format.decimals !== null && format.decimals !== undefined) {
       currentFractionDigits = format.decimals;
     } else if (isCurrency || isScientific || isPercent) {
       currentFractionDigits = 2;

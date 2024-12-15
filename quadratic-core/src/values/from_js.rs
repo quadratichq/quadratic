@@ -68,7 +68,10 @@ impl CellValue {
                         kind: NumericFormatKind::Currency,
                         symbol: Some(currency),
                     };
-                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                    sheet
+                        .formats
+                        .numeric_format
+                        .set(pos, Some(numeric_format.clone()));
 
                     ops.push(Operation::SetCellFormats {
                         sheet_rect,
@@ -90,7 +93,10 @@ impl CellValue {
                         kind: NumericFormatKind::Percentage,
                         symbol: None,
                     };
-                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                    sheet
+                        .formats
+                        .numeric_format
+                        .set(pos, Some(numeric_format.clone()));
                     ops.push(Operation::SetCellFormats {
                         sheet_rect,
                         attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(

@@ -14,9 +14,11 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::formulas::{escape_string, parse_sheet_name};
-use crate::Pos;
+use crate::{Pos, UNBOUNDED};
 
 /// A reference to a cell or a range of cells.
+///
+/// TODO: replace with `CellRangeRef`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 #[serde(tag = "type")]
 pub enum RangeRef {
@@ -75,6 +77,9 @@ impl RangeRef {
 }
 
 /// A reference to a single cell.
+///
+/// TODO: change this struct's relative/absolute distinction to match
+/// `CellRefRangeEnd`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 pub struct CellRef {
     pub sheet: Option<String>,
@@ -153,40 +158,41 @@ impl CellRef {
         let (sheet, rest) = parse_sheet_name(s);
 
         lazy_static! {
-            /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$
+            /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)?$
             /// ^                             $     match full string
             ///  (\$?)                              group 1: optional `$`
             ///       (n?[A-Z]+)                    group 2: column name
             ///                 (\$?)               group 3: optional `$`
             ///                      (n?)           group 4: optional `n`
-            ///                          (\d+)      group 5: row number
+            ///                          (\d+)?     group 5: row number
             pub static ref A1_CELL_REFERENCE_REGEX: Regex =
-                Regex::new(r"^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$").unwrap();
+                Regex::new(r"^(\$?)(n?[a-zA-Z]*)(\$?)(n?)(\d*)?$").unwrap();
         }
 
         let captures = A1_CELL_REFERENCE_REGEX.captures(rest.trim())?;
 
         let column_is_absolute = !captures[1].is_empty();
         let column_name = &captures[2];
+        let mut col = crate::a1::column_from_name(column_name)? as i64;
+        if col == 0 {
+            col = UNBOUNDED;
+        }
+        let col_ref = match column_is_absolute {
+            true => CellRefCoord::Absolute(col),
+            false => CellRefCoord::Relative(col - base.x),
+        };
+
         let row_is_absolute = !captures[3].is_empty();
         let row_is_negative = !captures[4].is_empty();
-        let row_number = &captures[5];
-
-        let col = crate::util::column_from_name(column_name)?;
-        let mut row = row_number.parse::<i64>().ok()?;
+        let mut row = captures.get(5).map_or(UNBOUNDED, |m| {
+            m.as_str().parse::<i64>().unwrap_or(UNBOUNDED)
+        });
         if row_is_negative {
             row = -row;
         }
-
-        let col_ref = if column_is_absolute {
-            CellRefCoord::Absolute(col)
-        } else {
-            CellRefCoord::Relative(col - base.x)
-        };
-        let row_ref = if row_is_absolute {
-            CellRefCoord::Absolute(row)
-        } else {
-            CellRefCoord::Relative(row - base.y)
+        let row_ref = match row_is_absolute {
+            true => CellRefCoord::Absolute(row),
+            false => CellRefCoord::Relative(row - base.y),
         };
 
         Some(CellRef {
@@ -252,14 +258,21 @@ impl CellRefCoord {
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a column coordinate.
     fn col_string(self, base: i64) -> String {
-        let col = crate::util::column_name(self.resolve_from(base));
+        let col = crate::a1::column_name(self.resolve_from(base));
         format!("{}{col}", self.prefix())
     }
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a row coordinate.
     fn row_string(self, base: i64) -> String {
-        let row = crate::util::row_name(self.resolve_from(base));
-        format!("{}{row}", self.prefix())
+        let row = self.resolve_from(base);
+        format!("{}{}", Self::remove_unbounded(row), self.prefix())
+    }
+    fn remove_unbounded(value: i64) -> String {
+        if value == UNBOUNDED {
+            return "".to_string();
+        }
+
+        value.to_string()
     }
 
     /// Returns whether the coordinate is relative (i.e., no '$' prefix).
@@ -283,8 +296,8 @@ mod tests {
         // Resolve from some random base position.
         let base_pos = pos![E8];
 
-        for col in ["A", "B", "C", "AE", "QR", "nA", "nB", "nQR"] {
-            for row in ["n99", "n42", "n2", "n1", "0", "1", "2", "42", "99"] {
+        for col in ["A", "B", "C", "AE", "QR", "A", "B", "QR"] {
+            for row in ["99", "42", "2", "1", "0", "1", "2", "42", "99"] {
                 for col_prefix in ["", "$"] {
                     for row_prefix in ["", "$"] {
                         let s = format!("{col_prefix}{col}{row_prefix}{row}");
@@ -303,7 +316,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_a1_sheet_parsing() {
-        let pos = CellRef::parse_a1("'Sheet 2'!A0", crate::Pos::ORIGIN);
+        let pos = CellRef::parse_a1("'Sheet 2'!A1", pos![A1]);
         assert_eq!(
             pos,
             Some(CellRef {
@@ -312,7 +325,7 @@ mod tests {
                 y: CellRefCoord::Relative(0),
             })
         );
-        let pos = CellRef::parse_a1("\"Sheet 2\"!A0", crate::Pos::ORIGIN);
+        let pos = CellRef::parse_a1("\"Sheet 2\"!A1", pos![A1]);
         assert_eq!(
             pos,
             Some(CellRef {
@@ -321,5 +334,30 @@ mod tests {
                 y: CellRefCoord::Relative(0),
             })
         );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_a1_column_parsing() {
+        let pos = CellRef::parse_a1("A", pos![A0]);
+
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: None,
+                x: CellRefCoord::Relative(0),
+                y: CellRefCoord::Relative(UNBOUNDED)
+            })
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_a1_case_insensitive_parsing() {
+        let parse = |s: &str| CellRef::parse_a1(s, pos![A1]);
+
+        assert_eq!(parse("a1"), parse("A1"));
+        assert_eq!(parse("aa1"), parse("AA1"));
+        assert_eq!(parse("Aa1"), parse("aA1"));
     }
 }

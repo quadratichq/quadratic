@@ -105,16 +105,19 @@ impl SheetOffsets {
     }
 
     /// gets the column index from an x-coordinate on the screen
-    pub fn column_from_x(&self, x: f64) -> (i64, f64) {
+    pub fn column_from_x(&mut self, x: f64) -> (i64, f64) {
         self.column_widths.find_offset(x)
     }
     /// gets the column index from an x-coordinate on the screen
-    pub fn row_from_y(&self, y: f64) -> (i64, f64) {
+    pub fn row_from_y(&mut self, y: f64) -> (i64, f64) {
         self.row_heights.find_offset(y)
     }
 
     /// gets a column's position and size
-    pub fn column_position_size(&self, column: i64) -> (f64, f64) {
+    pub fn column_position_size(&self, mut column: i64) -> (f64, f64) {
+        if column <= 0 {
+            column = 1;
+        }
         let xs: Vec<f64> = self
             .column_widths
             .iter_offsets(Range {
@@ -128,7 +131,10 @@ impl SheetOffsets {
     }
 
     /// gets a row's position and size
-    pub fn row_position_size(&self, row: i64) -> (f64, f64) {
+    pub fn row_position_size(&self, mut row: i64) -> (f64, f64) {
+        if row <= 0 {
+            row = 1;
+        }
         let ys: Vec<f64> = self
             .row_heights
             .iter_offsets(Range {
@@ -150,7 +156,13 @@ impl SheetOffsets {
 
     /// Gets the start and end screen position for a range of columns (where the
     /// end is the final position + size).
-    pub fn column_range(&self, x0: i64, x1: i64) -> (f64, f64) {
+    pub fn column_range(&self, mut x0: i64, mut x1: i64) -> (f64, f64) {
+        if x0 <= 0 {
+            x0 = 1;
+        }
+        if x1 <= 0 {
+            x1 = 1;
+        }
         let xs: Vec<f64> = self
             .column_widths
             .iter_offsets(Range {
@@ -165,7 +177,13 @@ impl SheetOffsets {
 
     // Gets the start and end screen position for a range of rows (where the end
     // is the final position + size).
-    pub fn row_range(&self, y0: i64, y1: i64) -> (f64, f64) {
+    pub fn row_range(&self, mut y0: i64, mut y1: i64) -> (f64, f64) {
+        if y0 <= 0 {
+            y0 = 1;
+        }
+        if y1 <= 0 {
+            y1 = 1;
+        }
         let ys: Vec<f64> = self
             .row_heights
             .iter_offsets(Range {
@@ -232,14 +250,6 @@ impl SheetOffsets {
         }
     }
 
-    pub fn total_column_width(&self, start: i64, end: i64) -> f64 {
-        self.column_widths.size(start, end)
-    }
-
-    pub fn total_row_height(&self, start: i64, end: i64) -> f64 {
-        self.row_heights.size(start, end)
-    }
-
     /// Inserts a column offset at the given column index.
     ///
     /// Returns a vector of changes made to the offsets structure, where each change
@@ -273,47 +283,59 @@ impl SheetOffsets {
     pub fn delete_row(&mut self, row: i64) -> (Vec<(i64, f64)>, Option<f64>) {
         self.row_heights.delete(row)
     }
+
+    /// Returns the default column width and row height.
+    pub fn defaults(&self) -> (f64, f64) {
+        (self.column_width(0), self.row_height(0))
+    }
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
-    use serial_test::parallel;
+    use super::*;
+
+    use crate::Rect;
 
     #[test]
-    #[parallel]
-    fn screen_rect_cell_offsets() {
-        let sheet = super::SheetOffsets::default();
-        let rect = super::Rect::from_numbers(0, 0, 1, 1);
-        let screen_rect = sheet.screen_rect_cell_offsets(rect);
+    fn test_screen_rect_cell_offsets() {
+        let offsets = SheetOffsets::default();
+        let rect = Rect::new(1, 1, 1, 1);
+        let screen_rect = offsets.screen_rect_cell_offsets(rect);
         assert_eq!(screen_rect.x, 0.0);
         assert_eq!(screen_rect.y, 0.0);
-        assert_eq!(screen_rect.w, 100.0);
-        assert_eq!(screen_rect.h, 21.0);
+        assert_eq!(screen_rect.w, offsets.defaults().0);
+        assert_eq!(screen_rect.h, offsets.defaults().1);
 
-        let rect = super::Rect::from_numbers(0, 0, 2, 2);
-        let screen_rect = sheet.screen_rect_cell_offsets(rect);
+        let rect = Rect::new(1, 1, 2, 2);
+        let screen_rect = offsets.screen_rect_cell_offsets(rect);
         assert_eq!(screen_rect.x, 0.0);
         assert_eq!(screen_rect.y, 0.0);
-        assert_eq!(screen_rect.w, 100.0 * 2.0);
-        assert_eq!(screen_rect.h, 21.0 * 2.0);
+        assert_eq!(screen_rect.w, offsets.defaults().0 * 2.0);
+        assert_eq!(screen_rect.h, offsets.defaults().1 * 2.0);
     }
 
     #[test]
-    #[parallel]
     fn rect_cell_offsets() {
-        let sheet = super::SheetOffsets::default();
-        let rect = super::Rect::from_numbers(0, 0, 1, 1);
-        let rect = sheet.rect_cell_offsets(rect);
+        let offsets = SheetOffsets::default();
+        let rect = Rect::new(1, 1, 1, 1);
+        let rect = offsets.rect_cell_offsets(rect);
         assert_eq!(rect.min.x, 0);
         assert_eq!(rect.min.y, 0);
-        assert_eq!(rect.max.x, 100);
-        assert_eq!(rect.max.y, 21);
+        assert_eq!(rect.max.x, offsets.defaults().0 as i64);
+        assert_eq!(rect.max.y, offsets.defaults().1 as i64);
 
-        let rect = super::Rect::from_numbers(0, 0, 2, 2);
-        let rect = sheet.rect_cell_offsets(rect);
+        let rect = Rect::from_numbers(1, 1, 2, 2);
+        let rect = offsets.rect_cell_offsets(rect);
         assert_eq!(rect.min.x, 0);
         assert_eq!(rect.min.y, 0);
-        assert_eq!(rect.max.x, 200);
-        assert_eq!(rect.max.y, 42);
+        assert_eq!(rect.max.x, (offsets.defaults().0 * 2.0) as i64);
+        assert_eq!(rect.max.y, (offsets.defaults().1 * 2.0) as i64);
+    }
+
+    #[test]
+    fn test_defaults() {
+        let sheet = super::SheetOffsets::default();
+        assert_eq!(sheet.defaults(), (100.0, 21.0));
     }
 }

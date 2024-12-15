@@ -2,6 +2,8 @@ import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { JsCoordinate } from '@/app/quadratic-core-types';
+import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ToolCard } from '@/app/ui/menus/AIAnalyst/toolCards/ToolCard';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -22,12 +24,29 @@ type SetCodeCellValueProps = {
 
 export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
+  const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 
   useEffect(() => {
     if (!loading) {
       const fullJson = parseFullJson(args);
       if (fullJson) {
-        setToolArgs(aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson));
+        const toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson);
+        setToolArgs(toolArgs);
+
+        if (toolArgs.success) {
+          try {
+            const selection = stringToSelection(
+              toolArgs.data.code_cell_position,
+              sheets.current,
+              sheets.getSheetIdNameMap()
+            );
+            const { x, y } = selection.getCursor();
+            setCodeCellPos({ x, y });
+          } catch (e) {
+            console.error('[SetCodeCellValue] Failed to parse args: ', e);
+            setCodeCellPos(undefined);
+          }
+        }
       } else {
         setToolArgs(undefined);
       }
@@ -37,14 +56,17 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
   const openDiffInEditor = useRecoilCallback(
     ({ set }) =>
       (toolArgs: SetCodeCellValueResponse) => {
-        // const codeCell = await quadraticCore.getCodeCell(sheets.sheet.id, toolArgs.code_cell_x, toolArgs.code_cell_y);
+        if (!codeCellPos) {
+          return;
+        }
+
         set(codeEditorAtom, (prev) => ({
           ...prev,
           diffEditorContent: { editorContent: toolArgs.code_string, isApplied: false },
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,
-              pos: { x: toolArgs.code_cell_x, y: toolArgs.code_cell_y },
+              pos: codeCellPos,
               language: toolArgs.code_cell_language,
             },
             showCellTypeMenu: false,
@@ -53,28 +75,32 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
           },
         }));
       },
-    []
+    [codeCellPos]
   );
 
   const saveAndRun = useRecoilCallback(
     () => (toolArgs: SetCodeCellValueResponse) => {
+      if (!codeCellPos) {
+        return;
+      }
+
       quadraticCore.setCodeCellValue({
         sheetId: sheets.current,
-        x: toolArgs.code_cell_x,
-        y: toolArgs.code_cell_y,
+        x: codeCellPos.x,
+        y: codeCellPos.y,
         codeString: toolArgs.code_string,
         language: toolArgs.code_cell_language,
         cursor: sheets.getCursorPosition(),
       });
     },
-    []
+    [codeCellPos]
   );
 
   if (loading) {
     const partialJson = parsePartialJson(args);
     if (partialJson && 'code_cell_language' in partialJson) {
       const estimatedNumberOfLines = args.split('\\n').length;
-      const { code_cell_language: language, code_cell_x: x, code_cell_y: y } = partialJson;
+      const { code_cell_language: language, code_cell_position: position } = partialJson;
       return (
         <ToolCard
           icon={<LanguageIcon language={language} />}
@@ -82,7 +108,7 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
           description={
             `${estimatedNumberOfLines} line` +
             (estimatedNumberOfLines === 1 ? '' : 's') +
-            (x && y ? ` at (${x}, ${y})` : '')
+            (position ? ` at ${position}` : '')
           }
           isLoading={true}
         />
@@ -96,31 +122,36 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
     return <ToolCard isLoading />;
   }
 
-  const { code_cell_language, code_cell_x, code_cell_y, code_string } = toolArgs.data;
+  const { code_cell_language, code_cell_position, code_string } = toolArgs.data;
   const estimatedNumberOfLines = code_string.split('\n').length;
   return (
     <ToolCard
       icon={<LanguageIcon language={code_cell_language} />}
       label={code_cell_language}
       description={
-        `${estimatedNumberOfLines} line` +
-        (estimatedNumberOfLines === 1 ? '' : 's') +
-        ` at (${code_cell_x}, ${code_cell_y})`
+        `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
       }
       actions={
-        <div className="flex gap-1">
-          <TooltipPopover label={'Open diff in editor'}>
-            <Button size="icon-sm" variant="ghost" onClick={() => openDiffInEditor(toolArgs.data)}>
-              <CodeIcon />
-            </Button>
-          </TooltipPopover>
+        codeCellPos ? (
+          <div className="flex gap-1">
+            <TooltipPopover label={'Open diff in editor'}>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                onClick={() => openDiffInEditor(toolArgs.data)}
+                disabled={!codeCellPos}
+              >
+                <CodeIcon />
+              </Button>
+            </TooltipPopover>
 
-          <TooltipPopover label={'Apply'}>
-            <Button size="icon-sm" variant="ghost" onClick={() => saveAndRun(toolArgs.data)}>
-              <SaveAndRunIcon />
-            </Button>
-          </TooltipPopover>
-        </div>
+            <TooltipPopover label={'Apply'}>
+              <Button size="icon-sm" variant="ghost" onClick={() => saveAndRun(toolArgs.data)} disabled={!codeCellPos}>
+                <SaveAndRunIcon />
+              </Button>
+            </TooltipPopover>
+          </div>
+        ) : undefined
       }
     />
   );

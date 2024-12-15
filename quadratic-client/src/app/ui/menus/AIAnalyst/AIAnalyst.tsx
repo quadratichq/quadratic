@@ -9,7 +9,7 @@ import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
 import { cn } from '@/shared/shadcn/utils';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export const AIAnalyst = () => {
@@ -19,6 +19,16 @@ export const AIAnalyst = () => {
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
+
+  const initialLoadRef = useRef(true);
+  const autoFocusRef = useRef(false);
+  useEffect(() => {
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+    } else {
+      autoFocusRef.current = true;
+    }
+  }, [showAIAnalyst]);
 
   const handleResize = useCallback(
     (event: MouseEvent) => {
@@ -69,9 +79,9 @@ export const AIAnalyst = () => {
               <div className="px-2 py-0.5">
                 <AIAnalystUserMessageForm
                   ref={textareaRef}
-                  autoFocus={true}
+                  autoFocusRef={autoFocusRef}
                   textareaRef={textareaRef}
-                  collapseAfterSubmit={true}
+                  collapseAfterSubmit={false}
                 />
                 <AIUserMessageFormDisclaimer />
               </div>

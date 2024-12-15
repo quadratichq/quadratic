@@ -7,7 +7,7 @@ import pandas as pd
 import pyodide
 from quadratic_py import code_trace, plotly_patch, process_output
 
-from .quadratic_api.quadratic import getCell, getCells
+from .quadratic_api.quadratic import getCell, getCells, q, rel_cell, rel_cells, rc
 from .utils import attempt_fix_await
 
 
@@ -34,15 +34,16 @@ async def run_python(code: str, pos: Tuple[int, int]):
         "result": None,
         "cell": getCell,
         "cells": getCells,
+        "rel_cell": rel_cell,
+        "rel_cells": rel_cells,
+        "rc": rc,
+        "q": q,
     }
 
     sout = StringIO()
     serr = StringIO()
     output_value = None
-    globals['pos'] = lambda: (pos.x, pos.y)
-    globals['rel_cell'] = lambda x, y: getCell(x + pos.x, y + pos.y)
-    globals['rel_cells'] = lambda first, second, sheet=None, first_row_header=False: getCells((first[0] + pos.x, first[1] + pos.y), (second[0] + pos.x, second[1] + pos.y), sheet, first_row_header)
-    globals['rc'] = globals['rel_cell']
+    globals['q'] = q(pos)
 
     try:
         plotly_html = await plotly_patch.intercept_plotly_html(code)

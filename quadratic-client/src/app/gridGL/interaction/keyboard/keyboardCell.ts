@@ -6,6 +6,7 @@ import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { isAllowedFirstChar } from '@/app/gridGL/interaction/keyboard/keyboardCellChars';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -16,7 +17,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 function inCodeEditor(codeEditorState: CodeEditorState, cursor: SheetCursor): boolean {
   if (!codeEditorState.showCodeEditor) return false;
-  const cursorPosition = cursor.cursorPosition;
+  const cursorPosition = cursor.position;
   const selectedX = codeEditorState.codeCell.pos.x;
   const selectedY = codeEditorState.codeCell.pos.y;
 
@@ -26,10 +27,7 @@ function inCodeEditor(codeEditorState: CodeEditorState, cursor: SheetCursor): bo
   }
 
   // selectedCell is inside multi-cursor
-  if (cursor.multiCursor?.some((cursor) => cursor.contains(selectedX, selectedY))) {
-    return true;
-  }
-  return false;
+  return cursor.contains(selectedX, selectedY);
 }
 
 export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
@@ -40,50 +38,64 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
-  const cursorPosition = cursor.cursorPosition;
+  const cursorPosition = cursor.position;
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
 
   // Move cursor right, don't clear selection
   if (matchShortcut(Action.MoveCursorRightWithSelection, event)) {
-    cursor.changePosition({
-      keyboardMovePosition: {
-        x: cursorPosition.x + 1,
-        y: cursorPosition.y,
-      },
-      cursorPosition: {
-        x: cursorPosition.x + 1,
-        y: cursorPosition.y,
-      },
-    });
+    cursor.moveTo(cursorPosition.x + 1, cursorPosition.y);
     return true;
   }
 
   // Move cursor left, don't clear selection
   if (matchShortcut(Action.MoveCursorLeftWithSelection, event)) {
-    cursor.changePosition({
-      keyboardMovePosition: {
-        x: cursorPosition.x - 1,
-        y: cursorPosition.y,
-      },
-      cursorPosition: {
-        x: cursorPosition.x - 1,
-        y: cursorPosition.y,
-      },
-    });
+    cursor.moveTo(cursorPosition.x - 1, cursorPosition.y);
     return true;
   }
 
   // Edit cell
   if (matchShortcut(Action.EditCell, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
-      const column = cursorPosition.x;
-      const row = cursorPosition.y;
-      quadraticCore.getCodeCell(sheets.sheet.id, column, row).then((code) => {
+      const { x, y } = sheets.sheet.cursor.position;
+      quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
         if (code) {
-          doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+          doubleClickCell({
+            column: Number(code.x),
+            row: Number(code.y),
+            language: code.language,
+            cell: '',
+          });
         } else {
-          quadraticCore.getEditCell(sheets.sheet.id, column, row).then((cell) => {
-            doubleClickCell({ column, row, cell });
+          quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
+            doubleClickCell({
+              column: x,
+              row: y,
+              cell,
+              cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
+            });
+          });
+        }
+      });
+      return true;
+    }
+  }
+
+  // Edit cell - navigate text
+  if (matchShortcut(Action.ToggleArrowMode, event)) {
+    if (!inlineEditorHandler.isEditingFormula()) {
+      const { x, y } = sheets.sheet.cursor.position;
+      quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
+        if (code) {
+          doubleClickCell({
+            column: Number(code.x),
+            row: Number(code.y),
+            language: code.language,
+            cell: '',
+            cursorMode: CursorMode.Edit,
+          });
+        } else {
+          quadraticCore.getEditCell(sheets.sheet.id, x, y).then((cell) => {
+            doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
           });
         }
       });
@@ -126,18 +138,23 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
 
   // Triggers Validation UI
   if (matchShortcut(Action.TriggerCell, event)) {
-    const p = sheets.sheet.cursor.cursorPosition;
+    const p = sheets.sheet.cursor.position;
     events.emit('triggerCell', p.x, p.y, true);
   }
 
   if (isAllowedFirstChar(event.key)) {
-    const cursorPosition = cursor.cursorPosition;
-    quadraticCore.getCodeCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y).then((code) => {
+    const { x, y } = cursor.position;
+    quadraticCore.getCodeCell(sheets.sheet.id, x, y).then((code) => {
       // open code cell unless this is the actual code cell. In this case we can overwrite it
-      if (code && (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)) {
-        doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+      if (code && (Number(code.x) !== x || Number(code.y) !== y)) {
+        doubleClickCell({
+          column: Number(code.x),
+          row: Number(code.y),
+          language: code.language,
+          cell: '',
+        });
       } else {
-        pixiAppSettings.changeInput(true, event.key);
+        pixiAppSettings.changeInput(true, event.key, CursorMode.Enter);
       }
     });
     return true;

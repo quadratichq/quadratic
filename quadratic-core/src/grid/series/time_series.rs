@@ -2,7 +2,7 @@ use chrono::{Duration, NaiveTime, Timelike};
 
 use crate::CellValue;
 
-use super::{copy_series, SeriesOptions};
+use super::SeriesOptions;
 
 fn unwrap_times(first: &CellValue, second: &CellValue) -> Option<(NaiveTime, NaiveTime)> {
     match (first, second) {
@@ -45,25 +45,20 @@ pub(crate) fn time_delta(last: &mut NaiveTime, diff: Duration, reverse: bool) ->
     Duration::seconds(new_seconds - final_seconds).num_days() as i32
 }
 
-pub(crate) fn find_time_series(options: SeriesOptions) -> Vec<CellValue> {
+pub(crate) fn find_time_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
     // if only one time, copy it
     let diff = if options.series.len() == 1 {
         Duration::hours(1)
     } else {
-        let Some((first, second)) = unwrap_times(&options.series[0], &options.series[1]) else {
-            return copy_series(options);
-        };
+        let (first, second) = unwrap_times(&options.series[0].0, &options.series[1].0)?;
 
         let diff = time_diff(first, second);
 
         for i in 2..options.series.len() {
-            let Some((first, second)) = unwrap_times(&options.series[i - 1], &options.series[i])
-            else {
-                return copy_series(options);
-            };
+            let (first, second) = unwrap_times(&options.series[i - 1].0, &options.series[i].0)?;
 
             if time_diff(first, second) != diff {
-                return copy_series(options);
+                return None;
             }
         }
         diff
@@ -74,8 +69,8 @@ pub(crate) fn find_time_series(options: SeriesOptions) -> Vec<CellValue> {
         &options.series[options.series.len() - 1]
     };
 
-    let CellValue::Time(mut last) = last else {
-        return copy_series(options);
+    let CellValue::Time(mut last) = last.0 else {
+        return None;
     };
 
     let mut results = vec![];
@@ -87,11 +82,13 @@ pub(crate) fn find_time_series(options: SeriesOptions) -> Vec<CellValue> {
     if options.negative {
         results.reverse();
     }
-    results
+    Some(results)
 }
 
 #[cfg(test)]
 mod test {
+    use crate::{grid::series::find_auto_complete, Pos};
+
     use super::*;
     use serial_test::parallel;
 
@@ -99,8 +96,8 @@ mod test {
         NaiveTime::from_hms_opt(hour, minute, second).unwrap()
     }
 
-    fn cell_value_time(hour: u32, minute: u32, second: u32) -> CellValue {
-        CellValue::Time(naked_time(hour, minute, second))
+    fn cell_value_time(hour: u32, minute: u32, second: u32) -> (CellValue, Option<Pos>) {
+        (CellValue::Time(naked_time(hour, minute, second)), None)
     }
 
     #[test]
@@ -116,7 +113,7 @@ mod test {
             negative: false,
         };
 
-        let results = find_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -127,7 +124,7 @@ mod test {
             ]
         );
 
-        let results = find_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });
@@ -155,7 +152,7 @@ mod test {
             negative: false,
         };
 
-        let results = find_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -166,7 +163,7 @@ mod test {
             ]
         );
 
-        let results = find_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });
@@ -194,7 +191,7 @@ mod test {
             negative: false,
         };
 
-        let results = find_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -205,7 +202,7 @@ mod test {
             ]
         );
 
-        let results = find_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });
@@ -255,7 +252,7 @@ mod test {
             negative: false,
         };
 
-        let results = find_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -266,7 +263,7 @@ mod test {
             ]
         );
 
-        let results = find_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });

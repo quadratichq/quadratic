@@ -34,6 +34,7 @@ export const AIAnalystUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((
   return (
     <AIUserMessageForm
       {...rest}
+      ref={ref}
       abortController={abortController}
       loading={loading}
       setLoading={setLoading}
