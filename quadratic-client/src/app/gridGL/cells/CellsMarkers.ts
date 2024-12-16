@@ -55,8 +55,8 @@ export class CellsMarkers extends Container {
           symbol.y -= 1;
         }
       } else if (codeCell.language === 'AIResearcher') {
-        symbol.texture = Texture.from('/images/ai-icon.png');
-        symbol.tint = isError ? colors.cellColorError : colors.cellColorUserAIResearcher;
+        symbol.texture = Texture.from('/images/ai-researcher-icon.png');
+        symbol.tint = isError ? colors.cellColorError : 0xffffff;
       }
     }
     this.markers.push({
