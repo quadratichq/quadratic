@@ -15,7 +15,9 @@ impl GridController {
         range: &RefRangeBounds,
         borders: &mut BordersUpdates,
     ) {
-        let style = style.map(|s| ClearOption::Some(s.into()));
+        let style = style.map_or(Some(ClearOption::Clear), |s| {
+            Some(ClearOption::Some(s.into()))
+        });
         let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
         match border_selection {
             BorderSelection::All => {
@@ -229,7 +231,6 @@ impl GridController {
         style: Option<BorderStyle>,
     ) -> Option<Vec<Operation>> {
         let mut borders: BordersUpdates = BordersUpdates::default();
-
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 self.a1_border_style_range(border_selection, style, range, &mut borders);
@@ -238,10 +239,10 @@ impl GridController {
 
         // Once we have the style updates, we need to check if we should toggle
         // instead of setting the style
-        if style.is_some() {
-            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            if style.is_some() {
+                borders = BordersUpdates::default();
                 if sheet.borders.is_toggle_borders(&borders) {
-                    borders = BordersUpdates::default();
                     selection.ranges.iter().for_each(|range| match range {
                         CellRefRange::Sheet { range } => {
                             self.a1_border_style_range(border_selection, None, range, &mut borders);
