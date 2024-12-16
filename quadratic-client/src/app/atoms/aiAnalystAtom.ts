@@ -1,7 +1,7 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
+import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
@@ -36,16 +36,12 @@ export const aiAnalystAtom = atom<AIAnalystState>({
   effects: [
     async ({ getPromise, setSelf, trigger }) => {
       if (trigger === 'get') {
-        // Determine if we want to override the default showAIAnalyst value on initialization
-        const aiAnalystOpenCount = getAiAnalystOpenCount();
-        const isSheetEmpty = sheets.sheet.bounds.type === 'empty';
-        const showAIAnalyst = aiAnalystOpenCount <= 3 ? true : isSheetEmpty;
-        if (showAIAnalyst) {
-          setSelf({
-            ...defaultAIAnalystState,
-            showAIAnalyst,
-          });
-        }
+        const gridSettings = await getPromise(gridSettingsAtom);
+        const showAIAnalyst = !gridSettings.hideAIOnStartup;
+        setSelf({
+          ...defaultAIAnalystState,
+          showAIAnalyst,
+        });
 
         const user = await getPromise(editorInteractionStateUserAtom);
         const uuid = await getPromise(editorInteractionStateUuidAtom);
