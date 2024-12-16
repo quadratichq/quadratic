@@ -47,7 +47,7 @@ export const AIResearcherHeader = () => {
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
-          AI Researcher - Cell {xyToA1(codeCellState.pos.x, codeCellState.pos.y)}
+          Cell {xyToA1(codeCellState.pos.x, codeCellState.pos.y)}
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}

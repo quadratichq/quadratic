@@ -49,7 +49,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
     formOnKeyDown,
   } = props;
 
-  const [editing, setEditing] = useState(!initialPrompt);
+  const [editing, setEditing] = useState(!collapseAfterSubmit || !initialPrompt);
   const [prompt, setPrompt] = useState(initialPrompt ?? '');
 
   const abortPrompt = useCallback(() => {
@@ -126,7 +126,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
               if (initialPrompt === undefined) {
                 setPrompt('');
                 textareaRef.current?.focus();
-              } else {
+              } else if (collapseAfterSubmit) {
                 setEditing(false);
                 bottomTextareaRef.current?.focus();
               }

@@ -187,7 +187,7 @@ export function HoverCell() {
   }, []);
   const { top, left } = usePositionCellMessage({ div, offsets });
 
-  if (loading) {
+  if (loading || !text) {
     return null;
   }
 
@@ -314,29 +314,49 @@ function HoverCellAIResearcherResult({ codeCell: codeCellCore }: { codeCell: JsC
   }
   return (
     <HoverCellDisplay title={language}>
-      <>
-        <div>
-          <span className="font-bold">{`Confidence Score: `}</span>
-          {aiResearcherResult.toolCallArgs.confidence_score}
+      <div className="mt-1 flex flex-col gap-2">
+        <div className="flex flex-row justify-between gap-2">
+          <span>Confidence:</span>
+          <span className="font-bold">{aiResearcherResult.toolCallArgs.confidence_score * 100}%</span>
         </div>
 
-        <div>
-          <span className="font-bold">{`Source: `}</span>
-          {aiResearcherResult.toolCallArgs.source_urls.map((url) => (
-            <a
-              key={url}
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              className="truncate whitespace-pre-wrap break-all text-link underline"
-            >
-              {url}
-            </a>
-          ))}
+        <div className="flex flex-row justify-between gap-2">
+          <span>Source:</span>
+          <div className="flex flex-col gap-1">
+            {aiResearcherResult.toolCallArgs.source_urls.map((url) => (
+              <UrlPill key={url} url={url} />
+            ))}
+          </div>
         </div>
-      </>
+      </div>
     </HoverCellDisplay>
   );
+}
+
+function UrlPill({ url }: { url: string }) {
+  const domain = useMemo(() => getDomainFromUrl(url), [url]);
+  if (!domain) {
+    return null;
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="truncate whitespace-pre-wrap break-all rounded-md border border-border px-2 py-0.5"
+    >
+      {domain}
+    </a>
+  );
+}
+
+function getDomainFromUrl(url: string): string | null {
+  try {
+    const urlObject = new URL(url);
+    return urlObject.hostname.replace(/^www\./, '');
+  } catch (e) {
+    return null;
+  }
 }
 
 function HoverCellDisplay({

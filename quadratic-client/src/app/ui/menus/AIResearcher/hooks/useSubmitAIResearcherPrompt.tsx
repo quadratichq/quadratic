@@ -112,7 +112,7 @@ export function useSubmitAIResearcherPrompt() {
             result = { error: 'Error parsing set_ai_researcher_value response' };
           }
         } else {
-          result = { error: 'No function call found' };
+          result = { error: 'API Error' };
         }
 
         set(aiResearcherAbortControllerAtom, undefined);

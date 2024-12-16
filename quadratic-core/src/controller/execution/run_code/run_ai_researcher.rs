@@ -64,7 +64,7 @@ impl GridController {
                             if query == CellValue::Blank {
                                 return Err(RunError {
                                     span: None,
-                                    msg: RunErrorMsg::InvalidArgument,
+                                    msg: RunErrorMsg::CodeRunError("Query cannot be blank".into()),
                                 });
                             }
 
@@ -72,7 +72,9 @@ impl GridController {
                                 if text.is_empty() {
                                     return Err(RunError {
                                         span: None,
-                                        msg: RunErrorMsg::InvalidArgument,
+                                        msg: RunErrorMsg::CodeRunError(
+                                            "Query cannot be blank".into(),
+                                        ),
                                     });
                                 }
                             }
@@ -156,12 +158,17 @@ impl GridController {
                     ref_cell_values,
                     cells_accessed,
                 }) => {
-                    // circular reference to itself
-                    let mut has_circular_reference = false;
+                    // dependent on another ai researcher request
+                    let is_dependent = all_ai_researchers
+                        .iter()
+                        .any(|ai_researcher| cells_accessed.contains(ai_researcher.to_owned()));
+                    if is_dependent {
+                        new_pending_ai_researchers.insert(pending_ai_researcher.to_owned());
+                        continue;
+                    }
 
-                    // check if referenced cell has error
-                    let mut referenced_cell_has_error = false;
-
+                    let mut has_circular_reference = false; // circular reference to itself
+                    let mut referenced_cell_has_error = false; // check if referenced cell has error
                     let mut seen_code_cells = HashSet::from([pending_ai_researcher.to_owned()]);
                     let mut cells_accessed_to_check = vec![cells_accessed.clone()];
                     'outer: while let Some(cells_accessed) = cells_accessed_to_check.pop() {
@@ -188,8 +195,10 @@ impl GridController {
                                             continue;
                                         }
 
-                                        if code_run.spill_error
-                                            || code_run.result.as_std_ref().is_err()
+                                        if !all_ai_researchers
+                                            .contains(&code_cell_pos.to_sheet_pos(sheet_id))
+                                            && (code_run.spill_error
+                                                || code_run.result.as_std_ref().is_err())
                                         {
                                             referenced_cell_has_error = true;
                                             break 'outer;
@@ -202,30 +211,22 @@ impl GridController {
                             }
                         }
                     }
-
-                    if referenced_cell_has_error || has_circular_reference {
-                        transaction
-                            .pending_ai_researchers
-                            .remove(pending_ai_researcher);
-
+                    if has_circular_reference || referenced_cell_has_error {
                         let msg = if has_circular_reference {
                             RunErrorMsg::CircularReference
                         } else {
-                            RunErrorMsg::CodeRunError("Error in referenced cell(s)".into())
+                            RunErrorMsg::CodeRunError(
+                                "Error in referenced / dependent cell(s)".into(),
+                            )
                         };
                         let run_error = RunError { span: None, msg };
 
+                        transaction
+                            .pending_ai_researchers
+                            .remove(pending_ai_researcher);
                         transaction.current_sheet_pos = Some(pending_ai_researcher.to_owned());
+                        transaction.cells_accessed.clear();
                         let _ = self.code_cell_sheet_error(transaction, &run_error);
-                        continue;
-                    }
-
-                    // dependent on another ai researcher request
-                    let is_dependent = all_ai_researchers
-                        .iter()
-                        .any(|ai_researcher| cells_accessed.contains(ai_researcher.to_owned()));
-                    if is_dependent {
-                        new_pending_ai_researchers.insert(pending_ai_researcher.to_owned());
                         continue;
                     }
 
@@ -258,6 +259,7 @@ impl GridController {
             for sheet_pos in pending_ai_researchers.iter() {
                 transaction.pending_ai_researchers.remove(sheet_pos);
                 transaction.current_sheet_pos = Some(sheet_pos.to_owned());
+                transaction.cells_accessed.clear();
                 let _ = self.code_cell_sheet_error(transaction, &run_error);
             }
         }
@@ -512,7 +514,7 @@ mod test {
             parsed_ai_researcher_code,
             Err(RunError {
                 span: None,
-                msg: RunErrorMsg::InvalidArgument,
+                msg: RunErrorMsg::CodeRunError("Query cannot be blank".into(),),
             })
         );
         assert_no_pending_async_transaction(&gc);
