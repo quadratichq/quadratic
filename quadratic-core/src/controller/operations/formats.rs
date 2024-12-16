@@ -1,7 +1,10 @@
 use super::operation::Operation;
 use crate::{
     controller::GridController,
-    grid::formats::{FormatUpdate, SheetFormatUpdates},
+    grid::{
+        formats::{FormatUpdate, SheetFormatUpdates},
+        sheet::borders::BorderSelection,
+    },
     A1Selection,
 };
 
@@ -15,7 +18,11 @@ impl GridController {
             sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, FormatUpdate::cleared()),
         }];
-        ops.extend(self.clear_borders_a1_operations(selection));
+        if let Some(border_ops) =
+            self.set_borders_a1_selection_operations(selection.clone(), BorderSelection::All, None)
+        {
+            ops.extend(border_ops);
+        }
         ops
     }
 }
@@ -23,13 +30,21 @@ impl GridController {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use crate::grid::SheetId;
+    use crate::grid::{sheet::borders::BorderStyle, SheetId};
 
     use super::*;
 
     #[test]
     fn test_clear_format_selection_operations() {
-        let gc = GridController::test();
+        let mut gc = GridController::test();
+
+        gc.set_borders(
+            A1Selection::test_a1("A1"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+
         let sheet_id = SheetId::TEST;
         let selection = A1Selection::test_a1("A1");
         let ops = gc.clear_format_borders_operations(&selection);

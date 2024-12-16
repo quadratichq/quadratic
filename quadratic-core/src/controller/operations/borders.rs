@@ -15,7 +15,9 @@ impl GridController {
         range: &RefRangeBounds,
         borders: &mut BordersUpdates,
     ) {
-        let style = style.map(|s| ClearOption::Some(s.into()));
+        let style = style.map_or(Some(ClearOption::Clear), |s| {
+            Some(ClearOption::Some(s.into()))
+        });
         let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
         match border_selection {
             BorderSelection::All => {
@@ -229,7 +231,6 @@ impl GridController {
         style: Option<BorderStyle>,
     ) -> Option<Vec<Operation>> {
         let mut borders: BordersUpdates = BordersUpdates::default();
-
         selection.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 self.a1_border_style_range(border_selection, style, range, &mut borders);
