@@ -146,7 +146,7 @@ impl A1Selection {
         });
         Self::from_ranges(ranges, sheet)
     }
-    #[cfg(test)]
+
     pub fn from_ranges(ranges: impl Iterator<Item = CellRefRange>, sheet: SheetId) -> Self {
         let ranges = ranges.collect::<Vec<_>>();
         let last_range = ranges.last().expect("empty selection is invalid");

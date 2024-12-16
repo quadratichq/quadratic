@@ -98,10 +98,10 @@ pub struct PendingTransaction {
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
 
     // ai researcher requests
-    pub pending_ai_researcher: HashSet<SheetPos>,
+    pub pending_ai_researchers: HashSet<SheetPos>,
 
     // ai researcher requests that are currently running
-    pub running_ai_researcher: HashSet<SheetPos>,
+    pub running_ai_researchers: HashSet<SheetPos>,
 }
 
 impl Default for PendingTransaction {
@@ -131,8 +131,8 @@ impl Default for PendingTransaction {
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
-            pending_ai_researcher: HashSet::new(),
-            running_ai_researcher: HashSet::new(),
+            pending_ai_researchers: HashSet::new(),
+            running_ai_researchers: HashSet::new(),
         }
     }
 }

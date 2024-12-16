@@ -659,20 +659,20 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_values(
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![A1].to_sheet_pos(sheet_id),
             vec![vec!["1"], vec!["2"], vec!["3"]],
             None,
         );
 
         gc.set_code_cell(
-            pos![B4].to_sheet_pos(sheet_id),
+            pos![B1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Formula,
-            "AI('query', B1:B3)".to_string(),
+            "AI('query', A1:A3)".to_string(),
             None,
         );
 
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((1, 4).into()),
+            gc.sheet(sheet_id).get_code_cell_value(pos![B1]),
             Some(CellValue::Text("result".to_string()))
         );
 
@@ -688,7 +688,7 @@ mod test {
         );
 
         assert_eq!(
-            gc.sheet(sheet_id).get_code_cell_value((5, 8).into()),
+            gc.sheet(sheet_id).get_code_cell_value(pos![F5]),
             Some(CellValue::Text("result".to_string()))
         );
     }

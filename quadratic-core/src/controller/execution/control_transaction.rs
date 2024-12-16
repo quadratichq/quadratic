@@ -28,7 +28,7 @@ impl GridController {
 
         loop {
             if transaction.operations.is_empty()
-                && transaction.pending_ai_researcher.is_empty()
+                && transaction.pending_ai_researchers.is_empty()
                 && transaction.resize_rows.is_empty()
             {
                 transaction.complete = true;
@@ -43,12 +43,12 @@ impl GridController {
 
             // try running pending ai researchers in parallel, only if there are no other operations
             if transaction.operations.is_empty()
-                && !transaction.pending_ai_researcher.is_empty()
-                && transaction.has_async == transaction.running_ai_researcher.len() as i64
+                && !transaction.pending_ai_researchers.is_empty()
+                && transaction.has_async == transaction.running_ai_researchers.len() as i64
             {
                 self.run_ai_researcher_parallel(transaction);
                 // if there are still running ai researchers, break and wait for them to complete
-                if !transaction.running_ai_researcher.is_empty() {
+                if !transaction.running_ai_researchers.is_empty() {
                     self.transactions.update_async_transaction(transaction);
                     break;
                 }

@@ -91,7 +91,12 @@ impl<'ctx> Ctx<'ctx> {
 
     /// Fetches the contents of the cell at `pos` evaluated at `self.sheet_pos`,
     /// or returns an error in the case of a circular reference.
-    pub fn get_cell(&mut self, pos: SheetPos, span: Span) -> Spanned<CellValue> {
+    pub fn get_cell(
+        &mut self,
+        pos: SheetPos,
+        span: Span,
+        add_to_cells_accessed: bool,
+    ) -> Spanned<CellValue> {
         if self.skip_computation {
             let value = CellValue::Blank;
             return Spanned { span, inner: value };
@@ -109,7 +114,9 @@ impl<'ctx> Ctx<'ctx> {
             return error_value(RunErrorMsg::CircularReference);
         }
 
-        self.cells_accessed.add_sheet_pos(pos);
+        if add_to_cells_accessed {
+            self.cells_accessed.add_sheet_pos(pos);
+        }
 
         let value = sheet.get_cell_for_formula(pos.into());
         Spanned { inner: value, span }
@@ -149,8 +156,10 @@ impl<'ctx> Ctx<'ctx> {
         // clone `sheet_name.`
         for y in bounded_rect.y_range() {
             for x in bounded_rect.x_range() {
-                // TODO: record array dependency instead of many individual cell dependencies
-                flat_array.push(self.get_cell(SheetPos { x, y, sheet_id }, span).inner);
+                flat_array.push(
+                    self.get_cell(SheetPos { x, y, sheet_id }, span, false)
+                        .inner,
+                );
             }
         }
 

@@ -18,7 +18,12 @@ fn get_functions() -> Vec<FormulaFunction> {
             "AI(\"What is the last year's GDP?\", \"A1\")"
         )]
         fn AI(query: String, ref_cell: Array) {
-            Value::Tuple(vec![CellValue::Text(query).into(), ref_cell])
+            let query_value = if query.is_empty() {
+                CellValue::Blank
+            } else {
+                CellValue::Text(query)
+            };
+            Value::Tuple(vec![query_value.into(), ref_cell])
         }
     )]
 }
