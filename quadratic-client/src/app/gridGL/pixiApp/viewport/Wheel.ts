@@ -1,10 +1,15 @@
 //! Cloned from pixi-viewport Wheel plugin.
 
+import { events } from '@/app/events/events';
+import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
 import { IPointData, Point } from '@pixi/math';
 import { Plugin, Viewport } from 'pixi-viewport';
 
 export const SCALE_OUT_OF_BOUNDS_SCROLL = 0.1;
+
+const MAX_RUBBER_BAND_GAP = 50;
+const RUBBER_BAND_DECELERATION_POWER = 5;
 
 /** Options for {@link Wheel}. */
 export interface IWheelOptions {
@@ -114,6 +119,8 @@ export class Wheel extends Plugin {
   /** Flags whether the viewport is currently zooming using ctrl key + wheel. */
   protected currentlyZooming: boolean;
 
+  protected headingSize: { width: number; height: number } = { width: CELL_HEIGHT, height: CELL_HEIGHT };
+
   /**
    * This is called by {@link Viewport.wheel}.
    */
@@ -131,6 +138,10 @@ export class Wheel extends Plugin {
     window.addEventListener('pointerdown', this.checkAndEmitZoomEnd);
     window.addEventListener('pointerout', this.checkAndEmitZoomEnd);
     window.addEventListener('pointerleave', this.checkAndEmitZoomEnd);
+
+    events.on('headingSize', (width, height) => {
+      this.headingSize = { width, height };
+    });
   }
 
   private handleBlur = (): void => {
@@ -354,17 +365,58 @@ export class Wheel extends Plugin {
     } else {
       const deltas = [e.deltaX, e.deltaY];
       const [deltaX, deltaY] = deltas;
-      const stepX = deltaX < 0 && this.parent.x > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1;
-      const stepY = deltaY < 0 && this.parent.y > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1;
-      const newX = this.parent.x + (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * stepX * -1;
-      const newY = this.parent.y + deltaY * stepY * -1 * (this.horizontalScrollKeyIsPressed && !isMac ? 0 : 1);
 
-      this.parent.x = newX;
-      this.parent.y = newY;
+      const { x: viewportX, y: viewportY } = this.parent;
+      const { width: headingWidth, height: headingHeight } = this.headingSize;
+
+      const stepX = deltaX < 0 && viewportX > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1;
+      const stepY = deltaY < 0 && viewportY > 0 ? SCALE_OUT_OF_BOUNDS_SCROLL : 1;
+
+      // Calculate the scroll amount
+      let dx = (this.horizontalScrollKeyIsPressed && !isMac ? deltaY : deltaX) * stepX * -1;
+      let dy = (this.horizontalScrollKeyIsPressed && !isMac ? 0 : deltaY) * stepY * -1;
+
+      // Calculate actual position of the viewport after scrolling
+      const nextX = viewportX + dx - headingWidth;
+      const nextY = viewportY + dy - headingHeight;
+
+      if (viewportX >= headingWidth) {
+        // going beyond the heading, decelerate
+        const factorX = this.getDecelerationFactor(nextX);
+        dx *= factorX;
+      } else if (nextX > 0) {
+        // snap to the edge
+        dx -= nextX;
+      }
+
+      if (viewportY >= headingHeight) {
+        // going beyond the heading, decelerate
+        const factorY = this.getDecelerationFactor(nextY);
+        dy *= factorY;
+      } else if (nextY > 0) {
+        // snap to the edge
+        dy -= nextY;
+      }
+
+      this.parent.x = viewportX + dx;
+      this.parent.y = viewportY + dy;
 
       this.parent.emit('wheel-scroll', this.parent);
       this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
     }
     return !this.parent.options.passiveWheel;
+  }
+
+  private getDecelerationFactor(value: number): number {
+    // No deceleration needed if the value is less than or equal to 0
+    if (value <= 0) return 1;
+
+    // Normalize the gap to be between 0 and 1
+    const normalizedGap = Math.min(value / MAX_RUBBER_BAND_GAP, 1);
+
+    // Calculate the deceleration factor using a power function
+    const factor = Math.pow(1 - normalizedGap, RUBBER_BAND_DECELERATION_POWER);
+
+    return factor;
   }
 }

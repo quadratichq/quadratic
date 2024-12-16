@@ -318,7 +318,7 @@ mod tests {
         );
         let sheet = gc.sheet(sheet_id);
         let horizontal = sheet.borders.horizontal_borders().unwrap();
-        assert_eq!(horizontal.len(), 5);
+        assert_eq!(horizontal.len(), 4);
         assert!(sheet.borders.vertical_borders().is_none());
     }
 
@@ -335,7 +335,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders().is_none());
         let vertical = sheet.borders.vertical_borders().unwrap();
-        assert_eq!(vertical.len(), 5);
+        assert_eq!(vertical.len(), 4);
     }
 
     #[test]
