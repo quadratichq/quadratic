@@ -85,6 +85,7 @@ mod tests {
         gc.clear_format_borders(&A1Selection::test_a1("*"), None);
 
         let sheet = gc.sheet(sheet_id);
+        dbg!(&sheet.borders.horizontal_borders());
         assert!(sheet.borders.horizontal_borders().is_none());
         assert!(sheet.borders.vertical_borders().is_none());
     }

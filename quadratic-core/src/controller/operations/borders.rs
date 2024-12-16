@@ -15,7 +15,9 @@ impl GridController {
         range: &RefRangeBounds,
         borders: &mut BordersUpdates,
     ) {
-        let style = style.map(|s| ClearOption::Some(s.into()));
+        let style = style.map_or(Some(ClearOption::Clear), |s| {
+            Some(ClearOption::Some(s.into()))
+        });
         let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
         match border_selection {
             BorderSelection::All => {
