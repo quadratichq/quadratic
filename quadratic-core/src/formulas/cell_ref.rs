@@ -154,7 +154,7 @@ impl CellRef {
     }
 
     /// Parses an A1-style cell reference relative to a given location.
-    pub fn parse_a1(s: &str, base: Pos) -> Option<CellRef> {
+    pub fn parse_a1(s: &str, mut base: Pos) -> Option<CellRef> {
         let (sheet, rest) = parse_sheet_name(s);
 
         lazy_static! {
@@ -176,6 +176,7 @@ impl CellRef {
         let mut col = crate::a1::column_from_name(column_name)? as i64;
         if col == 0 {
             col = UNBOUNDED;
+            base.x = 0;
         }
         let col_ref = match column_is_absolute {
             true => CellRefCoord::Absolute(col),
@@ -243,7 +244,7 @@ impl CellRefCoord {
     /// coordinate where evaluation is taking place.
     pub fn resolve_from(self, base: i64) -> i64 {
         match self {
-            CellRefCoord::Relative(delta) => base + delta,
+            CellRefCoord::Relative(delta) => i64::checked_add(base, delta).unwrap_or(UNBOUNDED),
             CellRefCoord::Absolute(coord) => coord,
         }
     }
@@ -347,6 +348,21 @@ mod tests {
                 sheet: None,
                 x: CellRefCoord::Relative(0),
                 y: CellRefCoord::Relative(UNBOUNDED)
+            })
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_a1_row_parsing() {
+        let pos = CellRef::parse_a1("2", pos![A0]);
+
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: None,
+                x: CellRefCoord::Relative(UNBOUNDED),
+                y: CellRefCoord::Relative(2)
             })
         );
     }

@@ -32,7 +32,7 @@ pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
     let tokens = lexer::tokenize(source)
         .filter(|t| !t.inner.is_skip())
         .collect_vec();
-    println!("tokens: {:?}", tokens);
+
     let mut p = Parser::new(source, &tokens, pos);
 
     while !p.is_done() {

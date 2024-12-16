@@ -82,7 +82,7 @@ pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
 mod tests {
     use crate::controller::formula::{parse_formula, CellRefSpan, FormulaParseResult};
     use crate::formulas::{CellRef, CellRefCoord, RangeRef};
-    use crate::Span;
+    use crate::{Span, UNBOUNDED};
     use serial_test::parallel;
 
     fn parse(s: &str) -> FormulaParseResult {
@@ -149,14 +149,50 @@ mod tests {
     #[test]
     #[parallel]
     fn test_parse_formula_column() {
-        // println!("{:?}", parse("A1").cell_refs);
-        // println!("{:?}", parse("A").cell_refs);
-        // println!("{:?}", parse("1:2").cell_refs);
-        // println!("{:?}", parse("A1:A2").cell_refs);
-        // println!("{:?}", parse("SUM(A1:A)").cell_refs);
-        // println!("{:?}", parse("SUM(1)").cell_refs);
-        // println!("{:?}", parse("SUM(A2,B$5, C8)").cell_refs);
-        // println!("{:?}", parse("SUM(R[0]C[-1])").cell_refs);
-        println!("{:?}", parse("SUM(A1:A12)"));
+        let cell_refs = parse("SUM(A1:A)").cell_refs;
+
+        assert_eq!(
+            cell_refs,
+            vec![CellRefSpan {
+                span: Span { start: 4, end: 8 },
+                cell_ref: RangeRef::CellRange {
+                    start: CellRef {
+                        sheet: None,
+                        x: CellRefCoord::Relative(0),
+                        y: CellRefCoord::Relative(1)
+                    },
+                    end: CellRef {
+                        sheet: None,
+                        x: CellRefCoord::Relative(0),
+                        y: CellRefCoord::Relative(UNBOUNDED)
+                    }
+                }
+            }]
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_parse_formula_row() {
+        let cell_refs = parse("SUM(2:3)").cell_refs;
+
+        assert_eq!(
+            cell_refs,
+            vec![CellRefSpan {
+                span: Span { start: 4, end: 7 },
+                cell_ref: RangeRef::CellRange {
+                    start: CellRef {
+                        sheet: None,
+                        x: CellRefCoord::Relative(UNBOUNDED),
+                        y: CellRefCoord::Relative(2)
+                    },
+                    end: CellRef {
+                        sheet: None,
+                        x: CellRefCoord::Relative(UNBOUNDED),
+                        y: CellRefCoord::Relative(3)
+                    }
+                }
+            }]
+        );
     }
 }

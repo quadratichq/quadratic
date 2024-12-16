@@ -5,6 +5,7 @@ use std::{fmt, str::FromStr};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use crate::UNBOUNDED;
 use crate::{grid::SheetId, ArraySize, Pos, SheetPos};
 
 /// Used for referencing a range during computation.
@@ -90,11 +91,11 @@ impl SheetRect {
     }
     /// Returns the range of X values in the rectangle.
     pub fn x_range(self) -> Range<i64> {
-        self.min.x..self.max.x + 1
+        self.min.x..i64::checked_add(self.max.x, 1).unwrap_or(UNBOUNDED)
     }
     /// Returns the range of Y values in the rectangle.
     pub fn y_range(self) -> Range<i64> {
-        self.min.y..self.max.y + 1
+        self.min.y..i64::checked_add(self.max.y, 1).unwrap_or(UNBOUNDED)
     }
     pub fn width(&self) -> usize {
         (self.max.x - self.min.x + 1) as usize
