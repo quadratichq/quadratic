@@ -79,6 +79,8 @@ fn sheet_name_must_be_quoted(sheet_name: &str) -> bool {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::grid::Sheet;
+
     use super::*;
 
     #[test]
@@ -159,6 +161,21 @@ mod tests {
         assert_eq!(
             parse_optional_sheet_name_to_id("sheet1!A1", &sheet_1, &map),
             Ok((sheet_1, "A1"))
+        );
+    }
+
+    #[test]
+    fn test_parse_long_sheet_name() {
+        let mut sheet = Sheet::test();
+        sheet.name = "Types: sequences, mapping, sets".to_string();
+        let map = HashMap::from([("Types: sequences, mapping, sets".to_string(), sheet.id)]);
+        assert_eq!(
+            parse_optional_sheet_name_to_id(
+                "'Types: sequences, mapping, sets'!A1:B2",
+                &sheet.id,
+                &map
+            ),
+            Ok((sheet.id, "A1:B2"))
         );
     }
 }

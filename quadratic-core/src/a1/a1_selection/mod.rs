@@ -184,7 +184,31 @@ impl A1Selection {
         let mut sheet = None;
         let mut ranges = vec![];
 
-        for segment in a1.strip_suffix(',').unwrap_or(a1).split(',') {
+        let mut segments = Vec::new();
+        let mut current_segment = String::new();
+        let mut in_quotes = false;
+
+        for c in a1.chars() {
+            match c {
+                '\'' => {
+                    in_quotes = !in_quotes;
+                    current_segment.push(c);
+                }
+                ',' if !in_quotes => {
+                    if !current_segment.is_empty() {
+                        segments.push(current_segment);
+                        current_segment = String::new();
+                    }
+                }
+                _ => current_segment.push(c),
+            }
+        }
+
+        if !current_segment.is_empty() {
+            segments.push(current_segment);
+        }
+
+        for segment in segments {
             let range = SheetCellRefRange::from_str(segment.trim(), default_sheet_id, sheet_map)?;
             if *sheet.get_or_insert(range.sheet) != range.sheet {
                 return Err(A1Error::TooManySheets(a1.to_string()));
