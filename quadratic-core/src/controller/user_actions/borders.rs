@@ -177,7 +177,7 @@ mod tests {
         gc.set_borders(
             A1Selection::test_a1("A1:B2"),
             BorderSelection::All,
-            None,
+            Some(BorderStyle::default()),
             None,
         );
         let sheet = gc.sheet(sheet_id);
