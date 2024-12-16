@@ -112,7 +112,7 @@ impl BorderStyleTimestamp {
         style.filter(|&style| style.line != CellBorderLine::Clear)
     }
 
-    #[cfg(test)]
+    /// Returns true if the two styles are equal ignoring the timestamp.
     pub fn is_equal_ignore_timestamp(
         b1: Option<BorderStyleTimestamp>,
         b2: Option<BorderStyleTimestamp>,
@@ -151,8 +151,17 @@ pub struct BorderStyleCell {
     pub left: Option<BorderStyleTimestamp>,
     pub right: Option<BorderStyleTimestamp>,
 }
-
 impl BorderStyleCell {
+    #[cfg(test)]
+    pub fn all() -> Self {
+        BorderStyleCell {
+            top: Some(BorderStyleTimestamp::default()),
+            bottom: Some(BorderStyleTimestamp::default()),
+            left: Some(BorderStyleTimestamp::default()),
+            right: Some(BorderStyleTimestamp::default()),
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         self.top.is_none() && self.bottom.is_none() && self.left.is_none() && self.right.is_none()
     }

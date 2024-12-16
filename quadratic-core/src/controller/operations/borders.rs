@@ -14,7 +14,14 @@ impl GridController {
         style: Option<BorderStyle>,
         range: &RefRangeBounds,
         borders: &mut BordersUpdates,
+        clear_neighbors: bool,
     ) {
+        // original style is used to determine if we should clear the borders by
+        // clearing the neighboring cell. We do not have to do this if we are
+        // setting a style since we track timestamps. This is only necessary if
+        // we are clearing a style.
+        let clear_neighbors = clear_neighbors && style.is_none();
+
         let style = style.map_or(Some(ClearOption::Clear), |s| {
             Some(ClearOption::Some(s.into()))
         });
@@ -37,6 +44,44 @@ impl GridController {
                     .right
                     .get_or_insert_with(Default::default)
                     .set_rect(x1, y1, x2, y2, style);
+                if clear_neighbors {
+                    if x1 > 1 {
+                        borders.right.get_or_insert_default().set_rect(
+                            x1 - 1,
+                            y1,
+                            Some(x1 - 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if y1 > 1 {
+                        borders.bottom.get_or_insert_default().set_rect(
+                            x1,
+                            y1 - 1,
+                            x2,
+                            Some(y1 - 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if let Some(x2) = x2 {
+                        borders.left.get_or_insert_default().set_rect(
+                            x2 + 1,
+                            y1,
+                            Some(x2 + 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if let Some(y2) = y2 {
+                        borders.top.get_or_insert_default().set_rect(
+                            x1,
+                            y2 + 1,
+                            x2,
+                            Some(y2 + 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Inner => {
                 borders
@@ -87,48 +132,112 @@ impl GridController {
                         .get_or_insert_default()
                         .set_rect(x1, y2, x2, Some(y2), style);
                 }
+                if clear_neighbors {
+                    if x1 > 1 {
+                        borders.right.get_or_insert_default().set_rect(
+                            x1 - 1,
+                            y1,
+                            Some(x1 - 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if y1 > 1 {
+                        borders.bottom.get_or_insert_default().set_rect(
+                            x1,
+                            y1 - 1,
+                            x2,
+                            Some(y1 - 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if let Some(x2) = x2 {
+                        borders.left.get_or_insert_default().set_rect(
+                            x2 + 1,
+                            y1,
+                            Some(x2 + 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                    if let Some(y2) = y2 {
+                        borders.top.get_or_insert_default().set_rect(
+                            x1,
+                            y2 + 1,
+                            x2,
+                            Some(y2 + 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Horizontal => {
-                if let Some(y2) = y2 {
-                    borders.bottom.get_or_insert_default().set_rect(
-                        x1,
-                        y2,
-                        x2,
-                        Some((y2 - 1).max(1)),
-                        style,
-                    );
-                }
                 borders
                     .top
                     .get_or_insert_default()
                     .set_rect(x1, y1 + 1, x2, y2, style);
+                if clear_neighbors {
+                    if let Some(y2) = y2 {
+                        borders.bottom.get_or_insert_default().set_rect(
+                            x1,
+                            y1,
+                            x2,
+                            Some((y2 - 1).max(1)),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Vertical => {
-                if let Some(x2) = x2 {
-                    borders.right.get_or_insert_default().set_rect(
-                        x2,
-                        y1,
-                        Some((x2 - 1).max(1)),
-                        y2,
-                        style,
-                    );
-                }
                 borders
                     .left
                     .get_or_insert_default()
                     .set_rect(x1 + 1, y1, x2, y2, style);
+                if clear_neighbors {
+                    if let Some(x2) = x2 {
+                        borders.right.get_or_insert_default().set_rect(
+                            x1,
+                            y1,
+                            Some((x2 - 1).max(1)),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Left => {
                 borders
                     .left
                     .get_or_insert_default()
                     .set_rect(x1, y1, Some(x1), y2, style);
+                if clear_neighbors {
+                    if x1 > 1 {
+                        borders.right.get_or_insert_default().set_rect(
+                            x1 - 1,
+                            y1,
+                            Some(x1 - 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Top => {
                 borders
                     .top
                     .get_or_insert_default()
                     .set_rect(x1, y1, x2, Some(y1), style);
+                if clear_neighbors {
+                    if y1 > 1 {
+                        borders.bottom.get_or_insert_default().set_rect(
+                            x1,
+                            y1 - 1,
+                            x2,
+                            Some(y1 - 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Right => {
                 if let Some(x2) = x2 {
@@ -137,6 +246,17 @@ impl GridController {
                         .get_or_insert_default()
                         .set_rect(x2, y1, Some(x2), y2, style);
                 }
+                if clear_neighbors {
+                    if let Some(x2) = x2 {
+                        borders.left.get_or_insert_default().set_rect(
+                            x2 + 1,
+                            y1,
+                            Some(x2 + 1),
+                            y2,
+                            Some(ClearOption::Clear),
+                        );
+                    }
+                }
             }
             BorderSelection::Bottom => {
                 if let Some(y2) = y2 {
@@ -144,6 +264,17 @@ impl GridController {
                         .bottom
                         .get_or_insert_default()
                         .set_rect(x1, y2, x2, Some(y2), style);
+                }
+                if clear_neighbors {
+                    if let Some(y2) = y2 {
+                        borders.top.get_or_insert_default().set_rect(
+                            x1,
+                            y2 + 1,
+                            x2,
+                            Some(y2 + 1),
+                            Some(ClearOption::Clear),
+                        );
+                    }
                 }
             }
             // for clear, we need to remove any borders that are at the edges of
@@ -229,28 +360,44 @@ impl GridController {
         selection: A1Selection,
         border_selection: BorderSelection,
         style: Option<BorderStyle>,
+        clear_neighbors: bool,
     ) -> Option<Vec<Operation>> {
-        let mut borders: BordersUpdates = BordersUpdates::default();
-        selection.ranges.iter().for_each(|range| match range {
-            CellRefRange::Sheet { range } => {
-                self.a1_border_style_range(border_selection, style, range, &mut borders);
-            }
-        });
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return None;
+        };
 
-        // Once we have the style updates, we need to check if we should toggle
-        // instead of setting the style
+        // Mutable so we can clear it if the style is toggled.
+        let mut style = style;
+
         if style.is_some() {
-            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                if sheet.borders.is_toggle_borders(&borders) {
-                    borders = BordersUpdates::default();
-                    selection.ranges.iter().for_each(|range| match range {
-                        CellRefRange::Sheet { range } => {
-                            self.a1_border_style_range(border_selection, None, range, &mut borders);
-                        }
-                    });
+            // If we have a style update, then we check if we should toggle
+            // instead of setting the style.
+            let mut borders: BordersUpdates = BordersUpdates::default();
+
+            // We compare w/o clear_neighbors since we don't care about the
+            // neighbors when toggling.
+            selection.ranges.iter().for_each(|range| match range {
+                CellRefRange::Sheet { range } => {
+                    self.a1_border_style_range(border_selection, style, range, &mut borders, false);
                 }
+            });
+            if sheet.borders.is_toggle_borders(&borders) {
+                style = None;
             }
         }
+
+        let mut borders = BordersUpdates::default();
+        selection.ranges.iter().for_each(|range| match range {
+            CellRefRange::Sheet { range } => {
+                self.a1_border_style_range(
+                    border_selection,
+                    style,
+                    range,
+                    &mut borders,
+                    clear_neighbors,
+                );
+            }
+        });
 
         if !borders.is_empty() {
             Some(vec![Operation::SetBordersA1 {
@@ -339,6 +486,7 @@ mod tests {
                 A1Selection::test_a1("*"),
                 BorderSelection::All,
                 Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);
@@ -358,6 +506,7 @@ mod tests {
                 A1Selection::test_a1("*"),
                 BorderSelection::Left,
                 Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);
@@ -380,6 +529,7 @@ mod tests {
                 A1Selection::test_a1("C:E"),
                 BorderSelection::Right,
                 Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);
@@ -403,6 +553,7 @@ mod tests {
                 A1Selection::test_a1("2:4"),
                 BorderSelection::Bottom,
                 Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);
@@ -428,6 +579,7 @@ mod tests {
                 A1Selection::test_a1("B3:D5"),
                 BorderSelection::Outer,
                 Some(BorderStyle::default()),
+                true,
             )
             .unwrap();
         assert_eq!(ops.len(), 1);

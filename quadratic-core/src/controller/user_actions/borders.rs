@@ -13,7 +13,7 @@ impl GridController {
         cursor: Option<String>,
     ) {
         if let Some(ops) =
-            self.set_borders_a1_selection_operations(selection, border_selection, style)
+            self.set_borders_a1_selection_operations(selection, border_selection, style, true)
         {
             self.start_user_transaction(ops, cursor, TransactionName::SetBorders);
         }
@@ -21,6 +21,7 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use crate::grid::sheet::borders::{BorderSelection, BorderStyle};
 
@@ -85,7 +86,6 @@ mod tests {
         gc.clear_format_borders(&A1Selection::test_a1("*"), None);
 
         let sheet = gc.sheet(sheet_id);
-        dbg!(&sheet.borders.horizontal_borders());
         assert!(sheet.borders.horizontal_borders().is_none());
         assert!(sheet.borders.vertical_borders().is_none());
     }
@@ -113,5 +113,75 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders().is_none());
         assert!(sheet.borders.vertical_borders().is_none());
+    }
+
+    #[test]
+    fn test_toggle_borders_single() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_borders(
+            A1Selection::test_a1("B2"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.borders.horizontal_borders().is_some());
+        assert!(sheet.borders.vertical_borders().is_some());
+
+        gc.set_borders(A1Selection::test_a1("B2"), BorderSelection::All, None, None);
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.borders.horizontal_borders().is_none());
+        assert!(sheet.borders.vertical_borders().is_none());
+    }
+
+    #[test]
+    fn test_toggle_borders_multiple() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_borders(
+            A1Selection::test_a1("A1:B2"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.borders.horizontal_borders().is_some());
+        assert!(sheet.borders.vertical_borders().is_some());
+
+        gc.set_borders(
+            A1Selection::test_a1("A1:B2"),
+            BorderSelection::All,
+            None,
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.borders.horizontal_borders().is_none());
+        assert!(sheet.borders.vertical_borders().is_none());
+    }
+
+    #[test]
+    fn test_toggle_borders_multiple_different_border_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_borders(
+            A1Selection::test_a1("A1:B2"),
+            BorderSelection::Outer,
+            Some(BorderStyle::default()),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.borders.horizontal_borders().is_some());
+        assert!(sheet.borders.vertical_borders().is_some());
+
+        gc.set_borders(
+            A1Selection::test_a1("A1:B2"),
+            BorderSelection::All,
+            None,
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.borders.horizontal_borders().is_some());
+        assert!(sheet.borders.vertical_borders().is_some());
     }
 }

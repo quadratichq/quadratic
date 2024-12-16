@@ -40,40 +40,67 @@ impl Borders {
             && self.right.is_all_default()
     }
 
+    /// Returns true if the border and update are the same.
+    fn same_border_and_update(
+        border: &Option<BorderStyleTimestamp>,
+        update: &ClearOption<BorderStyleTimestamp>,
+    ) -> bool {
+        match (border, update) {
+            (Some(border), ClearOption::Some(update)) => {
+                BorderStyleTimestamp::is_equal_ignore_timestamp(Some(*border), Some(*update))
+            }
+            (None, ClearOption::Some(_)) => false,
+            (Some(_), ClearOption::Clear) => false,
+            _ => true,
+        }
+    }
+
     /// Returns true if the borders update is already applied to the sheet.
     pub fn is_toggle_borders(&self, border_update: &BordersUpdates) -> bool {
+        // First check if update borders match current borders
         if let Some(update_left) = border_update.left.as_ref() {
-            if !self
-                .left
-                .zip_any(update_left, |border, update| *border == (*update).into())
-            {
+            if self.left.zip_any(update_left, |border, update| {
+                !Borders::same_border_and_update(border, update)
+            }) {
                 return false;
             }
         }
         if let Some(update_right) = border_update.right.as_ref() {
-            if !self
-                .right
-                .zip_any(update_right, |border, update| *border == (*update).into())
-            {
+            if self.right.zip_any(update_right, |border, update| {
+                !Borders::same_border_and_update(border, update)
+            }) {
                 return false;
             }
         }
         if let Some(update_top) = border_update.top.as_ref() {
-            if !self
-                .top
-                .zip_any(update_top, |border, update| *border == (*update).into())
-            {
+            if self.top.zip_any(update_top, |border, update| {
+                !Borders::same_border_and_update(border, update)
+            }) {
                 return false;
             }
         }
         if let Some(update_bottom) = border_update.bottom.as_ref() {
-            if !self
-                .bottom
-                .zip_any(update_bottom, |border, update| *border == (*update).into())
-            {
+            if self.bottom.zip_any(update_bottom, |border, update| {
+                !Borders::same_border_and_update(border, update)
+            }) {
                 return false;
             }
         }
+
+        // Then check if current borders exist where update has none
+        if border_update.left.is_none() && !self.left.is_all_default() {
+            return false;
+        }
+        if border_update.right.is_none() && !self.right.is_all_default() {
+            return false;
+        }
+        if border_update.top.is_none() && !self.top.is_all_default() {
+            return false;
+        }
+        if border_update.bottom.is_none() && !self.bottom.is_all_default() {
+            return false;
+        }
+
         true
     }
 
@@ -109,5 +136,37 @@ mod tests {
             Some(BorderStyleTimestamp::default()),
         );
         assert_eq!(borders.finite_bounds().unwrap(), Rect::new(1, 1, 20, 20));
+    }
+
+    #[test]
+    fn test_is_toggle_borders() {
+        let mut borders = Borders::default();
+
+        let mut border_update = BordersUpdates::default();
+        border_update.set_style_cell(pos![A1], BorderStyleCell::all());
+
+        assert!(!borders.is_toggle_borders(&border_update));
+
+        borders.set_style_cell(pos![A1], BorderStyleCell::all());
+        assert!(borders.is_toggle_borders(&border_update));
+    }
+
+    #[test]
+    fn test_is_toggle_borders_different_border_selection() {
+        let mut borders = Borders::default();
+        let mut border_update = BordersUpdates::default();
+        border_update.set_style_cell(
+            pos![A1],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: None,
+                left: None,
+                right: None,
+            },
+        );
+        assert!(!borders.is_toggle_borders(&border_update));
+
+        borders.set_style_cell(pos![A1], BorderStyleCell::all());
+        assert!(!borders.is_toggle_borders(&border_update));
     }
 }
