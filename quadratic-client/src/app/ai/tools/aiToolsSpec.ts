@@ -1,10 +1,11 @@
 import { AITool } from '@/app/ai/tools/aiTools';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
-import { SheetRect } from '@/app/quadratic-core-types';
+import { ensureRectVisible, ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
+import type { SheetRect } from '@/app/quadratic-core-types';
 import { stringToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { getAIResearcherCodeString } from '@/app/ui/menus/AIResearcher/helpers/getAIResearcherCodeString.helper';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -22,13 +23,17 @@ type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
 };
 
 export const AIToolsArgsSchema = {
-  [AITool.SetAIResearcherValue]: z.object({
+  [AITool.SetAIResearcherResult]: z.object({
     cell_value: z.string(),
     source_urls: z.array(z.string()),
     confidence_score: z.number(),
   }),
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
+  }),
+  [AITool.SetCellValues]: z.object({
+    top_left_position: z.string(),
+    cell_values: z.array(z.array(z.string())),
   }),
   [AITool.SetCodeCellValue]: z.object({
     code_cell_language: z.enum(['Python', 'Javascript', 'Formula']),
@@ -37,9 +42,10 @@ export const AIToolsArgsSchema = {
     output_width: z.number(),
     output_height: z.number(),
   }),
-  [AITool.SetCellValues]: z.object({
-    top_left_position: z.string(),
-    cell_values: z.array(z.array(z.string())),
+  [AITool.SetAIResearcherValue]: z.object({
+    query: z.string(),
+    ai_researcher_position: z.string(),
+    reference_cells_selection: z.string(),
   }),
   [AITool.MoveCells]: z.object({
     source_selection_rect: z.string(),
@@ -55,7 +61,7 @@ export type AIToolSpecRecord = {
 };
 
 export const aiToolsSpec: AIToolSpecRecord = {
-  [AITool.SetAIResearcherValue]: {
+  [AITool.SetAIResearcherResult]: {
     internalTool: true,
     description:
       "Sets the result of the AI Researcher as a value on the spreadsheet, based on user's query for some referenced cell value(s) from the spreadsheet.",
@@ -82,13 +88,13 @@ export const aiToolsSpec: AIToolSpecRecord = {
       required: ['cell_value', 'source_urls', 'confidence_score'],
       additionalProperties: false,
     },
-    responseSchema: AIToolsArgsSchema[AITool.SetAIResearcherValue],
+    responseSchema: AIToolsArgsSchema[AITool.SetAIResearcherResult],
     action: async (args) => {
       // no action as this tool is only meant to get structured data from AI
       return `Executed set ai researcher value tool successfully with value: ${args.cell_value}`;
     },
     prompt: `
-You should use the set_ai_researcher_value function to set the result of the AI Researcher as a value on the spreadsheet.\n
+You should use the set_ai_researcher_result function to set the result of the AI Researcher as a value on the spreadsheet.\n
 This value should be in strong correlation to the referenced cell value(s) from the spreadsheet and should directly answer the users query related to the referenced cell value(s).\n
 This function requires the value that will be set on the spreadsheet. It can be a text, number, currency, date, etc.\n
 You should also include the source_urls and confidence_score in the response, these are the urls of the search results that were used to answer the query and the confidence score of the search results.\n
@@ -270,6 +276,68 @@ The required location code_cell_position for this code cell is one which satisfi
  - Do not use conditional returns in python code cells.\n
  - Don't prefix formulas with \`=\` in code cells.\n
  `,
+  },
+  [AITool.SetAIResearcherValue]: {
+    internalTool: false,
+    description: `
+Sets the value of a code cell to the result of the AI Researcher, requires the query, the position (in a1 notation) of the researcher cell and the reference cells selection (in a1 notation).\n
+AI researcher is a tool that can browse the internet and search for information to answer the query in context of the reference cells.\n
+Use set_ai_researcher_value tool when the task requires information from the internet to better answer the query.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The query for which the AI Researcher is searching for results.',
+        },
+        ai_researcher_position: {
+          type: 'string',
+          description:
+            'The position of the code cell in the currently open sheet, in a1 notation. This should be a single cell, not a range. This is where the AI Researcher will write the result of the query.',
+        },
+        reference_cells_selection: {
+          type: 'string',
+          description:
+            'This is the string representation of the reference cells, in a1 notation, which will be used to answer the query. Only values in these cells will be passed to the AI Researcher as context. This should be a small rectangle of cells, not a large range.',
+        },
+      },
+      required: ['query', 'ai_researcher_position', 'reference_cells_selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetAIResearcherValue],
+    action: async (args) => {
+      const { query, ai_researcher_position, reference_cells_selection } = args;
+      try {
+        const selection = stringToSelection(ai_researcher_position, sheets.current, sheets.getSheetIdNameMap());
+        if (!selection.isSingleSelection()) {
+          return 'Invalid ai researcher position, this should be a single cell, not a range';
+        }
+        const { x, y } = selection.getCursor();
+
+        quadraticCore.setCodeCellValue({
+          sheetId: sheets.current,
+          x,
+          y,
+          codeString: getAIResearcherCodeString(query, reference_cells_selection),
+          language: 'AIResearcher',
+          cursor: sheets.getCursorPosition(),
+        });
+        ensureVisible({ x, y });
+
+        return 'Executed set ai researcher value tool successfully';
+      } catch (e) {
+        return `Error executing set ai researcher value tool: ${e}`;
+      }
+    },
+    prompt: `
+You should use the set_ai_researcher_value function to ask the AI Researcher to answer the query in context of the reference cells.\n
+This function requires the query, the position (in a1 notation) of the researcher cell and the reference cells selection (in a1 notation).\n
+Use set_ai_researcher_value tool when the task requires information from the internet to better answer the query.\n
+query is a string that is the query for which the AI Researcher is searching for results.\n
+ai_researcher_position is the position (in a1 notation) of the code cell in the currently open sheet, where the AI Researcher will write the result of the query.\n
+reference_cells_selection is the string representation of the reference cells, in a1 notation, which will be used to answer the query. Only values in these cells will be passed to the AI Researcher as context. This should be a small rectangle of cells, not a large range.\n
+`,
   },
   [AITool.MoveCells]: {
     internalTool: false,

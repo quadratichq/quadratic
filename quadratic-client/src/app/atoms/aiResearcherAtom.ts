@@ -1,32 +1,5 @@
-import { AITool } from '@/app/ai/tools/aiTools';
-import { AIToolsArgsSchema } from '@/app/ai/tools/aiToolsSpec';
-import { ExaSearchResultSchema } from 'quadratic-shared/typesAndSchemasAI';
+import { AIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { atom, DefaultValue, selector } from 'recoil';
-import { z } from 'zod';
-
-export const AIResearcherResultSchema = z.object({
-  exaResult: z.array(ExaSearchResultSchema).optional(),
-  toolCallArgs: AIToolsArgsSchema[AITool.SetAIResearcherValue],
-});
-
-export type AIResearcherResult = z.infer<typeof AIResearcherResultSchema>;
-
-export const ParseAIResearcherResult = (
-  ai_researcher_result_stringified?: string | null
-): AIResearcherResult | undefined => {
-  if (!ai_researcher_result_stringified) {
-    return undefined;
-  }
-
-  let aiResearcherResult = undefined;
-  try {
-    const aiResearcherResultJson = JSON.parse(ai_researcher_result_stringified);
-    aiResearcherResult = AIResearcherResultSchema.parse(aiResearcherResultJson);
-  } catch (e) {
-    console.warn(e);
-  }
-  return aiResearcherResult;
-};
 
 export interface AIResearcherState {
   abortController?: AbortController;

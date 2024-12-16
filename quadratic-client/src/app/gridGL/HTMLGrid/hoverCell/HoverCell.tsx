@@ -1,4 +1,3 @@
-import { ParseAIResearcherResult } from '@/app/atoms/aiResearcherAtom';
 import { aiAssistantLoadingAtom } from '@/app/atoms/codeEditorAtom';
 import { showCodePeekAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
@@ -13,6 +12,7 @@ import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
+import { parseAIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -308,7 +308,7 @@ function HoverCellSpillError({ codeCell: codeCellCore, onClick }: { codeCell: Js
 
 function HoverCellAIResearcherResult({ codeCell: codeCellCore }: { codeCell: JsCodeCell; onClick: () => void }) {
   const language = useMemo(() => getLanguage(codeCellCore.language), [codeCellCore.language]);
-  const aiResearcherResult = useMemo(() => ParseAIResearcherResult(codeCellCore.std_out), [codeCellCore.std_out]);
+  const aiResearcherResult = useMemo(() => parseAIResearcherResult(codeCellCore.std_out), [codeCellCore.std_out]);
   if (!aiResearcherResult) {
     return null;
   }

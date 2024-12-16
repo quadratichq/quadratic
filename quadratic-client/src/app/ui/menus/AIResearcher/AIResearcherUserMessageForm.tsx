@@ -7,6 +7,7 @@ import {
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { AIUserMessageForm, AIUserMessageFormWrapperProps } from '@/app/ui/components/AIUserMessageForm';
+import { getAIResearcherCodeString } from '@/app/ui/menus/AIResearcher/helpers/getAIResearcherCodeString.helper';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
 import { forwardRef } from 'react';
@@ -24,13 +25,12 @@ export const AIResearcherUserMessageForm = forwardRef<HTMLTextAreaElement, AIUse
           set(aiResearcherQueryAtom, prompt);
           const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
           const refCell = await snapshot.getPromise(aiResearcherRefCellAtom);
-          const codeString = `AI("${prompt}", ${refCell})`;
           quadraticCore.setCodeCellValue({
             sheetId: codeCell.sheetId,
             x: codeCell.pos.x,
             y: codeCell.pos.y,
             language: 'AIResearcher',
-            codeString,
+            codeString: getAIResearcherCodeString(prompt, refCell),
             cursor: sheets.getCursorPosition(),
           });
         },

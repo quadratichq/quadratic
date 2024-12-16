@@ -5,12 +5,9 @@ import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextM
 import { AITool } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { getMessagesForModel } from '@/app/ai/tools/message.helper';
-import {
-  aiResearcherAbortControllerAtom,
-  aiResearcherLoadingAtom,
-  AIResearcherResult,
-} from '@/app/atoms/aiResearcherAtom';
+import { aiResearcherAbortControllerAtom, aiResearcherLoadingAtom } from '@/app/atoms/aiResearcherAtom';
 import { exaSettingsAtom } from '@/app/atoms/exaSettingsAtom';
+import { AIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { useAIResearcherMessagePrompt } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherMessagePrompt';
 import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
@@ -94,22 +91,22 @@ export function useSubmitAIResearcherPrompt() {
           signal: abortController.signal,
           useStream: false,
           useTools: true,
-          toolChoice: AITool.SetAIResearcherValue,
+          toolChoice: AITool.SetAIResearcherResult,
         });
 
         const setAIResearcherValueToolCall = response.toolCalls.find(
-          (toolCall) => toolCall.name === AITool.SetAIResearcherValue
+          (toolCall) => toolCall.name === AITool.SetAIResearcherResult
         );
 
         let result: { result?: AIResearcherResult; error?: string } = { result: undefined, error: undefined };
         if (setAIResearcherValueToolCall) {
           try {
             const argsObject = JSON.parse(setAIResearcherValueToolCall.arguments);
-            const output = aiToolsSpec[AITool.SetAIResearcherValue].responseSchema.parse(argsObject);
+            const output = aiToolsSpec[AITool.SetAIResearcherResult].responseSchema.parse(argsObject);
             result = { result: { exaResult: exaResponse.content?.results, toolCallArgs: output } };
           } catch (e) {
-            console.error('[useAISetCodeCellValue] Error parsing set_ai_researcher_value response: ', e);
-            result = { error: 'Error parsing set_ai_researcher_value response' };
+            console.error('[useAISetCodeCellValue] Error parsing set_ai_researcher_result response: ', e);
+            result = { error: 'Error parsing set_ai_researcher_result response' };
           }
         } else {
           result = { error: 'API Error' };

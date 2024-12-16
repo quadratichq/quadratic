@@ -19,7 +19,7 @@ export function useAIResearcherMessagePrompt() {
   ${query}
   \`\`\`\n
   
-  You should use the set_ai_researcher_value function to set this result value directly in the spreadsheet.\n
+  You should use the set_ai_researcher_result function to set this result value directly in the spreadsheet.\n
   Don't include any preamble or other text, just the value.\n
   Answer in simple value (text or number), not markdown.\n
   For numerical results, don't include any units or other text, just the number. Don't include any formatting like commas or decimals. Don't include suffixes like million, billion, etc, answer with all digits.\n
