@@ -157,7 +157,7 @@ export class CellsArray extends Container {
     } else if (codeCell.language === 'Javascript') {
       tint = colors.cellColorUserJavascript;
     } else if (codeCell.language === 'AIResearcher') {
-      tint = colors.cellColorUserAI;
+      tint = colors.cellColorUserAIResearcher;
     }
 
     if (!pixiAppSettings.showCellTypeOutlines) {

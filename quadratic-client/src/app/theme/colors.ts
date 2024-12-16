@@ -10,6 +10,7 @@ export const colors = {
   cellColorUserPythonRgba: 'rgba(55, 118, 171, 0.5)',
   cellColorUserFormula: 0x8c1a6a,
   cellColorUserJavascript: 0xca8a04,
+  cellColorUserAIResearcher: 0x428a61,
   cellColorUserAI: 0x1a8c5d,
   cellColorError: 0xf25f5c,
 
@@ -57,6 +58,7 @@ export const colors = {
   languageMssql: '#cfd8dc',
   languageSnowflake: '#249edc',
   languageJavascript: '#ca8a04',
+  languageAIResearcher: '#428a61',
   link: '#2463eb',
 
   // todo: this can be change for dark background

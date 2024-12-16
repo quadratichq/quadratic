@@ -223,7 +223,7 @@ export class Cursor extends Container {
           : codeCell.language === 'Javascript'
           ? colors.cellColorUserJavascript
           : codeCell.language === 'AIResearcher'
-          ? colors.cellColorUserAI
+          ? colors.cellColorUserAIResearcher
           : colors.independence;
     }
 
