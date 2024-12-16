@@ -259,21 +259,24 @@ impl CellRefCoord {
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a column coordinate.
     fn col_string(self, base: i64) -> String {
-        let col = crate::a1::column_name(self.resolve_from(base));
+        let resolved = self.resolve_from(base);
+        let col = match resolved {
+            UNBOUNDED => "".to_string(),
+            _ => crate::a1::column_name(resolved),
+        };
+
         format!("{}{col}", self.prefix())
     }
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a row coordinate.
     fn row_string(self, base: i64) -> String {
-        let row = self.resolve_from(base);
-        format!("{}{}", Self::remove_unbounded(row), self.prefix())
-    }
-    fn remove_unbounded(value: i64) -> String {
-        if value == UNBOUNDED {
-            return "".to_string();
-        }
+        let resolved = self.resolve_from(base);
+        let row = match resolved {
+            UNBOUNDED => "".to_string(),
+            _ => resolved.to_string(),
+        };
 
-        value.to_string()
+        format!("{row}{}", self.prefix())
     }
 
     /// Returns whether the coordinate is relative (i.e., no '$' prefix).
