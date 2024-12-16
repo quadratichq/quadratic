@@ -1,7 +1,7 @@
 import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
+import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
@@ -34,10 +34,9 @@ export const aiAnalystAtom = atom<AIAnalystState>({
   key: 'aiAnalystAtom',
   default: defaultAIAnalystState,
   effects: [
-    async ({ getPromise, setSelf, trigger }) => {
+    async ({ getPromise, setSelf, trigger, getLoadable }) => {
       if (trigger === 'get') {
-        const gridSettings = await getPromise(gridSettingsAtom);
-        const showAIAnalyst = !gridSettings.hideAIOnStartup;
+        const showAIAnalyst = await getPromise(showAIAnalystOnStartupAtom);
         setSelf({
           ...defaultAIAnalystState,
           showAIAnalyst,
