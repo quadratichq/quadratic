@@ -322,7 +322,7 @@ function HoverCellAIResearcherResult({ codeCell: codeCellCore }: { codeCell: JsC
 
         <div className="flex flex-row justify-between gap-2">
           <span>Source:</span>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col items-end gap-1">
             {aiResearcherResult.toolCallArgs.source_urls.map((url) => (
               <UrlPill key={url} url={url} />
             ))}
@@ -343,7 +343,7 @@ function UrlPill({ url }: { url: string }) {
       href={url}
       target="_blank"
       rel="noreferrer"
-      className="flex flex-row items-center gap-2 rounded-md border border-border px-2 py-1"
+      className="flex max-w-fit flex-row items-center gap-2 rounded-md border border-border px-2 py-1"
     >
       <img
         alt="Source website icon"
@@ -377,7 +377,7 @@ function HoverCellDisplay({
 }) {
   return (
     <div className="flex flex-col gap-1 p-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between whitespace-pre-wrap break-all">
         <span className={cn(isError ? 'text-destructive' : '')}>{title}</span>
         {actions && <div className="flex items-center gap-0.5">{actions}</div>}
       </div>
