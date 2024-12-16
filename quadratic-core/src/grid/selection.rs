@@ -29,4 +29,17 @@ mod test {
         assert_eq!(selection.cursor, pos![A1]);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
     }
+
+    #[test]
+    fn a1_selection_from_string_long_sheet_name() {
+        let mut gc = GridController::test();
+        gc.add_sheet_with_name("Types: sequences, mapping, sets".to_string(), None);
+        let sheet_id = gc.sheet_ids()[1];
+        let selection = gc
+            .a1_selection_from_string("'Types: sequences, mapping, sets'!A1:B2", &sheet_id)
+            .unwrap();
+        assert_eq!(selection.sheet_id, sheet_id);
+        assert_eq!(selection.cursor, pos![A1]);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1:B2")]);
+    }
 }

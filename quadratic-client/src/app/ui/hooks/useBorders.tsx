@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 // used as a place-holder for clear color
-const CLEAR_COLOR = '#123456';
+const CLEAR_COLOR = 'rgb(18, 52, 86)'; // #123456
 
 export interface ChangeBorder {
   selection?: BorderSelection;

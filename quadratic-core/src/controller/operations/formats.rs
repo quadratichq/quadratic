@@ -18,9 +18,12 @@ impl GridController {
             sheet_id,
             formats: SheetFormatUpdates::from_selection(selection, FormatUpdate::cleared()),
         }];
-        if let Some(border_ops) =
-            self.set_borders_a1_selection_operations(selection.clone(), BorderSelection::All, None)
-        {
+        if let Some(border_ops) = self.set_borders_a1_selection_operations(
+            selection.clone(),
+            BorderSelection::All,
+            None,
+            false,
+        ) {
             ops.extend(border_ops);
         }
         ops

@@ -49,7 +49,7 @@ export const CodeEditor = () => {
             <div
               ref={codeEditorRef}
               className={cn(
-                'relative -mt-[1px] flex h-full flex-col overflow-auto border-t border-transparent bg-background',
+                'relative -mt-[1px] flex h-full flex-col overflow-visible border-t border-transparent bg-background',
                 codeEditorPanelData.panelPosition === 'left' ? 'flex-row border-t border-border' : 'flex-col'
               )}
               style={{
