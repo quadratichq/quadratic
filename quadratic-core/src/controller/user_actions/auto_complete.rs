@@ -702,7 +702,7 @@ mod tests {
 
     #[test]
     #[parallel]
-    fn expand_down_borders() {
+    fn test_expand_down_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
