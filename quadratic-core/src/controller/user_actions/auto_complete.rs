@@ -25,6 +25,7 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use super::*;
     use crate::{
@@ -39,7 +40,6 @@ mod tests {
         },
         A1Selection, CellValue, Pos, SheetPos, SheetRect,
     };
-    use serial_test::parallel;
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
@@ -118,7 +118,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_cell_values_in_rect() {
         let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
         let (grid_controller, sheet_id) = test_setup_rect(&selected);
@@ -133,7 +132,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_code_cell() {
         let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 });
         let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
@@ -158,7 +156,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_left_only() {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 11 }, Pos { x: 15, y: 12 });
         let range: Rect = Rect::new_span(Pos { x: 7, y: 11 }, Pos { x: 15, y: 12 });
@@ -183,7 +180,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_right_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
@@ -207,7 +203,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_up_only() {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 11 }, Pos { x: 15, y: 12 });
         let range: Rect = Rect::new_span(Pos { x: 12, y: 3 }, Pos { x: 15, y: 12 });
@@ -236,7 +231,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_down_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 10 });
@@ -265,7 +259,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
@@ -284,7 +277,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_formatting_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let vals = vec!["", "", "", "", "", "", "", ""];
@@ -350,7 +342,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 12 }, Pos { x: 15, y: 13 });
         let range: Rect = Rect::new_span(Pos { x: 12, y: 3 }, Pos { x: 20, y: 13 });
@@ -373,7 +364,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_down_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 12 }, Pos { x: 15, y: 13 });
         let range: Rect = Rect::new_span(Pos { x: 3, y: 30 }, Pos { x: 15, y: 20 });
@@ -400,7 +390,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 12, y: 12 }, Pos { x: 15, y: 13 });
         let range: Rect = Rect::new_span(Pos { x: 3, y: 3 }, selected.max);
@@ -423,7 +412,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_horizontal_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
@@ -449,7 +437,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_horizontal_series_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
         let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
@@ -478,7 +465,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_horizontal_series_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
@@ -513,7 +499,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_expand_vertical_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
@@ -528,7 +513,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_shrink_width() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -563,7 +547,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_shrink_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -595,7 +578,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_shrink_width_and_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -627,7 +609,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_autocomplete_sheet_id_not_found() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -638,7 +619,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn expand_right_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -659,70 +639,80 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
-    fn expand_left_borders() {
+    fn test_expand_left_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders(
-            A1Selection::from_rect(SheetRect::new(3, 1, 6, 1, sheet_id)),
+            A1Selection::test_a1("C1:F1"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
-        gc.autocomplete(sheet_id, Rect::new(3, 1, 6, 1), Rect::new(1, 1, 5, 1), None)
-            .unwrap();
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("C1:F1"),
+            Rect::test_a1("A1:F1"),
+            None,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::new(1, 1, 5, 1)));
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::test_a1("A1:F1")));
     }
 
     #[test]
-    #[parallel]
-    fn expand_up_borders() {
+    fn test_expand_up_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders(
-            A1Selection::from_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
+            A1Selection::test_a1("A3:A6"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
-        gc.autocomplete(sheet_id, Rect::new(1, 3, 1, 6), Rect::new(1, 1, 1, 5), None)
-            .unwrap();
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("A3:A6"),
+            Rect::test_a1("A1:A6"),
+            None,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::new(1, 1, 1, 5)));
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::test_a1("A1:A6")));
     }
 
     #[test]
-    #[parallel]
     fn test_expand_down_borders() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_borders(
-            A1Selection::from_rect(SheetRect::new(1, 3, 1, 6, sheet_id)),
+            A1Selection::test_a1("A1:A3"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
-        gc.autocomplete(sheet_id, Rect::new(1, 3, 1, 6), Rect::new(1, 1, 1, 5), None)
-            .unwrap();
+        gc.autocomplete(
+            sheet_id,
+            Rect::test_a1("A1:A3"),
+            Rect::test_a1("A1:A5"),
+            None,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-
-        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::new(1, 1, 1, 5)));
+        assert_eq!(sheet.borders.finite_bounds(), Some(Rect::test_a1("A1:A5")));
     }
 
     #[test]
-    #[parallel]
     fn update_code_cell_references_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -747,7 +737,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn update_code_cell_references_javascript() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
