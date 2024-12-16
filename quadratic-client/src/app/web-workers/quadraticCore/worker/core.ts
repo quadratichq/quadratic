@@ -7,7 +7,7 @@
 
 import { bigIntReplacer } from '@/app/bigint';
 import { debugWebWorkers } from '@/app/debugFlags';
-import {
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -30,12 +30,12 @@ import {
   Validation,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
-import { Rect } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import {
+import type { Rect } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import type {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import {
+import type {
   ClientCoreFindNextColumn,
   ClientCoreFindNextColumnForRect,
   ClientCoreFindNextRow,

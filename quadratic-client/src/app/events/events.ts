@@ -1,8 +1,8 @@
-import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
-import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
-import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import {
+import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
+import type {
   JsBordersSheet,
   JsCodeCell,
   JsCodeRun,
@@ -17,18 +17,19 @@ import {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
+import type { AIResearcherRequestArgs } from '@/app/ui/menus/AIResearcher/AIResearcherRequestHandler';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
-import { LanguageState } from '@/app/web-workers/languageTypes';
-import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
-import { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import {
+import type { LanguageState } from '@/app/web-workers/languageTypes';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import type {
   CoreClientImage,
   CoreClientImportProgress,
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
-import { Point, Rectangle } from 'pixi.js';
+import type { Point, Rectangle } from 'pixi.js';
 
 interface EventTypes {
   needRefresh: (state: 'required' | 'recommended' | 'force') => void;
@@ -140,7 +141,7 @@ interface EventTypes {
   viewportChangedReady: () => void;
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
-  requestAIResearcherResult: (transactionId: string, sheetPos: string, query: string, refCellValues: string) => void;
+  requestAIResearcherResult: (args: AIResearcherRequestArgs) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

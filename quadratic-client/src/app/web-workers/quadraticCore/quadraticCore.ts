@@ -8,7 +8,7 @@ import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import {
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -31,8 +31,8 @@ import {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
-import {
+import type { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
+import type {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
@@ -70,7 +70,7 @@ import {
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { authClient } from '@/auth/auth';
-import { Rectangle } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
 
 class QuadraticCore {
   private worker?: Worker;
@@ -202,13 +202,12 @@ class QuadraticCore {
 
       return;
     } else if (e.data.type === 'coreClientRequestAIResearcherResult') {
-      events.emit(
-        'requestAIResearcherResult',
-        e.data.transactionId,
-        e.data.sheetPos,
-        e.data.query,
-        e.data.refCellValues
-      );
+      events.emit('requestAIResearcherResult', {
+        transactionId: e.data.transactionId,
+        sheetPos: e.data.sheetPos,
+        query: e.data.query,
+        refCellValues: e.data.refCellValues,
+      });
       return;
     } else if (e.data.type === 'coreClientAIResearcherState') {
       events.emit('aiResearcherState', e.data.current, e.data.awaitingExecution);
