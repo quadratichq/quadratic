@@ -1,5 +1,5 @@
 use quadratic_core::{
-    formulas::{self},
+    formulas::{self, RangeRef},
     Pos, Span, Spanned,
 };
 use serde::{Deserialize, Serialize};
@@ -76,10 +76,16 @@ pub fn parse_formula(formula_string: &str, x: f64, y: f64) -> String {
     let result = JsFormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
-
         cell_refs: formulas::find_cell_references(formula_string, pos)
             .into_iter()
-            .map(|r| r.into())
+            .map(|mut spanned| {
+                if let RangeRef::CellRange { mut start, mut end } = spanned.inner {
+                    start.replace_unbounded(0);
+                    end.replace_unbounded(-1);
+                    spanned.inner = RangeRef::CellRange { start, end };
+                }
+                spanned.into()
+            })
             .collect(),
     };
 

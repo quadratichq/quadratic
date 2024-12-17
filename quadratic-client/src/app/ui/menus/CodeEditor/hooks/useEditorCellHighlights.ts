@@ -5,7 +5,7 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
-import { ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
+import { parseFormulaReturnToCellsAccessed, ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
 import { getKey, StringId } from '@/app/helpers/getKey';
 import { JsCoordinate } from '@/app/quadratic-core-types';
 import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -100,7 +100,9 @@ export const useEditorCellHighlights = (
       } else if (codeCell.language === 'Formula') {
         const parsed = JSON.parse(parseFormula(modelValue, codeCell.pos.x, codeCell.pos.y)) as ParseFormulaReturnType;
         if (parsed) {
-          pixiApp.cellHighlights.fromFormula(parsed, codeCell.pos, codeCell.sheetId);
+          // pixiApp.cellHighlights.fromFormula(parsed, codeCell.pos, codeCell.sheetId);
+          let cellsAccessed = parseFormulaReturnToCellsAccessed(parsed);
+          pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed);
           const extractedCells = extractCellsFromParseFormula(parsed, codeCell.pos, codeCell.sheetId);
           extractedCells.forEach((value, index) => {
             const { cellId, span } = value;

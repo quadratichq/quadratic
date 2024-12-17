@@ -1,6 +1,6 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { StringId } from '@/app/helpers/getKey';
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
 import { CellRefId } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { Rectangle } from 'pixi.js';
 
@@ -45,6 +45,37 @@ export type ParseFormulaReturnType = {
     span: Span;
   }[];
 };
+
+export function parseFormulaReturnToCellsAccessed(parseFormulaReturn: ParseFormulaReturnType): JsCellsAccessed[] {
+  const isAbsolute = (type: 'Relative' | 'Absolute') => type === 'Absolute';
+  const returnArray: JsCellsAccessed[] = [];
+
+  for (const cellRef of parseFormulaReturn.cell_refs) {
+    const start = cellRef.cell_ref.type === 'CellRange' ? cellRef.cell_ref.start : cellRef.cell_ref.pos;
+    const end = cellRef.cell_ref.type === 'CellRange' ? cellRef.cell_ref.end : cellRef.cell_ref.pos;
+    const cellsAccessed = {
+      sheetId: cellRef.sheet ?? '',
+      ranges: [
+        {
+          range: {
+            start: {
+              col: { coord: BigInt(start.x.coord), is_absolute: isAbsolute(start.x.type) },
+              row: { coord: BigInt(start.y.coord), is_absolute: isAbsolute(start.y.type) },
+            },
+            end: {
+              col: { coord: BigInt(end.x.coord), is_absolute: isAbsolute(end.x.type) },
+              row: { coord: BigInt(end.y.coord), is_absolute: isAbsolute(end.y.type) },
+            },
+          },
+        },
+      ],
+    };
+
+    returnArray.push(cellsAccessed);
+  }
+
+  return returnArray;
+}
 
 export function getCellFromFormulaNotation(sheetId: string, cellRefId: CellRefId, editorCursorPosition: JsCoordinate) {
   const isSimpleCell = !cellRefId.includes(':');

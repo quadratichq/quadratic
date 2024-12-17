@@ -74,6 +74,7 @@ impl AstNode {
 
             AstNodeContents::FunctionCall { func, .. } if func.inner == ":" => {
                 let range = self.to_range_ref(ctx)?;
+                dbgjs!(format!("eval range: {:?}", range));
                 let rect = ctx.resolve_range_ref(&range.inner, self.span)?;
                 let array = ctx.get_cell_array(rect.inner, self.span, bounds)?;
 
@@ -299,6 +300,7 @@ fn eval_cell_range_op(
 
     let ref1 = args[0].to_cell_ref(ctx)?;
     let ref2 = args[1].to_cell_ref(ctx)?;
+
     Ok(RangeRef::CellRange {
         start: ref1,
         end: ref2,
