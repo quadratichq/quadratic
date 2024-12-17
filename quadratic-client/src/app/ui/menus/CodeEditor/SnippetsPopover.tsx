@@ -49,7 +49,6 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
       open={showSnippetsPopover}
       onOpenChange={(value) => {
         setShowSnippetsPopover(value);
-        console.log(value);
       }}
     >
       <TooltipPopover label={`Snippets`} side="bottom">
@@ -60,7 +59,6 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
             className="text-muted-foreground"
             onClick={() => {
               setShowSnippetsPopover(true);
-              console.log(showSnippetsPopover);
             }}
           >
             <SnippetsIcon />
