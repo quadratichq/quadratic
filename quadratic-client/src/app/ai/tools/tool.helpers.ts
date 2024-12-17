@@ -1,6 +1,6 @@
 import { AITool as AIToolName } from '@/app/ai/tools/aiTools';
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import {
+import type {
   AIModel,
   AITool,
   AIToolChoice,

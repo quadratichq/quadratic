@@ -8,6 +8,7 @@ use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::js_types::JsCodeRun;
+use quadratic_core::grid::js_types::JsSheetPos;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
     JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
@@ -123,6 +124,7 @@ fn main() {
         JsReturnInfo,
         JsRowHeight,
         JsSheetFill,
+        JsSheetPos,
         JsSummarizeSelectionResult,
         JsValidationWarning,
         JumpDirection,

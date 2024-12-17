@@ -8,8 +8,11 @@ use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     error_core,
     formulas::{parse_formula, Ctx},
-    grid::{js_types::JsCodeRun, CellsAccessed, CodeCellLanguage, CodeRun, CodeRunResult},
-    CellValue, RunError, RunErrorMsg, SheetPos, Value,
+    grid::{
+        js_types::{JsCellValuePos, JsCodeRun},
+        CellsAccessed, CodeCellLanguage, CodeRun, CodeRunResult,
+    },
+    Array, CellValue, RunError, RunErrorMsg, SheetPos, Value,
 };
 
 #[derive(Debug, PartialEq)]
@@ -235,6 +238,7 @@ impl GridController {
                         pending_ai_researcher.to_owned(),
                         query,
                         ref_cell_values,
+                        cells_accessed,
                     );
                 }
                 Err(error) => {
@@ -275,7 +279,7 @@ impl GridController {
                     let _ = self.receive_ai_researcher_result(
                         transaction.id,
                         sheet_pos.to_owned(),
-                        Some("result".to_string()),
+                        vec![vec!["result".to_string()]],
                         None,
                         None,
                     );
@@ -289,22 +293,54 @@ impl GridController {
         sheet_pos: SheetPos,
         query: String,
         ref_cell_values: Vec<String>,
+        cells_accessed: CellsAccessed,
     ) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || !transaction.is_user() {
             return;
         }
 
+        let mut all_accessed_values: Vec<Vec<Vec<JsCellValuePos>>> = Vec::new();
+        for selection in cells_accessed.to_selections() {
+            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+                for rect in sheet.selection_to_rects(&selection) {
+                    let rect_values = sheet.get_js_cell_value_pos_in_rect(rect, None);
+                    all_accessed_values.push(rect_values);
+                }
+            }
+        }
+
         if let Ok(sheet_pos_str) = serde_json::to_string(&sheet_pos) {
-            crate::wasm_bindings::js::jsRequestAIResearcherResult(
-                transaction.id.to_string(),
-                sheet_pos_str,
-                query,
-                ref_cell_values.join(", "),
-            );
+            if let Ok(cells_accessed_values) = serde_wasm_bindgen::to_value(&all_accessed_values) {
+                crate::wasm_bindings::js::jsRequestAIResearcherResult(
+                    transaction.id.to_string(),
+                    sheet_pos_str,
+                    query,
+                    ref_cell_values.join(", "),
+                    cells_accessed_values,
+                );
+                transaction.pending_ai_researchers.remove(&sheet_pos);
+                transaction.running_ai_researchers.insert(sheet_pos);
+                transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
+                self.transactions.add_async_transaction(transaction);
+            } else {
+                let run_error = RunError {
+                    span: None,
+                    msg: RunErrorMsg::InternalError("Error in cells values context".into()),
+                };
+                transaction.pending_ai_researchers.remove(&sheet_pos);
+                transaction.current_sheet_pos = Some(sheet_pos.to_owned());
+                transaction.cells_accessed.clear();
+                let _ = self.code_cell_sheet_error(transaction, &run_error);
+            }
+        } else {
+            let run_error = RunError {
+                span: None,
+                msg: RunErrorMsg::InternalError("Error in sheet pos".into()),
+            };
             transaction.pending_ai_researchers.remove(&sheet_pos);
-            transaction.running_ai_researchers.insert(sheet_pos);
-            transaction.waiting_for_async = Some(CodeCellLanguage::AIResearcher);
-            self.transactions.add_async_transaction(transaction);
+            transaction.current_sheet_pos = Some(sheet_pos.to_owned());
+            transaction.cells_accessed.clear();
+            let _ = self.code_cell_sheet_error(transaction, &run_error);
         }
     }
 
@@ -312,7 +348,7 @@ impl GridController {
         &mut self,
         transaction_id: Uuid,
         sheet_pos: SheetPos,
-        cell_value: Option<String>,
+        cell_values: Vec<Vec<String>>,
         error: Option<String>,
         researcher_response_stringified: Option<String>,
     ) -> error_core::Result<()> {
@@ -330,14 +366,13 @@ impl GridController {
                 transaction.waiting_for_async = None;
             }
 
-            let result = match cell_value {
-                Some(cell_value) => {
-                    CodeRunResult::Ok(Value::Single(CellValue::parse_from_str(&cell_value)))
-                }
-                None => CodeRunResult::Err(RunError {
+            let result = if cell_values.len() > 0 && cell_values[0].len() > 0 {
+                CodeRunResult::Ok(Value::Array(Array::from(cell_values)))
+            } else {
+                CodeRunResult::Err(RunError {
                     span: None,
                     msg: RunErrorMsg::InternalError("API request failed".into()),
-                }),
+                })
             };
 
             let new_code_run = CodeRun {

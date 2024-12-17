@@ -1,6 +1,6 @@
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import 'fake-indexeddb/auto';
-import { Chat } from 'quadratic-shared/typesAndSchemasAI';
+import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { aiAnalystOfflineChats } from './aiAnalystChats';

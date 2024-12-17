@@ -1,7 +1,6 @@
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import type { SheetPosTS } from '@/app/gridGL/types/size';
 import type {
   JsBordersSheet,
   JsCodeCell,
@@ -12,6 +11,7 @@ import type {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  JsSheetPos,
   JsValidationWarning,
   SheetBounds,
   SheetInfo,
@@ -34,7 +34,7 @@ import type { Point, Rectangle } from 'pixi.js';
 interface EventTypes {
   needRefresh: (state: 'required' | 'recommended' | 'force') => void;
 
-  search: (found?: SheetPosTS[], current?: number) => void;
+  search: (found?: JsSheetPos[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => void;
   hoverTooltip: (rect?: Rectangle, text?: string, subtext?: string) => void;
 

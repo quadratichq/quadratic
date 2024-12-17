@@ -3,7 +3,7 @@ import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
 

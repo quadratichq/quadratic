@@ -1,8 +1,9 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import {
+import type {
   ConnectionKind,
   JsBordersSheet,
+  JsCellValuePos,
   JsCodeCell,
   JsCodeRun,
   JsHtmlOutput,
@@ -93,7 +94,8 @@ declare var self: WorkerGlobalScope &
       transactionId: string,
       sheetPos: string,
       query: string,
-      refCellValues: string
+      refCellValues: string,
+      cellsAccessedValues: JsCellValuePos[][][]
     ) => void;
     sendAIResearcherState: (current: JsCodeRun[], awaitingExecution: JsCodeRun[]) => void;
   };
@@ -304,9 +306,10 @@ export const jsRequestAIResearcherResult = (
   transactionId: string,
   sheetPos: string,
   query: string,
-  refCellValues: string
+  refCellValues: string,
+  cellsAccessedValues: JsCellValuePos[][][]
 ) => {
-  self.sendRequestAIResearcherResult(transactionId, sheetPos, query, refCellValues);
+  self.sendRequestAIResearcherResult(transactionId, sheetPos, query, refCellValues, cellsAccessedValues);
 };
 
 export const jsAIResearcherState = (current: string, awaitingExecution: string) => {

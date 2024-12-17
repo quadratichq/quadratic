@@ -1,6 +1,6 @@
 import { authClient } from '@/auth/auth';
 import { AI } from '@/shared/constants/routes';
-import { ExaSearchRequestBody, ExaSearchResponse } from 'quadratic-shared/typesAndSchemasAI';
+import type { ExaSearchRequestBody, ExaSearchResponse } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 type HandleExaRequestToAPIProps = {

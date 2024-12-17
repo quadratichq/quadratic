@@ -131,6 +131,7 @@ impl Sheet {
         &self,
         selection: A1Selection,
         max_rects: Option<usize>,
+        max_rows: Option<u32>,
     ) -> Vec<JsCellValuePosAIContext> {
         let mut ai_context_rects = Vec::new();
         let selection_rects = self.selection_to_rects(&selection);
@@ -143,7 +144,7 @@ impl Sheet {
                 rect_width: tabular_data_rect.width(),
                 rect_height: tabular_data_rect.height(),
                 starting_rect_values: self
-                    .get_js_cell_value_pos_in_rect(tabular_data_rect, Some(3)),
+                    .get_js_cell_value_pos_in_rect(tabular_data_rect, max_rows),
             };
             ai_context_rects.push(js_cell_value_pos_ai_context);
         }
@@ -356,7 +357,7 @@ mod tests {
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 1300, sheet.id));
         let ai_context_rects_in_selection =
-            sheet.get_ai_context_rects_in_selection(selection, None);
+            sheet.get_ai_context_rects_in_selection(selection, None, Some(3));
 
         let max_rows = 3;
 

@@ -143,6 +143,7 @@ extern "C" {
         sheet_pos: String,
         query: String,
         ref_cell_values: String,
+        cells_accessed_values: JsValue, /* Vec<Vec<Vec<JsCellValuePos>>> */
     );
 
     pub fn jsAIResearcherState(
@@ -703,12 +704,13 @@ pub fn jsRequestAIResearcherResult(
     sheet_pos: String,
     query: String,
     ref_cell_values: String,
+    cells_accessed_values: JsValue,
 ) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRequestAIResearcherResult",
         format!(
-            "{},{},{},{}",
-            transaction_id, sheet_pos, query, ref_cell_values
+            "{},{},{},{},{:?}",
+            transaction_id, sheet_pos, query, ref_cell_values, cells_accessed_values
         ),
     ));
 }

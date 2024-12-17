@@ -2,7 +2,7 @@ import { exaSettingsAtom } from '@/app/atoms/exaSettingsAtom';
 import { Checkbox } from '@/shared/shadcn/ui/checkbox';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/shadcn/ui/select';
-import { ExaSearchRequestBody } from 'quadratic-shared/typesAndSchemasAI';
+import type { ExaSearchRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilState } from 'recoil';
 
 export const AIResearcherSettings = () => {

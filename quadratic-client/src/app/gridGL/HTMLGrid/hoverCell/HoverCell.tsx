@@ -12,6 +12,7 @@ import { pluralize } from '@/app/helpers/pluralize';
 import { JsCodeCell, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FixSpillError } from '@/app/ui/components/FixSpillError';
+import { UrlPill } from '@/app/ui/components/UrlPill';
 import { parseAIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -331,37 +332,6 @@ function HoverCellAIResearcherResult({ codeCell: codeCellCore }: { codeCell: JsC
       </div>
     </HoverCellDisplay>
   );
-}
-
-function UrlPill({ url }: { url: string }) {
-  const domain = useMemo(() => getDomainFromUrl(url), [url]);
-  if (!domain) {
-    return null;
-  }
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="flex max-w-fit flex-row items-center gap-2 rounded-md border border-border px-2 py-1"
-    >
-      <img
-        alt="Source website icon"
-        className="h-4 w-4"
-        src={`https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${url}&size=16`}
-      />
-      <span className="truncate">{domain}</span>
-    </a>
-  );
-}
-
-function getDomainFromUrl(url: string): string | null {
-  try {
-    const urlObject = new URL(url);
-    return urlObject.hostname.replace(/^www\./, '');
-  } catch (e) {
-    return null;
-  }
 }
 
 function HoverCellDisplay({

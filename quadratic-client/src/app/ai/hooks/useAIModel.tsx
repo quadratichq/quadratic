@@ -1,6 +1,6 @@
 import useLocalStorage, { SetValue } from '@/shared/hooks/useLocalStorage';
 import { DEFAULT_MODEL, DEFAULT_MODEL_VERSION, MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
-import { AIModel } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModel } from 'quadratic-shared/typesAndSchemasAI';
 
 export function useAIModel(): [AIModel, SetValue<AIModel>] {
   const [model, setModel] = useLocalStorage<AIModel>('aiModel', DEFAULT_MODEL);

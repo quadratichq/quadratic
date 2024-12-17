@@ -1178,17 +1178,17 @@ class Core {
   receiveAIResearcherResult(
     transactionId: string,
     sheetPos: string,
-    cell_value?: string,
+    cellValues?: string[][],
     error?: string,
-    researcher_response_stringified?: string
+    researcherResponseStringified?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.receiveAIResearcherResult(
       transactionId,
       sheetPos,
-      cell_value,
+      cellValues ?? [[]],
       error,
-      researcher_response_stringified
+      researcherResponseStringified
     );
   }
 }

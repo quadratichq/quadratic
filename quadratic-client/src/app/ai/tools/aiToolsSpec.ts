@@ -24,7 +24,7 @@ type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
 
 export const AIToolsArgsSchema = {
   [AITool.SetAIResearcherResult]: z.object({
-    cell_value: z.string(),
+    cell_values: z.array(z.array(z.string())),
     source_urls: z.array(z.string()),
     confidence_score: z.number(),
   }),
@@ -63,15 +63,25 @@ export type AIToolSpecRecord = {
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIResearcherResult]: {
     internalTool: true,
-    description:
-      "Sets the result of the AI Researcher as a value on the spreadsheet, based on user's query for some referenced cell value(s) from the spreadsheet.",
+    description: `
+Sets the result of the AI Researcher as values on the spreadsheet, based on user's query for some referenced cell value(s) from the spreadsheet.\n
+AI Researcher cell is the position of top left corner of the 2d array of values on the spreadsheet, where the AI Researcher result will be written.\n
+cell_values is the 2d array of strings representing the cell values to set on the spreadsheet. This is the result of the AI Researcher. This is a 2d array of strings, where each sub array represents a row of values.\n
+Each cell value is a string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
+`,
     parameters: {
       type: 'object',
       properties: {
-        cell_value: {
-          type: 'string',
-          description:
-            'The value result of the query to the AI Researcher, this will be directly inserted into the cell in the spreadsheet',
+        cell_values: {
+          type: 'array',
+          items: {
+            type: 'array',
+            items: {
+              type: 'string',
+              description:
+                'The string representation of the value to set in the cell, this one of the AI Researcher result values',
+            },
+          },
         },
         source_urls: {
           type: 'array',
@@ -85,18 +95,19 @@ export const aiToolsSpec: AIToolSpecRecord = {
           description: 'The average confidence score of the search results that were used to answer the query',
         },
       },
-      required: ['cell_value', 'source_urls', 'confidence_score'],
+      required: ['cell_values', 'source_urls', 'confidence_score'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetAIResearcherResult],
-    action: async (args) => {
+    action: async (_args) => {
       // no action as this tool is only meant to get structured data from AI
-      return `Executed set ai researcher value tool successfully with value: ${args.cell_value}`;
+      return `Executed set_ai_researcher_result tool successfully.`;
     },
     prompt: `
 You should use the set_ai_researcher_result function to set the result of the AI Researcher as a value on the spreadsheet.\n
 This value should be in strong correlation to the referenced cell value(s) from the spreadsheet and should directly answer the users query related to the referenced cell value(s).\n
-This function requires the value that will be set on the spreadsheet. It can be a text, number, currency, date, etc.\n
+This function requires the cell_values, which is a 2d array of strings representing the cell values to set on the spreadsheet. This is the result of the AI Researcher. This is a 2d array of strings, where each sub array represents a row of values.\n
+Each cell value is a string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 You should also include the source_urls and confidence_score in the response, these are the urls of the search results that were used to answer the query and the confidence score of the search results.\n
 `,
   },
@@ -156,7 +167,7 @@ To clear the values of a cell, set the value to an empty string.\n
             type: 'array',
             items: {
               type: 'string',
-              description: 'The string that is the value to set in the cell',
+              description: 'The string representation of the value to set in the cell',
             },
           },
         },
@@ -283,6 +294,8 @@ The required location code_cell_position for this code cell is one which satisfi
 Sets the value of a code cell to the result of the AI Researcher, requires the query, the position (in a1 notation) of the researcher cell and the reference cells selection (in a1 notation).\n
 AI researcher is a tool that can browse the internet and search for information to answer the query in context of the reference cells.\n
 Use set_ai_researcher_value tool when the task requires information from the internet to better answer the query.\n
+AI researcher can process a query for multiple cells at once and return a 2d array of strings, where each sub array represents a row of values. Use multiple set_ai_researcher_value tool calls if the query is different for different tasks / cells.\n
+Return only the result of the query, don't return any other text, headers or code. If not sure of the result, return UNKNOWN as string value. Never make up a result, return only the result of the query based on the reference cells and search results provided.\n
 `,
     parameters: {
       type: 'object',
@@ -299,7 +312,7 @@ Use set_ai_researcher_value tool when the task requires information from the int
         reference_cells_selection: {
           type: 'string',
           description:
-            'This is the string representation of the reference cells, in a1 notation, which will be used to answer the query. Only values in these cells will be passed to the AI Researcher as context. This should be a small rectangle of cells, not a large range.',
+            'This is the string representation of the reference cells, in a1 notation, which will be used to answer the query. Only values in these cells will be passed to the AI Researcher as context. This should be a small rectangle of cells, not a large range. This selection should correspond only the actual data values, not the headers or other non-data values.',
         },
       },
       required: ['query', 'ai_researcher_position', 'reference_cells_selection'],
@@ -336,7 +349,9 @@ This function requires the query, the position (in a1 notation) of the researche
 Use set_ai_researcher_value tool when the task requires information from the internet to better answer the query.\n
 query is a string that is the query for which the AI Researcher is searching for results.\n
 ai_researcher_position is the position (in a1 notation) of the code cell in the currently open sheet, where the AI Researcher will write the result of the query.\n
-reference_cells_selection is the string representation of the reference cells, in a1 notation, which will be used to answer the query. Only values in these cells will be passed to the AI Researcher as context. This should be a small rectangle of cells, not a large range.\n
+reference_cells_selection is the string representation of the reference cells, in a1 notation, which will be used to answer the query. Only values in these cells will be passed to the AI Researcher as context. This should be a small rectangle of cells, not a large range. This selection should correspond only the actual data values, not the headers or other non-data values.\n
+AI Researcher can process a query for multiple cells at once and return a 2d array of strings, where each sub array represents a row of values. Use multiple set_ai_researcher_value tool calls if the query is different for different tasks / cells.\n
+Return only the result of the query, don't return any other text, headers or code. If not sure of the result, return UNKNOWN as string value. Never make up a result, return only the result of the query based on the reference cells and search results provided.\n
 `,
   },
   [AITool.MoveCells]: {

@@ -1,4 +1,4 @@
-import { ExaSearchRequestBody } from 'quadratic-shared/typesAndSchemasAI';
+import type { ExaSearchRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import { atom } from 'recoil';
 
 type ExaSettingsState = Omit<ExaSearchRequestBody, 'query'>;

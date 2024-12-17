@@ -207,6 +207,7 @@ class QuadraticCore {
         sheetPos: e.data.sheetPos,
         query: e.data.query,
         refCellValues: e.data.refCellValues,
+        cellsAccessedValues: e.data.cellsAccessedValues,
       });
       return;
     } else if (e.data.type === 'coreClientAIResearcherState') {
@@ -1348,23 +1349,23 @@ class QuadraticCore {
   receiveAIResearcherResult({
     transactionId,
     sheetPos,
-    cell_value,
+    cellValues,
     error,
-    researcher_response_stringified,
+    researcherResponseStringified,
   }: {
     transactionId: string;
     sheetPos: string;
-    cell_value?: string;
+    cellValues?: string[][];
     error?: string;
-    researcher_response_stringified?: string;
+    researcherResponseStringified?: string;
   }) {
     this.send({
       type: 'clientCoreReceiveAIResearcherResult',
       transactionId,
       sheetPos,
-      cell_value,
+      cellValues,
       error,
-      researcher_response_stringified,
+      researcherResponseStringified,
     });
   }
 

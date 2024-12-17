@@ -130,9 +130,27 @@ export function ReturnTypeInspector() {
         {fullMessage[1]}
       </>
     );
+  } else if (mode === 'Formula' || mode === 'AIResearcher') {
+    const type = evaluationResult?.type
+      ? evaluationResult.type
+      : evaluationResult?.values?.length
+      ? evaluationResult?.values?.length === 1
+        ? evaluationResult?.values[0]?.type
+        : evaluationResult?.values.find((v) => v.type !== evaluationResult?.values?.[0]?.type)
+        ? 'array'
+        : evaluationResult?.values[0]?.type
+      : undefined;
+    const show = !unsavedChanges && !!type;
+    const isTable = evaluationResult?.size && evaluationResult.size.h * evaluationResult.size.w > 1;
+    message = show ? (
+      <>
+        {`Returned ${isTable ? `${evaluationResult?.size?.w}x${evaluationResult?.size?.h} ` : ''}`}
+        <ReturnType>{`${type}${isTable ? '[]' : ''}`}</ReturnType>
+      </>
+    ) : undefined;
   }
 
-  if (message === undefined || language === 'Formula' || !editorContent || loading) {
+  if (message === undefined || !editorContent || loading) {
     return null;
   }
 

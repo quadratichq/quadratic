@@ -151,7 +151,7 @@ impl GridController {
         for selection in selections {
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 let ai_context_rects =
-                    sheet.get_ai_context_rects_in_selection(selection, max_rects);
+                    sheet.get_ai_context_rects_in_selection(selection, max_rects, Some(3));
                 all_ai_context_rects.push(ai_context_rects);
             }
         }

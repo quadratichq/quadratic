@@ -4,7 +4,8 @@ import { ExaSearchResultSchema } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export const AIResearcherResultSchema = z.object({
-  exaResult: z.array(ExaSearchResultSchema).optional(),
+  exaResults: z.array(ExaSearchResultSchema).optional(),
+  autopromptString: z.string().optional(),
   toolCallArgs: AIToolsArgsSchema[AITool.SetAIResearcherResult],
 });
 

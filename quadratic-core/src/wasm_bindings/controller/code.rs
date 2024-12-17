@@ -112,21 +112,23 @@ impl GridController {
         &mut self,
         transaction_id: String,
         sheet_pos: String,
-        cell_value: Option<String>,
+        cell_values: JsValue,
         error: Option<String>,
         researcher_response_stringified: Option<String>,
     ) -> Result<(), JsValue> {
-        let transaction_id = match Uuid::parse_str(&transaction_id) {
-            Ok(transaction_id) => transaction_id,
-            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
-        };
+        let transaction_id = Uuid::parse_str(&transaction_id)
+            .map_err(|_| JsValue::from_str("Invalid transaction id"))?;
+
+        let cell_values = serde_wasm_bindgen::from_value(cell_values)
+            .map_err(|_| JsValue::from_str("Invalid values"))?;
 
         let sheet_pos: SheetPos =
             serde_json::from_str(&sheet_pos).map_err(|_| JsValue::UNDEFINED)?;
+
         self.receive_ai_researcher_result(
             transaction_id,
             sheet_pos,
-            cell_value,
+            cell_values,
             error,
             researcher_response_stringified,
         )

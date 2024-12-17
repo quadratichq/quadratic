@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SheetPosTS } from '@/app/gridGL/types/size';
+import type { JsSheetPos } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Graphics } from 'pixi.js';
 
@@ -19,10 +19,10 @@ export class CellsSearch extends Graphics {
     super.destroy();
   }
 
-  private handleSearch = (found?: SheetPosTS[], current?: number) => {
+  private handleSearch = (found?: JsSheetPos[], current?: number) => {
     this.clear();
     if (found?.length) {
-      found.forEach((cell: SheetPosTS, index: number) => {
+      found.forEach((cell: JsSheetPos, index: number) => {
         const { x, y, sheetId } = cell;
         if (this.sheetId === sheetId) {
           const sheet = sheets.getById(sheetId);

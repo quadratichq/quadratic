@@ -1,16 +1,16 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { MultiplayerCellEdit } from '@/app/gridGL/HTMLGrid/multiplayerInput/MultiplayerCellEdit';
+import type { JsSheetPos } from '@/app/quadratic-core-types';
+import type { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { useEffect, useState } from 'react';
-import { MultiplayerCellEdit } from './MultiplayerCellEdit';
 
 export interface MultiplayerCell {
   sheetId: string;
   sessionId: string;
   playerColor: string;
   cellEdit: CellEdit;
-  location: SheetPosTS;
+  location: JsSheetPos;
 }
 
 export const MultiplayerCellEdits = () => {

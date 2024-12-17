@@ -1,5 +1,5 @@
 import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useToolUseMessages() {

@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import type { JsCellValuePos, SheetPos } from '@/app/quadratic-core-types';
 import { useSubmitAIResearcherPrompt } from '@/app/ui/menus/AIResearcher/hooks/useSubmitAIResearcherPrompt';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useState } from 'react';
@@ -8,6 +9,7 @@ export type AIResearcherRequestArgs = {
   sheetPos: string;
   query: string;
   refCellValues: string;
+  cellsAccessedValues: JsCellValuePos[][][];
 };
 
 const GAP_BETWEEN_REQUESTS_MS = 1000;
@@ -22,18 +24,21 @@ export const AIResearcherRequestHandler = () => {
       if (queue.length === 0) return false;
       const [args, ...rest] = queue;
 
-      const { transactionId, sheetPos, query, refCellValues } = args;
-      submitPrompt({ query, refCellValues }).then(({ result, error }) => {
-        const cell_value = result?.toolCallArgs?.cell_value;
-        const researcher_response_stringified = JSON.stringify(result);
-        quadraticCore.receiveAIResearcherResult({
-          transactionId,
-          sheetPos,
-          cell_value,
-          error,
-          researcher_response_stringified,
-        });
-      });
+      const { transactionId, sheetPos, query, refCellValues, cellsAccessedValues } = args;
+      const sheetPosStruct = JSON.parse(sheetPos) as SheetPos;
+      submitPrompt({ query, refCellValues, sheetPos: sheetPosStruct, cellsAccessedValues }).then(
+        ({ result, error }) => {
+          const cellValues = result?.toolCallArgs?.cell_values;
+          const researcherResponseStringified = JSON.stringify(result);
+          quadraticCore.receiveAIResearcherResult({
+            transactionId,
+            sheetPos,
+            cellValues,
+            error,
+            researcherResponseStringified,
+          });
+        }
+      );
 
       setQueue(rest);
       setWaitingForGap(true);

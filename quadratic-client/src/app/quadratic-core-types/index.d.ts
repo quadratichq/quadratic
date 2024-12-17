@@ -48,6 +48,7 @@ export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, colo
 export interface JsReturnInfo { line_number: number | null, output_type: string | null, }
 export interface JsRowHeight { row: bigint, height: number, }
 export interface JsSheetFill { x: number, y: number, w: number | null, h: number | null, color: string, }
+export interface JsSheetPos { x: number, y: number, sheetId: string, }
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
 export type JumpDirection = "Up" | "Down" | "Left" | "Right";

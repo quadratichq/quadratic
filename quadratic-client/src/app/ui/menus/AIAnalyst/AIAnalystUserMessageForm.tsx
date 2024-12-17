@@ -5,7 +5,7 @@ import { AIUserMessageForm, AIUserMessageFormWrapperProps } from '@/app/ui/compo
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import mixpanel from 'mixpanel-browser';
-import { Context } from 'quadratic-shared/typesAndSchemasAI';
+import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 

@@ -1,4 +1,5 @@
 import { aiResearcherResultAtom } from '@/app/atoms/aiResearcherAtom';
+import { UrlPill } from '@/app/ui/components/UrlPill';
 import { useRecoilValue } from 'recoil';
 
 export const AIResearcherResult = () => {
@@ -11,16 +12,14 @@ export const AIResearcherResult = () => {
   return (
     <div className="mx-3 mb-3 mt-1 flex flex-col gap-2 rounded-lg">
       <div>
-        <span className="font-bold">{`Confidence Score: `}</span>
-        {aiResearcherResult.toolCallArgs.confidence_score}
+        <span>{`Confidence Score: `}</span>
+        <span className="font-bold">{aiResearcherResult.toolCallArgs.confidence_score * 100}%</span>
       </div>
 
-      <div>
-        <span className="font-bold">{`Source: `}</span>
+      <div className="flex flex-row flex-wrap items-center gap-2">
+        <span>{`Source:`}</span>
         {aiResearcherResult.toolCallArgs.source_urls.map((url) => (
-          <a key={url} href={url} target="_blank" rel="noreferrer" className="text-link underline">
-            {url}
-          </a>
+          <UrlPill key={url} url={url} />
         ))}
       </div>
     </div>

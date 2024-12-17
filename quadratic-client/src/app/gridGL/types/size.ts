@@ -1,11 +1,5 @@
 import { JsCoordinate } from '@/app/quadratic-core-types';
 
-export interface SheetPosTS {
-  x: number;
-  y: number;
-  sheetId: string;
-}
-
 export interface Size {
   width: number;
   height: number;

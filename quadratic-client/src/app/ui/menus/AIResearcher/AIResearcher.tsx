@@ -1,49 +1,15 @@
-import { codeEditorEscapePressedAtom, codeEditorLoadingAtom } from '@/app/atoms/codeEditorAtom';
-import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageForm';
-import { ResizeControl } from '@/app/ui/components/ResizeControl';
-import { AIResearcherHeader } from '@/app/ui/menus/AIResearcher/AIResearcherHeader';
+import { codeEditorLoadingAtom } from '@/app/atoms/codeEditorAtom';
 import { AIResearcherInsertCellRef } from '@/app/ui/menus/AIResearcher/AIResearcherInsertCellRef';
-import { AIResearcherOutput } from '@/app/ui/menus/AIResearcher/AIResearcherOutput';
 import { AIResearcherResult } from '@/app/ui/menus/AIResearcher/AIResearcherResult';
-import { AIResearcherSettings } from '@/app/ui/menus/AIResearcher/AIResearcherSettings';
 import { AIResearcherUserMessageForm } from '@/app/ui/menus/AIResearcher/AIResearcherUserMessageForm';
-import { useAIResearcherPanelWidth } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherPanelWidth';
 import { CircularProgress } from '@mui/material';
-import { useCallback, useRef } from 'react';
-import { useRecoilCallback, useRecoilValue } from 'recoil';
+import { useRef } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export const AIResearcher = () => {
   const codeEditorLoading = useRecoilValue(codeEditorLoadingAtom);
-  const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoFocusRef = useRef(true);
-  const { panelWidth, setPanelWidth } = useAIResearcherPanelWidth();
-
-  const handleKeyDown = useRecoilCallback(
-    ({ set }) =>
-      (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          event.stopPropagation();
-          set(codeEditorEscapePressedAtom, true);
-        }
-      },
-    []
-  );
-
-  const handleResize = useCallback(
-    (event: MouseEvent) => {
-      const panel = aiPanelRef.current;
-      if (!panel) return;
-      event.stopPropagation();
-      event.preventDefault();
-
-      const containerRect = panel.getBoundingClientRect();
-      const newPanelWidth = containerRect.right - event.x;
-      setPanelWidth(newPanelWidth);
-    },
-    [setPanelWidth]
-  );
 
   if (codeEditorLoading) {
     return (
@@ -54,36 +20,22 @@ export const AIResearcher = () => {
   }
 
   return (
-    <div
-      ref={aiPanelRef}
-      className="relative hidden h-full shrink-0 overflow-hidden lg:block"
-      style={{ width: `${panelWidth}px` }}
-      onKeyDown={handleKeyDown}
-    >
-      <ResizeControl position="VERTICAL" style={{ left: '2px' }} setState={handleResize} />
-
-      <div className="flex h-full w-full flex-col gap-4">
-        <AIResearcherHeader />
-
-        <AIResearcherInsertCellRef />
-
-        <div className="px-2 py-0.5">
-          <AIResearcherUserMessageForm
-            ref={textareaRef}
-            autoFocusRef={autoFocusRef}
-            textareaRef={textareaRef}
-            collapseAfterSubmit={false}
-            disableBackspaceIcon={true}
-          />
-          <AIUserMessageFormDisclaimer />
-        </div>
-
-        <AIResearcherOutput />
-
-        <AIResearcherResult />
-
-        <AIResearcherSettings />
+    <div className="flex h-full w-full flex-col gap-4">
+      <div className="px-2 py-0.5">
+        <AIResearcherUserMessageForm
+          ref={textareaRef}
+          autoFocusRef={autoFocusRef}
+          textareaRef={textareaRef}
+          collapseAfterSubmit={false}
+          disableBackspaceIcon={true}
+        />
       </div>
+
+      <AIResearcherInsertCellRef />
+
+      <AIResearcherResult />
+
+      {/* <AIResearcherSettings /> */}
     </div>
   );
 };

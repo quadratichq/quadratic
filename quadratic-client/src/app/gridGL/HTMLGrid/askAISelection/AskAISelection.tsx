@@ -3,7 +3,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { AIIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { Context } from 'quadratic-shared/typesAndSchemasAI';
+import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 

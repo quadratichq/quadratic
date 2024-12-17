@@ -1,4 +1,3 @@
-import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useExaRequestToAPI } from '@/app/ai/hooks/useExaRequestToAPI';
 import { useQuadraticContextMessages } from '@/app/ai/hooks/useQuadraticContextMessages';
@@ -7,9 +6,11 @@ import { aiToolsSpec } from '@/app/ai/tools/aiToolsSpec';
 import { getMessagesForModel } from '@/app/ai/tools/message.helper';
 import { aiResearcherAbortControllerAtom, aiResearcherLoadingAtom } from '@/app/atoms/aiResearcherAtom';
 import { exaSettingsAtom } from '@/app/atoms/exaSettingsAtom';
-import { AIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
+import type { JsCellValuePos, SheetPos } from '@/app/quadratic-core-types';
+import type { AIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { useAIResearcherMessagePrompt } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherMessagePrompt';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import { DEFAULT_MODEL } from 'quadratic-shared/AI_MODELS';
+import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
 export function useSubmitAIResearcherPrompt() {
@@ -17,16 +18,19 @@ export function useSubmitAIResearcherPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getQuadraticContext } = useQuadraticContextMessages();
   const { getAIResearcherMessagePrompt } = useAIResearcherMessagePrompt();
-  const [model] = useAIModel();
 
   const submitPrompt = useRecoilCallback(
     ({ snapshot, set }) =>
       async ({
         query,
         refCellValues,
+        sheetPos,
+        cellsAccessedValues,
       }: {
         query: string;
         refCellValues: string;
+        sheetPos: SheetPos;
+        cellsAccessedValues: JsCellValuePos[][][];
       }): Promise<{
         result?: AIResearcherResult;
         error?: string;
@@ -78,14 +82,16 @@ export function useSubmitAIResearcherPrompt() {
         const aiResearcherMessagePrompt = getAIResearcherMessagePrompt({
           query,
           refCellValues,
+          sheetPos,
+          cellsAccessedValues,
           exaResult: exaResponse.content?.results,
         });
 
         const chatMessages: ChatMessage[] = [...quadraticContext, aiResearcherMessagePrompt];
-        const { system, messages } = getMessagesForModel(model, chatMessages);
+        const { system, messages } = getMessagesForModel(DEFAULT_MODEL, chatMessages);
 
         const response = await handleAIRequestToAPI({
-          model,
+          model: DEFAULT_MODEL,
           system,
           messages,
           signal: abortController.signal,
@@ -103,7 +109,13 @@ export function useSubmitAIResearcherPrompt() {
           try {
             const argsObject = JSON.parse(setAIResearcherValueToolCall.arguments);
             const output = aiToolsSpec[AITool.SetAIResearcherResult].responseSchema.parse(argsObject);
-            result = { result: { exaResult: exaResponse.content?.results, toolCallArgs: output } };
+            result = {
+              result: {
+                exaResults: exaResponse.content?.results,
+                autopromptString: exaResponse.content?.autopromptString ?? undefined,
+                toolCallArgs: output,
+              },
+            };
           } catch (e) {
             console.error('[useAISetCodeCellValue] Error parsing set_ai_researcher_result response: ', e);
             result = { error: 'Error parsing set_ai_researcher_result response' };
@@ -117,7 +129,7 @@ export function useSubmitAIResearcherPrompt() {
 
         return result;
       },
-    [handleExaRequestToAPI, handleAIRequestToAPI, getQuadraticContext, getAIResearcherMessagePrompt, model]
+    [handleExaRequestToAPI, handleAIRequestToAPI, getQuadraticContext, getAIResearcherMessagePrompt]
   );
 
   return { submitPrompt };

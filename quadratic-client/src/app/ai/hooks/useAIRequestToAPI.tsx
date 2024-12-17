@@ -4,7 +4,7 @@ import { isAnthropicBedrockModel, isAnthropicModel, isBedrockModel, isOpenAIMode
 import { getToolChoice, getTools } from '@/app/ai/tools/tool.helpers';
 import { authClient } from '@/auth/auth';
 import { MODEL_OPTIONS } from 'quadratic-shared/AI_MODELS';
-import { AIMessagePrompt, AIModel, AIPromptMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessagePrompt, AIModel, AIPromptMessage, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { SetterOrUpdater } from 'recoil';
 

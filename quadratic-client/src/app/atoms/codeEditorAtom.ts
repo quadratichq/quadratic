@@ -1,11 +1,11 @@
 import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { CodeCell } from '@/app/gridGL/types/codeCell';
+import type { CodeCell } from '@/app/gridGL/types/codeCell';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
-import { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
+import type { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
+import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
+import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface ConsoleOutput {

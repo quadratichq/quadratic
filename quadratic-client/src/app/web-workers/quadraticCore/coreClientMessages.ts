@@ -1,4 +1,4 @@
-import {
+import type {
   BorderSelection,
   BorderStyle,
   CellAlign,
@@ -9,6 +9,7 @@ import {
   Format,
   JsBordersSheet,
   JsCellValue,
+  JsCellValuePos,
   JsCellValuePosAIContext,
   JsCodeCell,
   JsCodeRun,
@@ -30,10 +31,10 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
-import { CodeRun } from '@/app/web-workers/CodeRun';
-import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
-import { Rectangle } from 'pixi.js';
+import type { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
+import type { CodeRun } from '@/app/web-workers/CodeRun';
+import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import type { Rectangle } from 'pixi.js';
 
 //#region Initialize
 
@@ -1120,15 +1121,16 @@ export interface CoreClientRequestAIResearcherResult {
   sheetPos: string;
   query: string;
   refCellValues: string;
+  cellsAccessedValues: JsCellValuePos[][][];
 }
 
 export interface ClientCoreReceiveAIResearcherResult {
   type: 'clientCoreReceiveAIResearcherResult';
   transactionId: string;
   sheetPos: string;
-  cell_value?: string;
+  cellValues?: string[][];
   error?: string;
-  researcher_response_stringified?: string;
+  researcherResponseStringified?: string;
 }
 
 export interface CoreClientAIResearcherState {

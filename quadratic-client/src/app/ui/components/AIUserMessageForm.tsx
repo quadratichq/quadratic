@@ -8,7 +8,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { Context } from 'quadratic-shared/typesAndSchemasAI';
+import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { SetterOrUpdater } from 'recoil';
 

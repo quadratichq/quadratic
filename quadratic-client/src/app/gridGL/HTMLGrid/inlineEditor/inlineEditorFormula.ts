@@ -7,8 +7,8 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import type { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import { JsSheetPos } from '@/app/quadratic-core-types';
 import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
@@ -23,7 +23,7 @@ class InlineEditorFormula {
     events.on('cursorPosition', this.cursorMoved);
   }
 
-  cellHighlights(location: SheetPosTS, formula: string) {
+  cellHighlights(location: JsSheetPos, formula: string) {
     const parsed = JSON.parse(parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
     if (parsed) {
       pixiApp.cellHighlights.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
