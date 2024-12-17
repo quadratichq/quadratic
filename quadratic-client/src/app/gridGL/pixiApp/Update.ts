@@ -103,6 +103,8 @@ export class Update {
     pixiApp.validations.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] backgrounds');
     pixiApp.background.update(pixiApp.viewport.dirty);
+    debugTimeCheck('[Update] copy');
+    pixiApp.copy.update();
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

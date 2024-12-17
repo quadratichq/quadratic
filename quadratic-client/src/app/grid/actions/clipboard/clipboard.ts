@@ -31,6 +31,7 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   debugTimeReset();
   const jsClipboard = await quadraticCore.copyToClipboard(sheets.getRustSelection());
   await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  pixiApp.copy.changeCopyRange(sheets.sheet.cursor.getCopyRange());
   debugTimeCheck('copy to clipboard');
 };
 

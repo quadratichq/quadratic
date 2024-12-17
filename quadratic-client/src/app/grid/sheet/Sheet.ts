@@ -149,9 +149,14 @@ export class Sheet {
   }
 
   // @returns screen rectangle for a column/row rectangle
-  getScreenRectangle(column: number, row: number, width: number, height: number): Rectangle {
-    const topLeft = this.getCellOffsets(column, row);
-    const bottomRight = this.getCellOffsets(column + width, row + height);
+  getScreenRectangle(
+    column: number | BigInt,
+    row: number | BigInt,
+    width: number | BigInt,
+    height: number | BigInt
+  ): Rectangle {
+    const topLeft = this.getCellOffsets(Number(column), Number(row));
+    const bottomRight = this.getCellOffsets(Number(column) + Number(width), Number(row) + Number(height));
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.left - topLeft.left, bottomRight.top - topLeft.top);
   }
 

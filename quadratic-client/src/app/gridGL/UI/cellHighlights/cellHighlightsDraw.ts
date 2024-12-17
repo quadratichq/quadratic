@@ -64,6 +64,7 @@ export function drawDashedRectangleMarching(options: {
   range: CellRefRange;
   alpha: number;
   offset?: number;
+  noFill?: boolean;
 }) {
   console.log('here?');
   const { g, color, march, range, alpha, offset } = options;
@@ -91,11 +92,14 @@ export function drawDashedRectangleMarching(options: {
   g.lineStyle({
     alignment: 0,
   });
-  g.moveTo(minX, minY);
-  g.beginFill(color, alpha);
-  g.drawRect(minX, minY, maxX - minX, maxY - minY);
-  g.endFill();
 
+  if (!noFill) {
+    g.beginFill(color, FILL_ALPHA);
+    g.drawRect(minX, minY, maxX - minX, maxY - minY);
+    g.endFill();
+  }
+
+  g.moveTo(minX, minY);
   g.lineStyle({
     width: CURSOR_THICKNESS,
     color,
