@@ -127,7 +127,7 @@ impl<'ctx> Ctx<'ctx> {
             return Ok(CellValue::Blank.into()).with_span(span);
         }
 
-        let mut bounded_rect = rect.clone();
+        let mut bounded_rect = rect;
 
         // convert unbounded values to the data bounds of the sheet
         if let Some(bounds) = bounds {

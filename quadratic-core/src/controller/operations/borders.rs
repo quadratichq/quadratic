@@ -210,16 +210,14 @@ impl GridController {
                     .left
                     .get_or_insert_default()
                     .set_rect(x1, y1, Some(x1), y2, style);
-                if clear_neighbors {
-                    if x1 > 1 {
-                        borders.right.get_or_insert_default().set_rect(
-                            x1 - 1,
-                            y1,
-                            Some(x1 - 1),
-                            y2,
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && x1 > 1 {
+                    borders.right.get_or_insert_default().set_rect(
+                        x1 - 1,
+                        y1,
+                        Some(x1 - 1),
+                        y2,
+                        Some(ClearOption::Clear),
+                    );
                 }
             }
             BorderSelection::Top => {
@@ -227,16 +225,14 @@ impl GridController {
                     .top
                     .get_or_insert_default()
                     .set_rect(x1, y1, x2, Some(y1), style);
-                if clear_neighbors {
-                    if y1 > 1 {
-                        borders.bottom.get_or_insert_default().set_rect(
-                            x1,
-                            y1 - 1,
-                            x2,
-                            Some(y1 - 1),
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && y1 > 1 {
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y1 - 1,
+                        x2,
+                        Some(y1 - 1),
+                        Some(ClearOption::Clear),
+                    );
                 }
             }
             BorderSelection::Right => {
@@ -362,9 +358,7 @@ impl GridController {
         style: Option<BorderStyle>,
         clear_neighbors: bool,
     ) -> Option<Vec<Operation>> {
-        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
-            return None;
-        };
+        let sheet = self.try_sheet(selection.sheet_id)?;
 
         // Mutable so we can clear it if the style is toggled.
         let mut style = style;
