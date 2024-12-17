@@ -202,10 +202,13 @@ impl CellRef {
         })
     }
 
+    // replace unbounded values with the given value
     pub fn replace_unbounded(&mut self, value: i64) {
+        // TODO(ddimaria): the -1 is a hack, replace after testing
         if self.x.get_value() == UNBOUNDED || self.x.get_value() == UNBOUNDED - 1 {
             self.x.replace_value(value);
         }
+        // TODO(ddimaria): the -1 is a hack, replace after testing
         if self.y.get_value() == UNBOUNDED || self.y.get_value() == UNBOUNDED - 1 {
             self.y.replace_value(value);
         }
