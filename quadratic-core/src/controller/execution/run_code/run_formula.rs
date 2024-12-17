@@ -417,18 +417,13 @@ mod test {
         };
         let pos: Pos = sheet_pos.into();
 
-        gc.set_code_cell(
-            sheet_pos,
-            CodeCellLanguage::Formula,
-            "this shouldn't work".into(),
-            None,
-        );
+        gc.set_code_cell(sheet_pos, CodeCellLanguage::Formula, "☺".into(), None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.cell_value(pos),
             Some(CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Formula,
-                code: "this shouldn't work".into(),
+                code: "☺".into(),
             }))
         );
         let result = sheet.code_run(pos).unwrap();

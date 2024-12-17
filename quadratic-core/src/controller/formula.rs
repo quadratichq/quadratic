@@ -87,8 +87,8 @@ mod tests {
 
     fn parse(s: &str) -> FormulaParseResult {
         println!("Parsing {s}");
-        let parsed = parse_formula(s, crate::Pos::ORIGIN);
-        parsed
+        
+        parse_formula(s, crate::Pos::ORIGIN)
     }
 
     /// Run this test with `--nocapture` to generate the example for the

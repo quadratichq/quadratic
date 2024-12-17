@@ -150,6 +150,7 @@ impl CellRef {
         };
         let col = self.x.col_string(base.x);
         let row = self.y.row_string(base.y);
+
         format!("{sheet_str}{col}{row}")
     }
 
@@ -287,7 +288,7 @@ impl CellRefCoord {
             _ => resolved.to_string(),
         };
 
-        format!("{row}{}", self.prefix())
+        format!("{}{row}", self.prefix())
     }
     pub fn get_value(self) -> i64 {
         match self {
