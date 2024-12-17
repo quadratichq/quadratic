@@ -1,8 +1,10 @@
-import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
+// Import the styles first in the order we want
 import '@/index.css';
+import '@/shared/shadcn/styles.css';
+
+import { QuadraticLoading } from '@/app/ui/loading/QuadraticLoading';
 import { router } from '@/router';
 import { ShowAfter } from '@/shared/components/ShowAfter';
-import '@/shared/shadcn/styles.css';
 import * as Sentry from '@sentry/react';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
