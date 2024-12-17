@@ -12,8 +12,11 @@ export function keyboardSearch(event: React.KeyboardEvent<HTMLElement>): boolean
   if (matchShortcut(Action.FindInCurrentSheet, event) || matchShortcut(Action.FindInAllSheets, event)) {
     event.preventDefault();
     if (editorInteractionState.showSearch) {
-      const search = document.getElementById('search-input');
-      search?.focus();
+      const search = document.getElementById('search-input') as HTMLInputElement;
+      if (search) {
+        search.focus();
+        search.select();
+      }
     } else {
       setEditorInteractionState((prev) => ({
         ...prev,

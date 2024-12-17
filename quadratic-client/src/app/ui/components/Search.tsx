@@ -162,7 +162,7 @@ export function Search() {
           if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             inputRef.current?.focus();
-
+            inputRef.current?.select();
             // shift+cmd+f let's you change to all sheets search mode while in the dialog box
             if (e.shiftKey) {
               setSearchOptions((prev) => {
