@@ -69,9 +69,9 @@ pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
 /// ```rust
 /// use quadratic_core::{formulas::replace_internal_cell_references, Pos};
 ///
-/// let pos = Pos { x: 0, y: 0 };
-/// let replaced = replace_internal_cell_references("SUM(R[0]C[-1])", pos);
-/// assert_eq!(replaced, "SUM(nA0)");
+/// let pos = Pos { x: 1, y: 0 };
+/// let replaced = replace_internal_cell_references("SUM(R[1]C[0])", pos);
+/// assert_eq!(replaced, "SUM(A1)");
 /// ```
 pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
     let replace_fn = |range_ref: RangeRef| range_ref.a1_string(pos);
@@ -85,9 +85,9 @@ pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
 /// ```rust
 /// use quadratic_core::{formulas::replace_a1_notation, Pos};
 ///
-/// let pos = Pos { x: 0, y: 0 };
-/// let replaced = replace_a1_notation("SUM(nA0)", pos);
-/// assert_eq!(replaced, "SUM(R[0]C[-1])");
+/// let pos = Pos { x: 1, y: 0 };
+/// let replaced = replace_a1_notation("SUM(A1)", pos);
+/// assert_eq!(replaced, "SUM(R[1]C[0])");
 /// ```
 pub fn replace_a1_notation(source: &str, pos: Pos) -> String {
     let replace_fn = |range_ref: RangeRef| range_ref.to_string();
@@ -369,6 +369,7 @@ mod tests {
                 CellRefCoord::Relative(i) => CellRefCoord::Relative(i * 2),
             },
         );
+
         let replaced_a1 = replace_internal_cell_references(&replaced, pos);
         assert_eq!(replaced_a1, expected);
     }

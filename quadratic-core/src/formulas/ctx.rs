@@ -129,6 +129,7 @@ impl<'ctx> Ctx<'ctx> {
 
         let mut bounded_rect = rect.clone();
 
+        // convert unbounded values to the data bounds of the sheet
         if let Some(bounds) = bounds {
             if bounded_rect.min.x == UNBOUNDED {
                 bounded_rect.min.x = bounds.first_column().unwrap_or(0);
@@ -146,9 +147,13 @@ impl<'ctx> Ctx<'ctx> {
 
         let sheet_id = bounded_rect.sheet_id;
         let array_size = bounded_rect.size();
-        if std::cmp::max(array_size.w, array_size.h).get() > crate::limits::CELL_RANGE_LIMIT {
-            return Err(RunErrorMsg::ArrayTooBig.with_span(span));
-        }
+
+        // TODO(ddimaria): removed b/c this should be enforced across all languages
+        // remove this comment and the code below once implemented elsewhere
+        //
+        // if std::cmp::max(array_size.w, array_size.h).get() > crate::limits::CELL_RANGE_LIMIT {
+        //     return Err(RunErrorMsg::ArrayTooBig.with_span(span));
+        // }
 
         let mut flat_array = smallvec![];
         // Reuse the same `CellRef` object so that we don't have to

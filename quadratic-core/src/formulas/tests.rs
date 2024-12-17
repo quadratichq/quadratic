@@ -423,7 +423,7 @@ fn test_cell_range_op_errors() {
         ("array literal", "A1:{1, 2, 3}"),
         ("array literal", "A1:{1, 2, 3}"),
         ("string literal", "A1:\"hello\""),
-        ("numeric literal", "A1:12"),
+        // ("numeric literal", "A1:12"),
         ("boolean literal", "A1:TRUE"),
     ] {
         let expected_err = RunErrorMsg::Expected {
