@@ -26,8 +26,14 @@ export const AIResearcherRequestHandler = () => {
 
       const { transactionId, sheetPos, query, refCellValues, cellsAccessedValues } = args;
       const sheetPosStruct = JSON.parse(sheetPos) as SheetPos;
+      const startTime = performance.now();
       submitPrompt({ query, refCellValues, sheetPos: sheetPosStruct, cellsAccessedValues }).then(
         ({ result, error }) => {
+          if (result) {
+            const endTime = performance.now();
+            const durationMs = endTime - startTime;
+            result.durationMs = durationMs;
+          }
           const cellValues = result?.toolCallArgs?.cell_values;
           const researcherResponseStringified = JSON.stringify(result);
           quadraticCore.receiveAIResearcherResult({

@@ -1,3 +1,4 @@
+import { aiResearcherResultAtom } from '@/app/atoms/aiResearcherAtom';
 import {
   aiAssistantLoadingAtom,
   codeEditorCodeCellAtom,
@@ -32,6 +33,7 @@ export function ReturnTypeInspector() {
   const consoleOutput = useRecoilValue(codeEditorConsoleOutputAtom);
   const codeCellRecoil = useRecoilValue(codeEditorCodeCellAtom);
   const aiAssistantLoading = useRecoilValue(aiAssistantLoadingAtom);
+  const aiResearcherResult = useRecoilValue(aiResearcherResultAtom);
 
   const { submitPrompt } = useSubmitAIAssistantPrompt();
 
@@ -132,13 +134,13 @@ export function ReturnTypeInspector() {
     );
   } else if (mode === 'Formula' || mode === 'AIResearcher') {
     const type = evaluationResult?.type
-      ? evaluationResult.type
+      ? evaluationResult.type // single value
       : evaluationResult?.values?.length
-      ? evaluationResult?.values?.length === 1
-        ? evaluationResult?.values[0]?.type
-        : evaluationResult?.values.find((v) => v.type !== evaluationResult?.values?.[0]?.type)
-        ? 'array'
-        : evaluationResult?.values[0]?.type
+      ? evaluationResult?.values?.length === 1 // array of one value
+        ? evaluationResult?.values[0]?.type // use first value's type
+        : evaluationResult?.values.find((v) => v.type !== evaluationResult?.values?.[0]?.type) // array of multiple values have different types
+        ? 'array' // use generic array type
+        : evaluationResult?.values[0]?.type // use first value's type
       : undefined;
     const show = !unsavedChanges && !!type;
     const isTable = evaluationResult?.size && evaluationResult.size.h * evaluationResult.size.w > 1;
@@ -146,6 +148,7 @@ export function ReturnTypeInspector() {
       <>
         {`Returned ${isTable ? `${evaluationResult?.size?.w}x${evaluationResult?.size?.h} ` : ''}`}
         <ReturnType>{`${type}${isTable ? '[]' : ''}`}</ReturnType>
+        {aiResearcherResult?.durationMs && <span>{` in ${(aiResearcherResult.durationMs / 1000).toFixed(1)}s`}</span>}
       </>
     ) : undefined;
   }

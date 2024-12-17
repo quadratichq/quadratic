@@ -7,6 +7,7 @@ export const AIResearcherResultSchema = z.object({
   exaResults: z.array(ExaSearchResultSchema).optional(),
   autopromptString: z.string().optional(),
   toolCallArgs: AIToolsArgsSchema[AITool.SetAIResearcherResult],
+  durationMs: z.number().optional(),
 });
 
 export type AIResearcherResultType = z.infer<typeof AIResearcherResultSchema>;
