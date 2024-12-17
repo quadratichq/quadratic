@@ -9,8 +9,8 @@ import {
   drawDashedRectangleMarching,
 } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
-import { CellPosition, ParseFormulaReturnType, Span } from '@/app/helpers/formulaNotation';
-import { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
+import type { CellPosition, ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import type { JsCellsAccessed, JsCoordinate, Span } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 

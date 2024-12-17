@@ -1,8 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { StringId } from '@/app/helpers/getKey';
-import { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
-import { CellRefId } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
-import { Rectangle } from 'pixi.js';
+import type { StringId } from '@/app/helpers/getKey';
+import type { JsCellsAccessed, JsCoordinate, Span } from '@/app/quadratic-core-types';
+import type { CellRefId } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
+import type { Rectangle } from 'pixi.js';
 
 export function getCoordinatesFromStringId(stringId: StringId): [number, number] {
   // required for type inference
@@ -15,13 +15,6 @@ export interface CellPosition {
   y: { type: 'Relative' | 'Absolute'; coord: number };
   sheet?: string;
 }
-
-export type Span = { start: number; end: number };
-
-export type CellRefCoord = {
-  x: { type: 'Relative' | 'Absolute'; coord: number };
-  y: { type: 'Relative' | 'Absolute'; coord: number };
-};
 
 export type CellRef =
   | {
@@ -46,35 +39,51 @@ export type ParseFormulaReturnType = {
   }[];
 };
 
-export function parseFormulaReturnToCellsAccessed(parseFormulaReturn: ParseFormulaReturnType): JsCellsAccessed[] {
+export function parseFormulaReturnToCellsAccessed(
+  parseFormulaReturn: ParseFormulaReturnType,
+  codeCellPos: JsCoordinate,
+  codeCellSheetId: string
+): JsCellsAccessed[] {
   const isAbsolute = (type: 'Relative' | 'Absolute') => type === 'Absolute';
-  const returnArray: JsCellsAccessed[] = [];
+  const jsCellsAccessed: JsCellsAccessed[] = [];
 
   for (const cellRef of parseFormulaReturn.cell_refs) {
     const start = cellRef.cell_ref.type === 'CellRange' ? cellRef.cell_ref.start : cellRef.cell_ref.pos;
     const end = cellRef.cell_ref.type === 'CellRange' ? cellRef.cell_ref.end : cellRef.cell_ref.pos;
-    const cellsAccessed = {
-      sheetId: cellRef.sheet ?? '',
+    const cellsAccessed: JsCellsAccessed = {
+      sheetId: cellRef.sheet ?? codeCellSheetId,
       ranges: [
         {
           range: {
             start: {
-              col: { coord: BigInt(start.x.coord), is_absolute: isAbsolute(start.x.type) },
-              row: { coord: BigInt(start.y.coord), is_absolute: isAbsolute(start.y.type) },
+              col: {
+                coord: BigInt(isAbsolute(start.x.type) ? start.x.coord : start.x.coord + codeCellPos.x),
+                is_absolute: isAbsolute(start.x.type),
+              },
+              row: {
+                coord: BigInt(isAbsolute(start.y.type) ? start.y.coord : start.y.coord + codeCellPos.y),
+                is_absolute: isAbsolute(start.y.type),
+              },
             },
             end: {
-              col: { coord: BigInt(end.x.coord), is_absolute: isAbsolute(end.x.type) },
-              row: { coord: BigInt(end.y.coord), is_absolute: isAbsolute(end.y.type) },
+              col: {
+                coord: BigInt(isAbsolute(end.x.type) ? end.x.coord : end.x.coord + codeCellPos.x),
+                is_absolute: isAbsolute(end.x.type),
+              },
+              row: {
+                coord: BigInt(isAbsolute(end.y.type) ? end.y.coord : end.y.coord + codeCellPos.y),
+                is_absolute: isAbsolute(end.y.type),
+              },
             },
           },
         },
       ],
     };
 
-    returnArray.push(cellsAccessed);
+    jsCellsAccessed.push(cellsAccessed);
   }
 
-  return returnArray;
+  return jsCellsAccessed;
 }
 
 export function getCellFromFormulaNotation(sheetId: string, cellRefId: CellRefId, editorCursorPosition: JsCoordinate) {

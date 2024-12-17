@@ -7,8 +7,8 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { SheetPosTS } from '@/app/gridGL/types/size';
-import { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
+import type { SheetPosTS } from '@/app/gridGL/types/size';
+import { parseFormulaReturnToCellsAccessed, type ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
 import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
@@ -26,9 +26,14 @@ class InlineEditorFormula {
   cellHighlights(location: SheetPosTS, formula: string) {
     const parsed = JSON.parse(parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
     if (parsed) {
-      pixiApp.cellHighlights.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
+      const cellsAccessed = parseFormulaReturnToCellsAccessed(
+        parsed,
+        { x: location.x, y: location.y },
+        location.sheetId
+      );
+      pixiApp.cellHighlights.fromCellsAccessed(cellsAccessed);
 
-      const extractedCells = extractCellsFromParseFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
+      const extractedCells = extractCellsFromParseFormula(parsed, { x: location.x, y: location.y });
       const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
       const cellColorReferences = new Map<string, number>();
 

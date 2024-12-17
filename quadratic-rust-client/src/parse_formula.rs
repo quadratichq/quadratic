@@ -69,20 +69,23 @@ impl From<Spanned<formulas::RangeRef>> for JsCellRefSpan {
 pub fn parse_formula(formula_string: &str, x: f64, y: f64) -> String {
     let x = x as i64;
     let y = y as i64;
-    let pos = Pos { x, y };
+    let code_cell_pos = Pos { x, y };
 
-    let parse_error = formulas::parse_formula(formula_string, pos).err();
+    let parse_error = formulas::parse_formula(formula_string, code_cell_pos).err();
 
     let result = JsFormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
-        cell_refs: formulas::find_cell_references(formula_string, pos)
+        cell_refs: formulas::find_cell_references(formula_string, code_cell_pos)
             .into_iter()
             .map(|mut spanned| {
                 if let RangeRef::CellRange { mut start, mut end } = spanned.inner {
-                    start.replace_unbounded(0);
-                    end.replace_unbounded(-1);
+                    start.replace_unbounded(1, code_cell_pos);
+                    end.replace_unbounded(-1, code_cell_pos);
                     spanned.inner = RangeRef::CellRange { start, end };
+                } else if let RangeRef::Cell { mut pos } = spanned.inner {
+                    pos.replace_unbounded(-1, code_cell_pos);
+                    spanned.inner = RangeRef::Cell { pos };
                 }
                 spanned.into()
             })
