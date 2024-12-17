@@ -65,7 +65,7 @@ class InlineEditorFormula {
         const editorCursorPosition = inlineEditorMonaco.getPosition();
 
         if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-          pixiApp.cellHighlights.setHighlightedCell(index);
+          pixiApp.cellHighlights.setSelectedCell(index);
         }
       });
 

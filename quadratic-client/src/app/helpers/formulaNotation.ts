@@ -1,22 +1,12 @@
-import { sheets } from '@/app/grid/controller/Sheets';
-import type { StringId } from '@/app/helpers/getKey';
 import type { JsCellsAccessed, JsCoordinate, Span } from '@/app/quadratic-core-types';
-import type { CellRefId } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
-import type { Rectangle } from 'pixi.js';
 
-export function getCoordinatesFromStringId(stringId: StringId): [number, number] {
-  // required for type inference
-  const [x, y] = stringId.split(',').map((val) => parseInt(val));
-  return [x, y];
-}
-
-export interface CellPosition {
+interface CellPosition {
   x: { type: 'Relative' | 'Absolute'; coord: number };
   y: { type: 'Relative' | 'Absolute'; coord: number };
   sheet?: string;
 }
 
-export type CellRef =
+type CellRef =
   | {
       type: 'CellRange';
       start: CellPosition;
@@ -84,50 +74,4 @@ export function parseFormulaReturnToCellsAccessed(
   }
 
   return jsCellsAccessed;
-}
-
-export function getCellFromFormulaNotation(sheetId: string, cellRefId: CellRefId, editorCursorPosition: JsCoordinate) {
-  const isSimpleCell = !cellRefId.includes(':');
-
-  if (isSimpleCell) {
-    const [x, y] = getCoordinatesFromStringId(cellRefId);
-    return getCellWithLimit(sheetId, editorCursorPosition, y, x);
-  }
-  const [startCell, endCell] = cellRefId.split(':') as [StringId, StringId];
-  const [startCellX, startCellY] = getCoordinatesFromStringId(startCell);
-  const [endCellX, endCellY] = getCoordinatesFromStringId(endCell);
-
-  return {
-    startCell: getCellWithLimit(sheetId, editorCursorPosition, startCellY, startCellX),
-    endCell: getCellWithLimit(sheetId, editorCursorPosition, endCellY, endCellX),
-  };
-}
-
-function getCellWithLimit(
-  sheetId: string,
-  editorCursorPosition: JsCoordinate,
-  row: number,
-  column: number,
-  offset = 20000
-): Rectangle {
-  // getCell is slow with more than 9 digits, so limit if column or row is > editorCursorPosition + an offset
-  // If it's a single cell to be highlighted, it won't be visible anyway, and if it's a range
-  // It will highlight beyond the what's visible in the viewport
-  return sheets.sheet.getCellOffsets(
-    Math.min(column, editorCursorPosition.x + offset),
-    Math.min(row, editorCursorPosition.y + offset)
-  );
-}
-
-export function isCellRangeTypeGuard(obj: any): obj is { startCell: Rectangle; endCell: Rectangle } {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'startCell' in obj &&
-    typeof obj.startCell === 'object' &&
-    obj.startCell !== null &&
-    'endCell' in obj &&
-    typeof obj.endCell === 'object' &&
-    obj.endCell !== null
-  );
 }
