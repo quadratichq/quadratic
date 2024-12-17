@@ -112,6 +112,7 @@ export const copyToClipboard = async () => {
   debugTimeReset();
   const jsClipboard = await quadraticCore.copyToClipboard(sheets.getRustSelection());
   await toClipboard(jsClipboard.plainText, jsClipboard.html);
+  pixiApp.copy.changeCopyRanges();
   debugTimeCheck('copy to clipboard');
 };
 

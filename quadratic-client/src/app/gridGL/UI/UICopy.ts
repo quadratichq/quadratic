@@ -40,12 +40,12 @@ export class UICopy extends Graphics {
 
   private updateNextTick = () => (this.dirty = true);
 
-  clearCopyRanges() {
+  clearCopyRanges = () => {
     this.clear();
     pixiApp.setViewportDirty();
     this.ranges = undefined;
     this.sheetId = undefined;
-  }
+  };
 
   changeCopyRanges() {
     const range = sheets.sheet.cursor.getRanges();
