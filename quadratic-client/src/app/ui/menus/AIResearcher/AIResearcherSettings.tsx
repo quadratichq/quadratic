@@ -8,10 +8,10 @@ import { useRecoilState } from 'recoil';
 export const AIResearcherSettings = () => {
   const [exaSettings, setExaSettings] = useRecoilState(exaSettingsAtom);
   return (
-    <div className="mx-3 mb-3 mt-1 flex flex-col gap-2 overflow-y-auto rounded-lg">
+    <div className="flex h-full flex-col gap-2 overflow-y-auto p-2">
       <span className="font-bold">Exa Settings (for testing):</span>
 
-      <div className={`flex items-center space-x-2`}>
+      <div className="flex items-center space-x-2">
         <Checkbox
           id="useAutoprompt"
           checked={exaSettings.useAutoprompt}

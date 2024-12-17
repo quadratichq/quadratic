@@ -7,7 +7,7 @@ import { getMessagesForModel } from '@/app/ai/tools/message.helper';
 import { aiResearcherAbortControllerAtom, aiResearcherLoadingAtom } from '@/app/atoms/aiResearcherAtom';
 import { exaSettingsAtom } from '@/app/atoms/exaSettingsAtom';
 import type { JsCellValuePos, SheetPos } from '@/app/quadratic-core-types';
-import type { AIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
+import type { AIResearcherResultType } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { useAIResearcherMessagePrompt } from '@/app/ui/menus/AIResearcher/hooks/useAIResearcherMessagePrompt';
 import { DEFAULT_MODEL } from 'quadratic-shared/AI_MODELS';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -32,7 +32,7 @@ export function useSubmitAIResearcherPrompt() {
         sheetPos: SheetPos;
         cellsAccessedValues: JsCellValuePos[][][];
       }): Promise<{
-        result?: AIResearcherResult;
+        result?: AIResearcherResultType;
         error?: string;
       }> => {
         set(aiResearcherLoadingAtom, true);
@@ -104,7 +104,7 @@ export function useSubmitAIResearcherPrompt() {
           (toolCall) => toolCall.name === AITool.SetAIResearcherResult
         );
 
-        let result: { result?: AIResearcherResult; error?: string } = { result: undefined, error: undefined };
+        let result: { result?: AIResearcherResultType; error?: string } = { result: undefined, error: undefined };
         if (setAIResearcherValueToolCall) {
           try {
             const argsObject = JSON.parse(setAIResearcherValueToolCall.arguments);

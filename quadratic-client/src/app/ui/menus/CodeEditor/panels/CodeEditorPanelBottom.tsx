@@ -1,8 +1,11 @@
 import {
+  codeEditorCodeCellAtom,
   codeEditorConsoleOutputAtom,
   codeEditorPanelBottomActiveTabAtom,
   codeEditorSpillErrorAtom,
 } from '@/app/atoms/codeEditorAtom';
+import { AIResearcherResult } from '@/app/ui/menus/AIResearcher/AIResearcherResult';
+import { AIResearcherSettings } from '@/app/ui/menus/AIResearcher/AIResearcherSettings';
 import { AIAssistant } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
@@ -13,7 +16,7 @@ import { ChevronRightIcon } from '@radix-ui/react-icons';
 import { ReactNode, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
+export type PanelTab = 'console' | 'ai-assistant' | 'data-browser' | 'ai-researcher-summary' | 'ai-researcher-settings';
 
 interface CodeEditorPanelBottomProps {
   schemaBrowser: ReactNode | undefined;
@@ -29,6 +32,8 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
     () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),
     [consoleOutput?.stdErr?.length, consoleOutput?.stdOut?.length, spillError]
   );
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+  const isAIResearcher = useMemo(() => codeCell.language === 'AIResearcher', [codeCell.language]);
 
   return (
     <Tabs
@@ -51,41 +56,71 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
           />
         </Button>
         <TabsList>
-          {schemaBrowser && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
-          {showAIAssistant && <TabsTrigger value="ai-assistant">Chat</TabsTrigger>}
-          <TabsTrigger
-            value="console"
-            className={cn(
-              `relative font-medium after:absolute after:right-1 after:top-4`,
-              // Special indicators when the console isn't active and there's output
-              hasOutput && `after:h-[4px] after:w-[4px] after:rounded-full after:content-['']`,
-              consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
-            )}
-          >
-            Console
-          </TabsTrigger>
+          {schemaBrowser && !isAIResearcher && <TabsTrigger value="data-browser">Schema</TabsTrigger>}
+
+          {showAIAssistant && !isAIResearcher && <TabsTrigger value="ai-assistant">Chat</TabsTrigger>}
+
+          {!isAIResearcher && (
+            <TabsTrigger
+              value="console"
+              className={cn(
+                `relative font-medium after:absolute after:right-1 after:top-4`,
+                // Special indicators when the console isn't active and there's output
+                hasOutput && `after:h-[4px] after:w-[4px] after:rounded-full after:content-['']`,
+                consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
+              )}
+            >
+              Console
+            </TabsTrigger>
+          )}
+
+          {isAIResearcher && <TabsTrigger value="ai-researcher-summary">Summary</TabsTrigger>}
+
+          {isAIResearcher && <TabsTrigger value="ai-researcher-settings">Settings</TabsTrigger>}
         </TabsList>
       </div>
 
-      {schemaBrowser && (
+      {schemaBrowser && !isAIResearcher && (
         <TabsContent value="data-browser" className="m-0 grow overflow-hidden">
           {bottomHidden ? null : schemaBrowser}
         </TabsContent>
       )}
 
-      {showAIAssistant && (
+      {showAIAssistant && !isAIResearcher && (
         <TabsContent value="ai-assistant" className="m-0 grow overflow-hidden">
           {!bottomHidden && <AIAssistant />}
         </TabsContent>
       )}
 
-      <TabsContent value="console" className="m-0 grow overflow-hidden">
-        {!bottomHidden && (
-          <div className="h-full pt-2">
-            <Console />
-          </div>
-        )}
-      </TabsContent>
+      {!isAIResearcher && (
+        <TabsContent value="console" className="m-0 grow overflow-hidden">
+          {!bottomHidden && (
+            <div className="h-full pt-2">
+              <Console />
+            </div>
+          )}
+        </TabsContent>
+      )}
+
+      {isAIResearcher && (
+        <TabsContent value="ai-researcher-summary" className="m-0 grow overflow-hidden">
+          {!bottomHidden && (
+            <div className="h-full pb-10">
+              <AIResearcherResult />
+            </div>
+          )}
+        </TabsContent>
+      )}
+
+      {isAIResearcher && (
+        <TabsContent value="ai-researcher-settings" className="m-0 grow overflow-hidden">
+          {!bottomHidden && (
+            <div className="h-full pb-10">
+              <AIResearcherSettings />
+            </div>
+          )}
+        </TabsContent>
+      )}
     </Tabs>
   );
 }

@@ -1,9 +1,13 @@
+import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
+import { AIResearcherResult } from '@/app/ui/menus/AIResearcher/AIResearcherResult';
+import { AIResearcherSettings } from '@/app/ui/menus/AIResearcher/AIResearcherSettings';
 import { AIAssistant } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 interface CodeEditorPanelSideProps {
   codeEditorRef: React.RefObject<HTMLDivElement>;
@@ -105,59 +109,96 @@ export function CodeEditorPanelSide({ codeEditorRef, schemaBrowser, showAIAssist
     [adjustedContainerHeight, codeEditorPanelData, codeEditorRef, leftOverPercentage, panels]
   );
 
+  const codeCell = useRecoilValue(codeEditorCodeCellAtom);
+  const isAIResearcher = useMemo(() => codeCell.language === 'AIResearcher', [codeCell.language]);
+
   return (
     <div className="h-full">
-      <PanelBox
-        id="panel-0"
-        title="Console"
-        open={panels[0].open}
-        toggleOpen={panels[0].toggleOpen}
-        height={panels[0].height}
-      >
-        <Console />
-      </PanelBox>
-
-      {showAIAssistant && (
+      {isAIResearcher ? (
         <>
-          <ResizeControl
-            style={{ top: panels[0].height }}
-            disabled={!panels[0].open || (!panels[1].open && !panels[2]?.open)}
-            position="HORIZONTAL"
-            setState={(e) => changeResizeBar(e, true)}
-          />
           <PanelBox
-            id="panel-1"
-            title="Chat"
-            open={panels[1].open}
-            toggleOpen={panels[1].toggleOpen}
-            height={panels[1].height}
+            id="panel-0"
+            title="Summary"
+            open={panels[0].open}
+            toggleOpen={panels[0].toggleOpen}
+            height={panels[0].height}
           >
-            <AIAssistant />
+            <AIResearcherResult />
           </PanelBox>
+
+          <>
+            <ResizeControl
+              style={{ top: panels[0].height }}
+              disabled={!panels[0].open || (!panels[1].open && !panels[2]?.open)}
+              position="HORIZONTAL"
+              setState={(e) => changeResizeBar(e, true)}
+            />
+            <PanelBox
+              id="panel-1"
+              title="Settings"
+              open={panels[1].open}
+              toggleOpen={panels[1].toggleOpen}
+              height={panels[1].height}
+            >
+              <AIResearcherSettings />
+            </PanelBox>
+          </>
         </>
-      )}
-
-      {schemaBrowser && (
+      ) : (
         <>
-          <ResizeControl
-            style={{ top: panels[0].height + panels[1].height }}
-            disabled={
-              (panels[0].open && panels[1].open && !panels[2].open) ||
-              (panels[0].open && !panels[1].open && !panels[2].open) ||
-              (!panels[0].open && !panels[1].open)
-            }
-            position="HORIZONTAL"
-            setState={(e) => changeResizeBar(e, false)}
-          />
           <PanelBox
-            id="panel-2"
-            title="Schema"
-            open={panels[2].open}
-            toggleOpen={panels[2].toggleOpen}
-            height={panels[2].height}
+            id="panel-0"
+            title="Console"
+            open={panels[0].open}
+            toggleOpen={panels[0].toggleOpen}
+            height={panels[0].height}
           >
-            {schemaBrowser}
+            <Console />
           </PanelBox>
+
+          {showAIAssistant && (
+            <>
+              <ResizeControl
+                style={{ top: panels[0].height }}
+                disabled={!panels[0].open || (!panels[1].open && !panels[2]?.open)}
+                position="HORIZONTAL"
+                setState={(e) => changeResizeBar(e, true)}
+              />
+              <PanelBox
+                id="panel-1"
+                title="Chat"
+                open={panels[1].open}
+                toggleOpen={panels[1].toggleOpen}
+                height={panels[1].height}
+              >
+                <AIAssistant />
+              </PanelBox>
+            </>
+          )}
+
+          {schemaBrowser && (
+            <>
+              <ResizeControl
+                style={{ top: panels[0].height + panels[1].height }}
+                disabled={
+                  (panels[0].open && panels[1].open && !panels[2].open) ||
+                  (panels[0].open && !panels[1].open && !panels[2].open) ||
+                  (!panels[0].open && !panels[1].open)
+                }
+                position="HORIZONTAL"
+                setState={(e) => changeResizeBar(e, false)}
+              />
+              <PanelBox
+                id="panel-2"
+                title="Schema"
+                open={panels[2].open}
+                toggleOpen={panels[2].toggleOpen}
+                height={panels[2].height}
+              >
+                {schemaBrowser}
+              </PanelBox>
+            </>
+          )}
         </>
       )}
     </div>

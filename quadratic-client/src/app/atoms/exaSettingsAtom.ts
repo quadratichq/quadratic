@@ -5,7 +5,7 @@ type ExaSettingsState = Omit<ExaSearchRequestBody, 'query'>;
 
 export const defaultExaSettingsState: ExaSettingsState = {
   type: 'auto',
-  numResults: 5,
+  numResults: 25,
   livecrawl: 'fallback',
   useAutoprompt: true,
   text: false,

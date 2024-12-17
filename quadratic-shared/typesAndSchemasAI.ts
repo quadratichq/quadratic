@@ -371,6 +371,9 @@ export const ExaSearchResultSchema = z.object({
   author: z.string().nullable().optional(),
   score: z.number().nullable().optional(),
   text: z.string().nullable().optional(),
+  highlights: z.array(z.string()).nullable().optional(),
+  highlightScores: z.array(z.number()).nullable().optional(),
+  summary: z.string().nullable().optional(),
 });
 export type ExaSearchResult = z.infer<typeof ExaSearchResultSchema>;
 

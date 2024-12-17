@@ -9,11 +9,11 @@ export const AIResearcherResultSchema = z.object({
   toolCallArgs: AIToolsArgsSchema[AITool.SetAIResearcherResult],
 });
 
-export type AIResearcherResult = z.infer<typeof AIResearcherResultSchema>;
+export type AIResearcherResultType = z.infer<typeof AIResearcherResultSchema>;
 
 export const parseAIResearcherResult = (
   ai_researcher_result_stringified?: string | null
-): AIResearcherResult | undefined => {
+): AIResearcherResultType | undefined => {
   if (!ai_researcher_result_stringified) {
     return undefined;
   }

@@ -1,6 +1,5 @@
 import { codeEditorLoadingAtom } from '@/app/atoms/codeEditorAtom';
 import { AIResearcherInsertCellRef } from '@/app/ui/menus/AIResearcher/AIResearcherInsertCellRef';
-import { AIResearcherResult } from '@/app/ui/menus/AIResearcher/AIResearcherResult';
 import { AIResearcherUserMessageForm } from '@/app/ui/menus/AIResearcher/AIResearcherUserMessageForm';
 import { CircularProgress } from '@mui/material';
 import { useRef } from 'react';
@@ -32,10 +31,6 @@ export const AIResearcher = () => {
       </div>
 
       <AIResearcherInsertCellRef />
-
-      <AIResearcherResult />
-
-      {/* <AIResearcherSettings /> */}
     </div>
   );
 };

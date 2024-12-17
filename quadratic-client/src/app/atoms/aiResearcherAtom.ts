@@ -1,4 +1,4 @@
-import { AIResearcherResult } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
+import { AIResearcherResultType } from '@/app/ui/menus/AIResearcher/helpers/parseAIResearcherResult.helper';
 import { atom, DefaultValue, selector } from 'recoil';
 
 export interface AIResearcherState {
@@ -7,7 +7,7 @@ export interface AIResearcherState {
   query: string;
   refCell: string;
   output: string;
-  aiResearcherResult?: AIResearcherResult;
+  aiResearcherResult?: AIResearcherResultType;
 }
 
 export const defaultAIResearcherState: AIResearcherState = {
