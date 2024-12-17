@@ -33,6 +33,10 @@ export class UICopy extends Graphics {
     super.destroy();
   }
 
+  isShowing(): boolean {
+    return !!this.range && this.sheetId === sheets.sheet.id;
+  }
+
   private updateNextTick = () => (this.dirty = true);
 
   private clearCopyRange = () => this.changeCopyRange();
@@ -40,6 +44,7 @@ export class UICopy extends Graphics {
   changeCopyRange(range?: RefRangeBounds) {
     if (!range) {
       this.clear();
+      pixiApp.setViewportDirty();
       this.range = undefined;
       this.sheetId = undefined;
     } else {
