@@ -11,7 +11,7 @@ import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
-export const AIResearcherInsertCellRef = () => {
+export const AIResearcherRefCell = () => {
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const [refCell, setRefCell] = useRecoilState(aiResearcherRefCellAtom);
 
@@ -54,7 +54,7 @@ export const AIResearcherInsertCellRef = () => {
   }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId]);
 
   return (
-    <div className="m-2 flex items-center gap-2 rounded-md border-t border-border py-2">
+    <div className="m-2 flex items-center gap-2 rounded-md border-t border-border p-2 text-sm">
       <span className="whitespace-nowrap text-muted-foreground">Cell data:</span>
 
       <Input className="w-min" value={refCell} onChange={(e) => setRefCell(e.target.value)} />

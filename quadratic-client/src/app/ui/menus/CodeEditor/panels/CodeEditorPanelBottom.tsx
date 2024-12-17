@@ -105,7 +105,7 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
       {isAIResearcher && (
         <TabsContent value="ai-researcher-summary" className="m-0 grow overflow-hidden">
           {!bottomHidden && (
-            <div className="h-full pb-10">
+            <div className="h-full pb-10 text-sm">
               <AIResearcherResult />
             </div>
           )}

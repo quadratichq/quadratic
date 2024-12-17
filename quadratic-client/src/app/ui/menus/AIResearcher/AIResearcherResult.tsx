@@ -26,6 +26,13 @@ export const AIResearcherResult = () => {
         </div>
       )}
 
+      {aiResearcherResult.autopromptString && (
+        <div>
+          <span>{`Autoprompt: `}</span>
+          <span className="whitespace-pre-wrap">{aiResearcherResult.autopromptString}</span>
+        </div>
+      )}
+
       {aiResearcherResult.exaResults && (
         <div>
           <span>{`Results: `}</span>

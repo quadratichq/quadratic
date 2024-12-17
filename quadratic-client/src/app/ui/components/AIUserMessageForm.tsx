@@ -17,8 +17,6 @@ export type AIUserMessageFormWrapperProps = {
   autoFocusRef?: React.RefObject<boolean>;
   initialPrompt?: string;
   messageIndex?: number;
-  collapseAfterSubmit: boolean;
-  disableBackspaceIcon?: boolean;
 };
 
 type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
@@ -37,8 +35,6 @@ type Props = Omit<AIUserMessageFormWrapperProps, 'messageIndex'> & {
 export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: Props, ref) => {
   const {
     initialPrompt,
-    collapseAfterSubmit,
-    disableBackspaceIcon,
     ctx,
     autoFocusRef,
     textareaRef: bottomTextareaRef,
@@ -49,7 +45,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
     formOnKeyDown,
   } = props;
 
-  const [editing, setEditing] = useState(!collapseAfterSubmit || !initialPrompt);
+  const [editing, setEditing] = useState(!initialPrompt);
   const [prompt, setPrompt] = useState(initialPrompt ?? '');
 
   const abortPrompt = useCallback(() => {
@@ -68,10 +64,10 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
   }, [autoFocusRef, textareaRef]);
 
   useEffect(() => {
-    if (loading && initialPrompt !== undefined && collapseAfterSubmit) {
+    if (loading && initialPrompt !== undefined) {
       setEditing(false);
     }
-  }, [loading, initialPrompt, collapseAfterSubmit]);
+  }, [loading, initialPrompt]);
 
   return (
     <form
@@ -126,7 +122,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
               if (initialPrompt === undefined) {
                 setPrompt('');
                 textareaRef.current?.focus();
-              } else if (collapseAfterSubmit) {
+              } else {
                 setEditing(false);
                 bottomTextareaRef.current?.focus();
               }
@@ -183,7 +179,7 @@ export const AIUserMessageForm = forwardRef<HTMLTextAreaElement, Props>((props: 
             </div>
           </div>
 
-          {loading && !disableBackspaceIcon && (
+          {loading && (
             <Button
               size="sm"
               variant="outline"

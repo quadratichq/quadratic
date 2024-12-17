@@ -116,7 +116,6 @@ export function AIAnalystMessages({ textareaRef }: AIAnalystMessagesProps) {
                   textareaRef={textareaRef}
                   initialPrompt={message.content}
                   messageIndex={index}
-                  collapseAfterSubmit={true}
                   initialContext={message.context}
                 />
               ) : Array.isArray(message.content) ? (

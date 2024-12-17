@@ -30,6 +30,7 @@ export const CodeEditor = () => {
   const [editorInst, setEditorInst] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const { onKeyDownCodeEditor } = useOnKeyDownCodeEditor();
   const codeEditorRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const codeEditorPanelData = useCodeEditorPanelData();
 
   return (
@@ -58,6 +59,9 @@ export const CodeEditor = () => {
             onCopy={(e) => e.stopPropagation()}
             onCut={(e) => e.stopPropagation()}
             onPaste={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              textareaRef.current?.focus();
+            }}
           >
             <div
               id="QuadraticCodeEditorID"
@@ -79,16 +83,16 @@ export const CodeEditor = () => {
               }}
             >
               {codeCell.language === 'AIResearcher' ? (
-                <AIResearcher />
+                <AIResearcher textareaRef={textareaRef} />
               ) : (
                 <>
                   <SaveChangesAlert editorInst={editorInst} />
                   <CodeEditorDiffButtons />
                   <CodeEditorBody editorInst={editorInst} setEditorInst={setEditorInst} />
                   <CodeEditorEmptyState editorInst={editorInst} />
+                  <ReturnTypeInspector />
                 </>
               )}
-              <ReturnTypeInspector />
             </div>
 
             <div

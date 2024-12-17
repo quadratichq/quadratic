@@ -1,14 +1,16 @@
 import { codeEditorLoadingAtom } from '@/app/atoms/codeEditorAtom';
-import { AIResearcherInsertCellRef } from '@/app/ui/menus/AIResearcher/AIResearcherInsertCellRef';
+import { AIResearcherRefCell } from '@/app/ui/menus/AIResearcher/AIResearcherRefCell';
 import { AIResearcherUserMessageForm } from '@/app/ui/menus/AIResearcher/AIResearcherUserMessageForm';
+import { ReturnTypeInspector } from '@/app/ui/menus/CodeEditor/ReturnTypeInspector';
 import { CircularProgress } from '@mui/material';
-import { useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const AIResearcher = () => {
+type AIResearcherProps = {
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
+};
+
+export const AIResearcher = ({ textareaRef }: AIResearcherProps) => {
   const codeEditorLoading = useRecoilValue(codeEditorLoadingAtom);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const autoFocusRef = useRef(true);
 
   if (codeEditorLoading) {
     return (
@@ -19,18 +21,12 @@ export const AIResearcher = () => {
   }
 
   return (
-    <div className="flex h-full w-full flex-col gap-4">
-      <div className="px-2 py-0.5">
-        <AIResearcherUserMessageForm
-          ref={textareaRef}
-          autoFocusRef={autoFocusRef}
-          textareaRef={textareaRef}
-          collapseAfterSubmit={false}
-          disableBackspaceIcon={true}
-        />
+    <div className="flex h-full w-full flex-col justify-between">
+      <AIResearcherUserMessageForm textareaRef={textareaRef} />
+      <div className="shrink-0">
+        <AIResearcherRefCell />
+        <ReturnTypeInspector />
       </div>
-
-      <AIResearcherInsertCellRef />
     </div>
   );
 };

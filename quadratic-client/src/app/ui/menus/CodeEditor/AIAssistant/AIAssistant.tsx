@@ -12,12 +12,7 @@ export const AIAssistant = () => {
       <AIAssistantMessages textareaRef={textareaRef} />
 
       <div className="flex h-full flex-col justify-end px-2 py-0.5">
-        <AIAssistantUserMessageForm
-          ref={textareaRef}
-          autoFocusRef={autoFocusRef}
-          textareaRef={textareaRef}
-          collapseAfterSubmit={false}
-        />
+        <AIAssistantUserMessageForm ref={textareaRef} autoFocusRef={autoFocusRef} textareaRef={textareaRef} />
         <AIUserMessageFormDisclaimer />
       </div>
     </div>

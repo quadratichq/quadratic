@@ -1,3 +1,4 @@
+import { aiResearcherQueryAtom, aiResearcherRefCellAtom } from '@/app/atoms/aiResearcherAtom';
 import {
   codeEditorCodeCellAtom,
   codeEditorDiffEditorContentAtom,
@@ -5,6 +6,7 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getAIResearcherCodeString } from '@/app/ui/menus/AIResearcher/helpers/getAIResearcherCodeString.helper';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
@@ -20,16 +22,30 @@ export const useSaveAndRunCell = () => {
         const { sheetId, pos, language } = codeCell;
         if (!sheetId) return;
 
-        quadraticCore.setCodeCellValue({
-          sheetId,
-          x: pos.x,
-          y: pos.y,
-          codeString: editorContent ?? '',
-          language,
-          cursor: sheets.getCursorPosition(),
-        });
+        if (codeCell.language === 'AIResearcher') {
+          const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
+          const query = await snapshot.getPromise(aiResearcherQueryAtom);
+          const refCell = await snapshot.getPromise(aiResearcherRefCellAtom);
+          quadraticCore.setCodeCellValue({
+            sheetId: codeCell.sheetId,
+            x: codeCell.pos.x,
+            y: codeCell.pos.y,
+            language: 'AIResearcher',
+            codeString: getAIResearcherCodeString(query, refCell),
+            cursor: sheets.getCursorPosition(),
+          });
+        } else {
+          quadraticCore.setCodeCellValue({
+            sheetId,
+            x: pos.x,
+            y: pos.y,
+            codeString: editorContent ?? '',
+            language,
+            cursor: sheets.getCursorPosition(),
+          });
 
-        set(codeEditorDiffEditorContentAtom, undefined);
+          set(codeEditorDiffEditorContentAtom, undefined);
+        }
 
         mixpanel.track('[CodeEditor].cellRun', {
           type: getLanguage(codeCell.language),
