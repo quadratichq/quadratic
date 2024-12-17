@@ -13,6 +13,7 @@ import { GridLines } from '@/app/gridGL/UI/GridLines';
 import { HtmlPlaceholders } from '@/app/gridGL/UI/HtmlPlaceholders';
 import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
+import { UICopy } from '@/app/gridGL/UI/UICopy';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
@@ -66,6 +67,7 @@ export class PixiApp {
   imagePlaceholders!: Container;
   cellImages!: UICellImages;
   validations: UIValidations;
+  copy: UICopy;
 
   renderer!: Renderer;
   stage = new Container();
@@ -90,6 +92,7 @@ export class PixiApp {
     this.validations = new UIValidations();
     this.viewport = new Viewport();
     this.background = new Background();
+    this.copy = new UICopy();
   }
 
   init() {
@@ -154,6 +157,7 @@ export class PixiApp {
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.cellImages = this.viewportContents.addChild(this.cellImages);
+    this.copy = this.viewportContents.addChild(this.copy);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());

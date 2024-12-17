@@ -50,7 +50,13 @@ export function drawDashedRectangle(options: {
   }
 }
 
-export function drawDashedRectangleMarching(g: Graphics, color: number, startCell: Rectangle, march: number) {
+export function drawDashedRectangleMarching(
+  g: Graphics,
+  color: number,
+  startCell: Rectangle,
+  march: number,
+  noFill?: boolean
+) {
   const minX = startCell.x;
   const minY = startCell.y;
   const maxX = startCell.width + startCell.x;
@@ -61,11 +67,13 @@ export function drawDashedRectangleMarching(g: Graphics, color: number, startCel
   g.lineStyle({
     alignment: 0,
   });
-  g.moveTo(minX, minY);
-  g.beginFill(color, FILL_ALPHA);
-  g.drawRect(minX, minY, maxX - minX, maxY - minY);
-  g.endFill();
+  if (!noFill) {
+    g.beginFill(color, FILL_ALPHA);
+    g.drawRect(minX, minY, maxX - minX, maxY - minY);
+    g.endFill();
+  }
 
+  g.moveTo(minX, minY);
   g.lineStyle({
     width: CURSOR_THICKNESS,
     color,
