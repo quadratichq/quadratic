@@ -3,7 +3,10 @@ use std::str::FromStr;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::SheetId, Pos, Rect, SheetRect};
+use crate::{
+    grid::{JsCellsAccessed, SheetId},
+    Pos, Rect, SheetRect,
+};
 
 use super::{A1Selection, SheetNameIdMap};
 
@@ -302,6 +305,15 @@ impl JsSelection {
             Pos::new(x0 as i64, y0 as i64),
             Some(Pos::new(x1 as i64, y1 as i64)),
         );
+    }
+
+    #[wasm_bindgen(js_name = "toJsCellsAccessed")]
+    pub fn to_js_cells_accessed(&self) -> Result<JsValue, String> {
+        serde_wasm_bindgen::to_value(&JsCellsAccessed {
+            sheet_id: self.selection.sheet_id.to_string(),
+            ranges: self.selection.ranges.clone(),
+        })
+        .map_err(|e| e.to_string())
     }
 }
 
