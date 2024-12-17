@@ -154,7 +154,7 @@ impl CellRef {
     }
 
     /// Parses an A1-style cell reference relative to a given location.
-    pub fn parse_a1(s: &str, base: Pos) -> Option<CellRef> {
+    pub fn parse_a1(s: &str, mut base: Pos) -> Option<CellRef> {
         let (sheet, rest) = parse_sheet_name(s);
 
         lazy_static! {
@@ -176,6 +176,7 @@ impl CellRef {
         let mut col = crate::a1::column_from_name(column_name)? as i64;
         if col == 0 {
             col = UNBOUNDED;
+            base.x = 0;
         }
         let col_ref = match column_is_absolute {
             true => CellRefCoord::Absolute(col),
@@ -243,7 +244,7 @@ impl CellRefCoord {
     /// coordinate where evaluation is taking place.
     pub fn resolve_from(self, base: i64) -> i64 {
         match self {
-            CellRefCoord::Relative(delta) => base + delta,
+            CellRefCoord::Relative(delta) => i64::checked_add(base, delta).unwrap_or(UNBOUNDED),
             CellRefCoord::Absolute(coord) => coord,
         }
     }
@@ -258,21 +259,24 @@ impl CellRefCoord {
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a column coordinate.
     fn col_string(self, base: i64) -> String {
-        let col = crate::a1::column_name(self.resolve_from(base));
+        let resolved = self.resolve_from(base);
+        let col = match resolved {
+            UNBOUNDED => "".to_string(),
+            _ => crate::a1::column_name(resolved),
+        };
+
         format!("{}{col}", self.prefix())
     }
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a row coordinate.
     fn row_string(self, base: i64) -> String {
-        let row = self.resolve_from(base);
-        format!("{}{}", Self::remove_unbounded(row), self.prefix())
-    }
-    fn remove_unbounded(value: i64) -> String {
-        if value == UNBOUNDED {
-            return "".to_string();
-        }
+        let resolved = self.resolve_from(base);
+        let row = match resolved {
+            UNBOUNDED => "".to_string(),
+            _ => resolved.to_string(),
+        };
 
-        value.to_string()
+        format!("{row}{}", self.prefix())
     }
 
     /// Returns whether the coordinate is relative (i.e., no '$' prefix).
@@ -347,6 +351,21 @@ mod tests {
                 sheet: None,
                 x: CellRefCoord::Relative(0),
                 y: CellRefCoord::Relative(UNBOUNDED)
+            })
+        );
+    }
+
+    #[test]
+    #[parallel]
+    fn test_a1_row_parsing() {
+        let pos = CellRef::parse_a1("2", pos![A0]);
+
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: None,
+                x: CellRefCoord::Relative(UNBOUNDED),
+                y: CellRefCoord::Relative(2)
             })
         );
     }

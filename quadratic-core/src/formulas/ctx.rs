@@ -137,8 +137,14 @@ impl<'ctx> Ctx<'ctx> {
         let mut bounded_rect = rect.clone();
 
         if let Some(bounds) = bounds {
+            if bounded_rect.min.x == UNBOUNDED {
+                bounded_rect.min.x = bounds.first_column().unwrap_or(0);
+            }
             if bounded_rect.max.x == UNBOUNDED {
                 bounded_rect.max.x = bounds.last_column().unwrap_or(0);
+            }
+            if bounded_rect.min.y == UNBOUNDED {
+                bounded_rect.min.y = bounds.first_row().unwrap_or(0);
             }
             if bounded_rect.max.y == UNBOUNDED {
                 bounded_rect.max.y = bounds.last_row().unwrap_or(0);

@@ -304,7 +304,10 @@ impl Token {
             s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => Self::UnterminatedStringLiteral,
             s if s.eq_ignore_ascii_case("false") => Self::False,
             s if s.eq_ignore_ascii_case("true") => Self::True,
-            s if NUMERIC_LITERAL_REGEX.is_match(s) && !input_str[..start].ends_with(':') => {
+            s if NUMERIC_LITERAL_REGEX.is_match(s)
+                && !input_str[end..].starts_with(':')
+                && !input_str[..start].ends_with(':') =>
+            {
                 Self::NumericLiteral
             }
             s if INTERNAL_CELL_REFERENCE_REGEX.is_match(s) => Self::InternalCellRef,
