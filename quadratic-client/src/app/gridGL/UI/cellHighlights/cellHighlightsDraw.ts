@@ -4,7 +4,7 @@ import { getRangeScreenRectangleFromCellRefRange } from '@/app/gridGL/helpers/se
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { CellRefRange } from '@/app/quadratic-core-types';
-import { Graphics } from 'pixi.js';
+import { Graphics, Rectangle } from 'pixi.js';
 
 export function drawDashedRectangle(options: { g: Graphics; color: number; isSelected: boolean; range: CellRefRange }) {
   const { g, color, isSelected, range } = options;
@@ -57,37 +57,22 @@ export function drawDashedRectangle(options: { g: Graphics; color: number; isSel
   }
 }
 
-export function drawDashedRectangleMarching(options: {
-  g: Graphics;
-  color: number;
-  march: number;
-  range: CellRefRange;
-  alpha: number;
-  offset?: number;
-  noFill?: boolean;
-}) {
-  console.log('here?');
-  const { g, color, march, range, alpha, offset } = options;
+export function drawDashedRectangleMarching(
+  g: Graphics,
+  color: number,
+  startCell: Rectangle,
+  march: number,
+  noFill?: boolean,
+  alpha = 1
+) {
+  const minX = startCell.x;
+  const minY = startCell.y;
+  const maxX = startCell.width + startCell.x;
+  const maxY = startCell.y + startCell.height;
 
-  const selectionRect = getRangeScreenRectangleFromCellRefRange(range);
-  const bounds = pixiApp.viewport.getVisibleBounds();
-  if (!intersects.rectangleRectangle(selectionRect, bounds)) {
-    return;
+  if (!noFill) {
+    g.clear();
   }
-
-  let minX = selectionRect.left;
-  let minY = selectionRect.top;
-  let maxX = selectionRect.right;
-  let maxY = selectionRect.bottom;
-
-  if (offset) {
-    minY += offset;
-    minX += offset;
-    maxY -= offset;
-    maxX -= offset;
-  }
-
-  g.clear();
 
   g.lineStyle({
     alignment: 0,
@@ -104,6 +89,7 @@ export function drawDashedRectangleMarching(options: {
     width: CURSOR_THICKNESS,
     color,
     alignment: 0,
+    alpha,
   });
 
   const clamp = (n: number, min: number, max: number): number => {

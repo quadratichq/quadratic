@@ -70,7 +70,7 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
   if (matchShortcut(Action.CloseOverlay, event)) {
     // clear copy range if it is showing
     if (pixiApp.copy.isShowing()) {
-      pixiApp.copy.changeCopyRange();
+      pixiApp.copy.clearCopyRanges();
       return true;
     }
 
