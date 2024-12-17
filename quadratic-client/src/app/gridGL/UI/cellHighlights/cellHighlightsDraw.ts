@@ -55,14 +55,17 @@ export function drawDashedRectangleMarching(
   color: number,
   startCell: Rectangle,
   march: number,
-  noFill?: boolean
+  noFill?: boolean,
+  alpha = 1
 ) {
   const minX = startCell.x;
   const minY = startCell.y;
   const maxX = startCell.width + startCell.x;
   const maxY = startCell.y + startCell.height;
 
-  g.clear();
+  if (!noFill) {
+    g.clear();
+  }
 
   g.lineStyle({
     alignment: 0,
@@ -78,6 +81,7 @@ export function drawDashedRectangleMarching(
     width: CURSOR_THICKNESS,
     color,
     alignment: 0,
+    alpha,
   });
 
   const clamp = (n: number, min: number, max: number): number => {

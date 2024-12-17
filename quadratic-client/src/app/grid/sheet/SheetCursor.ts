@@ -6,7 +6,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
+import { A1Selection, CellRefRange, JsCoordinate } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -289,16 +289,13 @@ export class SheetCursor {
     }
   }
 
-  getCopyRange(): RefRangeBounds | undefined {
+  getRanges(): CellRefRange[] {
     const rangesStringified = this.jsSelection.getRanges();
     try {
-      const ranges = JSON.parse(rangesStringified);
-      if (ranges) {
-        if (ranges.length !== 1) return;
-        return ranges[0]?.range;
-      }
+      return JSON.parse(rangesStringified);
     } catch (e) {
       console.error(e);
+      return [];
     }
   }
 }
