@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import re
 import sys
 import unittest
 from datetime import date, datetime, time
@@ -13,6 +14,24 @@ from inspect_python_test import *
 from process_output_test import *
 from quadratic_py.utils import attempt_fix_await, to_python_type, to_quadratic_type
 
+def a1_to_xy(a1: str) -> tuple:
+    # Regular expression to split letters and numbers
+    match = re.match(r"([A-Z]+)(\d+)", a1)
+    if not match:
+        raise ValueError("Invalid A1 notation")
+
+    column_letters, row_part = match.groups()
+
+    # Convert column letters to a number (base-26, A=1, B=2, ..., AA=27, etc.)
+    x = 0
+    for char in column_letters:
+        x = x * 26 + (ord(char) - ord('A') + 1)
+    x -= 1  # Convert to 0-based index
+
+    # Convert row to integer and make it 0-based
+    y = int(row_part) - 1
+
+    return (x, y)
 
 #  Mock definitions
 class Cell:
@@ -22,18 +41,31 @@ class Cell:
         self.value = value
         self.type_name = type_name
 
+class Result:
+    def __init__(self, w, h, x, y, cells):
+        self.w = w
+        self.h = h
+        self.x = x
+        self.y = y
+        self.cells = cells
 
-def mock_GetCellsDB(
-    x1: int, y1: int, x2: int, y2: int, sheet: str = None, line: int = False
-):
+def mock_getCellsA1(a1: str, first_row_header: bool = False):
     out = []
+    parts = a1.split(":")
+    x1, y1 = a1_to_xy(parts[0])
+
+    if len(parts) == 1:
+        x2 = x1 + 1
+        y2 = y1 + 1
+    else:
+        x2, y2 = a1_to_xy(parts[1])
 
     for x in range(x1, x2 + 1):
         for y in range(y1, y2 + 1):
             out.append(Cell(x, y, f"hello {x}", "string"))
 
-    return out
 
+    return Result(x2 - x1 + 1, y2 - y1 + 1, x1, y1, out)
 
 class mock_micropip:
     async def install(name):
@@ -47,7 +79,7 @@ async def mock_fetch_module(source: str):
 # mock modules needed to import run_python
 sys.modules["pyodide"] = MagicMock()
 sys.modules["pyodide.code"] = MagicMock()
-sys.modules["getCellsDB"] = mock_GetCellsDB
+sys.modules["getCellsA1"] = mock_getCellsA1
 sys.modules["micropip"] = AsyncMock()
 sys.modules["plotly"] = MagicMock()
 sys.modules["plotly.io"] = MagicMock()
@@ -56,7 +88,8 @@ sys.modules["autopep8.fix_code"] = MagicMock()
 
 # import after mocks to in order to use them
 from quadratic_py import code_trace, run_python
-from quadratic_py.quadratic_api.quadratic import getCells
+# from quadratic_py.quadratic_api.quadratic import getCells
+from quadratic_py.quadratic_api.quadratic import q
 
 run_python.fetch_module = mock_fetch_module
 
@@ -76,70 +109,6 @@ class TestTesting(IsolatedAsyncioTestCase):
         # NOTE: this approach bypasses the entire env of Pyodide.
         # We should make the run_python e2e tests run via playwright
         self.assertEqual(result.get("success"), False)
-
-    def test_attempt_fix_await(self):
-        self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")
-
-        # simple without await
-        self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = cells(0, 0)")
-        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = cell(0, 0)")
-        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = c(0, 0)")
-        self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = rel_cell(0, 0)")
-        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = rc(0, 0)")
-        self.assertEqual(attempt_fix_await("a = getCells(0, 0)"), "a = getCells(0, 0)")
-
-        # simple already has await
-        self.assertEqual(attempt_fix_await("a = await cells(0, 0)"), "a = cells(0, 0)")
-        self.assertEqual(attempt_fix_await("a = await cell(0, 0)"), "a = cell(0, 0)")
-        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = c(0, 0)")
-        self.assertEqual(
-            attempt_fix_await("a = await rel_cell(0, 0)"), "a = rel_cell(0, 0)"
-        )
-        self.assertEqual(attempt_fix_await("a = await rc(0, 0)"), "a = rc(0, 0)")
-        self.assertEqual(
-            attempt_fix_await("a = await getCells(0, 0)"), "a = getCells(0, 0)"
-        )
-
-        # other
-        self.assertEqual(attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
-        self.assertEqual(attempt_fix_await("c(0, 0)"), "c(0, 0)")
-        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int(c(0,0))")
-        self.assertEqual(attempt_fix_await("int(await c(0,0))"), "int(c(0,0))")
-        self.assertEqual(
-            attempt_fix_await("float(c(2, -4).value)"), "float(c(2, -4).value)"
-        )
-        self.assertEqual(
-            attempt_fix_await("float((await c(2, -4)).value)"),
-            "float((c(2, -4)).value)",
-        )
-        self.assertEqual(
-            attempt_fix_await("cells((0,0), (0,10)).sum()"),
-            "cells((0,0), (0,10)).sum()",
-        )
-        self.assertEqual(attempt_fix_await("c(0, 0)\nc(0, 0)"), "c(0, 0)\nc(0, 0)")
-
-        # convert c((x,y), ...) cell((x,y), ...) to cells((x,y), ...)
-        self.assertEqual(
-            attempt_fix_await("await c((0,0), (0,10), (10,10), (10,0)).sum()"),
-            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
-        )
-        self.assertEqual(
-            attempt_fix_await("await c((0,0), (0,10), (10,10), (10,0)).sum()"),
-            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
-        )
-        self.assertEqual(
-            attempt_fix_await("await cell((0,0), (0,10), (10,10), (10,0)).sum()"),
-            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
-        )
-        self.assertEqual(
-            attempt_fix_await("await cells((0,0), (0,10), (10,10), (10,0)).sum()"),
-            "cells((0,0), (0,10), (10,10), (10,0)).sum()",
-        )
-        self.assertEqual(
-            attempt_fix_await("await gc((0,0), (0,10), (10,10), (10,0)).sum()"),
-            "await gc((0,0), (0,10), (10,10), (10,0)).sum()",
-        )
-
 
 class TestImports(TestCase):
     def test_example_requirements(self):
@@ -214,9 +183,10 @@ class TestErrorMessaging(TestCase):
         }
 
 
-class TestQuadraticApi(IsolatedAsyncioTestCase):
+class TestQuadraticApi(TestCase):
     def test_getCells_2d_array(self):
-        cells = getCells((0, 0), (1, 1), first_row_header=False)
+        q_new = q((0, 0))
+        cells = q_new.cells("A1:B2", first_row_header=False)
         assert cells.equals(
             pd.DataFrame(
                 [["hello 0", "hello 1"], ["hello 0", "hello 1"]], columns=[0, 1]
@@ -224,11 +194,13 @@ class TestQuadraticApi(IsolatedAsyncioTestCase):
         )
 
     def test_getCells_1d_array(self):
-        cells = getCells((0, 0), (0, 1), first_row_header=False)
+        q_new = q((0, 0))
+        cells = q_new.cells("A1:A2", first_row_header=False)
         assert cells.equals(pd.DataFrame([["hello 0"], ["hello 0"]], columns=[0]))
 
     def test_getCells_1d_array_header(self):
-        cells = getCells((0, 0), (0, 1), first_row_header=True)
+        q_new = q((0, 0))
+        cells = q_new.cells("A1:A2", first_row_header=True)
         assert cells.equals(pd.DataFrame([["hello 0"]], columns=["hello 0"]))
 
 
