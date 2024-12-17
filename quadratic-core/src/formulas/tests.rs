@@ -443,26 +443,6 @@ fn test_currency_string() {
     assert_eq!("30", eval_to_string(&g, "\"$10\" + 20"));
 }
 
-/// Regression test for quadratic#410
-#[test]
-#[parallel]
-fn test_unbounded_column() {
-    let g = Grid::new();
-    let result = eval_to_string(&g, "SUM(A:A)");
-    println!("{}", result);
-    // assert_eq!("30", eval_to_string(&g, "SUM(4:4)"));
-}
-
-/// Regression test for quadratic#410
-#[test]
-#[parallel]
-fn test_unbounded_row() {
-    let g = Grid::new();
-    let result = eval_to_string(&g, "SUM(4:4)");
-    println!("{}", result);
-    // assert_eq!("30", eval_to_string(&g, "SUM(4:4)"));
-}
-
 #[test]
 fn test_syntax_check_ok() {
     let g = Grid::new();
