@@ -8,12 +8,13 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const AIResearcherRefCell = () => {
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
   const [refCell, setRefCell] = useRecoilState(aiResearcherRefCellAtom);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const insertCellRef = useCallback(() => {
     setRefCell(sheets.getA1String(codeCell.sheetId));
@@ -54,14 +55,35 @@ export const AIResearcherRefCell = () => {
   }, [codeCell.pos.x, codeCell.pos.y, codeCell.sheetId]);
 
   return (
-    <div className="m-2 flex items-center gap-2 rounded-md border-t border-border p-2 text-sm">
+    <div
+      className="m-2 flex items-center gap-2 rounded-md border-t border-border p-2 text-sm"
+      onClick={(e) => {
+        if (disabled) {
+          e.stopPropagation();
+          inputRef.current?.focus();
+        }
+      }}
+    >
       <span className="whitespace-nowrap text-muted-foreground">Cell data:</span>
 
-      <Input className="w-min" value={refCell} onChange={(e) => setRefCell(e.target.value)} />
+      <Input
+        ref={inputRef}
+        className="w-min"
+        value={refCell}
+        onChange={(e) => setRefCell(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+      />
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button size="icon" disabled={disabled} onClick={insertCellRef}>
+          <Button
+            size="icon"
+            disabled={disabled}
+            onClick={(e) => {
+              e.stopPropagation();
+              insertCellRef();
+            }}
+          >
             <HighlightAltIcon />
           </Button>
         </TooltipTrigger>
