@@ -119,7 +119,7 @@ export function HoverCell() {
               setText(<HoverCellRunError codeCell={codeCell} onClick={hideHoverCell} />);
             }
           } else if (language === 'AIResearcher') {
-            setOnlyCode(false);
+            setOnlyCode(true);
             if (codeCell) {
               setText(<HoverCellAIResearcherResult codeCell={codeCell} onClick={hideHoverCell} />);
             }
@@ -188,7 +188,7 @@ export function HoverCell() {
   }, []);
   const { top, left } = usePositionCellMessage({ div, offsets });
 
-  if (loading || !text) {
+  if (loading || !text || !(!onlyCode || showCodePeek)) {
     return null;
   }
 
@@ -203,7 +203,6 @@ export function HoverCell() {
       style={{
         top,
         left,
-        visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden',
         transition: delay ? `opacity 150ms linear ${HOVER_CELL_FADE_IN_OUT_DELAY}ms` : 'opacity 150ms linear',
         transformOrigin: `0 0`,
         transform: `scale(${1 / pixiApp.viewport.scale.x})`,
