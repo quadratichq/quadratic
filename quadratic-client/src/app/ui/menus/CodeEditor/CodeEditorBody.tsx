@@ -17,7 +17,6 @@ import { CodeEditorPlaceholder } from '@/app/ui/menus/CodeEditor/CodeEditorPlace
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { useEditorCellHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
-import { useEditorOnSelectionChange } from '@/app/ui/menus/CodeEditor/hooks/useEditorOnSelectionChange';
 import { useEditorReturn } from '@/app/ui/menus/CodeEditor/hooks/useEditorReturn';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import {
@@ -71,7 +70,6 @@ export const CodeEditorBody = (props: CodeEditorBodyProps) => {
   const [isValidRef, setIsValidRef] = useState(false);
   const [monacoInst, setMonacoInst] = useState<Monaco | null>(null);
   useEditorCellHighlights(isValidRef, editorInst, monacoInst);
-  useEditorOnSelectionChange(isValidRef, editorInst, monacoInst);
   useEditorReturn(isValidRef, editorInst, monacoInst);
 
   const { closeEditor } = useCloseCodeEditor({

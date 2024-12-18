@@ -510,6 +510,7 @@ mod tests {
                 y: 1,
                 w: 1,
                 h: 1,
+                two_dimensional: false,
             })
         );
         // pending cal

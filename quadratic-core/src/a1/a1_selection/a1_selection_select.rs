@@ -475,7 +475,7 @@ mod tests {
     fn test_select_row() {
         let mut selection = A1Selection::test_a1("A1");
         selection.select_row(2, false, false, false, 1);
-        assert_eq!(selection.test_to_string(), "2");
+        assert_eq!(selection.test_to_string(), "A2:2");
     }
 
     #[test]

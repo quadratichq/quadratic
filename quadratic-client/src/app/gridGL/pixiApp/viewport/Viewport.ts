@@ -213,8 +213,12 @@ export class Viewport extends PixiViewport {
       if (!this.snapState) {
         const headings = pixiApp.headings.headingSize;
         if (this.x > headings.width || this.y > headings.height) {
-          this.snapTimeout = Date.now();
-          this.snapState = 'waiting';
+          if (pixiApp.momentumDetector.hasMomentumScroll()) {
+            this.startSnap();
+          } else {
+            this.snapTimeout = Date.now();
+            this.snapState = 'waiting';
+          }
         }
       } else if (this.snapState === 'waiting' && this.snapTimeout) {
         if (Date.now() - this.snapTimeout > WAIT_TO_SNAP_TIME) {

@@ -204,13 +204,13 @@ impl CellRef {
     }
 
     // replace unbounded values with the given value
-    pub fn replace_unbounded(&mut self, value: i64) {
+    pub fn replace_unbounded(&mut self, value: i64, pos: Pos) {
         // TODO(ddimaria): the -1 is a hack, replace after testing
-        if self.x.get_value() == UNBOUNDED || self.x.get_value() == UNBOUNDED - 1 {
+        if self.x.get_value(pos.x) == UNBOUNDED {
             self.x.replace_value(value);
         }
         // TODO(ddimaria): the -1 is a hack, replace after testing
-        if self.y.get_value() == UNBOUNDED || self.y.get_value() == UNBOUNDED - 1 {
+        if self.y.get_value(pos.y) == UNBOUNDED {
             self.y.replace_value(value);
         }
     }
@@ -290,15 +290,15 @@ impl CellRefCoord {
 
         format!("{}{row}", self.prefix())
     }
-    pub fn get_value(self) -> i64 {
+    pub fn get_value(self, base: i64) -> i64 {
         match self {
-            CellRefCoord::Relative(delta) => delta,
+            CellRefCoord::Relative(delta) => delta.saturating_add(base),
             CellRefCoord::Absolute(coord) => coord,
         }
     }
     pub fn replace_value(&mut self, value: i64) {
         *self = match self {
-            CellRefCoord::Relative(_) => Self::Relative(value),
+            CellRefCoord::Relative(_) => Self::Absolute(value),
             CellRefCoord::Absolute(_) => Self::Absolute(value),
         };
     }

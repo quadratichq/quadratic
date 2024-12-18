@@ -23,6 +23,7 @@ import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
+import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetector';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
@@ -70,6 +71,7 @@ export class PixiApp {
   copy: UICopy;
 
   renderer!: Renderer;
+  momentumDetector: MomentumScrollDetector;
   stage = new Container();
   loading = true;
   destroyed = false;
@@ -92,6 +94,7 @@ export class PixiApp {
     this.validations = new UIValidations();
     this.viewport = new Viewport();
     this.background = new Background();
+    this.momentumDetector = new MomentumScrollDetector();
     this.copy = new UICopy();
   }
 

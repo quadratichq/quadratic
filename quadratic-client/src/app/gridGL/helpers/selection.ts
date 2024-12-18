@@ -5,8 +5,10 @@ import { Rectangle } from 'pixi.js';
 // returns rectangle representing the range in col/row coordinates
 export function getRangeRectangleFromCellRefRange({ range }: CellRefRange): Rectangle {
   const { col, row } = range.start;
-  const startCol = Number(col.coord);
-  const startRow = Number(row.coord);
+  let startCol = Number(col.coord);
+  if (startCol === -1) startCol = 1;
+  let startRow = Number(row.coord);
+  if (startRow === -1) startRow = 1;
 
   const end = range.end;
   let endCol = Number(end.col.coord);

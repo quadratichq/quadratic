@@ -49,7 +49,6 @@ export class Update {
       this.raf = requestAnimationFrame(this.update);
       return;
     }
-
     pixiApp.viewport.updateViewport();
 
     let rendererDirty =
