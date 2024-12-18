@@ -1,7 +1,9 @@
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::{controller::GridController, error_core::CoreError, RunError, RunErrorMsg};
+use crate::{
+    controller::GridController, error_core::CoreError, CellRefRange, RunError, RunErrorMsg,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -11,6 +13,7 @@ pub struct CellA1Response {
     pub y: i64,
     pub w: i64,
     pub h: i64,
+    pub two_dimensional: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
@@ -129,6 +132,19 @@ impl GridController {
         });
 
         let response = if let Some(rect) = rects.first() {
+            // cases for forced two-dimensional get_cells:
+            // 1. rect.width > 1
+            // 2. any range where end.col is unbounded
+            let two_dimensional = if rect.width() > 1 {
+                true
+            } else if let Some(range) = selection.ranges.first() {
+                match range {
+                    CellRefRange::Sheet { range } => range.end.col.is_unbounded(),
+                }
+            } else {
+                false
+            };
+
             let cells = sheet.get_cells_response(*rect);
             CellA1Response {
                 cells,
@@ -136,6 +152,7 @@ impl GridController {
                 y: rect.min.y,
                 w: rect.width() as i64,
                 h: rect.height() as i64,
+                two_dimensional,
             }
         } else {
             CellA1Response {
@@ -144,6 +161,7 @@ impl GridController {
                 y: 1,
                 w: 0,
                 h: 0,
+                two_dimensional: false,
             }
         };
 
@@ -154,13 +172,12 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
     use super::*;
     use crate::{grid::CodeCellLanguage, Pos, Rect, SheetPos};
-    use serial_test::parallel;
 
     #[test]
-    #[parallel]
     fn test_calculation_get_cells_bad_transaction_id() {
         let mut gc = GridController::test();
 
@@ -170,7 +187,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_calculation_get_cells_no_transaction() {
         let mut gc = GridController::test();
 
@@ -180,7 +196,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_calculation_get_cells_transaction_but_no_current_sheet_pos() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -203,7 +218,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_calculation_get_cells_sheet_name_not_found() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -238,7 +252,6 @@ mod test {
     // This was previously disallowed. It is now allowed to unlock appending results.
     // Leaving in some commented out code in case we want to revert this behavior.
     #[test]
-    #[parallel]
     fn test_calculation_get_cells_self_reference() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -284,7 +297,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_calculation_get_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -325,13 +337,13 @@ mod test {
                 x: 1,
                 y: 1,
                 w: 1,
-                h: 1
+                h: 1,
+                two_dimensional: false,
             })
         );
     }
 
     #[test]
-    #[parallel]
     fn calculation_get_cells_with_no_y1() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -426,13 +438,13 @@ mod test {
                 x: 1,
                 y: 1,
                 w: 1,
-                h: 5
+                h: 5,
+                two_dimensional: false,
             })
         );
     }
 
     #[test]
-    #[parallel]
     fn calculation_get_cells_a1() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -468,7 +480,50 @@ mod test {
                 x: 1,
                 y: 1,
                 w: 1,
-                h: 1
+                h: 1,
+                two_dimensional: false,
+            })
+        );
+    }
+
+    #[test]
+    fn calculation_get_cells_a1_two_dimensional() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(
+            SheetPos {
+                x: 2,
+                y: 1,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+        );
+
+        gc.set_code_cell(
+            SheetPos::new(sheet_id, 1, 1),
+            CodeCellLanguage::Python,
+            "".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string(), None);
+        assert_eq!(
+            result,
+            Ok(CellA1Response {
+                cells: vec![JsGetCellResponse {
+                    x: 2,
+                    y: 1,
+                    value: "test".into(),
+                    type_name: "text".into()
+                }],
+                x: 2,
+                y: 1,
+                w: 1,
+                h: 1,
+                two_dimensional: true,
             })
         );
     }
