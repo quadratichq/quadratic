@@ -148,6 +148,7 @@ This name should be from user's perspective, not the assistant's.\n
     description: `
 Sets the values of the currently open sheet cells to a 2d array of strings, requires the top left cell position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
 Use set_cell_values function to add data to the currently open sheet. Don't use code cell for adding data. Always add data using this function.\n
+If requirement is to add factual data to the currently open sheet, use set_ai_researcher_value tool instead.\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the currently open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
@@ -196,6 +197,7 @@ To clear the values of a cell, set the value to an empty string.\n
     prompt: `
 You should use the set_cell_values function to set the values of the currently open sheet cells to a 2d array of strings.\n
 Use this function to add data to the currently open sheet. Don't use code cell for adding data. Always add data using this function.\n
+If requirement is to add factual data to the currently open sheet, use set_ai_researcher_value tool instead.\n
 This function requires the top left cell position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
@@ -207,6 +209,7 @@ To clear the values of a cell, set the value to an empty string.\n
 Sets the value of a code cell and run it in the currently open sheet, requires the cell position (in a1 notation), codeString and language\n
 You should use the set_code_cell_value function to set this code cell value. Use this function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add static data to the currently open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
+If requirement is to add factual data to the currently open sheet, use set_ai_researcher_value tool instead.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
 `,
     parameters: {
@@ -272,6 +275,7 @@ Always refer to the data from cell by its position in a1 notation from respectiv
     prompt: `
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not a code. Don't add data to the currently open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to a code.\n
+If requirement is to add factual data to the currently open sheet, use set_ai_researcher_value tool instead.\n
 set_code_cell_value function requires language, codeString, the cell position (single cell in a1 notation) and the width and height of the code output on running this Code in the currently open sheet.\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
 The required location code_cell_position for this code cell is one which satisfies the following conditions:\n
@@ -296,6 +300,7 @@ AI researcher is a tool that can browse the internet and search for information 
 Use set_ai_researcher_value tool when the task requires information from the internet to better answer the query.\n
 AI researcher can process a query for multiple cells at once and return a 2d array of strings, where each sub array represents a row of values. Use multiple set_ai_researcher_value tool calls if the query is different for different tasks / cells.\n
 Return only the result of the query, don't return any other text, headers or code. If not sure of the result, return UNKNOWN as string value. Never make up a result, return only the result of the query based on the reference cells and search results provided.\n
+Always try to combine getting results for multiple cells is the query is the same for multiple cells. Use multiple set_ai_researcher_value tool calls if the query is different for different tasks / cells.\n
 `,
     parameters: {
       type: 'object',

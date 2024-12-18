@@ -318,7 +318,7 @@ function HoverCellAIResearcherResult({ codeCell: codeCellCore }: { codeCell: JsC
       <div className="mt-1 flex flex-col gap-2">
         <div className="flex flex-row justify-between gap-2">
           <span>Confidence:</span>
-          <span className="font-bold">{aiResearcherResult.toolCallArgs.confidence_score * 100}%</span>
+          <span className="font-bold">{Math.round(aiResearcherResult.toolCallArgs.confidence_score * 100)}%</span>
         </div>
 
         <div className="flex flex-row justify-between gap-2">

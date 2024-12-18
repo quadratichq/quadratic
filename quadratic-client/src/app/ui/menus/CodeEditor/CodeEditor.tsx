@@ -59,9 +59,6 @@ export const CodeEditor = () => {
             onCopy={(e) => e.stopPropagation()}
             onCut={(e) => e.stopPropagation()}
             onPaste={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              textareaRef.current?.focus();
-            }}
           >
             <div
               id="QuadraticCodeEditorID"

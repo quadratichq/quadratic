@@ -10,13 +10,13 @@ export function useAIResearcherMessagePrompt() {
       refCellValues,
       sheetPos,
       cellsAccessedValues,
-      exaResult,
+      exaResults,
     }: {
       query: string;
       refCellValues: string;
       sheetPos: SheetPos;
       cellsAccessedValues: JsCellValuePos[][][];
-      exaResult?: ExaSearchResult[];
+      exaResults?: ExaSearchResult[];
     }): UserMessagePrompt => {
       return {
         role: 'user',
@@ -47,34 +47,33 @@ ${JSON.stringify(cellsAccessedValues)}
 \`\`\`
 
 ${
-  exaResult
+  exaResults
     ? `
-I have done a search and I am providing you with the results as an array of objects, having the following properties:
-- title: The title of the search result.
-- url: The url of the search result.
-- publishedDate: The published date of the search result, if available.
-- author: The author of the search result, if available.
-- score: Similarity score between query/url and result. Higher score means more relevant to the query, if available.
-- text: The text of the search result, if available.
-- highlights: The highlights of the search result, if available.
-- summary: The summary of the search result, if available.
-  
-You should use the following search results to answer the query:\n
-\`\`\`json
-${JSON.stringify(exaResult, null, 2)}
-\`\`\`
+I have done a search and the results are as follows, you should use the following search results to answer the query:\n
+${exaResults.map(
+  (result, index) => `
+### Result ${index + 1}
+- **Title**: ${result.title}
+- **URL**: ${result.url}
+${result.publishedDate ? `- **Published**: ${result.publishedDate}` : ''}
+${result.author ? `- **Author**: ${result.author}` : ''}
+${result.score !== null && result.score !== undefined ? `- **Score**: ${result.score}` : ''}
+${result.text ? `- **Text**: ${result.text}` : ''}
+${result.highlights?.length ? '**Highlights**:\n' + result.highlights.map((h) => `> ${h}`).join('\n\n') : ''}
+${result.summary ? `**Summary**: \n\n ${result.summary}` : ''}
+---
+`
+)}
+`
+    : ''
+}
 
 AI Researcher cell is at the following position in the spreadsheet:
 \`\`\`plaintext
 ${xyToA1(Number(sheetPos.x), Number(sheetPos.y))}
 \`\`\`
 This will be the top left cell of the values returned by you, the AI Researcher.
-  `
-    : ''
-}
-
- 
-  `,
+`,
         contextType: 'userPrompt',
       };
     },

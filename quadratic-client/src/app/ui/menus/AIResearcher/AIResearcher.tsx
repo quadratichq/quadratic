@@ -21,7 +21,12 @@ export const AIResearcher = ({ textareaRef }: AIResearcherProps) => {
   }
 
   return (
-    <div className="flex h-full w-full flex-col justify-between">
+    <div
+      className="flex h-full w-full flex-col justify-between"
+      onClick={() => {
+        textareaRef.current?.focus();
+      }}
+    >
       <AIResearcherUserMessageForm textareaRef={textareaRef} />
       <div className="shrink-0">
         <AIResearcherRefCell />

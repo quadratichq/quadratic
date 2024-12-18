@@ -84,7 +84,7 @@ export function useSubmitAIResearcherPrompt() {
           refCellValues,
           sheetPos,
           cellsAccessedValues,
-          exaResult: exaResponse.content?.results,
+          exaResults: exaResponse.content?.results,
         });
 
         const chatMessages: ChatMessage[] = [...quadraticContext, aiResearcherMessagePrompt];
