@@ -173,6 +173,7 @@ impl Sheet {
                 columns_to_update.push(*col);
             }
         }
+        columns_to_update.sort_by(|a, b| a.cmp(b));
         for col in columns_to_update {
             if let Some(mut column_data) = self.columns.remove(&col) {
                 column_data.x -= 1;
@@ -187,6 +188,7 @@ impl Sheet {
                 code_runs_to_move.push(*pos);
             }
         }
+        code_runs_to_move.sort_by(|a, b| a.x.cmp(&b.x));
         for old_pos in code_runs_to_move {
             let new_pos = Pos {
                 x: old_pos.x - 1,
@@ -244,7 +246,7 @@ impl Sheet {
                 columns_to_update.push(*col);
             }
         }
-        columns_to_update.reverse();
+        columns_to_update.sort_by(|a, b| b.cmp(a));
         for col in columns_to_update {
             if let Some(mut column_data) = self.columns.remove(&col) {
                 column_data.x += 1;
@@ -259,7 +261,7 @@ impl Sheet {
                 code_runs_to_move.push(*pos);
             }
         }
-        code_runs_to_move.reverse();
+        code_runs_to_move.sort_by(|a, b| b.x.cmp(&a.x));
         for old_pos in code_runs_to_move {
             let new_pos = Pos {
                 x: old_pos.x + 1,
