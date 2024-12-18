@@ -49,17 +49,15 @@ impl fmt::Display for RefRangeBounds {
                 write!(f, "A")?;
                 self.start.row.fmt_as_row(f)?;
                 write!(f, ":")?;
+            } else if self.start.row() == self.end.row() {
+                write!(f, "A")?;
+                self.start.row.fmt_as_row(f)?;
+                write!(f, ":")?;
+                self.start.row.fmt_as_row(f)?;
             } else {
-                if self.start.row() == self.end.row() {
-                    write!(f, "A")?;
-                    self.start.row.fmt_as_row(f)?;
-                    write!(f, ":")?;
-                    self.start.row.fmt_as_row(f)?;
-                } else {
-                    self.start.row.fmt_as_row(f)?;
-                    write!(f, ":")?;
-                    self.end.row.fmt_as_row(f)?;
-                }
+                self.start.row.fmt_as_row(f)?;
+                write!(f, ":")?;
+                self.end.row.fmt_as_row(f)?;
             }
         } else {
             write!(f, "{}", self.start)?;

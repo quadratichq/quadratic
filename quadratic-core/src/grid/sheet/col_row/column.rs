@@ -173,7 +173,7 @@ impl Sheet {
                 columns_to_update.push(*col);
             }
         }
-        columns_to_update.sort_by(|a, b| a.cmp(b));
+        columns_to_update.sort();
         for col in columns_to_update {
             if let Some(mut column_data) = self.columns.remove(&col) {
                 column_data.x -= 1;
