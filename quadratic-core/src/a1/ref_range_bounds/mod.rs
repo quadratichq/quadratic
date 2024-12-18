@@ -41,12 +41,25 @@ impl fmt::Display for RefRangeBounds {
                 self.end.col.fmt_as_column(f)?;
             }
         } else if self.is_row_range() {
-            if self.start.row() == self.end.row() {
-                self.start.row.fmt_as_row(f)?;
-            } else {
+            // handle special case of An: (show as An: instead of n:)
+            if self.end.col.is_unbounded()
+                && self.end.row.is_unbounded()
+                && self.start.col.coord == 1
+            {
+                write!(f, "A")?;
                 self.start.row.fmt_as_row(f)?;
                 write!(f, ":")?;
-                self.end.row.fmt_as_row(f)?;
+            } else {
+                if self.start.row() == self.end.row() {
+                    write!(f, "A")?;
+                    self.start.row.fmt_as_row(f)?;
+                    write!(f, ":")?;
+                    self.start.row.fmt_as_row(f)?;
+                } else {
+                    self.start.row.fmt_as_row(f)?;
+                    write!(f, ":")?;
+                    self.end.row.fmt_as_row(f)?;
+                }
             }
         } else {
             write!(f, "{}", self.start)?;
@@ -166,5 +179,20 @@ mod tests {
         assert_eq!(range.start.row.coord, 1);
         assert_eq!(range.end.col.coord, 2);
         assert!(range.end.row.is_unbounded());
+    }
+
+    #[test]
+    fn test_display_row_range() {
+        let range = RefRangeBounds::new_infinite_row(1);
+        assert_eq!(range.to_string(), "A1:1");
+
+        let range = RefRangeBounds::new_infinite_rows(1, 2);
+        assert_eq!(range.to_string(), "1:2");
+    }
+
+    #[test]
+    fn test_display_infinite_a_n() {
+        let range = RefRangeBounds::test_a1("15:");
+        assert_eq!(range.to_string(), "A15:");
     }
 }
