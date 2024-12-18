@@ -123,6 +123,9 @@ export class PointerHeading {
         const left = sheets.sheet.getColumnFromScreen(bounds.left);
         cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
       }
+      if (isRightClick) {
+        setTimeout(() => events.emit('gridContextMenu', world, intersects.column, intersects.row));
+      }
     }
 
     return true;
