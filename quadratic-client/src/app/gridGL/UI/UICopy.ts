@@ -30,6 +30,7 @@ export class UICopy extends Graphics {
 
   destroy() {
     events.off('changeSheet', this.updateNextTick);
+    events.off('viewportChanged', this.updateNextTick);
     events.off('transactionStart', this.clearCopyRanges);
     super.destroy();
   }
