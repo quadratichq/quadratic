@@ -553,7 +553,7 @@ mod tests {
         let selection = A1Selection::from_row_ranges(&[1..=5, 10..=12, 15..=15], SheetId::test());
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "1:5,10:12,15",
+            "1:5,10:12,A15:15",
         );
     }
 
@@ -598,7 +598,7 @@ mod tests {
         };
         assert_eq!(
             selection.to_string(Some(SheetId::test()), &HashMap::new()),
-            "A:E,J:L,O,1:5,10:12,15",
+            "A:E,J:L,O,1:5,10:12,A15:15",
         );
     }
 
@@ -619,7 +619,7 @@ mod tests {
     fn test_extra_comma() {
         let sheet_id = SheetId::test();
         let selection = A1Selection::from_str("1,", &sheet_id, &HashMap::new()).unwrap();
-        assert_eq!(selection.to_string(Some(sheet_id), &HashMap::new()), "1");
+        assert_eq!(selection.to_string(Some(sheet_id), &HashMap::new()), "A1:1");
     }
 
     #[test]

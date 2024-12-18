@@ -25,7 +25,7 @@ class RenderWebWorker {
     this.worker.onerror = (e) => console.warn(`[render.worker] error: ${e.message}`, e);
   }
 
-  async init(coreMessagePort: MessagePort) {
+  init(coreMessagePort: MessagePort) {
     if (!this.worker) {
       throw new Error('Expected worker to be initialized in renderWebWorker.init');
     }

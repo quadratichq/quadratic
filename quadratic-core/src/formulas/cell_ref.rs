@@ -150,6 +150,7 @@ impl CellRef {
         };
         let col = self.x.col_string(base.x);
         let row = self.y.row_string(base.y);
+
         format!("{sheet_str}{col}{row}")
     }
 
@@ -182,7 +183,6 @@ impl CellRef {
             true => CellRefCoord::Absolute(col),
             false => CellRefCoord::Relative(col - base.x),
         };
-
         let row_is_absolute = !captures[3].is_empty();
         let row_is_negative = !captures[4].is_empty();
         let mut row = captures.get(5).map_or(UNBOUNDED, |m| {
@@ -201,6 +201,18 @@ impl CellRef {
             x: col_ref,
             y: row_ref,
         })
+    }
+
+    // replace unbounded values with the given value
+    pub fn replace_unbounded(&mut self, value: i64, pos: Pos) {
+        // TODO(ddimaria): the -1 is a hack, replace after testing
+        if self.x.get_value(pos.x) == UNBOUNDED {
+            self.x.replace_value(value);
+        }
+        // TODO(ddimaria): the -1 is a hack, replace after testing
+        if self.y.get_value(pos.y) == UNBOUNDED {
+            self.y.replace_value(value);
+        }
     }
 }
 
@@ -276,7 +288,19 @@ impl CellRefCoord {
             _ => resolved.to_string(),
         };
 
-        format!("{row}{}", self.prefix())
+        format!("{}{row}", self.prefix())
+    }
+    pub fn get_value(self, base: i64) -> i64 {
+        match self {
+            CellRefCoord::Relative(delta) => delta.saturating_add(base),
+            CellRefCoord::Absolute(coord) => coord,
+        }
+    }
+    pub fn replace_value(&mut self, value: i64) {
+        *self = match self {
+            CellRefCoord::Relative(_) => Self::Absolute(value),
+            CellRefCoord::Absolute(_) => Self::Absolute(value),
+        };
     }
 
     /// Returns whether the coordinate is relative (i.e., no '$' prefix).

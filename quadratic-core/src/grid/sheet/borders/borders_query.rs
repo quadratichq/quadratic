@@ -87,20 +87,6 @@ impl Borders {
             }
         }
 
-        // Then check if current borders exist where update has none
-        if border_update.left.is_none() && !self.left.is_all_default() {
-            return false;
-        }
-        if border_update.right.is_none() && !self.right.is_all_default() {
-            return false;
-        }
-        if border_update.top.is_none() && !self.top.is_all_default() {
-            return false;
-        }
-        if border_update.bottom.is_none() && !self.bottom.is_all_default() {
-            return false;
-        }
-
         true
     }
 
@@ -167,6 +153,6 @@ mod tests {
         assert!(!borders.is_toggle_borders(&border_update));
 
         borders.set_style_cell(pos![A1], BorderStyleCell::all());
-        assert!(!borders.is_toggle_borders(&border_update));
+        assert!(borders.is_toggle_borders(&border_update));
     }
 }

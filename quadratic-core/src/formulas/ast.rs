@@ -299,6 +299,7 @@ fn eval_cell_range_op(
 
     let ref1 = args[0].to_cell_ref(ctx)?;
     let ref2 = args[1].to_cell_ref(ctx)?;
+
     Ok(RangeRef::CellRange {
         start: ref1,
         end: ref2,

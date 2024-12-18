@@ -201,7 +201,7 @@ impl Sheet {
                 code_runs_to_move.push(*pos);
             }
         }
-        code_runs_to_move.sort_unstable();
+        code_runs_to_move.sort_by(|a, b| a.y.cmp(&b.y));
         for old_pos in code_runs_to_move {
             let new_pos = Pos {
                 x: old_pos.x,
@@ -293,7 +293,7 @@ impl Sheet {
                 code_runs_to_move.push(*pos);
             }
         }
-        code_runs_to_move.reverse();
+        code_runs_to_move.sort_by(|a, b| b.y.cmp(&a.y));
         for old_pos in code_runs_to_move {
             let new_pos = Pos {
                 x: old_pos.x,
