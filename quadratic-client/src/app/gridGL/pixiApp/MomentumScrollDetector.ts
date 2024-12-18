@@ -1,3 +1,7 @@
+//! This is a momentum scroll detector that uses a simple algorithm to detect if
+//! the user is scrolling with momentum. It is not perfect and may not work in
+//! all cases, but it is a good start.
+
 const SAMPLE_SIZE = 5;
 const DELTA_THRESHOLD = 1;
 const TIMING_TOLERANCE_MS = 50;
