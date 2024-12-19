@@ -91,16 +91,18 @@ export function EmptyGridMessage() {
         >
           Create connection
         </Button>
-        <Button
-          variant="link"
-          className="w-full"
-          onClick={() => {
-            setOpen(false);
-            showCellTypeMenu(true);
-          }}
-        >
-          Use connection
-        </Button>
+        {connections.length > 0 && (
+          <Button
+            variant="link"
+            className="w-full"
+            onClick={() => {
+              setOpen(false);
+              showCellTypeMenu(true);
+            }}
+          >
+            Use connection
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -109,11 +111,6 @@ export function EmptyGridMessage() {
         >
           <CloseIcon />
         </Button>
-        {connections.length && (
-          <p className="text-xs text-muted-foreground">
-            Press <code className="bg-accent p-0.5">/</code> to use an exisiting connection
-          </p>
-        )}
       </div>
     </div>
   );
