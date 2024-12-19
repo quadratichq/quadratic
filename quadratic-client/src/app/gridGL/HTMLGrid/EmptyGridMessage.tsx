@@ -109,7 +109,7 @@ export function EmptyGridMessage() {
         >
           <CloseIcon />
         </Button>
-        {connections.length && false && (
+        {connections.length && (
           <p className="text-xs text-muted-foreground">
             Press <code className="bg-accent p-0.5">/</code> to use an exisiting connection
           </p>
