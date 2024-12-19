@@ -26,7 +26,10 @@ export class JavascriptAPI {
     return entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
   }
 
-  getCellsA1 = async (a1: string, lineNumber?: number): Promise<CellType[][] | undefined> => {
+  getCellsA1 = async (
+    a1: string,
+    lineNumber?: number
+  ): Promise<{ cells: CellType[][]; two_dimensional: boolean } | undefined> => {
     if (!this.javascript.transactionId) {
       throw new Error('No transactionId in getCellsA1');
     }
@@ -44,7 +47,7 @@ export class JavascriptAPI {
     const width = results.x + results.w;
 
     for (let y = results.y; y < height; y++) {
-      const row: any[] = [];
+      const row: CellType[] = [];
 
       for (let x = results.x; x < width; x++) {
         const entry = results.cells?.find((r) => Number(r.x) === x && Number(r.y) === y);
@@ -55,6 +58,6 @@ export class JavascriptAPI {
       cells.push(row);
     }
 
-    return cells;
+    return { cells, two_dimensional: results.two_dimensional };
   };
 }
