@@ -134,10 +134,10 @@ export class Javascript {
           runner.terminate();
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
-          this.api.getCellsA1(a1).then((cells) => {
+          this.api.getCellsA1(a1).then((results) => {
             const int32View = new Int32Array(sharedBuffer, 0, 3);
-            if (cells) {
-              const cellsString = JSON.stringify(cells);
+            if (results) {
+              const cellsString = JSON.stringify(results);
               const length = cellsString.length;
               Atomics.store(int32View, 1, length);
               const id = this.id++;

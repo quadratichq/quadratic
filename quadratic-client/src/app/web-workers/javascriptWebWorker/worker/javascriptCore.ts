@@ -66,7 +66,9 @@ class JavascriptCore {
     transactionId: string,
     a1: string,
     lineNumber?: number
-  ): Promise<{ cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number } | undefined> {
+  ): Promise<
+    { cells: JsGetCellResponse[]; x: number; y: number; w: number; h: number; two_dimensional: boolean } | undefined
+  > {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreJavascriptGetCellsA1) => {
@@ -77,7 +79,14 @@ class JavascriptCore {
           message.w !== undefined &&
           message.h !== undefined
         ) {
-          resolve({ cells: message.cells, x: message.x, y: message.y, w: message.w, h: message.h });
+          resolve({
+            cells: message.cells,
+            x: message.x,
+            y: message.y,
+            w: message.w,
+            h: message.h,
+            two_dimensional: message.two_dimensional ?? false,
+          });
         } else {
           resolve(undefined);
         }
