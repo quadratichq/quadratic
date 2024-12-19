@@ -20,5 +20,4 @@ export const WEBSITE_EXAMPLES = 'https://www.quadratichq.com/examples';
 export const WEBSITE_CHANGELOG = 'https://www.quadratichq.com/changelog';
 export const SCHEDULE_MEETING = 'https://calendly.com/d/ckz9-g8t-stb/quadratic-demo';
 export const AI_SECURITY = 'https://docs.quadratichq.com/quadratic-ai/security';
-// TODO: update this
 export const COMMUNITY_A1_FILE_UPDATE_URL = 'https://community.quadratichq.com/t/switch-to-a1-notation-from-x-y-coordinates/';
