@@ -7,7 +7,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { supportedFileTypes } from '@/app/helpers/files';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
-import { CloseIcon } from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { useEffect, useRef, useState } from 'react';
@@ -23,17 +22,16 @@ export function EmptyGridMessage() {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const canEdit = filePermissions.includes('FILE_EDIT');
-  const [open, setOpen] = useState(fileHasData() ? false : true);
+  const [open, setOpen] = useState(false);
   const showConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const showCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const { data } = useConnectionsFetcher();
   const connections = data?.connections ?? [];
 
+  // Show/hide depending on whether the file has any data in it
   useEffect(() => {
     const checkBounds = () => {
-      if (open && fileHasData()) {
-        setOpen(false);
-      }
+      setOpen(fileHasData() ? false : true);
     };
 
     events.on('hashContentChanged', checkBounds);
@@ -81,36 +79,28 @@ export function EmptyGridMessage() {
       </p>
       <div className="mt-2 flex w-full flex-col justify-center gap-2">
         <UploadFileButton teamUuid={teamUuid} />
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => {
-            setOpen(false);
-            showConnectionsMenu(true);
-          }}
-        >
-          Create connection
-        </Button>
-        {connections.length > 0 && (
+
+        {connections.length === 0 ? (
           <Button
-            variant="link"
+            variant="outline"
             className="w-full"
             onClick={() => {
-              setOpen(false);
+              showConnectionsMenu(true);
+            }}
+          >
+            Create connection
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
               showCellTypeMenu(true);
             }}
           >
             Use connection
           </Button>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setOpen(false)}
-          className="absolute right-1 top-1 !bg-background text-muted-foreground"
-        >
-          <CloseIcon />
-        </Button>
       </div>
     </div>
   );
