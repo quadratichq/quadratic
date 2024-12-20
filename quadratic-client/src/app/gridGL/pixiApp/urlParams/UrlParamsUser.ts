@@ -73,6 +73,7 @@ export class UrlParamsUser {
   private loadAIAnalystPrompt = (params: URLSearchParams) => {
     if (!this.pixiAppSettingsInitialized || !this.aiAnalystInitialized) return;
     if (this.aiAnalystPromptLoaded) return;
+    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
 
     const prompt = params.get('prompt');
     if (!prompt) return;
