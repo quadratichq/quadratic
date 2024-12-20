@@ -23,7 +23,7 @@ jobs:
           - service: api
             runner: ubuntu-latest-8-cores
           - service: client
-            runner: ubuntu-latest-8-cores
+            runner: ubuntu-latest-64-cores
           - service: connection
             runner: ubuntu-latest-8-cores
           - service: files
