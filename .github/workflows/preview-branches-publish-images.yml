@@ -81,7 +81,8 @@ jobs:
       - name: Create and initialize buildx cache
         run: |
           mkdir -p /tmp/.buildx-cache
-          echo '{"layers":{}}' > /tmp/.buildx-cache/index.json
+          CACHE_TAG="${{ runner.os }}-buildx-${{ matrix.service }}"
+          echo "{\"layers\":{},\"manifests\":{\"$CACHE_TAG\":{\"layers\":[]}}}" > /tmp/.buildx-cache/index.json
 
       - name: Build, Tag, and Push Image to Amazon ECR Private
         env:
