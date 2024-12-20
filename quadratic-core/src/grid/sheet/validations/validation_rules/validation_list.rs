@@ -2,11 +2,11 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{grid::Sheet, selection::Selection, CellValue};
+use crate::{grid::Sheet, A1Selection, CellValue};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationListSource {
-    Selection(Selection),
+    Selection(A1Selection),
     List(Vec<String>),
 }
 
@@ -19,8 +19,8 @@ pub struct ValidationList {
 
 impl ValidationList {
     /// Compares all CellValues within a Selection to the provided CellValue.
-    fn validate_selection(sheet: &Sheet, selection: &Selection, value: &CellValue) -> bool {
-        if let Some(values) = sheet.selection(selection, None, false, true) {
+    fn validate_selection(sheet: &Sheet, selection: &A1Selection, value: &CellValue) -> bool {
+        if let Some(values) = sheet.selection_values(selection, None, false, true) {
             values.iter().any(|(_, search)| *search == value)
         } else {
             false
@@ -48,7 +48,7 @@ impl ValidationList {
         }
         match &self.source {
             ValidationListSource::Selection(selection) => {
-                let values = sheet.selection(selection, None, false, false)?;
+                let values = sheet.selection_values(selection, None, false, false)?;
                 Some(
                     values
                         .values()
@@ -63,9 +63,8 @@ impl ValidationList {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use crate::Rect;
-
     use super::*;
 
     #[test]
@@ -85,8 +84,8 @@ mod tests {
     #[test]
     fn validate_list_selection() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((0, 0).into(), "test");
-        let selection = Selection::pos(0, 0, sheet.id);
+        sheet.set_cell_value((1, 1).into(), "test");
+        let selection = A1Selection::test_a1("A1");
 
         assert!(ValidationList::validate_selection(
             &sheet,
@@ -129,10 +128,9 @@ mod tests {
     #[test]
     fn to_drop_down_values() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value((0, 0).into(), "test");
-        sheet.set_cell_value((0, 1).into(), "test");
-        sheet.set_cell_value((0, 2).into(), "test2");
-        let selection = Selection::rect(Rect::new(0, 0, 0, 2), sheet.id);
+        sheet.set_cell_value((1, 1).into(), "test");
+        sheet.set_cell_value((1, 2).into(), "test2");
+        let selection = A1Selection::test_a1("A1:A2");
 
         let list = ValidationList {
             source: ValidationListSource::Selection(selection),

@@ -12,9 +12,12 @@ use crate::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
-        formats::format::Format,
+        // formats::format::Format,
         table_formats::TableFormats,
-        CodeRun, ColumnData, DataTable, DataTableKind,
+        CodeRun,
+        ColumnData,
+        DataTable,
+        DataTableKind,
     },
     ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
 };
@@ -22,7 +25,7 @@ use crate::{
 use super::{
     cell_value::{export_cell_value, import_cell_value},
     current,
-    format::{export_format, import_format},
+    // format::{export_format, import_format},
 };
 
 pub(crate) fn import_run_error_msg_builder(
@@ -110,7 +113,7 @@ pub(crate) fn import_run_error_msg_builder(
     Ok(run_error_msg)
 }
 
-pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
+pub(crate) fn import_code_run_builder(code_run: current::OldCodeRunSchema) -> Result<CodeRun> {
     let cells_accessed = code_run
         .cells_accessed
         .into_iter()
@@ -142,36 +145,36 @@ pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Resul
     Ok(code_run)
 }
 
-pub(crate) fn import_formats(
-    column: HashMap<i64, current::ColumnRepeatSchema<current::FormatSchema>>,
-) -> ColumnData<SameValue<Format>> {
-    let mut data = ColumnData::new();
-    column.into_iter().for_each(|(start, schema)| {
-        let value = import_format(schema.value);
-        let len = schema.len as usize;
-        data.insert_block(start, len, value);
-    });
-    data
-}
+// pub(crate) fn import_formats(
+//     column: HashMap<i64, current::ColumnRepeatSchema<current::FormatSchema>>,
+// ) -> ColumnData<SameValue<Format>> {
+//     let mut data = ColumnData::new();
+//     column.into_iter().for_each(|(start, schema)| {
+//         let value = import_format(schema.value);
+//         let len = schema.len as usize;
+//         data.insert_block(start, len, value);
+//     });
+//     data
+// }
 
-fn import_data_table_formats(formats: current::TableFormatsSchema) -> TableFormats {
-    let table = formats.table.map(import_format);
-    let columns: HashMap<usize, Format> = formats
-        .columns
-        .into_iter()
-        .map(|(key, format)| (key as usize, import_format(format)))
-        .collect();
-    let cells: HashMap<usize, ColumnData<SameValue<Format>>> = formats
-        .cells
-        .into_iter()
-        .map(|(key, formats)| (key as usize, import_formats(formats)))
-        .collect();
-    TableFormats {
-        table,
-        columns,
-        cells,
-    }
-}
+// fn import_data_table_formats(formats: current::TableFormatsSchema) -> TableFormats {
+//     let table = formats.table.map(import_format);
+//     let columns: HashMap<usize, Format> = formats
+//         .columns
+//         .into_iter()
+//         .map(|(key, format)| (key as usize, import_format(format)))
+//         .collect();
+//     let cells: HashMap<usize, ColumnData<SameValue<Format>>> = formats
+//         .cells
+//         .into_iter()
+//         .map(|(key, formats)| (key as usize, import_formats(formats)))
+//         .collect();
+//     TableFormats {
+//         table,
+//         columns,
+//         cells,
+//     }
+// }
 
 pub(crate) fn import_data_table_builder(
     data_tables: Vec<(current::PosSchema, current::DataTableSchema)>,
@@ -241,9 +244,10 @@ pub(crate) fn import_data_table_builder(
             }),
             display_buffer: data_table.display_buffer,
             alternating_colors: data_table.alternating_colors,
-            formats: import_data_table_formats(data_table.formats),
+            // formats: import_data_table_formats(data_table.formats),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
+            formats: Default::default(),
         };
 
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
@@ -339,7 +343,7 @@ pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunEr
     }
 }
 
-pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
+pub(crate) fn export_code_run(code_run: CodeRun) -> current::OldCodeRunSchema {
     let error = if let Some(error) = code_run.error {
         Some(current::RunErrorSchema {
             span: error.span.map(|span| current::SpanSchema {
@@ -352,7 +356,7 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
         None
     };
 
-    current::CodeRunSchema {
+    current::OldCodeRunSchema {
         formatted_code_string: code_run.formatted_code_string,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
@@ -368,37 +372,37 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     }
 }
 
-pub(crate) fn export_formats(
-    formats: ColumnData<SameValue<Format>>,
-) -> HashMap<i64, current::ColumnRepeatSchema<current::FormatSchema>> {
-    formats
-        .into_blocks()
-        .filter_map(|block| {
-            let len = block.len() as u32;
-            if let Some(format) = export_format(block.content.value) {
-                Some((block.y, current::ColumnRepeatSchema { value: format, len }))
-            } else {
-                None
-            }
-        })
-        .collect()
-}
+// pub(crate) fn export_formats(
+//     formats: ColumnData<SameValue<Format>>,
+// ) -> HashMap<i64, current::ColumnRepeatSchema<current::FormatSchema>> {
+//     formats
+//         .into_blocks()
+//         .filter_map(|block| {
+//             let len = block.len() as u32;
+//             if let Some(format) = export_format(block.content.value) {
+//                 Some((block.y, current::ColumnRepeatSchema { value: format, len }))
+//             } else {
+//                 None
+//             }
+//         })
+//         .collect()
+// }
 
-pub(crate) fn export_data_table_formats(formats: TableFormats) -> current::TableFormatsSchema {
-    current::TableFormatsSchema {
-        table: formats.table.and_then(export_format),
-        columns: formats
-            .columns
-            .into_iter()
-            .filter_map(|(key, format)| export_format(format).map(|f| (key as i64, f)))
-            .collect(),
-        cells: formats
-            .cells
-            .into_iter()
-            .map(|(key, formats)| (key as i64, export_formats(formats)))
-            .collect(),
-    }
-}
+// pub(crate) fn export_data_table_formats(formats: TableFormats) -> current::TableFormatsSchema {
+//     current::TableFormatsSchema {
+//         table: formats.table.and_then(export_format),
+//         columns: formats
+//             .columns
+//             .into_iter()
+//             .filter_map(|(key, format)| export_format(format).map(|f| (key as i64, f)))
+//             .collect(),
+//         cells: formats
+//             .cells
+//             .into_iter()
+//             .map(|(key, formats)| (key as i64, export_formats(formats)))
+//             .collect(),
+//     }
+// }
 
 pub(crate) fn export_data_tables(
     data_tables: IndexMap<Pos, DataTable>,
@@ -478,7 +482,8 @@ pub(crate) fn export_data_tables(
                 spill_error: data_table.spill_error,
                 value,
                 alternating_colors: data_table.alternating_colors,
-                formats: export_data_table_formats(data_table.formats),
+                // formats: export_data_table_formats(data_table.formats),
+                formats: Default::default(),
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
             };
@@ -490,20 +495,20 @@ pub(crate) fn export_data_tables(
 
 #[cfg(test)]
 mod tests {
-    use serial_test::parallel;
+    // use serial_test::parallel;
 
-    use super::*;
+    // use super::*;
 
-    #[test]
-    #[parallel]
-    fn test_empty_table_formats_serialized() {
-        let formats = TableFormats {
-            table: None,
-            columns: HashMap::new(),
-            cells: HashMap::new(),
-        };
-        let serialized = export_data_table_formats(formats.clone());
-        let import = import_data_table_formats(serialized);
-        assert_eq!(import, formats);
-    }
+    // #[test]
+    // #[parallel]
+    // fn test_empty_table_formats_serialized() {
+    //     let formats = TableFormats {
+    //         table: None,
+    //         columns: HashMap::new(),
+    //         cells: HashMap::new(),
+    //     };
+    //     let serialized = export_data_table_formats(formats.clone());
+    //     let import = import_data_table_formats(serialized);
+    //     assert_eq!(import, formats);
+    // }
 }

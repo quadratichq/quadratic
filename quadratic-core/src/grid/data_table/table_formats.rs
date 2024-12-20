@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::grid::{
     block::SameValue,
-    formats::{format::Format, format_update::FormatUpdate},
+    formats::{Format, FormatUpdate},
     ColumnData,
 };
 use serde::{Deserialize, Serialize};
@@ -26,74 +26,72 @@ pub struct TableFormats {
 
 impl TableFormats {
     /// Returns the format for the given column and row in a table.
-    pub fn format(&self, column_index: usize, unsorted_row_index: i64) -> Option<Format> {
-        let cell = self
-            .cells
-            .get(&column_index)
-            .and_then(|value| value.get(unsorted_row_index));
-        let column = self.columns.get(&column_index);
-        let format = Format::combine(vec![self.table.as_ref(), column, cell.as_ref()]);
-        if format.is_default() {
-            None
-        } else {
-            Some(format)
-        }
+    pub fn format(&self, _column_index: usize, _unsorted_row_index: i64) -> Option<Format> {
+        None
+        // let cell = self
+        //     .cells
+        //     .get(&column_index)
+        //     .and_then(|value| value.get(unsorted_row_index));
+        // let column = self.columns.get(&column_index);
+        // let format = Format::combine(vec![self.table.as_ref(), column, cell.as_ref()]);
+        // if format.is_default() {
+        //     None
+        // } else {
+        //     Some(format)
+        // }
     }
 
     /// Sets the format for the given column and row in a table. Returns the
     /// undo for the change.
     pub fn set_format_cell(
         &mut self,
-        column_index: usize,
-        unsorted_row_index: i64,
-        format: FormatUpdate,
+        _column_index: usize,
+        _unsorted_row_index: i64,
+        _format: FormatUpdate,
     ) -> Option<FormatUpdate> {
-        let column = self
-            .cells
-            .entry(column_index)
-            .or_default();
+        None
+        // let column = self.cells.entry(column_index).or_default();
 
-        if let Some(mut cell) = column.get(unsorted_row_index) {
-            let replace = cell.merge_update_into(&format);
-            column.set(unsorted_row_index, Some(cell));
-            Some(replace)
-        } else {
-            None
-        }
+        // if let Some(mut cell) = column.get(unsorted_row_index) {
+        //     let replace = cell.merge_update_into(&format);
+        //     column.set(unsorted_row_index, Some(cell));
+        //     Some(replace)
+        // } else {
+        //     None
+        // }
     }
 
     /// Sets the format for the given column. Returns the undo for the change.
     pub fn set_format_column(
         &mut self,
-        column_index: usize,
-        format: FormatUpdate,
+        _column_index: usize,
+        _format: FormatUpdate,
     ) -> Option<FormatUpdate> {
-        let column = self
-            .columns
-            .entry(column_index)
-            .or_default();
-        let undo = column.merge_update_into(&format);
-        if undo.is_default() {
-            None
-        } else {
-            Some(undo)
-        }
+        None
+        // let column = self.columns.entry(column_index).or_default();
+        // let undo = column.merge_update_into(&format);
+        // if undo.is_default() {
+        //     None
+        // } else {
+        //     Some(undo)
+        // }
     }
 
     /// Sets the table format. Returns the undo for the change.
-    pub fn set_format_table(&mut self, format: FormatUpdate) -> Option<FormatUpdate> {
-        let mut table = self.table.clone().unwrap_or_default();
-        let replace = table.merge_update_into(&format);
-        if table.is_default() {
-            self.table = None;
-        } else {
-            self.table = Some(table);
-        }
-        if !replace.is_default() {
-            Some(replace)
-        } else {
-            None
-        }
+    pub fn set_format_table(&mut self, _format: FormatUpdate) -> Option<FormatUpdate> {
+        None
+        // let mut table = self.table.clone().unwrap_or_default();
+        // let replace = table.merge_update_into(&format);
+        // if table.is_default() {
+        //     self.table = None;
+        // } else {
+        //     self.table = Some(table);
+        // }
+        // if !replace.is_default() {
+        //     Some(replace)
+        // } else {
+        //     None
+        // }
     }
 }
 

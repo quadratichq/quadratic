@@ -1,5 +1,9 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { codeEditorCodeCellAtom, codeEditorUnsavedChangesAtom } from '@/app/atoms/codeEditorAtom';
+import {
+  codeEditorCodeCellAtom,
+  codeEditorShowDiffEditorAtom,
+  codeEditorUnsavedChangesAtom,
+} from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -7,23 +11,32 @@ import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandl
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
+import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
-import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { SnippetsPopover } from '@/app/ui/menus/CodeEditor/SnippetsPopover';
 import { useCancelRun } from '@/app/ui/menus/CodeEditor/hooks/useCancelRun';
 import { useCloseCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useCloseCodeEditor';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
+import { PanelPosition, useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import {
+  CloseIcon,
+  DockToBottomIcon,
+  DockToRightIcon,
+  SaveAndRunIcon,
+  SaveAndRunStopIcon,
+} from '@/shared/components/Icons';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { Button } from '@/shared/shadcn/ui/button';
+import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { Close, PlayArrow, Stop } from '@mui/icons-material';
-import { CircularProgress, IconButton } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import * as monaco from 'monaco-editor';
-import { useEffect, useMemo, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface CodeEditorHeaderProps {
@@ -39,6 +52,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
   const unsavedChanges = useRecoilValue(codeEditorUnsavedChangesAtom);
+  const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const codeCell = useMemo(() => getCodeCell(codeCellState.language), [codeCellState.language]);
   const language = useMemo(() => getLanguage(codeCellState.language), [codeCellState.language]);
   const isConnection = useMemo(() => codeCellIsAConnection(codeCellState.language), [codeCellState.language]);
@@ -46,8 +60,13 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     () => hasPermissionToEditFile(permissions) && (isConnection ? teamPermissions?.includes('TEAM_EDIT') : true),
     [permissions, teamPermissions, isConnection]
   );
-
+  const { panelPosition, setPanelPosition } = useCodeEditorPanelData();
   const connectionsFetcher = useConnectionsFetcher();
+
+  const a1Pos = useMemo(
+    () => xyToA1(codeCellState.pos.x, codeCellState.pos.y),
+    [codeCellState.pos.x, codeCellState.pos.y]
+  );
 
   // Get the connection name (it's possible the user won't have access to it
   // because they're in a file they have access to but not the team — or
@@ -83,7 +102,6 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     return () => {
       events.off('changeSheet', updateSheetName);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // show when this cell is already in the execution queue
@@ -155,6 +173,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
+<<<<<<< HEAD
   const description = useMemo(() => {
     if (codeCell) {
       if (htmlCellsHandler.isHtmlCell(codeCellState.pos.x, codeCellState.pos.y)) {
@@ -169,9 +188,18 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
       return '';
     }
   }, [codeCell, codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
+=======
+  const changePanelPosition = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
+      e.currentTarget.blur();
+    },
+    [setPanelPosition]
+  );
+>>>>>>> origin/qa
 
   return (
-    <div className="flex items-center px-3 py-1">
+    <div className="flex items-center border-l border-border py-1 pl-3 pr-2">
       <div
         className={cn(
           `relative`,
@@ -179,16 +207,20 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
             `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
         )}
       >
-        <TooltipHint title={`${codeCell?.label}${unsavedChanges ? ' · Unsaved changes' : ''}`} placement="bottom">
+        <TooltipPopover label={`${codeCell?.label}${unsavedChanges ? ' · Unsaved changes' : ''}`} side="bottom">
           <div className="flex items-center">
             <LanguageIcon language={codeCell?.id} fontSize="small" />
           </div>
-        </TooltipHint>
+        </TooltipPopover>
       </div>
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
+<<<<<<< HEAD
           {description} ({codeCellState.pos.x}, {codeCellState.pos.y})
+=======
+          {`Cell ${a1Pos}`}
+>>>>>>> origin/qa
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}
@@ -199,40 +231,63 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
         )}
       </div>
 
-      <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+      <div className="ml-auto flex flex-shrink-0 items-center gap-1 py-1">
         {isRunningComputation && (
-          <TooltipHint title={`${language} executing…`} placement="bottom">
+          <TooltipPopover label={`${language} executing…`} side="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
-          </TooltipHint>
+          </TooltipPopover>
         )}
 
-        {hasPermission && (
+        {hasPermission && !showDiffEditor && (
           <>
-            {['Python', 'Javascript', 'Formula'].includes(language as string) && <CodeEditorRefButton />}
+            {['Python', 'Javascript', 'Formula', 'Connection'].includes(language as string) && <CodeEditorRefButton />}
 
             {['Python', 'Javascript'].includes(language as string) && <SnippetsPopover editorInst={editorInst} />}
 
             {!isRunningComputation ? (
-              <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
-                  <PlayArrow />
-                </IconButton>
-              </TooltipHint>
+              <TooltipPopover
+                label={`Save & run`}
+                shortcut={`${KeyboardSymbols.Command}${KeyboardSymbols.Enter}`}
+                side="bottom"
+              >
+                <Button
+                  id="QuadraticCodeEditorRunButtonID"
+                  onClick={saveAndRunCell}
+                  size="icon-sm"
+                  className="mx-1 rounded-full"
+                >
+                  <SaveAndRunIcon />
+                </Button>
+              </TooltipPopover>
             ) : (
-              <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                  <Stop />
-                </IconButton>
-              </TooltipHint>
+              <TooltipPopover label={`Cancel execution`} shortcut={`${KeyboardSymbols.Command} Esc`} side="bottom">
+                <Button onClick={cancelRun} size="icon-sm" className="mx-1 rounded-full">
+                  <SaveAndRunStopIcon />
+                </Button>
+              </TooltipPopover>
             )}
           </>
         )}
 
-        <TooltipHint title="Close" shortcut="ESC" placement="bottom">
-          <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={() => closeEditor(false)}>
-            <Close />
-          </IconButton>
-        </TooltipHint>
+        <hr className="mx-2 h-4 border-l border-border" />
+
+        <TooltipPopover label={`Move panel ${panelPosition === 'left' ? 'to bottom' : 'to left'}`} side="bottom">
+          <Button onClick={changePanelPosition} size="icon-sm" variant="ghost" className="text-muted-foreground">
+            {panelPosition === 'left' ? <DockToBottomIcon /> : <DockToRightIcon />}
+          </Button>
+        </TooltipPopover>
+
+        <TooltipPopover label={`Close`} shortcut={`Esc`} side="bottom">
+          <Button
+            variant="ghost"
+            id="QuadraticCodeEditorCloseButtonID"
+            onClick={() => closeEditor(false)}
+            size="icon-sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <CloseIcon />
+          </Button>
+        </TooltipPopover>
       </div>
     </div>
   );

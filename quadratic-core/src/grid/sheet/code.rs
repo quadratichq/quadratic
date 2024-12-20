@@ -57,6 +57,7 @@ impl Sheet {
         }
     }
 
+    // TODO(ddimaria): move to DataTable code
     /// Returns the DataTable that overlaps the Pos if it is an HTML or image chart.
     pub fn chart_at(&self, pos: Pos) -> Option<(&Pos, &DataTable)> {
         self.data_tables.iter().find(|(code_cell_pos, data_table)| {
@@ -256,7 +257,7 @@ impl Sheet {
                                 line_number: code_run.line_number,
                                 output_type: code_run.output_type.clone(),
                             }),
-                            cells_accessed: Some(code_run.cells_accessed.iter().copied().collect()),
+                            cells_accessed: Some(code_run.cells_accessed.clone().into()),
                         }),
                         DataTableKind::Import(_) => Some(JsCodeCell {
                             x: code_pos.x,
@@ -296,12 +297,12 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRun},
-        Array, CodeCellValue, SheetPos, Value,
+        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeCellValue, CodeRun},
+        Array, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
-    use std::{collections::HashSet, vec};
+    use std::vec;
 
     #[test]
     #[parallel]
@@ -313,7 +314,7 @@ mod test {
             std_err: None,
             std_out: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
@@ -354,7 +355,7 @@ mod test {
             std_err: None,
             std_out: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
@@ -382,7 +383,7 @@ mod test {
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
-                cells_accessed: Some(vec![])
+                cells_accessed: Some(Default::default())
             })
         );
         assert_eq!(
@@ -397,7 +398,7 @@ mod test {
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
-                cells_accessed: Some(vec![])
+                cells_accessed: Some(Default::default())
             })
         );
         assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);
@@ -448,7 +449,7 @@ mod test {
             std_err: None,
             std_out: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
@@ -486,7 +487,7 @@ mod test {
             std_err: None,
             std_out: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,

@@ -1,3 +1,4 @@
+import { aiAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorAtom, codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
@@ -59,10 +60,17 @@ export const PixiAppEffects = () => {
     pixiAppSettings.updateGridPanMode(gridPanMode, setGridPanMode);
   }, [gridPanMode, setGridPanMode]);
 
+<<<<<<< HEAD
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
   useEffect(() => {
     pixiAppSettings.updateContextMenu(contextMenu, setContextMenu);
   }, [contextMenu, setContextMenu]);
+=======
+  const [aiAnalystState, setAIAnalystState] = useRecoilState(aiAnalystAtom);
+  useEffect(() => {
+    pixiAppSettings.updateAIAnalystState(aiAnalystState, setAIAnalystState);
+  }, [aiAnalystState, setAIAnalystState]);
+>>>>>>> origin/qa
 
   useEffect(() => {
     const handleMouseUp = () => {

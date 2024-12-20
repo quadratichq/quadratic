@@ -1,6 +1,7 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -11,8 +12,9 @@ export async function doubleClickCell(options: {
   row: number;
   language?: CodeCellLanguage;
   cell?: string;
+  cursorMode?: CursorMode;
 }) {
-  const { language, cell, column, row } = options;
+  const { language, cell, column, row, cursorMode } = options;
 
   if (inlineEditorHandler.isEditingFormula()) return;
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
@@ -28,6 +30,7 @@ export async function doubleClickCell(options: {
       pixiAppSettings.setCodeEditorState({
         ...pixiAppSettings.codeEditorState,
         escapePressed: false,
+        diffEditorContent: undefined,
         waitingForEditorClose: {
           codeCell: {
             sheetId: sheets.current,
@@ -41,20 +44,26 @@ export async function doubleClickCell(options: {
       });
     } else {
       if (hasPermission && formula) {
-        const cursor = sheets.sheet.cursor.cursorPosition;
+        const cursor = sheets.sheet.cursor.position;
 
         // ensure we're in the right cell (which may change if we double clicked on a CodeRun)
         if (cursor.x !== column || cursor.y !== row) {
-          sheets.sheet.cursor.changePosition({ cursorPosition: { x: column, y: row } });
+          sheets.sheet.cursor.moveTo(column, row);
         }
+<<<<<<< HEAD
         pixiAppSettings.changeInput(true, cell);
       } else if (hasPermission && file_import) {
         pixiAppSettings.changeInput(true, cell);
+=======
+
+        pixiAppSettings.changeInput(true, cell, cursorMode);
+>>>>>>> origin/qa
       } else {
         pixiAppSettings.setCodeEditorState({
           ...pixiAppSettings.codeEditorState,
           showCodeEditor: true,
           escapePressed: false,
+          diffEditorContent: undefined,
           waitingForEditorClose: {
             codeCell: {
               sheetId: sheets.current,
@@ -80,6 +89,6 @@ export async function doubleClickCell(options: {
         annotationState: `calendar${value.kind === 'date time' ? '-time' : ''}`,
       });
     }
-    pixiAppSettings.changeInput(true, cell);
+    pixiAppSettings.changeInput(true, cell, cursorMode);
   }
 }

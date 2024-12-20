@@ -39,10 +39,15 @@ quadratic-connection/target/
 quadratic-core/target/
 quadratic-core/tmp.txt
 quadratic-files/target/
+quadratic-files/storage
 quadratic-multiplayer/target/
 
 quadratic-multiplayer/updateAlertVersion.json
+<<<<<<< HEAD
 quadratic-rust-shared/src/auto_gen_path.rs
+=======
+quadratic-shared/src/auto_gen_path.rs
+>>>>>>> origin/qa
 
 # Generated JS files
 quadratic-api/node_modules/
@@ -66,6 +71,7 @@ docker/mysql/data
 docker/postgres/data
 docker/redis/data
 docker/static/html
+docker/file-storage
 docker/postgres-connection/data
 docker/mysql-connection/data
 docker/snowflake-connection/data

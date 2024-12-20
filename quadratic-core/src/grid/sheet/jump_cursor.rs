@@ -12,6 +12,9 @@
 //! The above checks are always made relative to the original cursor position
 //! (the highlighted cell)
 
+// TODO: charts code is left intact and should be uncommented after merging with
+// data tables.
+
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -43,7 +46,7 @@ impl Sheet {
             y = chart_pos.y;
         }
 
-        let prev_y: Option<i64>;
+        let prev_y: i64;
 
         // handle case of cell with content
         if self.has_content(Pos { x, y }) {
@@ -55,35 +58,29 @@ impl Sheet {
             // if prev cell is empty, find the next cell with content
             if !self.has_content(Pos { x, y: y - 1 }) {
                 if let Some(prev) = self.find_next_row(y - 2, x, true, true) {
-                    prev_y = Some(prev);
+                    prev_y = prev;
                 } else {
-                    prev_y = Some(1);
+                    prev_y = 1;
                 }
             }
             // if prev cell is not empty, find the next empty cell
-            else {
-                if let Some(prev) = self.find_next_row(y - 2, x, true, false) {
-                    prev_y = Some(prev + 1);
-                } else {
-                    prev_y = Some(y - 1);
-                }
+            else if let Some(prev) = self.find_next_row(y - 2, x, true, false) {
+                prev_y = prev + 1;
+            } else {
+                prev_y = y - 1;
             }
         }
         // otherwise find the next cell with content
         else {
             // this is wrong: the table is being excluded where it's starting from (y - 1 instead of y)
             if let Some(prev) = self.find_next_row(y - 1, x, true, true) {
-                prev_y = Some(prev);
+                prev_y = prev;
             } else {
-                prev_y = Some(1);
+                prev_y = 1;
             }
         }
-        y = if let Some(prev_y) = prev_y {
-            prev_y
-        } else {
-            (y - 1).max(1)
-        };
-        Pos { x, y }
+
+        Pos { x, y: prev_y }
     }
 
     fn jump_down(&self, current: Pos) -> Pos {
@@ -109,19 +106,15 @@ impl Sheet {
                 }
             }
             // if next cell is not empty, find the next empty cell
-            else {
-                if let Some(next) = self.find_next_row(y + 2, x, false, false) {
-                    next_y = Some(next - 1);
-                } else {
-                    next_y = Some(y + 1);
-                }
+            else if let Some(next) = self.find_next_row(y + 2, x, false, false) {
+                next_y = Some(next - 1);
+            } else {
+                next_y = Some(y + 1);
             }
         }
         // otherwise find the next cell with content
-        else {
-            if let Some(next) = self.find_next_row(y + 1, x, false, true) {
-                next_y = Some(next);
-            }
+        else if let Some(next) = self.find_next_row(y + 1, x, false, true) {
+            next_y = Some(next);
         }
 
         y = if let Some(next_y) = next_y {
@@ -148,7 +141,7 @@ impl Sheet {
             x = chart_pos.x;
         }
 
-        let mut prev_x: Option<i64> = None;
+        let prev_x;
 
         // handle case of cell with content
         if self.has_content(Pos { x, y }) {
@@ -161,33 +154,26 @@ impl Sheet {
                     return Pos { x: 1, y };
                 }
                 if let Some(prev) = self.find_next_column(x - 2, y, true, true) {
-                    prev_x = Some(prev);
+                    prev_x = prev;
+                } else {
+                    prev_x = 1;
                 }
             }
             // if next cell is not empty, find the next empty cell
-            else {
-                if let Some(prev) = self.find_next_column(x - 1, y, true, false) {
-                    prev_x = Some(prev + 1);
-                } else {
-                    prev_x = Some(x - 1);
-                }
+            else if let Some(prev) = self.find_next_column(x - 1, y, true, false) {
+                prev_x = prev + 1;
+            } else {
+                prev_x = x - 1;
             }
         }
         // otherwise find the previous cell with content
-        else {
-            if let Some(prev) = self.find_next_column(x - 1, y, true, true) {
-                prev_x = Some(prev);
-            } else {
-                prev_x = Some(1);
-            }
-        }
-        x = if let Some(prev_x) = prev_x {
-            prev_x
+        else if let Some(prev) = self.find_next_column(x - 1, y, true, true) {
+            prev_x = prev;
         } else {
-            (x - 1).max(1)
-        };
+            prev_x = 1;
+        }
 
-        Pos { x, y }
+        Pos { x: prev_x, y }
     }
 
     fn jump_right(&self, current: Pos) -> Pos {
@@ -212,19 +198,15 @@ impl Sheet {
                 }
             }
             // if next cell is not empty, find the next empty cell
-            else {
-                if let Some(next) = self.find_next_column(x + 2, y, false, false) {
-                    next_x = Some(next - 1);
-                } else {
-                    next_x = Some(x + 1);
-                }
+            else if let Some(next) = self.find_next_column(x + 2, y, false, false) {
+                next_x = Some(next - 1);
+            } else {
+                next_x = Some(x + 1);
             }
         }
         // otherwise find the next cell with content
-        else {
-            if let Some(next) = self.find_next_column(x + 1, y, false, true) {
-                next_x = Some(next);
-            }
+        else if let Some(next) = self.find_next_column(x + 1, y, false, true) {
+            next_x = Some(next);
         }
 
         x = if let Some(next_x) = next_x {
@@ -252,8 +234,8 @@ mod tests {
     use serial_test::parallel;
 
     use crate::{
-        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
-        CellValue, CodeCellValue,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        CellValue,
     };
 
     use super::*;
@@ -294,7 +276,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_right_filled() {
         let mut sheet = Sheet::test();
 
@@ -330,7 +311,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_left_filled() {
         let mut sheet = Sheet::test();
 
@@ -381,7 +361,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_up_filled() {
         let mut sheet = Sheet::test();
 
@@ -433,7 +412,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn jump_down_filled() {
         let mut sheet = Sheet::test();
 
@@ -487,7 +465,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_jump_chart_on_edge() {
         let mut sheet = Sheet::test();
 

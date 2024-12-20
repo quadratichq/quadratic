@@ -273,7 +273,7 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Cmd, MacModifiers.Shift, Keys.ArrowRight]],
     windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.ArrowRight]],
   },
-  [Action.GotoA0]: {
+  [Action.GotoA1]: {
     mac: [[MacModifiers.Cmd, Keys.Home]],
     windows: [[WindowsModifiers.Ctrl, Keys.Home]],
   },
@@ -306,8 +306,12 @@ export const defaultShortcuts: ActionShortcut = {
     windows: [[WindowsModifiers.Shift, Keys.Tab]],
   },
   [Action.EditCell]: {
-    mac: [[Keys.Enter], [MacModifiers.Shift, Keys.Enter], [Keys.F2]],
-    windows: [[Keys.Enter], [WindowsModifiers.Shift, Keys.Enter], [Keys.F2]],
+    mac: [[Keys.Enter], [MacModifiers.Shift, Keys.Enter]],
+    windows: [[Keys.Enter], [WindowsModifiers.Shift, Keys.Enter]],
+  },
+  [Action.ToggleArrowMode]: {
+    mac: [[Keys.F2]],
+    windows: [[Keys.F2]],
   },
   [Action.DeleteCell]: {
     mac: [[Keys.Backspace], [Keys.Delete]],
@@ -352,5 +356,9 @@ export const defaultShortcuts: ActionShortcut = {
   [Action.InsertTodayTime]: {
     mac: [[MacModifiers.Ctrl, Keys.Semicolon]],
     windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Shift, Keys.Semicolon]],
+  },
+  [Action.ToggleAIAnalyst]: {
+    mac: [[MacModifiers.Cmd, Keys.K]],
+    windows: [[WindowsModifiers.Ctrl, Keys.K]],
   },
 };

@@ -11,7 +11,7 @@ impl Sheet {
     #[cfg(test)]
     pub fn set_data_table(&mut self, pos: Pos, data_table: Option<DataTable>) -> Option<DataTable> {
         if let Some(data_table) = data_table {
-            self.data_tables.insert(pos, data_table)
+            self.data_tables.insert_sorted(pos, data_table).1
         } else {
             self.data_tables.shift_remove(&pos)
         }
@@ -120,7 +120,7 @@ mod test {
     };
     use bigdecimal::BigDecimal;
     use serial_test::parallel;
-    use std::{collections::HashSet, vec};
+    use std::vec;
 
     #[test]
     #[parallel]
@@ -132,7 +132,7 @@ mod test {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
@@ -164,7 +164,7 @@ mod test {
             std_err: None,
             std_out: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,

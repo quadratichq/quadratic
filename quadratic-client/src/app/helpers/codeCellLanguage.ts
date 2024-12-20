@@ -1,6 +1,8 @@
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 
-const codeCellsById = {
+export type CodeCellType = 'Python' | 'Javascript' | 'Formula' | 'Connection';
+
+export const codeCellsById = {
   Formula: { id: 'Formula', label: 'Formula', type: undefined },
   Javascript: { id: 'Javascript', label: 'JavaScript', type: undefined },
   Python: { id: 'Python', label: 'Python', type: undefined },
@@ -33,14 +35,14 @@ export const getCodeCell = (language?: CodeCellLanguage) => {
   return undefined;
 };
 
-export const getLanguage = (language?: CodeCellLanguage) => {
+export const getLanguage = (language?: CodeCellLanguage): CodeCellType => {
   if (typeof language === 'string') {
     return language;
   } else if (typeof language === 'object') {
     return 'Connection';
   }
 
-  return 'Formula';
+  return 'Python';
 };
 
 // For languages that monaco supports, see https://github.com/microsoft/monaco-editor/tree/c321d0fbecb50ab8a5365fa1965476b0ae63fc87/src/basic-languages
@@ -61,7 +63,7 @@ export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
     }
   }
 
-  return 'formula';
+  return 'python';
 };
 
 export const getConnectionUuid = (language?: CodeCellLanguage): string | undefined => {

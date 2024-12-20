@@ -75,6 +75,7 @@ export enum Action {
   ZoomTo50 = 'zoom_to_50',
   ZoomTo100 = 'zoom_to_100',
   ZoomTo200 = 'zoom_to_200',
+  ZoomReset = 'zoom_reset',
   Save = 'save',
   SwitchSheetNext = 'switch_sheet_next',
   SwitchSheetPrevious = 'switch_sheet_previous',
@@ -113,7 +114,7 @@ export enum Action {
   JumpCursorContentRight = 'jump_cursor_content_right',
   ExpandSelectionRight = 'expand_selection_right',
   ExpandSelectionContentRight = 'expand_selection_content_right',
-  GotoA0 = 'goto_A0',
+  GotoA1 = 'goto_A1',
   GotoBottomRight = 'goto_bottom_right',
   GotoRowStart = 'goto_row_start',
   GotoRowEnd = 'goto_row_end',
@@ -122,6 +123,7 @@ export enum Action {
   MoveCursorRightWithSelection = 'move_cursor_right_with_selection',
   MoveCursorLeftWithSelection = 'move_cursor_left_with_selection',
   EditCell = 'edit_cell',
+  ToggleArrowMode = 'toggle_arrow_mode',
   DeleteCell = 'delete_cell',
   ShowCellTypeMenu = 'show_cell_type_menu',
   CloseInlineEditor = 'close_inline_editor',
@@ -139,6 +141,7 @@ export enum Action {
   InsertRowBelow = 'insert_row_below',
   DeleteRow = 'delete_row',
   DeleteColumn = 'delete_column',
+<<<<<<< HEAD
 
   FlattenTable = 'flatten_table',
   GridToDataTable = 'grid_to_data_table',
@@ -159,4 +162,7 @@ export enum Action {
   HideTableColumn = 'hide_table_column',
   ShowAllColumns = 'show_all_columns',
   EditTableCode = 'edit_table_code',
+=======
+  ToggleAIAnalyst = 'toggle_ai_analyst',
+>>>>>>> origin/qa
 }

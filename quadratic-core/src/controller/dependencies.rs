@@ -13,11 +13,9 @@ impl GridController {
 
         self.grid.sheets().iter().for_each(|sheet| {
             sheet.iter_code_runs().for_each(|(pos, code_run)| {
-                code_run.cells_accessed.iter().for_each(|cell_accessed| {
-                    if sheet_rect.intersects(*cell_accessed) {
-                        dependent_cells.insert(pos.to_sheet_pos(sheet.id));
-                    }
-                });
+                if code_run.cells_accessed.intersects(sheet_rect) {
+                    dependent_cells.insert(pos.to_sheet_pos(sheet.id));
+                }
             });
         });
 
@@ -30,25 +28,23 @@ impl GridController {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
-    use std::collections::HashSet;
-
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+        grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         CellValue, Pos, SheetPos, SheetRect, Value,
     };
-    use serial_test::parallel;
+    use std::collections::HashSet;
 
     #[test]
-    #[parallel]
     fn test_graph() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
-        let mut cells_accessed = HashSet::new();
+        let mut cells_accessed = CellsAccessed::default();
         let sheet_pos_00 = SheetPos {
             x: 0,
             y: 0,
@@ -64,7 +60,9 @@ mod test {
             max: sheet_pos_01.into(),
             sheet_id,
         };
-        cells_accessed.insert(sheet_rect);
+        cells_accessed
+            .cells
+            .insert(sheet_id, HashSet::from([sheet_rect]));
         let code_run = CodeRun {
             formatted_code_string: None,
             std_err: None,
@@ -117,14 +115,13 @@ mod test {
     }
 
     #[test]
-    #[parallel]
-    fn dependencies_near_input() {
+    fn test_dependencies_near_input() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "1".to_string(),
@@ -132,24 +129,24 @@ mod test {
         );
         gc.set_code_cell(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             CodeCellLanguage::Formula,
-            "A0 + 5".to_string(),
+            "A1 + 5".to_string(),
             None,
         );
         assert_eq!(
             gc.get_dependent_code_cells(&SheetRect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 0 },
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 1, y: 1 },
                 sheet_id
             }),
             Some(
                 vec![SheetPos {
-                    x: 1,
-                    y: 0,
+                    x: 2,
+                    y: 1,
                     sheet_id
                 }]
                 .into_iter()

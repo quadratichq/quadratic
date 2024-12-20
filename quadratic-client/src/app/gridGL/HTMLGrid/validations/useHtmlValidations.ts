@@ -4,8 +4,7 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { Validation } from '@/app/quadratic-core-types';
+import { JsCoordinate, Validation } from '@/app/quadratic-core-types';
 import { validationRuleSimple, ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -16,7 +15,7 @@ export interface HtmlValidationsData {
   offsets?: Rectangle;
   validation?: Validation;
   validationRuleSimple: ValidationRuleSimple;
-  location?: Coordinate;
+  location?: JsCoordinate;
   readOnly: boolean;
 }
 
@@ -27,17 +26,17 @@ export const useHtmlValidations = (): HtmlValidationsData => {
   const [offsets, setOffsets] = useState<Rectangle | undefined>();
   const [validation, setValidation] = useState<Validation | undefined>();
   const [validationType, setValidationType] = useState<ValidationRuleSimple>('');
-  const [location, setLocation] = useState<Coordinate | undefined>();
+  const [location, setLocation] = useState<JsCoordinate | undefined>();
 
   // Change in cursor position triggers update of validation
   useEffect(() => {
     const updateCursor = async () => {
-      if (sheets.sheet.cursor.multiCursor) {
+      if (sheets.sheet.cursor.isMultiCursor()) {
         setValidation(undefined);
         setValidationType('');
         return;
       }
-      const { x, y } = sheets.sheet.cursor.cursorPosition;
+      const { x, y } = sheets.sheet.cursor.position;
       setLocation({ x, y });
       const validation = await quadraticCore.getValidationFromPos(sheets.sheet.id, x, y);
 
@@ -51,7 +50,7 @@ export const useHtmlValidations = (): HtmlValidationsData => {
 
       setValidation(validation);
       setValidationType(validationRuleSimple(validation));
-
+      setLocation({ x, y });
       const offsets = sheets.sheet.getCellOffsets(x, y);
       setOffsets(offsets);
     };

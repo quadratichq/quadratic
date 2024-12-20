@@ -1,12 +1,20 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { CodeRun } from '../../CodeRun';
-import type { ClientJavascriptMessage, JavascriptClientMessage } from '../javascriptClientMessages';
+import type {
+  ClientJavascriptGetJwt,
+  ClientJavascriptMessage,
+  JavascriptClientMessage,
+} from '../javascriptClientMessages';
 import { javascriptCore } from './javascriptCore';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
 class JavascriptClient {
+  private id = 0;
+  private waitingForResponse: Record<number, Function> = {};
+  env: Record<string, string> = {};
+
   start() {
     self.onmessage = this.handleMessage;
     if (debugWebWorkers) console.log('[javascriptClient] initialized.');
@@ -25,11 +33,21 @@ class JavascriptClient {
 
     switch (e.data.type) {
       case 'clientJavascriptCoreChannel':
+        this.env = e.data.env;
         javascriptCore.init(e.ports[0]);
         break;
 
       default:
-        console.warn('[coreClient] Unhandled message type', e.data);
+        if (e.data.id !== undefined) {
+          if (this.waitingForResponse[e.data.id]) {
+            this.waitingForResponse[e.data.id](e.data);
+            delete this.waitingForResponse[e.data.id];
+          } else {
+            console.warn('No resolve for message in javascriptClient', e.data.type);
+          }
+        } else {
+          console.warn('[javascriptClient] Unhandled message type', e.data);
+        }
     }
   };
 
@@ -49,6 +67,14 @@ class JavascriptClient {
 
   sendInit(version: string) {
     this.send({ type: 'javascriptClientInit', version });
+  }
+
+  getJwt(): Promise<string> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: ClientJavascriptGetJwt) => resolve(message.jwt);
+      this.send({ type: 'javascriptClientGetJwt', id });
+    });
   }
 }
 

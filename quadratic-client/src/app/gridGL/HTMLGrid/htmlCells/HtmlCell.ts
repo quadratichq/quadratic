@@ -5,7 +5,7 @@ import { JsHtmlOutput } from '@/app/quadratic-core-types';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { InteractionEvent, Point, Rectangle } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { Wheel } from '../../pixiOverride/Wheel';
+import { Wheel } from '../../pixiApp/viewport/Wheel';
 import { HtmlCellResizing } from './HtmlCellResizing';
 
 // number of screen pixels to trigger the resize cursor

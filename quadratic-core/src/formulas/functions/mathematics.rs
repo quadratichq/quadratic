@@ -349,7 +349,7 @@ mod tests {
             },
             parse_formula("SUM()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -460,7 +460,7 @@ mod tests {
             },
             parse_formula("PRODUCT()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -500,7 +500,7 @@ mod tests {
             },
             parse_formula("ABS()", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -512,7 +512,7 @@ mod tests {
             },
             parse_formula("ABS(16, 17)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -756,7 +756,7 @@ mod tests {
             },
             parse_formula("PI(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );
@@ -775,7 +775,7 @@ mod tests {
             },
             parse_formula("TAU(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval(&mut ctx)
+                .eval(&mut ctx, None)
                 .unwrap_err()
                 .msg,
         );

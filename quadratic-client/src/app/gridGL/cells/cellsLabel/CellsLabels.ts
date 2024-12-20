@@ -9,6 +9,9 @@
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
+import { CellsSheet, ErrorMarker, ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Link } from '@/app/gridGL/types/links';
@@ -20,9 +23,6 @@ import {
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
-import { CellsSheet, ErrorMarker, ErrorValidation } from '../CellsSheet';
-import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
-import { CellsTextHash } from './CellsTextHash';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -46,6 +46,11 @@ export class CellsLabels extends Container {
     this.cellsTextHashDebug = this.addChild(new Container());
 
     events.on('clickedToCell', this.clickedToCell);
+  }
+
+  destroy() {
+    events.off('clickedToCell', this.clickedToCell);
+    super.destroy();
   }
 
   get sheetId(): string {
@@ -84,7 +89,7 @@ export class CellsLabels extends Container {
   }
 
   // Returns whether the cell has content by checking CellsTextHashContent.
-  hasCell(column: number, row: number): boolean {
+  hasCell = (column: number, row: number): boolean => {
     const hashX = Math.floor(column / sheetHashWidth);
     const hashY = Math.floor(row / sheetHashHeight);
     const key = `${hashX},${hashY}`;
@@ -93,7 +98,19 @@ export class CellsLabels extends Container {
       return cellsTextHash.content.hasContent(column, row);
     }
     return false;
-  }
+  };
+
+  // Returns whether the rect has content by checking CellsTextHashContent.
+  hasCellInRect = (rect: Rectangle): boolean => {
+    for (let column = rect.x; column <= rect.x + rect.width; column++) {
+      for (let row = rect.y; row <= rect.y + rect.height; row++) {
+        if (this.hasCell(column, row)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
   // received a new LabelMeshEntry to add to a CellsTextHash
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {

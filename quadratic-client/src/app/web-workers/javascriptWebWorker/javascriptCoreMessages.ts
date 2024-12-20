@@ -15,24 +15,25 @@ export interface JavascriptCoreResults {
   results: JsCodeResult;
 }
 
-export interface JavascriptCoreGetCells {
-  type: 'javascriptCoreGetCells';
+export interface CoreJavascriptGetCellsA1 {
+  type: 'coreJavascriptGetCellsA1';
+  id: number;
+  cells?: JsGetCellResponse[];
+  // returned by GetCellsA1
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+}
+
+export interface JavascriptCoreGetCellsA1 {
+  type: 'javascriptCoreGetCellsA1';
   id: number;
   transactionId: string;
-  x: number;
-  y: number;
-  w: number;
-  h?: number;
-  sheet?: string;
+  a1: string;
   lineNumber?: number;
 }
 
-export interface CoreJavascriptGetCells {
-  type: 'coreJavascriptGetCells';
-  id: number;
-  cells?: JsGetCellResponse[];
-}
+export type CoreJavascriptMessage = CoreJavascriptRun | CoreJavascriptGetCellsA1;
 
-export type CoreJavascriptMessage = CoreJavascriptRun | CoreJavascriptGetCells;
-
-export type JavascriptCoreMessage = JavascriptCoreResults | JavascriptCoreGetCells;
+export type JavascriptCoreMessage = JavascriptCoreResults | JavascriptCoreGetCellsA1;

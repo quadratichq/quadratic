@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 4c5d9b177ad4a52455a506d48629b4275aaa6621ba3c282e2ff4415c032ea15a # shrinks to selection = A1Selection { sheet: SheetId { id: 00000000-0000-0000-0000-000000000000 }, cursor: Pos { x: 1, y: 1 }, ranges: [] }, test_positions = []
+cc a136e447bf4d0d73ab188b041fa7150e917da2b6950235bbab790320d305d123 # shrinks to selection = A1Selection { sheet: SheetId { id: 00000000-0000-0000-0000-000000000000 }, cursor: Pos { x: 1, y: 1 }, ranges: [CellRefRange(47:), CellRefRange(:AD)] }, test_positions = [Pos { x: 1, y: 1 }]
+cc 764aebef0614afa1e1bc3a713e813704226ed260cd51721c5f6b32b2e1137775 # shrinks to selection = A1Selection { sheet: SheetId { id: 00000000-0000-0000-0000-000000000000 }, cursor: Pos { x: 1, y: 1 }, ranges: [CellRefRange(8:A1), CellRefRange(1)] }

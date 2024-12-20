@@ -1,0 +1,13 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc aeef3be4f0457695f2cbd2dc3cae83c5a9556c8cfe6952bd1782f02cd1caf7ab # shrinks to start = 0, end = None, value = 1
+cc 24db0dbd87a3bfb3213df24060e6ee9fd886dc0df0b0870b7775e2cd4eea5f61 # shrinks to start = 25, end = Some(0), value = 0
+cc 4ba8d8828c562b29ae1c92ae867a1b3be14aa997e913fe165c9452a0fc6038ba # shrinks to start = 1, end = None, value = 1
+cc d703f88840e262ec4b4dd855f4c4cbf1825c311e0f8603d6cb1bff6b7cd3ba5c # shrinks to start = 0, end = None, value = 1
+cc 50cc8c6b73b4df841ec460136b602b455f0aa600d2b33cee23defb4111b13a62 # shrinks to start = 0, end = Some(0), value = 0
+cc 4bc50945e6f69452d425575b683d9579a17cfe9aecd78f2837350c6047d487d9 # shrinks to ops = []
+cc 94fbb0f76e5d0fa86304f5cf90f45df80a86542a2057cfa78b8e97e32a3094e5 # shrinks to ops = [ShiftInsert { start: 0, end: 1, value: 0 }]

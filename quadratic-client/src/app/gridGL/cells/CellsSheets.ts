@@ -1,5 +1,8 @@
 import { debugShowCellsHashBoxes } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { SheetInfo } from '@/app/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
@@ -8,9 +11,6 @@ import {
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
   current?: CellsSheet;
@@ -19,6 +19,12 @@ export class CellsSheets extends Container<CellsSheet> {
     super();
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
+  }
+
+  destroy() {
+    events.off('addSheet', this.addSheet);
+    events.off('deleteSheet', this.deleteSheet);
+    super.destroy();
   }
 
   async create() {
@@ -99,6 +105,8 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     const key = `${message.hashX},${message.hashY}`;
     sheet.gridOverflowLines.updateHash(key, message.overflowGridLines);
+
+    events.emit('hashContentChanged', message.sheetId, message.hashX, message.hashY);
   }
 
   labelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -176,8 +184,13 @@ export class CellsSheets extends Container<CellsSheet> {
   isCursorOnCodeCell(): boolean {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
+<<<<<<< HEAD
     const cursor = sheets.sheet.cursor.cursorPosition;
     return cellsSheet.tables.isTable(cursor.x, cursor.y);
+=======
+    const cursor = sheets.sheet.cursor.position;
+    return cellsSheet.cellsArray.isCodeCell(cursor.x, cursor.y);
+>>>>>>> origin/qa
   }
 
   isCursorOnCodeCellOutput(): boolean {

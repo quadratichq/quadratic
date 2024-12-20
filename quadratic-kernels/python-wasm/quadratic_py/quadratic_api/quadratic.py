@@ -1,6 +1,7 @@
 from typing import Tuple
 
-import getCellsDB
+import getCellsA1
+
 from pandas import DataFrame, Series
 
 from ..utils import result_to_value, stack_line_number, to_python_type_df
@@ -14,64 +15,35 @@ results = None
 
 def getCell(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
     """
-    Reference a single cell in the grid.
-
-    Args:
-        p_x: The X coordinate on the grid.
-        p_y: The Y coordinate on the grid.
-        sheet: The name of the sheet to reference. Defaults to the current sheet.
-
-    Returns:
-        The value of the cell referenced.
-
-    Typical usage example:
-        c = getCell(0, 0)
+    THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    result = getCellsDB(p_x, p_y, p_x, p_y, sheet, int(stack_line_number()))
-
-    if len(result):
-        return result_to_value(result[0])
-    else:
-        return None
+    a1 = q.to_a1(p_x, p_y, absolute=False)
+    old = f"getCell({p_x}, {p_y})"
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
 
 
 def cell(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
     """
-    Reference a single cell in the grid.
-
-    Args:
-        p_x: The X coordinate on the grid.
-        p_y: The Y coordinate on the grid.
-        sheet: The name of the sheet to reference. Defaults to the current sheet.
-
-    Returns:
-        The value of the cell referenced.
-
-    Typical usage example:
-        c = cell(0, 0)
+    THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    return getCell(p_x, p_y, sheet)
+    a1 = q.to_a1(p_x, p_y, absolute=False)
+    old = f"cell({p_x}, {p_y})"
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
 
 
 def c(p_x: int, p_y: int, sheet: str = None) -> int | float | str | bool | None:
     """
-    Reference a single cell in the grid.
-
-    Args:
-        p_x: The X coordinate on the grid.
-        p_y: The Y coordinate on the grid.
-        sheet: The name of the sheet to reference. Defaults to the current sheet.
-
-    Returns:
-        The value of the cell referenced.
-
-    Typical usage example:
-        c = c(0, 0)
+    THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
-
-    return getCell(p_x, p_y, sheet)
+    a1 = q.to_a1(p_x, p_y, absolute=False)
+    old = f"c({p_x}, {p_y})"
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
+    # return getCell(p_x, p_y, sheet)
 
 
 def getCells(
@@ -81,55 +53,14 @@ def getCells(
     first_row_header: bool = False,
 ) -> DataFrame:
     """
-    Reference multiple cells in the grid.
-
-    Args:
-        p0: A tuple of (x, y) coordinates on the grid.
-        p1: A tuple of (x, y) coordinates on the grid
-        sheet: The name of the sheet to reference. Defaults to the current sheet.
-        first_row_header: If True the first row will be used as the header.
-
-    Returns:
-        A pandas DataFrame of the cells referenced.
-
-    Typical usage example:
-        c = getCells((0, 0), (1, 1))
+    THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    # Get Cells
-    cells = getCellsDB(p0[0], p0[1], p1[0], p1[1], sheet, int(stack_line_number()))
-    cell_range_width = p1[0] - p0[0] + 1
-    cell_range_height = p1[1] - p0[1] + 1
-
-    # TODO(ddimaria): consider removing after team decides this is the right approach
-    # for always returning a dataframe.
-    #
-    # return a panda series for a 1d vertical array of cells
-    # if cell_range_width == 1:
-    #     cell_list = [result_to_value(cell) for cell in cells]
-    #     return Series(cell_list)
-
-    # Create empty df of the correct size
-    df = DataFrame(
-        index=range(cell_range_height),
-        columns=range(cell_range_width),
-    )
-
-    # Fill DF
-    x_offset = p0[0]
-    y_offset = p0[1]
-
-    for cell in cells:
-        value = to_python_type_df(cell.value, cell.type_name)
-        df.at[cell.y - y_offset, cell.x - x_offset] = value
-
-    # Move the first row to the header
-    if first_row_header:
-        df.rename(columns=df.iloc[0], inplace=True)
-        df.drop(df.index[0], inplace=True)
-        df.reset_index(drop=True, inplace=True)
-
-    return df
+    a1_0 = q.to_a1(p0[0], p0[1], absolute=False)
+    a1_1 = q.to_a1(p1[0], p1[1], absolute=False)
+    old = f"cells({p0[0]},{ p0[1]}, {p1[0]}, {p1[1]})"
+    new = f'q.cells("{a1_0}:{a1_1}")'
+    q.conversion_error(old, new)
 
 
 def cells(
@@ -139,58 +70,27 @@ def cells(
     first_row_header: bool = False,
 ) -> DataFrame:
     """
-    Reference multiple cells in the grid.
-
-    Args:
-        p0: A tuple of (x, y) coordinates on the grid.
-        p1: A tuple of (x, y) coordinates on the grid
-        sheet: The name of the sheet to reference. Defaults to the current sheet.
-        first_row_header: If True the first row will be used as the header.
-
-    Returns:
-        A pandas DataFrame of the cells referenced.
-
-    Typical usage example:
-        c = cells((0, 0), (1, 1))
+    THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    return getCells(p0, p1, sheet, first_row_header)
-
-
-# This function is not used from here (it's a lambda function in run_python.py)
-# This is documented for pyright usage only
-def pos() -> tuple[int, int]:
-    """
-    A relative reference to the current cell in the grid.
-
-    Returns:
-        The tuple (x, y) coordinates of the current cell.
-
-    Typical usage example:
-        (x, y) = pos()
-    """
-
-    return None
+    a1_0 = q.to_a1(p0[0], p0[1], absolute=False)
+    a1_1 = q.to_a1(p1[0], p1[1], absolute=False)
+    old = f"cells({p0[0]},{ p0[1]}, {p1[0]}, {p1[1]})"
+    new = f'q.cells("{a1_0}:{a1_1}")'
+    q._conversion_error(old, new)
 
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
 def rel_cell(x: int, y: int) -> int | float | str | bool | None:
     """
-    Relative reference to a single cell in the grid.
-
-    Args:
-        x: The relative grid X coordinate from the current cell.
-        y: The relative grid Y coordinate from the current cell.
-
-    Returns:
-        The value of the relative cell referenced.
-
-    Typical usage example:
-        c = rel_cell(-1, 0) # references the cell to the left of this cell
+    THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    return None
+    old = f"rel_cell({x}, {y})"
+    a1 = q.to_a1(x, y, absolute=False)
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
 
 
 # This function is not used from here (it's a lambda function in run_python.py)
@@ -202,39 +102,112 @@ def rel_cells(
     first_row_header: bool = False,
 ) -> int | float | str | bool | None:
     """
-    Relative reference to a single cell in the grid.
-
-    Args:
-        first: The relative grid coordinate tuple from the current cell.
-        second: The relative grid coordinate tuple from the current cell.
-        sheet: The name of the sheet to reference. Defaults to the current sheet.
-        first_row_header: If True the first row will be used as the header.
-
-    Returns:
-        The value of the relative cell referenced.
-
-    Typical usage example:
-        c = rel_cells((-5, -5), (-3, -2)) # references the cells starting -5 cells left, and -5 cells up from the code cell
+    THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    return None
+    a1_0 = q.to_a1(first[0], first[1], absolute=False)
+    a1_1 = q.to_a1(second[0], second[1], absolute=False)
+    old = f"rel_cells({first[0]},{ first[1]}, {second[0]}, {second[1]})"
+    new = f'q.cells("{a1_0}:{a1_1}")'
+    q._conversion_error(old, new)
 
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
 def rc(x: int, y: int) -> int | float | str | bool | None:
     """
-    Relative reference to a single cell in the grid.
-
-    Args:
-        x: The relative grid X coordinate from the current cell.
-        y: The relative grid Y coordinate from the current cell.
-
-    Returns:
-        The value of the relative cell referenced.
-
-    Typical usage example:
-        c = rel_cell(-1, 0) # references the cell to the left of this cell
+    THIS FUNCTION IS NO LONGER USED. USE q.cells() INSTEAD.
     """
 
-    return None
+    a1 = q.to_a1(x, y, absolute=False)
+    old = f"rc({x}, {y})"
+    new = f'q.cells("{a1}")'
+    q._conversion_error(old, new)
+
+
+class q:
+    def __init__(self, pos):
+        self._pos = pos
+
+    def cells(self, a1: str, first_row_header: bool = False):
+        """
+        Reference cells in the grid.
+
+        Args:
+            a1: A string representing a cell or range of cells.
+            first_row_header: If True the first row will be used as the header.
+
+        Returns:
+            For single returns: the value of the cell referenced. For multiple returns: A pandas DataFrame of the cells referenced.
+
+        Typical usage example:
+            c = q.cells("A1:B5")
+        """
+        result = getCellsA1(a1, int(stack_line_number()))
+
+        if result.w == 1 and result.h == 1:
+            return result_to_value(result.cells[0])
+
+        # Create empty df of the correct size
+        df = DataFrame(
+            index=range(result.h),
+            columns=range(result.w),
+        )
+
+        # Fill DF
+        x_offset = result.x
+        y_offset = result.y
+
+        for cell in result.cells:
+            value = to_python_type_df(cell.value, cell.type_name)
+            df.at[cell.y - y_offset, cell.x - x_offset] = value
+
+        # Move the first row to the header
+        if first_row_header:
+            df.rename(columns=df.iloc[0], inplace=True)
+            df.drop(df.index[0], inplace=True)
+            df.reset_index(drop=True, inplace=True)
+
+        return df
+
+    def pos(self) -> tuple[int, int]:
+        """
+        A relative reference to the current cell in the grid.
+
+        Returns:
+            The tuple (x, y) coordinates of the current cell.
+
+        Typical usage example:
+            (x, y) = pos()
+        """
+
+        return self._pos
+
+    def to_a1(x: int, y: int, absolute: bool = True) -> str:
+        """
+        Convert (x, y) coordinates to A1 notation.
+        x: Column number (1-based index)
+        y: Row number (1-based index)
+        Returns: A1 notation as a string
+        """
+
+        column = ""
+
+        while x > 0:
+            x -= 1
+            column = chr(x % 26 + 65) + column
+            x //= 26
+
+        if absolute:
+            column = f"${column}"
+            y = f"${y}"
+
+        return f"{column}{y}"
+
+    def _conversion_error(old: str, new: str, raise_exception: bool = True):
+        output = f"{old} functionality is no longer supported.  Use {new} instead, though this may be different if your sheet had negative values.  Refer to the documentation at https://docs.quadratic.app/python-api/ for more details."
+
+        if raise_exception:
+            raise Exception(output)
+        else:
+            print(output)

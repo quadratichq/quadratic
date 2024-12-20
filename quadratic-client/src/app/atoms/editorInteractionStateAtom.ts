@@ -1,5 +1,6 @@
 import { focusGrid } from '@/app/helpers/focusGrid.js';
 import { SearchOptions } from '@/app/quadratic-core-types';
+import { User } from '@/auth/auth';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom, DefaultValue, selector } from 'recoil';
 
@@ -10,7 +11,6 @@ export interface EditorInteractionState {
   showConnectionsMenu: boolean;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
-  showNewFileMenu: boolean;
   showRenameFileMenu: boolean;
   showShareFileMenu: boolean;
   showSearch: boolean | SearchOptions;
@@ -18,20 +18,20 @@ export interface EditorInteractionState {
   showValidation: boolean | string;
   annotationState?: 'dropdown' | 'date-format' | 'calendar' | 'calendar-time';
   permissions: FilePermission[];
+  user?: User;
   uuid: string;
   follow?: string;
   undo: boolean;
   redo: boolean;
 }
 
-export const editorInteractionStateDefault: EditorInteractionState = {
+export const defaultEditorInteractionState: EditorInteractionState = {
   isRunningAsyncAction: false,
   showCellTypeMenu: false,
   showCommandPalette: false,
   showConnectionsMenu: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
-  showNewFileMenu: false,
   showRenameFileMenu: false,
   showShareFileMenu: false,
   showSearch: false,
@@ -39,6 +39,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showValidation: false,
   annotationState: undefined,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
+  user: undefined,
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   follow: undefined,
   undo: false,
@@ -47,7 +48,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
 
 export const editorInteractionStateAtom = atom<EditorInteractionState>({
   key: 'editorInteractionState', // unique ID (with respect to other atoms/selectors)
-  default: editorInteractionStateDefault,
+  default: defaultEditorInteractionState,
   effects: [
     // this effect is used to focus the grid when the modal is closed
     ({ onSet }) => {
@@ -59,7 +60,6 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           oldValue.showConnectionsMenu ||
           oldValue.showGoToMenu ||
           oldValue.showFeedbackMenu ||
-          oldValue.showNewFileMenu ||
           oldValue.showRenameFileMenu ||
           oldValue.showShareFileMenu ||
           oldValue.showSearch ||
@@ -70,7 +70,6 @@ export const editorInteractionStateAtom = atom<EditorInteractionState>({
           newValue.showConnectionsMenu ||
           newValue.showGoToMenu ||
           newValue.showFeedbackMenu ||
-          newValue.showNewFileMenu ||
           newValue.showRenameFileMenu ||
           newValue.showShareFileMenu ||
           newValue.showSearch ||
@@ -100,7 +99,6 @@ export const editorInteractionStateShowCommandPaletteAtom = createSelector('show
 export const editorInteractionStateShowConnectionsMenuAtom = createSelector('showConnectionsMenu');
 export const editorInteractionStateShowGoToMenuAtom = createSelector('showGoToMenu');
 export const editorInteractionStateShowFeedbackMenuAtom = createSelector('showFeedbackMenu');
-export const editorInteractionStateShowNewFileMenuAtom = createSelector('showNewFileMenu');
 export const editorInteractionStateShowRenameFileMenuAtom = createSelector('showRenameFileMenu');
 export const editorInteractionStateShowShareFileMenuAtom = createSelector('showShareFileMenu');
 export const editorInteractionStateShowSearchAtom = createSelector('showSearch');
@@ -109,6 +107,7 @@ export const editorInteractionStateShowValidationAtom = createSelector('showVali
 
 export const editorInteractionStateAnnotationStateAtom = createSelector('annotationState');
 export const editorInteractionStatePermissionsAtom = createSelector('permissions');
+export const editorInteractionStateUserAtom = createSelector('user');
 export const editorInteractionStateUuidAtom = createSelector('uuid');
 export const editorInteractionStateFollowAtom = createSelector('follow');
 export const editorInteractionStateUndoAtom = createSelector('undo');

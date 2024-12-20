@@ -1,5 +1,4 @@
 import { fileDragDropModalAtom } from '@/dashboard/atoms/fileDragDropModalAtom';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
 import { FileDragDrop } from '@/dashboard/components/FileDragDrop';
 import { DRAWER_WIDTH } from '@/routes/_dashboard';
 import { Action as FilesAction } from '@/routes/api.files.$uuid';
@@ -10,7 +9,7 @@ import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchem
 import { ReactNode, useCallback, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router-dom';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import { Empty } from './Empty';
 import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
@@ -27,7 +26,9 @@ export type FilesListUserFile = {
   creator?: {
     name?: string;
     picture?: string;
+    email?: string;
   };
+  filterMatch?: 'file-name' | 'creator-name' | 'creator-email';
 };
 
 export function FilesList({
@@ -82,7 +83,31 @@ export function FilesList({
 
   // If the user has an active filter query, remove those
   if (filterValue) {
-    filesToRender = filesToRender.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()));
+    filesToRender = filesToRender
+      .map((file) => {
+        const { name, creator } = file;
+        const fileNameNormalized = name.toLowerCase();
+        const creatorNameNormalized = creator?.name?.toLowerCase() || '';
+        const creatorEmailNormalized = creator?.email?.toLowerCase() || '';
+        const filterValueNormalized = filterValue.toLowerCase();
+
+        let filterMatch: FilesListUserFile['filterMatch'] = undefined;
+        if (fileNameNormalized.includes(filterValueNormalized)) {
+          filterMatch = 'file-name';
+        } else if (creatorNameNormalized.includes(filterValueNormalized)) {
+          filterMatch = 'creator-name';
+        } else if (creatorEmailNormalized.includes(filterValueNormalized)) {
+          filterMatch = 'creator-email';
+        }
+
+        return filterMatch
+          ? {
+              ...file,
+              filterMatch,
+            }
+          : file;
+      })
+      .filter((item) => item.filterMatch);
   }
 
   // Sort 'em based on current prefs
@@ -103,7 +128,6 @@ export function FilesList({
   const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'delete');
   const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
 
-  const { show: newFileDialogShow } = useRecoilValue(newFileDialogAtom);
   const setFileDragDropState = useSetRecoilState(fileDragDropModalAtom);
   const handleDragEnter = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -129,6 +153,7 @@ export function FilesList({
             file={file}
             lazyLoad={i > 12}
             filterValue={filterValue}
+            setFilterValue={setFilterValue}
             activeShareMenuFileId={activeShareMenuFileId}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
             viewPreferences={viewPreferences}
@@ -150,9 +175,7 @@ export function FilesList({
         />
       )}
 
-      {!newFileDialogShow && (
-        <FileDragDrop className={`lg:left-[${DRAWER_WIDTH}px] lg:w-[calc(100%-${DRAWER_WIDTH}px)]`} />
-      )}
+      <FileDragDrop className={`lg:left-[${DRAWER_WIDTH}px] lg:w-[calc(100%-${DRAWER_WIDTH}px)]`} />
     </div>
   );
 }

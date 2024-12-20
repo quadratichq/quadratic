@@ -1,9 +1,11 @@
 use anyhow::Result;
 
 use crate::grid::file::{
-    v1_7::schema::{self as v1_7},
-    v1_8::schema::{self as v1_8},
+    v1_7::{self as v1_7},
+    v1_7_1,
 };
+
+use super::upgrade_columns_formats;
 
 fn render_size_to_chart_size(
     columns: &[(i64, v1_7::ColumnSchema)],
@@ -31,90 +33,54 @@ fn render_size_to_chart_size(
 
 fn upgrade_code_runs(
     code_runs: Vec<(v1_7::PosSchema, v1_7::CodeRunSchema)>,
-    columns: &[(i64, v1_7::ColumnSchema)],
-) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
+) -> v1_7_1::CodeRunsSchema {
     code_runs
         .into_iter()
-        .enumerate()
-        .map(|(i, (pos, code_run))| {
-            let error = if let v1_7::CodeRunResultSchema::Err(error) = &code_run.result {
-                Some(error.to_owned())
-            } else {
-                None
-            };
-            let new_code_run = v1_8::CodeRunSchema {
-                formatted_code_string: code_run.formatted_code_string,
-                std_out: code_run.std_out,
-                std_err: code_run.std_err,
-                cells_accessed: code_run.cells_accessed,
-                error,
-                return_type: code_run.return_type,
-                line_number: code_run.line_number,
-                output_type: code_run.output_type,
-            };
-            let value = if let v1_7::CodeRunResultSchema::Ok(value) = &code_run.result {
-                match value.to_owned() {
-                    v1_7::OutputValueSchema::Single(cell_value) => {
-                        v1_8::OutputValueSchema::Single(cell_value)
-                    }
-                    v1_7::OutputValueSchema::Array(array) => {
-                        v1_8::OutputValueSchema::Array(v1_8::OutputArraySchema {
-                            size: v1_8::OutputSizeSchema {
-                                w: array.size.w,
-                                h: array.size.h,
-                            },
-                            values: array.values,
-                        })
-                    }
-                }
-            } else {
-                v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank)
-            };
-
-            let chart_pixel_output = render_size_to_chart_size(columns, pos.clone());
-            let new_data_table = v1_8::DataTableSchema {
-                kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
-                name: format!("Table{}", i),
-                header_is_first_row: false,
-                show_header: false,
-                columns: None,
-                sort: None,
-                display_buffer: None,
-                value,
-                readonly: true,
-                spill_error: code_run.spill_error,
-                last_modified: code_run.last_modified,
-                alternating_colors: true,
-                formats: Default::default(),
-                chart_pixel_output,
-                chart_output: None,
-            };
-            Ok((v1_8::PosSchema::from(pos), new_data_table))
-        })
-        .collect::<Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>>>()
+        .map(|(pos, code_run)| (pos, upgrade_code_run(code_run)))
+        .collect()
 }
 
-pub fn upgrade_sheet(sheet: v1_7::SheetSchema) -> Result<v1_8::SheetSchema> {
-    Ok(v1_8::SheetSchema {
+fn upgrade_code_run(code_run: v1_7::CodeRunSchema) -> v1_7_1::CodeRunSchema {
+    v1_7_1::CodeRunSchema {
+        formatted_code_string: code_run.formatted_code_string,
+        std_out: code_run.std_out,
+        std_err: code_run.std_err,
+        cells_accessed: v1_7::upgrade_cells_accessed(code_run.cells_accessed),
+        result: code_run.result,
+        spill_error: code_run.spill_error,
+        last_modified: code_run.last_modified,
+        return_type: code_run.return_type,
+        line_number: code_run.line_number,
+        output_type: code_run.output_type,
+    }
+}
+
+pub fn upgrade_sheet(sheet: v1_7::SheetSchema) -> Result<v1_7_1::SheetSchema> {
+    let formats_upgrade = v1_7::upgrade_formats_all_col_row(
+        sheet.formats_all,
+        sheet.formats_columns,
+        sheet.formats_rows,
+    );
+    let (columns, formats) = upgrade_columns_formats(sheet.columns, formats_upgrade);
+
+    Ok(v1_7_1::SheetSchema {
         id: sheet.id,
         name: sheet.name,
         color: sheet.color,
         order: sheet.order,
         offsets: sheet.offsets,
-        data_tables: upgrade_code_runs(sheet.code_runs, &sheet.columns)?,
+        code_runs: upgrade_code_runs(sheet.code_runs),
         columns: sheet.columns,
-        formats_all: sheet.formats_all,
-        formats_columns: sheet.formats_columns,
-        formats_rows: sheet.formats_rows,
+        formats: formats_upgrade,
         rows_resize: sheet.rows_resize,
         validations: sheet.validations,
         borders: sheet.borders,
     })
 }
 
-pub fn upgrade(grid: v1_7::GridSchema) -> Result<v1_8::GridSchema> {
-    let new_grid = v1_8::GridSchema {
-        version: Some("1.7".to_string()),
+pub fn upgrade(grid: v1_7::GridSchema) -> Result<v1_7_1::GridSchema> {
+    let new_grid = v1_7_1::GridSchema {
+        version: Some("1.7.1".to_string()),
         sheets: grid
             .sheets
             .into_iter()
@@ -133,7 +99,7 @@ mod tests {
         controller::GridController,
         grid::{
             file::{export, import},
-            CellBorderLine,
+            sheet::borders::CellBorderLine,
         },
     };
 

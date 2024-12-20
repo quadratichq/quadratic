@@ -2,12 +2,36 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 
+/// Asserts that an operation is a particular type, and unpacks its contents
+/// into the current scope.
+///
+/// # Examples
+///
+/// ```ignore
+/// fn set_cell_values(transaction: &mut PendingTransaction, op: Operation) {
+///     // panic if `op` is not `SetCellValues`
+///     unwrap_op!(let SetCellValues { sheet_pos, values } = op);
+///
+///     println!("sheet_pos: {:?}", sheet_pos);
+///     println!("values: {:?}", values);
+/// }
+/// ```
+macro_rules! unwrap_op {
+    (let $op_type:ident $contents:tt = $op:ident) => {
+        let $crate::controller::operations::operation::Operation::$op_type $contents = $op else {
+            unreachable!("expected {}; got {:?}", stringify!($op_type), $op);
+        };
+    };
+}
+
 mod execute_borders;
+mod execute_borders_old;
 mod execute_code;
 mod execute_col_rows;
 mod execute_cursor;
 mod execute_data_table;
 mod execute_formats;
+mod execute_formats_old;
 mod execute_move_cells;
 mod execute_offsets;
 mod execute_sheets;
@@ -77,6 +101,31 @@ impl GridController {
                 Operation::SetBordersSelection { .. } => {
                     self.execute_set_borders_selection(transaction, op);
                 }
+                Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
+                Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
+                Operation::SetCodeRunVersion { .. } => {
+                    self.execute_set_code_run_version(transaction, op);
+                }
+                Operation::SetCodeRun_RENAME_ME {
+                    sheet_pos,
+                    code_run,
+                    index,
+                } => {
+                    self.execute_set_code_run_RENAME_ME(transaction, op);
+                }
+                Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
+                Operation::SetCellFormats { .. } => (), //self.execute_set_cell_formats(transaction, op)),
+                Operation::SetCellFormatsSelection { .. } => {
+                    self.execute_set_cell_formats_selection(transaction, op);
+                }
+                Operation::SetCellFormatsA1 { .. } => {
+                    self.execute_set_cell_formats_a1(transaction, op);
+                }
+                Operation::SetBorders { .. } => (), // we no longer support this (12/9/2024)
+                Operation::SetBordersSelection { .. } => {
+                    self.execute_set_borders_selection(transaction, op);
+                }
+                Operation::SetBordersA1 { .. } => self.execute_set_borders_a1(transaction, op),
 
                 Operation::MoveCells { .. } => self.execute_move_cells(transaction, op),
 
@@ -97,6 +146,7 @@ impl GridController {
                 Operation::SetCursorSelection { .. } => {
                     self.execute_set_cursor_selection(transaction, op);
                 }
+                Operation::SetCursorA1 { .. } => self.execute_set_cursor_a1(transaction, op),
 
                 Operation::SetValidation { .. } => self.execute_set_validation(transaction, op),
                 Operation::RemoveValidation { .. } => {
@@ -110,13 +160,6 @@ impl GridController {
                 Operation::DeleteRow { .. } => self.execute_delete_row(transaction, op),
                 Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
                 Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
-            }
-
-            if cfg!(target_family = "wasm") || cfg!(test) {
-                crate::wasm_bindings::js::jsTransactionProgress(
-                    transaction.id.to_string(),
-                    transaction.operations.len() as i32,
-                );
             }
         }
     }

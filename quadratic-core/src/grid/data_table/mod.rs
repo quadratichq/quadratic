@@ -184,6 +184,15 @@ impl DataTable {
         }
     }
 
+    /// Helper function to get the CodeRun from the DataTable.
+    /// Returns `None` if the DataTableKind is not CodeRun.
+    pub fn code_run_mut(&mut self) -> Option<&mut CodeRun> {
+        match &mut self.kind {
+            DataTableKind::CodeRun(ref mut code_run) => Some(code_run),
+            _ => None,
+        }
+    }
+
     /// Helper function to determine if the DataTable's CodeRun has an error.
     /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
     pub fn has_error(&self) -> bool {
@@ -404,7 +413,6 @@ impl DataTable {
 
 #[cfg(test)]
 pub mod test {
-    use std::collections::HashSet;
 
     use super::*;
     use crate::{
@@ -498,7 +506,7 @@ pub mod test {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
@@ -531,7 +539,7 @@ pub mod test {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
@@ -571,7 +579,7 @@ pub mod test {
             formatted_code_string: None,
             std_out: None,
             std_err: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,

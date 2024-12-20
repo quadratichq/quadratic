@@ -1,25 +1,23 @@
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { sheets } from '../../../grid/controller/Sheets';
-import { intersects } from '../../helpers/intersects';
-import { pixiApp } from '../../pixiApp/PixiApp';
-import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
-import { Coordinate } from '../../types/size';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
 
 export class PointerAutoComplete {
   private selection?: Rectangle;
-  private endCell?: Coordinate;
+  private endCell?: JsCoordinate;
   private stateHorizontal: StateHorizontal;
   private stateVertical: StateVertical;
-  private toVertical?: number;
-  private toHorizontal?: number;
   private screenSelection?: Rectangle;
   cursor?: string;
   active = false;
@@ -32,21 +30,14 @@ export class PointerAutoComplete {
 
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
-    if (cursor.multiCursor && cursor.multiCursor.length > 1) return false;
+    this.selection = cursor.getSingleRectangleOrCursor();
+    if (!this.selection) return false;
 
     // handle dragging from the corner
     if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       this.active = true;
       events.emit('cellMoving', true);
-      this.selection = cursor.multiCursor
-        ? cursor.multiCursor[0]
-        : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
-      this.screenSelection = sheet.getScreenRectangle(
-        this.selection.left,
-        this.selection.top,
-        this.selection.width,
-        this.selection.height
-      );
+      this.screenSelection = sheet.getScreenRectangleFromRect(this.selection);
       cursor.changeBoxCells(true);
 
       return true;
@@ -60,8 +51,6 @@ export class PointerAutoComplete {
       this.stateHorizontal = undefined;
       this.stateVertical = undefined;
       this.endCell = undefined;
-      this.toHorizontal = undefined;
-      this.toVertical = undefined;
       this.selection = undefined;
       this.screenSelection = undefined;
       this.active = false;
@@ -92,7 +81,7 @@ export class PointerAutoComplete {
 
         this.endCell = { x: column, y: row };
         const boxCellsRectangle = selection.clone();
-        const deleteRectangles = [];
+        const deleteRectangles: Rectangle[] = [];
 
         // Note: there is weirdness as to the rectangle size because the cell in
         // which the cursor is hovering is where we want to expand/shrink to.
@@ -102,66 +91,58 @@ export class PointerAutoComplete {
 
         // if at bottom or single height then don't do anything
         if (row === selection.bottom - 1 || (row === selection.top && selection.top === selection.bottom)) {
-          this.toVertical = undefined;
           this.stateVertical = undefined;
-          boxCellsRectangle.height = selection.height - 1;
+          boxCellsRectangle.height = selection.height;
         }
 
         // if at top or between top and bottom then we shrink
-        else if (row >= selection.top && row + 1 < selection.bottom) {
+        else if (row >= selection.top && row < selection.bottom - 1) {
           this.stateVertical = 'shrink';
-          this.toVertical = row;
-          boxCellsRectangle.height = row - selection.top;
-          deleteRectangles.push(new Rectangle(selection.x, row + 1, selection.width - 1, selection.bottom - row - 2));
+          boxCellsRectangle.height = row - selection.top + 1;
+          deleteRectangles.push(new Rectangle(selection.x, row + 1, selection.width, selection.bottom - 1 - row));
         }
 
         // if above top, then we expand up
         else if (row < selection.top) {
           this.stateVertical = 'expandUp';
-          this.toVertical = row;
           boxCellsRectangle.y = row;
-          boxCellsRectangle.height = selection.bottom - row - 1;
+          boxCellsRectangle.height = selection.bottom - row;
         }
 
         // if below bottom, then we expand down
-        else if (row >= selection.bottom) {
+        else if (row >= selection.bottom - 1) {
           this.stateVertical = 'expandDown';
-          this.toVertical = row;
-          boxCellsRectangle.height = row - selection.y;
+          boxCellsRectangle.height = row + 1 - selection.y;
         }
 
         // Handle changes in column
 
         // if at right or single width then don't do anything
         if (column === selection.right - 1 || (column === selection.left && selection.left === selection.right)) {
-          this.toHorizontal = undefined;
           this.stateHorizontal = undefined;
-          boxCellsRectangle.width = selection.width - 1;
+          boxCellsRectangle.width = selection.width;
         }
 
         // if at left or between left and right then we shrink
-        else if (column >= selection.left && column + 1 < selection.right) {
+        else if (column >= selection.left && column < selection.right - 1) {
           this.stateHorizontal = 'shrink';
-          this.toHorizontal = column;
-          boxCellsRectangle.width = column - selection.left;
+          boxCellsRectangle.width = column - selection.left + 1;
           deleteRectangles.push(
-            new Rectangle(column + 1, selection.y, selection.right - column - 2, row - selection.y)
+            new Rectangle(column + 1, selection.y, selection.right - 1 - column, row - selection.y + 1)
           );
         }
 
         // if to the left of the selection then we expand left
         else if (column < selection.left) {
           this.stateHorizontal = 'expandLeft';
-          this.toHorizontal = column;
           boxCellsRectangle.x = column;
-          boxCellsRectangle.width = selection.right - column - 1;
+          boxCellsRectangle.width = selection.right - column;
         }
 
         // if to the right of the selection then we expand right
-        else if (column >= selection.right) {
+        else if (column >= selection.right - 1) {
           this.stateHorizontal = 'expandRight';
-          this.toHorizontal = column;
-          boxCellsRectangle.width = column - selection.x;
+          boxCellsRectangle.width = column + 1 - selection.x;
         }
 
         pixiApp.boxCells.populate({
@@ -235,16 +216,13 @@ export class PointerAutoComplete {
         }
 
         // update the selection
-        const cursor = sheets.sheet.cursor;
-        if (newRectangle.width === 1 && newRectangle.height === 1) {
-          cursor.changePosition({ columnRow: null, multiCursor: null });
-        } else {
-          cursor.changePosition({
-            columnRow: null,
-            multiCursor: [newRectangle],
-            ensureVisible: false,
-          });
-        }
+        sheets.sheet.cursor.selectRect(
+          newRectangle.left,
+          newRectangle.top,
+          newRectangle.right - 1,
+          newRectangle.bottom - 1,
+          false
+        );
       }
       this.reset();
       return true;

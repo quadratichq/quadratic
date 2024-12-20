@@ -1,6 +1,8 @@
 import { ContextMenuOptions } from '@/app/atoms/contextMenuAtom';
 import { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
+import { CodeCell } from '@/app/gridGL/types/codeCell';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import {
   JsBordersSheet,
@@ -12,7 +14,6 @@ import {
   JsRenderFill,
   JsSheetFill,
   JsValidationWarning,
-  Selection,
   SheetBounds,
   SheetInfo,
   Validation,
@@ -49,16 +50,16 @@ interface EventTypes {
   changeSheet: (sheetId: string) => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
-  setCursor: (cursor?: string, selection?: Selection) => void;
+  setCursor: (selection?: string) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
-  changeInput: (input: boolean, initialValue?: string) => void;
+  changeInput: (input: boolean, initialValue?: string, cursorMode?: CursorMode) => void;
   headingSize: (width: number, height: number) => void;
   gridSettings: () => void;
 
   sheetOffsets: (sheetId: string, offsets: JsOffset[]) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
-  sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
+  sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   bordersSheet: (sheetId: string, borders?: JsBordersSheet) => void;
@@ -136,6 +137,12 @@ interface EventTypes {
 
   // use this only if you need to immediately get the viewport's value (ie, from React)
   viewportChangedReady: () => void;
+<<<<<<< HEAD
+=======
+  hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
+
+  codeEditorCodeCell: (codeCell?: CodeCell) => void;
+>>>>>>> origin/qa
 }
 
 export const events = new EventEmitter<EventTypes>();

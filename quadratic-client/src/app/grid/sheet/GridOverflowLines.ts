@@ -1,10 +1,14 @@
 //! Keeps track of which grid lines should not be drawn within the sheet because
 //! of overflow of text, images, and html tables..
 
+<<<<<<< HEAD
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
+=======
+import { JsCoordinate } from '@/app/quadratic-core-types';
+>>>>>>> origin/qa
 
 export class GridOverflowLines {
   private sheet: Sheet;
@@ -22,7 +26,7 @@ export class GridOverflowLines {
   }
 
   // Updates a hash with a list of overflow lines
-  updateHash(hashKey: string, coordinates: Coordinate[]) {
+  updateHash(hashKey: string, coordinates: JsCoordinate[]) {
     // first remove all overflowLines from this hash
     this.overflowLines.forEach((value, key) => {
       if (value === hashKey) {

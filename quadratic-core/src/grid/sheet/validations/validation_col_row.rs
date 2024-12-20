@@ -4,6 +4,7 @@ use crate::{
         operations::operation::Operation,
     },
     grid::SheetId,
+    A1Selection,
 };
 
 use super::{validation::Validation, Validations};
@@ -11,78 +12,92 @@ use super::{validation::Validation, Validations};
 impl Validations {
     /// Removes a column from all validations. Adds undo operations and client
     /// signalling to the transaction.
-    pub fn remove_column(
+    pub(crate) fn remove_column(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
-    ) {
+    ) -> Vec<A1Selection> {
         let mut reverse_operations = Vec::new();
-
+        let mut changed_selections = vec![];
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.removed_column(column) {
-                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
+                changed_selections.extend(transaction.validation_changed(
+                    sheet_id,
+                    validation,
+                    Some(&original_selection),
+                ));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
                         ..validation.clone()
                     },
                 });
-                !validation.selection.is_empty()
+                !validation.selection.ranges.is_empty()
             } else {
                 true
             }
         });
 
         transaction.reverse_operations.extend(reverse_operations);
+        changed_selections
     }
 
     /// Removes a row from all validations.
     ///
     /// Returns a list of operations that reverse the changes.
-    pub fn remove_row(
+    pub(crate) fn remove_row(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
-    ) {
+    ) -> Vec<A1Selection> {
+        let mut changed_selections = vec![];
         let mut reverse_operations = Vec::new();
-
         self.validations.retain_mut(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.removed_row(row) {
-                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
+                changed_selections.extend(transaction.validation_changed(
+                    sheet_id,
+                    validation,
+                    Some(&original_selection),
+                ));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
                         ..validation.clone()
                     },
                 });
-                !validation.selection.is_empty()
+                !validation.selection.ranges.is_empty()
             } else {
                 true
             }
         });
-
         transaction.reverse_operations.extend(reverse_operations);
+        changed_selections
     }
 
     /// Inserts a column into all validations.
     ///
     /// Returns a list of operations that reverse the changes.
-    pub fn insert_column(
+    pub(crate) fn insert_column(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         column: i64,
-    ) {
+    ) -> Vec<A1Selection> {
+        let mut changed_selections = vec![];
         let mut reverse_operations = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.inserted_column(column) {
-                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
+                changed_selections.extend(transaction.validation_changed(
+                    sheet_id,
+                    validation,
+                    Some(&original_selection),
+                ));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -93,23 +108,29 @@ impl Validations {
         });
 
         transaction.reverse_operations.extend(reverse_operations);
+        changed_selections
     }
 
     /// Inserts a row into all validations.
     ///
     /// Returns a list of operations that reverse the changes.
-    pub fn insert_row(
+    pub(crate) fn insert_row(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         row: i64,
-    ) {
+    ) -> Vec<A1Selection> {
+        let mut changed_selections = vec![];
         let mut reverse_operations = Vec::new();
 
         self.validations.iter_mut().for_each(|validation| {
             let original_selection = validation.selection.clone();
             if validation.selection.inserted_row(row) {
-                transaction.validation_changed(sheet_id, validation, Some(&original_selection));
+                changed_selections.extend(transaction.validation_changed(
+                    sheet_id,
+                    validation,
+                    Some(&original_selection),
+                ));
                 reverse_operations.push(Operation::SetValidation {
                     validation: Validation {
                         selection: original_selection,
@@ -120,37 +141,32 @@ impl Validations {
         });
 
         transaction.reverse_operations.extend(reverse_operations);
+        changed_selections
     }
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
     use uuid::Uuid;
 
     use crate::{
         grid::sheet::validations::validation_rules::{
             validation_logical::ValidationLogical, ValidationRule,
         },
-        selection::Selection,
-        Rect,
+        A1Selection,
     };
 
     use super::*;
 
     #[test]
-    #[parallel]
-    fn remove_column() {
+    fn test_remove_column() {
         let mut validations = Validations::default();
 
         // rect and columns to be updated
         let validation_rect_columns = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(1, 1, 3, 3)]),
-                columns: Some(vec![1, 2, 3]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("A1:C3,A:C"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -160,11 +176,7 @@ mod tests {
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(2, 2, 1, 1)]),
-                columns: Some(vec![2]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("B2:B3,B"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -174,12 +186,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
-                columns: Some(vec![-10]),
-                rows: Some(vec![1, 2, 3, 4]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("A1:A1,A,5:10"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -192,17 +199,13 @@ mod tests {
         // remove column 2
         validations.remove_column(&mut transaction, sheet_id, 2);
         assert_eq!(transaction.reverse_operations.len(), 2);
-
         assert_eq!(validations.validations.len(), 2);
 
+        let selection = A1Selection::test_a1("A1:B3,A:B");
         assert_eq!(
             validations.validations[0],
             Validation {
-                selection: Selection {
-                    rects: Some(vec![Rect::new(1, 1, 2, 3)]),
-                    columns: Some(vec![1, 2]),
-                    ..validation_rect_columns.selection
-                },
+                selection,
                 ..validation_rect_columns
             }
         );
@@ -210,18 +213,13 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
-    fn remove_row() {
+    fn test_remove_row() {
         let mut validations = Validations::default();
 
         // rect and columns to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(1, 1, 3, 3)]),
-                rows: Some(vec![1, 2, 3]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("A1:C3,1:3"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -231,11 +229,7 @@ mod tests {
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(2, 2, 1, 1)]),
-                rows: Some(vec![2]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("A2:C2,2"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -245,12 +239,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
-                columns: Some(vec![1, 2, 3, 4]),
-                rows: Some(vec![-10]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("A1:A1,A1:D1,1"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -262,17 +251,12 @@ mod tests {
         let sheet_id = SheetId::test();
         validations.remove_row(&mut transaction, sheet_id, 2);
         assert_eq!(transaction.reverse_operations.len(), 2);
-
         assert_eq!(validations.validations.len(), 2);
 
         assert_eq!(
             validations.validations[0],
             Validation {
-                selection: Selection {
-                    rects: Some(vec![Rect::new(1, 1, 3, 2)]),
-                    rows: Some(vec![1, 2]),
-                    ..validation_rect_rows.selection
-                },
+                selection: A1Selection::test_a1("A1:C2,1:2"),
                 ..validation_rect_rows
             }
         );
@@ -280,18 +264,13 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn inserted_column() {
         let mut validations = Validations::default();
 
         // rect and rows to be updated
         let validation_rect_cols = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(1, 1, 3, 3)]),
-                columns: Some(vec![1, 2, 3]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("A1:C3,A,B,C"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -301,11 +280,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
-                columns: Some(vec![-10]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("A1:A1,A"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -323,11 +298,7 @@ mod tests {
         assert_eq!(
             validations.validations[0],
             Validation {
-                selection: Selection {
-                    rects: Some(vec![Rect::new(1, 1, 4, 3)]),
-                    columns: Some(vec![1, 3, 4]),
-                    ..validation_rect_cols.selection
-                },
+                selection: A1Selection::test_a1("A1:D3,A,C,D"),
                 ..validation_rect_cols
             }
         );
@@ -335,18 +306,13 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn inserted_row() {
         let mut validations = Validations::default();
 
         // rect and columns to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(1, 1, 3, 3)]),
-                rows: Some(vec![1, 2, 3]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("A1:C3,1,2,3"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -356,11 +322,7 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: Selection {
-                rects: Some(vec![Rect::new(-10, -10, 1, 1)]),
-                rows: Some(vec![-10]),
-                ..Default::default()
-            },
+            selection: A1Selection::test_a1("A1:A1,1"),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -378,11 +340,7 @@ mod tests {
         assert_eq!(
             validations.validations[0],
             Validation {
-                selection: Selection {
-                    rects: Some(vec![Rect::new(1, 1, 3, 4)]),
-                    rows: Some(vec![1, 3, 4]),
-                    ..validation_rect_rows.selection
-                },
+                selection: A1Selection::test_a1("A1:C4,1,3,4"),
                 ..validation_rect_rows
             }
         );

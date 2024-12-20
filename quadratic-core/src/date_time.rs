@@ -97,7 +97,11 @@ fn find_items_date_start(items: &[Item<'_>]) -> Option<usize> {
 /// Converts a NaiveDateTime to a date and time string using a strftime format string.
 pub fn date_time_to_date_time_string(date_time: NaiveDateTime, format: Option<String>) -> String {
     let format = format.map_or(DEFAULT_DATE_TIME_FORMAT.to_string(), |f| f);
-    date_time.format(&format).to_string()
+    let strftime_items = StrftimeItems::new(&format);
+    let Ok(items) = strftime_items.parse() else {
+        return date_time.format(DEFAULT_DATE_TIME_FORMAT).to_string();
+    };
+    date_time.format_with_items(items.iter()).to_string()
 }
 
 /// Converts a NaiveDateTime to a date-only string using a strftime format string.
@@ -225,7 +229,7 @@ pub fn parse_date(value: &str) -> Option<NaiveDate> {
         "%d.%m.%Y",
         "%Y %m %d",
         "%m %d %Y",
-        "%d %m %Y",
+        "%d %m %G",
         "%Y %b %d",
         "%b %d %Y",
         "%d %b %Y",
@@ -319,8 +323,7 @@ mod tests {
     #[test]
     #[parallel]
     fn test_parse_date() {
-        let date = "12/23/2024".to_string();
-        let parsed_date = parse_date(&date).unwrap();
+        let parsed_date = parse_date("12/23/2024").unwrap();
         assert_eq!(parsed_date, NaiveDate::from_ymd_opt(2024, 12, 23).unwrap());
         assert_eq!(
             parse_date("12/23/2024"),
@@ -413,5 +416,12 @@ mod tests {
         let format = "%H:%M:%S %Y %B %d %A";
         let formatted_date = date_to_date_string(date.unwrap(), Some(format.to_string()));
         assert_eq!(formatted_date, "2024 December 23 Monday".to_string());
+    }
+
+    #[test]
+    #[parallel]
+    fn test_parse_date_time() {
+        assert_eq!(parse_date("1893-01"), None);
+        assert_eq!(parse_date("1902-01"), None);
     }
 }

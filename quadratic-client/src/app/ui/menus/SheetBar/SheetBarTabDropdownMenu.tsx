@@ -90,9 +90,13 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
         </DropdownMenuSub>
 
         <DropdownMenuItem
-          onClick={(e) => {
+          onClick={() => {
             handleClose();
             handleRename();
+          }}
+          onPointerUp={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
           }}
         >
           Rename

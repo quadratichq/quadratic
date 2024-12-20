@@ -2,10 +2,15 @@
   "editor.formatOnSave": true,
   "cSpell.words": [
     "actix",
+    "ayush",
     "bigdecimal",
     "bincode",
     "bindgen",
+<<<<<<< HEAD
     "cellvalue",
+=======
+    "CRPXNLSKVLJFHH",
+>>>>>>> origin/qa
     "dashmap",
     "dbgjs",
     "dcell",
@@ -13,7 +18,10 @@
     "dgraph",
     "dotenv",
     "endregion",
+    "finitize",
     "Fuzzysort",
+    "GETCELL",
+    "getcells",
     "gramm",
     "grammarly",
     "Hasher",
@@ -27,6 +35,7 @@
     "jwks",
     "MDSL",
     "micropip",
+    "minmax",
     "msdf",
     "nonblank",
     "Northbridge",
@@ -35,10 +44,14 @@
     "peekable",
     "pixi",
     "pixiapp",
+    "Plotly",
     "pulumi",
     "pyimport",
     "rects",
+    "RELCELL",
+    "relcells",
     "reqwest",
+    "scrollend",
     "shadcn",
     "Signin",
     "smallpop",
@@ -47,6 +60,7 @@
     "szhsin",
     "thiserror",
     "Timelike",
+    "trackpad",
     "undoable",
     "unspill",
     "vals",
@@ -56,6 +70,10 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
+<<<<<<< HEAD
+=======
+  "rust-analyzer.check.extraArgs": ["--target-dir=target/rust-analyzer"],
+>>>>>>> origin/qa
   "rust-analyzer.checkOnSave": true,
   "rust-analyzer.cargo.unsetTest": true,
   // "rust-analyzer.checkOnSave.command": "clippy",
@@ -91,6 +109,9 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

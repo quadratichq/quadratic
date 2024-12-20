@@ -5,6 +5,7 @@ use crate::{Array, ArraySize, CellValue, Rect};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+/// Sparsely-populated rectangle of [`CellValue`]s.
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CellValues {
     pub columns: Vec<BTreeMap<u64, CellValue>>,

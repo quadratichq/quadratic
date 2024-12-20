@@ -11,25 +11,12 @@ import { isMac } from '@/shared/utils/isMac';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
-import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
-
-// Returns an array with all numbers inclusive of start to end
-function fillArray(start: number, end: number): number[] {
-  const result = [];
-  if (start > end) {
-    [start, end] = [end, start];
-  }
-  for (let i = start; i <= end; i++) {
-    result.push(i);
-  }
-  return result;
-}
 
 export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
@@ -78,6 +65,7 @@ export class PointerHeading {
 
     // exit out of inline editor
     inlineEditorHandler.closeIfOpen();
+    const cursor = sheets.sheet.cursor;
 
     const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
     const headingResize = !hasPermission ? undefined : headings.intersectsHeadingGridLine(world);
@@ -112,7 +100,7 @@ export class PointerHeading {
           this.downTimeout = undefined;
           zoomToFit();
         } else {
-          selectAllCells();
+          cursor.selectAll(event.shiftKey);
           this.downTimeout = window.setTimeout(() => {
             if (this.downTimeout) {
               this.downTimeout = undefined;
@@ -121,14 +109,13 @@ export class PointerHeading {
         }
       }
 
-      const cursor = sheets.sheet.cursor;
-
       // Selects multiple columns or rows. If ctrl/meta is pressed w/o shift,
       // then it add or removes the clicked column or row. If shift is pressed,
       // then it selects all columns or rows between the last clicked column or
       // row and the current one.
       const isRightClick =
         (event as MouseEvent).button === 2 || (isMac && (event as MouseEvent).button === 0 && event.ctrlKey);
+<<<<<<< HEAD
       if (event.ctrlKey || event.metaKey || isRightClick) {
         if (intersects.column !== null) {
           let column = intersects.column;
@@ -226,6 +213,16 @@ export class PointerHeading {
         } else if (intersects.row !== null) {
           selectRows([intersects.row]);
         }
+=======
+      const bounds = pixiApp.viewport.getVisibleBounds();
+      const headingSize = pixiApp.headings.headingSize;
+      if (intersects.column !== null) {
+        const top = sheets.sheet.getRowFromScreen(bounds.top + headingSize.height);
+        cursor.selectColumn(intersects.column, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, top);
+      } else if (intersects.row !== null) {
+        const left = sheets.sheet.getColumnFromScreen(bounds.left);
+        cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
+>>>>>>> origin/qa
       }
     }
 

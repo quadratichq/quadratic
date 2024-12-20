@@ -1,8 +1,8 @@
 use super::current;
 use crate::{
     cellvalue::Import,
-    grid::{CodeCellLanguage, ConnectionKind},
-    CellValue, CodeCellValue,
+    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind},
+    CellValue,
 };
 use bigdecimal::BigDecimal;
 use std::str::FromStr;
@@ -99,24 +99,22 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
         current::CellValueSchema::DateTime(dt) => CellValue::DateTime(dt),
         current::CellValueSchema::Error(error) => CellValue::Error(Box::new(error.into())),
         current::CellValueSchema::Image(text) => CellValue::Image(text),
-        current::CellValueSchema::Import(import) => {
-            CellValue::Import(Import::new(import.file_name))
+        current::CellValueSchema::Import(current::ImportSchema { file_name }) => {
+            CellValue::Import(Import::new(file_name))
         }
     }
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
-    use serial_test::parallel;
-
-    use crate::{controller::GridController, grid::file, selection::Selection};
+    use crate::{controller::GridController, grid::file, A1Selection};
 
     #[test]
-    #[parallel]
-    fn import_and_export_date_time() {
+    fn test_import_and_export_date_time() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_date_time_format(Selection::pos(0, 0, sheet_id), Some("%H".to_string()), None)
+        gc.set_date_time_format(&A1Selection::test_a1("A1"), Some("%H".to_string()), None)
             .unwrap();
         let grid = gc.grid().clone();
         let exported = file::export(grid).unwrap();

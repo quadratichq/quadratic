@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::grid::file::v1_6::schema as v1_6;
 use crate::grid::file::v1_6::schema_validation as v1_6_validation;
+use crate::grid::file::v1_8::ImportSchema;
 use chrono::DateTime;
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
@@ -47,7 +48,6 @@ pub type ValidationDateTimeSchema = v1_6_validation::ValidationDateTime;
 pub type ValidationNumberSchema = v1_6_validation::ValidationNumber;
 pub type ValidationTextSchema = v1_6_validation::ValidationText;
 pub type ValidationLogicalSchema = v1_6_validation::ValidationLogical;
-pub type ValidationListSchema = v1_6_validation::ValidationList;
 pub type ValidationListSourceSchema = v1_6_validation::ValidationListSource;
 pub type TextMatchSchema = v1_6_validation::TextMatch;
 pub type TextCaseSchema = v1_6_validation::TextCase;
@@ -93,11 +93,6 @@ pub struct OutputArraySchema {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Import {
-    pub file_name: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CellValueSchema {
     Blank,
     Text(String),
@@ -112,7 +107,7 @@ pub enum CellValueSchema {
     Duration(String),
     Error(RunErrorSchema),
     Image(String),
-    Import(Import),
+    Import(ImportSchema),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

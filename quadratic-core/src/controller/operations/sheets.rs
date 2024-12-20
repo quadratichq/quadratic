@@ -44,7 +44,7 @@ impl GridController {
         let sheet = Sheet::new(id, name, order);
 
         vec![Operation::AddSheetSchema {
-            schema: export_sheet(sheet),
+            schema: Box::new(export_sheet(sheet)),
         }]
     }
 
@@ -97,7 +97,7 @@ impl GridController {
         };
 
         let mut ops = vec![Operation::AddSheetSchema {
-            schema: (export_sheet(new_sheet)),
+            schema: Box::new(export_sheet(new_sheet)),
         }];
 
         // get code run operations for the old sheet, as new sheet is not yet in the grid

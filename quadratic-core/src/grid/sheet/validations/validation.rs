@@ -4,8 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     grid::{js_types::JsRenderCellSpecial, Sheet},
-    selection::Selection,
-    CellValue,
+    A1Selection, CellRefRange, CellValue,
 };
 
 use super::validation_rules::ValidationRule;
@@ -34,9 +33,18 @@ pub struct ValidationError {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub struct JsValidation {
+    pub id: Uuid,
+    pub selection: String,
+    pub rule: ValidationRule,
+    pub message: ValidationMessage,
+    pub error: ValidationError,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct Validation {
     pub id: Uuid,
-    pub selection: Selection,
+    pub selection: A1Selection,
     pub rule: ValidationRule,
     pub message: ValidationMessage,
     pub error: ValidationError,
@@ -71,36 +79,36 @@ impl Validation {
 }
 
 /// Used to render a validation on the sheet.
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 pub struct ValidationDisplay {
+    pub range: CellRefRange,
     pub checkbox: bool,
     pub list: bool,
 }
 
 impl ValidationDisplay {
-    pub fn is_default(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         !self.checkbox && !self.list
     }
 }
 
 /// Used for sheet-level validations (ie, Selection.all, Selection.columns, or
 /// Selection.rows).
-/// todo: also need to include exceptions
 #[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 pub struct ValidationDisplaySheet {
-    pub columns: Option<Vec<(i64, ValidationDisplay)>>,
-    pub rows: Option<Vec<(i64, ValidationDisplay)>>,
-    pub all: Option<ValidationDisplay>,
+    pub displays: Vec<ValidationDisplay>,
 }
 
 impl ValidationDisplaySheet {
     pub fn is_default(&self) -> bool {
-        self.columns.is_none() && self.rows.is_none() && self.all.is_none()
+        self.displays.is_empty()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use crate::grid::sheet::validations::validation_rules::{
         validation_list::{ValidationList, ValidationListSource},
         validation_logical::ValidationLogical,
@@ -114,35 +122,37 @@ mod tests {
         assert!(v.is_default());
 
         let v = ValidationDisplaySheet {
-            columns: Some(vec![(
-                0,
-                ValidationDisplay {
-                    checkbox: true,
-                    list: false,
-                },
-            )]),
-            ..Default::default()
+            displays: vec![ValidationDisplay {
+                range: CellRefRange::from_str("A1").unwrap(),
+                checkbox: true,
+                list: false,
+            }],
         };
         assert!(!v.is_default());
     }
 
     #[test]
-    fn validation_display_is_default() {
-        let v = ValidationDisplay::default();
-        assert!(v.is_default());
+    fn validation_display_is_empty() {
+        let v = ValidationDisplay {
+            range: CellRefRange::from_str("A1").unwrap(),
+            checkbox: false,
+            list: false,
+        };
+        assert!(v.is_empty());
 
         let v = ValidationDisplay {
+            range: CellRefRange::new_relative_xy(1, 1),
             checkbox: true,
             list: false,
         };
-        assert!(!v.is_default());
+        assert!(!v.is_empty());
     }
 
     #[test]
     fn validation_render_special() {
         let v = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::default(),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
                 ignore_blank: true,
@@ -154,7 +164,7 @@ mod tests {
 
         let v = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::default(),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::List(ValidationList {
                 source: ValidationListSource::List(vec!["test".to_string()]),
                 ignore_blank: true,
@@ -167,7 +177,7 @@ mod tests {
 
         let v = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::default(),
+            selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::None,
             message: Default::default(),
             error: Default::default(),

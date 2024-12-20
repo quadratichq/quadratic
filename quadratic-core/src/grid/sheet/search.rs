@@ -50,11 +50,13 @@ impl Sheet {
                 if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
                     true
                 } else {
-                    let format = self.format_cell(pos.x, pos.y, true);
+                    let numeric_format = self.formats.numeric_format.get(pos);
+                    let numeric_decimals = self.formats.numeric_decimals.get(pos);
+                    let numeric_commas = self.formats.numeric_commas.get(pos);
                     let display = cell_value.to_number_display(
-                        format.numeric_format,
-                        format.numeric_decimals,
-                        format.numeric_commas,
+                        numeric_format,
+                        numeric_decimals,
+                        numeric_commas,
                     );
                     display == *query || (!whole_cell && display.contains(query))
                 }
@@ -227,13 +229,11 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
-        Array, CodeCellValue,
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        Array,
     };
     use serial_test::parallel;
 
@@ -425,8 +425,8 @@ mod test {
         );
         gc.set_cell_value(
             SheetPos {
-                x: -10,
-                y: -11,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "10.123%".to_string(),
@@ -436,7 +436,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let results = sheet.search(&"123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 1));
         assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
 
         let results = sheet.search(&"$5,123".into(), &SearchOptions::default());
@@ -470,7 +470,7 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 1));
 
         let results = sheet.search(
             &"0.10123".into(),
@@ -481,7 +481,7 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 1));
     }
 
     #[test]
@@ -500,7 +500,7 @@ mod test {
             error: None,
             std_out: None,
             std_err: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             return_type: None,
             line_number: None,
             output_type: None,
@@ -546,7 +546,7 @@ mod test {
             error: None,
             std_out: None,
             std_err: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             return_type: None,
             line_number: None,
             output_type: None,

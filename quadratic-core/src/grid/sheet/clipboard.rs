@@ -2,19 +2,18 @@ use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOrigin};
 use crate::formulas::replace_a1_notation;
-use crate::grid::formats::Formats;
+use crate::grid::js_types::JsClipboard;
 use crate::grid::{CodeCellLanguage, Sheet};
-use crate::selection::Selection;
-use crate::{CellValue, Pos, Rect};
+use crate::{A1Selection, CellValue, Pos, Rect};
 
 impl Sheet {
     /// Copies the selection to the clipboard.
     ///
     /// Returns the copied SheetRect, plain text, and html.
-    pub fn copy_to_clipboard(&self, selection: &Selection) -> Result<(String, String), String> {
+    pub fn copy_to_clipboard(&self, selection: &A1Selection) -> Result<JsClipboard, String> {
         let mut clipboard_origin = ClipboardOrigin::default();
-        let mut html = String::from("<tbody>");
         let mut plain_text = String::new();
+        let mut html_body = String::from("<tbody>");
         let mut cells = CellValues::default();
         let mut values = CellValues::default();
         let mut sheet_bounds: Option<Rect> = None;
@@ -27,20 +26,20 @@ impl Sheet {
             for y in bounds.y_range() {
                 if y != bounds.min.y {
                     plain_text.push('\n');
-                    html.push_str("</tr>");
+                    html_body.push_str("</tr>");
                 }
 
-                html.push_str("<tr>");
+                html_body.push_str("<tr>");
 
                 for x in bounds.x_range() {
                     if x != bounds.min.x {
                         plain_text.push('\t');
-                        html.push_str("</td>");
+                        html_body.push_str("</td>");
                     }
 
                     let pos = Pos { x, y };
 
-                    if !selection.contains_pos(pos) {
+                    if !selection.might_contain_pos(pos) {
                         continue;
                     }
 
@@ -81,7 +80,7 @@ impl Sheet {
                     // add styling for html (only used for pasting to other spreadsheets)
                     let mut style = String::new();
 
-                    let summary = self.cell_format_summary(pos, true);
+                    let summary = self.cell_format_summary(pos);
                     let bold = summary.bold.unwrap_or(false);
                     let italic = summary.italic.unwrap_or(false);
                     let text_color = summary.text_color;
@@ -92,15 +91,18 @@ impl Sheet {
                     let underline = summary.underline.unwrap_or(false);
                     let strike_through = summary.strike_through.unwrap_or(false);
 
+                    let cell_border = self.borders.get_style_cell(pos);
+
                     if bold
                         || italic
+                        || underline
+                        || strike_through
                         || text_color.is_some()
                         || fill_color.is_some()
                         || cell_align.is_some()
                         || cell_vertical_align.is_some()
                         || cell_wrap.is_some()
-                        || underline
-                        || strike_through
+                        || !cell_border.is_empty()
                     {
                         style.push_str("style=\"");
 
@@ -109,6 +111,13 @@ impl Sheet {
                         }
                         if italic {
                             style.push_str("font-style:italic;");
+                        }
+                        if underline && !strike_through {
+                            style.push_str("text-decoration:underline;");
+                        } else if !underline && strike_through {
+                            style.push_str("text-decoration:line-through;");
+                        } else if underline && strike_through {
+                            style.push_str("text-decoration:underline line-through;");
                         }
                         if let Some(text_color) = text_color {
                             if let Ok(text_color) = Rgba::from_css_str(text_color.as_str()) {
@@ -142,38 +151,55 @@ impl Sheet {
                             style.push_str("text-decoration:underline line-through;");
                         }
 
-                        // todo...
-                        // if let Some(cell_border) = cell_border {
-                        //     for (side, border) in cell_border.borders.iter().enumerate() {
-                        //         let side = match side {
-                        //             0 => "-left",
-                        //             1 => "-top",
-                        //             2 => "-right",
-                        //             3 => "-bottom",
-                        //             _ => "",
-                        //         };
-                        //         if let Some(border) = border {
-                        //             style.push_str(
-                        //                 format!(
-                        //                     "border{}: {} {};",
-                        //                     side,
-                        //                     border.line.as_css_string(),
-                        //                     border.color.as_rgb_hex()
-                        //                 )
-                        //                 .as_str(),
-                        //             );
-                        //         }
-                        //     }
-                        // }
+                        if cell_border.left.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-left: {} {};",
+                                    cell_border.left.unwrap().line.as_css_string(),
+                                    cell_border.left.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                        if cell_border.top.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-top: {} {};",
+                                    cell_border.top.unwrap().line.as_css_string(),
+                                    cell_border.top.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                        if cell_border.right.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-right: {} {};",
+                                    cell_border.right.unwrap().line.as_css_string(),
+                                    cell_border.right.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                        if cell_border.bottom.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-bottom: {} {};",
+                                    cell_border.bottom.unwrap().line.as_css_string(),
+                                    cell_border.bottom.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
 
                         style.push('"');
                     }
 
-                    html.push_str(format!("<td {}>", style).as_str());
+                    html_body.push_str(format!("<td {}>", style).as_str());
 
                     if let Some(value) = &simple_value {
                         plain_text.push_str(&value.to_string());
-                        html.push_str(&value.to_string());
+                        html_body.push_str(&value.to_string());
                     }
                 }
             }
@@ -222,8 +248,7 @@ impl Sheet {
                                     x: x - bounds.min.x,
                                     y: y - bounds.min.y,
                                 };
-
-                                if selection.contains_pos(Pos { x, y }) {
+                                if selection.might_contain_pos(Pos { x, y }) {
                                     if include_in_cells {
                                         cells.set(pos.x as u32, pos.y as u32, value.clone());
                                     }
@@ -236,55 +261,32 @@ impl Sheet {
                 });
         }
 
-        let formats = if let Some(bounds) = sheet_bounds {
-            self.override_cell_formats(bounds, Some(selection))
-        } else {
-            Formats::default()
-        };
+        let formats = self.formats.to_clipboard(self, selection);
 
-        if selection.all {
-            clipboard_origin.all = Some((clipboard_origin.x, clipboard_origin.y));
-        } else {
-            if selection.columns.is_some() {
-                // we need the row origin when columns are selected
-                clipboard_origin.row = sheet_bounds.map(|b| b.min.y);
-            }
+        let borders = self.borders.to_clipboard(self, selection);
 
-            if selection.rows.is_some() {
-                // we need the column origin when rows are selected
-                clipboard_origin.column = sheet_bounds.map(|b| b.min.x);
-            }
-        }
-
-        let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
         let validations = self.validations.to_clipboard(selection, &clipboard_origin);
-        let borders = self.borders.to_clipboard(selection);
+
         let clipboard = Clipboard {
             cells,
             formats,
-            sheet_formats,
-            borders: borders.map(|borders| {
-                (
-                    selection.translate(-clipboard_origin.x, -clipboard_origin.y),
-                    borders,
-                )
-            }),
+            borders,
             values,
             w: sheet_bounds.map_or(0, |b| b.width()),
             h: sheet_bounds.map_or(0, |b| b.height()),
             origin: clipboard_origin,
-            selection: Some(selection.clone()),
+            selection: selection.clone(),
             validations,
         };
 
-        html.push_str("</td></tr></tbody></table>");
-        let mut final_html = String::from("<table data-quadratic=\"");
+        html_body.push_str("</td></tr></tbody></table>");
+        let mut html = String::from("<table data-quadratic=\"");
         let data = serde_json::to_string(&clipboard).unwrap();
         let encoded = htmlescape::encode_attribute(&data);
-        final_html.push_str(&encoded);
-        final_html.push_str(&String::from("\">"));
-        final_html.push_str(&html);
-        Ok((plain_text, final_html))
+        html.push_str(&encoded);
+        html.push_str(&String::from("\">"));
+        html.push_str(&html_body);
+        Ok(JsClipboard { plain_text, html })
     }
 }
 
@@ -292,11 +294,11 @@ impl Sheet {
 mod tests {
     use serial_test::parallel;
 
-    use super::*;
     use crate::controller::operations::clipboard::PasteSpecial;
     use crate::controller::GridController;
-    use crate::grid::{BorderSelection, BorderStyle, CellBorderLine};
-    use crate::{Rect, SheetRect};
+    use crate::grid::js_types::JsClipboard;
+    use crate::grid::sheet::borders::{BorderSelection, BorderStyle, CellBorderLine};
+    use crate::{A1Selection, Pos, Rect};
 
     #[test]
     #[parallel]
@@ -307,18 +309,17 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         sheet.test_set_values(0, 0, 4, 1, vec!["1", "2", "3", "4"]);
 
-        let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
-                rects: Some(vec![
-                    Rect::single_pos(Pos { x: 0, y: 0 }),
-                    Rect::from_numbers(2, 0, 2, 1),
-                ]),
-                ..Default::default()
-            })
-            .unwrap();
+        let selection = A1Selection::from_rects(
+            &[
+                Rect::single_pos(Pos { x: 0, y: 0 }),
+                Rect::from_numbers(2, 0, 2, 1),
+            ],
+            sheet_id,
+        );
+        let JsClipboard { html, .. } = sheet.copy_to_clipboard(&selection).unwrap();
 
         gc.paste_from_clipboard(
-            Selection::pos(0, 5, sheet_id),
+            &A1Selection::from_xy(0, 5, sheet_id),
             None,
             Some(html),
             PasteSpecial::None,
@@ -335,19 +336,20 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = Selection::sheet_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
-        gc.set_borders_selection(
-            selection.clone(),
+        gc.set_borders(
+            A1Selection::test_a1("A1"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
-        let (_, html) = sheet.copy_to_clipboard(&selection).unwrap();
+        let JsClipboard { html, .. } = sheet
+            .copy_to_clipboard(&A1Selection::test_a1("A1"))
+            .unwrap();
 
         gc.paste_from_clipboard(
-            Selection::pos(2, 2, sheet_id),
+            &A1Selection::test_a1("B2"),
             None,
             Some(html),
             PasteSpecial::None,
@@ -355,7 +357,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let border = sheet.borders.get(2, 2);
+        let border = sheet.borders.get_style_cell(pos![B2]);
         assert_eq!(border.top.unwrap().line, CellBorderLine::default());
         assert_eq!(border.bottom.unwrap().line, CellBorderLine::default());
         assert_eq!(border.left.unwrap().line, CellBorderLine::default());

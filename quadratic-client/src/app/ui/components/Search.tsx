@@ -3,6 +3,7 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { editorInteractionStateShowSearchAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -15,7 +16,7 @@ import {
 import { Input } from '@/shared/shadcn/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/shared/shadcn/ui/popover';
 import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon } from '@radix-ui/react-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
 const findInSheetActionSpec = defaultActionSpec[Action.FindInCurrentSheet];
@@ -36,32 +37,32 @@ export function Search() {
 
   const placeholder = !searchOptions.sheet_id ? findInSheetsActionSpec.label : findInSheetActionSpec.label;
 
-  const onChange = async (search: string, updatedSearchOptions = searchOptions) => {
-    if (search.length > 0) {
-      const found = await quadraticCore.search(search, updatedSearchOptions);
-      if (found.length) {
-        setResults(found);
-        setCurrent(0);
-        moveCursor(found[0]);
-        events.emit(
-          'search',
-          found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), 0)
-        );
-        return;
+  const onChange = useCallback(
+    async (search: string, updatedSearchOptions = searchOptions) => {
+      if (search.length > 0) {
+        const found = await quadraticCore.search(search, updatedSearchOptions);
+        if (found.length) {
+          setResults(found);
+          setCurrent(0);
+          moveCursor(found[0]);
+          events.emit(
+            'search',
+            found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), 0)
+          );
+          return;
+        }
       }
-    }
-    setResults([]);
-    events.emit('search');
-  };
+      setResults([]);
+      events.emit('search');
+    },
+    [searchOptions]
+  );
 
   const moveCursor = (pos: SheetPos) => {
     if (sheets.sheet.id !== pos.sheet_id.id) {
       sheets.current = pos.sheet_id.id;
     }
-    sheets.sheet.cursor.changePosition({
-      cursorPosition: { x: Number(pos.x), y: Number(pos.y) },
-      ensureVisible: true,
-    });
+    sheets.sheet.cursor.moveTo(Number(pos.x), Number(pos.y));
   };
 
   const navigate = (delta: 1 | -1) => {
@@ -105,26 +106,26 @@ export function Search() {
 
   const closeSearch = () => {
     events.emit('search');
+    focusGrid();
   };
 
   useEffect(() => {
     const changeSheet = () => {
-      if (!showSearch) {
+      if (!showSearch || !searchOptions.sheet_id) {
         return;
       }
-      setSearchOptions((prev) => {
-        if (prev.sheet_id) {
-          return { ...prev, sheet_id: sheets.sheet.id };
-        } else {
-          return prev;
-        }
-      });
+      const newSearchOptions = { ...searchOptions };
+      if (searchOptions.sheet_id) {
+        newSearchOptions.sheet_id = sheets.sheet.id;
+      }
+      setSearchOptions(newSearchOptions);
+      onChange((inputRef.current as HTMLInputElement).value, newSearchOptions);
     };
     events.on('changeSheet', changeSheet);
     return () => {
       events.off('changeSheet', changeSheet);
     };
-  }, [showSearch]);
+  }, [showSearch, searchOptions, onChange]);
 
   useEffect(() => {
     if (!showSearch) {
@@ -161,7 +162,7 @@ export function Search() {
           if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             inputRef.current?.focus();
-
+            inputRef.current?.select();
             // shift+cmd+f let's you change to all sheets search mode while in the dialog box
             if (e.shiftKey) {
               setSearchOptions((prev) => {

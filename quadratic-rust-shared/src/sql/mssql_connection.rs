@@ -17,7 +17,8 @@ use tokio_util::compat::{Compat, TokioAsyncWriteCompatExt};
 use uuid::Uuid;
 
 use crate::arrow::arrow_type::ArrowType;
-use crate::error::{Result, SharedError, Sql};
+use crate::error::{Result, SharedError};
+use crate::sql::error::Sql as SqlError;
 use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
 use crate::sql::Connection;
 
@@ -52,13 +53,13 @@ impl MsSqlConnection {
         let mut row_stream = client
             .query(sql, &[])
             .await
-            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?
+            .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?
             .into_row_stream();
 
         while let Some(row_result) = row_stream.next().await {
             match row_result {
                 Ok(row) => rows.push(row),
-                Err(e) => return Err(SharedError::Sql(Sql::Query(e.to_string()))),
+                Err(e) => return Err(SharedError::Sql(SqlError::Query(e.to_string()))),
             }
         }
 
@@ -91,7 +92,9 @@ impl Connection for MsSqlConnection {
 
         if let Some(port) = &self.port {
             config.port(port.parse::<u16>().map_err(|_| {
-                SharedError::Sql(Sql::Connect("Could not parse port into a number".into()))
+                SharedError::Sql(SqlError::Connect(
+                    "Could not parse port into a number".into(),
+                ))
             })?);
         }
 
@@ -104,16 +107,17 @@ impl Connection for MsSqlConnection {
 
         config.trust_cert();
 
-        let tcp = TcpStream::connect(config.get_addr())
-            .await
-            .map_err(|e| SharedError::Sql(Sql::Connect(format!("Failed to connect: {}", e))))?;
-        tcp.set_nodelay(true)
-            .map_err(|e| SharedError::Sql(Sql::Connect(format!("Failed to set nodelay: {}", e))))?;
+        let tcp = TcpStream::connect(config.get_addr()).await.map_err(|e| {
+            SharedError::Sql(SqlError::Connect(format!("Failed to connect: {}", e)))
+        })?;
+        tcp.set_nodelay(true).map_err(|e| {
+            SharedError::Sql(SqlError::Connect(format!("Failed to set nodelay: {}", e)))
+        })?;
 
         let client = Client::connect(config, tcp.compat_write())
             .await
             .map_err(|e| {
-                SharedError::Sql(Sql::Connect(format!("Failed to create client: {}", e)))
+                SharedError::Sql(SqlError::Connect(format!("Failed to create client: {}", e)))
             })?;
 
         Ok(client)
@@ -134,7 +138,7 @@ impl Connection for MsSqlConnection {
             let mut row_stream = client
                 .query(sql, &[])
                 .await
-                .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?
+                .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?
                 .into_row_stream();
 
             while let Some(row_result) = row_stream.next().await {
@@ -149,7 +153,7 @@ impl Connection for MsSqlConnection {
 
                         rows.push(row);
                     }
-                    Err(e) => return Err(SharedError::Sql(Sql::Query(e.to_string()))),
+                    Err(e) => return Err(SharedError::Sql(SqlError::Query(e.to_string()))),
                 }
             }
         } else {
@@ -185,13 +189,13 @@ ORDER BY
         let row_stream = client
             .query(sql, &[])
             .await
-            .map_err(|e| SharedError::Sql(Sql::Schema(e.to_string())))?
+            .map_err(|e| SharedError::Sql(SqlError::Schema(e.to_string())))?
             .into_row_stream();
 
         let rows: Vec<Row> = row_stream
             .try_collect()
             .await
-            .map_err(|e| SharedError::Sql(Sql::Schema(e.to_string())))?;
+            .map_err(|e| SharedError::Sql(SqlError::Schema(e.to_string())))?;
 
         let mut schema = DatabaseSchema {
             database: self.database.to_owned(),

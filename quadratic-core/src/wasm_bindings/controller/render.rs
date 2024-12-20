@@ -7,14 +7,14 @@ impl GridController {
     ///
     /// Returns a string containing a JSON array of [`JsRenderCell`].
     #[wasm_bindgen(js_name = "getRenderCells")]
-    pub fn get_render_cells(&self, sheet_id: String, rect: String) -> Result<String, JsValue> {
+    pub fn get_render_cells(&self, sheet_id: String, rect: String) -> Result<JsValue, JsValue> {
         let rect = serde_json::from_str::<Rect>(&rect).map_err(|e| e.to_string())?;
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return Result::Err("Sheet not found".into());
         };
         sheet.send_validation_warnings_rect(rect);
         let output = sheet.get_render_cells(rect);
-        Ok(serde_json::to_string::<[JsRenderCell]>(&output).map_err(|e| e.to_string())?)
+        Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
 
     /// Returns whether there is any cells to render in this region

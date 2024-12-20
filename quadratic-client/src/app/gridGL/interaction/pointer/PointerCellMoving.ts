@@ -174,14 +174,11 @@ export class PointerCellMoving {
   }
 
   private pointerMoveHover(world: Point): boolean {
-    const sheet = sheets.sheet;
-    const rectangles = sheet.cursor.getRectangles();
-
     // we do not move if there are multiple rectangles (for now)
-    if (rectangles.length > 1) return false;
-    const rectangle = rectangles[0];
+    const rectangle = sheets.sheet.cursor.getSingleRectangleOrCursor();
+    if (!rectangle) return false;
 
-    const origin = sheet.cursor.getCursor();
+    const origin = sheets.sheet.cursor.position;
     const column = origin.x;
     const row = origin.y;
 
@@ -234,6 +231,7 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
+<<<<<<< HEAD
         const table = getTable();
         const rectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
 
@@ -242,36 +240,32 @@ export class PointerCellMoving {
           rectangle.height = table.h;
         }
 
+=======
+        const rectangle = sheets.sheet.cursor.getLargestRectangle();
+>>>>>>> origin/qa
         quadraticCore.moveCells(
-          rectToSheetRect(
-            new Rectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1),
-            sheets.sheet.id
-          ),
+          rectToSheetRect(rectangle, sheets.sheet.id),
           this.movingCells.toColumn,
           this.movingCells.toRow,
           sheets.sheet.id
         );
 
-        // if we moved the code cell, we need to repopulate the code editor with
-        // unsaved content.
-        if (pixiAppSettings.unsavedEditorChanges) {
-          const { codeCell } = pixiAppSettings.codeEditorState;
-          if (
-            codeCell.sheetId === sheets.current &&
-            intersects.rectanglePoint(rectangle, new Point(codeCell.pos.x, codeCell.pos.y))
-          ) {
-            pixiAppSettings.setCodeEditorState?.({
-              ...pixiAppSettings.codeEditorState,
-              initialCode: pixiAppSettings.unsavedEditorChanges ?? '',
-              codeCell: {
-                ...codeCell,
-                pos: {
-                  x: codeCell.pos.x + this.movingCells.toColumn - this.movingCells.column,
-                  y: codeCell.pos.y + this.movingCells.toRow - this.movingCells.row,
-                },
+        const { showCodeEditor, codeCell } = pixiAppSettings.codeEditorState;
+        if (
+          showCodeEditor &&
+          codeCell.sheetId === sheets.current &&
+          intersects.rectanglePoint(rectangle, new Point(codeCell.pos.x, codeCell.pos.y))
+        ) {
+          pixiAppSettings.setCodeEditorState?.({
+            ...pixiAppSettings.codeEditorState,
+            codeCell: {
+              ...codeCell,
+              pos: {
+                x: codeCell.pos.x + this.movingCells.toColumn - this.movingCells.column,
+                y: codeCell.pos.y + this.movingCells.toRow - this.movingCells.row,
               },
-            });
-          }
+            },
+          });
         }
       }
       this.reset();

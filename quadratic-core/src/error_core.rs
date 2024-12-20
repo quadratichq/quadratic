@@ -8,6 +8,8 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::A1Error;
+
 pub type Result<T> = std::result::Result<T, CoreError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
@@ -30,6 +32,9 @@ pub enum CoreError {
 
     #[error("CodeCellSheetError: {0}")]
     CodeCellSheetError(String),
+
+    #[error("A1Error: {0}")]
+    A1Error(String),
 }
 
 impl From<serde_json::Error> for CoreError {
@@ -47,5 +52,11 @@ impl From<uuid::Error> for CoreError {
 impl From<anyhow::Error> for CoreError {
     fn from(error: anyhow::Error) -> Self {
         CoreError::Unknown(error.to_string())
+    }
+}
+
+impl From<A1Error> for CoreError {
+    fn from(error: A1Error) -> Self {
+        CoreError::A1Error(error.into())
     }
 }

@@ -1,247 +1,64 @@
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
-use crate::grid::formatting::CellFmtArray;
-use crate::grid::*;
-use formatting::DateTimeFormatting;
 
 impl GridController {
-    // Supports deprecated SetCellFormats operation.
-    pub(crate) fn execute_set_cell_formats(
+    pub fn execute_set_cell_formats_a1(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        if let Operation::SetCellFormats { sheet_rect, attr } = op {
-            let old_attr = match attr.clone() {
-                CellFmtArray::Align(align) => CellFmtArray::Align(
-                    self.set_cell_formats_for_type::<CellAlign>(&sheet_rect, align),
-                ),
-                CellFmtArray::VerticalAlign(vertical_align) => CellFmtArray::VerticalAlign(
-                    self.set_cell_formats_for_type::<CellVerticalAlign>(
-                        &sheet_rect,
-                        vertical_align,
-                    ),
-                ),
-                CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
-                    self.set_cell_formats_for_type::<CellWrap>(&sheet_rect, wrap),
-                ),
-                CellFmtArray::NumericFormat(num_fmt) => CellFmtArray::NumericFormat(
-                    self.set_cell_formats_for_type::<NumericFormat>(&sheet_rect, num_fmt),
-                ),
-                CellFmtArray::NumericDecimals(num_decimals) => CellFmtArray::NumericDecimals(
-                    self.set_cell_formats_for_type::<NumericDecimals>(&sheet_rect, num_decimals),
-                ),
-                CellFmtArray::NumericCommas(num_commas) => CellFmtArray::NumericCommas(
-                    self.set_cell_formats_for_type::<NumericCommas>(&sheet_rect, num_commas),
-                ),
-                CellFmtArray::Bold(bold) => {
-                    CellFmtArray::Bold(self.set_cell_formats_for_type::<Bold>(&sheet_rect, bold))
-                }
-                CellFmtArray::Italic(italic) => CellFmtArray::Italic(
-                    self.set_cell_formats_for_type::<Italic>(&sheet_rect, italic),
-                ),
-                CellFmtArray::TextColor(text_color) => CellFmtArray::TextColor(
-                    self.set_cell_formats_for_type::<TextColor>(&sheet_rect, text_color),
-                ),
-                CellFmtArray::FillColor(fill_color) => CellFmtArray::FillColor(
-                    self.set_cell_formats_for_type::<FillColor>(&sheet_rect, fill_color),
-                ),
-                CellFmtArray::RenderSize(output_size) => CellFmtArray::RenderSize(
-                    self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
-                ),
-                CellFmtArray::DateTime(date_time) => CellFmtArray::DateTime(
-                    self.set_cell_formats_for_type::<DateTimeFormatting>(&sheet_rect, date_time),
-                ),
-                CellFmtArray::Underline(underline) => CellFmtArray::Underline(
-                    self.set_cell_formats_for_type::<Underline>(&sheet_rect, underline),
-                ),
-                CellFmtArray::StrikeThrough(strike_through) => CellFmtArray::StrikeThrough(
-                    self.set_cell_formats_for_type::<StrikeThrough>(&sheet_rect, strike_through),
-                ),
-            };
-            if old_attr == attr {
-                return;
-            }
+        unwrap_op!(let SetCellFormatsA1 { sheet_id, formats } = op);
 
-            if !transaction.is_server() {
-                match &attr {
-                    CellFmtArray::RenderSize(_) => {
-                        // RenderSize is always sent as a 1,1 rect. TODO: we need to refactor formats to make it less generic.
-                        if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
-                            if let Some(code_run) =
-                                sheet.data_table((sheet_rect.min.x, sheet_rect.min.y).into())
-                            {
-                                if code_run.is_html() {
-                                    self.send_html_output_rect(&sheet_rect);
-                                } else if code_run.is_image() {
-                                    self.send_image(
-                                        (sheet_rect.min.x, sheet_rect.min.y, sheet_rect.sheet_id)
-                                            .into(),
-                                    );
-                                }
-                            }
-                        }
-                    }
-                    CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
-                    _ => {
-                        self.send_updated_bounds_rect(&sheet_rect, true);
-                        transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
-                        if matches!(
-                            attr,
-                            CellFmtArray::Wrap(_)
-                                | CellFmtArray::NumericFormat(_)
-                                | CellFmtArray::NumericDecimals(_)
-                                | CellFmtArray::NumericCommas(_)
-                                | CellFmtArray::Bold(_)
-                                | CellFmtArray::Italic(_)
-                        ) && transaction.is_user()
-                        {
-                            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-                                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into());
-                                if !rows.is_empty() {
-                                    let resize_rows = transaction
-                                        .resize_rows
-                                        .entry(sheet_rect.sheet_id)
-                                        .or_default();
-                                    resize_rows.extend(rows);
-                                }
-                            }
-                        }
-                    }
-                };
-            }
+        transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
 
-            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+            return; // sheet may have been deleted
+        };
 
-            transaction
-                .forward_operations
-                .push(Operation::SetCellFormats { sheet_rect, attr });
+        let (reverse_operations, hashes, rows, html, fills_changed) =
+            sheet.set_formats_a1(&formats);
 
-            transaction
-                .reverse_operations
-                .push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: old_attr,
-                });
+        if reverse_operations.is_empty() {
+            return;
         }
-    }
 
-    /// Executes SetCellFormatsSelection operation.
-    pub fn execute_set_cell_formats_selection(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        op: Operation,
-    ) {
-        if let Operation::SetCellFormatsSelection { selection, formats } = op {
-            if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-                let (reverse_operations, hashes, rows) =
-                    sheet.set_formats_selection(&selection, &formats);
-                if reverse_operations.is_empty() {
-                    return;
-                }
+        if !transaction.is_server() {
+            self.send_updated_bounds(sheet_id);
 
-                if !transaction.is_server() {
-                    self.send_updated_bounds_selection(&selection, true);
+            if !hashes.is_empty() {
+                let dirty_hashes = transaction.dirty_hashes.entry(sheet_id).or_default();
+                dirty_hashes.extend(hashes);
+            }
 
-                    if !rows.is_empty() && transaction.is_user() {
-                        let resize_rows = transaction
-                            .resize_rows
-                            .entry(selection.sheet_id)
-                            .or_default();
-                        resize_rows.extend(rows);
-                    }
-                }
+            if !rows.is_empty() && transaction.is_user() {
+                let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                resize_rows.extend(rows);
+            }
 
-                if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-                    let dirty_hashes = transaction
-                        .dirty_hashes
-                        .entry(selection.sheet_id)
-                        .or_default();
-                    dirty_hashes.extend(hashes);
-                }
+            if !html.is_empty() {
+                // not the best way, but render_size is moving to data_tables in
+                // the near future, so don't worry about this
+                let html_cells = transaction.html_cells.entry(sheet_id).or_default();
+                html_cells.extend(html.clone());
+                let image_cells = transaction.image_cells.entry(sheet_id).or_default();
+                image_cells.extend(html);
+            }
 
-                transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
-
-                transaction
-                    .forward_operations
-                    .push(Operation::SetCellFormatsSelection { selection, formats });
-
-                transaction
-                    .reverse_operations
-                    .extend(reverse_operations.iter().cloned());
+            if fills_changed {
+                transaction.fill_cells.insert(sheet_id);
             }
         }
+
+        transaction
+            .forward_operations
+            .push(Operation::SetCellFormatsA1 { sheet_id, formats });
+
+        transaction
+            .reverse_operations
+            .extend(reverse_operations.iter().cloned());
     }
 }
 
 #[cfg(test)]
-mod test {
-    use std::collections::HashSet;
-
-    use serial_test::serial;
-
-    use super::*;
-    use crate::wasm_bindings::js::expect_js_call;
-    use crate::{CellValue, CodeCellValue, Pos, SheetPos, Value};
-
-    #[test]
-    #[serial]
-    fn test_execute_set_chart_size() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-
-        sheet.test_set_code_run_single(
-            0,
-            0,
-            crate::CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Javascript,
-                code: "code".to_string(),
-            }),
-        );
-        let code_run = CodeRun {
-            formatted_code_string: None,
-            output_type: None,
-            std_err: None,
-            std_out: None,
-            error: None,
-            cells_accessed: HashSet::new(),
-            return_type: None,
-            line_number: None,
-        };
-        sheet.set_data_table(
-            Pos { x: 0, y: 0 },
-            Some(DataTable::new(
-                DataTableKind::CodeRun(code_run),
-                "Table 1",
-                Value::Single(CellValue::Image("image".to_string())),
-                false,
-                false,
-                true,
-                None,
-            )),
-        );
-
-        gc.set_chart_size(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
-            1.0,
-            2.0,
-            None,
-        );
-        let args = format!(
-            "{},{},{},{:?},{:?},{:?}",
-            sheet_id,
-            0,
-            0,
-            true,
-            Some(1.0),
-            Some(2.0)
-        );
-        expect_js_call("jsSendImage", args, true);
-    }
-}
+mod test {}

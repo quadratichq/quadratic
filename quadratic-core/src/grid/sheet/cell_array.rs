@@ -73,11 +73,11 @@ impl Sheet {
                     .x_range()
                     .map(|x| {
                         let pos = Pos { x, y };
-                        let cell_value = self.cell_value(pos).unwrap_or_else(|| CellValue::Blank);
+                        let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
 
                         match (include_code, &cell_value) {
                             (true, CellValue::Code(_)) => cell_value,
-                            (_, _) => self.display_value(pos).unwrap_or_else(|| CellValue::Blank),
+                            (_, _) => self.display_value(pos).unwrap_or(CellValue::Blank),
                         }
                     })
                     .collect::<Vec<CellValue>>()
@@ -91,6 +91,31 @@ impl Sheet {
                 e
             )
         })
+    }
+
+    /// Returns all cell values and their positions in a rect.
+    pub fn cell_values_pos_in_rect(
+        &self,
+        &selection: &Rect,
+        include_code: bool,
+    ) -> Vec<(CellValue, Option<Pos>)> {
+        selection
+            .y_range()
+            .flat_map(|y| {
+                selection
+                    .x_range()
+                    .map(|x| {
+                        let pos = Pos { x, y };
+                        let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
+
+                        match (include_code, &cell_value) {
+                            (true, CellValue::Code(_)) => (cell_value, Some(pos)),
+                            (_, _) => (self.display_value(pos).unwrap_or(CellValue::Blank), None),
+                        }
+                    })
+                    .collect::<Vec<(CellValue, Option<Pos>)>>()
+            })
+            .collect()
     }
 
     /// Returns whether a rect has any CellValue within it.

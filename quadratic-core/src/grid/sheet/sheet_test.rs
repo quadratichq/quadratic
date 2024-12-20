@@ -1,13 +1,11 @@
 use super::Sheet;
 
 use crate::{
-    grid::{
-        formats::format_update::FormatUpdate, CodeCellLanguage, CodeRun, DataTable, DataTableKind,
-    },
-    Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
+    grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+    Array, ArraySize, CellValue, Pos, Value,
 };
 use bigdecimal::BigDecimal;
-use std::{collections::HashSet, str::FromStr};
+use std::str::FromStr;
 
 impl Sheet {
     /// Sets a test value in the sheet of &str converted to a BigDecimal.
@@ -39,18 +37,14 @@ impl Sheet {
                 }
             }
         }
-        self.calculate_bounds();
-    }
-
-    pub fn test_set_format(&mut self, x: i64, y: i64, update: FormatUpdate) {
-        self.set_format_cell(crate::grid::Pos { x, y }, &update, true);
+        self.recalculate_bounds();
     }
 
     /// Sets a code run and CellValue::Code with an empty code string, a single value result.
     pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: crate::grid::CellValue) {
         self.set_cell_value(
             crate::Pos { x, y },
-            CellValue::Code(CodeCellValue {
+            crate::CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Formula,
                 code: "".to_string(),
             }),
@@ -60,7 +54,7 @@ impl Sheet {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: std::collections::HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
@@ -120,7 +114,7 @@ impl Sheet {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,
@@ -139,6 +133,7 @@ impl Sheet {
                 None,
             )),
         );
+        self.recalculate_bounds();
     }
 
     pub fn test_set_code_run_array_2d(&mut self, x: i64, y: i64, w: u32, h: u32, n: Vec<&str>) {
@@ -167,7 +162,7 @@ impl Sheet {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             error: None,
             return_type: Some("number".into()),
             line_number: None,

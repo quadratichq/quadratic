@@ -1,10 +1,9 @@
-import { HEADING_SIZE } from '@/shared/constants/gridConstants';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { Point } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { intersects } from '../helpers/intersects';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { Coordinate } from '../types/size';
 
 export function getVisibleTopRow(): number {
   const viewport = pixiApp.viewport.getVisibleBounds();
@@ -62,11 +61,49 @@ export function isColumnVisible(column: number): boolean {
   return true;
 }
 
+// Makes a rect visible in the viewport
+export function rectVisible(min: JsCoordinate, max: JsCoordinate): boolean {
+  // returns true if the rect is visible in the viewport
+  const { viewport, headings } = pixiApp;
+  const sheet = sheets.sheet;
+  const headingSize = headings.headingSize;
+
+  const topLeftCell = sheet.getCellOffsets(min.x, min.y);
+  const bottomRightCell = sheet.getCellOffsets(max.x, max.y);
+  let is_off_screen = false;
+
+  if (bottomRightCell.right > viewport.right) {
+    viewport.right = bottomRightCell.right;
+    is_off_screen = true;
+  }
+  if (topLeftCell.left + headingSize.width < viewport.left) {
+    viewport.left = topLeftCell.left - headingSize.width / viewport.scale.x;
+    is_off_screen = true;
+  }
+
+  if (bottomRightCell.bottom > viewport.bottom) {
+    viewport.bottom = bottomRightCell.bottom;
+    is_off_screen = true;
+  }
+  if (topLeftCell.top + headingSize.height < viewport.top) {
+    viewport.top = topLeftCell.top - headingSize.height / viewport.scale.x;
+    is_off_screen = true;
+  }
+
+  return !is_off_screen;
+}
+
+export function ensureRectVisible(min: JsCoordinate, max: JsCoordinate) {
+  if (!rectVisible(min, max)) {
+    pixiApp.viewportChanged();
+  }
+}
+
 // Makes a cell visible in the viewport
 export function cellVisible(
-  coordinate: Coordinate = {
-    x: sheets.sheet.cursor.cursorPosition.x,
-    y: sheets.sheet.cursor.cursorPosition.y,
+  coordinate: JsCoordinate = {
+    x: sheets.sheet.cursor.position.x,
+    y: sheets.sheet.cursor.position.y,
   }
 ): boolean {
   // returns true if the cursor is visible in the viewport
@@ -97,7 +134,7 @@ export function cellVisible(
 }
 
 // Ensures the cursor is always visible
-export function ensureVisible(visible: Coordinate | undefined) {
+export function ensureVisible(visible: JsCoordinate | undefined) {
   if (!cellVisible(visible)) {
     pixiApp.viewportChanged();
   }
@@ -113,20 +150,16 @@ export function ensureVisible(visible: Coordinate | undefined) {
  * @param [options.pageDown] move viewport down one page
  * @param [options.force] force viewport to move even if cell is already visible
  */
-export function moveViewport(options: {
-  center?: Coordinate;
-  topLeft?: Coordinate;
-  pageUp?: boolean;
-  pageDown?: boolean;
-  force?: boolean;
-}): void {
-  const { center, topLeft, pageUp, pageDown, force } = options;
-  if (!center && !topLeft && !pageUp && !pageDown) return;
+export function moveViewport(options: { center?: JsCoordinate; topLeft?: JsCoordinate; force?: boolean }): void {
+  const { center, topLeft, force } = options;
+  if (!center && !topLeft) return;
 
   const sheet = sheets.sheet;
   const bounds = pixiApp.viewport.getVisibleBounds();
   const zoom = pixiApp.viewport.scale.x;
-  const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE / zoom : 0;
+  const { width, height } = pixiApp.headings.headingSize;
+  const adjustX = width / zoom;
+  const adjustY = height / zoom;
 
   if (center) {
     const cell = sheet.getCellOffsets(center.x, center.y);
@@ -134,19 +167,15 @@ export function moveViewport(options: {
     pixiApp.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
   } else if (topLeft) {
     const cell = sheet.getCellOffsets(topLeft.x, topLeft.y);
-    if (!force && intersects.rectanglePoint(bounds, new Point(cell.x - adjust, cell.y - adjust))) return;
-    pixiApp.viewport.moveCorner(cell.x - adjust, cell.y - adjust);
-  } else if (pageUp) {
-    pixiApp.viewport.moveCorner(bounds.x, bounds.y - (bounds.height - adjust));
-  } else if (pageDown) {
-    pixiApp.viewport.moveCorner(bounds.x, bounds.y + (bounds.height - adjust));
+    if (!force && intersects.rectanglePoint(bounds, new Point(cell.x - adjustX, cell.y - adjustY))) return;
+    pixiApp.viewport.moveCorner(cell.x - adjustX, cell.y - adjustY);
   }
 
   pixiApp.viewportChanged();
 }
 
 export function getShareUrlParams(): string {
-  let url = `x=${sheets.sheet.cursor.cursorPosition.x}&y=${sheets.sheet.cursor.cursorPosition.y}`;
+  let url = `x=${sheets.sheet.cursor.position.x}&y=${sheets.sheet.cursor.position.y}`;
   if (sheets.sheet !== sheets.getFirst()) {
     url += `&sheet=${sheets.sheet.name}`;
   }
@@ -158,4 +187,21 @@ export function getShareUrlParams(): string {
     }
   }
   return url;
+}
+
+// Moves the cursor up or down one page
+export function pageUpDown(up: boolean) {
+  const cursorRect = pixiApp.cursor.cursorRectangle;
+  const { viewport } = pixiApp;
+  if (cursorRect) {
+    const distanceTopToCursorTop = cursorRect.top - viewport.top;
+    const newY = cursorRect.y + pixiApp.viewport.screenHeightInWorldPixels * (up ? -1 : 1);
+    const newRow = Math.max(1, sheets.sheet.getColumnRowFromScreen(0, newY).row);
+    const cursor = sheets.sheet.cursor;
+    cursor.moveTo(cursor.position.x, newRow, false);
+    const newCursorY = sheets.sheet.getRowY(newRow);
+    const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+    pixiApp.viewport.y = Math.min(gridHeadings, -newCursorY + distanceTopToCursorTop);
+    pixiApp.viewportChanged();
+  }
 }

@@ -117,14 +117,12 @@ impl GridController {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use std::collections::HashSet;
-
     use crate::{
         cellvalue::Import,
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+        grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
         test_util::{assert_cell_value, assert_data_table_cell_value_row, print_data_table},
-        Array, CellValue, CodeCellValue, Pos, Rect, SheetPos, Value,
+        Array, CellValue, Pos, Rect, SheetPos, Value,
     };
 
     #[test]
@@ -136,7 +134,7 @@ mod tests {
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             formatted_code_string: None,
         };
         let data_table = DataTable::new(

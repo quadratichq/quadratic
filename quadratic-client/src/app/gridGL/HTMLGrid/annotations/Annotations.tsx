@@ -10,13 +10,12 @@ export const Annotations = () => {
   const [offsets, setOffsets] = useState<Rectangle | undefined>();
   useEffect(() => {
     const updateOffsets = () => {
-      const p = sheets.sheet.cursor.cursorPosition;
+      const p = sheets.sheet.cursor.position;
       setOffsets(sheets.sheet.getCellOffsets(p.x, p.y));
     };
     updateOffsets();
 
     events.on('cursorPosition', updateOffsets);
-
     return () => {
       events.off('cursorPosition', updateOffsets);
     };

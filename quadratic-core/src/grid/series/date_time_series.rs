@@ -3,20 +3,19 @@ use chrono::{Duration, NaiveDateTime};
 use crate::CellValue;
 
 use super::{
-    copy_series,
     date_series::{date_delta, date_diff},
     time_series::{time_delta, time_diff},
     SeriesOptions,
 };
 
-pub(crate) fn find_date_time_series(options: SeriesOptions) -> Vec<CellValue> {
+pub(crate) fn find_date_time_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
     let (diff_in_date, diff_in_time) = if options.series.len() == 1 {
         ((0, 0, 1), Duration::zero())
     } else {
         let (CellValue::DateTime(first), CellValue::DateTime(second)) =
-            (&options.series[0], &options.series[1])
+            (&options.series[0].0, &options.series[1].0)
         else {
-            return copy_series(options);
+            return None;
         };
 
         let diff_in_date = date_diff(&first.date(), &second.date());
@@ -24,15 +23,15 @@ pub(crate) fn find_date_time_series(options: SeriesOptions) -> Vec<CellValue> {
 
         for i in 2..options.series.len() {
             let (CellValue::DateTime(first), CellValue::DateTime(second)) =
-                (&options.series[i - 1], &options.series[i])
+                (&options.series[i - 1].0, &options.series[i].0)
             else {
-                return copy_series(options);
+                return None;
             };
 
             if date_diff(&first.date(), &second.date()) != diff_in_date
                 || time_diff(first.time(), second.time()) != diff_in_time
             {
-                return copy_series(options);
+                return None;
             }
         }
 
@@ -44,8 +43,8 @@ pub(crate) fn find_date_time_series(options: SeriesOptions) -> Vec<CellValue> {
         &options.series[options.series.len() - 1]
     };
 
-    let CellValue::DateTime(mut last) = last else {
-        return copy_series(options);
+    let CellValue::DateTime(mut last) = last.0 else {
+        return None;
     };
 
     let mut results = vec![];
@@ -70,13 +69,15 @@ pub(crate) fn find_date_time_series(options: SeriesOptions) -> Vec<CellValue> {
     if options.negative {
         results.reverse();
     }
-    results
+    Some(results)
 }
 
 #[cfg(test)]
 mod tests {
     use chrono::{NaiveDate, NaiveTime};
     use serial_test::parallel;
+
+    use crate::{grid::series::find_auto_complete, Pos};
 
     use super::*;
 
@@ -87,11 +88,14 @@ mod tests {
         hour: u32,
         minute: u32,
         second: u32,
-    ) -> CellValue {
-        CellValue::DateTime(NaiveDateTime::new(
-            NaiveDate::from_ymd_opt(year, month, day).unwrap(),
-            NaiveTime::from_hms_opt(hour, minute, second).unwrap(),
-        ))
+    ) -> (CellValue, Option<Pos>) {
+        (
+            CellValue::DateTime(NaiveDateTime::new(
+                NaiveDate::from_ymd_opt(year, month, day).unwrap(),
+                NaiveTime::from_hms_opt(hour, minute, second).unwrap(),
+            )),
+            None,
+        )
     }
 
     #[test]
@@ -107,7 +111,7 @@ mod tests {
             negative: false,
         };
 
-        let results = find_date_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -118,7 +122,7 @@ mod tests {
             ]
         );
 
-        let results = find_date_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });
@@ -146,7 +150,7 @@ mod tests {
             negative: false,
         };
 
-        let results = find_date_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -157,7 +161,7 @@ mod tests {
             ]
         );
 
-        let results = find_date_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });
@@ -185,7 +189,7 @@ mod tests {
             negative: false,
         };
 
-        let results = find_date_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -196,7 +200,7 @@ mod tests {
             ]
         );
 
-        let results = find_date_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });
@@ -224,7 +228,7 @@ mod tests {
             negative: false,
         };
 
-        let results = find_date_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -235,7 +239,7 @@ mod tests {
             ]
         );
 
-        let results = find_date_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });
@@ -263,7 +267,7 @@ mod tests {
             negative: false,
         };
 
-        let results = find_date_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -274,7 +278,7 @@ mod tests {
             ]
         );
 
-        let results = find_date_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });
@@ -302,7 +306,7 @@ mod tests {
             negative: false,
         };
 
-        let results = find_date_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -313,7 +317,7 @@ mod tests {
             ]
         );
 
-        let results = find_date_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });
@@ -337,7 +341,7 @@ mod tests {
             negative: false,
         };
 
-        let results = find_date_time_series(options.clone());
+        let results = find_auto_complete(options.clone());
         assert_eq!(
             results,
             vec![
@@ -348,7 +352,7 @@ mod tests {
             ]
         );
 
-        let results = find_date_time_series(SeriesOptions {
+        let results = find_auto_complete(SeriesOptions {
             negative: true,
             ..options
         });

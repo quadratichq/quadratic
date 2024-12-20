@@ -4,22 +4,107 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
-use crate::{RunError, SheetRect};
+use crate::{RunError, SheetPos, SheetRect, Value};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use strum_macros::Display;
 use wasm_bindgen::{convert::IntoWasmAbi, JsValue};
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CodeRun {
+use super::cells_accessed::CellsAccessed;
+
+// This is a deprecated version of CodeRun that is only used for file v1.7 and below.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CodeRunOld {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,
     pub std_out: Option<String>,
     pub std_err: Option<String>,
-    pub cells_accessed: HashSet<SheetRect>,
-    pub error: Option<RunError>,
+    pub cells_accessed: Vec<SheetRect>,
+    pub result: CodeRunResult,
     pub return_type: Option<String>,
+    pub spill_error: bool,
     pub line_number: Option<u32>,
+    pub output_type: Option<String>,
+    pub last_modified: DateTime<Utc>,
+}
+
+impl From<Vec<SheetRect>> for CellsAccessed {
+    fn from(old: Vec<SheetRect>) -> Self {
+        let mut cells = CellsAccessed::default();
+        for rect in old {
+            cells.add_sheet_pos(SheetPos::new(rect.sheet_id, rect.min.x, rect.min.y));
+        }
+        cells
+    }
+}
+
+impl From<CodeRunOld> for CodeRun {
+    fn from(old: CodeRunOld) -> Self {
+        let error = match old.result {
+            CodeRunResult::Ok(_) => None,
+            CodeRunResult::Err(e) => Some(e),
+        };
+        Self {
+            formatted_code_string: old.formatted_code_string,
+            std_out: old.std_out,
+            std_err: old.std_err,
+            cells_accessed: old.cells_accessed.into(),
+            // result: old.result,
+            return_type: old.return_type,
+            // spill_error: old.spill_error,
+            line_number: old.line_number,
+            output_type: old.output_type,
+            error,
+            // last_modified: old.last_modified,
+        }
+    }
+}
+
+/// Custom version of [`std::result::Result`] that serializes the way we want.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum CodeRunResult {
+    Ok(Value),
+    Err(RunError),
+}
+impl CodeRunResult {
+    /// Converts into a [`std::result::Result`] by value.
+    pub fn into_std(self) -> Result<Value, RunError> {
+        match self {
+            CodeRunResult::Ok(v) => Ok(v),
+            CodeRunResult::Err(e) => Err(e),
+        }
+    }
+    /// Converts into a [`std::result::Result`] by reference.
+    pub fn as_std_ref(&self) -> Result<&Value, &RunError> {
+        match self {
+            CodeRunResult::Ok(v) => Ok(v),
+            CodeRunResult::Err(e) => Err(e),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+pub struct CodeRun {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub formatted_code_string: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub std_out: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub std_err: Option<String>,
+
+    pub cells_accessed: CellsAccessed,
+    pub error: Option<RunError>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub return_type: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line_number: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub output_type: Option<String>,
 }
 
@@ -91,8 +176,4 @@ impl wasm_bindgen::convert::IntoWasmAbi for ConnectionKind {
 // }
 
 #[cfg(test)]
-mod test {
-    // use super::*;
-    // use crate::{grid::SheetId, Array};
-    // use serial_test::parallel;
-}
+mod test {}

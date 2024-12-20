@@ -1,5 +1,3 @@
-use js_sys::Uint8Array;
-
 use super::*;
 
 #[wasm_bindgen]
@@ -14,31 +12,18 @@ impl GridController {
         }
     }
 
-    #[wasm_bindgen(js_name = "calculationGetCells")]
-    #[allow(clippy::too_many_arguments)]
-    pub fn js_calculation_get_cells(
+    #[wasm_bindgen(js_name = "calculationGetCellsA1")]
+    pub fn js_calculation_get_cells_a1(
         &mut self,
         transaction_id: String,
-        x: i32,
-        y: i32,
-        w: i32,
-        h: Option<i32>,
-        sheet_name: Option<String>,
+        a1: String,
         line_number: Option<u32>,
     ) -> Result<String, JsValue> {
-        match self.calculation_get_cells(
-            transaction_id,
-            x as i64,
-            y as i64,
-            w as i64,
-            h.map(|h| h as i64),
-            sheet_name,
-            line_number,
-        ) {
-            Ok(get_cells) => match serde_json::to_string(&get_cells) {
+        match self.calculation_get_cells_a1(transaction_id, a1, line_number) {
+            Ok(response) => match serde_json::to_string(&response) {
                 Ok(json) => Ok(json),
                 Err(_) => {
-                    dbgjs!("calculationGetCells: Failed to serialize calculation result");
+                    dbgjs!("calculationGetCellsA1: Failed to serialize calculation result");
                     Err(JsValue::UNDEFINED)
                 }
             },
@@ -109,13 +94,12 @@ impl GridController {
     pub fn js_connection_complete(
         &mut self,
         transaction_id: String,
-        data: JsValue,
+        data: Vec<u8>,
         std_out: Option<String>,
         std_err: Option<String>,
         extra: Option<String>,
     ) -> Result<(), JsValue> {
-        let data = Uint8Array::new(&data);
-        self.connection_complete(transaction_id, data.to_vec(), std_out, std_err, extra)
+        self.connection_complete(transaction_id, data, std_out, std_err, extra)
             .map_err(|e| e.to_string())?;
 
         Ok(())

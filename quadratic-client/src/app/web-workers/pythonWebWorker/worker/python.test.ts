@@ -66,7 +66,6 @@ describe('Python/Pyodide', () => {
       5 + 3
 `;
       let results = await runPython(code);
-      console.log('results', results);
 
       expect(results).toEqual({
         output: ['8', 'number'],

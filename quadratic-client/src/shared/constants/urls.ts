@@ -10,6 +10,7 @@ export const DOCUMENTATION_CONNECTIONS_URL = `${DOCUMENTATION_URL}/connections`;
 export const DOCUMENTATION_CONNECTIONS_IP_LIST_URL = `${DOCUMENTATION_CONNECTIONS_URL}/security#ip-allow-list`;
 export const DOCUMENTATION_BROWSER_COMPATIBILITY_URL = `${DOCUMENTATION_URL}/spreadsheet/browser-compatibility`;
 export const DOCUMENTATION_DATE_TIME_FORMATTING = `${DOCUMENTATION_URL}/spreadsheet/date-time-formatting`;
+export const DOCUMENTATION_NEGATIVE_OFFSETS = `${DOCUMENTATION_URL}/spreadsheet/negative-offsets`;
 export const TRUST_CENTER = 'https://trust.quadratichq.com';
 export const BUG_REPORT_URL = 'https://github.com/quadratichq/quadratic/issues';
 export const TWITTER = 'https://twitter.com/quadratichq';
@@ -17,3 +18,7 @@ export const CONTACT_URL = 'https://quadratichq.com/contact';
 export const WEBSITE_CONNECTIONS = 'https://www.quadratichq.com/connections';
 export const WEBSITE_EXAMPLES = 'https://www.quadratichq.com/examples';
 export const WEBSITE_CHANGELOG = 'https://www.quadratichq.com/changelog';
+export const SCHEDULE_MEETING = 'https://calendly.com/d/ckz9-g8t-stb/quadratic-demo';
+export const AI_SECURITY = 'https://docs.quadratichq.com/quadratic-ai/security';
+// TODO: update this
+export const COMMUNITY_A1_FILE_UPDATE_URL = 'https://community.quadratichq.com';

@@ -1,8 +1,9 @@
 import { Link } from '@/app/gridGL/types/links';
-import { Coordinate, DrawRects } from '@/app/gridGL/types/size';
+import { DrawRects } from '@/app/gridGL/types/size';
+import { JsCoordinate } from '@/app/quadratic-core-types';
+import { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
+import { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { Rectangle } from 'pixi.js';
-import { RenderBitmapFonts } from './renderBitmapFonts';
-import type { RenderSpecial } from './worker/cellsLabel/CellsTextHashSpecial';
 
 export interface ClientRenderInit {
   type: 'clientRenderInit';
@@ -35,7 +36,7 @@ export interface RenderClientCellsTextHashClear {
   hashX: number;
   hashY: number;
   viewRectangle: { x: number; y: number; width: number; height: number };
-  overflowGridLines: Coordinate[];
+  overflowGridLines: JsCoordinate[];
   content: Uint32Array;
   links: Link[];
   drawRects: DrawRects[];

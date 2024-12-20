@@ -55,7 +55,7 @@ impl GridController {
             transaction.reverse_operations.extend(reverse_operations);
         }
 
-        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(*sheet_rect);
     }
 
     // delete any code runs within the sheet_rect.
@@ -633,8 +633,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
     use crate::{
         controller::{
             execution::execute_operation::{
@@ -644,13 +642,13 @@ mod tests {
         },
         grid::{
             data_table::sort::{DataTableSort, SortDirection},
-            CodeCellLanguage, CodeRun, SheetId,
+            CodeCellLanguage, CodeCellValue, CodeRun, SheetId,
         },
         test_util::{
             assert_cell_value_row, assert_data_table_cell_value, assert_data_table_cell_value_row,
             print_data_table, print_table,
         },
-        Array, CodeCellValue, SheetPos, Value,
+        Array, SheetPos, Value,
     };
 
     use super::*;
@@ -801,7 +799,7 @@ mod tests {
             return_type: Some("number".into()),
             line_number: None,
             output_type: None,
-            cells_accessed: HashSet::new(),
+            cells_accessed: Default::default(),
             formatted_code_string: None,
         };
         let data_table = DataTable::new(

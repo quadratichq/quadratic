@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use super::{GridController, TransactionType};
+use super::{GridController, TransactionSource};
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
@@ -32,7 +32,7 @@ impl GridController {
             }
 
             self.execute_operation(transaction);
-
+            self.send_transaction_progress(transaction);
             self.process_visible_dirty_hashes(transaction);
 
             if transaction.has_async > 0 {
@@ -83,8 +83,8 @@ impl GridController {
         }
 
         if transaction.complete {
-            match transaction.transaction_type {
-                TransactionType::User => {
+            match transaction.source {
+                TransactionSource::User => {
                     let undo = transaction.to_undo_transaction();
                     self.undo_stack.push(undo);
                     self.redo_stack.clear();
@@ -92,28 +92,28 @@ impl GridController {
                         .unsaved_transactions
                         .insert_or_replace(&transaction, true);
                 }
-                TransactionType::Unsaved => {
+                TransactionSource::Unsaved => {
                     let undo = transaction.to_undo_transaction();
                     self.undo_stack.push(undo);
                     self.redo_stack.clear();
                 }
-                TransactionType::Undo => {
+                TransactionSource::Undo => {
                     let undo = transaction.to_undo_transaction();
                     self.redo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(&transaction, true);
                 }
-                TransactionType::Redo => {
+                TransactionSource::Redo => {
                     let undo = transaction.to_undo_transaction();
                     self.undo_stack.push(undo);
                     self.transactions
                         .unsaved_transactions
                         .insert_or_replace(&transaction, true);
                 }
-                TransactionType::Multiplayer => (),
-                TransactionType::Server => (),
-                TransactionType::Unset => panic!("Expected a transaction type"),
+                TransactionSource::Multiplayer => (),
+                TransactionSource::Server => (),
+                TransactionSource::Unset => panic!("Expected a transaction type"),
             }
         }
 
@@ -217,7 +217,7 @@ impl GridController {
         transaction_name: TransactionName,
     ) {
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             operations: operations.into(),
             cursor,
             transaction_name,
@@ -230,7 +230,7 @@ impl GridController {
     pub fn start_undo_transaction(
         &mut self,
         transaction: Transaction,
-        transaction_type: TransactionType,
+        transaction_type: TransactionSource,
         cursor: Option<String>,
     ) {
         let mut pending = transaction.to_undo_transaction(transaction_type, cursor);
@@ -329,6 +329,7 @@ impl GridController {
             );
 
             self.finalize_code_run(&mut transaction, current_sheet_pos, Some(data_table), None);
+            transaction.cells_accessed.clear();
             transaction.waiting_for_async = None;
             self.start_transaction(&mut transaction);
             self.finalize_transaction(transaction);
@@ -392,7 +393,7 @@ mod tests {
 
         // TransactionType::User
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             operations: vec![operation].into(),
             ..Default::default()
         };
@@ -405,7 +406,7 @@ mod tests {
 
         // TransactionType::Undo
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::Undo,
+            source: TransactionSource::Undo,
             operations: vec![operation_undo.clone()].into(),
             ..Default::default()
         };
@@ -419,7 +420,7 @@ mod tests {
 
         // TransactionType::Redo
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::Redo,
+            source: TransactionSource::Redo,
             operations: vec![operation_undo.clone()].into(),
             ..Default::default()
         };
@@ -465,7 +466,7 @@ mod tests {
         assert_eq!(gc.grid().sheets()[0].bounds(true), GridBounds::Empty);
 
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             operations: vec![operation.clone()].into(),
             ..Default::default()
         };

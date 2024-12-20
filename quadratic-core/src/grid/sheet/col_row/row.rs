@@ -1,14 +1,11 @@
-use chrono::Utc;
-
 use crate::{
     cell_values::CellValues,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::{CopyFormats, Operation},
+        operations::operation::Operation,
     },
-    grid::{formats::Formats, GridBounds, Sheet},
-    selection::Selection,
-    Pos, Rect, SheetPos,
+    grid::{GridBounds, Sheet},
+    CopyFormats, Pos, SheetPos,
 };
 
 use super::MAX_OPERATION_SIZE_COL_ROW;
@@ -41,40 +38,43 @@ impl Sheet {
 
     /// Creates reverse operations for cell formatting within the row.
     fn reverse_formats_ops_for_row(&self, row: i64) -> Vec<Operation> {
-        let mut formats = Formats::new();
-        let mut selection = Selection::new(self.id);
-
-        if let Some(format) = self.try_format_row(row) {
-            selection.rows = Some(vec![row]);
-            formats.push(format.to_replace());
+        if let Some(formats) = self.formats.copy_row(row) {
+            vec![Operation::SetCellFormatsA1 {
+                sheet_id: self.id,
+                formats,
+            }]
+        } else {
+            vec![]
         }
+    }
 
-        if let Some((min, max)) = self.row_bounds_formats(row) {
-            for x in min..=max {
-                let format = self.format_cell(x, row, false).to_replace();
-                formats.push(format);
+    /// Creates reverse operations for borders within the row.
+    fn reverse_borders_ops_for_row(&self, row: i64) -> Vec<Operation> {
+        if let Some(borders) = self.borders.copy_row(row) {
+            if borders.is_empty() {
+                return vec![];
             }
-            selection.rects = Some(vec![Rect::new(min, row, max, row)]);
-        }
-        if !selection.is_empty() {
-            vec![Operation::SetCellFormatsSelection { selection, formats }]
+            vec![Operation::SetBordersA1 {
+                sheet_id: self.id,
+                borders,
+            }]
         } else {
             vec![]
         }
     }
 
     /// Creates reverse operations for code runs within the column.
-    fn code_runs_for_row(&self, row: i64) -> Vec<Operation> {
+    fn reverse_code_runs_ops_for_row(&self, row: i64) -> Vec<Operation> {
         let mut reverse_operations = Vec::new();
 
         self.data_tables
             .iter()
             .enumerate()
-            .for_each(|(index, (pos, code_run))| {
+            .for_each(|(index, (pos, data_table))| {
                 if pos.y == row {
-                    reverse_operations.push(Operation::SetCodeRun {
+                    reverse_operations.push(Operation::SetCodeRun_RENAME_ME {
                         sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
-                        code_run: Some(code_run.clone()),
+                        code_run: Some(data_table.clone()),
                         index,
                     });
                 }
@@ -113,33 +113,7 @@ impl Sheet {
         }
     }
 
-    /// Removes format at row and shifts remaining formats to the left by 1.
-    fn formats_remove_and_shift_up(&mut self, transaction: &mut PendingTransaction, row: i64) {
-        if let GridBounds::NonEmpty(bounds) = self.bounds(false) {
-            for x in bounds.min.x..=bounds.max.x {
-                if let Some(column) = self.columns.get_mut(&x) {
-                    column.align.remove_and_shift_left(row);
-                    column.vertical_align.remove_and_shift_left(row);
-                    column.wrap.remove_and_shift_left(row);
-                    column.numeric_format.remove_and_shift_left(row);
-                    column.numeric_decimals.remove_and_shift_left(row);
-                    column.numeric_commas.remove_and_shift_left(row);
-                    column.bold.remove_and_shift_left(row);
-                    column.italic.remove_and_shift_left(row);
-                    column.text_color.remove_and_shift_left(row);
-                    if column.fill_color.remove_and_shift_left(row) {
-                        transaction.fill_cells.insert(self.id);
-                    }
-                    column.render_size.remove_and_shift_left(row);
-                    column.date_time.remove_and_shift_left(row);
-                    column.underline.remove_and_shift_left(row);
-                    column.strike_through.remove_and_shift_left(row);
-                }
-            }
-        }
-    }
-
-    pub fn delete_row_offset(&mut self, transaction: &mut PendingTransaction, row: i64) {
+    fn delete_row_offset(&mut self, transaction: &mut PendingTransaction, row: i64) {
         let (changed, new_size) = self.offsets.delete_row(row);
 
         if let Some(new_size) = new_size {
@@ -161,7 +135,7 @@ impl Sheet {
         }
     }
 
-    pub fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
+    pub(crate) fn delete_row(&mut self, transaction: &mut PendingTransaction, row: i64) {
         // create undo operations for the deleted column (only when needed since
         // it's a bit expensive)
         if transaction.is_user_undo_redo() {
@@ -173,15 +147,36 @@ impl Sheet {
                 .extend(self.reverse_formats_ops_for_row(row));
             transaction
                 .reverse_operations
-                .extend(self.code_runs_for_row(row));
+                .extend(self.reverse_borders_ops_for_row(row));
             transaction
                 .reverse_operations
-                .extend(self.borders.get_row_ops(self.id, row));
+                .extend(self.reverse_code_runs_ops_for_row(row));
+
+            // reverse operation to create the column (this will also shift all impacted columns)
+            transaction.reverse_operations.push(Operation::InsertRow {
+                sheet_id: self.id,
+                row,
+                copy_formats: CopyFormats::None,
+            });
         }
 
         self.delete_row_offset(transaction, row);
 
-        // remove the column's code runs from the sheet
+        // mark hashes of existing rows dirty
+        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
+
+        // remove the row's formats from the sheet
+        self.formats.remove_row(row);
+        transaction.fill_cells.insert(self.id);
+
+        // remove the column's borders from the sheet
+        self.borders.remove_row(row);
+        transaction.sheet_borders.insert(self.id);
+
+        // update all cells that were impacted by the deletion
+        self.delete_and_shift_values(row);
+
+        // remove the row's code runs from the sheet
         self.data_tables.retain(|pos, code_run| {
             if pos.y == row {
                 transaction.add_code_cell(self.id, *pos);
@@ -198,24 +193,6 @@ impl Sheet {
             }
         });
 
-        // mark hashes of existing rows dirty
-        transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
-
-        // remove the row's formats from the sheet
-        if let Some((format, _)) = self.formats_rows.remove(&row) {
-            if format.fill_color.is_some() {
-                transaction.fill_cells.insert(self.id);
-            }
-        }
-
-        // remove the column's borders from the sheet
-        if self.borders.remove_row(row) {
-            transaction.sheet_borders.insert(self.id);
-        }
-
-        // update all cells that were impacted by the deletion
-        self.delete_and_shift_values(row);
-
         // update the indices of all code_runs impacted by the deletion
         let mut code_runs_to_move = Vec::new();
         for (pos, _) in self.data_tables.iter() {
@@ -223,7 +200,7 @@ impl Sheet {
                 code_runs_to_move.push(*pos);
             }
         }
-        code_runs_to_move.sort_unstable();
+        code_runs_to_move.sort_by(|a, b| a.y.cmp(&b.y));
         for old_pos in code_runs_to_move {
             if let Some(code_run) = self.data_tables.shift_remove(&old_pos) {
                 let new_pos = Pos {
@@ -240,7 +217,7 @@ impl Sheet {
                     transaction.add_image_cell(self.id, new_pos);
                 }
 
-                self.data_tables.insert(new_pos, code_run);
+                self.data_tables.insert_sorted(new_pos, code_run);
 
                 // signal client to update the code runs
                 transaction.add_code_cell(self.id, old_pos);
@@ -248,36 +225,11 @@ impl Sheet {
             }
         }
 
-        // update the indices of all column-based formats impacted by the deletion
-        self.formats_remove_and_shift_up(transaction, row);
-
-        // update the indices of all row-based formats impacted by the deletion
-        let mut formats_to_update = Vec::new();
-        for r in self.formats_rows.keys() {
-            if *r > row {
-                formats_to_update.push(*r);
-            }
-        }
-        for row in formats_to_update {
-            if let Some(format) = self.formats_rows.remove(&row) {
-                if format.0.fill_color.is_some() {
-                    transaction.fill_cells.insert(self.id);
-                }
-                self.formats_rows.insert(row - 1, format);
-            }
-        }
-
         // mark hashes of new rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
-        // reverse operation to create the column (this will also shift all impacted columns)
-        transaction.reverse_operations.push(Operation::InsertRow {
-            sheet_id: self.id,
-            row,
-            copy_formats: CopyFormats::None,
-        });
-
-        self.validations.remove_row(transaction, self.id, row);
+        let changed_selections = self.validations.remove_row(transaction, self.id, row);
+        transaction.add_dirty_hashes_from_selections(self, changed_selections);
     }
 
     /// Removes any value at row and shifts the remaining values up by 1.
@@ -306,67 +258,7 @@ impl Sheet {
         }
     }
 
-    /// Removes format at row and shifts remaining formats to the left by 1.
-    fn formats_insert_and_shift_down(&mut self, row: i64, transaction: &mut PendingTransaction) {
-        if let GridBounds::NonEmpty(bounds) = self.bounds(false) {
-            for x in bounds.min.x..=bounds.max.x {
-                if let Some(column) = self.columns.get_mut(&x) {
-                    column.align.insert_and_shift_right(row);
-                    column.vertical_align.insert_and_shift_right(row);
-                    column.wrap.insert_and_shift_right(row);
-                    column.numeric_format.insert_and_shift_right(row);
-                    column.numeric_decimals.insert_and_shift_right(row);
-                    column.numeric_commas.insert_and_shift_right(row);
-                    column.bold.insert_and_shift_right(row);
-                    column.italic.insert_and_shift_right(row);
-                    column.text_color.insert_and_shift_right(row);
-                    if column.fill_color.insert_and_shift_right(row) {
-                        transaction.fill_cells.insert(self.id);
-                    }
-                    column.render_size.insert_and_shift_right(row);
-                    column.date_time.insert_and_shift_right(row);
-                    column.underline.insert_and_shift_right(row);
-                    column.strike_through.insert_and_shift_right(row);
-                }
-            }
-        }
-    }
-
-    /// Copies row formats to the new row.
-    ///
-    /// We don't need reverse operations since the updated column will be
-    /// deleted during an undo.
-    fn copy_row_formats(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        row: i64,
-        copy_formats: CopyFormats,
-    ) {
-        let delta = match copy_formats {
-            CopyFormats::After => 1,
-            CopyFormats::Before => -1,
-            CopyFormats::None => return,
-        };
-        if let Some((min, max)) = self.row_bounds_formats(row + delta) {
-            for x in min..=max {
-                if let Some(format) = self.try_format_cell(x, row + delta) {
-                    if format.fill_color.is_some() {
-                        transaction.fill_cells.insert(self.id);
-                    }
-                    self.set_format_cell(Pos { x, y: row }, &format.to_replace(), false);
-                }
-            }
-        }
-        if let Some((format, _)) = self.formats_rows.get(&(row + delta)) {
-            if format.fill_color.is_some() {
-                transaction.fill_cells.insert(self.id);
-            }
-            self.formats_rows
-                .insert(row, (format.clone(), Utc::now().timestamp()));
-        }
-    }
-
-    pub fn insert_row(
+    pub(crate) fn insert_row(
         &mut self,
         transaction: &mut PendingTransaction,
         row: i64,
@@ -386,6 +278,14 @@ impl Sheet {
 
         self.insert_and_shift_values(row);
 
+        // update formatting
+        self.formats.insert_row(row, copy_formats);
+        transaction.fill_cells.insert(self.id);
+
+        // signal client to update the borders for changed columns
+        self.borders.insert_row(row, copy_formats);
+        transaction.sheet_borders.insert(self.id);
+
         // update the indices of all code_runs impacted by the insertion
         let mut code_runs_to_move = Vec::new();
         for (pos, _) in self.data_tables.iter() {
@@ -393,8 +293,7 @@ impl Sheet {
                 code_runs_to_move.push(*pos);
             }
         }
-        code_runs_to_move.reverse();
-
+        code_runs_to_move.sort_by(|a, b| b.y.cmp(&a.y));
         for old_pos in code_runs_to_move {
             let new_pos = Pos {
                 x: old_pos.x,
@@ -410,7 +309,7 @@ impl Sheet {
                     transaction.add_image_cell(self.id, new_pos);
                 }
 
-                self.data_tables.insert(new_pos, code_run);
+                self.data_tables.insert_sorted(new_pos, code_run);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
                 transaction.add_code_cell(self.id, old_pos);
@@ -418,34 +317,11 @@ impl Sheet {
             }
         }
 
-        // update the indices of all column-based formats impacted by the deletion
-        self.formats_insert_and_shift_down(row, transaction);
-
-        // signal client to update the borders for changed columns
-        if self.borders.insert_row(row) {
-            transaction.sheet_borders.insert(self.id);
-        }
-
-        // update the indices of all column-based formats impacted by the deletion
-        let mut formats_to_update = Vec::new();
-        for r in self.formats_rows.keys() {
-            if *r >= row {
-                formats_to_update.push(*r);
-            }
-        }
-        formats_to_update.reverse();
-        for row in formats_to_update {
-            if let Some(format) = self.formats_rows.remove(&row) {
-                self.formats_rows.insert(row + 1, format);
-            }
-        }
-
         // mark hashes of new rows dirty
         transaction.add_dirty_hashes_from_sheet_rows(self, row, None);
 
-        self.validations.insert_row(transaction, self.id, row);
-
-        self.copy_row_formats(transaction, row, copy_formats);
+        let changed_selections = self.validations.insert_row(transaction, self.id, row);
+        transaction.add_dirty_hashes_from_selections(self, changed_selections);
 
         let changes = self.offsets.insert_row(row);
         if !changes.is_empty() {
@@ -457,14 +333,13 @@ impl Sheet {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod test {
-    use serial_test::parallel;
-
     use crate::{
-        controller::execution::TransactionType,
+        controller::execution::TransactionSource,
         grid::{
-            formats::{format::Format, format_update::FormatUpdate},
-            BorderStyle, CellBorderLine, CellWrap,
+            sheet::borders::{BorderSide, BorderStyleCell, BorderStyleTimestamp, CellBorderLine},
+            CellWrap,
         },
         CellValue, DEFAULT_ROW_HEIGHT,
     };
@@ -472,8 +347,7 @@ mod test {
     use super::*;
 
     #[test]
-    #[parallel]
-    fn delete_row_values() {
+    fn test_delete_row_values() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(
             1,
@@ -484,7 +358,7 @@ mod test {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         sheet.delete_and_shift_values(1);
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
@@ -493,8 +367,7 @@ mod test {
     }
 
     #[test]
-    #[parallel]
-    fn delete_row() {
+    fn test_delete_row() {
         // will delete row 1
         let mut sheet = Sheet::test();
         sheet.test_set_values(
@@ -506,61 +379,37 @@ mod test {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.test_set_format(
-            1,
-            2,
-            FormatUpdate {
-                fill_color: Some(Some("red".to_string())),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            2,
-            2,
-            FormatUpdate {
-                wrap: Some(Some(CellWrap::Clip)),
-                ..Default::default()
-            },
-        );
-        sheet.test_set_format(
-            3,
-            2,
-            FormatUpdate {
-                fill_color: Some(Some("blue".to_string())),
-                ..Default::default()
-            },
-        );
+        sheet
+            .formats
+            .fill_color
+            .set(pos![A2], Some("red".to_string()));
+        sheet.formats.wrap.set(pos![B2], Some(CellWrap::Clip));
+        sheet
+            .formats
+            .fill_color
+            .set(pos![C2], Some("blue".to_string()));
         sheet.test_set_code_run_array(1, 3, vec!["=A1", "=A2"], false);
         sheet.test_set_code_run_array(1, 4, vec!["=A1", "=A2"], false);
 
-        sheet.set_formats_rows(
-            &[1],
-            &Formats::repeat(
-                FormatUpdate {
-                    bold: Some(Some(true)),
-                    italic: Some(Some(true)),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
+        sheet.formats.bold.set_rect(1, 1, Some(1), None, Some(true));
+        sheet
+            .formats
+            .italic
+            .set_rect(1, 1, Some(1), None, Some(true));
 
-        sheet.set_formats_rows(
-            &[2],
-            &Formats::repeat(
-                FormatUpdate {
-                    bold: Some(Some(false)),
-                    italic: Some(Some(false)),
-                    ..Default::default()
-                },
-                1,
-            ),
-        );
+        sheet
+            .formats
+            .bold
+            .set_rect(2, 1, Some(2), None, Some(false));
+        sheet
+            .formats
+            .italic
+            .set_rect(2, 1, Some(2), None, Some(false));
 
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
 
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::User,
+            source: TransactionSource::User,
             ..Default::default()
         };
         sheet.delete_row(&mut transaction, 1);
@@ -571,93 +420,95 @@ mod test {
             Some(CellValue::Text("E".to_string()))
         );
         assert_eq!(
-            sheet.format_cell(3, 1, false),
-            Format {
-                fill_color: Some("blue".to_string()),
-                ..Default::default()
-            }
+            sheet.formats.fill_color.get(pos![C1]),
+            Some("blue".to_string())
         );
         assert!(sheet.data_tables.get(&Pos { x: 1, y: 2 }).is_some());
         assert!(sheet.data_tables.get(&Pos { x: 1, y: 3 }).is_some());
     }
 
     #[test]
-    #[parallel]
     fn insert_row_start() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
-        sheet.borders.set(
-            1,
-            1,
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
+        sheet.borders.set_style_cell(
+            pos![A1],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: Some(BorderStyleTimestamp::default()),
+                left: Some(BorderStyleTimestamp::default()),
+                right: Some(BorderStyleTimestamp::default()),
+            },
         );
-        sheet.borders.set(
-            1,
-            2,
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
+        sheet.borders.set_style_cell(
+            pos![A2],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: Some(BorderStyleTimestamp::default()),
+                left: Some(BorderStyleTimestamp::default()),
+                right: Some(BorderStyleTimestamp::default()),
+            },
         );
-        sheet.borders.set(
-            1,
-            3,
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
-            Some(BorderStyle::default()),
+        sheet.borders.set_style_cell(
+            pos![A3],
+            BorderStyleCell {
+                top: Some(BorderStyleTimestamp::default()),
+                bottom: Some(BorderStyleTimestamp::default()),
+                left: Some(BorderStyleTimestamp::default()),
+                right: Some(BorderStyleTimestamp::default()),
+            },
         );
         sheet.test_set_code_run_array(4, 1, vec!["A", "B"], false);
 
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
 
         let mut transaction = PendingTransaction::default();
 
         sheet.insert_row(&mut transaction, 1, CopyFormats::None);
 
-        assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
+        assert_eq!(sheet.display_value(pos![A1]), None);
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(pos![A2]),
             Some(CellValue::Text("A".to_string()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 3 }),
+            sheet.display_value(pos![A3]),
             Some(CellValue::Text("B".to_string()))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 4 }),
+            sheet.display_value(pos![A4]),
             Some(CellValue::Text("C".to_string()))
         );
 
-        assert_eq!(sheet.borders.get(1, 1).top, None);
+        assert_eq!(sheet.borders.get_side(BorderSide::Top, pos![A1]), None);
         assert_eq!(
-            sheet.borders.get(1, 2).top.unwrap().line,
+            sheet
+                .borders
+                .get_side(BorderSide::Top, pos![A2])
+                .unwrap()
+                .line,
             CellBorderLine::default()
         );
         assert_eq!(
-            sheet.borders.get(1, 3).top.unwrap().line,
+            sheet.borders.get_style_cell(pos![A3]).top.unwrap().line,
             CellBorderLine::default()
         );
         assert_eq!(
-            sheet.borders.get(1, 4).top.unwrap().line,
+            sheet.borders.get_style_cell(pos![A4]).top.unwrap().line,
             CellBorderLine::default()
         );
-        assert_eq!(sheet.borders.get(5, 1).top, None);
+        assert_eq!(sheet.borders.get_side(BorderSide::Top, pos![E1]), None);
 
-        assert!(sheet.data_tables.get(&Pos { x: 4, y: 1 }).is_none());
-        assert!(sheet.data_tables.get(&Pos { x: 4, y: 2 }).is_some());
+        assert!(sheet.data_tables.get(&pos![D1]).is_none());
+        assert!(sheet.data_tables.get(&pos![D2]).is_some());
 
         assert_eq!(
-            sheet.display_value(Pos { x: 4, y: 2 }),
+            sheet.display_value(pos![D2]),
             Some(CellValue::Text("A".to_string()))
         );
     }
 
     #[test]
-    #[parallel]
     fn insert_row_middle() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 1, 3, vec!["A", "B", "C"]);
@@ -682,7 +533,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_row_end() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 1, 2, vec!["A", "B"]);
@@ -703,7 +553,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn test_values_ops_for_column() {
         let mut sheet = Sheet::test();
         sheet.test_set_values(1, 1, 2, 2, vec!["a", "b", "c", "d"]);
@@ -712,7 +561,6 @@ mod test {
     }
 
     #[test]
-    #[parallel]
     fn insert_row_offset() {
         let mut sheet = Sheet::test();
         sheet.offsets.set_row_height(1, 100.0);
@@ -728,8 +576,7 @@ mod test {
     }
 
     #[test]
-    #[parallel]
-    fn delete_column_offset() {
+    fn delete_row_offset() {
         let mut sheet = Sheet::test();
         sheet.offsets.set_row_height(1, 100.0);
         sheet.offsets.set_row_height(2, 200.0);

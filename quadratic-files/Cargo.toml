@@ -1,12 +1,13 @@
 [package]
 name = "quadratic-files"
-version = "0.5.2"
+version = "0.5.4"
 edition = "2021"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
 [dependencies]
-axum = { version = "0.7.1", features = ["ws"] }
+axum = { version = "0.7.1", features = ["macros"] }
 axum-extra = { version = "0.9.0", features = ["typed-header"] }
+bytes = "1.6.1"
 chrono = { version = "0.4.31", features = ["serde"] }
 dotenv = "0.15.0"
 envy = "0.4.2"
@@ -28,8 +29,9 @@ strum = "0.26.3"
 strum_macros = "0.25.3"
 thiserror = "1.0.50"
 tokio = { version = "1.34.0", features = ["full"] }
+tokio-util = "0.7.11"
 tower = { version = "0.4.13", features = ["util"] }
-tower-http = { version = "0.5.0", features = ["fs", "trace"] }
+tower-http = { version = "0.5.0", features = ["cors", "fs", "trace", "validate-request"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }

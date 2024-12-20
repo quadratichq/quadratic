@@ -1,3 +1,5 @@
+// TODO: remove if unused. I don't think this is needed anymore.
+
 use itertools::Itertools;
 use std::fmt;
 use std::ops::Range;

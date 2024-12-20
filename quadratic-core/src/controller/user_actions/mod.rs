@@ -8,7 +8,6 @@ pub mod code;
 pub mod col_row;
 pub mod data_table;
 pub mod formats;
-pub mod formatting;
 pub mod import;
 pub mod sheets;
 pub mod undo;

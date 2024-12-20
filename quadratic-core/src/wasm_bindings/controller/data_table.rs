@@ -1,4 +1,3 @@
-use selection::Selection;
 use sort::DataTableSort;
 
 use super::*;
@@ -24,11 +23,11 @@ impl GridController {
     #[wasm_bindgen(js_name = "gridToDataTable")]
     pub fn js_grid_to_data_table(
         &mut self,
-        selection: String,
+        sheet_rect: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        let sheet_rect = selection.rects.unwrap()[0].to_sheet_rect(selection.sheet_id);
+        let sheet_rect =
+            serde_json::from_str::<SheetRect>(&sheet_rect).map_err(|e| e.to_string())?;
         self.grid_to_data_table(sheet_rect, cursor);
 
         Ok(())

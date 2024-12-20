@@ -78,12 +78,12 @@ pub(crate) mod tests {
     use std::str::FromStr;
 
     use crate::{
-        grid::CodeCellLanguage,
+        grid::{CodeCellLanguage, CodeCellValue},
         test_util::{
             assert_cell_value_row, assert_data_table_cell_value_row, print_data_table, print_table,
         },
         wasm_bindings::js::clear_js_calls,
-        CellValue, CodeCellValue, Rect, RunError, RunErrorMsg, Span,
+        CellValue, Rect, RunError, RunErrorMsg, Span,
     };
 
     use bigdecimal::BigDecimal;
@@ -225,8 +225,8 @@ pub(crate) mod tests {
         assert_cell_value_row(
             &gc,
             sheet_id,
-            0,
-            10,
+            1,
+            11,
             1,
             vec![
                 "Empty",
@@ -245,51 +245,51 @@ pub(crate) mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.cell_value((1, 2).into()).unwrap(),
+            sheet.cell_value((2, 2).into()).unwrap(),
             CellValue::Text("Hello".into())
         );
         assert_eq!(
-            sheet.cell_value((2, 2).into()).unwrap(),
+            sheet.cell_value((3, 2).into()).unwrap(),
             CellValue::Date(NaiveDate::parse_from_str("2016-10-20", "%Y-%m-%d").unwrap())
         );
         assert_eq!(
-            sheet.cell_value((4, 2).into()).unwrap(),
+            sheet.cell_value((5, 2).into()).unwrap(),
             CellValue::Number(BigDecimal::from_str("1.1").unwrap())
         );
         assert_eq!(
-            sheet.cell_value((5, 2).into()).unwrap(),
+            sheet.cell_value((6, 2).into()).unwrap(),
             CellValue::DateTime(
                 NaiveDateTime::parse_from_str("2024-01-01 13:00", "%Y-%m-%d %H:%M").unwrap()
             )
         );
         assert_eq!(
-            sheet.cell_value((6, 2).into()).unwrap(),
+            sheet.cell_value((7, 2).into()).unwrap(),
             CellValue::Number(BigDecimal::from_str("1").unwrap())
         );
         assert_eq!(
-            sheet.cell_value((7, 2).into()).unwrap(),
+            sheet.cell_value((8, 2).into()).unwrap(),
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Formula,
                 code: "0/0".to_string()
             })
         );
         assert_eq!(
-            sheet.display_value((7, 2).into()).unwrap(),
+            sheet.display_value((8, 2).into()).unwrap(),
             CellValue::Error(Box::new(RunError {
                 msg: RunErrorMsg::DivideByZero,
                 span: Some(Span { start: 0, end: 3 })
             }))
         );
         assert_eq!(
-            sheet.cell_value((8, 2).into()).unwrap(),
+            sheet.cell_value((9, 2).into()).unwrap(),
             CellValue::Logical(true)
         );
         assert_eq!(
-            sheet.cell_value((9, 2).into()).unwrap(),
+            sheet.cell_value((10, 2).into()).unwrap(),
             CellValue::Text("Hello Bold".into())
         );
         assert_eq!(
-            sheet.cell_value((10, 2).into()).unwrap(),
+            sheet.cell_value((11, 2).into()).unwrap(),
             CellValue::Text("Hello Red".into())
         );
 
@@ -314,7 +314,7 @@ pub(crate) mod tests {
     #[parallel]
     fn import_all_excel_functions() {
         let mut grid_controller = GridController::new_blank();
-        let pos = Pos { x: 0, y: 0 };
+        let pos = pos![A1];
         let file: Vec<u8> = std::fs::read(EXCEL_FUNCTIONS_FILE).expect("Failed to read file");
         let _ = grid_controller.import_excel(file, "all_excel_functions.xlsx", None);
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -326,11 +326,11 @@ pub(crate) mod tests {
         );
 
         let sheet = grid_controller.grid.try_sheet(sheet_id).unwrap();
-        let (y_start, y_end) = sheet.column_bounds(0, true).unwrap();
+        let (y_start, y_end) = sheet.column_bounds(1, true).unwrap();
         assert_eq!(y_start, 1);
         assert_eq!(y_end, 512);
         for y in y_start..=y_end {
-            let pos = Pos { x: 0, y };
+            let pos = Pos { x: 1, y };
             // all cells should be formula code cells
             let code_cell = sheet.cell_value(pos).unwrap();
             match &code_cell {
@@ -356,7 +356,7 @@ pub(crate) mod tests {
     fn imports_a_simple_parquet() {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = pos![A1];
         let file_name = "alltypes_plain.parquet";
         let file: Vec<u8> = std::fs::read(PARQUET_FILE).expect("Failed to read file");
         let _result = grid_controller.import_parquet(sheet_id, file, file_name, pos, None);
@@ -364,9 +364,9 @@ pub(crate) mod tests {
         assert_data_table_cell_value_row(
             &grid_controller,
             sheet_id,
-            0,
-            22,
-            0,
+            1,
+            23,
+            1,
             vec![
                 "id",
                 "text",
@@ -397,9 +397,9 @@ pub(crate) mod tests {
         assert_cell_value_row(
             &grid_controller,
             sheet_id,
-            0,
-            22,
             1,
+            23,
+            2,
             vec![
                 "1",                                    // id
                 "a",                                    // text

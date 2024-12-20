@@ -72,8 +72,7 @@ export class PointerLink {
   };
 
   pointerDown = (world: Point, event: PointerEvent): boolean => {
-    const { multiCursor } = sheets.sheet.cursor;
-    if (matchShortcut(Action.CmdClick, event) && !multiCursor) {
+    if (matchShortcut(Action.CmdClick, event) && !sheets.sheet.cursor.isMultiCursor()) {
       const link = this.checkHoverLink(world);
       if (link?.pos) {
         quadraticCore.getDisplayCell(pixiApp.cellsSheets.current?.sheetId ?? '', link.pos.x, link.pos.y).then((url) => {

@@ -9,10 +9,16 @@
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
 import { DROPDOWN_PADDING, DROPDOWN_SIZE } from '@/app/gridGL/cells/cellsLabel/drawSpecial';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { isFloatGreaterThan, isFloatLessThan } from '@/app/helpers/float';
-import { CellAlign, CellVerticalAlign, CellWrap, JsNumber, JsRenderCell } from '@/app/quadratic-core-types';
+import {
+  CellAlign,
+  CellVerticalAlign,
+  CellWrap,
+  JsCoordinate,
+  JsNumber,
+  JsRenderCell,
+} from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { RenderBitmapChar } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import {
@@ -54,6 +60,8 @@ const STRIKE_THROUGH_OFFSET = 32;
 export const FONT_SIZE = 14;
 export const LINE_HEIGHT = 16;
 
+const URL_REGEX = /^(https?:\/\/|www\.)[^\s<>'"]+\.[^\s<>'"]+$/i;
+
 export class CellLabel {
   private cellsLabels: CellsLabels;
   private position = new Point();
@@ -72,7 +80,7 @@ export class CellLabel {
   tint: number;
   private maxWidth?: number;
   private roundPixels?: boolean;
-  location: Coordinate;
+  location: JsCoordinate;
   AABB: Rectangle;
 
   clipLeft?: number;
@@ -108,8 +116,9 @@ export class CellLabel {
   textHeight = 0;
   unwrappedTextWidth = 0;
 
-  overflowRight = 0;
-  overflowLeft = 0;
+  // overflow values
+  private overflowRight = 0;
+  private overflowLeft = 0;
 
   // bounds with overflow
   private actualLeft: number;
@@ -118,8 +127,8 @@ export class CellLabel {
   private actualBottom: number;
 
   // bounds after clipping
-  private textLeft: number;
-  private textRight: number;
+  textLeft: number;
+  textRight: number;
   private textTop: number;
   private textBottom: number;
 
@@ -211,7 +220,8 @@ export class CellLabel {
   };
 
   private updateCellLimits = () => {
-    this.cellClipLeft = this.wrap === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.cellClipLeft =
+      (this.wrap === 'clip' && this.align !== 'left') || this.location.x === 1 ? this.AABB.left : undefined;
     this.cellClipRight = this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;
@@ -220,6 +230,7 @@ export class CellLabel {
 
   private isLink = (cell: JsRenderCell): boolean => {
     if (cell.number !== undefined || cell.special !== undefined) return false;
+    if (!URL_REGEX.test(cell.value)) return false;
     try {
       new URL(cell.value);
       return true;

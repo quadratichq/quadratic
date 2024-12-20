@@ -6,6 +6,9 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useCallback } from 'react';
 import { useSetRecoilState } from 'recoil';
 
+// used as a place-holder for clear color
+const CLEAR_COLOR = 'rgb(18, 52, 86)'; // #123456
+
 export interface ChangeBorder {
   selection?: BorderSelection;
   color?: string;
@@ -28,15 +31,21 @@ export const useBorders = (): UseBordersResults => {
         const line = options.line ?? prev.line;
         const colorTint = convertColorStringToTint(color);
         const colorArray = convertTintToArray(colorTint);
-        const style: BorderStyle = {
-          color: {
-            red: Math.floor(colorArray[0] * 255),
-            green: Math.floor(colorArray[1] * 255),
-            blue: Math.floor(colorArray[2] * 255),
-            alpha: 1,
-          },
-          line,
-        };
+        let style: BorderStyle | undefined;
+
+        if (color === CLEAR_COLOR) {
+          style = undefined;
+        } else {
+          style = {
+            color: {
+              red: Math.floor(colorArray[0] * 255),
+              green: Math.floor(colorArray[1] * 255),
+              blue: Math.floor(colorArray[2] * 255),
+              alpha: 1,
+            },
+            line,
+          };
+        }
         const rustSelection = sheets.getRustSelection();
         if (options.selection) {
           quadraticCore.setBorders(rustSelection, options.selection, style);

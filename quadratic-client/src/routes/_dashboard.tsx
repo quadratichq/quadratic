@@ -1,14 +1,12 @@
-import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { newFileDialogAtom } from '@/dashboard/atoms/newFileDialogAtom';
+import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { DashboardSidebar } from '@/dashboard/components/DashboardSidebar';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Empty } from '@/dashboard/components/Empty';
 import { ImportProgressList } from '@/dashboard/components/ImportProgressList';
-import { NewFileDialog } from '@/dashboard/components/NewFileDialog';
 import { apiClient } from '@/shared/api/apiClient';
 import { MenuIcon } from '@/shared/components/Icons';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import { CONTACT_URL } from '@/shared/constants/urls';
+import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
@@ -17,6 +15,7 @@ import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons'
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import {
   Link,
   LoaderFunctionArgs,
@@ -31,7 +30,7 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
-import { RecoilRoot, useRecoilState } from 'recoil';
+import { RecoilRoot } from 'recoil';
 
 export const DRAWER_WIDTH = 264;
 export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
@@ -93,10 +92,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   } else if (teams.length > 0) {
     initialActiveTeamUuid = teams[0].team.uuid;
 
-    // 4) there's no teams in the API, so create one and send the user to it
+    // 4) there's no teams in the API, so create one
   } else if (teams.length === 0) {
     const newTeam = await apiClient.teams.create({ name: 'My Team' });
-    return redirect(ROUTES.TEAM(newTeam.uuid));
+    // Send user to team dashboard if mobile, otherwise to a new file
+    return isMobile ? redirect(ROUTES.TEAM(newTeam.uuid)) : redirect(ROUTES.CREATE_FILE(newTeam.uuid));
   }
 
   // This should never happen, but if it does, we'll log it to sentry
@@ -225,33 +225,11 @@ export const Component = () => {
           </div>
           {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
         </div>
-        <NewFileDialogWrapper />
         <ImportProgressList />
       </TooltipProvider>
     </RecoilRoot>
   );
 };
-
-function NewFileDialogWrapper() {
-  const [newFileDialogState, setNewFileDialogState] = useRecoilState(newFileDialogAtom);
-  const {
-    activeTeam: {
-      connections,
-      team: { uuid: teamUuid },
-    },
-  } = useDashboardRouteLoaderData();
-
-  if (!newFileDialogState.show) return null;
-
-  return (
-    <NewFileDialog
-      connections={connections}
-      teamUuid={teamUuid}
-      onClose={() => setNewFileDialogState((prev) => ({ ...prev, show: false }))}
-      isPrivate={newFileDialogState.isPrivate}
-    />
-  );
-}
 
 export const ErrorBoundary = () => {
   const error = useRouteError();
@@ -269,7 +247,31 @@ export const ErrorBoundary = () => {
     </div>
   );
 
+  const actionsLicenseRevoked = (
+    <div className="flex justify-center gap-1">
+      <Button asChild variant="outline">
+        <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+          Contact Support
+        </a>
+      </Button>
+      <Button asChild>
+        <a href={SCHEDULE_MEETING} target="_blank" rel="noreferrer">
+          Schedule Meeting
+        </a>
+      </Button>
+    </div>
+  );
+
   if (isRouteErrorResponse(error)) {
+    if (error.status === 402)
+      return (
+        <Empty
+          title="License Revoked"
+          description="Your license has been revoked. Please contact Quadratic Support."
+          Icon={InfoCircledIcon}
+          actions={actionsLicenseRevoked}
+        />
+      );
     if (error.status === 403)
       return (
         <Empty

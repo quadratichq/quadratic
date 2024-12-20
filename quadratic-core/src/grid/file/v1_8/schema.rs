@@ -1,62 +1,75 @@
 use std::collections::HashMap;
 
-use crate::grid::file::v1_7;
+use crate::grid::file::v1_7_1;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-pub type IdSchema = v1_7::IdSchema;
-pub type PosSchema = v1_7::PosSchema;
-pub type RectSchema = v1_7::RectSchema;
-pub type SheetRectSchema = v1_7::SheetRectSchema;
-pub type OffsetsSchema = v1_7::OffsetsSchema;
-pub type RunErrorSchema = v1_7::run_error_schema::RunErrorSchema;
-pub type FormatSchema = v1_7::FormatSchema;
-pub type ValidationsSchema = v1_7::ValidationsSchema;
-pub type ResizeSchema = v1_7::ResizeSchema;
-pub type CodeRunResultSchema = v1_7::CodeRunResultSchema;
-pub type OutputValueSchema = v1_7::schema::OutputValueSchema;
-pub type OutputArraySchema = v1_7::schema::OutputArraySchema;
-pub type OutputSizeSchema = v1_7::schema::OutputSizeSchema;
-pub type OutputValueValueSchema = v1_7::OutputValueValueSchema;
-pub type ColumnSchema = v1_7::schema::ColumnSchema;
-pub type NumericFormatKindSchema = v1_7::NumericFormatKindSchema;
-pub type NumericFormatSchema = v1_7::NumericFormatSchema;
-pub type CellValueSchema = v1_7::schema::CellValueSchema;
-pub type CodeCellLanguage = v1_7::CodeCellLanguageSchema;
-pub type ConnectionKindSchema = v1_7::ConnectionKindSchema;
-pub type CodeCellSchema = v1_7::CodeCellSchema;
-pub type CellAlignSchema = v1_7::CellAlignSchema;
-pub type CellVerticalAlignSchema = v1_7::CellVerticalAlignSchema;
-pub type CellWrapSchema = v1_7::CellWrapSchema;
-pub type CellBorderSchema = v1_7::CellBorderSchema;
-pub type ColumnRepeatSchema<T> = v1_7::ColumnRepeatSchema<T>;
-pub type RenderSizeSchema = v1_7::RenderSizeSchema;
-pub type RunErrorMsgSchema = v1_7::run_error_schema::RunErrorMsgSchema;
-pub type AxisSchema = v1_7::schema::AxisSchema;
-pub type SpanSchema = v1_7::schema::SpanSchema;
-pub type ImportSchema = v1_7::schema::Import;
-pub type BordersSchema = v1_7::schema::BordersSchema;
-pub type BorderStyleCellSchema = v1_7::schema::BorderStyleCellSchema;
-pub type BorderStyleTimestampSchema = v1_7::schema::BorderStyleTimestampSchema;
-pub type CellBorderLineSchema = v1_7::schema::CellBorderLineSchema;
-pub type RgbaSchema = v1_7::schema::RgbaSchema;
-pub type BorderStyleCell = v1_7::schema::BorderStyleCellSchema;
-pub type SelectionSchema = v1_7::SelectionSchema;
-pub type ValidationSchema = v1_7::ValidationSchema;
-pub type ValidationStyleSchema = v1_7::ValidationStyleSchema;
-pub type ValidationMessageSchema = v1_7::ValidationMessageSchema;
-pub type ValidationErrorSchema = v1_7::ValidationErrorSchema;
-pub type ValidationRuleSchema = v1_7::ValidationRuleSchema;
-pub type ValidationDateTimeSchema = v1_7::ValidationDateTimeSchema;
-pub type ValidationNumberSchema = v1_7::ValidationNumberSchema;
-pub type ValidationTextSchema = v1_7::ValidationTextSchema;
-pub type ValidationLogicalSchema = v1_7::ValidationLogicalSchema;
-pub type ValidationListSchema = v1_7::ValidationListSchema;
-pub type ValidationListSourceSchema = v1_7::ValidationListSourceSchema;
-pub type TextMatchSchema = v1_7::TextMatchSchema;
-pub type TextCaseSchema = v1_7::TextCaseSchema;
-pub type DateTimeRangeSchema = v1_7::DateTimeRangeSchema;
-pub type NumberRangeSchema = v1_7::NumberRangeSchema;
+pub type IdSchema = v1_7_1::IdSchema;
+pub type PosSchema = v1_7_1::PosSchema;
+pub type RectSchema = v1_7_1::RectSchema;
+pub type SheetRectSchema = v1_7_1::SheetRectSchema;
+pub type OffsetsSchema = v1_7_1::OffsetsSchema;
+pub type RunErrorSchema = v1_7_1::RunErrorSchema;
+// pub type FormatSchema = v1_7_1::FormatSchema;
+pub type ValidationsSchema = v1_7_1::ValidationsSchema;
+pub type ResizeSchema = v1_7_1::ResizeSchema;
+pub type CodeRunResultSchema = v1_7_1::CodeRunResultSchema;
+pub type OutputValueSchema = v1_7_1::OutputValueSchema;
+pub type OutputArraySchema = v1_7_1::OutputArraySchema;
+pub type OutputSizeSchema = v1_7_1::OutputSizeSchema;
+pub type OutputValueValueSchema = v1_7_1::OutputValueValueSchema;
+pub type ColumnSchema = v1_7_1::ColumnSchema;
+pub type NumericFormatKindSchema = v1_7_1::NumericFormatKindSchema;
+pub type NumericFormatSchema = v1_7_1::NumericFormatSchema;
+pub type CellValueSchema = v1_7_1::CellValueSchema;
+pub type CodeCellLanguage = v1_7_1::CodeCellLanguageSchema;
+pub type ConnectionKindSchema = v1_7_1::ConnectionKindSchema;
+pub type CodeCellSchema = v1_7_1::CodeCellSchema;
+pub type CellAlignSchema = v1_7_1::CellAlignSchema;
+pub type CellVerticalAlignSchema = v1_7_1::CellVerticalAlignSchema;
+pub type CellWrapSchema = v1_7_1::CellWrapSchema;
+pub type CellBorderSchema = v1_7_1::CellBorderSchema;
+pub type ColumnRepeatSchema<T> = v1_7_1::ColumnRepeatSchema<T>;
+pub type RenderSizeSchema = v1_7_1::RenderSizeSchema;
+pub type RunErrorMsgSchema = v1_7_1::RunErrorMsgSchema;
+pub type BordersSchema = v1_7_1::BordersSchema;
+pub type BorderStyleCellSchema = v1_7_1::BorderStyleCellSchema;
+pub type BorderStyleTimestampSchema = v1_7_1::BorderStyleTimestampSchema;
+pub type CellBorderLineSchema = v1_7_1::CellBorderLineSchema;
+pub type RgbaSchema = v1_7_1::RgbaSchema;
+pub type BorderStyleCell = v1_7_1::BorderStyleCellSchema;
+pub type SelectionSchema = v1_7_1::A1SelectionSchema;
+pub type ValidationSchema = v1_7_1::ValidationSchema;
+pub type ValidationStyleSchema = v1_7_1::ValidationStyleSchema;
+pub type ValidationMessageSchema = v1_7_1::ValidationMessageSchema;
+pub type ValidationErrorSchema = v1_7_1::ValidationErrorSchema;
+pub type ValidationRuleSchema = v1_7_1::ValidationRuleSchema;
+pub type ValidationDateTimeSchema = v1_7_1::ValidationDateTimeSchema;
+pub type ValidationNumberSchema = v1_7_1::ValidationNumberSchema;
+pub type ValidationTextSchema = v1_7_1::ValidationTextSchema;
+pub type ValidationLogicalSchema = v1_7_1::ValidationLogicalSchema;
+pub type ValidationListSchema = v1_7_1::ValidationListSchema;
+pub type ValidationListSourceSchema = v1_7_1::ValidationListSourceSchema;
+pub type TextMatchSchema = v1_7_1::TextMatchSchema;
+pub type TextCaseSchema = v1_7_1::TextCaseSchema;
+pub type DateTimeRangeSchema = v1_7_1::DateTimeRangeSchema;
+pub type NumberRangeSchema = v1_7_1::NumberRangeSchema;
+pub type CellsAccessedSchema = v1_7_1::CellsAccessedSchema;
+pub type CellRefRangeSchema = v1_7_1::CellRefRangeSchema;
+pub type RefRangeBoundsSchema = v1_7_1::RefRangeBoundsSchema;
+pub type CellRefRangeEndSchema = v1_7_1::CellRefRangeEndSchema;
+pub type CellRefCoordSchema = v1_7_1::CellRefCoordSchema;
+pub type A1SelectionSchema = v1_7_1::A1SelectionSchema;
+pub type Contiguous2DSchema<T> = v1_7_1::Contiguous2DSchema<T>;
+pub type BlockSchema<T> = v1_7_1::BlockSchema<T>;
+pub type BordersSideSchema = v1_7_1::BordersSideSchema;
+pub type DataTablesSchema = Vec<(PosSchema, DataTableSchema)>;
+pub type RowsResizesSchema = Vec<(i64, ResizeSchema)>;
+pub type ColumnsSchema = Vec<(i64, ColumnSchema)>;
+pub type AxisSchema = v1_7_1::AxisSchema;
+pub type SpanSchema = v1_7_1::SpanSchema;
+pub type SheetFormattingSchema = v1_7_1::SheetFormattingSchema;
+pub type RowsResizeSchema = v1_7_1::RowsResizeSchema;
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct GridSchema {
@@ -71,14 +84,12 @@ pub struct SheetSchema {
     pub color: Option<String>,
     pub order: String,
     pub offsets: OffsetsSchema,
+    pub validations: ValidationsSchema,
     pub columns: Vec<(i64, ColumnSchema)>,
     pub data_tables: Vec<(PosSchema, DataTableSchema)>,
-    pub formats_all: Option<FormatSchema>,
-    pub formats_columns: Vec<(i64, (FormatSchema, i64))>,
-    pub formats_rows: Vec<(i64, (FormatSchema, i64))>,
     pub rows_resize: Vec<(i64, ResizeSchema)>,
-    pub validations: ValidationsSchema,
     pub borders: BordersSchema,
+    pub formats: SheetFormattingSchema,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -86,7 +97,7 @@ pub struct CodeRunSchema {
     pub formatted_code_string: Option<String>,
     pub std_out: Option<String>,
     pub std_err: Option<String>,
-    pub cells_accessed: Vec<SheetRectSchema>,
+    pub cells_accessed: CellsAccessedSchema,
     pub error: Option<RunErrorSchema>,
     pub return_type: Option<String>,
     pub line_number: Option<u32>,
@@ -120,6 +131,27 @@ pub struct DataTableSortOrderSchema {
     pub direction: SortDirectionSchema,
 }
 
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FormatSchema {
+    pub align: Option<CellAlignSchema>,
+    pub vertical_align: Option<CellVerticalAlignSchema>,
+    pub wrap: Option<CellWrapSchema>,
+    pub numeric_format: Option<NumericFormatSchema>,
+    pub numeric_decimals: Option<i16>,
+    pub numeric_commas: Option<bool>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub text_color: Option<String>,
+    pub fill_color: Option<String>,
+    pub render_size: Option<RenderSizeSchema>,
+
+    #[serde(default)]
+    pub date_time: Option<String>,
+    #[serde(default)]
+    pub underline: Option<bool>,
+    #[serde(default)]
+    pub strike_through: Option<bool>,
+}
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableFormatsSchema {
     pub table: Option<FormatSchema>,
@@ -163,4 +195,9 @@ impl From<AxisSchema> for i8 {
             AxisSchema::Y => 1,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ImportSchema {
+    pub file_name: String,
 }

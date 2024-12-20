@@ -1,6 +1,7 @@
 use super::serialize::sheets::import_sheet;
 use super::v1_6;
 use super::v1_7;
+use super::v1_7_1;
 use super::v1_8;
 use crate::grid::Sheet;
 use anyhow::Result;
@@ -11,6 +12,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum SheetSchema {
     V1_8(v1_8::schema::SheetSchema),
+    V1_7_1(v1_7_1::SheetSchema),
     V1_7(v1_7::schema::SheetSchema),
     V1_6(v1_6::schema::Sheet),
 }
@@ -20,10 +22,13 @@ impl SheetSchema {
     pub fn into_latest(self) -> Result<Sheet> {
         match self {
             SheetSchema::V1_8(sheet) => import_sheet(sheet),
-            SheetSchema::V1_7(sheet) => import_sheet(v1_7::file::upgrade_sheet(sheet)?),
-            SheetSchema::V1_6(sheet) => import_sheet(v1_7::file::upgrade_sheet(
-                v1_6::file::upgrade_sheet(sheet)?,
-            )?),
+            SheetSchema::V1_7_1(sheet) => import_sheet(v1_7_1::upgrade_sheet(sheet)),
+            SheetSchema::V1_7(sheet) => {
+                import_sheet(v1_7_1::upgrade_sheet(v1_7::file::upgrade_sheet(sheet)?))
+            }
+            SheetSchema::V1_6(sheet) => import_sheet(v1_7_1::upgrade_sheet(
+                v1_7::file::upgrade_sheet(v1_6::file::upgrade_sheet(sheet)?)?,
+            )),
         }
     }
 }
@@ -44,7 +49,7 @@ mod test {
     fn test_export_sheet() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value((0, 0).into(), "Hello, world!".to_string());
-        sheet.calculate_bounds();
+        sheet.recalculate_bounds();
         let schema = export_sheet(sheet.clone());
         let imported = schema.into_latest().unwrap();
         assert_eq!(sheet, imported);

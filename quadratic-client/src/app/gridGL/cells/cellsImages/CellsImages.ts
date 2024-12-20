@@ -1,6 +1,7 @@
 //! Draw the cell images (an Image output from a code cell)
 
 import { events } from '@/app/events/events';
+<<<<<<< HEAD
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -9,6 +10,14 @@ import { intersects } from '../../helpers/intersects';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { CellsSheet } from '../CellsSheet';
 import { CellsImage } from './CellsImage';
+=======
+import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
+import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { Container, Rectangle } from 'pixi.js';
+>>>>>>> origin/qa
 
 export class CellsImages extends Container<CellsImage> {
   private cellsSheet: CellsSheet;
@@ -21,9 +30,9 @@ export class CellsImages extends Container<CellsImage> {
   }
 
   destroy() {
-    super.destroy();
     events.off('updateImage', this.updateImage);
     events.off('sheetOffsets', this.reposition);
+    super.destroy();
   }
 
   reposition = (sheetId: string) => {

@@ -61,7 +61,7 @@ impl GridController {
     ) {
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             let mut warnings = vec![];
-            if let Some(values) = sheet.selection(&validation.selection, None, false, true) {
+            if let Some(values) = sheet.selection_values(&validation.selection, None, false, true) {
                 values.iter().for_each(|(pos, _)| {
                     if let Some(validation) = sheet.validations.validate(sheet, *pos) {
                         warnings.push((*pos, validation.id));
@@ -227,9 +227,8 @@ mod tests {
     use serial_test::serial;
 
     use crate::grid::sheet::validations::validation_rules::ValidationRule;
-    use crate::selection::Selection;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count};
-    use crate::CellValue;
+    use crate::{A1Selection, CellValue};
 
     #[test]
     #[serial]
@@ -240,11 +239,11 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("test".to_string()));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("test".to_string()));
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1", &sheet_id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
@@ -259,8 +258,8 @@ mod tests {
 
         expect_js_call_count("jsRenderCellSheets", 1, false);
         let warnings = vec![JsValidationWarning {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             validation: Some(validation.id),
             style: Some(validation.error.style.clone()),
         }];
@@ -280,11 +279,11 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("test".to_string()));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("test".to_string()));
 
         let validation = Validation {
             id: Uuid::new_v4(),
-            selection: Selection::pos(0, 0, sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1", &sheet_id),
             rule: ValidationRule::Logical(Default::default()),
             message: Default::default(),
             error: Default::default(),
@@ -305,8 +304,8 @@ mod tests {
 
         expect_js_call_count("jsRenderCellSheets", 2, false);
         let warnings = vec![JsValidationWarning {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             validation: None,
             style: None,
         }];
