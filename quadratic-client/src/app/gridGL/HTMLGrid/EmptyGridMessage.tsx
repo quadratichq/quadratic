@@ -109,6 +109,7 @@ export function EmptyGridMessage() {
 function UploadFileButton({ teamUuid }: { teamUuid: string }) {
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <>
       <Button className="w-full" onClick={() => fileInputRef.current?.click()}>
