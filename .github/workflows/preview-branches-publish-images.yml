@@ -53,7 +53,13 @@ jobs:
         env:
           REPO_NAME: ${{ steps.repo-name.outputs.REPO_NAME }}
         run: |
-          aws ecr create-repository --repository-name $REPO_NAME || true
+          # Try to describe the repository first
+          if ! aws ecr describe-repositories --repository-names $REPO_NAME 2>/dev/null; then
+            # Repository doesn't exist, create it
+            aws ecr create-repository --repository-name $REPO_NAME
+          fi
+
+          # Get the repository URI either way
           REPO_INFO=$(aws ecr describe-repositories --repository-names $REPO_NAME)
           ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
           echo "ECR_URL=$ECR_URL" >> $GITHUB_OUTPUT
@@ -72,8 +78,10 @@ jobs:
             ${{ runner.os }}-buildx-${{ matrix.service }}-
             ${{ runner.os }}-buildx-
 
-      - name: Create cache directory if it doesn't exist
-        run: mkdir -p /tmp/.buildx-cache
+      - name: Create and initialize buildx cache
+        run: |
+          mkdir -p /tmp/.buildx-cache
+          echo '{"layers":{}}' > /tmp/.buildx-cache/index.json
 
       - name: Build, Tag, and Push Image to Amazon ECR Private
         env:
