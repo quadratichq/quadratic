@@ -136,26 +136,6 @@ impl From<CodeRunOld> for DataTable {
     }
 }
 
-// impl From<DataTable> for Option<CodeRunOld> {
-//     fn from(data_table: DataTable) -> Option<CodeRunOld> {
-//         match data_table.kind {
-//             DataTableKind::CodeRun(code_run) => Some(CodeRunOld {
-//                 formatted_code_string: code_run.formatted_code_string,
-//                 std_out: code_run.std_out,
-//                 std_err: code_run.std_err,
-//                 cells_accessed: code_run.cells_accessed,
-//                 result: code_run.result,
-//                 return_type: code_run.return_type,
-//                 spill_error: code_run.spill_error,
-//                 line_number: code_run.line_number,
-//                 output_type: code_run.output_type,
-//                 last_modified: code_run.last_modified,
-//             }),
-//             _ => None,
-//         }
-//     }
-// }
-
 impl DataTable {
     /// Creates a new DataTable with the given kind, value, and spill_error,
     /// with the ability to lift the first row as column headings.

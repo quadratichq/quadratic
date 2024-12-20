@@ -110,17 +110,7 @@ impl GridController {
             index,
         } = op
         {
-            let op = Operation::SetCodeRunVersion {
-                sheet_pos,
-                code_run: data_table.and_then(|data_table| {
-                    data_table
-                        .code_run()
-                        .and_then(|code_run| Some(code_run.to_owned().into()))
-                }),
-                index,
-                version: 1,
-            };
-            self.execute_set_code_run_version(transaction, op);
+            self.finalize_code_run(transaction, sheet_pos, data_table, Some(index));
         }
     }
 

@@ -7,6 +7,7 @@ use quadratic_core::controller::execution::run_code::get_cells::JsGetCellRespons
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::grid::formats::Format;
+use quadratic_core::grid::js_types::JsDataTableColumnHeader;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosAIContext, JsClipboard,
     JsCodeCell, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
@@ -41,14 +42,17 @@ use quadratic_core::grid::sheet::validations::validation_rules::validation_text:
     TextCase, TextMatch, ValidationText,
 };
 use quadratic_core::grid::sheet::validations::validation_rules::ValidationRule;
+use quadratic_core::grid::sort::DataTableSort;
+use quadratic_core::grid::sort::SortDirection;
+use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::{
     CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
 use quadratic_core::grid::{CodeCellLanguage, ConnectionKind};
-use quadratic_core::grid::{JsCellsAccessed, RenderSize};
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::small_timestamp::SmallTimestamp;
+use quadratic_core::wasm_bindings::controller::bounds::MinMax;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
 use quadratic_core::A1Selection;
 use quadratic_core::CellRefCoord;
@@ -133,7 +137,6 @@ fn main() {
         Pos,
         RefRangeBounds,
         Rect,
-        RenderSize,
         Rgba,
         RunError,
         RunErrorMsg,
