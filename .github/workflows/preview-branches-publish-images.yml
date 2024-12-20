@@ -28,6 +28,7 @@ jobs:
         run: |
           echo "BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
           echo "GIT_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "BRANCH_NAME=$(echo "${{ github.head_ref }}" | tr '/' '-')" >> $GITHUB_OUTPUT
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -83,7 +84,7 @@ jobs:
             --label "org.opencontainers.image.revision=${{ github.sha }}" \
             --push \
             -t $ECR_URL:pr-${{ github.event.pull_request.number }} \
-            -t $ECR_URL:${{ github.head_ref }} \
+            -t $ECR_URL:${{ steps.build-metadata.outputs.BRANCH_NAME }} \
             -t $ECR_URL:${{ steps.build-metadata.outputs.GIT_SHA_SHORT }} \
             -f quadratic-${{ matrix.service }}/Dockerfile .
 
