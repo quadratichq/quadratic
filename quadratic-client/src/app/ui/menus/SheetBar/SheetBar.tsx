@@ -7,6 +7,7 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
 import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
+import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -30,10 +31,15 @@ export const SheetBar = (): JSX.Element => {
 
   const dragTimeOut = useRef<number | undefined>();
 
+  // Store the active sheet in the URL
+  const [activeSheetNameEncoded, setActiveSheetNameEncoded] = useState<string | null>(null);
+  useUpdateQueryStringValueWithoutNavigation('sheet', activeSheetNameEncoded);
+
   useEffect(() => {
     const updateSheet = () => {
       setActiveSheet(sheets.current);
       setTrigger((trigger) => trigger + 1);
+      setActiveSheetNameEncoded(sheets.sheet.order === 'a0' ? null : encodeURIComponent(sheets.sheet.name));
     };
 
     events.on('changeSheet', updateSheet);
