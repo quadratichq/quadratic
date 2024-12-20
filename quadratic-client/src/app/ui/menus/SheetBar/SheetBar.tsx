@@ -32,14 +32,14 @@ export const SheetBar = (): JSX.Element => {
   const dragTimeOut = useRef<number | undefined>();
 
   // Store the active sheet in the URL
-  const [activeSheetNameEncoded, setActiveSheetNameEncoded] = useState<string | null>(null);
-  useUpdateQueryStringValueWithoutNavigation('sheet', activeSheetNameEncoded);
+  const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
+  useUpdateQueryStringValueWithoutNavigation('sheet', activeSheetId);
 
   useEffect(() => {
     const updateSheet = () => {
       setActiveSheet(sheets.current);
       setTrigger((trigger) => trigger + 1);
-      setActiveSheetNameEncoded(sheets.sheet.order === 'a0' ? null : encodeURIComponent(sheets.sheet.name));
+      setActiveSheetId(sheets.sheet.order === 'a0' ? null : sheets.sheet.id);
     };
 
     events.on('changeSheet', updateSheet);
