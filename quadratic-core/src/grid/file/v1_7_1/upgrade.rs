@@ -3,9 +3,26 @@ use anyhow::Result;
 use crate::grid::file::v1_7_1 as current;
 use crate::grid::file::v1_8;
 
+// TODO(ddimaria): David F will take care of this
+fn chart_size_to_data_table_size(
+    formats: &current::SheetFormattingSchema,
+    pos: current::PosSchema,
+) -> Option<(f32, f32)> {
+    // formats.render_size.iter().find_map(|(y, render_size)| {
+    //     if let Ok(y) = y.parse::<i64>() {
+    //         if pos.y >= y && pos.y < y + render_size.len as i64 {
+    //             return Some((render_size.value.w, render_size.value.h));
+    //         }
+    //     }
+    //     None
+    // })
+    None
+}
+
 fn upgrade_code_runs(
     code_runs: Vec<(current::PosSchema, current::CodeRunSchema)>,
     columns: &[(i64, current::ColumnSchema)],
+    formats: &current::SheetFormattingSchema,
 ) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
     code_runs
         .into_iter()
@@ -27,10 +44,9 @@ fn upgrade_code_runs(
                 output_type: code_run.output_type,
             };
 
-            // TODO(ddimaria): fix this
-            let column = columns.get(i).unwrap();
-
-            let data_table_name = column
+            let data_table_name = columns
+                .get(i)
+                .unwrap()
                 .1
                 .iter()
                 .filter_map(|(_, value)| {
@@ -45,10 +61,9 @@ fn upgrade_code_runs(
                     }
                     None
                 })
-                .collect::<Vec<_>>()
-                .first()
-                .unwrap_or(&"Table");
+                .collect::<Vec<_>>();
 
+            let data_table_name = data_table_name.first().unwrap_or(&"Table");
             let data_table_name = format!("{}{}", data_table_name, i);
 
             let value = if let current::CodeRunResultSchema::Ok(value) = &code_run.result {
@@ -84,7 +99,7 @@ fn upgrade_code_runs(
                 last_modified: code_run.last_modified,
                 alternating_colors: true,
                 formats: Default::default(),
-                chart_pixel_output: code_run.chart_pixel_output,
+                chart_pixel_output: chart_size_to_data_table_size(&formats, pos.to_owned()),
                 chart_output: None,
             };
             Ok((v1_8::PosSchema::from(pos), new_data_table))
@@ -116,8 +131,8 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
         rows_resize,
         validations,
         borders,
-        formats,
-        data_tables: upgrade_code_runs(code_runs, &columns).unwrap_or_default(),
+        formats: formats.clone(),
+        data_tables: upgrade_code_runs(code_runs, &columns, &formats).unwrap_or_default(),
         columns,
     }
 }

@@ -123,6 +123,7 @@ fn export_render_size(render_size: RenderSize) -> current::RenderSizeSchema {
     }
 }
 
+// TODO(ddimaria):  v1_8::schema: should be current, update
 pub(crate) fn export_formats(formats: SheetFormatting) -> current::SheetFormattingSchema {
     current::SheetFormattingSchema {
         align: export_contiguous_2d(formats.align, opt_fn(export_cell_align)),
@@ -138,7 +139,6 @@ pub(crate) fn export_formats(formats: SheetFormatting) -> current::SheetFormatti
         italic: export_contiguous_2d(formats.italic, |x| x),
         text_color: export_contiguous_2d(formats.text_color, |x| x),
         fill_color: export_contiguous_2d(formats.fill_color, |x| x),
-        render_size: export_contiguous_2d(formats.render_size, opt_fn(export_render_size)),
         date_time: export_contiguous_2d(formats.date_time, |x| x),
         underline: export_contiguous_2d(formats.underline, |x| x),
         strike_through: export_contiguous_2d(formats.strike_through, |x| x),

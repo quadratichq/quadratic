@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     CellAlignSchema, CellVerticalAlignSchema, CellWrapSchema, Contiguous2DSchema,
-    NumericFormatSchema, RenderSizeSchema,
+    NumericFormatSchema,
 };
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
@@ -37,9 +37,8 @@ pub struct SheetFormattingSchema {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub fill_color: Contiguous2DSchema<Option<String>>,
 
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub render_size: Contiguous2DSchema<Option<RenderSizeSchema>>,
-
+    // #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    // pub render_size: Contiguous2DSchema<Option<RenderSizeSchema>>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub date_time: Contiguous2DSchema<Option<String>>,
 

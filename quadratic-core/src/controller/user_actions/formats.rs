@@ -325,7 +325,7 @@ impl GridController {
 #[serial_test::parallel]
 mod test {
     use crate::controller::GridController;
-    use crate::grid::{formatting::RenderSize, CellWrap};
+    use crate::grid::CellWrap;
     use crate::{A1Selection, Pos};
 
     #[test]
@@ -742,30 +742,6 @@ mod test {
                 .unwrap_or_default()
                 .date_time,
             Some("yyyy-mm-dd".to_string())
-        );
-    }
-
-    #[test]
-    fn test_set_render_size_selection() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_render_size(
-            &A1Selection::test_a1("A1:B2"),
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string(),
-            }),
-            None,
-        )
-        .unwrap();
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.formats.render_size.get(pos![A1]),
-            Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string()
-            })
         );
     }
 }

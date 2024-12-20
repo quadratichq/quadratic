@@ -72,9 +72,9 @@ impl Sheet {
             .enumerate()
             .for_each(|(index, (pos, data_table))| {
                 if pos.y == row {
-                    reverse_operations.push(Operation::SetCodeRun_RENAME_ME {
+                    reverse_operations.push(Operation::SetDataTable {
                         sheet_pos: SheetPos::new(self.id, pos.x, pos.y),
-                        code_run: Some(data_table.clone()),
+                        data_table: Some(data_table.clone()),
                         index,
                     });
                 }

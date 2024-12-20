@@ -8,6 +8,7 @@ use crate::{
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         file::sheet_schema::SheetSchema,
         formats::{Formats, SheetFormatUpdates},
+        formatting::CellFmtArray,
         js_types::JsRowHeight,
         sheet::{
             borders::{
@@ -42,9 +43,9 @@ pub enum Operation {
     /// **Deprecated** Nov 2024 in favor of `SetCodeRunVersion`.
     ///
     /// This works for < v1.7.
-    SetCodeRun_RENAME_ME {
+    SetDataTable {
         sheet_pos: SheetPos,
-        code_run: Option<DataTable>,
+        data_table: Option<DataTable>,
         index: usize,
     },
     SetChartSize {
@@ -105,7 +106,7 @@ pub enum Operation {
     /// Sets a code run.
     SetCodeRunVersion {
         sheet_pos: SheetPos,
-        code_run: Option<CodeRun>,
+        code_run: Option<CodeRunOld>,
         index: usize,
 
         /// Simple version for tracking breaking changes to [`CodeRun`].
@@ -279,13 +280,13 @@ impl fmt::Display for Operation {
             Operation::ComputeCode { sheet_pos } => {
                 write!(fmt, "ComputeCode {{ sheet_pos: {} }}", sheet_pos)
             }
-            Operation::SetCodeRun_RENAME_ME {
+            Operation::SetDataTable {
                 sheet_pos,
-                code_run: run,
+                data_table: run,
                 index,
             } => write!(
                 fmt,
-                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?}, index: {} }}",
+                "SetDataTable {{ sheet_pos: {} data_table: {:?}, index: {} }}",
                 sheet_pos, run, index
             ),
             Operation::SetCodeRun {

@@ -24,11 +24,11 @@ impl SheetSchema {
             SheetSchema::V1_8(sheet) => import_sheet(sheet),
             SheetSchema::V1_7_1(sheet) => import_sheet(v1_7_1::upgrade_sheet(sheet)),
             SheetSchema::V1_7(sheet) => {
-                import_sheet(v1_7_1::upgrade_sheet(v1_7::file::upgrade_sheet(sheet)?))
+                import_sheet(v1_7_1::upgrade_sheet(v1_7::upgrade_sheet(sheet)))
             }
-            SheetSchema::V1_6(sheet) => import_sheet(v1_7_1::upgrade_sheet(
-                v1_7::file::upgrade_sheet(v1_6::file::upgrade_sheet(sheet)?)?,
-            )),
+            SheetSchema::V1_6(sheet) => import_sheet(v1_7_1::upgrade_sheet(v1_7::upgrade_sheet(
+                v1_6::file::upgrade_sheet(sheet)?,
+            ))),
         }
     }
 }

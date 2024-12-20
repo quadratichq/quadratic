@@ -127,13 +127,13 @@ impl GridController {
             values: CellValues::from(CellValue::Import(import)),
         });
 
-        ops.push(Operation::SetCodeRun {
+        ops.push(Operation::SetDataTable {
             sheet_pos: SheetPos {
                 x: insert_at.x,
                 y: insert_at.y,
                 sheet_id,
             },
-            code_run: Some(data_table),
+            data_table: Some(data_table),
             index: y as usize,
         });
 
@@ -392,9 +392,9 @@ impl GridController {
             values: CellValues::from(CellValue::Import(import)),
         });
 
-        ops.push(Operation::SetCodeRun {
+        ops.push(Operation::SetDataTable {
             sheet_pos,
-            code_run: Some(data_table),
+            data_table: Some(data_table),
             index: 0,
         });
 
@@ -478,13 +478,13 @@ mod test {
         expected_data_table.last_modified = data_table.last_modified;
         expected_data_table.name = file_name.to_string();
 
-        let expected = Operation::SetCodeRun {
+        let expected = Operation::SetDataTable {
             sheet_pos: SheetPos {
                 x: 1,
                 y: 1,
                 sheet_id,
             },
-            code_run: Some(expected_data_table),
+            data_table: Some(expected_data_table),
             index: 2,
         };
 
@@ -514,12 +514,12 @@ mod test {
         assert_eq!(ops.as_ref().unwrap().len(), 2);
 
         let (sheet_pos, data_table) = match &ops.unwrap()[1] {
-            Operation::SetCodeRun {
+            Operation::SetDataTable {
                 sheet_pos,
-                code_run,
+                data_table,
                 ..
-            } => (*sheet_pos, code_run.clone().unwrap()),
-            _ => panic!("Expected SetCodeRun operation"),
+            } => (*sheet_pos, data_table.clone().unwrap()),
+            _ => panic!("Expected SetDataTable operation"),
         };
         assert_eq!(sheet_pos.x, 1);
         assert_eq!(

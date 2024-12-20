@@ -22,18 +22,19 @@ impl GridController {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
                 transaction
                     .reverse_operations
-                    .push(Operation::SetCodeRunVersion {
+                    .push(Operation::SetDataTable {
                         sheet_pos,
-                        code_run: Some(run.clone()),
+                        data_table: Some(run.clone()),
                         index,
-                        version: 1,
                     });
                 run.spill_error = spill_error;
-                transaction.forward_operations.push(Operation::SetCodeRun {
-                    sheet_pos,
-                    code_run: Some(run.to_owned()),
-                    index,
-                });
+                transaction
+                    .forward_operations
+                    .push(Operation::SetDataTable {
+                        sheet_pos,
+                        data_table: Some(run.to_owned()),
+                        index,
+                    });
                 code_pos = Some(*pos);
 
                 // need to update the cells that are affected by the spill error
@@ -121,7 +122,7 @@ mod tests {
     use crate::controller::GridController;
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
     use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
-    use crate::wasm_bindings::js::clear_js_calls;
+    use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
     use crate::{Array, CellValue, Pos, Rect, SheetPos, Value};
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
@@ -229,6 +230,8 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.data_tables[0].spill_error);
+
+        let mut transaction = PendingTransaction::default();
 
         gc.check_all_spills(&mut transaction, sheet_id);
         let sheet = gc.sheet(sheet_id);
@@ -354,10 +357,10 @@ mod tests {
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 1 }));
         assert_eq!(
             render_cells,
-            output_number(1, 1, "1", Some(CodeCellLanguage::Formula))
+            output_number(1, 1, "1", Some(CodeCellLanguage::Formula), None)
         );
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }));
-        assert_eq!(render_cells, output_number(1, 2, "2", None),);
+        assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
         gc.set_code_cell(
             SheetPos {

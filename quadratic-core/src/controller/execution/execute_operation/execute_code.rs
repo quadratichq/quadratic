@@ -72,7 +72,12 @@ impl GridController {
         } = op
         {
             if version == 1 {
-                self.finalize_code_run(transaction, sheet_pos, code_run, Some(index));
+                self.finalize_code_run(
+                    transaction,
+                    sheet_pos,
+                    code_run.map(|code_run| code_run.into()),
+                    Some(index),
+                );
             } else {
                 dbgjs!("Expected SetCodeRunVersion version to be 1");
             }

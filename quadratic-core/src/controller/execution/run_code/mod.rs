@@ -137,17 +137,17 @@ impl GridController {
         if transaction.is_user_undo_redo() {
             transaction
                 .forward_operations
-                .push(Operation::SetCodeRun_RENAME_ME {
+                .push(Operation::SetDataTable {
                     sheet_pos,
-                    code_run: new_data_table,
+                    data_table: new_data_table,
                     index,
                 });
 
             transaction
                 .reverse_operations
-                .push(Operation::SetCodeRun_RENAME_ME {
+                .push(Operation::SetDataTable {
                     sheet_pos,
-                    code_run: old_data_table,
+                    data_table: old_data_table,
                     index,
                 });
 

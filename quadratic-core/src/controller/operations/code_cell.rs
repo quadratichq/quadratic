@@ -44,12 +44,7 @@ impl GridController {
     fn is_dependent_on(&self, current: &DataTable, other_pos: SheetPos) -> bool {
         current
             .code_run()
-            .map(|code_run| {
-                code_run
-                    .cells_accessed
-                    .iter()
-                    .any(|sheet_rect| sheet_rect.contains(other_pos))
-            })
+            .map(|code_run| code_run.cells_accessed.contains(other_pos))
             .unwrap_or(false)
     }
 

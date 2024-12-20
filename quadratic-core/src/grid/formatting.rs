@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
+use crate::RunLengthEncoding;
+
 pub struct NumericDecimals;
 
 pub struct NumericCommas;
@@ -132,3 +134,22 @@ pub enum NumericFormatKind {
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, ts_rs::TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct DateTimeFormatting;
+
+// keep around for backwards compatibility
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum CellFmtArray {
+    Align(RunLengthEncoding<Option<CellAlign>>),
+    VerticalAlign(RunLengthEncoding<Option<CellVerticalAlign>>),
+    Wrap(RunLengthEncoding<Option<CellWrap>>),
+    NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
+    NumericDecimals(RunLengthEncoding<Option<i16>>),
+    NumericCommas(RunLengthEncoding<Option<bool>>),
+    Bold(RunLengthEncoding<Option<bool>>),
+    Italic(RunLengthEncoding<Option<bool>>),
+    TextColor(RunLengthEncoding<Option<String>>),
+    FillColor(RunLengthEncoding<Option<String>>),
+    RenderSize(RunLengthEncoding<Option<RenderSize>>),
+    DateTime(RunLengthEncoding<Option<String>>),
+    Underline(RunLengthEncoding<Option<bool>>),
+    StrikeThrough(RunLengthEncoding<Option<bool>>),
+}

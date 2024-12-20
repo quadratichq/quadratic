@@ -12,7 +12,7 @@ use super::{
     BordersUpgrade, SheetFormattingUpgrade,
 };
 
-pub fn upgrade_cells_accessed(
+fn upgrade_cells_accessed(
     cells_accessed: Vec<current::SheetRectSchema>,
 ) -> v1_7_1::CellsAccessedSchema {
     let mut new_cells_accessed: HashMap<v1_7_1::IdSchema, Vec<v1_7_1::CellRefRangeSchema>> =
@@ -429,7 +429,7 @@ fn upgrade_column(values: HashMap<String, v1_7_1::CellValueSchema>) -> v1_7_1::C
 
 type FormatColumnRow = (current::FormatSchema, (Option<i64>, Option<i64>));
 
-pub fn upgrade_formats_all_col_row(
+fn upgrade_formats_all_col_row(
     format_all: Option<current::FormatSchema>,
     format_columns: Vec<(i64, (current::FormatSchema, i64))>,
     format_rows: Vec<(i64, (current::FormatSchema, i64))>,
@@ -503,7 +503,7 @@ fn upgrade_column_formats_property<T>(
     }
 }
 
-pub fn upgrade_columns_formats(
+fn upgrade_columns_formats(
     current_columns: Vec<(i64, current::ColumnSchema)>,
     mut formats_upgrade: SheetFormattingUpgrade,
 ) -> (v1_7_1::ColumnsSchema, v1_7_1::SheetFormattingSchema) {

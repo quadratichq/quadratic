@@ -93,11 +93,11 @@ impl GridController {
                     );
                 }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
-                Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
+                Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
-                Operation::SetBorders { .. } => self.execute_set_borders(transaction, op),
+                Operation::SetBorders { .. } => {}
                 Operation::SetBordersSelection { .. } => {
                     self.execute_set_borders_selection(transaction, op);
                 }
@@ -106,12 +106,12 @@ impl GridController {
                 Operation::SetCodeRunVersion { .. } => {
                     self.execute_set_code_run_version(transaction, op);
                 }
-                Operation::SetCodeRun_RENAME_ME {
+                Operation::SetDataTable {
                     sheet_pos,
-                    code_run,
+                    data_table,
                     index,
                 } => {
-                    self.execute_set_code_run_RENAME_ME(transaction, op);
+                    self.execute_set_data_table(transaction, op);
                 }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => (), //self.execute_set_cell_formats(transaction, op)),

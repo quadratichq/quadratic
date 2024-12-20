@@ -35,7 +35,6 @@ mod test {
         grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
         CellValue, Pos, SheetPos, SheetRect, Value,
     };
-    use std::collections::HashSet;
 
     #[test]
     fn test_graph() {
@@ -60,9 +59,7 @@ mod test {
             max: sheet_pos_01.into(),
             sheet_id,
         };
-        cells_accessed
-            .cells
-            .insert(sheet_id, HashSet::from([sheet_rect]));
+        cells_accessed.add_sheet_rect(sheet_rect);
         let code_run = CodeRun {
             formatted_code_string: None,
             std_err: None,

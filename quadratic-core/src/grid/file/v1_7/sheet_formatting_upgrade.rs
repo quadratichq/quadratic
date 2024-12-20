@@ -97,7 +97,7 @@ impl SheetFormattingUpgrade {
             italic: self.italic.upgrade_schema(),
             text_color: self.text_color.upgrade_schema(),
             fill_color: self.fill_color.upgrade_schema(),
-            render_size: self.render_size.upgrade_schema(),
+            // render_size: self.render_size.upgrade_schema(),
             date_time: self.date_time.upgrade_schema(),
             underline: self.underline.upgrade_schema(),
             strike_through: self.strike_through.upgrade_schema(),

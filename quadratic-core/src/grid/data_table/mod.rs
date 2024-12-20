@@ -33,7 +33,7 @@ use tabled::{
     settings::{Color, Modify, Style},
 };
 
-use super::Grid;
+use super::{CodeRunOld, CodeRunResult, Grid};
 
 impl Grid {
     pub fn unique_data_table_name(&self, name: &str, require_number: bool) -> String {
@@ -117,6 +117,44 @@ impl From<(Import, Array, &Grid)> for DataTable {
         )
     }
 }
+
+impl From<CodeRunOld> for DataTable {
+    fn from(code_run_old: CodeRunOld) -> Self {
+        let value = match code_run_old.result.to_owned() {
+            CodeRunResult::Ok(value) => value,
+            CodeRunResult::Err(_) => Value::Single(CellValue::Blank),
+        };
+        DataTable::new(
+            DataTableKind::CodeRun(code_run_old.into()),
+            "Table1",
+            value,
+            false,
+            false,
+            true,
+            None,
+        )
+    }
+}
+
+// impl From<DataTable> for Option<CodeRunOld> {
+//     fn from(data_table: DataTable) -> Option<CodeRunOld> {
+//         match data_table.kind {
+//             DataTableKind::CodeRun(code_run) => Some(CodeRunOld {
+//                 formatted_code_string: code_run.formatted_code_string,
+//                 std_out: code_run.std_out,
+//                 std_err: code_run.std_err,
+//                 cells_accessed: code_run.cells_accessed,
+//                 result: code_run.result,
+//                 return_type: code_run.return_type,
+//                 spill_error: code_run.spill_error,
+//                 line_number: code_run.line_number,
+//                 output_type: code_run.output_type,
+//                 last_modified: code_run.last_modified,
+//             }),
+//             _ => None,
+//         }
+//     }
+// }
 
 impl DataTable {
     /// Creates a new DataTable with the given kind, value, and spill_error,

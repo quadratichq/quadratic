@@ -11,10 +11,9 @@ impl Sheet {
         &self,
         formats: &SheetFormatUpdates,
         reverse_formats: &SheetFormatUpdates,
-    ) -> (HashSet<Pos>, HashSet<i64>, HashSet<Pos>, bool) {
+    ) -> (HashSet<Pos>, HashSet<i64>, bool) {
         let mut dirty_hashes = HashSet::new();
         let mut resize_rows = HashSet::new();
-        let mut html_cells_changed = HashSet::new();
         let mut fills_changed = false;
 
         let sheet_bounds =
@@ -158,7 +157,7 @@ impl Sheet {
                 });
         }
 
-        (dirty_hashes, resize_rows, html_cells_changed, fills_changed)
+        (dirty_hashes, resize_rows, fills_changed)
     }
 
     /// Sets formats using SheetFormatUpdates.
@@ -167,16 +166,10 @@ impl Sheet {
     pub fn set_formats_a1(
         &mut self,
         formats: &SheetFormatUpdates,
-    ) -> (
-        Vec<Operation>,
-        HashSet<Pos>,
-        HashSet<i64>,
-        HashSet<Pos>,
-        bool,
-    ) {
+    ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>, bool) {
         let reverse_formats = self.formats.apply_updates(formats);
 
-        let (dirty_hashes, resize_rows, html_cells_changed, fills_changed) =
+        let (dirty_hashes, resize_rows, fills_changed) =
             self.formats_transaction_changes(formats, &reverse_formats);
 
         let reverse_op = Operation::SetCellFormatsA1 {
@@ -184,13 +177,7 @@ impl Sheet {
             formats: reverse_formats,
         };
 
-        (
-            vec![reverse_op],
-            dirty_hashes,
-            resize_rows,
-            html_cells_changed,
-            fills_changed,
-        )
+        (vec![reverse_op], dirty_hashes, resize_rows, fills_changed)
     }
 }
 
@@ -268,7 +255,7 @@ mod tests {
         reverse_formats.fill_color = Some(reverse_fill_color);
 
         // Get the changes
-        let (dirty_hashes, rows_changed, _html_cells_changed, fills_changed) =
+        let (dirty_hashes, rows_changed, fills_changed) =
             sheet.formats_transaction_changes(&formats, &reverse_formats);
 
         // Expected quadrants (converted to quadrant coordinates)

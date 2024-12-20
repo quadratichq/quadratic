@@ -16,8 +16,7 @@ impl GridController {
             return; // sheet may have been deleted
         };
 
-        let (reverse_operations, hashes, rows, html, fills_changed) =
-            sheet.set_formats_a1(&formats);
+        let (reverse_operations, hashes, rows, fills_changed) = sheet.set_formats_a1(&formats);
 
         if reverse_operations.is_empty() {
             return;
@@ -34,15 +33,6 @@ impl GridController {
             if !rows.is_empty() && transaction.is_user() {
                 let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
                 resize_rows.extend(rows);
-            }
-
-            if !html.is_empty() {
-                // not the best way, but render_size is moving to data_tables in
-                // the near future, so don't worry about this
-                let html_cells = transaction.html_cells.entry(sheet_id).or_default();
-                html_cells.extend(html.clone());
-                let image_cells = transaction.image_cells.entry(sheet_id).or_default();
-                image_cells.extend(html);
             }
 
             if fills_changed {

@@ -5,8 +5,11 @@ use crate::compression::{
 
 use super::Grid;
 use anyhow::{anyhow, Result};
+use migrate_code_cell_references::{
+    migrate_code_cell_references, replace_formula_a1_references_to_r1c1,
+};
 use serde::{Deserialize, Serialize};
-pub use shift_negative_offsets::add_import_offset_to_contiguous_2d_rect;
+pub use shift_negative_offsets::{add_import_offset_to_contiguous_2d_rect, shift_negative_offsets};
 use std::fmt::Debug;
 use std::str;
 pub use v1_7_1::{CellsAccessedSchema, CodeRunSchema};
@@ -80,17 +83,15 @@ impl GridFile {
         match self {
             GridFile::V1_8 { grid } => Ok(grid),
             GridFile::V1_7_1 { grid } => v1_7_1::upgrade(grid),
-            GridFile::V1_7 { grid } => v1_7_1::upgrade(v1_7::file::upgrade(grid)?),
-            GridFile::V1_6 { grid } => {
-                v1_7_1::upgrade(v1_7::file::upgrade(v1_6::file::upgrade(grid)?)?)
-            }
-            GridFile::V1_5 { grid } => v1_7_1::upgrade(v1_7::file::upgrade(v1_6::file::upgrade(
+            GridFile::V1_7 { grid } => v1_7_1::upgrade(v1_7::upgrade(grid)?),
+            GridFile::V1_6 { grid } => v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(grid)?)?),
+            GridFile::V1_5 { grid } => v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(
                 v1_5::file::upgrade(grid)?,
             )?)?),
-            GridFile::V1_4 { grid } => v1_7_1::upgrade(v1_7::file::upgrade(v1_6::file::upgrade(
+            GridFile::V1_4 { grid } => v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(
                 v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?,
             )?)?),
-            GridFile::V1_3 { grid } => v1_7_1::upgrade(v1_7::file::upgrade(v1_6::file::upgrade(
+            GridFile::V1_3 { grid } => v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(
                 v1_5::file::upgrade(v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?)?,
             )?)?),
         }
@@ -122,7 +123,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_7_1::upgrade(v1_7::file::upgrade(v1_6::file::upgrade(schema)?)?)?;
+            let schema = v1_7_1::upgrade(v1_7::upgrade(v1_6::file::upgrade(schema)?)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.7" => {
@@ -133,7 +134,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
                 data,
             )?;
             drop(file_contents);
-            let schema = v1_7_1::upgrade(v1_7::file::upgrade(schema)?)?;
+            let schema = v1_7_1::upgrade(v1_7::upgrade(schema)?)?;
             Ok(serialize::import(schema)?)
         }
         "1.7.1" => {
@@ -161,7 +162,21 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         )),
     };
 
+    handle_negative_offsets(&mut grid, check_for_negative_offsets);
+
     grid
+}
+
+fn handle_negative_offsets(grid: &mut Result<Grid>, check_for_negative_offsets: bool) {
+    if !check_for_negative_offsets {
+        return;
+    }
+
+    if let Ok(grid) = grid {
+        replace_formula_a1_references_to_r1c1(grid);
+        let shifted_offsets = shift_negative_offsets(grid);
+        migrate_code_cell_references(grid, &shifted_offsets);
+    }
 }
 
 fn import_json(file_contents: String) -> Result<Grid> {

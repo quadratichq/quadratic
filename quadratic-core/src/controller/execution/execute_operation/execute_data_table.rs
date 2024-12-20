@@ -4,7 +4,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{DataTable, DataTableKind},
+    grid::{CodeRunOld, DataTable, DataTableKind},
     ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
@@ -22,7 +22,8 @@ impl GridController {
 
             if transaction.is_user() {
                 let sheet = self.try_sheet_result(sheet_rect.sheet_id)?;
-                let rows = sheet.get_rows_with_wrap_in_rect(&(*sheet_rect).into());
+                // TODO(ddimaria): this could be false, check the history of the source fn
+                let rows = sheet.get_rows_with_wrap_in_rect(&(*sheet_rect).into(), true);
 
                 if !rows.is_empty() {
                     let resize_rows = transaction
@@ -96,6 +97,31 @@ impl GridController {
         data_tables_to_delete.iter().for_each(|pos| {
             self.finalize_code_run(transaction, pos.to_sheet_pos(sheet_id), None, None);
         });
+    }
+
+    pub(super) fn execute_set_data_table(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetDataTable {
+            sheet_pos,
+            data_table,
+            index,
+        } = op
+        {
+            let op = Operation::SetCodeRunVersion {
+                sheet_pos,
+                code_run: data_table.and_then(|data_table| {
+                    data_table
+                        .code_run()
+                        .and_then(|code_run| Some(code_run.to_owned().into()))
+                }),
+                index,
+                version: 1,
+            };
+            self.execute_set_code_run_version(transaction, op);
+        }
     }
 
     pub(super) fn execute_set_data_table_at(

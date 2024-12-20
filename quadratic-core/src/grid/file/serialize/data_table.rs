@@ -4,6 +4,7 @@ use anyhow::{anyhow, Result};
 use chrono::Utc;
 use indexmap::IndexMap;
 use itertools::Itertools;
+use std::str::FromStr;
 
 use crate::{
     grid::{
@@ -12,14 +13,11 @@ use crate::{
             column_header::DataTableColumnHeader,
             sort::{DataTableSort, SortDirection},
         },
-        // formats::format::Format,
         table_formats::TableFormats,
-        CodeRun,
-        ColumnData,
-        DataTable,
-        DataTableKind,
+        CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
     },
-    ArraySize, Axis, Pos, RunError, RunErrorMsg, Value,
+    ArraySize, Axis, CellRefCoord, CellRefRange, CellRefRangeEnd, Pos, RefRangeBounds, RunError,
+    RunErrorMsg, Value,
 };
 
 use super::{
@@ -27,6 +25,46 @@ use super::{
     current,
     // format::{export_format, import_format},
 };
+
+fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
+    CellRefCoord {
+        coord: coord.coord,
+        is_absolute: coord.is_absolute,
+    }
+}
+
+fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellRefRange {
+    match range {
+        current::CellRefRangeSchema::Sheet(ref_range_bounds) => CellRefRange::Sheet {
+            range: RefRangeBounds {
+                start: CellRefRangeEnd {
+                    col: import_cell_ref_coord(ref_range_bounds.start.col),
+                    row: import_cell_ref_coord(ref_range_bounds.start.row),
+                },
+                end: CellRefRangeEnd {
+                    col: import_cell_ref_coord(ref_range_bounds.end.col),
+                    row: import_cell_ref_coord(ref_range_bounds.end.row),
+                },
+            },
+        },
+    }
+}
+
+fn import_cells_accessed(
+    cells_accessed: Vec<(current::IdSchema, Vec<current::CellRefRangeSchema>)>,
+) -> Result<CellsAccessed> {
+    let mut imported_cells = CellsAccessed::default();
+
+    for (id, ranges) in cells_accessed {
+        let sheet_id = SheetId::from_str(&id.to_string())?;
+        imported_cells.cells.insert(
+            sheet_id,
+            ranges.into_iter().map(import_cell_ref_range).collect(),
+        );
+    }
+
+    Ok(imported_cells)
+}
 
 pub(crate) fn import_run_error_msg_builder(
     run_error_msg: current::RunErrorMsgSchema,
@@ -113,12 +151,47 @@ pub(crate) fn import_run_error_msg_builder(
     Ok(run_error_msg)
 }
 
-pub(crate) fn import_code_run_builder(code_run: current::OldCodeRunSchema) -> Result<CodeRun> {
-    let cells_accessed = code_run
-        .cells_accessed
+fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
+    current::CellRefCoordSchema {
+        coord: coord.coord,
+        is_absolute: coord.is_absolute,
+    }
+}
+
+fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRangeSchema {
+    match range {
+        CellRefRange::Sheet { range } => {
+            current::CellRefRangeSchema::Sheet(current::RefRangeBoundsSchema {
+                start: current::CellRefRangeEndSchema {
+                    col: export_cell_ref_coord(range.start.col),
+                    row: export_cell_ref_coord(range.start.row),
+                },
+                end: current::CellRefRangeEndSchema {
+                    col: export_cell_ref_coord(range.end.col),
+                    row: export_cell_ref_coord(range.end.row),
+                },
+            })
+        }
+    }
+}
+
+fn export_cells_accessed(
+    cells_accessed: CellsAccessed,
+) -> Vec<(current::IdSchema, Vec<current::CellRefRangeSchema>)> {
+    cells_accessed
+        .cells
         .into_iter()
-        .map(crate::SheetRect::from)
-        .collect();
+        .map(|(sheet_id, ranges)| {
+            (
+                current::IdSchema::from(sheet_id.to_string()),
+                ranges.into_iter().map(export_cell_ref_range).collect(),
+            )
+        })
+        .collect()
+}
+
+pub(crate) fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> {
+    let cells_accessed = code_run.cells_accessed;
 
     let error = if let Some(error) = code_run.error {
         Some(RunError {
@@ -136,7 +209,7 @@ pub(crate) fn import_code_run_builder(code_run: current::OldCodeRunSchema) -> Re
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
-        cells_accessed,
+        cells_accessed: import_cells_accessed(cells_accessed)?,
         return_type: code_run.return_type,
         line_number: code_run.line_number,
         output_type: code_run.output_type,
@@ -343,7 +416,7 @@ pub(crate) fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunEr
     }
 }
 
-pub(crate) fn export_code_run(code_run: CodeRun) -> current::OldCodeRunSchema {
+pub(crate) fn export_code_run(code_run: CodeRun) -> current::CodeRunSchema {
     let error = if let Some(error) = code_run.error {
         Some(current::RunErrorSchema {
             span: error.span.map(|span| current::SpanSchema {
@@ -356,16 +429,12 @@ pub(crate) fn export_code_run(code_run: CodeRun) -> current::OldCodeRunSchema {
         None
     };
 
-    current::OldCodeRunSchema {
+    current::CodeRunSchema {
         formatted_code_string: code_run.formatted_code_string,
         std_out: code_run.std_out,
         std_err: code_run.std_err,
         error,
-        cells_accessed: code_run
-            .cells_accessed
-            .into_iter()
-            .map(current::SheetRectSchema::from)
-            .collect(),
+        cells_accessed: export_cells_accessed(code_run.cells_accessed),
         return_type: code_run.return_type,
         line_number: code_run.line_number,
         output_type: code_run.output_type,

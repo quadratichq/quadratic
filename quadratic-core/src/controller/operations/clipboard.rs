@@ -296,9 +296,9 @@ impl GridController {
 
                         if let Some(data_table) = sheet.data_table(source_pos) {
                             if matches!(data_table.kind, DataTableKind::Import(_)) {
-                                ops.push(Operation::SetCodeRun {
+                                ops.push(Operation::SetDataTable {
                                     sheet_pos,
-                                    code_run: Some(data_table.to_owned()),
+                                    data_table: Some(data_table.to_owned()),
                                     index: 0,
                                 });
                             }
@@ -692,12 +692,7 @@ mod test {
 
         let paste = |gc: &mut GridController, x, y, html| {
             gc.paste_from_clipboard(
-                Selection {
-                    sheet_id,
-                    x,
-                    y,
-                    ..Default::default()
-                },
+                &A1Selection::from_xy(x, y, sheet_id),
                 None,
                 Some(html),
                 PasteSpecial::None,
@@ -705,15 +700,9 @@ mod test {
             )
         };
 
-        let (_, html) = gc
+        let JsClipboard { html, .. } = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&Selection {
-                sheet_id,
-                x: 0,
-                y: 0,
-                rects: Some(vec![rect]),
-                ..Default::default()
-            })
+            .copy_to_clipboard(&A1Selection::from_xy(0, 0, sheet_id))
             .unwrap();
 
         let expected_row1 = vec!["city", "region", "country", "population"];
@@ -765,24 +754,13 @@ mod test {
         let sheet = gc.sheet_mut(sheet_id);
 
         sheet.test_set_values(10, 0, 2, 2, vec!["1", "2", "3", "4"]);
-        let (_, html) = sheet
-            .copy_to_clipboard(&Selection {
-                sheet_id,
-                x: 10,
-                y: 0,
-                rects: Some(vec![rect]),
-                ..Default::default()
-            })
+        let JsClipboard { html, .. } = sheet
+            .copy_to_clipboard(&A1Selection::from_xy(10, 0, sheet_id))
             .unwrap();
 
         let paste = |gc: &mut GridController, x, y, html| {
             gc.paste_from_clipboard(
-                Selection {
-                    sheet_id,
-                    x,
-                    y,
-                    ..Default::default()
-                },
+                &A1Selection::from_xy(x, y, sheet_id),
                 None,
                 Some(html),
                 PasteSpecial::None,
