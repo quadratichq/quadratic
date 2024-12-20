@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   build_images:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest-64-cores
     permissions:
       contents: read
     timeout-minutes: 10
