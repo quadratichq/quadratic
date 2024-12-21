@@ -24,7 +24,8 @@ COPY ./quadratic-core/package*.json ./quadratic-core/
 COPY ./quadratic-rust-client/package*.json ./quadratic-rust-client/
 COPY ./quadratic-shared/package*.json ./quadratic-shared/
 COPY ./quadratic-client/package*.json ./quadratic-client/
-RUN npm install --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm \
+  npm install --no-audit --no-fund
 
 # Copy the rest of the application
 WORKDIR /app
