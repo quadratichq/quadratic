@@ -23,7 +23,7 @@ jobs:
           - service: api
             runner: ubuntu-latest-8-cores
           - service: client
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2204
           - service: connection
             runner: ubuntu-latest-8-cores
           - service: files
@@ -81,14 +81,14 @@ jobs:
             image=moby/buildkit:latest
             network=host
 
-      - name: Cache Docker layers
-        uses: actions/cache@v3
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.service }}-pr-${{ github.event.pull_request.number }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.service }}-
-            ${{ runner.os }}-buildx-
+      # - name: Cache Docker layers
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: /tmp/.buildx-cache
+      #     key: ${{ runner.os }}-buildx-${{ matrix.service }}-pr-${{ github.event.pull_request.number }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-buildx-${{ matrix.service }}-
+      #       ${{ runner.os }}-buildx-
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -97,12 +97,8 @@ jobs:
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
-          cache-from: |
-            type=local,src=/tmp/.buildx-cache
-            type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:buildcache
-          cache-to: |
-            type=local,dest=/tmp/.buildx-cache-new,mode=max
-            type=registry,ref=${{ steps.create-ecr.outputs.ECR_URL }}:buildcache,mode=max
+          # cache-from: type=gha,scope=${{ matrix.service }}
+          # cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
@@ -115,7 +111,7 @@ jobs:
       # Temp fix
       # https://github.com/docker/build-push-action/issues/252
       # https://github.com/moby/buildkit/issues/1896
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      # - name: Move cache
+      #   run: |
+      #     rm -rf /tmp/.buildx-cache
+      #     mv /tmp/.buildx-cache-new /tmp/.buildx-cache

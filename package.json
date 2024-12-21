@@ -15,6 +15,7 @@
     "quadratic-files",
     "quadratic-multiplayer",
     "quadratic-rust-client",
+    "quadratic-core",
     "quadratic-client",
     "quadratic-kernels/python-wasm"
   ],
