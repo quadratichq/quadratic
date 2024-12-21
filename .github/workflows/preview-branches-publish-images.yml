@@ -84,8 +84,6 @@ jobs:
           ECR_URL: ${{ steps.create-ecr.outputs.ECR_URL }}
         run: |
           docker buildx build \
-            # --cache-from=type=registry,ref=$ECR_URL:buildcache \
-            # --cache-to=type=registry,ref=$ECR_URL:buildcache,mode=max \
             --build-arg BUILD_TIME="${{ steps.build-metadata.outputs.BUILD_TIME }}" \
             --build-arg GIT_SHA="${{ github.sha }}" \
             --build-arg PR_NUMBER="${{ github.event.pull_request.number }}" \
@@ -93,4 +91,5 @@ jobs:
             --label "org.opencontainers.image.revision=${{ github.sha }}" \
             --push \
             -t $ECR_URL:pr-${{ github.event.pull_request.number }} \
-            -f quadratic-${{ matrix.service }}/Dockerfile .
+            -f quadratic-${{ matrix.service }}/Dockerfile \
+            .
