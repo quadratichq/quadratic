@@ -21,15 +21,15 @@ jobs:
       matrix:
         include:
           - service: api
-            runner: ubuntu-latest-8-cores
+            runner: blacksmith-2vcpu-ubuntu-2204
           - service: client
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-8vcpu-ubuntu-2204
           - service: connection
-            runner: ubuntu-latest-8-cores
+            runner: blacksmith-2vcpu-ubuntu-2204
           - service: files
-            runner: ubuntu-latest-8-cores
+            runner: blacksmith-2vcpu-ubuntu-2204
           - service: multiplayer
-            runner: ubuntu-latest-8-cores
+            runner: blacksmith-2vcpu-ubuntu-2204
       fail-fast: true
 
     steps:

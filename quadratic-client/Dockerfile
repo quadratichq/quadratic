@@ -4,13 +4,17 @@ FROM node:18 AS build
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
+ENV CARGO_TARGET_DIR=/app/target
+ENV CARGO_HOME=/app/.cargo
+ENV CARGO_BUILD_JOBS=64
+ENV RUSTFLAGS='-C codegen-units=64'
 
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 RUN echo 'wasm-pack version:' && wasm-pack --version
 
 # Install wasm32-unknown-unknown target
-# RUN rustup target add wasm32-unknown-unknown
+RUN rustup target add wasm32-unknown-unknown
 
 # Install python
 RUN apt-get update && apt-get install -y --no-install-recommends python-is-python3 python3-pip
