@@ -81,14 +81,13 @@ jobs:
             image=moby/buildkit:latest
             network=host
 
-      - name: Cache Docker layers
+      - name: Set up Docker layer cache
         uses: useblacksmith/cache@v5
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ matrix.service }}-pr-${{ github.event.pull_request.number }}
+          key: buildx-${{ matrix.service }}-pr-${{ github.event.pull_request.number }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.service }}-
-            ${{ runner.os }}-buildx-
+            buildx-${{ matrix.service }}-
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -98,7 +97,7 @@ jobs:
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max,compression=zstd,compression-level=22,force-compression=true
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
@@ -111,7 +110,7 @@ jobs:
       # Temp fix
       # https://github.com/docker/build-push-action/issues/252
       # https://github.com/moby/buildkit/issues/1896
-      - name: Move cache
+      - name: Update cache
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
