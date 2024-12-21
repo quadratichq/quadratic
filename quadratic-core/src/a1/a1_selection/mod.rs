@@ -344,6 +344,11 @@ impl A1Selection {
         None
     }
 
+    /// Returns an iterator over the ranges in the selection.
+    pub fn iter_ranges(&self) -> impl Iterator<Item = &CellRefRange> {
+        self.ranges.iter()
+    }
+
     /// Returns a test selection from the A1-string with SheetId::test().
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
@@ -1008,5 +1013,18 @@ mod intersection_tests {
 
         let selection = A1Selection::test_a1("1:4");
         assert_eq!(selection.try_to_pos(), None);
+    }
+
+    #[test]
+    fn test_iter_ranges() {
+        let selection = A1Selection::test_a1("A1:B2,C3:D4");
+        let ranges: Vec<_> = selection.iter_ranges().collect();
+        assert_eq!(
+            ranges,
+            vec![
+                &CellRefRange::test_a1("A1:B2"),
+                &CellRefRange::test_a1("C3:D4")
+            ]
+        );
     }
 }

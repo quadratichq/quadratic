@@ -98,7 +98,7 @@ impl GridController {
                     };
 
                     for cells_range in cells_ranges.iter() {
-                        let cells_rect = sheet.cell_ref_range_to_rect(*cells_range);
+                        let cells_rect = sheet.cell_ref_range_to_rect(*cells_range, false);
 
                         if cells_rect.max.x < column.unwrap_or(UNBOUNDED)
                             && cells_rect.max.y < row.unwrap_or(UNBOUNDED)

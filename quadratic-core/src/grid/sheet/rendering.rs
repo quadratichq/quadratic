@@ -20,6 +20,23 @@ impl Sheet {
         }) || self.iter_code_output_in_rect(rect).count() > 0
     }
 
+    /// Returns true if there is more than one data entry within the rect.
+    pub fn has_more_than_one_data_in_rect(&self, rect: Rect) -> bool {
+        let mut count = 0;
+        for (_, column) in self.columns.range(rect.x_range()) {
+            for (y, _) in column.values.iter() {
+                if rect.y_range().contains(y) {
+                    count += 1;
+                    if count > 1 {
+                        return true;
+                    }
+                }
+            }
+        }
+        count += self.iter_code_output_in_rect(rect).count();
+        count > 1
+    }
+
     /// creates a render for a single cell
     fn get_render_cell(
         &self,
@@ -549,11 +566,12 @@ impl Sheet {
 }
 
 #[cfg(test)]
+#[serial_test::parallel]
 mod tests {
     use super::*;
 
     use chrono::Utc;
-    use serial_test::{parallel, serial};
+    use serial_test::serial;
     use uuid::Uuid;
 
     use crate::{
@@ -574,7 +592,6 @@ mod tests {
     };
 
     #[test]
-    #[parallel]
     fn test_has_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -623,7 +640,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_get_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -739,7 +755,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_get_html_output() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -806,7 +821,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_get_code_cells() {
         let sheet = Sheet::test();
         let code_cell = CellValue::Code(CodeCellValue {
@@ -897,7 +911,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_get_render_cells_code() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -928,7 +941,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn render_cells_boolean() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -955,7 +967,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn render_cells_duration() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -976,7 +987,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn render_code_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1109,7 +1119,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn test_get_sheet_fills() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -1159,7 +1168,6 @@ mod tests {
     }
 
     #[test]
-    #[parallel]
     fn validation_list() {
         let mut sheet = Sheet::test();
         sheet.validations.set(Validation {
@@ -1233,5 +1241,19 @@ mod tests {
             format!("{},{}", sheet.id, warnings),
             true,
         );
+    }
+
+    #[test]
+    fn test_has_more_than_one_data_in_rect() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(pos![A1], "1".to_string());
+        sheet.set_cell_value(pos![B2], "2".to_string());
+        sheet.set_cell_value(pos![C3], "3".to_string());
+        assert!(sheet.has_more_than_one_data_in_rect(Rect::test_a1("A1:C3")));
+        assert!(!sheet.has_more_than_one_data_in_rect(Rect::test_a1("C3:C4")));
+
+        sheet.test_set_code_run_array_2d(col![D], 4, 2, 2, vec!["1", "2", "3", "4"]);
+        assert!(sheet.has_more_than_one_data_in_rect(Rect::test_a1("D4:E5")));
+        assert!(!sheet.has_more_than_one_data_in_rect(Rect::test_a1("E4:F6")));
     }
 }

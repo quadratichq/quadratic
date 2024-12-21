@@ -23,6 +23,7 @@ use quadratic_core::grid::sheet::borders::JsBorderHorizontal;
 use quadratic_core::grid::sheet::borders::JsBorderVertical;
 use quadratic_core::grid::sheet::borders::JsBordersSheet;
 use quadratic_core::grid::sheet::jump_cursor::JumpDirection;
+use quadratic_core::grid::sheet::merge_cells::MergeResult;
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::validation::{
     Validation, ValidationError, ValidationMessage, ValidationStyle,
@@ -124,6 +125,7 @@ fn main() {
         JsSummarizeSelectionResult,
         JsValidationWarning,
         JumpDirection,
+        MergeResult,
         NumberRange,
         NumericFormat,
         NumericFormatKind,
