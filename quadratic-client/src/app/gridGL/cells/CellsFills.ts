@@ -1,25 +1,16 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { convertColorStringToTint } from '@/app/helpers/convertColor';
+import { convertColorStringToTint, getCSSVariableTint } from '@/app/helpers/convertColor';
+import { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 
 interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
-}
-
-<<<<<<< HEAD
-interface ColumnRow {
-  row: number | null;
-  column: number | null;
-  color: string;
-  timestamp: number;
 }
 
 const ALTERNATING_COLOR_LUMINOSITY = 1.85;
@@ -27,18 +18,12 @@ const ALTERNATING_COLOR_LUMINOSITY = 1.85;
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   private cells: JsRenderFill[] = [];
-  private metaFill?: JsSheetFill;
-  private alternatingColors: Map<string, JsRenderCodeCell> = new Map();
-=======
-export class CellsFills extends Container {
-  private cellsSheet: CellsSheet;
-  private cells: JsRenderFill[] = [];
   private sheetFills?: JsSheetFill[];
->>>>>>> origin/qa
+  private alternatingColorsGraphics: Graphics;
 
   private cellsContainer: ParticleContainer;
-  private alternatingColorsGraphics: Graphics;
   private meta: Graphics;
+  private alternatingColors: Map<string, JsRenderCodeCell> = new Map();
 
   private dirty = false;
 
@@ -51,43 +36,15 @@ export class CellsFills extends Container {
       new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
     );
 
-<<<<<<< HEAD
-    events.on('sheetFills', (sheetId, fills) => {
-      if (sheetId === this.cellsSheet.sheetId) {
-        this.cells = fills;
-        this.drawCells();
-      }
-    });
-    events.on('sheetMetaFills', (sheetId, fills) => {
-      if (sheetId === this.cellsSheet.sheetId) {
-        if (this.isMetaEmpty(fills)) {
-          this.metaFill = undefined;
-          this.meta.clear();
-          pixiApp.setViewportDirty();
-        } else {
-          this.metaFill = fills;
-          this.setDirty();
-        }
-      }
-    });
-
-=======
     events.on('sheetFills', this.handleSheetFills);
     events.on('sheetMetaFills', this.handleSheetMetaFills);
->>>>>>> origin/qa
     events.on('sheetOffsets', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
     events.on('resizeHeadingRow', this.drawCells);
-<<<<<<< HEAD
-    sharedEvents.on('changeThemeAccentColor', this.drawAlternatingColors);
-    pixiApp.viewport.on('zoomed', this.setDirty);
-    pixiApp.viewport.on('moved', this.setDirty);
-=======
     events.on('resizeHeadingRow', this.drawSheetCells);
     events.on('resizeHeadingColumn', this.drawSheetCells);
     events.on('viewportChanged', this.setDirty);
->>>>>>> origin/qa
   }
 
   destroy() {
@@ -171,7 +128,6 @@ export class CellsFills extends Container {
     if (this.dirty) {
       this.dirty = false;
       this.drawMeta();
-      this.drawAlternatingColors();
     }
   };
 
