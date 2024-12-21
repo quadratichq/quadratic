@@ -12,8 +12,8 @@ RUN echo 'wasm-pack version:' && wasm-pack --version
 # Install wasm32-unknown-unknown target
 # RUN rustup target add wasm32-unknown-unknown
 
-# Install python & clean up
-RUN apt-get update && apt-get install -y python-is-python3 python3-pip && apt-get clean && rm -rf /var/lib/apt/lists/*
+# Install python
+RUN apt-get update && apt-get install -y --no-install-recommends python-is-python3 python3-pip
 
 # Install npm dependencies
 WORKDIR /app
@@ -24,10 +24,7 @@ COPY ./quadratic-core/package*.json ./quadratic-core/
 COPY ./quadratic-rust-client/package*.json ./quadratic-rust-client/
 COPY ./quadratic-shared/package*.json ./quadratic-shared/
 COPY ./quadratic-client/package*.json ./quadratic-client/
-RUN npm install
-
-# Install typescript
-RUN  npm install -D typescript
+RUN npm install --no-audit --no-fund
 
 # Copy the rest of the application
 WORKDIR /app
@@ -51,6 +48,7 @@ WORKDIR /app/quadratic-core
 RUN echo 'Exporting TS/Rust types...' && cargo run --bin export_types
 
 # Build the quadratic-rust-client
+# Cache will not work beyond this point on CI because of GIT_COMMIT being different for each commit
 WORKDIR /app
 ARG GIT_COMMIT
 ENV GIT_COMMIT=$GIT_COMMIT

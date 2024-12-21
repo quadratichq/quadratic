@@ -23,7 +23,7 @@ jobs:
           - service: api
             runner: ubuntu-latest-8-cores
           - service: client
-            runner: ubuntu-latest-64-cores
+            runner: ubuntu-latest-8-cores
           - service: connection
             runner: ubuntu-latest-8-cores
           - service: files
@@ -85,7 +85,6 @@ jobs:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ matrix.service }}-pr-${{ github.event.pull_request.number }}
           restore-keys: |
-            ${{ runner.os }}-buildx-${{ matrix.service }}-pr-${{ github.event.pull_request.number }}
             ${{ runner.os }}-buildx-${{ matrix.service }}-
             ${{ runner.os }}-buildx-
 
@@ -96,6 +95,7 @@ jobs:
           docker buildx build \
             --cache-from=type=local,src=/tmp/.buildx-cache \
             --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
             --build-arg BUILD_TIME="${{ steps.build-metadata.outputs.BUILD_TIME }}" \
             --build-arg GIT_SHA="${{ github.sha }}" \
             --build-arg PR_NUMBER="${{ github.event.pull_request.number }}" \
