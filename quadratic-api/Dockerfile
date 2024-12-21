@@ -2,6 +2,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package.json .
 COPY package-lock.json .
+COPY ./quadratic-api/package*.json ./quadratic-api/
 RUN npm install
 COPY quadratic-api ./quadratic-api
 COPY quadratic-shared ./quadratic-shared
