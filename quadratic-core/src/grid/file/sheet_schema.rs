@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 #[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum SheetSchema {
-    V1_8(v1_8::schema::SheetSchema),
+    V1_8(v1_8::SheetSchema),
     V1_7_1(v1_7_1::SheetSchema),
     V1_7(v1_7::schema::SheetSchema),
     V1_6(v1_6::schema::Sheet),

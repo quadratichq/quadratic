@@ -1,22 +1,17 @@
 use anyhow::Result;
 
+use crate::grid::file::serialize::contiguous_2d::import_contiguous_2d;
+use crate::grid::file::serialize::contiguous_2d::opt_fn;
 use crate::grid::file::v1_7_1 as current;
 use crate::grid::file::v1_8;
+use crate::grid::formatting::RenderSize;
+use crate::Pos;
 
-// TODO(ddimaria): David F will take care of this
-fn chart_size_to_data_table_size(
-    formats: &current::SheetFormattingSchema,
-    pos: current::PosSchema,
-) -> Option<(f32, f32)> {
-    // formats.render_size.iter().find_map(|(y, render_size)| {
-    //     if let Ok(y) = y.parse::<i64>() {
-    //         if pos.y >= y && pos.y < y + render_size.len as i64 {
-    //             return Some((render_size.value.w, render_size.value.h));
-    //         }
-    //     }
-    //     None
-    // })
-    None
+fn import_render_size(render_size: current::RenderSizeSchema) -> RenderSize {
+    RenderSize {
+        w: render_size.w,
+        h: render_size.h,
+    }
 }
 
 fn upgrade_code_runs(
@@ -24,6 +19,7 @@ fn upgrade_code_runs(
     columns: &[(i64, current::ColumnSchema)],
     formats: &current::SheetFormattingSchema,
 ) -> Result<Vec<(v1_8::PosSchema, v1_8::DataTableSchema)>> {
+    let render_size = import_contiguous_2d(formats.render_size.clone(), opt_fn(import_render_size));
     code_runs
         .into_iter()
         .enumerate()
@@ -85,6 +81,14 @@ fn upgrade_code_runs(
                 v1_8::OutputValueSchema::Single(v1_8::CellValueSchema::Blank)
             };
 
+            let chart_pos = Pos { x: pos.x, y: pos.y };
+            let chart_pixel_output = render_size.get(chart_pos).and_then(|render_size| {
+                render_size
+                    .w
+                    .parse::<f32>()
+                    .ok()
+                    .and_then(|w| render_size.h.parse::<f32>().ok().map(|h| (w, h)))
+            });
             let new_data_table = v1_8::DataTableSchema {
                 kind: v1_8::DataTableKindSchema::CodeRun(new_code_run),
                 name: data_table_name,
@@ -99,7 +103,7 @@ fn upgrade_code_runs(
                 last_modified: code_run.last_modified,
                 alternating_colors: true,
                 formats: Default::default(),
-                chart_pixel_output: chart_size_to_data_table_size(&formats, pos.to_owned()),
+                chart_pixel_output,
                 chart_output: None,
             };
             Ok((v1_8::PosSchema::from(pos), new_data_table))
@@ -122,6 +126,22 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
         columns,
     } = sheet;
 
+    let upgraded_formats = v1_8::SheetFormattingSchema {
+        align: formats.align.clone(),
+        vertical_align: formats.vertical_align.clone(),
+        wrap: formats.wrap.clone(),
+        numeric_format: formats.numeric_format.clone(),
+        numeric_decimals: formats.numeric_decimals.clone(),
+        numeric_commas: formats.numeric_commas.clone(),
+        bold: formats.bold.clone(),
+        italic: formats.italic.clone(),
+        text_color: formats.text_color.clone(),
+        fill_color: formats.fill_color.clone(),
+        date_time: formats.date_time.clone(),
+        underline: formats.underline.clone(),
+        strike_through: formats.strike_through.clone(),
+    };
+
     v1_8::SheetSchema {
         id,
         name,
@@ -131,7 +151,7 @@ pub fn upgrade_sheet(sheet: current::SheetSchema) -> v1_8::SheetSchema {
         rows_resize,
         validations,
         borders,
-        formats: formats.clone(),
+        formats: upgraded_formats,
         data_tables: upgrade_code_runs(code_runs, &columns, &formats).unwrap_or_default(),
         columns,
     }

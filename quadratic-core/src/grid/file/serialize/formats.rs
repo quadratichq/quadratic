@@ -50,13 +50,6 @@ fn import_numeric_format(numeric_format: current::NumericFormatSchema) -> Numeri
     }
 }
 
-fn import_render_size(render_size: current::RenderSizeSchema) -> RenderSize {
-    RenderSize {
-        w: render_size.w,
-        h: render_size.h,
-    }
-}
-
 pub(crate) fn import_formats(formats: current::SheetFormattingSchema) -> SheetFormatting {
     SheetFormatting {
         align: import_contiguous_2d(formats.align, opt_fn(import_cell_align)),

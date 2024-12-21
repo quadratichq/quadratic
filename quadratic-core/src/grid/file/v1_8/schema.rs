@@ -4,13 +4,14 @@ use crate::grid::file::v1_7_1;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::SheetFormattingSchema;
+
 pub type IdSchema = v1_7_1::IdSchema;
 pub type PosSchema = v1_7_1::PosSchema;
 pub type RectSchema = v1_7_1::RectSchema;
 pub type SheetRectSchema = v1_7_1::SheetRectSchema;
 pub type OffsetsSchema = v1_7_1::OffsetsSchema;
 pub type RunErrorSchema = v1_7_1::RunErrorSchema;
-// pub type FormatSchema = v1_7_1::FormatSchema;
 pub type ValidationsSchema = v1_7_1::ValidationsSchema;
 pub type ResizeSchema = v1_7_1::ResizeSchema;
 pub type CodeRunResultSchema = v1_7_1::CodeRunResultSchema;
@@ -68,7 +69,6 @@ pub type RowsResizesSchema = Vec<(i64, ResizeSchema)>;
 pub type ColumnsSchema = Vec<(i64, ColumnSchema)>;
 pub type AxisSchema = v1_7_1::AxisSchema;
 pub type SpanSchema = v1_7_1::SpanSchema;
-pub type SheetFormattingSchema = v1_7_1::SheetFormattingSchema;
 pub type RowsResizeSchema = v1_7_1::RowsResizeSchema;
 
 #[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone)]

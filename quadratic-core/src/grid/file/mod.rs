@@ -43,7 +43,7 @@ enum GridFile {
     #[serde(rename = "1.8")]
     V1_8 {
         #[serde(flatten)]
-        grid: v1_8::schema::GridSchema,
+        grid: v1_8::GridSchema,
     },
     #[serde(rename = "1.7.1")]
     V1_7_1 {
@@ -79,7 +79,7 @@ enum GridFile {
 
 // TODO(ddimaria): refactor to be recrsive
 impl GridFile {
-    fn into_latest(self) -> Result<v1_8::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_8::GridSchema> {
         match self {
             GridFile::V1_8 { grid } => Ok(grid),
             GridFile::V1_7_1 { grid } => v1_7_1::upgrade(grid),
