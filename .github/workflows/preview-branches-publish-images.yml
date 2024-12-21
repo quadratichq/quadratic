@@ -23,7 +23,7 @@ jobs:
           - service: api
             runner: ubuntu-latest-8-cores
           - service: client
-            runner: blacksmith-32vcpu-ubuntu-2204
+            runner: ubuntu-latest-64-cores
           - service: connection
             runner: ubuntu-latest-8-cores
           - service: files
@@ -47,81 +47,50 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
-          aws-region: us-east-1
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR Public
+      - name: Login to Amazon ECR Private
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-        with:
-          registry-type: public
 
       - name: Define repository name
         id: repo-name
         run: |
           echo "REPO_NAME=quadratic-${{ matrix.service }}-development" >> $GITHUB_OUTPUT
 
-      - name: Create Public ECR Repository if not exists
+      - name: Create Private ECR Repository if not exists
         id: create-ecr
         env:
           REPO_NAME: ${{ steps.repo-name.outputs.REPO_NAME }}
         run: |
           # Try to describe the repository first
-          if ! aws ecr-public describe-repositories --repository-names $REPO_NAME 2>/dev/null; then
+          if ! aws ecr describe-repositories --repository-names $REPO_NAME 2>/dev/null; then
             # Repository doesn't exist, create it
-            aws ecr-public create-repository --repository-name $REPO_NAME
+            aws ecr create-repository --repository-name $REPO_NAME || true
           fi
 
           # Get the repository URI either way
-          REPO_INFO=$(aws ecr-public describe-repositories --repository-names $REPO_NAME)
+          REPO_INFO=$(aws ecr describe-repositories --repository-names $REPO_NAME)
           ECR_URL=$(echo $REPO_INFO | jq -r '.repositories[0].repositoryUri')
           echo "ECR_URL=$ECR_URL" >> $GITHUB_OUTPUT
 
-      # - name: Set up Docker Buildx
-      #   uses: docker/setup-buildx-action@v3
-      #   with:
-      #     buildkitd-flags: --debug
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --debug
 
-      # - name: Cache Docker layers
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: /tmp/.buildx-cache
-      #     key: ${{ runner.os }}-buildx-${{ matrix.service }}-${{ github.sha }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-buildx-${{ matrix.service }}-
-      #       ${{ runner.os }}-buildx-
-
-      # - name: Create and initialize buildx cache
-      #   run: |
-      #     mkdir -p /tmp/.buildx-cache
-      #     CACHE_TAG="${{ runner.os }}-buildx-${{ matrix.service }}"
-      #     echo "{\"layers\":{},\"manifests\":{\"$CACHE_TAG\":{\"layers\":[]}}}" > /tmp/.buildx-cache/index.json
-
-      # - name: Build, Tag, and Push Image to Amazon ECR Private
-      #   env:
-      #     ECR_URL: ${{ steps.create-ecr.outputs.ECR_URL }}
-      #   run: |
-      #     docker buildx build \
-      #       --cache-from=type=local,src=/tmp/.buildx-cache \
-      #       --cache-to=type=local,dest=/tmp/.buildx-cache-new \
-      #       --build-arg BUILD_TIME="${{ steps.build-metadata.outputs.BUILD_TIME }}" \
-      #       --build-arg GIT_SHA="${{ github.sha }}" \
-      #       --build-arg PR_NUMBER="${{ github.event.pull_request.number }}" \
-      #       --label "org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}" \
-      #       --label "org.opencontainers.image.revision=${{ github.sha }}" \
-      #       --push \
-      #       -t $ECR_URL:pr-${{ github.event.pull_request.number }} \
-      #       -t $ECR_URL:${{ steps.build-metadata.outputs.BRANCH_NAME }} \
-      #       -t $ECR_URL:${{ steps.build-metadata.outputs.GIT_SHA_SHORT }} \
-      #       -f quadratic-${{ matrix.service }}/Dockerfile .
-
-      # - name: Move cache
-      #   run: |
-      #     rm -rf /tmp/.buildx-cache
-      #     mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      - name: Build, Tag, and Push Image to Amazon ECR Public
+      - name: Build, Tag, and Push Image to Amazon ECR Private
         env:
           ECR_URL: ${{ steps.create-ecr.outputs.ECR_URL }}
         run: |
-          docker build -t $ECR_URL:pr-${{ github.event.pull_request.number }} -f quadratic-${{ matrix.service }}/Dockerfile .
-          docker push $ECR_URL:pr-${{ github.event.pull_request.number }}
+          docker buildx build \
+            --cache-from=type=registry,ref=$ECR_URL:buildcache \
+            --cache-to=type=registry,ref=$ECR_URL:buildcache,mode=max \
+            --build-arg BUILD_TIME="${{ steps.build-metadata.outputs.BUILD_TIME }}" \
+            --build-arg GIT_SHA="${{ github.sha }}" \
+            --build-arg PR_NUMBER="${{ github.event.pull_request.number }}" \
+            --label "org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --push \
+            -t $ECR_URL:pr-${{ github.event.pull_request.number }} \
+            -f quadratic-${{ matrix.service }}/Dockerfile .

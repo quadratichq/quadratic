@@ -5,7 +5,7 @@
   "scripts": {
     "start": "cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "performance": "cargo watch -s 'wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
-    "build": "wasm-pack build --release --target web --out-dir ../quadratic-client/src/app/quadratic-core",
+    "build": "wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
     "coverage": "npm run coverage:clean && npm run coverage:wasm:gen && npm run coverage:wasm:html && npm run coverage:wasm:view",
     "coverage:wasm:gen": "CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
     "coverage:wasm:html": "grcov . --binary-path ../target/debug/deps/ -s src -t html --branch --ignore-not-existing --ignore 'src/wasm_bindings/*' --ignore 'src/bin/*' --ignore '../*' --ignore '/*' -o coverage/html",
