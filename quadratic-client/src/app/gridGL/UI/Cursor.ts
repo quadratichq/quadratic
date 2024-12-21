@@ -77,7 +77,7 @@ export class Cursor extends Container {
     const cell = cursor.position;
     const showInput = pixiAppSettings.input.show;
 
-    if (cursor.onlySingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
+    if (cursor.isSingleSelection() && pixiApp.cellsSheet().tables.isHtmlOrImage(cell)) {
       return;
     }
     let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
@@ -285,12 +285,8 @@ export class Cursor extends Container {
   // is dirty and columnRow is set because the columnRow selection is drawn to
   // visible bounds on the screen, not to the selection size.
   update(viewportDirty: boolean) {
-<<<<<<< HEAD
-    const columnRow = !!sheets.sheet.cursor.columnRow;
-=======
     const cursor = sheets.sheet.cursor;
     const columnRow = cursor.isColumnRow();
->>>>>>> origin/qa
     if (this.dirty || (viewportDirty && columnRow)) {
       this.dirty = false;
       this.graphics.clear();
@@ -305,21 +301,6 @@ export class Cursor extends Container {
       this.drawInlineCursorModeIndicator();
 
       if (!pixiAppSettings.input.show) {
-<<<<<<< HEAD
-        const cursorPosition = sheets.sheet.cursor.cursorPosition;
-        this.drawMultiCursor();
-        const columnRow = sheets.sheet.cursor.columnRow;
-        if (columnRow) {
-          drawColumnRowCursor({
-            g: this.graphics,
-            columnRow,
-            color: pixiApp.accentColor,
-            alpha: FILL_ALPHA,
-            cursorPosition,
-          });
-        }
-        if (sheets.sheet.cursor.onlySingleSelection() && !pixiApp.cellsSheet().tables.isHtmlOrImage(cursorPosition)) {
-=======
         const finiteRanges: CellRefRange[] = cursor.getFiniteRanges();
         this.drawFiniteCursor(finiteRanges);
         const infiniteRanges: CellRefRange[] = cursor.getInfiniteRanges();
@@ -330,7 +311,6 @@ export class Cursor extends Container {
           ranges: infiniteRanges,
         });
         if (!columnRow && cursor.rangeCount() === 1 && !cursor.getInfiniteRanges().length) {
->>>>>>> origin/qa
           this.drawCursorIndicator();
         }
       }

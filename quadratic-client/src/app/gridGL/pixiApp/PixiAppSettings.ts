@@ -1,16 +1,12 @@
 import { AIAnalystState, defaultAIAnalystState } from '@/app/atoms/aiAnalystAtom';
 import { CodeEditorState, defaultCodeEditorState } from '@/app/atoms/codeEditorAtom';
-<<<<<<< HEAD
 import {
   ContextMenuOptions,
   ContextMenuState,
   ContextMenuType,
   defaultContextMenuState,
 } from '@/app/atoms/contextMenuAtom';
-import { EditorInteractionState, editorInteractionStateDefault } from '@/app/atoms/editorInteractionStateAtom';
-=======
 import { defaultEditorInteractionState, EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
->>>>>>> origin/qa
 import { defaultGridPanMode, GridPanMode, PanMode } from '@/app/atoms/gridPanModeAtom';
 import { defaultGridSettings, GridSettings } from '@/app/atoms/gridSettingsAtom';
 import { defaultInlineEditor, InlineEditorState } from '@/app/atoms/inlineEditorAtom';
@@ -67,13 +63,10 @@ class PixiAppSettings {
   codeEditorState = defaultCodeEditorState;
   setCodeEditorState?: SetterOrUpdater<CodeEditorState>;
 
-<<<<<<< HEAD
   contextMenu = defaultContextMenuState;
   setContextMenu?: SetterOrUpdater<ContextMenuOptions>;
-=======
   aiAnalystState = defaultAIAnalystState;
   setAIAnalystState?: SetterOrUpdater<AIAnalystState>;
->>>>>>> origin/qa
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -241,7 +234,6 @@ class PixiAppSettings {
     return this._panMode;
   }
 
-<<<<<<< HEAD
   updateContextMenu(contextMenu: ContextMenuState, setContextMenu: SetterOrUpdater<ContextMenuOptions>) {
     this.contextMenu = contextMenu;
     this.setContextMenu = setContextMenu;
@@ -258,7 +250,8 @@ class PixiAppSettings {
       (this.contextMenu.type === ContextMenuType.Table || this.contextMenu.type === ContextMenuType.TableColumn) &&
       this.contextMenu.rename
     );
-=======
+  }
+
   setGlobalSnackbar(addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) {
     this.addGlobalSnackbar = addGlobalSnackbar;
     for (const snackbar of this.waitingForSnackbar) {
@@ -273,7 +266,6 @@ class PixiAppSettings {
     } else {
       this.waitingForSnackbar.push({ message, options });
     }
->>>>>>> origin/qa
   }
 }
 

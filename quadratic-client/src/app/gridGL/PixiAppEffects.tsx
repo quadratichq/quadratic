@@ -60,17 +60,15 @@ export const PixiAppEffects = () => {
     pixiAppSettings.updateGridPanMode(gridPanMode, setGridPanMode);
   }, [gridPanMode, setGridPanMode]);
 
-<<<<<<< HEAD
   const [contextMenu, setContextMenu] = useRecoilState(contextMenuAtom);
   useEffect(() => {
     pixiAppSettings.updateContextMenu(contextMenu, setContextMenu);
   }, [contextMenu, setContextMenu]);
-=======
+
   const [aiAnalystState, setAIAnalystState] = useRecoilState(aiAnalystAtom);
   useEffect(() => {
     pixiAppSettings.updateAIAnalystState(aiAnalystState, setAIAnalystState);
   }, [aiAnalystState, setAIAnalystState]);
->>>>>>> origin/qa
 
   useEffect(() => {
     const handleMouseUp = () => {

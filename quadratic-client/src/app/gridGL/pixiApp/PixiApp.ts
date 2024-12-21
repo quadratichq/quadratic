@@ -52,13 +52,8 @@ export class PixiApp {
 
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
-<<<<<<< HEAD
   gridLines: GridLines;
-  axesLines!: AxesLines;
-=======
   background: Background;
-  gridLines!: GridLines;
->>>>>>> origin/qa
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
@@ -168,7 +163,6 @@ export class PixiApp {
     this.debug = this.viewportContents.addChild(new Graphics());
 
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
-<<<<<<< HEAD
     this.gridLines = this.viewportContents.addChild(this.gridLines);
 
     // this is a hack to ensure that table column names appears over the column
@@ -176,10 +170,6 @@ export class PixiApp {
     const gridHeadings = new GridHeadings();
     this.viewportContents.addChild(gridHeadings.gridHeadingsRows);
 
-    this.axesLines = this.viewportContents.addChild(new AxesLines());
-=======
-    this.gridLines = this.viewportContents.addChild(new GridLines());
->>>>>>> origin/qa
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());

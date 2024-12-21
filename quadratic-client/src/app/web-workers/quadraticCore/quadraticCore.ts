@@ -7,11 +7,7 @@
 import { debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-<<<<<<< HEAD
-import { Coordinate } from '@/app/gridGL/types/size';
-=======
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
->>>>>>> origin/qa
 import {
   BorderSelection,
   BorderStyle,
@@ -27,20 +23,16 @@ import {
   JsCodeCell,
   JsCoordinate,
   JsRenderCell,
-<<<<<<< HEAD
-  JumpDirection,
-  MinMax,
-=======
   JsSummarizeSelectionResult,
   JumpDirection,
->>>>>>> origin/qa
+  MinMax,
   PasteSpecial,
+  Pos,
   SearchOptions,
   SheetPos,
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
 import {
   ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
@@ -1038,34 +1030,7 @@ class QuadraticCore {
     });
   }
 
-<<<<<<< HEAD
-  jumpCursor(sheetId: string, current: Coordinate, direction: JumpDirection): Promise<Coordinate | undefined> {
-=======
   jumpCursor(sheetId: string, current: JsCoordinate, direction: JumpDirection): Promise<JsCoordinate | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
-        resolve(message.coordinate);
-      };
-      this.send({
-        type: 'clientCoreJumpCursor',
-        sheetId,
-        current,
-        direction,
-        id,
-      });
-    });
-  }
-
-  findNextColumn(options: {
-    sheetId: string;
-    columnStart: number;
-    row: number;
-    reverse: boolean;
-    withContent: boolean;
-  }): Promise<number | undefined> {
-    const { sheetId, columnStart, row, reverse, withContent } = options;
->>>>>>> origin/qa
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {

@@ -1,26 +1,14 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-<<<<<<< HEAD
 import { JsRenderCodeCell, JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
-=======
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
-import { JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
->>>>>>> origin/qa
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
-<<<<<<< HEAD
-import { Sheet } from '../../grid/sheet/Sheet';
-import { convertColorStringToTint, getCSSVariableTint } from '../../helpers/convertColor';
-import { intersects } from '../helpers/intersects';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { CellsSheet } from './CellsSheet';
-=======
->>>>>>> origin/qa
 
 interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;

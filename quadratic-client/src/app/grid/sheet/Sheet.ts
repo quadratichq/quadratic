@@ -36,15 +36,11 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
-<<<<<<< HEAD
     this.gridOverflowLines = new GridOverflowLines(this);
-=======
-    this.gridOverflowLines = new GridOverflowLines();
 
     // this will be imported via SheetInfo in the future
     this.clamp = new Rectangle(1, 1, Infinity, Infinity);
 
->>>>>>> origin/qa
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
   }

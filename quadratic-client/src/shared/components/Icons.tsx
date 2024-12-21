@@ -551,7 +551,6 @@ export const ZoomOutIcon: IconComponent = (props) => {
   return <Icon {...props}>zoom_out</Icon>;
 };
 
-<<<<<<< HEAD
 export const TableEditIcon: IconComponent = (props) => {
   return <Icon {...props}>table_edit</Icon>;
 };
@@ -562,10 +561,6 @@ export const TableConvertIcon: IconComponent = (props) => {
 
 export const FlattenTableIcon: IconComponent = (props) => {
   return <Icon {...props}>view_compact</Icon>;
-};
-
-export const TableIcon: IconComponent = (props) => {
-  return <Icon {...props}>table</Icon>;
 };
 
 export const SortIcon: IconComponent = (props) => {
@@ -603,7 +598,8 @@ export const HideIcon: IconComponent = (props) => {
 
 export const ShowIcon: IconComponent = (props) => {
   return <Icon {...props}>visibility</Icon>;
-=======
+};
+
 export const ArrowRight: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_right</Icon>;
 };
@@ -618,5 +614,4 @@ export const ArrowDown: IconComponent = (props) => {
 
 export const ArrowDoubleDown: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_down</Icon>;
->>>>>>> origin/qa
 };

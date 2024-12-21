@@ -21,10 +21,7 @@ import {
   JsSummarizeSelectionResult,
   JsValidationWarning,
   JumpDirection,
-<<<<<<< HEAD
   MinMax,
-=======
->>>>>>> origin/qa
   SearchOptions,
   SheetBounds,
   SheetInfo,
@@ -33,7 +30,7 @@ import {
   TransactionName,
   Validation,
 } from '@/app/quadratic-core-types';
-import { MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
+import { Pos } from '@/app/quadratic-core/quadratic_core';
 import { CodeRun } from '@/app/web-workers/CodeRun';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { Rectangle } from 'pixi.js';
@@ -723,8 +720,6 @@ export interface CoreClientGetRowsBounds {
 
 export interface ClientCoreJumpCursor {
   type: 'clientCoreJumpCursor';
-<<<<<<< HEAD
-=======
   id: number;
   sheetId: string;
   current: JsCoordinate;
@@ -739,17 +734,16 @@ export interface CoreClientJumpCursor {
 
 export interface ClientCoreFindNextColumn {
   type: 'clientCoreFindNextColumn';
->>>>>>> origin/qa
   id: number;
   sheetId: string;
-  current: Coordinate;
+  current: JsCoordinate;
   direction: JumpDirection;
 }
 
 export interface CoreClientJumpCursor {
   type: 'coreClientJumpCursor';
   id: number;
-  coordinate?: Coordinate;
+  coordinate?: JsCoordinate;
 }
 
 export interface ClientCoreFindNextRow {
@@ -1100,7 +1094,6 @@ export interface ClientCoreInsertRow {
   cursor: string;
 }
 
-<<<<<<< HEAD
 export interface ClientCoreFlattenDataTable {
   type: 'clientCoreFlattenDataTable';
   sheetId: string;
@@ -1167,7 +1160,8 @@ export interface ClientCoreDataTableFirstRowAsHeader {
   y: number;
   firstRowAsHeader: boolean;
   cursor: string;
-=======
+}
+
 export interface CoreClientClientMessage {
   type: 'coreClientClientMessage';
   message: string;
@@ -1184,7 +1178,6 @@ export interface CoreClientFiniteRectFromSelection {
   type: 'coreClientFiniteRectFromSelection';
   id: number;
   rect?: Rectangle;
->>>>>>> origin/qa
 }
 
 export type ClientCoreMessage =
@@ -1240,11 +1233,8 @@ export type ClientCoreMessage =
   | ClientCoreGetColumnsBounds
   | ClientCoreGetRowsBounds
   | ClientCoreJumpCursor
-<<<<<<< HEAD
-=======
   | ClientCoreFindNextColumn
   | ClientCoreFindNextRow
->>>>>>> origin/qa
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
   | ClientCoreInit
@@ -1269,15 +1259,13 @@ export type ClientCoreMessage =
   | ClientCoreDeleteRows
   | ClientCoreInsertColumn
   | ClientCoreInsertRow
-<<<<<<< HEAD
   | ClientCoreFlattenDataTable
   | ClientCoreCodeDataTableToDataTable
   | ClientCoreGridToDataTable
   | ClientCoreDataTableMeta
   | ClientCoreDataTableMutations
   | ClientCoreSortDataTable
-  | ClientCoreDataTableFirstRowAsHeader;
-=======
+  | ClientCoreDataTableFirstRowAsHeader
   | ClientCoreGetCellValue
   | ClientCoreGetAIContextRectsInSelections
   | ClientCoreGetErroredCodeCellsInSelections
@@ -1286,7 +1274,6 @@ export type ClientCoreMessage =
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
   | ClientCoreFiniteRectFromSelection;
->>>>>>> origin/qa
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1316,11 +1303,6 @@ export type CoreClientMessage =
   | CoreClientGetColumnsBounds
   | CoreClientGetRowsBounds
   | CoreClientJumpCursor
-<<<<<<< HEAD
-=======
-  | CoreClientFindNextColumn
-  | CoreClientFindNextRow
->>>>>>> origin/qa
   | CoreClientGenerateThumbnail
   | CoreClientLoad
   | CoreClientSheetRenderCells

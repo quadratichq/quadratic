@@ -7,7 +7,6 @@
 
 import { bigIntReplacer } from '@/app/bigint';
 import { debugWebWorkers } from '@/app/debugFlags';
-import { Coordinate } from '@/app/gridGL/types/size';
 import {
   BorderSelection,
   BorderStyle,
@@ -24,50 +23,26 @@ import {
   JsCodeResult,
   JsCoordinate,
   JsRenderCell,
-<<<<<<< HEAD
-  JumpDirection,
-  MinMax,
-=======
   JsSummarizeSelectionResult,
   JumpDirection,
->>>>>>> origin/qa
   SearchOptions,
   SheetPos,
   Validation,
 } from '@/app/quadratic-core-types';
-import initCore, { GridController, MinMax, Pos } from '@/app/quadratic-core/quadratic_core';
-import { Rect } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import initCore, { GridController, MinMax, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
 import {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import {
-<<<<<<< HEAD
-=======
-  ClientCoreFindNextColumn,
   ClientCoreFindNextColumnForRect,
-  ClientCoreFindNextRow,
   ClientCoreFindNextRowForRect,
->>>>>>> origin/qa
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMoveCells,
   ClientCoreMoveCodeCellHorizontally,
   ClientCoreMoveCodeCellVertically,
   ClientCoreSummarizeSelection,
-<<<<<<< HEAD
-} from '../coreClientMessages';
-import { coreClient } from './coreClient';
-import { coreRender } from './coreRender';
-import { offline } from './offline';
-import { numbersToRectStringified, pointsToRect, posToPos, posToRect, toSheetPos } from './rustConversions';
-
-// Used to coerce bigints to numbers for JSON.stringify; see
-// https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
-const bigIntReplacer = (_key: string, value: any): any => {
-  return typeof value === 'bigint' ? Number(value) : value;
-};
-=======
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 import { coreRender } from '@/app/web-workers/quadraticCore/worker/coreRender';
@@ -77,11 +52,11 @@ import {
   pointsToRect,
   posToPos,
   posToRect,
+  toSheetPos,
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import * as Sentry from '@sentry/react';
 import { Buffer } from 'buffer';
 import { Rectangle } from 'pixi.js';
->>>>>>> origin/qa
 
 class Core {
   gridController?: GridController;
@@ -842,36 +817,12 @@ class Core {
     });
   }
 
-<<<<<<< HEAD
-  jumpCursor(sheetId: string, current: Coordinate, direction: JumpDirection): Promise<Coordinate | undefined> {
-=======
   jumpCursor(sheetId: string, current: JsCoordinate, direction: JumpDirection): Promise<JsCoordinate | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         const pos = this.gridController.jumpCursor(sheetId, posToPos(current.x, current.y), JSON.stringify(direction));
         resolve({ x: Number(pos.x), y: Number(pos.y) });
-      });
-    });
-  }
-
-  findNextColumn(data: ClientCoreFindNextColumn): Promise<number | undefined> {
->>>>>>> origin/qa
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        try {
-          const result = this.gridController.jumpCursor(
-            sheetId,
-            posToPos(current.x, current.y),
-            JSON.stringify(direction)
-          );
-          const pos = JSON.parse(result);
-          resolve({ x: Number(pos.x), y: Number(pos.y) });
-        } catch (error: any) {
-          console.warn(error);
-          resolve(undefined);
-        }
       });
     });
   }
@@ -1177,7 +1128,6 @@ class Core {
     });
   }
 
-<<<<<<< HEAD
   flattenDataTable(sheetId: string, x: number, y: number, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.flattenDataTable(sheetId, posToPos(x, y), cursor);
@@ -1188,9 +1138,10 @@ class Core {
     this.gridController.codeDataTableToDataTable(sheetId, posToPos(x, y), cursor);
   }
 
-  gridToDataTable(selection: Selection, cursor: string) {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.gridToDataTable(JSON.stringify(selection, bigIntReplacer), cursor);
+  gridToDataTable(selection: any, cursor: string) {
+    console.warn('todo!');
+    // if (!this.gridController) throw new Error('Expected gridController to be defined');
+    // this.gridController.gridToDataTable(JSON.stringify(selection, bigIntReplacer), cursor);
   }
 
   dataTableMeta(
@@ -1251,7 +1202,8 @@ class Core {
   dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
-=======
+  }
+
   getCellsA1(transactionId: string, a1: string, lineNumber?: number): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.calculationGetCellsA1(transactionId, a1, lineNumber);
@@ -1268,7 +1220,6 @@ class Core {
           Number(rect.max.y - rect.min.y) + 1
         )
       : undefined;
->>>>>>> origin/qa
   }
 }
 

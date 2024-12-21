@@ -9,7 +9,7 @@ export type BorderSide = "Top" | "Bottom" | "Left" | "Right";
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export interface BorderStyleCell { top: BorderStyleTimestamp | null, bottom: BorderStyleTimestamp | null, left: BorderStyleTimestamp | null, right: BorderStyleTimestamp | null, }
 export interface BorderStyleTimestamp { color: Rgba, line: CellBorderLine, timestamp: SmallTimestamp, }
-export interface CellA1Response { cells: Array<JsGetCellResponse>, x: bigint, y: bigint, w: bigint, h: bigint, }
+export interface CellA1Response { cells: Array<JsGetCellResponse>, x: bigint, y: bigint, w: bigint, h: bigint, two_dimensional: boolean, }
 export type CellAlign = "center" | "left" | "right";
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, }
@@ -22,12 +22,7 @@ export type CodeCellLanguage = "Python" | "Formula" | { "Connection": { kind: Co
 export interface ColumnRow { column: number, row: number, }
 export type ConnectionKind = "POSTGRES" | "MYSQL" | "MSSQL" | "SNOWFLAKE";
 export type DateTimeRange = { "DateRange": [bigint | null, bigint | null] } | { "DateEqual": Array<bigint> } | { "DateNotEqual": Array<bigint> } | { "TimeRange": [number | null, number | null] } | { "TimeEqual": Array<number> } | { "TimeNotEqual": Array<number> };
-<<<<<<< HEAD
-export interface Duration { months: number, seconds: number, }
-export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, date_time: string | null, underline: boolean | null, strike_through: boolean | null, render_size: RenderSize | null, }
-=======
-export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, date_time: string | null, underline: boolean | null, strike_through: boolean | null, }
->>>>>>> origin/qa
+export interface Format { align: CellAlign | null, vertical_align: CellVerticalAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, date_time: string | null, underline: boolean | null, strike_through: boolean | null, }
 export type GridBounds = { "type": "empty" } | { "type": "nonEmpty" } & Rect;
 export interface JsBordersSheet { horizontal: Array<JsBorderHorizontal> | null, vertical: Array<JsBorderVertical> | null, }
 export interface JsBorderHorizontal { color: Rgba, line: CellBorderLine, x: bigint, y: bigint, width: bigint | null, unbounded: boolean, }
@@ -37,15 +32,10 @@ export interface JsCellValue { value: string, kind: string, }
 export interface JsCellValuePos { value: string, kind: string, pos: string, }
 export interface JsCellValuePosAIContext { sheet_name: string, rect_origin: string, rect_width: number, rect_height: number, starting_rect_values: Array<Array<JsCellValuePos>>, }
 export interface JsClipboard { plainText: string, html: string, }
-<<<<<<< HEAD
-export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<SheetRect> | null, }
+export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, }
 export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, }
 export interface JsDataTableColumnHeader { name: string, display: boolean, valueIndex: number, }
-=======
-export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, }
-export interface JsCodeResult { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: Array<string> | null, output_array: Array<Array<Array<string>>> | null, output_display_type: string | null, cancel_compute: boolean | null, }
 export interface JsCoordinate { x: number, y: number, }
->>>>>>> origin/qa
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string | null, w: number | null, h: number | null, }
 export interface JsNumber { decimals: number | null, commas: boolean | null, format: NumericFormat | null, }
@@ -61,10 +51,7 @@ export interface JsSheetFill { x: number, y: number, w: number | null, h: number
 export interface JsSummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export interface JsValidationWarning { x: bigint, y: bigint, validation: string | null, style: ValidationStyle | null, }
 export type JumpDirection = "Up" | "Down" | "Left" | "Right";
-<<<<<<< HEAD
 export interface MinMax { min: number, max: number, }
-=======
->>>>>>> origin/qa
 export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };
 export interface NumericFormat { type: NumericFormatKind, symbol: string | null, }
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";
@@ -72,7 +59,6 @@ export type PasteSpecial = "None" | "Values" | "Formats";
 export interface Pos { x: bigint, y: bigint, }
 export interface RefRangeBounds { start: CellRefRangeEnd, end: CellRefRangeEnd, }
 export interface Rect { min: Pos, max: Pos, }
-export interface RenderSize { w: string, h: string, }
 export interface Rgba { red: number, green: number, blue: number, alpha: number, }
 export interface RunError { span: Span | null, msg: RunErrorMsg, }
 export type RunErrorMsg = { "CodeRunError": string } | "Spill" | { "Unimplemented": string } | "UnknownError" | { "InternalError": string } | { "Unterminated": string } | { "Expected": { expected: string, got: string | null, } } | { "Unexpected": string } | { "TooManyArguments": { func_name: string, max_arg_count: number, } } | { "MissingRequiredArgument": { func_name: string, arg_name: string, } } | "BadFunctionName" | "BadCellReference" | "BadNumber" | { "BadOp": { op: string, ty1: string, ty2: string | null, use_duration_instead: boolean, } } | "NaN" | { "ExactArraySizeMismatch": { expected: ArraySize, got: ArraySize, } } | { "ExactArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | { "ArrayAxisMismatch": { axis: Axis, expected: number, got: number, } } | "EmptyArray" | "NonRectangularArray" | "NonLinearArray" | "ArrayTooBig" | "CircularReference" | "Overflow" | "DivideByZero" | "NegativeExponent" | "NotANumber" | "Infinity" | "IndexOutOfBounds" | "NoMatch" | "InvalidArgument";
@@ -82,12 +68,9 @@ export interface SheetId { id: string, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
 export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
 export interface SheetRect { min: Pos, max: Pos, sheet_id: SheetId, }
-<<<<<<< HEAD
 export type SortDirection = "Ascending" | "Descending" | "None";
 export interface DataTableSort { column_index: number, direction: SortDirection, }
-=======
 export type SmallTimestamp = number;
->>>>>>> origin/qa
 export interface Span { start: number, end: number, }
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };

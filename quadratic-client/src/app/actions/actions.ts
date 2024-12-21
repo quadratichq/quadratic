@@ -141,8 +141,6 @@ export enum Action {
   InsertRowBelow = 'insert_row_below',
   DeleteRow = 'delete_row',
   DeleteColumn = 'delete_column',
-<<<<<<< HEAD
-
   FlattenTable = 'flatten_table',
   GridToDataTable = 'grid_to_data_table',
   ToggleFirstRowAsHeaderTable = 'toggle_first_row_as_header_table',
@@ -162,7 +160,5 @@ export enum Action {
   HideTableColumn = 'hide_table_column',
   ShowAllColumns = 'show_all_columns',
   EditTableCode = 'edit_table_code',
-=======
   ToggleAIAnalyst = 'toggle_ai_analyst',
->>>>>>> origin/qa
 }
