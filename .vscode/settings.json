@@ -66,7 +66,8 @@
     "vals",
     "vcpu",
     "websockets",
-    "Westborough"
+    "Westborough",
+    "zstd"
   ],
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
