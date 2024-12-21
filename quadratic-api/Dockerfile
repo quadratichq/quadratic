@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json .
 COPY package-lock.json .
 COPY ./quadratic-api/package*.json ./quadratic-api/
+COPY ./quadratic-shared/package*.json ./quadratic-shared/
 RUN npm install
 COPY quadratic-api ./quadratic-api
 COPY quadratic-shared ./quadratic-shared
