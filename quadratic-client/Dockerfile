@@ -4,8 +4,8 @@ FROM node:18 AS build
 # Install rustup
 RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/app/target
-ENV CARGO_HOME=/app/.cargo
+ENV CARGO_TARGET_DIR=/quadratic/target
+ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
 ENV RUSTFLAGS='-C codegen-units=64'
 
@@ -19,7 +19,7 @@ RUN rustup target add wasm32-unknown-unknown
 # Install python
 RUN apt-get update && apt-get install -y --no-install-recommends python-is-python3 python3-pip
 
-WORKDIR /app
+WORKDIR /quadratic
 
 # Copy all package.json files
 COPY package.json .
@@ -69,7 +69,7 @@ RUN echo 'Building front-end...' && npm run build --workspace=quadratic-client
 # CMD ["npm", "run", "start:production"]
 
 FROM nginx:stable-alpine
-COPY --from=build /app/build /usr/share/nginx/html
+COPY --from=build /quadratic/build /usr/share/nginx/html
 
 EXPOSE 80 443 3000
 
