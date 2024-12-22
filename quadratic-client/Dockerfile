@@ -21,6 +21,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends python-is-pytho
 
 WORKDIR /quadratic
 
+# Copy updateAlertVersion.json
+COPY updateAlertVersion.json .
+
 # Copy all package.json files
 COPY package.json .
 COPY package-lock.json .
@@ -33,30 +36,27 @@ COPY ./quadratic-client/package*.json ./quadratic-client/
 # Install npm dependencies
 RUN npm install --no-audit --no-fund
 
-# Copy the rest of the application
-COPY updateAlertVersion.json .
-COPY ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
-COPY ./quadratic-core/. ./quadratic-core/
-COPY ./quadratic-rust-client/. ./quadratic-rust-client/
-COPY ./quadratic-shared/. ./quadratic-shared/
-COPY ./quadratic-client/. ./quadratic-client/
-
 # Run the packaging script for quadratic_py
+COPY ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
 RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry
 
 # Build wasm and export TS/Rust types
+COPY ./quadratic-core/. ./quadratic-core/
+COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts
 RUN echo 'Building wasm...' && npm run build --workspace=quadratic-core
 
 # Build the quadratic-rust-client
-# Layer caching will not work beyond this point on CI because of GIT_COMMIT being different for each commit
+COPY ./quadratic-rust-client/. ./quadratic-rust-client/
 ARG GIT_COMMIT
 ENV GIT_COMMIT=$GIT_COMMIT
 RUN echo 'Building quadratic-rust-client...' && npm run build --workspace=quadratic-rust-client
 
 # Build the quadratic-shared
+COPY ./quadratic-shared/. ./quadratic-shared/
 RUN echo 'Building quadratic-shared...' && npm run compile --workspace=quadratic-shared
 
 # Build the front-end
+COPY ./quadratic-client/. ./quadratic-client/
 ENV VITE_DEBUG=VITE_DEBUG_VAL
 ENV VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL
 ENV VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL

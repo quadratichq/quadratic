@@ -35,3 +35,8 @@ vendor/
 *.swp
 *.swo
 .DS_Store
+
+# TS/Rust types, this is generated during the build process
+quadratic-client/src/app/quadratic-core/
+quadratic-client/src/app/quadratic-core-types/
+quadratic-client/src/app/quadratic-rust-client/
