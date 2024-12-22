@@ -1,0 +1,77 @@
+name: Build Docker Images for Preview Branches
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+
+jobs:
+  deploy_cloudformation:
+    permissions:
+      contents: read
+      id-token: write
+      
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+
+    env:
+      STACK_NAME: preview-pr-${{ github.event.pull_request.number }}
+      STACK_PARAMS: >-
+        ParameterKey=LicenseKey,ParameterValue=5a32bd8a-409e-4733-8846-1868c568a813
+        ParameterKey=ImageTag,ParameterValue=pr-${{ github.event.pull_request.number }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy CloudFormation Stack
+        run: |
+          # Check if stack exists
+          if aws cloudformation describe-stacks --stack-name $STACK_NAME 2>/dev/null; then
+            # Update existing stack
+            aws cloudformation update-stack \
+              --stack-name $STACK_NAME \
+              --template-body file://infra/aws-cloudformation/preview.yml \
+              --parameters $STACK_PARAMS \
+              --capabilities CAPABILITY_IAM \
+              --no-fail-on-empty-changeset
+          else
+            # Create new stack
+            aws cloudformation create-stack \
+              --stack-name $STACK_NAME \
+              --template-body file://infra/aws-cloudformation/preview.yml \
+              --parameters $STACK_PARAMS \
+              --capabilities CAPABILITY_IAM
+            
+            # Wait for stack creation to complete
+            aws cloudformation wait stack-create-complete --stack-name $STACK_NAME
+          fi
+
+      - name: Get Stack Outputs
+        id: stack-output
+        run: |
+          DOMAIN=$(aws cloudformation describe-stacks \
+            --stack-name $STACK_NAME \
+            --query 'Stacks[0].Outputs[?OutputKey==`DomainRecord`].OutputValue' \
+            --output text)
+          echo "PREVIEW_URL=https://$DOMAIN" >> $GITHUB_OUTPUT
+
+      - name: Comment Preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const previewUrl = '${{ steps.stack-output.outputs.PREVIEW_URL }}';
+            const message = `Preview URL: ${previewUrl}`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: message
+            });

@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened]
 
 concurrency:
-  group: ${{ github.head_ref }}-build-images
+  group: pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -92,6 +92,7 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
             GIT_SHA=${{ github.sha }}
+            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
