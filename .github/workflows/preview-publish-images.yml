@@ -1,4 +1,4 @@
-name: Build Docker Images for Preview Branches
+name: Build and Publish Images to ECR - Preview
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build_images:
+  publish_images:
     permissions:
       contents: read
 

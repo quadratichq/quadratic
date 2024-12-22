@@ -2,7 +2,7 @@ name: Deploy CloudFormation Stack for Preview Branch
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-deploy-cloudformation
@@ -16,7 +16,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2204
 
     env:
-      STACK_NAME: preview-pr-${{ github.event.pull_request.number }}
+      STACK_NAME: pr-${{ github.event.pull_request.number }}
       STACK_PARAMS: >-
         ParameterKey=LicenseKey,ParameterValue=5a32bd8a-409e-4733-8846-1868c568a813
         ParameterKey=ImageTag,ParameterValue=pr-${{ github.event.pull_request.number }}

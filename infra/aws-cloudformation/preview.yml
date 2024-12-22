@@ -11,9 +11,6 @@ Parameters:
     Default: "latest"
 
 Mappings:
-  EnvironmentConfig:
-    Preview:
-      DomainName: "quadratic-preview.com"
   RegionMap:
     us-west-2:
       AMI: "ami-05134c8ef96964280" # Example AMI for us-west-2 (Ubuntu 20.04)
@@ -132,15 +129,15 @@ Resources:
           chmod +x /quadratic-selfhost/login.sh
 
           # Run Quadratic initialization
-          curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init.sh -o init.sh && bash -i init.sh ${LicenseKey} ${ImageTag}.${!FindInMap [EnvironmentConfig, Preview, DomainName]}
+          curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init.sh -o init.sh && bash -i init.sh ${LicenseKey} ${ImageTag}.quadratic-preview.com
 
   DnsRecords:
     Type: AWS::Route53::RecordSet
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      HostedZoneName: !Sub "${!FindInMap [EnvironmentConfig, Preview, DomainName]}."
-      Name: !Sub "${ImageTag}.${!FindInMap [EnvironmentConfig, Preview, DomainName]}"
+      HostedZoneName: "quadratic-preview.com."
+      Name: !Sub "${ImageTag}.quadratic-preview.com"
       Type: A
       TTL: 300
       ResourceRecords:
@@ -151,8 +148,8 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      HostedZoneName: !Sub "${!FindInMap [EnvironmentConfig, Preview, DomainName]}."
-      Name: !Sub "*.${ImageTag}.${!FindInMap [EnvironmentConfig, Preview, DomainName]}"
+      HostedZoneName: "quadratic-preview.com."
+      Name: !Sub "*.${ImageTag}.quadratic-preview.com"
       Type: A
       TTL: 300
       ResourceRecords:
@@ -230,4 +227,4 @@ Resources:
 Outputs:
   DomainRecord:
     Description: "Url of the selfhosted instance"
-    Value: !Sub "${ImageTag}.${!FindInMap [EnvironmentConfig, Preview, DomainName]}"
+    Value: !Sub "${ImageTag}.quadratic-preview.com"
