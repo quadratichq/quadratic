@@ -40,6 +40,7 @@ jobs:
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           disable-rollback: false
+          termination-protection: false
 
       - name: Find Comment
         uses: peter-evans/find-comment@v3

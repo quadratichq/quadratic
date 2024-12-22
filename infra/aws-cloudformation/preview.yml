@@ -16,14 +16,6 @@ Mappings:
     ap-south-1:
       AMI: "ami-0522ab6e1ddcc7055" # Example AMI for ap-south-1 (Ubuntu 24.04 LTS)
 
-RollbackConfiguration:
-  MonitoringTimeInMinutes: 0
-  RollbackTriggers: []
-
-OnFailure: ROLLBACK
-DeletionPolicy: Delete
-UpdateReplacePolicy: Delete
-
 Resources:
   EC2Role:
     Type: AWS::IAM::Role
