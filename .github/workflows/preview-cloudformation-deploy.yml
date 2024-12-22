@@ -1,4 +1,4 @@
-name: Deploy CloudFormation Stack for Preview Branch
+name: Deploy CloudFormation Stack - Preview
 
 on:
   pull_request:

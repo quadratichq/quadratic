@@ -123,13 +123,13 @@ Resources:
           # Source the new environment variables
           source /home/ubuntu/.profile
 
+          # Run Quadratic initialization
+          curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init.sh -o init.sh && bash -i init.sh ${LicenseKey} ${ImageTag}.quadratic-preview.com
+
           # Create login.sh script
           echo '#!/bin/bash
           aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com' > /quadratic-selfhost/login.sh
           chmod +x /quadratic-selfhost/login.sh
-
-          # Run Quadratic initialization
-          curl -sSf https://raw.githubusercontent.com/quadratichq/quadratic-selfhost/main/init.sh -o init.sh && bash -i init.sh ${LicenseKey} ${ImageTag}.quadratic-preview.com
 
   DnsRecords:
     Type: AWS::Route53::RecordSet
