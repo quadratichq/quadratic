@@ -16,6 +16,14 @@ Mappings:
     ap-south-1:
       AMI: "ami-0522ab6e1ddcc7055" # Example AMI for ap-south-1 (Ubuntu 24.04 LTS)
 
+RollbackConfiguration:
+  MonitoringTimeInMinutes: 0
+  RollbackTriggers: []
+
+OnFailure: ROLLBACK
+DeletionPolicy: Delete
+UpdateReplacePolicy: Delete
+
 Resources:
   EC2Role:
     Type: AWS::IAM::Role
@@ -196,9 +204,6 @@ Resources:
       - EC2Instance
       - EventBridgeRole
     Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub "pr-${ImageTag}"
       Description: "Rule to detect ECR image pushes"
       EventPattern:
         source:
@@ -239,6 +244,6 @@ Resources:
               }
 
 Outputs:
-  DomainRecord:
+  DnsRecord:
     Description: "Url of the selfhosted instance"
     Value: !Sub "${ImageTag}.quadratic-preview.com"
