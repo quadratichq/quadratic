@@ -1,11 +1,11 @@
-name: Deploy CloudFormation Stack for Preview Branches
+name: Deploy CloudFormation Stack for Preview Branch
 
 on:
   pull_request:
     types: [opened, reopened]
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  group: pr-${{ github.event.pull_request.number }}-deploy-cloudformation
 
 jobs:
   deploy_cloudformation:
