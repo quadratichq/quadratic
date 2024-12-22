@@ -219,7 +219,7 @@ Resources:
                   "commands": [
                     "cd /quadratic-selfhost",
                     "./login.sh",
-                    "./start.sh",
+                    "./start.sh"
                   ]
                 }
               }
