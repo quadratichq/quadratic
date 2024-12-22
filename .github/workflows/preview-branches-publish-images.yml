@@ -81,23 +81,24 @@ jobs:
             image=moby/buildkit:latest
             network=host
 
-      - name: Set up Docker layer cache
-        uses: useblacksmith/cache@v5
-        with:
-          path: /tmp/.buildx-cache
-          key: buildx-${{ matrix.service }}-pr-${{ github.event.pull_request.number }}
-          restore-keys: |
-            buildx-${{ matrix.service }}-
+      # - name: Set up Docker layer cache
+      #   uses: useblacksmith/cache@v5
+      #   with:
+      #     path: /tmp/.buildx-cache
+      #     key: buildx-${{ matrix.service }}-pr-${{ github.event.pull_request.number }}
+      #     restore-keys: |
+      #       buildx-${{ matrix.service }}-
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        # uses: docker/build-push-action@v6
+        uses: useblacksmith/build-push-action@v1
         with:
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max,compression=zstd
+          # cache-from: type=local,src=/tmp/.buildx-cache
+          # cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max,compression=zstd
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
@@ -110,7 +111,7 @@ jobs:
       # Temp fix
       # https://github.com/docker/build-push-action/issues/252
       # https://github.com/moby/buildkit/issues/1896
-      - name: Update cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      # - name: Update cache
+      #   run: |
+      #     rm -rf /tmp/.buildx-cache
+      #     mv /tmp/.buildx-cache-new /tmp/.buildx-cache
