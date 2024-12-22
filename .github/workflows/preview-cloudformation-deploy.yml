@@ -12,6 +12,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      pull-requests: write
       
     runs-on: blacksmith-2vcpu-ubuntu-2204
 
