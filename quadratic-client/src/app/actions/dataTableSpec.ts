@@ -1,7 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
-import { createSelection } from '@/app/grid/sheet/selection';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -21,7 +20,6 @@ import {
   TableConvertIcon,
   TableIcon,
 } from '@/shared/components/Icons';
-import { Rectangle } from 'pixi.js';
 import { sheets } from '../grid/controller/Sheets';
 import { ActionSpecRecord } from './actionsSpec';
 
@@ -93,7 +91,8 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Convert to table',
     Icon: TableConvertIcon,
     run: () => {
-      quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
+      // todo...
+      // quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
     },
   },
   [Action.ToggleFirstRowAsHeaderTable]: {
@@ -152,8 +151,9 @@ export const dataTableSpec: DataTableSpec = {
     run: () => {
       const table = getTable();
       if (table) {
-        const selection = createSelection({ sheetId: sheets.sheet.id, rects: [new Rectangle(table.x, table.y, 1, 1)] });
-        quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
+        // todo...
+        // const selection = createSelection({ sheetId: sheets.sheet.id, rects: [new Rectangle(table.x, table.y, 1, 1)] });
+        // quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
       }
     },
   },
@@ -364,6 +364,20 @@ export const dataTableSpec: DataTableSpec = {
           }
         });
       }
+    },
+  },
+  [Action.InsertTableRow]: {
+    label: 'Insert row',
+    Icon: AddIcon,
+    run: () => {
+      console.warn('todo...');
+    },
+  },
+  [Action.RemoveTableRow]: {
+    label: 'Remove row',
+    Icon: DeleteIcon,
+    run: () => {
+      console.warn('todo...');
     },
   },
 };

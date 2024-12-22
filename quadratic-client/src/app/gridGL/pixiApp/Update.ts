@@ -35,49 +35,6 @@ export class Update {
     }
   }
 
-<<<<<<< HEAD
-  sendRenderViewport() {
-    const bounds = pixiApp.viewport.getVisibleBounds();
-    const scale = pixiApp.viewport.scale.x;
-    renderWebWorker.updateViewport(sheets.sheet.id, bounds, scale);
-  }
-
-  updateViewport(): void {
-    const { viewport } = pixiApp;
-    let dirty = false;
-    if (this.lastViewportScale !== viewport.scale.x) {
-      this.lastViewportScale = viewport.scale.x;
-      dirty = true;
-
-      // this is used to trigger changes to ZoomDropdown
-      events.emit('zoom', viewport.scale.x);
-    }
-    if (this.lastViewportPosition.x !== viewport.x || this.lastViewportPosition.y !== viewport.y) {
-      this.lastViewportPosition.x = viewport.x;
-      this.lastViewportPosition.y = viewport.y;
-      dirty = true;
-    }
-    if (this.lastScreenWidth !== viewport.screenWidth || this.lastScreenHeight !== viewport.screenHeight) {
-      this.lastScreenWidth = viewport.screenWidth;
-      this.lastScreenHeight = viewport.screenHeight;
-      dirty = true;
-    }
-    if (this.lastSheetId !== sheets.sheet.id) {
-      this.lastSheetId = sheets.sheet.id;
-      dirty = true;
-    }
-    if (dirty) {
-      pixiApp.viewportChanged();
-      this.sendRenderViewport();
-
-      // signals to react that the viewport has changed (so it can update any
-      // related positioning)
-      events.emit('viewportChangedReady');
-    }
-  }
-
-=======
->>>>>>> origin/qa
   // update loop w/debug checks
   private update = (): void => {
     if (pixiApp.destroyed) return;

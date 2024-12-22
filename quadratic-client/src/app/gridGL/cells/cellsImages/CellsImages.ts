@@ -1,23 +1,14 @@
 //! Draw the cell images (an Image output from a code cell)
 
 import { events } from '@/app/events/events';
-<<<<<<< HEAD
 import { sheets } from '@/app/grid/controller/Sheets';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, Point, Rectangle } from 'pixi.js';
 import { intersects } from '../../helpers/intersects';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { CellsSheet } from '../CellsSheet';
 import { CellsImage } from './CellsImage';
-=======
-import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
-import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
-import { intersects } from '@/app/gridGL/helpers/intersects';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import { Container, Rectangle } from 'pixi.js';
->>>>>>> origin/qa
 
 export class CellsImages extends Container<CellsImage> {
   private cellsSheet: CellsSheet;
@@ -75,7 +66,7 @@ export class CellsImages extends Container<CellsImage> {
     }
   };
 
-  contains(world: Point): Coordinate | undefined {
+  contains(world: Point): JsCoordinate | undefined {
     for (const child of this.children) {
       const result = child.contains(world);
       if (result) {

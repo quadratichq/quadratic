@@ -1,9 +1,9 @@
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Drag, Viewport as PixiViewport } from 'pixi-viewport';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
-import { events } from '@/app/events/events';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;

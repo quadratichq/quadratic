@@ -5,13 +5,10 @@
 //! numbers to all return statements via a caught thrown error (the only way to
 //! get line numbers in JS).
 
-<<<<<<< HEAD
 // todo: can remove the line number vars as we are no longer using them.
 
-=======
 import { getJavascriptFetchOverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptFetchOverride';
 import { getJavascriptXHROverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptXHROverride';
->>>>>>> origin/qa
 import * as esbuild from 'esbuild-wasm';
 import { LINE_NUMBER_VAR } from './javascript';
 import { javascriptLibrary } from './runner/generateJavascriptForRunner';

@@ -1,12 +1,7 @@
 import { events } from '@/app/events/events';
 import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import { Container, Graphics } from 'pixi.js';
-<<<<<<< HEAD
-import { CellsImage } from '../cells/cellsImages/CellsImage';
-=======
->>>>>>> origin/qa
 
 // These should be consistent with ResizeControl.tsx
 export const IMAGE_BORDER_WIDTH = 5;

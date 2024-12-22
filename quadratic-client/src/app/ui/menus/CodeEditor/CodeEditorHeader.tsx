@@ -7,8 +7,6 @@ import {
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { codeCellIsAConnection, getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { xyToA1 } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -173,22 +171,24 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
-<<<<<<< HEAD
-  const description = useMemo(() => {
-    if (codeCell) {
-      if (htmlCellsHandler.isHtmlCell(codeCellState.pos.x, codeCellState.pos.y)) {
-        return 'Python chart at';
-      } else if (
-        pixiApp.cellsSheets.getById(codeCellState.sheetId)?.cellsImages.isImageCell(codeCellState.pos.x, codeCellState.pos.y)) {
-        return 'JS chart at';
-      } else {
-        return 'Cell at';
-      }
-    } else {
-      return '';
-    }
-  }, [codeCell, codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
-=======
+  // const description = useMemo(() => {
+  //   if (codeCell) {
+  //     if (htmlCellsHandler.isHtmlCell(codeCellState.pos.x, codeCellState.pos.y)) {
+  //       return 'Python chart at';
+  //     } else if (
+  //       pixiApp.cellsSheets
+  //         .getById(codeCellState.sheetId)
+  //         ?.cellsImages.isImageCell(codeCellState.pos.x, codeCellState.pos.y)
+  //     ) {
+  //       return 'JS chart at';
+  //     } else {
+  //       return 'Cell at';
+  //     }
+  //   } else {
+  //     return '';
+  //   }
+  // }, [codeCell, codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
+
   const changePanelPosition = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
       setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
@@ -196,7 +196,6 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
     },
     [setPanelPosition]
   );
->>>>>>> origin/qa
 
   return (
     <div className="flex items-center border-l border-border py-1 pl-3 pr-2">
@@ -216,11 +215,7 @@ export const CodeEditorHeader = ({ editorInst }: CodeEditorHeaderProps) => {
 
       <div className="mx-2 flex flex-col truncate">
         <div className="text-sm font-medium leading-4">
-<<<<<<< HEAD
-          {description} ({codeCellState.pos.x}, {codeCellState.pos.y})
-=======
           {`Cell ${a1Pos}`}
->>>>>>> origin/qa
           {currentCodeEditorCellIsNotInActiveSheet && (
             <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
           )}

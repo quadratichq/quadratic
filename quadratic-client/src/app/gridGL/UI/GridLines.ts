@@ -58,15 +58,15 @@ export class GridLines extends Graphics {
       this.gridLinesX = [];
       this.gridLinesY = [];
 
-      const range = this.drawHorizontalLines(bounds, this.getColumns(bounds));
+      const range = this.drawHorizontalLines(bounds); //, this.getColumns(bounds));
       this.drawVerticalLines(bounds, range);
     }
   }
 
-  private getColumns(bounds: Rectangle): [number, number] {
-    const sheet = sheets.sheet;
-    return [sheet.offsets.getXPlacement(bounds.left).index, sheet.offsets.getXPlacement(bounds.right).index];
-  }
+  // private getColumns(bounds: Rectangle): [number, number] {
+  //   const sheet = sheets.sheet;
+  //   return [sheet.offsets.getXPlacement(bounds.left).index, sheet.offsets.getXPlacement(bounds.right).index];
+  // }
 
   private drawVerticalLines(bounds: Rectangle, range: [number, number]) {
     const sheet = sheets.sheet;
@@ -110,18 +110,13 @@ export class GridLines extends Graphics {
   }
 
   // @returns the vertical range of [rowStart, rowEnd]
-<<<<<<< HEAD
-  private drawHorizontalLines(bounds: Rectangle, columns: [number, number]): [number, number] {
-    const offsets = sheets.sheet.offsets;
-=======
   private drawHorizontalLines(bounds: Rectangle): [number, number] {
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
->>>>>>> origin/qa
     const rowPlacement = offsets.getYPlacement(bounds.top);
     const index = rowPlacement.index;
     const position = rowPlacement.position;
-    const gridOverflowLines = sheets.sheet.gridOverflowLines;
+    // const gridOverflowLines = sheets.sheet.gridOverflowLines;
 
     const left = bounds.left <= sheet.clamp.left ? sheet.clamp.left : bounds.left;
 
@@ -137,25 +132,9 @@ export class GridLines extends Graphics {
     for (let y = bounds.top; y <= bounds.bottom + size - 1; y += size) {
       // don't draw grid lines when hidden
       if (size !== 0) {
-<<<<<<< HEAD
-        const lines = gridOverflowLines.getRowHorizontalRange(row, columns);
-        if (lines) {
-          for (const [x0, x1] of lines) {
-            const start = offsets.getColumnPlacement(x0).position;
-            const end = offsets.getColumnPlacement(x1 + 1).position;
-            this.moveTo(start, y - offset);
-            this.lineTo(end, y - offset);
-          }
-        } else {
-          this.moveTo(bounds.left, y - offset);
-          this.lineTo(bounds.right, y - offset);
-        }
-        this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - bounds.left, h: 1 });
-=======
         this.moveTo(left, y - offset);
         this.lineTo(bounds.right, y - offset);
         this.gridLinesY.push({ row, x: bounds.left, y: y - offset, w: bounds.right - left, h: 1 });
->>>>>>> origin/qa
       }
       size = offsets.getRowHeight(row);
       row++;

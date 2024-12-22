@@ -1,7 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { Coordinate } from '@/app/gridGL/types/size';
+import { JsCoordinate } from '@/app/quadratic-core-types';
 import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, Graphics, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '../../UI/UICellImages';
@@ -143,7 +143,7 @@ export class CellsImage extends Container {
     this.resizeImage();
   }
 
-  contains(world: Point): Coordinate | undefined {
+  contains(world: Point): JsCoordinate | undefined {
     if (intersects.rectanglePoint(this.viewBounds, world)) {
       return { x: this.gridBounds.x, y: this.gridBounds.y };
     }

@@ -9,8 +9,7 @@ import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Table } from '@/app/gridGL/cells/tables/Table';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { JsCodeCell, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, Point, Rectangle } from 'pixi.js';
 
@@ -153,7 +152,7 @@ export class Tables extends Container<Table> {
     if (this.activeTable) {
       this.activeTable.hideActive();
     }
-    const cursor = sheets.sheet.cursor.cursorPosition;
+    const cursor = sheets.sheet.cursor.position;
     this.activeTable = this.children.find((table) => table.intersectsCursor(cursor.x, cursor.y));
     if (!this.activeTable) {
       const image = pixiApp.cellsSheet().cellsImages.findCodeCell(cursor.x, cursor.y);
@@ -388,7 +387,7 @@ export class Tables extends Container<Table> {
     return this.children.find((table) => table.isCursorOnDataTable())?.codeCell;
   }
 
-  getSortDialogPosition(codeCell: JsRenderCodeCell): Coordinate | undefined {
+  getSortDialogPosition(codeCell: JsRenderCodeCell): JsCoordinate | undefined {
     const table = this.children.find((table) => table.codeCell === codeCell);
     if (!table) {
       return;
@@ -401,12 +400,12 @@ export class Tables extends Container<Table> {
   }
 
   // Ensures that the code cell at the given coordinate is active.
-  ensureActiveCoordinate(coordinate: Coordinate) {
+  ensureActiveCoordinate(coordinate: JsCoordinate) {
     const table = this.children.find((table) => table.codeCell.x === coordinate.x && table.codeCell.y === coordinate.y);
     if (!table) {
       return;
     }
-    sheets.sheet.cursor.changePosition({ cursorPosition: coordinate });
+    sheets.sheet.cursor.moveTo(coordinate.x, coordinate.y);
     this.ensureActive(table.codeCell);
   }
 
@@ -416,7 +415,7 @@ export class Tables extends Container<Table> {
     if (!table) {
       return;
     }
-    sheets.sheet.cursor.changePosition({ cursorPosition: { x: table.codeCell.x, y: table.codeCell.y } });
+    sheets.sheet.cursor.moveTo(table.codeCell.x, table.codeCell.y);
     if (this.activeTable !== table) {
       if (this.activeTable) {
         this.activeTable.hideActive();
@@ -471,7 +470,7 @@ export class Tables extends Container<Table> {
     }
   }
 
-  isHtmlOrImage(cell: Coordinate): boolean {
+  isHtmlOrImage(cell: JsCoordinate): boolean {
     if (this.htmlOrImage.has(`${cell.x},${cell.y}`)) {
       return true;
     }

@@ -417,8 +417,6 @@ class CoreClient {
         return;
 
       case 'clientCoreJumpCursor':
-<<<<<<< HEAD
-=======
         this.send({
           type: 'coreClientJumpCursor',
           id: e.data.id,
@@ -427,7 +425,6 @@ class CoreClient {
         return;
 
       case 'clientCoreFindNextColumn':
->>>>>>> origin/qa
         this.send({
           type: 'coreClientJumpCursor',
           id: e.data.id,
@@ -624,7 +621,6 @@ class CoreClient {
         core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
         return;
 
-<<<<<<< HEAD
       case 'clientCoreFlattenDataTable':
         core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
         return;
@@ -669,14 +665,14 @@ class CoreClient {
 
       case 'clientCoreDataTableFirstRowAsHeader':
         core.dataTableFirstRowAsHeader(e.data.sheetId, e.data.x, e.data.y, e.data.firstRowAsHeader, e.data.cursor);
-=======
+        return;
+
       case 'clientCoreFiniteRectFromSelection':
         this.send({
           type: 'coreClientFiniteRectFromSelection',
           id: e.data.id,
           rect: core.finiteRectFromSelection(e.data.selection),
         });
->>>>>>> origin/qa
         return;
 
       default:
