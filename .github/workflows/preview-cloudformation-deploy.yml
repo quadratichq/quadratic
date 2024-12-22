@@ -1,4 +1,4 @@
-name: Build Docker Images for Preview Branches
+name: Deploy CloudFormation Stack for Preview Branches
 
 on:
   pull_request:
