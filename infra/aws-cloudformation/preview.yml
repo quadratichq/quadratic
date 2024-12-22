@@ -55,9 +55,6 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub "pr-${ImageTag}"
       Roles:
         - !Ref EC2Role
 
