@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened]
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}-build-images
+  group: pr-${{ github.event.pull_request.number }}-publish-images
   cancel-in-progress: true
 
 jobs:
@@ -87,13 +87,13 @@ jobs:
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
-          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
+          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
-            GIT_SHA=${{ github.sha }}
+            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}

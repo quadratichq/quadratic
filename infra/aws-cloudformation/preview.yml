@@ -8,7 +8,6 @@ Parameters:
   ImageTag:
     Type: String
     Description: "Image tag to use for all services"
-    Default: "latest"
 
 Mappings:
   RegionMap:
@@ -23,6 +22,9 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "pr-${ImageTag}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -53,6 +55,9 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "pr-${ImageTag}"
       Roles:
         - !Ref EC2Role
 
@@ -61,6 +66,9 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "pr-${ImageTag}"
       GroupDescription: !Sub "${ImageTag}"
       SecurityGroupIngress:
         - IpProtocol: "tcp"
@@ -77,6 +85,9 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "pr-${ImageTag}"
       InstanceType: "m6a.large"
       ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AMI]
       IamInstanceProfile: !Ref EC2InstanceProfile
@@ -160,6 +171,9 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "pr-${ImageTag}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -185,6 +199,9 @@ Resources:
       - EC2Instance
       - EventBridgeRole
     Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "pr-${ImageTag}"
       Description: "Rule to detect ECR image pushes"
       EventPattern:
         source:

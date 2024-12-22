@@ -69,9 +69,9 @@ jobs:
           script: |
             const previewUrl = '${{ steps.stack-output.outputs.PREVIEW_URL }}';
             const message = `Preview URL: ${previewUrl}`;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.name,
+              issue_number: context.issue.number,
               body: message
             });
