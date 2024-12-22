@@ -97,7 +97,7 @@ jobs:
           push: true
           tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max,compression=zstd,compression-level=22,force-compression=true
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max,compression=zstd
           build-args: |
             BUILDKIT_INLINE_CACHE=1
             BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
