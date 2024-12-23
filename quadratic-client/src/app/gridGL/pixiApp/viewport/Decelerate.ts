@@ -262,15 +262,15 @@ export class Decelerate extends Plugin {
     if (this.x !== null && this.y !== null) {
       if (this.x && this.y) {
         if (Math.abs(this.x) < this.options.minSpeed && Math.abs(this.y) < this.options.minSpeed) {
-          this.x = 0;
-          this.y = 0;
+          this.x = null;
+          this.y = null;
         }
       } else {
         if (Math.abs(this.x || 0) < this.options.minSpeed) {
-          this.x = 0;
+          this.x = null;
         }
         if (Math.abs(this.y || 0) < this.options.minSpeed) {
-          this.y = 0;
+          this.y = null;
         }
       }
 
