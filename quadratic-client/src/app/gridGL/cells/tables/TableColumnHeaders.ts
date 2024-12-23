@@ -5,9 +5,8 @@ import { Table } from '@/app/gridGL/cells/tables/Table';
 import { TableColumnHeader } from '@/app/gridGL/cells/tables/TableColumnHeader';
 import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
-import { JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
+import { JsCoordinate, JsDataTableColumnHeader, SortDirection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Point, Rectangle } from 'pixi.js';
@@ -201,7 +200,7 @@ export class TableColumnHeaders extends Container {
     this.columns.children.forEach((column) => (column.visible = true));
   }
 
-  getSortDialogPosition(): Coordinate | undefined {
+  getSortDialogPosition(): JsCoordinate | undefined {
     if (this.columns.children.length === 0) return;
     const firstColumn = this.columns.children[0];
     return { x: firstColumn.columnHeaderBounds.left, y: firstColumn.columnHeaderBounds.bottom + this.y };

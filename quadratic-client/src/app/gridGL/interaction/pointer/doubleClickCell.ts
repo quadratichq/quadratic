@@ -50,14 +50,9 @@ export async function doubleClickCell(options: {
         if (cursor.x !== column || cursor.y !== row) {
           sheets.sheet.cursor.moveTo(column, row);
         }
-<<<<<<< HEAD
         pixiAppSettings.changeInput(true, cell);
       } else if (hasPermission && file_import) {
-        pixiAppSettings.changeInput(true, cell);
-=======
-
         pixiAppSettings.changeInput(true, cell, cursorMode);
->>>>>>> origin/qa
       } else {
         pixiAppSettings.setCodeEditorState({
           ...pixiAppSettings.codeEditorState,

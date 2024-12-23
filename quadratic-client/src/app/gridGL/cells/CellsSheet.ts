@@ -1,30 +1,15 @@
 import { events } from '@/app/events/events';
-<<<<<<< HEAD
+import { Borders } from '@/app/gridGL/cells/Borders';
 import { Tables } from '@/app/gridGL/cells/tables/Tables';
 import { JsRenderCodeCell, JsValidationWarning } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle, Sprite } from 'pixi.js';
-import { Borders } from './borders/Borders';
 import { CellsFills } from './CellsFills';
 import { CellsImage } from './cellsImages/CellsImage';
 import { CellsImages } from './cellsImages/CellsImages';
 import { CellsLabels } from './cellsLabel/CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
-=======
-import { Borders } from '@/app/gridGL/cells/Borders';
-import { CellsArray } from '@/app/gridGL/cells/CellsArray';
-import { CellsFills } from '@/app/gridGL/cells/CellsFills';
-import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
-import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
-import { CellsLabels } from '@/app/gridGL/cells/cellsLabel/CellsLabels';
-import { CellsMarkers } from '@/app/gridGL/cells/CellsMarkers';
-import { CellsSearch } from '@/app/gridGL/cells/CellsSearch';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { JsValidationWarning } from '@/app/quadratic-core-types';
-import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Rectangle, Sprite } from 'pixi.js';
->>>>>>> origin/qa
 
 export interface ErrorMarker {
   triangle?: Sprite;
@@ -105,16 +90,7 @@ export class CellsSheet extends Container {
   }
 
   adjustOffsets() {
-<<<<<<< HEAD
-    this.borders.setDirty();
     this.tables.sheetOffsets(this.sheetId);
-=======
-    this.borders.sheetOffsetsChanged(this.sheetId);
-  }
-
-  updateCellsArray() {
-    this.cellsArray.updateCellsArray();
->>>>>>> origin/qa
   }
 
   getCellsImages(): CellsImage[] {

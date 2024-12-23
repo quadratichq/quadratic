@@ -1,8 +1,7 @@
 import { RectangleLike } from '@/app/grid/sheet/SheetCursor';
-import { Rect } from '@/app/quadratic-core-types';
+import { JsCoordinate, Rect } from '@/app/quadratic-core-types';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Circle, Point, Rectangle } from 'pixi.js';
-import { Coordinate } from '../types/size';
 
 function left(rectangle: RectangleLike): number {
   return Math.min(rectangle.x, rectangle.x + rectangle.width);
@@ -20,7 +19,7 @@ function bottom(rectangle: RectangleLike): number {
   return Math.max(rectangle.y, rectangle.y + rectangle.height);
 }
 
-function rectanglePoint(rectangle: RectangleLike, point: Point | Coordinate): boolean {
+function rectanglePoint(rectangle: RectangleLike, point: Point | JsCoordinate): boolean {
   return (
     point.x >= left(rectangle) &&
     point.x <= right(rectangle) &&

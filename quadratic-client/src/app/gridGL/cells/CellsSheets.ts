@@ -184,19 +184,14 @@ export class CellsSheets extends Container<CellsSheet> {
   isCursorOnCodeCell(): boolean {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
-<<<<<<< HEAD
-    const cursor = sheets.sheet.cursor.cursorPosition;
-    return cellsSheet.tables.isTable(cursor.x, cursor.y);
-=======
     const cursor = sheets.sheet.cursor.position;
-    return cellsSheet.cellsArray.isCodeCell(cursor.x, cursor.y);
->>>>>>> origin/qa
+    return cellsSheet.tables.isTable(cursor.x, cursor.y);
   }
 
   isCursorOnCodeCellOutput(): boolean {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
-    const cursor = sheets.sheet.cursor.cursorPosition;
+    const cursor = sheets.sheet.cursor.position;
     return cellsSheet.tables.isTable(cursor.x, cursor.y);
   }
 

@@ -10,8 +10,7 @@ import { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Coordinate } from '@/app/gridGL/types/size';
-import { JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Point, Rectangle } from 'pixi.js';
 
 export class Table extends Container {
@@ -181,7 +180,7 @@ export class Table extends Container {
 
   // Checks whether the cursor is on the table
   isCursorOnDataTable(): boolean {
-    const cursor = sheets.sheet.cursor.cursorPosition;
+    const cursor = sheets.sheet.cursor.position;
     return intersects.rectanglePoint(
       new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1),
       cursor
@@ -230,7 +229,7 @@ export class Table extends Container {
     return this.tableName.intersects(world);
   }
 
-  getSortDialogPosition(): Coordinate | undefined {
+  getSortDialogPosition(): JsCoordinate | undefined {
     // we need to force the column headers to be updated first to avoid a
     // flicker since the update normally happens on the tick instead of on the
     // viewport event (caused by inconsistency between React and pixi's update
@@ -254,7 +253,7 @@ export class Table extends Container {
   }
 
   // Checks whether the cell is within the table
-  contains(cell: Coordinate): boolean {
+  contains(cell: JsCoordinate): boolean {
     // first check if we're even in the right x/y range
     return (
       cell.x >= this.codeCell.x &&

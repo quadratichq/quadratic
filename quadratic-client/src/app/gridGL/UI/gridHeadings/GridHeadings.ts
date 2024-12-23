@@ -252,20 +252,12 @@ export class GridHeadings extends Container {
     this.rowWidth = Math.max(this.rowWidth, CELL_HEIGHT / viewport.scale.x);
 
     // draw background of vertical bar
-<<<<<<< HEAD
-    this.gridHeadingsRows.headingsGraphics.lineStyle(0);
-    this.gridHeadingsRows.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
-    this.gridHeadingsRows.headingsGraphics.drawShape(this.columnRect);
-    this.gridHeadingsRows.headingsGraphics.endFill();
-=======
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
     const top = Math.max(bounds.top, clamp.top);
     this.columnRect = new Rectangle(bounds.left, top, this.rowWidth, bounds.height);
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
->>>>>>> origin/qa
     this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
 
     const topRow = sheet.getRowFromScreen(top);

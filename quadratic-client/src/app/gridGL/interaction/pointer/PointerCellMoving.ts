@@ -231,18 +231,14 @@ export class PointerCellMoving {
         this.movingCells &&
         (this.startCell.x !== this.movingCells.toColumn || this.startCell.y !== this.movingCells.toRow)
       ) {
-<<<<<<< HEAD
         const table = getTable();
-        const rectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
+        const rectangle = sheets.sheet.cursor.getLargestRectangle();
 
         if (table) {
           rectangle.width = table.w;
           rectangle.height = table.h;
         }
 
-=======
-        const rectangle = sheets.sheet.cursor.getLargestRectangle();
->>>>>>> origin/qa
         quadraticCore.moveCells(
           rectToSheetRect(rectangle, sheets.sheet.id),
           this.movingCells.toColumn,

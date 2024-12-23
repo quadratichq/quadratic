@@ -65,9 +65,7 @@ export class PointerTable {
       });
     } else {
       // move cursor to column header
-      sheets.sheet.cursor.changePosition({
-        cursorPosition: { x: tableDown.table.x + tableDown.column, y: tableDown.table.y },
-      });
+      sheets.sheet.cursor.moveTo(tableDown.table.x + tableDown.column, tableDown.table.y);
 
       // select entire column?
 
@@ -88,7 +86,7 @@ export class PointerTable {
           doubleClickCell({ column: image.x, row: image.y, language: 'Javascript' });
         } else {
           pixiApp.cellsSheet().tables.ensureActiveCoordinate(image);
-          sheets.sheet.cursor.changePosition({ cursorPosition: image });
+          sheets.sheet.cursor.moveTo(image.x, image.y);
           this.doubleClickTimeout = window.setTimeout(() => {
             this.doubleClickTimeout = undefined;
           }, DOUBLE_CLICK_TIME);
