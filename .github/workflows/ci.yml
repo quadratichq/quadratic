@@ -12,7 +12,7 @@ on:
 
 jobs:
   test_rust:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-32vcpu-ubuntu-2204
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +109,7 @@ jobs:
           npm run test:docker:ci
 
   test_unit:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -145,7 +145,7 @@ jobs:
           npm run test:ts
 
   test_python:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -163,7 +163,7 @@ jobs:
           npm run test
 
   test_api:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -178,7 +178,7 @@ jobs:
           npm run docker:test:ci
 
   lint_rust:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -194,7 +194,7 @@ jobs:
           cargo clippy -- -D warnings
 
   lint:
-    runs-on: blacksmith-32vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -225,7 +225,7 @@ jobs:
           npm run lint:ts
 
   check-version-increment:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     # If we are merging into main, but not pushed on main
     if: github.base_ref == 'main' && github.ref != 'refs/heads/main'
     steps:
@@ -260,7 +260,7 @@ jobs:
           fi
 
   check-versions-match:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2204
 
     steps:
       - name: Checkout current branch
