@@ -45,11 +45,12 @@ jobs:
       - name: Test quadratic-core
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
-          RUSTFLAGS: -Cinstrument-coverage
+          RUSTFLAGS: "-Cinstrument-coverage -j 4"
           RUSTC_BOOTSTRAP: 1
+          CARGO_BUILD_JOBS: 4
         run: |
           cd quadratic-core
-          cargo test
+          cargo test -- --test-threads=4
 
       - name: Generate coverage for quadratic-core
         env:
