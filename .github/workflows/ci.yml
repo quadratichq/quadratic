@@ -173,7 +173,14 @@ jobs:
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
-          grcov $(find . -name "grcov-*.profraw" -print) \
+          mkdir -p coverage
+          chmod -R 755 coverage
+
+          # Find profraw files in current project directory only
+          find quadratic-*/target -name "grcov-*.profraw" -type f -print > profraw_files.txt
+
+          # Run grcov with explicit file list
+          grcov $(cat profraw_files.txt) \
             --branch \
             --ignore-not-existing \
             --binary-path ./target/debug/ \
@@ -183,7 +190,8 @@ jobs:
             --ignore "./src/wasm_bindings/*" \
             --ignore "./src/bin/*" \
             --ignore "./docker/*" \
-            -o lcov.info
+            --ignore "**/target/*" \
+            -o coverage/lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-connection
         uses: codecov/codecov-action@v3
