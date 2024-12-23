@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test_rust:
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+  test_core:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
       - name: Test quadratic-core
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
-          RUSTFLAGS: "-Cinstrument-coverage -j 4"
+          RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
           CARGO_BUILD_JOBS: 4
         run: |
@@ -68,21 +68,49 @@ jobs:
             --ignore "./docker/*" \
             -o lcov.info
 
-      - name: Upload coverage reports to Codecov
+      - name: Upload coverage reports to Codecov quadratic-core
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  test_multiplayer:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Set up Rust
+        uses: moonrepo/setup-rust@v1
+        with:
+          components: clippy, llvm-tools-preview
+          cache: false
+
+      - name: Install grcov
+        run: if ! which grcov; then cargo install grcov; fi
+
+      - name: Install llvm-tools-preview
+        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+
+      - name: Install pkg-config
+        if: github.runner.isHosted == true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config
 
       - name: Test quadratic-multiplayer
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
+          CARGO_BUILD_JOBS: 4
         run: |
           cd quadratic-multiplayer
           npm run docker:test
 
-      - name: Generate coverage quadratic-multiplayer
+      - name: Generate coverage for quadratic-multiplayer
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
@@ -104,14 +132,63 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  test_connection:
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Set up Rust
+        uses: moonrepo/setup-rust@v1
+        with:
+          components: clippy, llvm-tools-preview
+          cache: false
+
+      - name: Install grcov
+        run: if ! which grcov; then cargo install grcov; fi
+
+      - name: Install llvm-tools-preview
+        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+
+      - name: Install pkg-config
+        if: github.runner.isHosted == true
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config
+
       - name: Test quadratic-connection
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
+          CARGO_BUILD_JOBS: 4
         run: |
           cd quadratic-connection
           npm run test:docker:ci
+
+      - name: Generate coverage for quadratic-connection
+        env:
+          RUSTC_BOOTSTRAP: 1
+        run: |
+          grcov $(find . -name "grcov-*.profraw" -print) \
+            --branch \
+            --ignore-not-existing \
+            --binary-path ./target/debug/ \
+            -s . \
+            -t lcov \
+            --ignore "/*" \
+            --ignore "./src/wasm_bindings/*" \
+            --ignore "./src/bin/*" \
+            --ignore "./docker/*" \
+            -o lcov.info
+
+      - name: Upload coverage reports to Codecov quadratic-connection
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test_unit:
     runs-on: blacksmith-2vcpu-ubuntu-2204
