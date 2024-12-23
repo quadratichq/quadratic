@@ -176,9 +176,11 @@ jobs:
           mkdir -p coverage
           chmod -R 755 coverage
 
-          find . -name "grcov-*.profraw" -type f -print > profraw_files.txt
+          find . -name "grcov-*.profraw" -type f \
+            ! -path "./docker/mysql-connection/data/*" \
+            ! -path "./docker/postgres-connection/data/*" \
+            -print > profraw_files.txt
 
-          # Run grcov with explicit file list
           grcov $(cat profraw_files.txt) \
             --branch \
             --ignore-not-existing \
