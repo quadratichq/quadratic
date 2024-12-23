@@ -21,21 +21,35 @@ jobs:
       matrix:
         include:
           - service: api
-            runner: blacksmith-2vcpu-ubuntu-2204
-          # - service: client
-          #   runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
+            runner: depot-ubuntu-22.04
           - service: client
             runner: depot-ubuntu-24.04-64
           - service: connection
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: depot-ubuntu-22.04
           - service: files
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: depot-ubuntu-22.04
           - service: multiplayer
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: depot-ubuntu-22.04
+          # - service: api
+          #   runner: blacksmith-2vcpu-ubuntu-2204
+          # - service: client
+          #   runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
+          # - service: client
+          #   runner: depot-ubuntu-24.04-64
+          # - service: connection
+          #   runner: blacksmith-2vcpu-ubuntu-2204
+          # - service: files
+          #   runner: blacksmith-2vcpu-ubuntu-2204
+          # - service: multiplayer
+          #   runner: blacksmith-2vcpu-ubuntu-2204
       fail-fast: true
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Depot CLI
+        uses: depot/setup-action@v1
 
       - name: Generate Build Metadata
         id: build-metadata
