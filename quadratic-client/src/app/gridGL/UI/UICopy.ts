@@ -85,7 +85,14 @@ export class UICopy extends Graphics {
       rect.width -= RECT_OFFSET * 2;
       rect.height -= RECT_OFFSET * 2;
       const color = getCSSVariableTint('primary');
-      drawDashedRectangleMarching(this, color, rect, this.march, true, ALPHA);
+      drawDashedRectangleMarching({
+        g: this,
+        color,
+        range: cellRefRange,
+        march: this.march,
+        alpha: ALPHA,
+        offset: RECT_OFFSET,
+      });
       if (!render) {
         if (intersects.rectangleRectangle(rect, bounds)) {
           render = true;

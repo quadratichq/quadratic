@@ -4,6 +4,7 @@ import { DASHED } from '@/app/gridGL/generateTextures';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
+import { FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import type { JsCellsAccessed } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
@@ -98,6 +99,7 @@ export class CellHighlights extends Container {
       color: colorNumber,
       march: this.march,
       range: accessedCell.ranges[0],
+      alpha: FILL_ALPHA,
     });
     this.march = (this.march + 1) % Math.floor(DASHED);
     pixiApp.setViewportDirty();
