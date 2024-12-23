@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   test_core:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +74,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test_multiplayer:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -133,7 +133,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test_connection:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -191,7 +191,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test_unit:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -276,7 +276,7 @@ jobs:
           cargo clippy -- -D warnings
 
   lint:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
