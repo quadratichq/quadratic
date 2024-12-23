@@ -104,7 +104,7 @@ Resources:
           echo "export ECR_URL=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com" >> /home/ubuntu/.profile
           echo "export IMAGE_TAG=${ImageTag}" >> /home/ubuntu/.profile
           echo "export GIT_SHA=${GitSHA}" >> /home/ubuntu/.profile
-          
+
           # Source the new environment variables
           source /home/ubuntu/.profile
 
@@ -113,7 +113,7 @@ Resources:
           #!/bin/bash
           aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
           EOF
-          
+
           chmod +x /home/ubuntu/quadratic-selfhost/login.sh
           cd /home/ubuntu/quadratic-selfhost
           ./login.sh
@@ -193,33 +193,76 @@ Resources:
                 }
               }
 
+  GlobalAccelerator:
+    Type: AWS::GlobalAccelerator::Accelerator
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Name: !Sub "${ImageTag}-${GitSHA}"
+      Enabled: true
+      Tags:
+        - Key: Name
+          Value: !Ref ImageTag
+
+  GlobalAcceleratorListener:
+    Type: AWS::GlobalAccelerator::Listener
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn:
+      - GlobalAccelerator
+    Properties:
+      AcceleratorArn: !Ref GlobalAccelerator
+      Protocol: TCP
+      PortRanges:
+        - FromPort: 80
+          ToPort: 80
+        - FromPort: 443
+          ToPort: 443
+
+  GlobalAcceleratorEndpointGroup:
+    Type: AWS::GlobalAccelerator::EndpointGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn:
+      - GlobalAcceleratorListener
+      - EC2Instance
+    Properties:
+      ListenerArn: !Ref GlobalAcceleratorListener
+      EndpointGroupRegion: !Ref AWS::Region
+      EndpointConfigurations:
+        - EndpointId: !Ref EC2Instance
+          Weight: 100
+          ClientIPPreservationEnabled: true
+
   DnsRecords:
     Type: AWS::Route53::RecordSet
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     DependsOn:
-      - EC2Instance
+      - GlobalAccelerator
     Properties:
       HostedZoneId: Z0126430TJ1UYIMO3SYX
       Name: !Sub "${ImageTag}-${GitSHA}.quadratic-preview.com"
       Type: A
-      TTL: 300
-      ResourceRecords:
-        - !GetAtt EC2Instance.PublicIp
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
 
   WildcardDnsRecord:
     Type: AWS::Route53::RecordSet
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     DependsOn:
-      - EC2Instance
+      - GlobalAccelerator
     Properties:
       HostedZoneId: Z0126430TJ1UYIMO3SYX
       Name: !Sub "*.${ImageTag}-${GitSHA}.quadratic-preview.com"
       Type: A
-      TTL: 300
-      ResourceRecords:
-        - !GetAtt EC2Instance.PublicIp
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
 
 Outputs:
   DnsRecord:
