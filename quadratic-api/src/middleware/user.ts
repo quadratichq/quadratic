@@ -61,7 +61,7 @@ const getOrCreateUser = async (auth0Id: string) => {
   });
 
   if (user) {
-    return user;
+    return { user, userCreated: false };
   }
 
   // If they don't exist yet, create them
@@ -74,18 +74,19 @@ const getOrCreateUser = async (auth0Id: string) => {
   await runFirstTimeUserLogic(newUser);
 
   // Return the user
-  return newUser;
+  return { user: newUser, userCreated: true };
 };
 
 export const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   const { auth } = req as RequestWithAuth;
 
-  const user = await getOrCreateUser(auth.sub);
+  const { user, userCreated } = await getOrCreateUser(auth.sub);
   if (!user) {
     return res.status(500).json({ error: { message: 'Unable to get authenticated user' } });
   }
 
   (req as RequestWithUser).user = user;
+  (req as RequestWithUser).userCreated = userCreated === true;
   next();
 };
 
@@ -93,12 +94,12 @@ export const userOptionalMiddleware = async (req: Request, res: Response, next: 
   const { auth } = req as RequestWithOptionalAuth;
 
   if (auth && auth.sub) {
-    const user = await getOrCreateUser(auth.sub);
+    const { user } = await getOrCreateUser(auth.sub);
     if (!user) {
       return res.status(500).json({ error: { message: 'Unable to get authenticated user' } });
     }
-    // @ts-expect-error
-    req.user = user;
+
+    (req as RequestWithUser).user = user;
   }
 
   next();

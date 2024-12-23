@@ -68,6 +68,9 @@ export const router = createBrowserRouter(
             />
           </Route>
 
+          {/* Route to redirect to a new file in the app */}
+          <Route path="files/create" lazy={() => import('./routes/files.create')} />
+
           {/* Dashboard UI routes */}
           <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route
@@ -98,9 +101,8 @@ export const router = createBrowserRouter(
               </Route>
             </Route>
           </Route>
+          <Route path="*" Component={Page404.Component} />
         </Route>
-
-        <Route path="*" Component={Page404.Component} />
       </Route>
       <Route path={ROUTES.LOGIN} loader={Login.loader} />
       <Route path={ROUTES.LOGIN_RESULT} loader={LoginResult.loader} />

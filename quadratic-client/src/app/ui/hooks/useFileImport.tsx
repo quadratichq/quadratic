@@ -37,6 +37,7 @@ export function useFileImport() {
     isPrivate?: boolean;
     teamUuid?: string;
   }) => {
+    mixpanel.track('[ImportData].useFileImport');
     quadraticCore.initWorker();
 
     if (!files) files = await uploadFile(supportedFileTypes);
