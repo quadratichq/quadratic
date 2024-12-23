@@ -65,12 +65,35 @@ Resources:
                   - ecr:ListImages
                 Resource: "*"
 
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref ImageTag
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeSsmAutomation
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:SendCommand
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:*"
+
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
-    DependsOn:
-      - EC2Role
     Properties:
       Roles:
         - !Ref EC2Role
@@ -79,9 +102,6 @@ Resources:
     Type: AWS::EC2::Instance
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
-    DependsOn:
-      - EC2InstanceProfile
-      - SecurityGroup
     Properties:
       Tags:
         - Key: Name
@@ -121,38 +141,60 @@ Resources:
           # Run Quadratic initialization script
           ./init.sh "${LicenseKey}" "${ImageTag}-${GitSHA}.quadratic-preview.com"
 
-  EventBridgeRole:
-    Type: AWS::IAM::Role
+  GlobalAccelerator:
+    Type: AWS::GlobalAccelerator::Accelerator
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
+      Name: !Sub "${ImageTag}-${GitSHA}"
+      Enabled: true
       Tags:
         - Key: Name
           Value: !Ref ImageTag
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: events.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: InvokeSsmAutomation
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ssm:SendCommand
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:*"
+
+  DnsRecords:
+    Type: AWS::Route53::RecordSet
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      HostedZoneId: Z0126430TJ1UYIMO3SYX
+      Name: !Sub "${ImageTag}-${GitSHA}.quadratic-preview.com"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
+
+  WildcardDnsRecord:
+    Type: AWS::Route53::RecordSet
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      HostedZoneId: Z0126430TJ1UYIMO3SYX
+      Name: !Sub "*.${ImageTag}-${GitSHA}.quadratic-preview.com"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
+
+  GlobalAcceleratorListener:
+    Type: AWS::GlobalAccelerator::Listener
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      AcceleratorArn: !Ref GlobalAccelerator
+      Protocol: TCP
+      PortRanges:
+        - FromPort: 80
+          ToPort: 80
+        - FromPort: 443
+          ToPort: 443
 
   EcrPushRule:
     Type: AWS::Events::Rule
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
-    DependsOn:
-      - EC2Instance
-      - EventBridgeRole
     Properties:
       Description: Rule to detect ECR image pushes
       EventPattern:
@@ -193,39 +235,10 @@ Resources:
                 }
               }
 
-  GlobalAccelerator:
-    Type: AWS::GlobalAccelerator::Accelerator
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      Name: !Sub "${ImageTag}-${GitSHA}"
-      Enabled: true
-      Tags:
-        - Key: Name
-          Value: !Ref ImageTag
-
-  GlobalAcceleratorListener:
-    Type: AWS::GlobalAccelerator::Listener
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    DependsOn:
-      - GlobalAccelerator
-    Properties:
-      AcceleratorArn: !Ref GlobalAccelerator
-      Protocol: TCP
-      PortRanges:
-        - FromPort: 80
-          ToPort: 80
-        - FromPort: 443
-          ToPort: 443
-
   GlobalAcceleratorEndpointGroup:
     Type: AWS::GlobalAccelerator::EndpointGroup
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
-    DependsOn:
-      - GlobalAcceleratorListener
-      - EC2Instance
     Properties:
       ListenerArn: !Ref GlobalAcceleratorListener
       EndpointGroupRegion: !Ref AWS::Region
@@ -233,36 +246,6 @@ Resources:
         - EndpointId: !Ref EC2Instance
           Weight: 100
           ClientIPPreservationEnabled: true
-
-  DnsRecords:
-    Type: AWS::Route53::RecordSet
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    DependsOn:
-      - GlobalAccelerator
-    Properties:
-      HostedZoneId: Z0126430TJ1UYIMO3SYX
-      Name: !Sub "${ImageTag}-${GitSHA}.quadratic-preview.com"
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt GlobalAccelerator.DnsName
-        HostedZoneId: Z2BJ6XQ5FK7U4H
-        EvaluateTargetHealth: true
-
-  WildcardDnsRecord:
-    Type: AWS::Route53::RecordSet
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    DependsOn:
-      - GlobalAccelerator
-    Properties:
-      HostedZoneId: Z0126430TJ1UYIMO3SYX
-      Name: !Sub "*.${ImageTag}-${GitSHA}.quadratic-preview.com"
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt GlobalAccelerator.DnsName
-        HostedZoneId: Z2BJ6XQ5FK7U4H
-        EvaluateTargetHealth: true
 
 Outputs:
   DnsRecord:
