@@ -169,36 +169,6 @@ jobs:
           cd quadratic-connection
           npm run test:docker:ci
 
-      - name: Generate coverage for quadratic-connection
-        env:
-          RUSTC_BOOTSTRAP: 1
-        run: |
-          mkdir -p coverage
-          chmod -R 755 coverage
-
-          find . -name "grcov-*.profraw" -type f \
-            ! -path "./docker/mysql-connection/data/*" \
-            ! -path "./docker/postgres-connection/data/*" \
-            -print > profraw_files.txt
-
-          grcov $(cat profraw_files.txt) \
-            --branch \
-            --ignore-not-existing \
-            --binary-path ./target/debug/ \
-            -s . \
-            -t lcov \
-            --ignore "/*" \
-            --ignore "./src/wasm_bindings/*" \
-            --ignore "./src/bin/*" \
-            --ignore "./docker/*" \
-            --ignore "**/target/*" \
-            -o coverage/lcov.info
-
-      - name: Upload coverage reports to Codecov quadratic-connection
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
   test_unit:
     runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 10
