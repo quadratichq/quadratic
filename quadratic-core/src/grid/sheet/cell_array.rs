@@ -73,11 +73,11 @@ impl Sheet {
                     .x_range()
                     .map(|x| {
                         let pos = Pos { x, y };
-                        let cell_value = self.cell_value(pos).unwrap_or_else(|| CellValue::Blank);
+                        let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
 
                         match (include_code, &cell_value) {
                             (true, CellValue::Code(_)) => cell_value,
-                            (_, _) => self.display_value(pos).unwrap_or_else(|| CellValue::Blank),
+                            (_, _) => self.display_value(pos).unwrap_or(CellValue::Blank),
                         }
                     })
                     .collect::<Vec<CellValue>>()
