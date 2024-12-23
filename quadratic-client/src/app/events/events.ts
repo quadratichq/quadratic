@@ -133,6 +133,10 @@ interface EventTypes {
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
   codeEditorCodeCell: (codeCell?: CodeCell) => void;
+
+  aiAnalystInitialized: () => void;
+
+  pixiAppSettingsInitialized: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

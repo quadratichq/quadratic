@@ -8,6 +8,7 @@ import { ApiError } from '@/shared/api/fetchFromApi';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Buffer } from 'buffer';
+import mixpanel from 'mixpanel-browser';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
@@ -35,6 +36,7 @@ export function useFileImport() {
     isPrivate?: boolean;
     teamUuid?: string;
   }) => {
+    mixpanel.track('[ImportData].useFileImport');
     quadraticCore.initWorker();
 
     if (!files) files = await uploadFile(supportedFileTypes);
