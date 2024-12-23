@@ -92,6 +92,7 @@ export class UICopy extends Graphics {
         march: this.march,
         alpha: ALPHA,
         offset: RECT_OFFSET,
+        noFill: true,
       });
       if (!render) {
         if (intersects.rectangleRectangle(rect, bounds)) {

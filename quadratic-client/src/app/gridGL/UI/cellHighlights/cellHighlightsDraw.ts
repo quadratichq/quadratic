@@ -4,7 +4,7 @@ import { getRangeScreenRectangleFromCellRefRange } from '@/app/gridGL/helpers/se
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CURSOR_THICKNESS, FILL_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { CellRefRange } from '@/app/quadratic-core-types';
-import { Graphics, Rectangle } from 'pixi.js';
+import { Graphics } from 'pixi.js';
 
 export function drawDashedRectangle(options: { g: Graphics; color: number; isSelected: boolean; range: CellRefRange }) {
   const { g, color, isSelected, range } = options;
@@ -57,18 +57,27 @@ export function drawDashedRectangle(options: { g: Graphics; color: number; isSel
   }
 }
 
-export function drawDashedRectangleMarching(
-  g: Graphics,
-  color: number,
-  startCell: Rectangle,
-  march: number,
-  noFill?: boolean,
-  alpha = 1
-) {
-  const minX = startCell.x;
-  const minY = startCell.y;
-  const maxX = startCell.width + startCell.x;
-  const maxY = startCell.y + startCell.height;
+export function drawDashedRectangleMarching(options: {
+  g: Graphics;
+  color: number;
+  march: number;
+  noFill?: boolean;
+  alpha?: number;
+  offset?: number;
+  range: CellRefRange;
+}): boolean {
+  const { g, color, march, noFill, alpha, offset = 0, range } = options;
+
+  const selectionRect = getRangeScreenRectangleFromCellRefRange(range);
+  const bounds = pixiApp.viewport.getVisibleBounds();
+  if (!intersects.rectangleRectangle(selectionRect, bounds)) {
+    return false;
+  }
+
+  const minX = selectionRect.left + offset;
+  const minY = selectionRect.top + offset;
+  const maxX = selectionRect.right - offset;
+  const maxY = selectionRect.bottom - offset;
 
   if (!noFill) {
     g.clear();
@@ -77,7 +86,6 @@ export function drawDashedRectangleMarching(
   g.lineStyle({
     alignment: 0,
   });
-
   if (!noFill) {
     g.beginFill(color, FILL_ALPHA);
     g.drawRect(minX, minY, maxX - minX, maxY - minY);
@@ -132,4 +140,6 @@ export function drawDashedRectangleMarching(
     g.moveTo(minX + DASHED_THICKNESS, clamp(y - DASHED / 2, minY, maxY));
     g.lineTo(minX + DASHED_THICKNESS, clamp(y, minY, maxY));
   }
+
+  return true;
 }
