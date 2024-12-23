@@ -197,19 +197,19 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
 
-        // sets 0,0=1 and 0,1=2
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
+        // sets 1,1=1 and 1,2=2
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(2.into()));
 
         // sets code cell that outputs 1,0=1 and 1,1=2
         gc.set_code_cell(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             crate::grid::CodeCellLanguage::Formula,
-            "A0:A1".to_string(),
+            "A1:A2".to_string(),
             None,
         );
 
@@ -218,15 +218,15 @@ mod tests {
         // manually set a cell value and see if the spill error changed
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 1,
+                x: 2,
+                y: 2,
                 sheet_id,
             },
             "3".into(),
             None,
         );
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));
+        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Number(3.into()));
 
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.data_tables[0].spill_error);
@@ -240,15 +240,15 @@ mod tests {
         // remove the cell causing the spill error
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 1,
+                x: 2,
+                y: 2,
                 sheet_id,
             },
             "".into(),
             None,
         );
         let sheet = gc.sheet_mut(sheet_id);
-        assert_eq!(sheet.cell_value(Pos { x: 1, y: 1 }), None);
+        assert_eq!(sheet.cell_value(Pos { x: 2, y: 2 }), None);
         gc.check_all_spills(&mut transaction, sheet_id);
 
         let sheet = gc.sheet(sheet_id);

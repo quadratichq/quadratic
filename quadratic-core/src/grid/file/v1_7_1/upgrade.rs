@@ -40,9 +40,11 @@ fn upgrade_code_runs(
                 output_type: code_run.output_type,
             };
 
-            let data_table_name = columns
+            let column = columns
                 .get(i)
-                .unwrap()
+                .ok_or_else(|| anyhow::anyhow!("Column {} not found", i))?;
+
+            let data_table_name = column
                 .1
                 .iter()
                 .filter_map(|(_, value)| {

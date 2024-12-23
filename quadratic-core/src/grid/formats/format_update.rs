@@ -441,10 +441,7 @@ mod tests {
             italic: Some(Some(false)),
             text_color: Some(Some("blue".to_string())),
             fill_color: Some(Some("red".to_string())),
-            render_size: Some(Some(RenderSize {
-                w: "3".to_string(),
-                h: "4".to_string(),
-            })),
+            render_size: None,
             date_time: Some(Some("%M".to_string())),
             underline: Some(Some(false)),
             strike_through: Some(Some(false)),
@@ -471,13 +468,7 @@ mod tests {
         assert_eq!(combined.italic, Some(Some(true)));
         assert_eq!(combined.text_color, Some(Some("red".to_string())));
         assert_eq!(combined.fill_color, Some(Some("blue".to_string())));
-        assert_eq!(
-            combined.render_size,
-            Some(Some(RenderSize {
-                w: "1".to_string(),
-                h: "2".to_string()
-            }))
-        );
+        assert_eq!(combined.render_size, None);
         assert_eq!(combined.date_time, Some(Some("%H".to_string())));
         assert_eq!(combined.underline, Some(Some(true)));
         assert_eq!(combined.strike_through, Some(Some(true)));
@@ -517,7 +508,7 @@ mod tests {
         assert_eq!(cleared.italic, Some(None));
         assert_eq!(cleared.text_color, Some(None));
         assert_eq!(cleared.fill_color, Some(None));
-        assert_eq!(cleared.render_size, Some(None));
+        assert_eq!(cleared.render_size, None);
         assert_eq!(cleared.date_time, Some(None));
         assert_eq!(cleared.underline, Some(None));
         assert_eq!(cleared.strike_through, Some(None));

@@ -74,7 +74,7 @@ mod tests {
         let code_run = sheet.data_tables.get(&pos).unwrap();
         assert_eq!(code_run.output_size(), ArraySize::_1X1);
         assert_eq!(
-            code_run.cell_value_at(1, 1),
+            code_run.cell_value_at(0, 0),
             Some(CellValue::Text("test".to_string()))
         );
         assert!(!code_run.spill_error);

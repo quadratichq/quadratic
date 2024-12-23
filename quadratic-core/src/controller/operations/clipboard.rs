@@ -750,12 +750,12 @@ mod test {
     #[parallel]
     fn paste_clipboard_on_top_of_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv_at(Pos { x: 2, y: 0 });
-        let rect = Rect::from_numbers(10, 0, 2, 2);
         let sheet = gc.sheet_mut(sheet_id);
+        let rect = SheetRect::from_numbers(10, 0, 2, 2, sheet.id);
 
         sheet.test_set_values(10, 0, 2, 2, vec!["1", "2", "3", "4"]);
         let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&A1Selection::from_xy(10, 0, sheet_id))
+            .copy_to_clipboard(&A1Selection::from_rect(rect))
             .unwrap();
 
         let paste = |gc: &mut GridController, x, y, html| {

@@ -455,7 +455,7 @@ mod tests {
             Value::Array(Array::from(vec![vec!["3"]])),
             false,
             false,
-            true,
+            false,
             None,
         );
         let transaction = &mut PendingTransaction::default();
@@ -539,7 +539,7 @@ mod tests {
             Value::Array(Array::from(vec![vec!["3"]])),
             false,
             false,
-            true,
+            false,
             None,
         );
         let transaction = &mut PendingTransaction::default();

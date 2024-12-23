@@ -538,12 +538,13 @@ mod test {
             success: true,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
             ..Default::default()
-        });
+        })
+        .unwrap();
 
         gc.set_chart_size(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             1.0,

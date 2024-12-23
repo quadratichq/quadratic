@@ -961,6 +961,7 @@ mod tests {
                 language: Some(CodeCellLanguage::Formula),
                 align: Some(CellAlign::Right),
                 number: Some(JsNumber::default()),
+                // TODO(ddimaria): this is returning `wrap: None` instead of `wrap: Some(Clip)`
                 wrap: Some(CellWrap::Clip),
                 ..Default::default()
             }]
@@ -1045,6 +1046,7 @@ mod tests {
             true,
             None,
         );
+
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
         let rendering = sheet.get_render_code_cell(pos);
@@ -1059,11 +1061,7 @@ mod tests {
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
                 name: "Table 1".to_string(),
-                columns: vec![JsDataTableColumnHeader {
-                    name: "Column 1".into(),
-                    display: true,
-                    value_index: 0,
-                }],
+                columns: vec![], // single values don't have column headers
                 first_row_header: false,
                 show_header: true,
                 sort: None,
@@ -1130,15 +1128,15 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            (0, 0, sheet_id).into(),
+            (1, 1, sheet_id).into(),
             CodeCellLanguage::Formula,
             "{TRUE(), FALSE(), TRUE()}".into(),
             None,
         );
         let cells = vec![
             JsRenderCell {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 value: "true".to_string(),
                 language: Some(CodeCellLanguage::Formula),
                 wrap: Some(CellWrap::Clip),
@@ -1146,16 +1144,16 @@ mod tests {
                 ..Default::default()
             },
             JsRenderCell {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 value: "false".to_string(),
                 wrap: Some(CellWrap::Clip),
                 special: Some(JsRenderCellSpecial::Logical),
                 ..Default::default()
             },
             JsRenderCell {
-                x: 2,
-                y: 0,
+                x: 3,
+                y: 1,
                 value: "true".to_string(),
                 wrap: Some(CellWrap::Clip),
                 special: Some(JsRenderCellSpecial::Logical),
@@ -1163,7 +1161,7 @@ mod tests {
             },
         ];
         let sheet = gc.sheet(sheet_id);
-        let expected = sheet.get_render_cells(Rect::new(0, 0, 2, 0));
+        let expected = sheet.get_render_cells(Rect::new(1, 1, 3, 1));
 
         println!("{:?}", expected);
         println!("{:?}", cells);

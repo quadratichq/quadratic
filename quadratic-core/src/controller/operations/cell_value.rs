@@ -403,7 +403,6 @@ mod test {
         );
         let selection = A1Selection::test_a1("A2:,B");
         let operations = gc.delete_cells_operations(&selection);
-        let values = CellValues::new(1, 1);
 
         assert_eq!(operations.len(), 4);
         assert_eq!(
@@ -411,19 +410,19 @@ mod test {
             vec![
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: values.clone()
+                    values: CellValues::new(2, 1)
                 },
                 Operation::SetDataTableAt {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: values.clone()
+                    values: CellValues::new(2, 1)
                 },
                 Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 2, 2),
-                    values: values.clone()
+                    sheet_pos: SheetPos::new(sheet_id, 2, 1),
+                    values: CellValues::new(1, 2)
                 },
                 Operation::SetDataTableAt {
-                    sheet_pos: SheetPos::new(sheet_id, 2, 2),
-                    values: values.clone()
+                    sheet_pos: SheetPos::new(sheet_id, 2, 1),
+                    values: CellValues::new(1, 2)
                 },
             ]
         );

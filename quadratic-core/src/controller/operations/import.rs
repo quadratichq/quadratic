@@ -431,8 +431,8 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 mod test {
     use super::{read_utf16, *};
     use crate::{
-        test_util::{assert_data_table_cell_value, assert_display_cell_value},
-        CellValue,
+        test_util::{assert_data_table_cell_value, assert_display_cell_value, print_data_table},
+        CellValue, Rect,
     };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
     use serial_test::parallel;
@@ -472,7 +472,7 @@ mod test {
         assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
 
         let data_table = match ops[1].clone() {
-            Operation::SetCodeRun { code_run, .. } => code_run.unwrap(),
+            Operation::SetDataTable { data_table, .. } => data_table.unwrap(),
             _ => panic!("Expected SetCodeRun operation"),
         };
         expected_data_table.last_modified = data_table.last_modified;
@@ -604,22 +604,23 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table(pos).unwrap();
+        print_data_table(&gc, sheet_id, Rect::from_numbers(1, 1, 10, 10));
 
         // date
         assert_eq!(
-            data_table.cell_value_at(1, 2),
+            data_table.cell_value_at(0, 1),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            data_table.cell_value_at(1, 3),
+            data_table.cell_value_at(0, 2),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-22", "%Y-%m-%d").unwrap()
             ))
         );
         assert_eq!(
-            data_table.cell_value_at(1, 4),
+            data_table.cell_value_at(0, 3),
             Some(CellValue::Date(
                 NaiveDate::parse_from_str("2024-12-23", "%Y-%m-%d").unwrap()
             ))
@@ -627,19 +628,19 @@ mod test {
 
         // time
         assert_eq!(
-            data_table.cell_value_at(2, 2),
+            data_table.cell_value_at(1, 1),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            data_table.cell_value_at(2, 3),
+            data_table.cell_value_at(1, 2),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("14:45:00", "%H:%M:%S").unwrap()
             ))
         );
         assert_eq!(
-            data_table.cell_value_at(2, 4),
+            data_table.cell_value_at(1, 3),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("16:30:00", "%H:%M:%S").unwrap()
             ))
@@ -647,7 +648,7 @@ mod test {
 
         // date time
         assert_eq!(
-            data_table.cell_value_at(3, 2),
+            data_table.cell_value_at(2, 1),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 21)
                     .unwrap()
@@ -656,7 +657,7 @@ mod test {
             ))
         );
         assert_eq!(
-            data_table.cell_value_at(3, 3),
+            data_table.cell_value_at(2, 2),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 22)
                     .unwrap()
@@ -665,7 +666,7 @@ mod test {
             ))
         );
         assert_eq!(
-            data_table.cell_value_at(3, 4),
+            data_table.cell_value_at(2, 3),
             Some(CellValue::DateTime(
                 NaiveDate::from_ymd_opt(2024, 12, 23)
                     .unwrap()

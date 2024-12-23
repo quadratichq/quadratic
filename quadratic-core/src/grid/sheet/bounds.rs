@@ -1188,6 +1188,7 @@ mod test {
 
         // should find the first table moving backwards even though we're inside
         // the second table
+        // TODO(ddimaria): this is returning 24 instead of 9
         assert_eq!(sheet.find_next_column(24, 6, true, true), Some(9));
     }
 
@@ -1250,6 +1251,7 @@ mod test {
 
         // should find the first table moving backwards even though we're inside
         // the second table
+        // TODO(ddimaria): this is returning 24 instead of 9
         assert_eq!(sheet.find_next_row(24, 6, true, true), Some(9));
     }
 
