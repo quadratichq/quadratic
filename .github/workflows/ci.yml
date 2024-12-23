@@ -194,7 +194,7 @@ jobs:
           cargo clippy -- -D warnings
 
   lint:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: blacksmith-32vcpu-ubuntu-2204
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -229,42 +229,42 @@ jobs:
     # If we are merging into main, but not pushed on main
     if: github.base_ref == 'main' && github.ref != 'refs/heads/main'
     steps:
-    - name: Checkout current branch
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout current branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Get current VERSION
-      id: current_version
-      run: echo "CURRENT_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Get current VERSION
+        id: current_version
+        run: echo "CURRENT_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
 
-    - name: Checkout main branch
-      uses: actions/checkout@v3
-      with:
-        ref: main
-        fetch-depth: 1
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 1
 
-    - name: Get main VERSION
-      id: main_version
-      run: echo "MAIN_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Get main VERSION
+        id: main_version
+        run: echo "MAIN_VERSION=$(cat VERSION)" >> $GITHUB_OUTPUT
 
-    - name: Compare versions to main, verify this version is higher
-      run: |
-        current_version="${{ steps.current_version.outputs.CURRENT_VERSION }}"
-        main_version="${{ steps.main_version.outputs.MAIN_VERSION }}"
-        if [ "$(printf '%s\n' "$main_version" "$current_version" | sort -V | tail -n1)" != "$current_version" ]; then
-          echo "Error: VERSION in the current branch ($current_version) is not greater than VERSION in main ($main_version)"
-          exit 1
-        else
-          echo "VERSION check passed: Current branch ($current_version) > main ($main_version)"
-        fi
+      - name: Compare versions to main, verify this version is higher
+        run: |
+          current_version="${{ steps.current_version.outputs.CURRENT_VERSION }}"
+          main_version="${{ steps.main_version.outputs.MAIN_VERSION }}"
+          if [ "$(printf '%s\n' "$main_version" "$current_version" | sort -V | tail -n1)" != "$current_version" ]; then
+            echo "Error: VERSION in the current branch ($current_version) is not greater than VERSION in main ($main_version)"
+            exit 1
+          else
+            echo "VERSION check passed: Current branch ($current_version) > main ($main_version)"
+          fi
 
   check-versions-match:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout current branch
-      uses: actions/checkout@v3
+      - name: Checkout current branch
+        uses: actions/checkout@v3
 
-    - name: Verify that all versions match
-      run: ./bump.sh verify
+      - name: Verify that all versions match
+        run: ./bump.sh verify

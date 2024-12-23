@@ -12,7 +12,6 @@ jobs:
   publish_images:
     permissions:
       contents: read
-      id-token: write
 
     timeout-minutes: 30
 
@@ -22,33 +21,20 @@ jobs:
       matrix:
         include:
           - service: api
-            runner: depot-ubuntu-22.04
+            runner: blacksmith-2vcpu-ubuntu-2204
           - service: client
-            runner: depot-ubuntu-24.04-64
+            runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
           - service: connection
-            runner: depot-ubuntu-22.04
+            runner: blacksmith-2vcpu-ubuntu-2204
           - service: files
-            runner: depot-ubuntu-22.04
+            runner: blacksmith-2vcpu-ubuntu-2204
           - service: multiplayer
-            runner: depot-ubuntu-22.04
-          # - service: api
-          #   runner: blacksmith-2vcpu-ubuntu-2204
-          # - service: client
-          #   runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
-          # - service: connection
-          #   runner: blacksmith-2vcpu-ubuntu-2204
-          # - service: files
-          #   runner: blacksmith-2vcpu-ubuntu-2204
-          # - service: multiplayer
-          #   runner: blacksmith-2vcpu-ubuntu-2204
+            runner: blacksmith-2vcpu-ubuntu-2204
       fail-fast: true
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up Depot CLI
-        uses: depot/setup-action@v1
 
       - name: Generate Build Metadata
         id: build-metadata
@@ -97,10 +83,8 @@ jobs:
             network=host
 
       - name: Build and push
-        uses: depot/build-push-action@v1
+        uses: useblacksmith/build-push-action@v1
         with:
-          project: bt0vcnzjf4
-          token: ${{ secrets.DEPOT_PROJECT_TOKEN }}
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
@@ -114,20 +98,3 @@ jobs:
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
-
-      # - name: Build and push
-      #   uses: useblacksmith/build-push-action@v1
-      #   with:
-      #     context: .
-      #     file: quadratic-${{ matrix.service }}/Dockerfile
-      #     push: true
-      #     tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
-      #     build-args: |
-      #       BUILDKIT_INLINE_CACHE=1
-      #       BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
-      #       GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
-      #       BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
-      #       PR_NUMBER=${{ github.event.pull_request.number }}
-      #     labels: |
-      #       org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
-      #       org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
