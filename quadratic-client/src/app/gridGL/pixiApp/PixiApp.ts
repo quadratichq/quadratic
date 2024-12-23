@@ -174,7 +174,6 @@ export class PixiApp {
     this.viewportContents.addChild(gridHeadings.gridHeadingsRows);
 
     this.boxCells = this.viewportContents.addChild(new BoxCells());
-    this.cellImages = this.viewportContents.addChild(this.cellImages);
     this.copy = this.viewportContents.addChild(this.copy);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
