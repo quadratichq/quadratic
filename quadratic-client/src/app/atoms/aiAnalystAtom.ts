@@ -2,6 +2,7 @@ import { aiAnalystOfflineChats } from '@/app/ai/offline/aiAnalystChats';
 import { getPromptMessages } from '@/app/ai/tools/message.helper';
 import { editorInteractionStateUserAtom, editorInteractionStateUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
+import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
@@ -57,6 +58,7 @@ export const aiAnalystAtom = atom<AIAnalystState>({
             console.error('[AIAnalystOfflineChats]: ', error);
           }
         }
+        events.emit('aiAnalystInitialized');
       }
     },
     ({ onSet }) => {
