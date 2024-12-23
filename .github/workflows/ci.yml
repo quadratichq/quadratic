@@ -176,8 +176,7 @@ jobs:
           mkdir -p coverage
           chmod -R 755 coverage
 
-          # Find profraw files in current project directory only
-          find quadratic-*/target -name "grcov-*.profraw" -type f -print > profraw_files.txt
+          find . -name "grcov-*.profraw" -type f -print > profraw_files.txt
 
           # Run grcov with explicit file list
           grcov $(cat profraw_files.txt) \
