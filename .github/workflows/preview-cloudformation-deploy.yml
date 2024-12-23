@@ -13,7 +13,7 @@ jobs:
       contents: read
       id-token: write
       pull-requests: write
-      
+
     runs-on: blacksmith-2vcpu-ubuntu-2204
 
     env:
@@ -41,7 +41,7 @@ jobs:
           name: ${{ env.STACK_NAME }}
           template: infra/aws-cloudformation/preview-deployment-template.yml
           parameter-overrides: >-
-            LicenseKey=5a32bd8a-409e-4733-8846-1868c568a813,
+            LicenseKey=${{ secrets.QUADRATIC_LICENSE_KEY }},
             ImageTag=pr-${{ github.event.pull_request.number }},
             GitSHA=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
           capabilities: CAPABILITY_IAM
@@ -54,8 +54,8 @@ jobs:
         id: preview-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: 'Preview Deployment'
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview Deployment"
 
       - name: Create or update comment
         if: steps.deploy-stack.outputs.DnsRecord != ''
@@ -67,4 +67,3 @@ jobs:
             ## Preview Deployment
             Preview URL: https://${{ steps.deploy-stack.outputs.DnsRecord }}
           edit-mode: replace
-          
