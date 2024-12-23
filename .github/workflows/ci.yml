@@ -23,12 +23,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
 
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1
         with:
           components: clippy, llvm-tools-preview
-          cache: false
+          cache: true
+          cache-target: true
+
+      - name: Cache grcov
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/bin/grcov
+          key: ${{ runner.os }}-grcov
 
       - name: Install grcov
         run: if ! which grcov; then cargo install grcov; fi
@@ -120,14 +129,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11.3"
+          cache: "pip"
 
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1
         with:
           channel: "nightly"
+          cache: true
+          cache-target: true
 
       - uses: jetli/wasm-pack-action@v0.4.0
 
@@ -156,6 +171,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11.3"
@@ -174,6 +192,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
 
       - name: Run npm test:ci in quadratic-api
         run: |
@@ -190,7 +210,8 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           components: clippy
-          cache: false
+          cache: true
+          cache-target: true
 
       - name: Run cargo clippy in quadratic-core
         run: |
@@ -205,10 +226,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1
         with:
-          cache: false
+          cache: true
+          cache-target: true
+
       - uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"
