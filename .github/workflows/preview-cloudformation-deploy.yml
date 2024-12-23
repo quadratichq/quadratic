@@ -22,6 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Generate Build Metadata
+        id: build-metadata
+        run: |
+          echo "GIT_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -34,10 +39,11 @@ jobs:
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: ${{ env.STACK_NAME }}
-          template: infra/aws-cloudformation/preview.yml
+          template: infra/aws-cloudformation/preview-deployment-template.yml
           parameter-overrides: >-
             LicenseKey=5a32bd8a-409e-4733-8846-1868c568a813,
             ImageTag=pr-${{ github.event.pull_request.number }}
+            GitSHA=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           disable-rollback: false
