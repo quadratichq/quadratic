@@ -22,8 +22,10 @@ jobs:
         include:
           - service: api
             runner: blacksmith-2vcpu-ubuntu-2204
+          # - service: client
+          #   runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
           - service: client
-            runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
+            runner: depot-ubuntu-24.04-64
           - service: connection
             runner: blacksmith-2vcpu-ubuntu-2204
           - service: files
@@ -82,8 +84,10 @@ jobs:
             network=host
 
       - name: Build and push
-        uses: useblacksmith/build-push-action@v1
+        uses: depot/build-push-action@v1
         with:
+          project: 473fbzf7w6
+          token: ${{ secrets.DEPOT_PROJECT_TOKEN }}
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
           push: true
@@ -97,3 +101,20 @@ jobs:
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+
+      # - name: Build and push
+      #   uses: useblacksmith/build-push-action@v1
+      #   with:
+      #     context: .
+      #     file: quadratic-${{ matrix.service }}/Dockerfile
+      #     push: true
+      #     tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}-${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+      #     build-args: |
+      #       BUILDKIT_INLINE_CACHE=1
+      #       BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
+      #       GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+      #       BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
+      #       PR_NUMBER=${{ github.event.pull_request.number }}
+      #     labels: |
+      #       org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
+      #       org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
