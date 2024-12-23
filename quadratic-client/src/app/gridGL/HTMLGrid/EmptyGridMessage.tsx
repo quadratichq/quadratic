@@ -22,7 +22,7 @@ export function EmptyGridMessage() {
     team: { uuid: teamUuid },
   } = useFileRouteLoaderData();
   const canEdit = filePermissions.includes('FILE_EDIT');
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(fileHasData() ? false : true);
   const showConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const showCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const { data } = useConnectionsFetcher();
