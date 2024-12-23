@@ -42,7 +42,7 @@ jobs:
           template: infra/aws-cloudformation/preview-deployment-template.yml
           parameter-overrides: >-
             LicenseKey=5a32bd8a-409e-4733-8846-1868c568a813,
-            ImageTag=pr-${{ github.event.pull_request.number }}
+            ImageTag=pr-${{ github.event.pull_request.number }},
             GitSHA=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
