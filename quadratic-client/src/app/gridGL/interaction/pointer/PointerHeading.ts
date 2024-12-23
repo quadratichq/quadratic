@@ -1,3 +1,4 @@
+import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
 import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
@@ -122,6 +123,16 @@ export class PointerHeading {
       } else if (intersects.row !== null) {
         const left = sheets.sheet.getColumnFromScreen(bounds.left);
         cursor.selectRow(intersects.row, event.ctrlKey || event.metaKey, event.shiftKey, isRightClick, left);
+      }
+      if (isRightClick) {
+        setTimeout(() =>
+          events.emit('contextMenu', {
+            world,
+            column: intersects.column ?? undefined,
+            row: intersects.row ?? undefined,
+            type: ContextMenuType.Grid,
+          })
+        );
       }
     }
 

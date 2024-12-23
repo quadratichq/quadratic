@@ -62,8 +62,11 @@ export function drawDashedRectangleMarching(options: {
   color: number;
   march: number;
   range: CellRefRange;
+  alpha: number;
+  offset?: number;
 }) {
-  const { g, color, march, range } = options;
+  console.log('here?');
+  const { g, color, march, range, alpha, offset } = options;
 
   const selectionRect = getRangeScreenRectangleFromCellRefRange(range);
   const bounds = pixiApp.viewport.getVisibleBounds();
@@ -71,10 +74,17 @@ export function drawDashedRectangleMarching(options: {
     return;
   }
 
-  const minX = selectionRect.left;
-  const minY = selectionRect.top;
-  const maxX = selectionRect.right;
-  const maxY = selectionRect.bottom;
+  let minX = selectionRect.left;
+  let minY = selectionRect.top;
+  let maxX = selectionRect.right;
+  let maxY = selectionRect.bottom;
+
+  if (offset) {
+    minY += offset;
+    minX += offset;
+    maxY -= offset;
+    maxX -= offset;
+  }
 
   g.clear();
 
@@ -82,7 +92,7 @@ export function drawDashedRectangleMarching(options: {
     alignment: 0,
   });
   g.moveTo(minX, minY);
-  g.beginFill(color, FILL_ALPHA);
+  g.beginFill(color, alpha);
   g.drawRect(minX, minY, maxX - minX, maxY - minY);
   g.endFill();
 

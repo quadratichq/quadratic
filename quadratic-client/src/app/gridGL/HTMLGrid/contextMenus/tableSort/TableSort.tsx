@@ -62,7 +62,9 @@ export const TableSort = () => {
   useEffect(() => {
     const changePosition = () => {
       if (!ref.current) {
-        setTimeout(changePosition, 0);
+        if (contextMenu.table) {
+          setTimeout(changePosition, 0);
+        }
         return;
       }
       if (contextMenu.table) {

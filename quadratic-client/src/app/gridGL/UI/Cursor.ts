@@ -150,7 +150,10 @@ export class Cursor extends Container {
     const { cursor } = sheet;
 
     this.startCell = sheet.getCellOffsets(cursor.position.x, cursor.position.y);
-    drawFiniteSelection(this.graphics, pixiApp.accentColor, FILL_ALPHA, ranges);
+
+    if (!sheets.sheet.cursor.isSingleSelection()) {
+      drawFiniteSelection(this.graphics, pixiApp.accentColor, FILL_ALPHA, ranges);
+    }
   }
 
   private drawCursorIndicator() {

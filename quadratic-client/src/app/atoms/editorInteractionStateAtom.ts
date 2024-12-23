@@ -47,7 +47,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
 };
 
 export const editorInteractionStateAtom = atom<EditorInteractionState>({
-  key: 'editorInteractionState', // unique ID (with respect to other atoms/selectors)
+  key: 'editorInteractionState',
   default: defaultEditorInteractionState,
   effects: [
     // this effect is used to focus the grid when the modal is closed

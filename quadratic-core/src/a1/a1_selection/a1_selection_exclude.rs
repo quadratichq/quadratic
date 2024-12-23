@@ -573,4 +573,19 @@ mod test {
             vec![CellRefRange::test_a1("B7:C7"), CellRefRange::test_a1("B8")]
         );
     }
+
+    #[test]
+    fn test_3x3_exclude_middle() {
+        let mut selection = A1Selection::test_a1("A1:C3");
+        selection.exclude_cells(pos![B2], None);
+        assert_eq!(
+            selection.ranges,
+            vec![
+                CellRefRange::test_a1("A1:C1"),
+                CellRefRange::test_a1("A3:C3"),
+                CellRefRange::test_a1("A2"),
+                CellRefRange::test_a1("C2"),
+            ]
+        );
+    }
 }

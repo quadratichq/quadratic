@@ -269,6 +269,10 @@ export class SheetCursor {
     return this.getFiniteRanges().length + this.getInfiniteRanges().length;
   }
 
+  getRanges(): CellRefRange[] {
+    return this.getFiniteRanges().concat(this.getInfiniteRanges());
+  }
+
   getFiniteRanges(): CellRefRange[] {
     const ranges = this.jsSelection.getFiniteRanges();
     try {
