@@ -99,7 +99,7 @@ jobs:
       - name: Build and push
         uses: depot/build-push-action@v1
         with:
-          project: 473fbzf7w6
+          project: bt0vcnzjf4
           token: ${{ secrets.DEPOT_PROJECT_TOKEN }}
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile
