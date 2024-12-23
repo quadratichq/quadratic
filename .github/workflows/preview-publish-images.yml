@@ -12,6 +12,7 @@ jobs:
   publish_images:
     permissions:
       contents: read
+      id-token: write
 
     timeout-minutes: 30
 
@@ -34,8 +35,6 @@ jobs:
           #   runner: blacksmith-2vcpu-ubuntu-2204
           # - service: client
           #   runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
-          # - service: client
-          #   runner: depot-ubuntu-24.04-64
           # - service: connection
           #   runner: blacksmith-2vcpu-ubuntu-2204
           # - service: files
