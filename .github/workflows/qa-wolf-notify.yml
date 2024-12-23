@@ -5,6 +5,9 @@ on:
     branches:
       - qa
 
+concurrency:
+  group: qa-wolf-notify
+
 jobs:
   qa-wolf-notify:
     runs-on: blacksmith-2vcpu-ubuntu-2204
