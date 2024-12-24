@@ -39,16 +39,8 @@ impl GridController {
         unwrap_op!(let SetCursorA1 { selection } = op);
 
         // this op should only be called by a user transaction
-        if !transaction.is_user() {
-            return;
-        }
-
-        if cfg!(target_family = "wasm") && !transaction.is_server() {
-            if let Ok(json) = serde_json::to_string(&selection) {
-                crate::wasm_bindings::js::jsSetCursorSelection(json);
-            }
-        } else if cfg!(test) {
-            transaction.cursor = Some(serde_json::to_string(&selection).unwrap());
+        if transaction.is_user() && (cfg!(target_family = "wasm") || cfg!(test)) {
+            transaction.add_update_selection(selection);
         }
     }
 }
@@ -72,7 +64,7 @@ mod test {
         gc.execute_set_cursor_a1(&mut transaction, op);
 
         assert_eq!(
-            transaction.cursor,
+            transaction.update_selection,
             Some(serde_json::to_string(&selection).unwrap())
         );
     }

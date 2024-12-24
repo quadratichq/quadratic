@@ -419,15 +419,6 @@ impl GridController {
             js_code_result.chart_pixel_output,
         );
 
-        // update the name if the data_table is an image or html
-        if data_table.is_html() || data_table.is_image() {
-            data_table.name = match language {
-                CodeCellLanguage::Javascript => "JSChart1".to_string(),
-                CodeCellLanguage::Python => "PythonChart1".to_string(),
-                _ => table_name.to_string(),
-            };
-        }
-
         // set alternating colors to false if chart_pixel_output is set.
         if js_code_result.chart_pixel_output.is_some() {
             data_table.alternating_colors = false;

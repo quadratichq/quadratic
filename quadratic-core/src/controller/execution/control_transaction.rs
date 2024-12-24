@@ -207,6 +207,10 @@ impl GridController {
                     sheet.resend_fills();
                 }
             });
+
+            if let Some(selection) = transaction.update_selection {
+                crate::wasm_bindings::js::jsSetCursor(selection);
+            }
         }
     }
 

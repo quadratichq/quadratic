@@ -6,6 +6,7 @@ import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCel
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
+import { newSingleSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   AddIcon,
@@ -159,9 +160,8 @@ export const dataTableSpec: DataTableSpec = {
     run: () => {
       const table = getTable();
       if (table) {
-        // todo...
-        // const selection = createSelection({ sheetId: sheets.sheet.id, rects: [new Rectangle(table.x, table.y, 1, 1)] });
-        // quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
+        const selection = newSingleSelection(sheets.sheet.id, table.x, table.y);
+        quadraticCore.deleteCellValues(selection.save(), sheets.getCursorPosition());
       }
     },
   },

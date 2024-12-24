@@ -597,11 +597,6 @@ export interface CoreClientSetCursor {
   cursor: string;
 }
 
-export interface CoreClientSetCursorSelection {
-  type: 'coreClientSetCursorSelection';
-  selection: string;
-}
-
 export interface CoreClientSheetOffsets {
   type: 'coreClientSheetOffsets';
   sheetId: string;
@@ -1289,7 +1284,6 @@ export type CoreClientMessage =
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
   | CoreClientSetCursor
-  | CoreClientSetCursorSelection
   | CoreClientSheetOffsets
   | CoreClientUpgradeFile
   | CoreClientExport

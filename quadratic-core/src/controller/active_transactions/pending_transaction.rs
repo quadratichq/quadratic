@@ -95,6 +95,9 @@ pub struct PendingTransaction {
 
     // offsets modified (sheet_id -> SheetOffsets)
     pub offsets_modified: HashMap<SheetId, SheetOffsets>,
+
+    // update selection after transaction completes
+    pub update_selection: Option<String>,
 }
 
 impl Default for PendingTransaction {
@@ -102,8 +105,8 @@ impl Default for PendingTransaction {
         PendingTransaction {
             id: Uuid::new_v4(),
             transaction_name: TransactionName::Unknown,
-            cursor: None,
             source: TransactionSource::User,
+            cursor: None,
             operations: VecDeque::new(),
             reverse_operations: Vec::new(),
             forward_operations: Vec::new(),
@@ -124,6 +127,7 @@ impl Default for PendingTransaction {
             fill_cells: HashSet::new(),
             sheet_info: HashSet::new(),
             offsets_modified: HashMap::new(),
+            update_selection: None,
         }
     }
 }
@@ -370,6 +374,13 @@ impl PendingTransaction {
         }
         if let Some(row) = row {
             offsets_modified.insert((None, Some(row)), size.unwrap_or(0.0));
+        }
+    }
+
+    /// Adds an updated selection to the transaction
+    pub fn add_update_selection(&mut self, selection: A1Selection) {
+        if let Ok(json) = serde_json::to_string(&selection) {
+            self.update_selection = Some(json);
         }
     }
 
@@ -676,5 +687,16 @@ mod tests {
         let dirty_hashes = transaction.dirty_hashes.get(&sheet.id).unwrap();
         assert!(dirty_hashes.contains(&Pos { x: 0, y: 0 }));
         assert_eq!(dirty_hashes.len(), 1);
+    }
+
+    #[test]
+    fn test_add_update_selection() {
+        let mut transaction = PendingTransaction::default();
+        let selection = A1Selection::test_a1("A1:B2");
+        transaction.add_update_selection(selection.clone());
+        assert_eq!(
+            transaction.update_selection,
+            Some(serde_json::to_string(&selection).unwrap())
+        );
     }
 }

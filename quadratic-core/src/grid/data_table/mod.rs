@@ -69,6 +69,7 @@ impl Grid {
         Ok(())
     }
 
+    /// Returns a unique name for a data table
     pub fn next_data_table_name(&self) -> String {
         self.unique_data_table_name("Table", true)
     }

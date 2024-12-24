@@ -5,7 +5,7 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::{DataTable, DataTableKind},
-    ArraySize, CellValue, Pos, Rect, SheetRect,
+    A1Selection, ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 
 use anyhow::{bail, Result};
@@ -308,7 +308,7 @@ impl GridController {
 
             let old_values = sheet.cell_values_in_rect(&rect, false)?;
 
-            let import = Import::new("simple.csv".into());
+            let import = Import::new(self.grid.next_data_table_name());
             let data_table =
                 DataTable::from((import.to_owned(), old_values.to_owned(), &self.grid));
             let cell_value = CellValue::Import(import.to_owned());
@@ -336,6 +336,13 @@ impl GridController {
                 forward_operations,
                 reverse_operations,
             );
+
+            // Sets the cursor to the entire table, including the new header
+            if transaction.is_user() {
+                let mut sheet_rect = sheet_rect.to_owned();
+                sheet_rect.max.y += 1;
+                transaction.add_update_selection(A1Selection::from_rect(sheet_rect));
+            }
 
             return Ok(());
         };
