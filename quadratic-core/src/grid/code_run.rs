@@ -4,7 +4,7 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
-use crate::{CellRefRange, RunError, SheetPos, SheetRect, Value};
+use crate::{RunError, SheetPos, SheetRect, Value};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;

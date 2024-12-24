@@ -8,7 +8,6 @@ use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
-use crate::grid::formatting::RenderSize;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
 use crate::A1Selection;
 
@@ -26,24 +25,6 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let format_update = FormatUpdate {
             align: Some(Some(align)),
-            ..Default::default()
-        };
-        let ops = vec![Operation::SetCellFormatsA1 {
-            sheet_id: selection.sheet_id,
-            formats: SheetFormatUpdates::from_selection(selection, format_update),
-        }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
-        Ok(())
-    }
-
-    pub(crate) fn set_render_size(
-        &mut self,
-        selection: &A1Selection,
-        render_size: Option<RenderSize>,
-        cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        let format_update = FormatUpdate {
-            render_size: Some(render_size),
             ..Default::default()
         };
         let ops = vec![Operation::SetCellFormatsA1 {

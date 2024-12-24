@@ -115,8 +115,7 @@ impl GridController {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
-    use chrono::Utc;
-    use serial_test::{parallel, serial};
+    use serial_test::serial;
 
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::transaction_types::JsCodeResult;
@@ -191,6 +190,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_check_all_spills() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -213,8 +213,6 @@ mod tests {
         );
 
         clear_js_calls();
-        // let sheet = gc.sheet_mut(sheet_id);
-        // sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Number(3.into()));
 
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.data_tables[0].spill_error);
@@ -499,6 +497,7 @@ mod tests {
             transaction_id: transaction_id.to_string(),
             success: true,
             chart_pixel_output: Some((100.0, 100.0)),
+            output_value: Some(vec!["<html>".to_string(), "text".to_string()]),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
@@ -513,7 +512,6 @@ mod tests {
                 y: 1,
                 language: Some(CodeCellLanguage::Javascript),
                 special: Some(JsRenderCellSpecial::SpillError),
-                wrap: Some(CellWrap::Clip),
                 ..Default::default()
             }]
         );

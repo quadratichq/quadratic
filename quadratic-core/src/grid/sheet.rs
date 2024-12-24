@@ -511,7 +511,7 @@ mod test {
     use super::*;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, DataTableKind, NumericFormat};
-    use crate::test_util::{print_data_table, print_table};
+    use crate::test_util::print_table;
     use crate::{A1Selection, SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {

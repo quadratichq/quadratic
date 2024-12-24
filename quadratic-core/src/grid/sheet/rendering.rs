@@ -588,8 +588,8 @@ mod tests {
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
             js_types::{
-                JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial,
-                JsRenderCodeCell, JsValidationWarning,
+                JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+                JsValidationWarning,
             },
             sheet::validations::{
                 validation::{Validation, ValidationStyle},
