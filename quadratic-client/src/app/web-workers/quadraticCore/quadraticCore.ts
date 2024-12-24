@@ -1308,10 +1308,10 @@ class QuadraticCore {
     });
   }
 
-  gridToDataTable(selection: Selection, cursor: string) {
+  gridToDataTable(sheetRect: string, cursor: string) {
     this.send({
       type: 'clientCoreGridToDataTable',
-      selection,
+      sheetRect,
       cursor,
     });
   }

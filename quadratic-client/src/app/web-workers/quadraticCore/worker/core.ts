@@ -1138,10 +1138,9 @@ class Core {
     this.gridController.codeDataTableToDataTable(sheetId, posToPos(x, y), cursor);
   }
 
-  gridToDataTable(selection: any, cursor: string) {
-    console.warn('todo!');
-    // if (!this.gridController) throw new Error('Expected gridController to be defined');
-    // this.gridController.gridToDataTable(JSON.stringify(selection, bigIntReplacer), cursor);
+  gridToDataTable(sheetRect: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.gridToDataTable(sheetRect, cursor);
   }
 
   dataTableMeta(

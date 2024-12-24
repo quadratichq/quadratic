@@ -295,16 +295,9 @@ export class SheetCursor {
 
   // Returns true if there is one multiselect of > 1 size
   canConvertToDataTable(): boolean {
-    return false;
-    // const tables = pixiApp.cellsSheets.current?.tables;
-    // if (!tables) return false;
-    // if (
-    //   !this.multiCursor ||
-    //   this.multiCursor?.length !== 1 ||
-    //   (this.multiCursor[0].width === 1 && this.multiCursor[0].height === 1)
-    // ) {
-    //   return false;
-    // }
+    const tables = pixiApp.cellsSheets.current?.tables;
+    if (!tables) return false;
+    return !!sheets.sheet.cursor.getSingleRectangle();
   }
 
   // return !tables.intersects(this.multiCursor[0]);

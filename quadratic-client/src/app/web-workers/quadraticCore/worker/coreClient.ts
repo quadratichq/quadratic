@@ -630,7 +630,7 @@ class CoreClient {
         return;
 
       case 'clientCoreGridToDataTable':
-        core.gridToDataTable(e.data.selection, e.data.cursor);
+        core.gridToDataTable(e.data.sheetRect, e.data.cursor);
         return;
 
       case 'clientCoreDataTableMeta':

@@ -1112,7 +1112,7 @@ export interface ClientCoreCodeDataTableToDataTable {
 
 export interface ClientCoreGridToDataTable {
   type: 'clientCoreGridToDataTable';
-  selection: Selection;
+  sheetRect: string;
   cursor: string;
 }
 

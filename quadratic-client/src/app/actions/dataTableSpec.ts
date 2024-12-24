@@ -1,10 +1,11 @@
 import { Action } from '@/app/actions/actions';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { JsDataTableColumnHeader, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import { JsDataTableColumnHeader, JsRenderCodeCell, SheetRect } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   AddIcon,
@@ -91,8 +92,15 @@ export const dataTableSpec: DataTableSpec = {
     label: 'Convert to table',
     Icon: TableConvertIcon,
     run: () => {
-      // todo...
-      // quadraticCore.gridToDataTable(sheets.getRustSelection(), sheets.getCursorPosition());
+      const rectangle = sheets.sheet.cursor.getSingleRectangle();
+      if (rectangle) {
+        const sheetRect: SheetRect = {
+          sheet_id: { id: sheets.sheet.id },
+          min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
+          max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
+        };
+        quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), sheets.getCursorPosition());
+      }
     },
   },
   [Action.ToggleFirstRowAsHeaderTable]: {
