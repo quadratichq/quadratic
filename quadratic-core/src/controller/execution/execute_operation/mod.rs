@@ -97,22 +97,11 @@ impl GridController {
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
-                Operation::SetBorders { .. } => {}
-                Operation::SetBordersSelection { .. } => {
-                    self.execute_set_borders_selection(transaction, op);
-                }
-                Operation::SetCellValues { .. } => self.execute_set_cell_values(transaction, op),
-                Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
                 Operation::SetCodeRunVersion { .. } => {
                     self.execute_set_code_run_version(transaction, op);
                 }
                 Operation::SetDataTable { .. } => {
                     self.execute_set_data_table(transaction, op);
-                }
-                Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
-                Operation::SetCellFormats { .. } => (), //self.execute_set_cell_formats(transaction, op)),
-                Operation::SetCellFormatsSelection { .. } => {
-                    self.execute_set_cell_formats_selection(transaction, op);
                 }
                 Operation::SetCellFormatsA1 { .. } => {
                     self.execute_set_cell_formats_a1(transaction, op);

@@ -4,7 +4,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{CodeRunOld, DataTable, DataTableKind},
+    grid::{DataTable, DataTableKind},
     ArraySize, CellValue, Pos, Rect, SheetRect,
 };
 

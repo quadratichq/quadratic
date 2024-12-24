@@ -17,7 +17,7 @@ use crate::{
             },
             validations::validation::Validation,
         },
-        CodeRun, CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
+        CodeRunOld, DataTable, DataTableKind, Sheet, SheetId,
     },
     selection::OldSelection,
     A1Selection, CopyFormats, SheetPos, SheetRect,
@@ -374,7 +374,7 @@ impl fmt::Display for Operation {
                     sheet_pos, index
                 )
             }
-            Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
+            Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats - deprecated",),
             Operation::SetCodeRunVersion {
                 sheet_pos,
                 code_run: run,
@@ -385,7 +385,6 @@ impl fmt::Display for Operation {
                 "SetCellRun {{ sheet_pos: {} code_cell_value: {:?}, index: {} version: {} }}",
                 sheet_pos, run, index, version
             ),
-            Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ [deprecated] }}",),
             Operation::SetCellFormatsSelection { selection, formats } => {
                 write!(
                     fmt,
