@@ -98,8 +98,6 @@ jobs:
           body: |
             ## Preview Deployment
             Preview URL: https://${{ steps.deploy-stack.outputs.DnsRecord }}
-            Stack Status: ${{ steps.deploy-stack.outputs.stack-status }}
-            Deployment Time: ${{ steps.deploy-stack.outputs.deployment-time }}
           edit-mode: replace
 
       - name: Create or update comment on build failure

@@ -120,13 +120,12 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
 
-          # Export environment variables for docker-compose
-          echo "export ECR_URL=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com" >> /home/ubuntu/.profile
-          echo "export IMAGE_TAG=${ImageTag}" >> /home/ubuntu/.profile
-          echo "export GIT_SHA=${GitSHA}" >> /home/ubuntu/.profile
-
-          # Source the new environment variables
-          sudo -u ubuntu bash -c 'source /home/ubuntu/.profile'
+          # Export environment variables to .env file
+          cat << EOF > /home/ubuntu/quadratic-selfhost/.env
+          ECR_URL=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+          IMAGE_TAG=${ImageTag}
+          GIT_SHA=${GitSHA}
+          EOF
 
           # Create login.sh script and run it
           cat << 'EOF' > /home/ubuntu/quadratic-selfhost/login.sh
