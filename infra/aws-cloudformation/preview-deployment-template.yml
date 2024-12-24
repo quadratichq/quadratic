@@ -126,7 +126,7 @@ Resources:
           echo "export GIT_SHA=${GitSHA}" >> /home/ubuntu/.profile
 
           # Source the new environment variables
-          source /home/ubuntu/.profile
+          sudo -u ubuntu bash -c 'source /home/ubuntu/.profile'
 
           # Create login.sh script and run it
           cat << 'EOF' > /home/ubuntu/quadratic-selfhost/login.sh
@@ -195,6 +195,8 @@ Resources:
     Type: AWS::Events::Rule
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
+    DependsOn:
+      - EC2Instance
     Properties:
       Description: Rule to detect ECR image pushes
       EventPattern:
