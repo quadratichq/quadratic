@@ -36,7 +36,6 @@ mod tests {
             transaction_types::JsCodeResult,
         },
         grid::js_types::JsRenderCell,
-        test_util::{print_data_table, print_table},
         ArraySize, CellValue, Rect,
     };
     use bigdecimal::BigDecimal;

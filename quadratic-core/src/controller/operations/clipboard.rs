@@ -688,8 +688,6 @@ mod test {
     #[parallel]
     fn paste_clipboard_with_data_table() {
         let (mut gc, sheet_id, _, _) = simple_csv();
-        let rect = Rect::new(0, 0, 3, 10);
-
         let paste = |gc: &mut GridController, x, y, html| {
             gc.paste_from_clipboard(
                 &A1Selection::from_xy(x, y, sheet_id),
