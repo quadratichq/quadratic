@@ -120,8 +120,10 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
 
-          # Export environment variables to .env file
-          cat << EOF > /home/ubuntu/quadratic-selfhost/.env
+          # Append environment variables to .env file
+          cat << EOF >> /home/ubuntu/quadratic-selfhost/.env
+
+          #AWS
           ECR_URL=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
           IMAGE_TAG=${ImageTag}
           GIT_SHA=${GitSHA}
@@ -194,8 +196,6 @@ Resources:
     Type: AWS::Events::Rule
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
-    DependsOn:
-      - EC2Instance
     Properties:
       Description: Rule to detect ECR image pushes
       EventPattern:
