@@ -29,9 +29,9 @@ impl GridController {
 
         // enforce unique data table names
         if let Some(new_data_table) = &mut new_data_table {
-            let unique_name = self
-                .grid()
-                .unique_data_table_name(&new_data_table.name, false);
+            let unique_name =
+                self.grid()
+                    .unique_data_table_name(&new_data_table.name, false, Some(sheet_pos));
             new_data_table.update_table_name(&unique_name);
         }
 
@@ -189,16 +189,17 @@ impl GridController {
 
                     transaction.waiting_for_async = None;
 
-                    // this is a hack to ensure that the chart size remains the
-                    // same if there is an existing chart in the same cell
+                    // Keep chart_pixel_output and table name consistent if
+                    // there already exists a data table at the same position.
                     if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
-                        if let Some(old_chart_pixel_output) = sheet
+                        if let Some((_, existing_data_table)) = sheet
                             .data_tables
                             .iter()
                             .find(|(p, _)| **p == current_sheet_pos.into())
-                            .and_then(|(_, dt)| dt.chart_pixel_output)
                         {
-                            new_data_table.chart_pixel_output = Some(old_chart_pixel_output);
+                            new_data_table.chart_pixel_output =
+                                existing_data_table.chart_pixel_output;
+                            new_data_table.name = existing_data_table.name.clone();
                         }
                     }
 

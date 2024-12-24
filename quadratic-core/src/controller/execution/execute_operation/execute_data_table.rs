@@ -364,9 +364,10 @@ impl GridController {
         } = op
         {
             // get unique name first since it requires an immutable reference to the grid
-            let unique_name = name
-                .as_ref()
-                .map(|name| self.grid.unique_data_table_name(name, false));
+            let unique_name = name.as_ref().map(|name| {
+                self.grid
+                    .unique_data_table_name(name, false, Some(sheet_pos))
+            });
 
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
@@ -983,7 +984,8 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.execute_data_table_meta(&mut transaction, op).unwrap();
         let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        assert_eq!(&data_table.name, "My Table1");
+        // todo: this was wrong. the same data table should not conflict with itself (it used to be "My Table1")
+        assert_eq!(&data_table.name, "My Table");
 
         // ensure numbers aren't added for unique names
         let op = Operation::DataTableMeta {

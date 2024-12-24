@@ -36,15 +36,29 @@ use tabled::{
 use super::{CodeRunOld, CodeRunResult, Grid};
 
 impl Grid {
-    pub fn unique_data_table_name(&self, name: &str, require_number: bool) -> String {
+    /// Returns a unique name for the data table, taking into account its
+    /// position on the sheet (so it doesn't conflict with itself).
+    pub fn unique_data_table_name(
+        &self,
+        name: &str,
+        require_number: bool,
+        sheet_pos: Option<SheetPos>,
+    ) -> String {
         let all_names = &self
             .sheets()
             .iter()
             .flat_map(|sheet| {
-                sheet
-                    .data_tables
-                    .values()
-                    .map(|table| table.name.to_owned())
+                sheet.data_tables.iter().filter_map(|(pos, dt)| {
+                    if let Some(sheet_pos) = sheet_pos {
+                        if sheet.id != sheet_pos.sheet_id || pos != &sheet_pos.into() {
+                            Some(dt.name.to_owned())
+                        } else {
+                            None
+                        }
+                    } else {
+                        Some(dt.name.to_owned())
+                    }
+                })
             })
             .collect_vec();
 
@@ -57,7 +71,7 @@ impl Grid {
         name: &str,
         require_number: bool,
     ) -> Result<()> {
-        let unique_name = self.unique_data_table_name(name, require_number);
+        let unique_name = self.unique_data_table_name(name, require_number, Some(sheet_pos));
         let sheet = self
             .try_sheet_mut(sheet_pos.sheet_id)
             .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
@@ -71,7 +85,7 @@ impl Grid {
 
     /// Returns a unique name for a data table
     pub fn next_data_table_name(&self) -> String {
-        self.unique_data_table_name("Table", true)
+        self.unique_data_table_name("Table", true, None)
     }
 }
 
@@ -105,7 +119,7 @@ pub struct DataTable {
 
 impl From<(Import, Array, &Grid)> for DataTable {
     fn from((import, cell_values, grid): (Import, Array, &Grid)) -> Self {
-        let name = grid.unique_data_table_name(&import.file_name, false);
+        let name = grid.unique_data_table_name(&import.file_name, false, None);
 
         DataTable::new(
             DataTableKind::Import(import),
