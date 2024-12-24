@@ -222,7 +222,7 @@ Resources:
             InputPathsMap:
               imageTag: $.detail.image-tag
               repository: $.detail.repository-name
-            InputTemplate: |
+            InputTemplate: !Sub |
               {
                 "InstanceIds": ["${EC2Instance.InstanceId}"],
                 "DocumentName": "AWS-RunShellScript",
