@@ -260,7 +260,6 @@ mod tests {
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_upgrade_code_runs.grid");
     const V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_JavaScript_getting_started_(example).grid");
-    const NEW_FILE: &[u8] = include_bytes!("../../../../quadratic-api/src/data/current_blank.grid");
 
     #[test]
     fn process_a_number_v1_3_file() {
@@ -659,6 +658,9 @@ mod tests {
 
     #[test]
     fn test_new_file() {
+        const NEW_FILE: &[u8] =
+            include_bytes!("../../../../quadratic-api/src/data/current_blank.grid");
+
         let imported = import(NEW_FILE.to_vec()).unwrap();
         let exported = export(imported.clone()).unwrap();
         let exported_test = import_binary(exported).unwrap();
