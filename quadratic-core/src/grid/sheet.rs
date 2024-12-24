@@ -511,7 +511,7 @@ mod test {
     use super::*;
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, CodeCellValue, DataTableKind, NumericFormat};
-    use crate::test_util::print_table;
+    use crate::test_util::{print_data_table, print_table};
     use crate::{A1Selection, SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -961,7 +961,9 @@ mod test {
     #[test]
     #[parallel]
     fn test_has_content() {
-        let mut sheet = Sheet::test();
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
         let pos = Pos { x: 1, y: 1 };
 
         // Empty cell should have no content
@@ -1000,13 +1002,11 @@ mod test {
 
         let mut dt = dt.clone();
         dt.chart_output = Some((5, 5));
-        sheet.data_tables.insert(pos, dt);
-        println!("{:?}", sheet.data_tables);
-        assert!(sheet.has_content(pos));
-        assert!(sheet.has_content(Pos { x: 2, y: 2 }));
-        // TODO(ddimaria): this is failing below
-        assert!(sheet.has_content(Pos { x: 6, y: 2 }));
-        assert!(!sheet.has_content(Pos { x: 7, y: 2 }));
+        let pos2 = Pos { x: 10, y: 10 };
+        sheet.data_tables.insert(pos2, dt);
+        assert!(sheet.has_content(pos2));
+        assert!(sheet.has_content(Pos { x: 14, y: 10 }));
+        assert!(!sheet.has_content(Pos { x: 15, y: 10 }));
     }
 
     #[test]

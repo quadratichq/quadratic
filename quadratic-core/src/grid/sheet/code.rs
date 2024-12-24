@@ -244,21 +244,29 @@ impl Sheet {
                     };
 
                     match &data_table.kind {
-                        DataTableKind::CodeRun(code_run) => Some(JsCodeCell {
-                            x: code_pos.x,
-                            y: code_pos.y,
-                            code_string: code_cell_value.code,
-                            language: code_cell_value.language,
-                            std_err: code_run.std_err.clone(),
-                            std_out: code_run.std_out.clone(),
-                            evaluation_result: Some(evaluation_result),
-                            spill_error,
-                            return_info: Some(JsReturnInfo {
-                                line_number: code_run.line_number,
-                                output_type: code_run.output_type.clone(),
-                            }),
-                            cells_accessed: Some(code_run.cells_accessed.clone().into()),
-                        }),
+                        DataTableKind::CodeRun(code_run) => {
+                            let evaluation_result = if let Some(error) = &code_run.error {
+                                Some(serde_json::to_string(error).unwrap_or("".into()))
+                            } else {
+                                Some(evaluation_result)
+                            };
+
+                            Some(JsCodeCell {
+                                x: code_pos.x,
+                                y: code_pos.y,
+                                code_string: code_cell_value.code,
+                                language: code_cell_value.language,
+                                std_err: code_run.std_err.clone(),
+                                std_out: code_run.std_out.clone(),
+                                evaluation_result,
+                                spill_error,
+                                return_info: Some(JsReturnInfo {
+                                    line_number: code_run.line_number,
+                                    output_type: code_run.output_type.clone(),
+                                }),
+                                cells_accessed: Some(code_run.cells_accessed.clone().into()),
+                            })
+                        }
                         DataTableKind::Import(_) => Some(JsCodeCell {
                             x: code_pos.x,
                             y: code_pos.y,
@@ -345,7 +353,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         sheet.set_cell_value(
-            Pos { x: 0, y: 0 },
+            Pos { x: 1, y: 1 },
             CellValue::Code(CodeCellValue {
                 code: "=".to_string(),
                 language: CodeCellLanguage::Formula,
@@ -370,12 +378,12 @@ mod test {
             true,
             None,
         );
-        sheet.set_data_table(Pos { x: 0, y: 0 }, Some(data_table.clone()));
+        sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 0, y: 0 }),
+            sheet.edit_code_value(Pos { x: 1, y: 1 }),
             Some(JsCodeCell {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 code_string: "=".to_string(),
                 language: CodeCellLanguage::Formula,
                 std_err: None,
@@ -387,10 +395,10 @@ mod test {
             })
         );
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 1, y: 0 }),
+            sheet.edit_code_value(Pos { x: 2, y: 1 }),
             Some(JsCodeCell {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 code_string: "=".to_string(),
                 language: CodeCellLanguage::Formula,
                 std_err: None,
@@ -401,7 +409,7 @@ mod test {
                 cells_accessed: Some(Default::default())
             })
         );
-        assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);
+        assert_eq!(sheet.edit_code_value(Pos { x: 3, y: 3 }), None);
     }
 
     #[test]

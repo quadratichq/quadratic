@@ -36,6 +36,7 @@ mod tests {
             transaction_types::JsCodeResult,
         },
         grid::js_types::JsRenderCell,
+        test_util::{print_data_table, print_table},
         ArraySize, CellValue, Rect,
     };
     use bigdecimal::BigDecimal;
@@ -265,7 +266,7 @@ mod tests {
             .calculation_complete(JsCodeResult {
                 transaction_id: transaction_id.to_string(),
                 success: true,
-                output_value: Some(vec!["1".into(), "2".into(), "3".into()]),
+                output_array: Some(javascript_array(vec![1, 2, 3])),
                 ..Default::default()
             })
             .is_ok());

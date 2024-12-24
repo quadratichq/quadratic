@@ -389,7 +389,7 @@ mod tests {
     }
 
     #[test]
-    fn get_errored_code_cells_in_selection() {
+    fn test_get_errored_code_cells_in_selection() {
         let mut sheet = Sheet::test();
 
         let code_run_1 = CodeRun {
@@ -418,7 +418,7 @@ mod tests {
                 DataTableKind::CodeRun(code_run_1),
                 "test",
                 Default::default(),
-                true,
+                false,
                 true,
                 false,
                 None,
@@ -451,7 +451,7 @@ mod tests {
                 DataTableKind::CodeRun(code_run_2),
                 "test",
                 Default::default(),
-                true,
+                false,
                 true,
                 false,
                 None,

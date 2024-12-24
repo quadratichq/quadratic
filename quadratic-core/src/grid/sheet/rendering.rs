@@ -3,7 +3,7 @@ use crate::grid::js_types::{
     JsHtmlOutput, JsNumber, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill, JsSheetFill, JsValidationWarning,
 };
-use crate::grid::{CellAlign, CodeCellLanguage, DataTable};
+use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, DataTable};
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{CellValue, Pos, Rect, RunError, RunErrorMsg, Value};
 
@@ -94,13 +94,18 @@ impl Sheet {
             }
             _ => value.to_display(),
         };
+        let wrap = if from_table {
+            Some(CellWrap::Clip)
+        } else {
+            format.wrap
+        };
         JsRenderCell {
             x,
             y,
             value,
             language,
             align: format.align.or(align),
-            wrap: format.wrap,
+            wrap,
             bold: format.bold,
             italic: format.italic,
             text_color: format.text_color,

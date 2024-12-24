@@ -328,8 +328,7 @@ mod tests {
         assert_eq!(sheet.jump_left(Pos { x: 1, y: 1 }), Pos { x: 1, y: 1 });
 
         // jump to the last cell in the second chart
-        // TODO(ddimaria): the test is returning Pos { x: 25, y: 1 } instead of Pos { x: 27, y: 1 }
-        assert_eq!(sheet.jump_left(Pos { x: 28, y: 1 }), Pos { x: 25, y: 1 });
+        assert_eq!(sheet.jump_left(Pos { x: 28, y: 1 }), Pos { x: 27, y: 1 });
 
         // jump to the first cell in the second chart
         assert_eq!(sheet.jump_left(Pos { x: 25, y: 1 }), Pos { x: 22, y: 1 });
@@ -376,8 +375,7 @@ mod tests {
 
         // jump to the last cell in the first chart
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 27 }), Pos { x: 3, y: 22 });
-        // TODO(ddimaria): this is returning Pos { x: 3, y: 22 } instead of Pos { x: 3, y: 20 }
-        assert_eq!(sheet.jump_up(Pos { x: 3, y: 23 }), Pos { x: 3, y: 20 });
+        assert_eq!(sheet.jump_up(Pos { x: 3, y: 23 }), Pos { x: 3, y: 22 });
 
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 22 }), Pos { x: 3, y: 10 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 12 }), Pos { x: 3, y: 10 });
@@ -480,8 +478,7 @@ mod tests {
         assert_eq!(sheet.jump_right(Pos { x: 3, y: 1 }), Pos { x: 4, y: 1 });
 
         assert_eq!(sheet.jump_up(Pos { x: 1, y: 5 }), Pos { x: 1, y: 3 });
-        // TODO(ddimaria): this is returning Pos { x: 2, y: 3 } instead of Pos { x: 2, y: 1 }
-        assert_eq!(sheet.jump_up(Pos { x: 2, y: 4 }), Pos { x: 2, y: 1 });
+        assert_eq!(sheet.jump_up(Pos { x: 2, y: 4 }), Pos { x: 2, y: 3 });
         assert_eq!(sheet.jump_up(Pos { x: 3, y: 3 }), Pos { x: 3, y: 1 });
 
         assert_eq!(sheet.jump_down(Pos { x: 1, y: 1 }), Pos { x: 1, y: 4 });

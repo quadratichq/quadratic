@@ -214,6 +214,11 @@ mod tests {
         );
 
         clear_js_calls();
+        // let sheet = gc.sheet_mut(sheet_id);
+        // sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Number(3.into()));
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.data_tables[0].spill_error);
 
         // manually set a cell value and see if the spill error changed
         gc.set_cell_value(
@@ -225,11 +230,6 @@ mod tests {
             "3".into(),
             None,
         );
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Number(3.into()));
-
-        let sheet = gc.sheet(sheet_id);
-        assert!(!sheet.data_tables[0].spill_error);
 
         let mut transaction = PendingTransaction::default();
 
@@ -253,7 +253,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.data_tables[0].spill_error);
-        expect_js_call_count("jsUpdateCodeCell", 1, true);
+        expect_js_call_count("jsUpdateCodeCell", 2, true);
     }
 
     #[test]
@@ -292,7 +292,7 @@ mod tests {
         gc.check_all_spills(transaction, sheet_id);
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.data_table(Pos { x: 0, y: 0 }).unwrap();
+        let code_run = sheet.data_table(Pos { x: 1, y: 1 }).unwrap();
         assert!(code_run.spill_error);
 
         // should be a spill caused by 1,2
@@ -519,6 +519,7 @@ mod tests {
                 y: 1,
                 language: Some(CodeCellLanguage::Javascript),
                 special: Some(JsRenderCellSpecial::SpillError),
+                wrap: Some(CellWrap::Clip),
                 ..Default::default()
             }]
         );
