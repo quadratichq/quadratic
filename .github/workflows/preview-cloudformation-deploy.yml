@@ -34,21 +34,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Check and Delete Stack if in ROLLBACK
+      - name: Check and Delete Stack if in ROLLBACK or DELETE
         id: check-stack
         run: |
           if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} 2>/dev/null; then
             STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --query 'Stacks[0].StackStatus' --output text)
             echo "Current stack status: $STACK_STATUS"
             
-            if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ]; then
+            if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || \
+                [ "$STACK_STATUS" = "DELETE_FAILED" ] || [ "$STACK_STATUS" = "DELETE_IN_PROGRESS" ]; then
               echo "Stack is in $STACK_STATUS state. Deleting..."
               aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
               echo "Waiting for stack deletion to complete..."
               aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
               echo "deleted=true" >> $GITHUB_OUTPUT
             else
-              echo "Stack exists but is not in ROLLBACK state"
+              echo "Stack exists but is not in ROLLBACK or DELETE state"
               echo "deleted=false" >> $GITHUB_OUTPUT
             fi
           else
@@ -64,7 +65,7 @@ jobs:
           template: infra/aws-cloudformation/preview-deployment-template.yml
           parameter-overrides: >-
             LicenseKey=${{ secrets.QUADRATIC_LICENSE_KEY }},
-            ImageTag=pr-${{ github.event.pull_request.number }},
+            ImageTag=pr-${{ github.event.pull_request.number }}
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           disable-rollback: false
