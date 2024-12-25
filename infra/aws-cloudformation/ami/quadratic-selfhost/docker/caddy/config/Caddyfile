@@ -1,0 +1,27 @@
+#HOST# {
+  reverse_proxy http://host.docker.internal:3000
+}
+
+api.#HOST# {
+  reverse_proxy http://host.docker.internal:8000
+}
+
+multiplayer.#HOST# {
+  reverse_proxy http://host.docker.internal:3001
+}
+
+files.#HOST# {
+  reverse_proxy http://host.docker.internal:3002
+}
+
+connection.#HOST# {
+  reverse_proxy http://host.docker.internal:3003
+}
+
+ory.#HOST# {
+  reverse_proxy http://host.docker.internal:4433
+}
+
+ory-node.#HOST# {
+  reverse_proxy http://host.docker.internal:4455
+}

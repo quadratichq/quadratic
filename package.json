@@ -61,7 +61,9 @@
     "docker:down:kill-volumes": "docker compose down -v",
     "copy:esbuild": "cp -f node_modules/esbuild-wasm/esbuild.wasm quadratic-client/public/",
     "gen:pyright:initialization": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
-    "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm"
+    "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
+    "docker": "ECR_OR_BUILD=ecr docker compose --profile all --env-file .env.docker up",
+    "docker:build": "ECR_OR_BUILD=build docker compose --profile all --env-file .env.docker up"
   },
   "dependencies": {
     "@ory/kratos-client": "^1.2.1",

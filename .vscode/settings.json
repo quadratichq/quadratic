@@ -33,19 +33,26 @@
     "htmlescape",
     "indexmap",
     "indicies",
+    "initdb",
+    "isready",
     "itertools",
     "jwks",
     "keyrings",
+    "localstack",
+    "mailslurper",
     "MDSL",
     "micropip",
     "minmax",
     "moby",
     "msdf",
+    "mysqladmin",
     "nonblank",
     "Northbridge",
     "openai",
     "opensans",
+    "oryd",
     "peekable",
+    "PGUSER",
     "pixi",
     "pixiapp",
     "Plotly",
@@ -58,10 +65,15 @@
     "scrollend",
     "selfhost",
     "selfhosted",
+    "selfservice",
     "shadcn",
     "Signin",
     "smallpop",
+    "smtps",
     "Southborough",
+    "sqlcmd",
+    "sqlservr",
+    "sslmode",
     "Strftime",
     "szhsin",
     "thiserror",
@@ -73,6 +85,7 @@
     "usermod",
     "vals",
     "vcpu",
+    "VITE",
     "websockets",
     "Westborough",
     "zstd"
@@ -119,6 +132,9 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

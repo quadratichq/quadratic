@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: My API
+  version: '1.0'
+  x-logo:
+    url: ''
+paths:
+  /license/{licenseKey}:
+    post:
+      tags: []
+      operationId: license
+      parameters:
+        - name: licenseKey
+          in: path
+          required: true
+          deprecated: false
+          example: sdaf
+          schema:
+            type: string
+          x-last-modified: 1724376657454
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  limits:
+                    type: object
+                    properties:
+                      seats:
+                        type: number
+                        example: 5
+          x-last-modified: 1724376729775
+          description: ''
+          headers: {}
+          links: {}
+    x-last-modified: 1724376538356
+components:
+  securitySchemes: {}
+  schemas: {}
+  headers: {}
+  responses: {}
+  parameters: {}
+tags: []
+servers:
+  - url: https://api.example.io
+security: []

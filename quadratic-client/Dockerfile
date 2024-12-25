@@ -68,9 +68,6 @@ ENV VITE_STORAGE_TYPE=VITE_STORAGE_TYPE_VAL
 ENV VITE_ORY_HOST=VITE_ORY_HOST_VAL
 RUN echo 'Building front-end...' && npm run build --workspace=quadratic-client
 
-# The default command to run the application
-# CMD ["npm", "run", "start:production"]
-
 FROM nginx:stable-alpine
 COPY --from=build /quadratic/build /usr/share/nginx/html
 

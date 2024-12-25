@@ -5,11 +5,11 @@ dsn: memory
 
 serve:
   public:
-    base_url: http://localhost:4433/
+    base_url: https://ory.#HOST#/
     cors:
       enabled: true
       allowed_origins:
-        - http://localhost:3000
+        - https://#HOST#
       allowed_methods:
         - POST
         - GET
@@ -28,12 +28,12 @@ serve:
     base_url: http://kratos:4434/
 
 selfservice:
-  default_browser_return_url: http://localhost:3000
+  default_browser_return_url: https://#HOST#
   allowed_return_urls:
-    - http://localhost
-    - http://localhost:4455
-    - http://localhost:3000
-    - http://localhost:19006/Callback
+    - https://#HOST#
+    - https://ory-node.#HOST#
+    - https://#HOST#:3000
+    - https://#HOST#:19006/Callback
     - exp://localhost:8081/--/Callback
 
   methods:
@@ -52,44 +52,44 @@ selfservice:
 
   flows:
     error:
-      ui_url: http://localhost:4455/error
+      ui_url: https://ory-node.#HOST#/error
 
     settings:
-      ui_url: http://localhost:4455/settings
+      ui_url: https://ory-node.#HOST#/settings
       privileged_session_max_age: 15m
       required_aal: highest_available
 
     recovery:
       enabled: true
-      ui_url: http://localhost:4455/recovery
-      use: link
+      ui_url: https://ory-node.#HOST#/recovery
+      use: code
 
     verification:
       # we disable verification for self-hosting
       enabled: false
-      ui_url: http://localhost:4455/verification
-      use: link
+      ui_url: https://ory-node.#HOST#/verification
+      use: code
       after:
-        default_browser_return_url: http://localhost:3000/login-result
+        default_browser_return_url: https://#HOST#/login-result
 
     logout:
       after:
-        default_browser_return_url: http://localhost:4455/login
+        default_browser_return_url: https://ory-node.#HOST#/login
 
     login:
-      ui_url: http://localhost:4455/login
+      ui_url: https://ory-node.#HOST#/login
       lifespan: 10m
 
     registration:
       lifespan: 10m
-      ui_url: http://localhost:4455/registration
+      ui_url: https://ory-node.#HOST#/registration
       after:
-        default_browser_return_url: http://localhost:3000/login-result
         password:
-          default_browser_return_url: http://localhost:3000/login-result
+          default_browser_return_url: https://#HOST#/login-result
           hooks:
             - hook: session
             - hook: show_verification_ui
+        default_browser_return_url: https://#HOST#/login-result
 
 session:
   whoami:
@@ -100,14 +100,15 @@ session:
           # claims_mapper_url: base64://... # A JsonNet template for modifying the claims
           ttl: 24h # 24 hours (defaults to 10 minutes)
 cookies:
-  domain: "localhost"
+  domain: "#HOST#"
   path: /
   same_site: Lax
 
 log:
-  level: debug
-  format: text
-  leak_sensitive_values: true
+  level: warning
+  format: json
+  redaction_text: ""
+  leak_sensitive_values: false
 
 secrets:
   cookie:

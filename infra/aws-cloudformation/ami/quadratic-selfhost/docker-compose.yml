@@ -4,7 +4,6 @@ services:
   redis:
     image: redis/redis-stack:latest
     restart: always
-    container_name: redis
     ports:
       - "6379:6379"
       - "8001:8001"
@@ -14,13 +13,11 @@ services:
     volumes:
       - ./docker/redis/data:/data
     profiles:
-      - base
-      - all
+      - pubsub
 
   postgres:
     image: postgres:15
     restart: always
-    container_name: postgres
     ports:
       - "5432:5432"
     environment:
@@ -37,43 +34,27 @@ services:
       - ./docker/postgres/data:/var/lib/postgresql/data
       - ./docker/postgres/scripts:/docker-entrypoint-initdb.d
     profiles:
-      - base
-      - all
+      - database
 
-  # files service - local aws alternative, use this or file-storage
-
-  localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack}"
-    image: localstack/localstack:latest
+  caddy:
+    image: caddy:latest
     ports:
-      - "127.0.0.1:4566:4566" # LocalStack Gateway
-      - "127.0.0.1:4510-4559:4510-4559"
-    environment:
-      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:-}
-      - DEBUG=${DEBUG:-0}
-      - SERVICES=s3:4566
-      - HOSTNAME=localstack
-      - HOSTNAME_EXTERNAL=localstack
-      - DEFAULT_REGION=us-east-2
-      - DISABLE_CUSTOM_CORS_S3=true
-      - DISABLE_CORS_CHECKS=true
-      - EXTRA_CORS_ALLOWED_ORIGINS=*
+      - "80:80"
+      - "443:443"
     volumes:
-      - "./docker/localstack/scripts/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh" # ready hook
-      - "./docker/localstack/data:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - ./docker/caddy/config/Caddyfile:/etc/caddy/Caddyfile
+      - ./docker/caddy/data:/data/caddy
     profiles:
-      - base
+      - caddy
     networks:
       - host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # quadratic services - client, api, multiplayer, files, connection
 
   quadratic-client:
-    extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
-      service: quadratic-client
+    image: ${ECR_URL}/quadratic-client-development:${IMAGE_TAG}
     environment:
       VITE_DEBUG: 1
       VITE_QUADRATIC_API_URL: ${QUADRATIC_API_URL_EXTERNAL}
@@ -83,7 +64,7 @@ services:
       VITE_STORAGE_TYPE: ${STORAGE_TYPE}
       VITE_ORY_HOST: ${KRATOS_URL_EXTERNAL}
     ports:
-      - 3000:80
+      - "3000:80"
     command: >
       sh -c "/client/scripts/replace_env_vars.sh &&
             nginx -g \"daemon off;\""
@@ -99,18 +80,14 @@ services:
       - ./docker/client:/client
       - ./docker/client/config/default.conf:/etc/nginx/conf.d/default.conf
     profiles:
-      - quadratic-client
-      - frontend
-      - all
+      - quadratic_client
     networks:
       - host
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   quadratic-api:
-    extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
-      service: quadratic-api
+    image: ${ECR_URL}/quadratic-api-development:${IMAGE_TAG}
     environment:
       CORS: "*"
       DATABASE_URL: ${DATABASE_DSN}
@@ -135,18 +112,14 @@ services:
       postgres:
         condition: service_healthy
     profiles:
-      - api
-      - backend
-      - all
+      - quadratic_api
     networks:
       - host
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   quadratic-multiplayer:
-    extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
-      service: quadratic-multiplayer
+    image: ${ECR_URL}/quadratic-multiplayer-development:${IMAGE_TAG}
     environment:
       RUST_LOG: info
       HOST: 0.0.0.0
@@ -171,18 +144,14 @@ services:
       quadratic-api:
         condition: service_started
     profiles:
-      - quadratic-multiplayer
-      - backend
-      - all
+      - quadratic_multiplayer
     networks:
       - host
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   quadratic-files:
-    extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
-      service: quadratic-files
+    image: ${ECR_URL}/quadratic-files-development:${IMAGE_TAG}
     environment:
       RUST_LOG: ${QUADRATIC_FILES_RUST_LOG}
       HOST: ${QUADRATIC_FILES_HOST}
@@ -218,18 +187,14 @@ services:
     volumes:
       - ./docker/file-storage:/file-storage
     profiles:
-      - quadratic-files
-      - backend
-      - all
+      - quadratic_files
     networks:
       - host
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   quadratic-connection:
-    extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
-      service: quadratic-connection
+    image: ${ECR_URL}/quadratic-connection-development:${IMAGE_TAG}
     environment:
       RUST_LOG: ${QUADRATIC_CONNECTION_RUST_LOG}
       HOST: ${QUADRATIC_CONNECTION_HOST}
@@ -244,9 +209,7 @@ services:
     ports:
       - "3003:3003"
     profiles:
-      - quadratic-connection
-      - backend
-      - all
+      - quadratic_connection
     networks:
       - host
     extra_hosts:
@@ -271,7 +234,6 @@ services:
       - ory-auth-migrate
     profiles:
       - ory
-      - all
     networks:
       - host
     extra_hosts:
@@ -289,7 +251,6 @@ services:
       - postgres
     profiles:
       - ory
-      - all
     networks:
       - host
     extra_hosts:
@@ -309,7 +270,6 @@ services:
     restart: on-failure
     profiles:
       - ory
-      - all
     networks:
       - host
     extra_hosts:
@@ -324,97 +284,10 @@ services:
       - "8080:8080"
     profiles:
       - ory
-      - all
     networks:
       - host
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
-  # databases to be used for testing by the connection service
-  # postgres, mysql, mssql
-
-  postgres-connection:
-    image: postgres:15
-    restart: always
-    container_name: postgres-connection
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_DB: postgres-connection
-      POSTGRES_USER: user
-      PGUSER: user
-      POSTGRES_PASSWORD: password
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d postgres-connection"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - ./docker/postgres-connection/data:/var/lib/postgresql/data
-      - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
-    profiles:
-      - quadratic-connection
-      - quadratic-connection-db
-      - quadratic-connection-db-postgres
-
-  mysql-connection:
-    image: mysql:8
-    restart: always
-    container_name: mysql-connection
-    ports:
-      - 3306:3306
-    environment:
-      MYSQL_DATABASE: mysql-connection
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - ./docker/mysql-connection/data:/var/lib/mysql
-      - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
-    profiles:
-      - quadratic-connection
-      - quadratic-connection-db
-      - quadratic-connection-db-mysql
-
-  mssql-connection:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    restart: always
-    container_name: mssql-connection
-    user: root
-    ports:
-      - 1433:1433
-    environment:
-      ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: yourStrong(!)Password
-      MSSQL_PID: Express
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD}' -Q 'SELECT 1' || exit 1",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    volumes:
-      - ./docker/mssql-connection/data:/var/opt/mssql
-      - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
-    command: >
-      bash -c "
-      /opt/mssql/bin/sqlservr &
-      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -i /docker-entrypoint-initdb.d/create_db.sql -C &&
-      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -i /docker-entrypoint-initdb.d/seed_db.sql -C &&
-      tail -f /dev/null
-      "
-    profiles:
-      - quadratic-connection
-      - quadratic-connection-db
-      - quadratic-connection-db-mssql
 
 volumes:
   docker:

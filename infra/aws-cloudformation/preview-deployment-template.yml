@@ -10,21 +10,6 @@ Parameters:
     Description: Image tag to use for all services
 
 Resources:
-  # AMI Lookup for quadratic-preview-base-ami (custom AMI for preview deployments)
-  AMIInfo:
-    Type: AWS::EC2::Image
-    Properties:
-      Filters:
-        - Name: name
-          Values:
-            - "quadratic-preview-base-ami"
-        - Name: state
-          Values:
-            - available
-      Owners:
-        - !Ref AWS::AccountId
-      MostRecent: true
-
   # Security Group for the EC2 instance
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -83,7 +68,7 @@ Resources:
         - Key: Name
           Value: !Sub "${ImageTag}"
       InstanceType: m6a.large
-      ImageId: !GetAtt AMIInfo.Id
+      ImageId: ami-0aa830d419bb978e9 # quadratic-preview-base-ami
       IamInstanceProfile: !Ref EC2InstanceProfile
       SecurityGroups:
         - !Ref SecurityGroup
@@ -115,7 +100,7 @@ Resources:
           ./login.sh
 
           # Run Quadratic initialization script
-          ./init.sh "${LicenseKey}" "${ImageTag}.quadratic-preview.com"
+          ./init.sh "${LicenseKey}" "${ImageTag}.quadratic-selfhost.com"
 
   # # IAM Role for the EventBridge rule
   # EventBridgeRole:
@@ -226,28 +211,28 @@ Resources:
           Weight: 100
           ClientIPPreservationEnabled: true
 
-  # DNS record for the preview deployment for the main application
+  # DNS record for the main application
   DNSRecord:
     Type: AWS::Route53::RecordSet
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      HostedZoneId: Z0126430TJ1UYIMO3SYX
-      Name: !Sub "${ImageTag}.quadratic-preview.com"
+      HostedZoneId: Z08322143IM80L9CZZQV5
+      Name: !Sub "${ImageTag}.quadratic-selfhost.com."
       Type: A
       AliasTarget:
         DNSName: !GetAtt GlobalAccelerator.DnsName
         HostedZoneId: Z2BJ6XQ5FK7U4H
         EvaluateTargetHealth: true
 
-  # Wildcard DNS record for the preview deployment for all subdomains
+  # Wildcard DNS record for all services on subdomains
   WildcardDNSRecord:
     Type: AWS::Route53::RecordSet
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      HostedZoneId: Z0126430TJ1UYIMO3SYX
-      Name: !Sub "*.${ImageTag}.quadratic-preview.com"
+      HostedZoneId: Z08322143IM80L9CZZQV5
+      Name: !Sub "*.${ImageTag}.quadratic-selfhost.com."
       Type: A
       AliasTarget:
         DNSName: !GetAtt GlobalAccelerator.DnsName
@@ -257,4 +242,4 @@ Resources:
 Outputs:
   WebsiteURL:
     Description: Website URL
-    Value: !Sub "https://${ImageTag}.quadratic-preview.com"
+    Value: !Sub "https://${ImageTag}.quadratic-selfhost.com"

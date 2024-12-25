@@ -1,4 +1,4 @@
-# script used to build quadratic-preview-ami-base
+# script used to build quadratic-preview-ami-base, all ami images have this script pre-run
 
 #!/bin/bash
 
