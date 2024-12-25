@@ -2,7 +2,7 @@ name: Build and Publish Images to ECR - Preview
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-publish-images
