@@ -1,5 +1,7 @@
 //! Tokenizes a table reference after the table_name has been removed.
 
+use crate::UNBOUNDED;
+
 use super::*;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -7,12 +9,12 @@ pub(crate) enum Token {
     All,
     Headers,
     Data,
-    Footers,
+    Totals,
     ThisRow,
     Column(String),
     ColumnRange(String, String),
     ColumnToEnd(String),
-    RowRange(u64, u64),
+    RowRange(i64, i64),
 }
 
 impl TableRef {
@@ -37,12 +39,12 @@ impl TableRef {
         let s = s.trim().to_ascii_uppercase();
 
         // Handle single number case
-        if let Ok(num) = s.parse::<u64>() {
+        if let Ok(num) = s.parse::<i64>() {
             return Ok(Token::RowRange(num, num));
         }
 
         if s == "LAST" {
-            return Ok(Token::RowRange(u64::MAX, u64::MAX));
+            return Ok(Token::RowRange(UNBOUNDED, UNBOUNDED));
         }
 
         if s == "THIS ROW" {
@@ -55,17 +57,17 @@ impl TableRef {
             let end = end.trim();
 
             let start_num = start
-                .parse::<u64>()
+                .parse::<i64>()
                 .map_err(|_| A1Error::InvalidTableRef("Invalid row number".into()))?;
 
-            // Handle cases like "5:" or "5:LAST"
-            if end.is_empty() || end.eq_ignore_ascii_case("LAST") {
-                return Ok(Token::RowRange(start_num, u64::MAX));
+            // Handle cases like "5:"
+            if end.is_empty() {
+                return Ok(Token::RowRange(start_num, UNBOUNDED));
             }
 
             // Handle "5:10"
             let end_num = end
-                .parse::<u64>()
+                .parse::<i64>()
                 .map_err(|_| A1Error::InvalidTableRef("Invalid row number".into()))?;
 
             return Ok(Token::RowRange(start_num, end_num));
@@ -184,7 +186,7 @@ impl TableRef {
             match entry.as_str() {
                 "#HEADERS" => tokens.push(Token::Headers),
                 "#DATA" => tokens.push(Token::Data),
-                "#TOTALS" => tokens.push(Token::Footers),
+                "#TOTALS" => tokens.push(Token::Totals),
                 "#ALL" => tokens.push(Token::All),
                 ":" => return Err(A1Error::InvalidTableRef("Unexpected colon".into())),
                 s => {
@@ -217,6 +219,8 @@ impl TableRef {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::UNBOUNDED;
+
     use super::*;
 
     #[test]
@@ -292,7 +296,7 @@ mod tests {
         let special = [
             ("[#HEADERS]", Token::Headers),
             ("[#DATA]", Token::Data),
-            ("[#TOTALS]", Token::Footers),
+            ("[#TOTALS]", Token::Totals),
             ("[#ALL]", Token::All),
         ];
         for (s, expected) in special {
@@ -311,8 +315,8 @@ mod tests {
         let rows = [
             ("#1", vec![Token::RowRange(1, 1)]),
             ("#1:10", vec![Token::RowRange(1, 10)]),
-            ("#1:LAST", vec![Token::RowRange(1, u64::MAX)]),
-            ("#2:", vec![Token::RowRange(2, u64::MAX)]),
+            ("#1:", vec![Token::RowRange(1, UNBOUNDED)]),
+            ("#2:", vec![Token::RowRange(2, UNBOUNDED)]),
             (
                 "#1, 2, 3 : 5 ",
                 vec![
@@ -321,7 +325,7 @@ mod tests {
                     Token::RowRange(3, 5),
                 ],
             ),
-            ("#LAST", vec![Token::RowRange(u64::MAX, u64::MAX)]),
+            ("#LAST", vec![Token::RowRange(UNBOUNDED, UNBOUNDED)]),
             ("#This Row", vec![Token::ThisRow]),
         ];
         for (s, expected) in rows {

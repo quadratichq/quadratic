@@ -40,7 +40,7 @@ impl TableRef {
                 table_name,
                 data: true,
                 headers: false,
-                footers: false,
+                totals: false,
                 row_ranges: RowRange::All,
                 col_ranges: vec![],
             });
@@ -50,7 +50,7 @@ impl TableRef {
         let mut column_ranges = vec![];
         let mut data = true;
         let mut headers = false;
-        let mut footers = false;
+        let mut totals = false;
 
         for token in Self::tokenize(remaining)? {
             match token {
@@ -79,16 +79,17 @@ impl TableRef {
                     column_ranges.push(ColRange::ColumnToEnd(name));
                 }
                 Token::All => {
-                    if row_ranges.is_some() {
-                        return Err(A1Error::MultipleRowDefinitions);
-                    }
-                    row_ranges = Some(RowRange::All);
+                    headers = true;
+                    data = true;
+                    totals = true;
                 }
                 Token::Headers => {
+                    data = false;
                     headers = true;
                 }
-                Token::Footers => {
-                    footers = true;
+                Token::Totals => {
+                    data = false;
+                    totals = true;
                 }
                 Token::Data => {
                     data = true;
@@ -106,7 +107,7 @@ impl TableRef {
             table_name,
             data,
             headers,
-            footers,
+            totals,
             row_ranges: row_ranges.unwrap_or(RowRange::All),
             col_ranges: column_ranges,
         })
@@ -175,7 +176,11 @@ mod tests {
 
     #[test]
     fn test_table_with_row_range() {
-        let names = vec!["Table1".to_string()];
+        let names = vec![
+            "Table1".to_string(),
+            "Table2".to_string(),
+            "Table3".to_string(),
+        ];
 
         let variations = [
             (
@@ -184,13 +189,33 @@ mod tests {
                     table_name: "Table1".to_string(),
                     data: true,
                     headers: false,
-                    footers: false,
+                    totals: false,
                     row_ranges: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
                     col_ranges: vec![ColRange::Col("Column 1".to_string())],
                 },
             ),
-            // "TABLE2[ [#12:15], [Column 2]]",
-            // "table3[[#12:15],[Column 3]]",
+            (
+                "TABLE2[ [#12:15], [Column 2]]",
+                TableRef {
+                    table_name: "Table2".to_string(),
+                    data: true,
+                    headers: false,
+                    totals: false,
+                    row_ranges: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
+                    col_ranges: vec![ColRange::Col("Column 2".to_string())],
+                },
+            ),
+            (
+                "table3[[#12:15],[Column 3]]",
+                TableRef {
+                    table_name: "Table3".to_string(),
+                    data: true,
+                    headers: false,
+                    totals: false,
+                    row_ranges: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
+                    col_ranges: vec![ColRange::Col("Column 3".to_string())],
+                },
+            ),
         ];
 
         for (s, expected) in variations.iter() {

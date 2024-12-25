@@ -10,7 +10,6 @@
 //! Table references:
 //! - Table1[Column Name] - reference only the data in that column
 //! - Table1[[Column 1]:[Column 3]] - all data within the range of the columns
-//! - Table1[[Column 2]:] - all data in column 2 to the last column
 //! - Table1[[Column 1],[Column 3]] - all data within the list of columns
 //! - (not yet supported) Table1[[Column 1] [Column 3]] - the intersection of
 //!   two or more columns -- I don't understand this one
@@ -19,7 +18,7 @@
 //! - (not yet supported) Table1[#TOTALS] - reference the total line at the end
 //!   of the table (also known as the footer)
 //! - Table1[[#HEADERS], [#DATA]] - table headers and data across entire table
-//! - Table1 or Table1[#DATA] - table data without headers or footers
+//! - Table1 or Table1[#DATA] - table data without headers or totals
 //! - Table1[@Column Name] - data in column name at the same row as the code
 //!   cell
 //! - Table1[[#This Row],[Colum Name]] - dat in column name at the same row as
@@ -33,8 +32,7 @@
 //! - Table1[[#10]] - all data in row 10
 //! - Table1[[#12],[Column 1]]
 //! - Table1[[#12:15],[Column 1]]
-//! - Table1[[#12:LAST],[Column 1]] - from 12 to last row in table
-//! - Table1[[#12:],[Column 1]] - same as #12:LAST
+//! - Table1[[#12:],[Column 1]] - from row 12 to the end of the rows
 //! - Table1[[#12,15],[Column 1]]
 //! - Table1[[#12,14,20],[Column 1]:[Column 2]]
 //! - (possibly support) Table1[#$12],[Column 1] - maintains reference to the
@@ -61,6 +59,7 @@
 //! =DeptSales[[#Headers], [#Data], [% Commission]]
 
 mod column_range;
+pub mod display;
 pub mod parse;
 mod tokenize;
 
@@ -76,7 +75,7 @@ pub struct TableRef {
     pub table_name: String,
     pub data: bool,
     pub headers: bool,
-    pub footers: bool,
+    pub totals: bool,
     pub row_ranges: RowRange,
     pub col_ranges: Vec<ColRange>,
 }
