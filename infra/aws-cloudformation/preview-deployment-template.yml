@@ -8,11 +8,24 @@ Parameters:
   ImageTag:
     Type: String
     Description: Image tag to use for all services
-  GitSHA:
-    Type: String
-    Description: Git short SHA to use for all services
 
 Resources:
+  # AMI Lookup for quadratic-preview-base-ami (custom AMI for preview deployments)
+  AMIInfo:
+    Type: AWS::EC2::Image
+    Properties:
+      Filters:
+        - Name: name
+          Values:
+            - "quadratic-preview-base-ami"
+        - Name: state
+          Values:
+            - available
+      Owners:
+        - !Ref AWS::AccountId
+      MostRecent: true
+
+  # Security Group for the EC2 instance
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     DeletionPolicy: Delete
@@ -32,6 +45,7 @@ Resources:
           ToPort: 443
           CidrIp: 0.0.0.0/0
 
+  # IAM Role for the EC2 instance
   EC2Role:
     Type: AWS::IAM::Role
     DeletionPolicy: Delete
@@ -49,47 +63,8 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-      Policies:
-        - PolicyName: ECRAccess
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ecr:GetAuthorizationToken
-                  - ecr:BatchCheckLayerAvailability
-                  - ecr:GetDownloadUrlForLayer
-                  - ecr:BatchGetImage
-                  - ecr:DescribeImages
-                  - ecr:ListImages
-                Resource: "*"
 
-  EventBridgeRole:
-    Type: AWS::IAM::Role
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Ref ImageTag
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: events.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: InvokeSsmAutomation
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ssm:SendCommand
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:*"
-
+  # IAM Instance Profile for the EC2 instance
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     DeletionPolicy: Delete
@@ -98,6 +73,7 @@ Resources:
       Roles:
         - !Ref EC2Role
 
+  # EC2 instance
   EC2Instance:
     Type: AWS::EC2::Instance
     DeletionPolicy: Delete
@@ -105,9 +81,9 @@ Resources:
     Properties:
       Tags:
         - Key: Name
-          Value: !Ref ImageTag
+          Value: !Sub "${ImageTag}"
       InstanceType: m6a.large
-      ImageId: ami-0fd0cf59e80d3f545 # quadratic-preview-ami-base
+      ImageId: !GetAtt AMIInfo.Id
       IamInstanceProfile: !Ref EC2InstanceProfile
       SecurityGroups:
         - !Ref SecurityGroup
@@ -121,64 +97,109 @@ Resources:
           #!/bin/bash
 
           # Append environment variables to .env file
-          cat << EOF >> /home/ubuntu/quadratic-selfhost/.env
+          cat << EOF >> /quadratic-selfhost/.env
 
           #AWS
           ECR_URL=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
           IMAGE_TAG=${ImageTag}
-          GIT_SHA=${GitSHA}
           EOF
 
           # Create login.sh script and run it
-          cat << 'EOF' > /home/ubuntu/quadratic-selfhost/login.sh
+          cat << 'EOF' > /quadratic-selfhost/login.sh
           #!/bin/bash
           aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
           EOF
 
-          chmod +x /home/ubuntu/quadratic-selfhost/login.sh
-          cd /home/ubuntu/quadratic-selfhost
+          chmod +x /quadratic-selfhost/login.sh
+          cd /quadratic-selfhost
           ./login.sh
 
           # Run Quadratic initialization script
-          ./init.sh "${LicenseKey}" "${ImageTag}-${GitSHA}.quadratic-preview.com"
+          ./init.sh "${LicenseKey}" "${ImageTag}.quadratic-preview.com"
 
+  # # IAM Role for the EventBridge rule
+  # EventBridgeRole:
+  #   Type: AWS::IAM::Role
+  #   DeletionPolicy: Delete
+  #   UpdateReplacePolicy: Delete
+  #   Properties:
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Ref ImageTag
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: events.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     Policies:
+  #       - PolicyName: InvokeSsmAutomation
+  #         PolicyDocument:
+  #           Version: 2012-10-17
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - ssm:SendCommand
+  #               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:*"
+
+  # EcrPushRule:
+  #   Type: AWS::Events::Rule
+  #   DeletionPolicy: Delete
+  #   UpdateReplacePolicy: Delete
+  #   Properties:
+  #     Description: Rule to detect ECR image pushes
+  #     EventPattern:
+  #       source:
+  #         - aws.ecr
+  #       detail-type:
+  #         - ECR Image Action
+  #       detail:
+  #         action-type:
+  #           - PUSH
+  #         repository-name:
+  #           - quadratic-client-development
+  #           - quadratic-api-development
+  #           - quadratic-multiplayer-development
+  #           - quadratic-files-development
+  #           - quadratic-connection-development
+  #         image-tag:
+  #           - !Ref ImageTag
+  #     State: ENABLED
+  #     Targets:
+  #       - Arn: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:automation-definition/AWS-RunShellScript"
+  #         Id: TriggerScriptOnInstance
+  #         RoleArn: !GetAtt EventBridgeRole.Arn
+  #         InputTransformer:
+  #           InputPathsMap:
+  #             imageTag: $.detail.image-tag
+  #             repository: $.detail.repository-name
+  #           InputTemplate: !Sub |
+  #             {
+  #               "InstanceIds": ["${EC2Instance.InstanceId}"],
+  #               "DocumentName": "AWS-RunShellScript",
+  #               "Parameters": {
+  #                 "commands": [
+  #                   "cd /quadratic-selfhost",
+  #                   "./login.sh",
+  #                   "./start.sh"
+  #                 ]
+  #               }
+  #             }
+
+  # Global Accelerator
   GlobalAccelerator:
     Type: AWS::GlobalAccelerator::Accelerator
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      Name: !Sub "${ImageTag}-${GitSHA}"
+      Name: !Sub "${ImageTag}"
       Enabled: true
       Tags:
         - Key: Name
           Value: !Ref ImageTag
 
-  DnsRecords:
-    Type: AWS::Route53::RecordSet
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      HostedZoneId: Z0126430TJ1UYIMO3SYX
-      Name: !Sub "${ImageTag}-${GitSHA}.quadratic-preview.com"
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt GlobalAccelerator.DnsName
-        HostedZoneId: Z2BJ6XQ5FK7U4H
-        EvaluateTargetHealth: true
-
-  WildcardDnsRecord:
-    Type: AWS::Route53::RecordSet
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      HostedZoneId: Z0126430TJ1UYIMO3SYX
-      Name: !Sub "*.${ImageTag}-${GitSHA}.quadratic-preview.com"
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt GlobalAccelerator.DnsName
-        HostedZoneId: Z2BJ6XQ5FK7U4H
-        EvaluateTargetHealth: true
-
+  # Global Accelerator Listener
   GlobalAcceleratorListener:
     Type: AWS::GlobalAccelerator::Listener
     DeletionPolicy: Delete
@@ -192,50 +213,7 @@ Resources:
         - FromPort: 443
           ToPort: 443
 
-  EcrPushRule:
-    Type: AWS::Events::Rule
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      Description: Rule to detect ECR image pushes
-      EventPattern:
-        source:
-          - aws.ecr
-        detail-type:
-          - ECR Image Action
-        detail:
-          action-type:
-            - PUSH
-          repository-name:
-            - quadratic-client-development
-            - quadratic-api-development
-            - quadratic-multiplayer-development
-            - quadratic-files-development
-            - quadratic-connection-development
-          image-tag:
-            - !Ref ImageTag
-      State: ENABLED
-      Targets:
-        - Arn: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:automation-definition/AWS-RunShellScript"
-          Id: TriggerScriptOnInstance
-          RoleArn: !GetAtt EventBridgeRole.Arn
-          InputTransformer:
-            InputPathsMap:
-              imageTag: $.detail.image-tag
-              repository: $.detail.repository-name
-            InputTemplate: !Sub |
-              {
-                "InstanceIds": ["${EC2Instance.InstanceId}"],
-                "DocumentName": "AWS-RunShellScript",
-                "Parameters": {
-                  "commands": [
-                    "cd /home/ubuntu/quadratic-selfhost",
-                    "./login.sh",
-                    "./start.sh"
-                  ]
-                }
-              }
-
+  # Global Accelerator Endpoint Group
   GlobalAcceleratorEndpointGroup:
     Type: AWS::GlobalAccelerator::EndpointGroup
     DeletionPolicy: Delete
@@ -248,7 +226,35 @@ Resources:
           Weight: 100
           ClientIPPreservationEnabled: true
 
+  # DNS record for the preview deployment for the main application
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      HostedZoneId: Z0126430TJ1UYIMO3SYX
+      Name: !Sub "${ImageTag}.quadratic-preview.com"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
+
+  # Wildcard DNS record for the preview deployment for all subdomains
+  WildcardDNSRecord:
+    Type: AWS::Route53::RecordSet
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      HostedZoneId: Z0126430TJ1UYIMO3SYX
+      Name: !Sub "*.${ImageTag}.quadratic-preview.com"
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt GlobalAccelerator.DnsName
+        HostedZoneId: Z2BJ6XQ5FK7U4H
+        EvaluateTargetHealth: true
+
 Outputs:
-  DnsRecord:
-    Description: Url of the preview instance
-    Value: !Sub "${ImageTag}-${GitSHA}.quadratic-preview.com"
+  WebsiteURL:
+    Description: Website URL
+    Value: !Sub "https://${ImageTag}.quadratic-preview.com"

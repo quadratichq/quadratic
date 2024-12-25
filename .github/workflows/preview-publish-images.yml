@@ -83,7 +83,8 @@ jobs:
             network=host
 
       - name: Build and push
-        uses: useblacksmith/build-push-action@v1
+        # uses: useblacksmith/build-push-action@v1
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: quadratic-${{ matrix.service }}/Dockerfile

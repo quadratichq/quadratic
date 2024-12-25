@@ -65,7 +65,6 @@ jobs:
           parameter-overrides: >-
             LicenseKey=${{ secrets.QUADRATIC_LICENSE_KEY }},
             ImageTag=pr-${{ github.event.pull_request.number }},
-            GitSHA=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           disable-rollback: false
@@ -90,14 +89,14 @@ jobs:
           body-includes: "Preview Deployment"
 
       - name: Create or update comment on build success
-        if: success() && steps.deploy-stack.outputs.DnsRecord != ''
+        if: success() && steps.deploy-stack.outputs.WebsiteURL != ''
         uses: peter-evans/create-or-update-comment@v3
         with:
           comment-id: ${{ steps.preview-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## Preview Deployment
-            Preview URL: https://${{ steps.deploy-stack.outputs.DnsRecord }}
+            Preview URL: https://${{ steps.deploy-stack.outputs.WebsiteURL }}
           edit-mode: replace
 
       - name: Create or update comment on build failure
