@@ -177,6 +177,7 @@ impl TableRef {
         }
 
         let bracketed_entries = Self::bracketed_entries(s)?;
+
         let mut tokens = Vec::new();
         let mut iter = bracketed_entries.iter().peekable();
         while let Some(entry) = iter.next() {
@@ -209,7 +210,6 @@ impl TableRef {
                 }
             }
         }
-
         Ok(tokens)
     }
 }

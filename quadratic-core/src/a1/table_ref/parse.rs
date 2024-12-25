@@ -51,9 +51,8 @@ impl TableRef {
         let mut data = true;
         let mut headers = false;
         let mut footers = false;
-        let tokens = Self::tokenize(remaining)?;
-        dbg!(&tokens);
-        for token in tokens {
+
+        for token in Self::tokenize(remaining)? {
             match token {
                 Token::RowRange(start, end) => match row_ranges {
                     Some(RowRange::Rows(mut rows)) => {
@@ -169,7 +168,7 @@ mod tests {
     #[test]
     fn test_table_with_headers() {
         let names = vec!["Table1".to_string()];
-        let table_ref = TableRef::parse("Table1[#HEADERS]", &names).unwrap();
+        let table_ref = TableRef::parse("Table1[[#HEADERS]]", &names).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert!(table_ref.headers);
     }
