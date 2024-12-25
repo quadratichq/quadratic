@@ -21,14 +21,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends python-is-pytho
 
 WORKDIR /quadratic
 
-# Copy root dependencies
-# Any changes to these files will trigger a full rebuild (version change)
+# Copy updateAlertVersion.json
 COPY updateAlertVersion.json .
-COPY package.json .
 
-# Run the packaging script for quadratic_py
-COPY ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
-RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry
+# Copy all package.json files
+COPY package.json .
+COPY package-lock.json .
+COPY ./quadratic-kernels/python-wasm/package*.json ./quadratic-kernels/python-wasm/
+COPY ./quadratic-core/package*.json ./quadratic-core/
+COPY ./quadratic-rust-client/package*.json ./quadratic-rust-client/
+COPY ./quadratic-shared/package*.json ./quadratic-shared/
+COPY ./quadratic-client/package*.json ./quadratic-client/
+
+# Install npm dependencies
+RUN npm install --no-audit --no-fund
 
 # Build wasm and export TS/Rust types
 COPY ./quadratic-core/. ./quadratic-core/
@@ -41,18 +47,18 @@ ARG GIT_COMMIT
 ENV GIT_COMMIT=$GIT_COMMIT
 RUN echo 'Building quadratic-rust-client...' && npm run build --workspace=quadratic-rust-client
 
-# Install npm dependencies
-COPY package-lock.json .
-COPY ./quadratic-shared/package*.json ./quadratic-shared/
-COPY ./quadratic-client/package*.json ./quadratic-client/
-RUN npm install --no-audit --no-fund
+# Copy rest of the files
+COPY ./quadratic-kernels/python-wasm/. ./quadratic-kernels/python-wasm/
+COPY ./quadratic-shared/. ./quadratic-shared/
+COPY ./quadratic-client/. ./quadratic-client/
+
+# Run the packaging script for quadratic_py
+RUN ./quadratic-kernels/python-wasm/package.sh --no-poetry
 
 # Build the quadratic-shared
-COPY ./quadratic-shared/. ./quadratic-shared/
 RUN echo 'Building quadratic-shared...' && npm run compile --workspace=quadratic-shared
 
 # Build the front-end
-COPY ./quadratic-client/. ./quadratic-client/
 ENV VITE_DEBUG=VITE_DEBUG_VAL
 ENV VITE_QUADRATIC_API_URL=VITE_QUADRATIC_API_URL_VAL
 ENV VITE_QUADRATIC_MULTIPLAYER_URL=VITE_QUADRATIC_MULTIPLAYER_URL_VAL
