@@ -8,6 +8,7 @@ mod error;
 mod js_selection;
 mod ref_range_bounds;
 mod sheet_cell_ref_range;
+mod table_ref;
 
 pub use a1_selection::*;
 pub use a1_sheet_name::*;
@@ -19,6 +20,7 @@ pub use error::*;
 pub use js_selection::*;
 pub use ref_range_bounds::*;
 pub use sheet_cell_ref_range::*;
+pub use table_ref::*;
 
 /// Name to use when a sheet ID has no corresponding name.
 ///
