@@ -386,27 +386,44 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     restart: always
     container_name: mssql-connection
+    user: mssql
     ports:
       - 1433:1433
     environment:
       ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: YourStrong@Passw0rd
+      MSSQL_SA_PASSWORD: yourStrong(!)Password
       MSSQL_PID: Express
-      MSSQL_TCP_PORT: 1433
-    healthcheck:
-      test:
-        ["CMD-SHELL", '/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -Q "SELECT 1" || exit 1']
-      interval: 10s
-      timeout: 5s
-      retries: 5
     volumes:
       - ./docker/mssql-connection/data:/var/opt/mssql
       - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/opt/mssql-tools18/bin/sqlcmd",
+          "-S",
+          "localhost",
+          "-U",
+          "sa",
+          "-P",
+          "yourStrong(!)Password",
+          "-Q",
+          "SELECT 1",
+          "-C",
+          "-N",
+          "-t",
+          "30",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
     command: >
-      bash -c "/opt/mssql/bin/sqlservr &
-      sleep 30 &&
-      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -i /docker-entrypoint-initdb.d/create_db.sql -C &&
-      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -i /docker-entrypoint-initdb.d/seed_db.sql -C &&
+      bash -c "
+      /opt/mssql/bin/sqlservr &
+      sleep 10 &&
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/create_db.sql -C -N -t 30 &&
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/seed_db.sql -C -N -t 30 &&
       tail -f /dev/null"
     profiles:
       - quadratic-connection
