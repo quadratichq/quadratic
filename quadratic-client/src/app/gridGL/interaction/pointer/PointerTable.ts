@@ -18,7 +18,8 @@ export class PointerTable {
   private doubleClickTimeout: number | undefined;
   private tableNameDown: { column: number; row: number; point: Point } | undefined;
 
-  private pointerDownTableName(world: Point, tableDown: TablePointerDownResult) {
+  private pointerDownTableName(world: Point, tableDown: TablePointerDownResult, append: boolean) {
+    sheets.sheet.cursor.selectTable(tableDown.table.name, append);
     pixiApp.cellsSheet().tables.ensureActive(tableDown.table);
     if (this.doubleClickTimeout) {
       events.emit('contextMenu', {
@@ -108,7 +109,7 @@ export class PointerTable {
     }
 
     if (tableDown.type === 'table-name') {
-      this.pointerDownTableName(world, tableDown);
+      this.pointerDownTableName(world, tableDown, event.shiftKey);
     } else if (tableDown.type === 'dropdown') {
       this.pointerDownDropdown(world, tableDown);
     } else if (tableDown.type === 'sort') {

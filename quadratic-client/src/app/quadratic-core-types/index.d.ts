@@ -14,7 +14,7 @@ export type CellAlign = "center" | "left" | "right";
 export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double" | "clear";
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, dateTime: string | null, cellType: CellType | null, underline: boolean | null, strikeThrough: boolean | null, }
 export interface CellRefCoord { coord: bigint, is_absolute: boolean, }
-export type CellRefRange = { range: RefRangeBounds, };
+export type CellRefRange = { range: RefRangeBounds, } | { range: TableRef, };
 export interface CellRefRangeEnd { col: CellRefCoord, row: CellRefCoord, }
 export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";

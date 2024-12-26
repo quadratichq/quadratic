@@ -147,6 +147,19 @@ impl DataTable {
             .collect::<Vec<_>>()
     }
 
+    /// Gets the visible columns by name. This is used to map it to a grid
+    /// location in the selection.
+    pub fn columns_map(&self) -> Vec<String> {
+        self.column_headers
+            .to_owned()
+            .unwrap_or_else(|| self.default_header(None))
+            .iter()
+            .enumerate()
+            .filter(|(_, c)| c.display)
+            .map(|(_, col)| col.name.to_string())
+            .collect::<Vec<_>>()
+    }
+
     /// For a given row of CellValues, return only the columns that should be displayed
     pub fn display_columns(&self, columns_to_show: &[usize], row: &[CellValue]) -> Vec<CellValue> {
         row.to_vec()

@@ -415,7 +415,6 @@ export class Tables extends Container<Table> {
     if (!table) {
       return;
     }
-    sheets.sheet.cursor.moveTo(table.codeCell.x, table.codeCell.y);
     if (this.activeTable !== table) {
       if (this.activeTable) {
         this.activeTable.hideActive();

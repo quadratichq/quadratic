@@ -58,12 +58,12 @@
 //! reference. It is ignored in parsing: =DeptSales[ [Sales Person]:[Region] ]
 //! =DeptSales[[#Headers], [#Data], [% Commission]]
 
-mod column_range;
 pub mod display;
 pub mod parse;
+mod table_ref_range;
 mod tokenize;
 
-pub use column_range::*;
+pub use table_ref_range::*;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -79,4 +79,39 @@ pub struct TableRef {
     pub totals: bool,
     pub row_ranges: RowRange,
     pub col_ranges: Vec<ColRange>,
+}
+
+impl TableRef {
+    pub fn new(table_name: &str) -> Self {
+        Self {
+            table_name: table_name.to_string(),
+            data: true,
+            headers: false,
+            totals: false,
+            row_ranges: RowRange::All,
+            col_ranges: vec![],
+        }
+    }
+}
+
+#[cfg(test)]
+#[serial_test::parallel]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_table_ref_new() {
+        let table_ref = TableRef::new("Table1");
+        assert_eq!(
+            table_ref,
+            TableRef {
+                table_name: "Table1".to_string(),
+                data: true,
+                headers: false,
+                totals: false,
+                row_ranges: RowRange::All,
+                col_ranges: vec![],
+            }
+        );
+    }
 }

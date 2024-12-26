@@ -10,6 +10,7 @@ pub mod display_value;
 pub mod row;
 pub mod sort;
 pub mod table_formats;
+mod table_map;
 use std::num::NonZeroU32;
 
 use crate::cellvalue::Import;
@@ -26,6 +27,8 @@ use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
 use table_formats::TableFormats;
+
+pub use table_map::*;
 
 #[cfg(test)]
 use tabled::{

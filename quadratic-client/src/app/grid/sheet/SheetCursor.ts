@@ -311,4 +311,8 @@ export class SheetCursor {
       return [];
     }
   }
+
+  selectTable(table: string, append: boolean) {
+    this.jsSelection.selectTable(table, append);
+  }
 }

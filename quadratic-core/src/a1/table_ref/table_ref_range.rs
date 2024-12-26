@@ -57,6 +57,8 @@ pub enum ColRange {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::UNBOUNDED;
+
     use super::*;
 
     #[test]
@@ -70,7 +72,7 @@ mod tests {
     fn test_row_range_serialization() {
         let row_range = RowRangeEntry {
             start: CellRefCoord::new_rel(1),
-            end: CellRefCoord::new_rel(i64::MAX),
+            end: CellRefCoord::new_rel(UNBOUNDED),
         };
         let serialized = serde_json::to_string(&row_range).unwrap();
         assert_eq!(

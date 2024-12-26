@@ -45,6 +45,8 @@ use quadratic_core::grid::sheet::validations::validation_rules::ValidationRule;
 use quadratic_core::grid::sort::DataTableSort;
 use quadratic_core::grid::sort::SortDirection;
 use quadratic_core::grid::JsCellsAccessed;
+use quadratic_core::grid::TableMap;
+use quadratic_core::grid::TableMapEntry;
 use quadratic_core::grid::{
     CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
@@ -150,6 +152,8 @@ fn main() {
         DataTableSort,
         SmallTimestamp,
         Span,
+        TableMapEntry,
+        TableMap,
         TextCase,
         TextMatch,
         TransactionName,
