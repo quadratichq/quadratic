@@ -24,34 +24,29 @@ impl TableRef {
         };
 
         if start == end {
-            start
+            format!("[#{}]", start)
         } else {
-            format!("{}:{}", start, end)
+            format!("[#{}:{}]", start, end)
         }
     }
 
     /// Returns the string representation of the row range.
-    fn row_range_to_string(&self) -> String {
+    fn row_range_to_string(&self) -> Vec<String> {
         match &self.row_ranges {
-            RowRange::All => String::default(),
-            RowRange::CurrentRow => "[#THIS ROW]".to_string(),
-            RowRange::Rows(rows) => {
-                format!(
-                    "[#{}]",
-                    rows.iter()
-                        .map(TableRef::row_range_entry_to_string)
-                        .collect::<Vec<String>>()
-                        .join(",")
-                )
-            }
+            RowRange::All => vec![],
+            RowRange::CurrentRow => vec!["[#THIS ROW]".to_string()],
+            RowRange::Rows(rows) => rows
+                .iter()
+                .map(TableRef::row_range_entry_to_string)
+                .collect::<Vec<String>>(),
         }
     }
 
     fn col_range_entry_to_string(entry: &ColRange) -> String {
         match entry {
             ColRange::Col(col) => format!("[{}]", col),
-            ColRange::ColRange(start, end) => format!("[{}:{}]", start, end),
-            ColRange::ColumnToEnd(col) => format!("[{}:]", col),
+            ColRange::ColRange(start, end) => format!("[{}]:[{}]", start, end),
+            ColRange::ColumnToEnd(col) => format!("[{}]:", col),
         }
     }
 
@@ -86,7 +81,7 @@ impl TableRef {
                 }
             }
         }
-        entries.push(self.row_range_to_string());
+        entries.extend(self.row_range_to_string());
         entries.extend(self.col_ranges_to_string());
 
         format!("{}[{}]", self.table_name.to_string(), entries.join(","))
@@ -119,7 +114,7 @@ mod tests {
             "Table1[[#HEADERS],[Column 1]]",
             "Table1[[#HEADERS],[Column 1],[Column 2]]",
             "Table1[[#HEADERS],[Column 1],[Column 2],[Column 3]:[Column 4],[Column 6]]",
-            "Table1[[#DATA],[#HEADERS]][Column 1]]",
+            "Table1[[#DATA],[#HEADERS],[Column 1]]",
         ];
 
         for test in tests {

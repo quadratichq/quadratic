@@ -68,7 +68,10 @@ mod tests {
             end: CellRefCoord::new_rel(i64::MAX),
         };
         let serialized = serde_json::to_string(&row_range).unwrap();
-        assert_eq!(serialized, r#"{"start":1,"end":-1}"#);
+        assert_eq!(
+            serialized,
+            r#"{"start":{"coord":1,"is_absolute":false},"end":{"coord":-1,"is_absolute":false}}"#
+        );
 
         let deserialized: RowRangeEntry = serde_json::from_str(&serialized).unwrap();
         assert_eq!(deserialized, row_range);
@@ -78,7 +81,10 @@ mod tests {
             end: CellRefCoord::new_rel(15),
         };
         let serialized = serde_json::to_string(&row_range).unwrap();
-        assert_eq!(serialized, r#"{"start":10,"end":15}"#);
+        assert_eq!(
+            serialized,
+            r#"{"start":{"coord":10,"is_absolute":false},"end":{"coord":15,"is_absolute":false}}"#
+        );
 
         let deserialized: RowRangeEntry = serde_json::from_str(&serialized).unwrap();
         assert_eq!(deserialized, row_range);

@@ -48,7 +48,7 @@ impl TableRef {
 
         let mut row_ranges = None;
         let mut column_ranges = vec![];
-        let mut data = true;
+        let mut data = None;
         let mut headers = false;
         let mut totals = false;
 
@@ -80,19 +80,23 @@ impl TableRef {
                 }
                 Token::All => {
                     headers = true;
-                    data = true;
+                    data = Some(true);
                     totals = true;
                 }
                 Token::Headers => {
-                    data = false;
+                    if data.is_none() {
+                        data = Some(false);
+                    }
                     headers = true;
                 }
                 Token::Totals => {
-                    data = false;
+                    if data.is_none() {
+                        data = Some(false);
+                    }
                     totals = true;
                 }
                 Token::Data => {
-                    data = true;
+                    data = Some(true);
                 }
                 Token::ThisRow => {
                     if row_ranges.is_some() {
@@ -105,7 +109,7 @@ impl TableRef {
 
         Ok(Self {
             table_name,
-            data,
+            data: data.unwrap_or(true),
             headers,
             totals,
             row_ranges: row_ranges.unwrap_or(RowRange::All),
