@@ -4,8 +4,10 @@
 //! table reference may only have one list of row ranges, and any number of
 //! column ranges.
 //!
-//! We serialize/deserialize RowRangeEntry#End to -1 if equal to u64::MAX. This
-//! is to ensure compatibility with JS.
+//! We serialize/deserialize RowRangeEntry#End to -1 if equal to UNBOUNDED
+//! (i64::MAX). This is to ensure compatibility with JS.
+//!
+//! i64 is used to maintain compatibility with CellRefCoord.
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
