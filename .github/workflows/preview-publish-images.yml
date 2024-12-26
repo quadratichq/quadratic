@@ -23,7 +23,7 @@ jobs:
           - service: api
             runner: blacksmith-2vcpu-ubuntu-2204
           - service: client
-            runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
+            runner: blacksmith-8vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
           - service: connection
             runner: blacksmith-2vcpu-ubuntu-2204
           - service: files
