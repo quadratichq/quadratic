@@ -121,11 +121,11 @@ services:
   quadratic-multiplayer:
     image: ${ECR_URL}/quadratic-multiplayer-development:${IMAGE_TAG}
     environment:
-      RUST_LOG: info
-      HOST: 0.0.0.0
-      PORT: 3001
-      HEARTBEAT_CHECK_S: 3
-      HEARTBEAT_TIMEOUT_S: 600
+      RUST_LOG: ${RUST_LOG}
+      HOST: ${QUADRATIC_MULTIPLAYER_HOST}
+      PORT: ${QUADRATIC_MULTIPLAYER_PORT}
+      HEARTBEAT_CHECK_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_CHECK_S}
+      HEARTBEAT_TIMEOUT_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_TIMEOUT_S}
       QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
       M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       ENVIRONMENT: ${ENVIRONMENT}
@@ -153,7 +153,7 @@ services:
   quadratic-files:
     image: ${ECR_URL}/quadratic-files-development:${IMAGE_TAG}
     environment:
-      RUST_LOG: ${QUADRATIC_FILES_RUST_LOG}
+      RUST_LOG: ${RUST_LOG}
       HOST: ${QUADRATIC_FILES_HOST}
       PORT: ${QUADRATIC_FILES_PORT}
       FILE_CHECK_S: ${QUADRATIC_FILES_FILE_CHECK_S}
@@ -196,7 +196,7 @@ services:
   quadratic-connection:
     image: ${ECR_URL}/quadratic-connection-development:${IMAGE_TAG}
     environment:
-      RUST_LOG: ${QUADRATIC_CONNECTION_RUST_LOG}
+      RUST_LOG: ${RUST_LOG}
       HOST: ${QUADRATIC_CONNECTION_HOST}
       PORT: ${QUADRATIC_CONNECTION_PORT}
       ENVIRONMENT: ${ENVIRONMENT}

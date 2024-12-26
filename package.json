@@ -56,14 +56,15 @@
     "heroku-postbuild": "npm run build --workspace=quadratic-api",
     "kill": "kill-port 3000 && kill-port 3001 && kill-port 8001 && kill-port 8000",
     "prisma:migrate": "cd quadratic-api && npm run prisma:migrate",
-    "docker:up": "docker compose up -d --wait && npm run prisma:migrate --workspace=quadratic-api",
-    "docker:down": "docker compose down",
-    "docker:down:kill-volumes": "docker compose down -v",
     "copy:esbuild": "cp -f node_modules/esbuild-wasm/esbuild.wasm quadratic-client/public/",
     "gen:pyright:initialization": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
-    "docker": "ECR_OR_BUILD=ecr docker compose --profile all --env-file .env.docker up",
-    "docker:build": "ECR_OR_BUILD=build docker compose --profile all --env-file .env.docker up"
+    "docker:base": "ECR_OR_BUILD=build docker compose --profile base --env-file .env.docker up",
+    "docker:dev": "ECR_OR_BUILD=build docker compose --profile dev --env-file .env.docker up -d && docker attach quadratic-dev",
+    "docker:build": "ECR_OR_BUILD=build docker compose --profile all --env-file .env.docker up",
+    "docker:ecr": "ECR_OR_BUILD=ecr docker compose --profile all --env-file .env.docker up",
+    "docker:down": "ECR_OR_BUILD=build docker compose --profile all --env-file .env.docker down",
+    "docker:clean": "npm run docker:down && docker system prune -af"
   },
   "dependencies": {
     "@ory/kratos-client": "^1.2.1",

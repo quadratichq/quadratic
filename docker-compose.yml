@@ -15,6 +15,7 @@ services:
       - ./docker/redis/data:/data
     profiles:
       - base
+      - dev
       - all
 
   postgres:
@@ -38,6 +39,7 @@ services:
       - ./docker/postgres/scripts:/docker-entrypoint-initdb.d
     profiles:
       - base
+      - dev
       - all
 
   # files service - local aws alternative, use this or file-storage
@@ -148,11 +150,11 @@ services:
       file: docker-compose.${ECR_OR_BUILD}.yml
       service: quadratic-multiplayer
     environment:
-      RUST_LOG: info
-      HOST: 0.0.0.0
-      PORT: 3001
-      HEARTBEAT_CHECK_S: 3
-      HEARTBEAT_TIMEOUT_S: 600
+      RUST_LOG: ${RUST_LOG}
+      HOST: ${QUADRATIC_MULTIPLAYER_HOST}
+      PORT: ${QUADRATIC_MULTIPLAYER_PORT}
+      HEARTBEAT_CHECK_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_CHECK_S}
+      HEARTBEAT_TIMEOUT_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_TIMEOUT_S}
       QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
       M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
       ENVIRONMENT: ${ENVIRONMENT}
@@ -184,7 +186,7 @@ services:
       file: docker-compose.${ECR_OR_BUILD}.yml
       service: quadratic-files
     environment:
-      RUST_LOG: ${QUADRATIC_FILES_RUST_LOG}
+      RUST_LOG: ${RUST_LOG}
       HOST: ${QUADRATIC_FILES_HOST}
       PORT: ${QUADRATIC_FILES_PORT}
       FILE_CHECK_S: ${QUADRATIC_FILES_FILE_CHECK_S}
@@ -231,7 +233,7 @@ services:
       file: docker-compose.${ECR_OR_BUILD}.yml
       service: quadratic-connection
     environment:
-      RUST_LOG: ${QUADRATIC_CONNECTION_RUST_LOG}
+      RUST_LOG: ${RUST_LOG}
       HOST: ${QUADRATIC_CONNECTION_HOST}
       PORT: ${QUADRATIC_CONNECTION_PORT}
       ENVIRONMENT: ${ENVIRONMENT}
@@ -252,6 +254,84 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  quadratic-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quadratic-dev
+    environment:
+      # common
+      ENVIRONMENT: ${ENVIRONMENT}
+      RUST_LOG: ${RUST_LOG}
+      STORAGE_TYPE: ${STORAGE_TYPE}
+      QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
+      AUTH0_JWKS_URI: ${JWKS_URI}
+      M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
+      PUBSUB_HOST: ${PUBSUB_HOST}
+      PUBSUB_PORT: ${PUBSUB_PORT}
+      PUBSUB_PASSWORD: ${PUBSUB_PASSWORD}
+      PUBSUB_ACTIVE_CHANNELS: ${PUBSUB_ACTIVE_CHANNELS}
+      HOST: 0.0.0.0
+      # client
+      VITE_DEBUG: 1
+      VITE_QUADRATIC_API_URL: ${QUADRATIC_API_URL_EXTERNAL}
+      VITE_QUADRATIC_MULTIPLAYER_URL: ${QUADRATIC_MULTIPLAYER_URL_EXTERNAL}
+      VITE_QUADRATIC_CONNECTION_URL: ${QUADRATIC_CONNECTION_URL_EXTERNAL}
+      VITE_AUTH_TYPE: ${AUTH_TYPE}
+      VITE_STORAGE_TYPE: ${STORAGE_TYPE}
+      VITE_ORY_HOST: ${KRATOS_URL_EXTERNAL}
+      # api
+      CORS: "*"
+      DATABASE_URL: ${DATABASE_DSN}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      AUTH_TYPE: ${AUTH_TYPE}
+      ORY_JWKS_URI: ${JWKS_URI}
+      ORY_ADMIN_HOST: ${ORY_ADMIN_HOST}
+      QUADRATIC_FILE_URI: ${QUADRATIC_FILES_URL_INTERNAL}
+      QUADRATIC_FILE_URI_PUBLIC: ${QUADRATIC_FILES_URL_EXTERNAL}
+      LICENSE_KEY: ${LICENSE_KEY}
+      # multiplayer
+      # PORT: ${QUADRATIC_MULTIPLAYER_PORT}
+      HEARTBEAT_CHECK_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_CHECK_S}
+      HEARTBEAT_TIMEOUT_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_TIMEOUT_S}
+      AUTHENTICATE_JWT: true
+      # files
+      # PORT: ${QUADRATIC_FILES_PORT}
+      FILE_CHECK_S: ${QUADRATIC_FILES_FILE_CHECK_S}
+      FILES_PER_CHECK: ${QUADRATIC_FILES_FILES_PER_CHECK}
+      TRUNCATE_FILE_CHECK_S: ${QUADRATIC_FILES_TRUNCATE_FILE_CHECK_S}
+      TRUNCATE_TRANSACTION_AGE_DAYS: ${QUADRATIC_FILES_TRUNCATE_TRANSACTION_AGE_DAYS}
+      PUBSUB_PROCESSED_TRANSACTIONS_CHANNEL: ${PUBSUB_PROCESSED_TRANSACTIONS_CHANNEL}
+      STORAGE_DIR: ${STORAGE_DIR}
+      STORAGE_ENCRYPTION_KEYS: ${ENCRYPTION_KEY}
+      # connection
+      # PORT: ${QUADRATIC_CONNECTION_PORT}
+      MAX_RESPONSE_BYTES: ${QUADRATIC_CONNECTION_MAX_RESPONSE_BYTES}
+      STATIC_IPS: ${QUADRATIC_CONNECTION_STATIC_IPS}
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+      - "3001:3001"
+      - "3002:3002"
+      - "3003:3003"
+    volumes:
+      - ./:/quadratic
+    depends_on:
+      - postgres
+      - redis
+    profiles:
+      - quadratic-dev
+      - dev
+    networks:
+      - host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    tty: true
+    stdin_open: true
+
   # auth service - ory
 
   ory-auth:
@@ -271,6 +351,7 @@ services:
       - ory-auth-migrate
     profiles:
       - ory
+      - dev
       - all
     networks:
       - host
@@ -289,6 +370,7 @@ services:
       - postgres
     profiles:
       - ory
+      - dev
       - all
     networks:
       - host
@@ -309,6 +391,7 @@ services:
     restart: on-failure
     profiles:
       - ory
+      - dev
       - all
     networks:
       - host
@@ -324,14 +407,14 @@ services:
       - "8080:8080"
     profiles:
       - ory
+      - dev
       - all
     networks:
       - host
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  # databases to be used for testing by the connection service
-  # postgres, mysql, mssql
+  # databases to be used for testing by the connection service - postgres, mysql, mssql
 
   postgres-connection:
     image: postgres:15
