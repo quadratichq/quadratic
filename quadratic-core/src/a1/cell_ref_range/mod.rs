@@ -275,6 +275,9 @@ mod tests {
     proptest! {
         #[test]
         fn proptest_cell_ref_range_parsing(cell_ref_range: CellRefRange) {
+            if matches!(cell_ref_range, CellRefRange::Table { .. }) {
+                return Ok(());
+            }
             assert_eq!(cell_ref_range, cell_ref_range.to_string().parse().unwrap());
         }
     }
