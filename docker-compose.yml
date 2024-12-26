@@ -361,6 +361,7 @@ services:
     image: mysql:8
     restart: always
     container_name: mysql-connection
+    user: "999:999"
     ports:
       - 3306:3306
     environment:
@@ -374,7 +375,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./docker/mysql-connection/data:/var/lib/mysql
+      - ./docker/mysql-connection/data:/var/lib/mysql:rw
       - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
       - quadratic-connection
@@ -385,19 +386,16 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     restart: always
     container_name: mssql-connection
-    user: root
     ports:
       - 1433:1433
     environment:
       ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: yourStrong(!)Password
+      MSSQL_SA_PASSWORD: YourStrong@Passw0rd
       MSSQL_PID: Express
+      MSSQL_TCP_PORT: 1433
     healthcheck:
       test:
-        [
-          "CMD-SHELL",
-          "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD}' -Q 'SELECT 1' || exit 1",
-        ]
+        ["CMD-SHELL", '/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -Q "SELECT 1" || exit 1']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -405,12 +403,11 @@ services:
       - ./docker/mssql-connection/data:/var/opt/mssql
       - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
     command: >
-      bash -c "
-      /opt/mssql/bin/sqlservr &
-      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -i /docker-entrypoint-initdb.d/create_db.sql -C &&
-      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -i /docker-entrypoint-initdb.d/seed_db.sql -C &&
-      tail -f /dev/null
-      "
+      bash -c "/opt/mssql/bin/sqlservr &
+      sleep 30 &&
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -i /docker-entrypoint-initdb.d/create_db.sql -C &&
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -i /docker-entrypoint-initdb.d/seed_db.sql -C &&
+      tail -f /dev/null"
     profiles:
       - quadratic-connection
       - quadratic-connection-db
