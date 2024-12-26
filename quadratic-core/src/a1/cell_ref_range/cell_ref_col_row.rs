@@ -27,6 +27,7 @@ impl CellRefRange {
                     }
                 }
             }
+            Self::Table { .. } => todo!(),
         }
         changed
     }
@@ -56,6 +57,7 @@ impl CellRefRange {
                     }
                 }
             }
+            Self::Table { .. } => todo!(),
         }
         changed
     }
@@ -77,6 +79,7 @@ impl CellRefRange {
                     changed = true;
                 }
             }
+            Self::Table { .. } => todo!(),
         }
         changed
     }
@@ -98,6 +101,7 @@ impl CellRefRange {
                     changed = true;
                 }
             }
+            Self::Table { .. } => todo!(),
         }
         changed
     }

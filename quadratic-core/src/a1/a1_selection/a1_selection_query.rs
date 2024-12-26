@@ -14,6 +14,7 @@ impl A1Selection {
         if let Some(last_range) = self.ranges.last() {
             match last_range {
                 CellRefRange::Sheet { range } => range.is_multi_cursor(),
+                CellRefRange::Table { .. } => todo!(),
             }
         } else {
             false
@@ -63,6 +64,7 @@ impl A1Selection {
                     ));
                 }
             }
+            CellRefRange::Table { .. } => todo!(),
         });
         rect
     }
@@ -125,6 +127,7 @@ impl A1Selection {
                     };
                     Pos { x, y }
                 }
+                CellRefRange::Table { .. } => todo!(),
             }
         } else {
             self.cursor
@@ -146,6 +149,7 @@ impl A1Selection {
                         }
                     }
                 }
+                CellRefRange::Table { .. } => todo!(),
             }
         } else {
             self.cursor

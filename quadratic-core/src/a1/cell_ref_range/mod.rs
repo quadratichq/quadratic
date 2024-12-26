@@ -5,22 +5,24 @@ use ts_rs::TS;
 
 use crate::{Pos, Rect, RefRangeBounds};
 
-use super::{A1Error, UNBOUNDED};
+use super::{A1Error, TableRef, UNBOUNDED};
 
 pub mod cell_ref_col_row;
 pub mod cell_ref_query;
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, TS)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(untagged)]
 pub enum CellRefRange {
     Sheet { range: RefRangeBounds },
+    Table { range: TableRef },
 }
 
 impl fmt::Debug for CellRefRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Sheet { range } => write!(f, "CellRefRange::Sheet({})", range),
+            CellRefRange::Sheet { range } => write!(f, "CellRefRange::Sheet({})", range),
+            CellRefRange::Table { range } => write!(f, "CellRefRange::Table({})", range),
         }
     }
 }
@@ -29,6 +31,7 @@ impl fmt::Display for CellRefRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Sheet { range } => fmt::Display::fmt(range, f),
+            Self::Table { range } => fmt::Display::fmt(range, f),
         }
     }
 }
@@ -110,87 +113,101 @@ impl CellRefRange {
         }
     }
 
-    pub fn might_intersect_rect(self, rect: Rect) -> bool {
+    pub fn might_intersect_rect(&self, rect: Rect) -> bool {
         match self {
             Self::Sheet { range } => range.might_intersect_rect(rect),
+            Self::Table { .. } => todo!(),
         }
     }
 
-    pub fn might_contain_pos(self, pos: Pos) -> bool {
+    pub fn might_contain_pos(&self, pos: Pos) -> bool {
         match self {
             Self::Sheet { range } => range.might_contain_pos(pos),
+            Self::Table { .. } => todo!(),
         }
     }
 
-    pub fn contains_pos(self, pos: Pos) -> bool {
+    pub fn contains_pos(&self, pos: Pos) -> bool {
         match self {
             Self::Sheet { range } => range.contains_pos(pos),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn is_column_range(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_column_range(),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn has_column_range(&self, col: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_column_range(col),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn is_row_range(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_row_range(),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn has_row_range(&self, row: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_row_range(row),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn is_finite(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_finite(),
+            Self::Table { .. } => true,
         }
     }
 
     pub fn to_rect(&self) -> Option<Rect> {
         match self {
             Self::Sheet { range } => range.to_rect(),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn selected_columns_finite(&self) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns_finite(),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn selected_columns(&self, from: i64, to: i64) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns(from, to),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn selected_rows_finite(&self) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows_finite(),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn selected_rows(&self, from: i64, to: i64) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows(from, to),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn translate_in_place(&mut self, x: i64, y: i64) {
         match self {
             Self::Sheet { range } => range.translate_in_place(x, y),
+            Self::Table { .. } => todo!(),
         }
     }
 
@@ -199,6 +216,7 @@ impl CellRefRange {
             Self::Sheet { range } => Self::Sheet {
                 range: range.translate(x, y),
             },
+            Self::Table { .. } => todo!(),
         }
     }
 
@@ -210,6 +228,7 @@ impl CellRefRange {
     ) {
         match self {
             Self::Sheet { range } => range.adjust_column_row_in_place(column, row, delta),
+            Self::Table { .. } => todo!(),
         }
     }
 
@@ -218,18 +237,21 @@ impl CellRefRange {
             Self::Sheet { range } => Self::Sheet {
                 range: range.adjust_column_row(column, row, delta),
             },
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn try_to_pos(&self) -> Option<Pos> {
         match self {
             Self::Sheet { range } => range.try_to_pos(),
+            Self::Table { .. } => todo!(),
         }
     }
 
     pub fn is_single_cell(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_single_cell(),
+            Self::Table { .. } => false,
         }
     }
 

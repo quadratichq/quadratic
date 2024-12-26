@@ -15,6 +15,7 @@ use ts_rs::TS;
 use crate::CellRefCoord;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, TS, Serialize, Deserialize)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct RowRangeEntry {
     pub start: CellRefCoord,
     pub end: CellRefCoord,
@@ -37,6 +38,7 @@ impl RowRangeEntry {
 }
 
 #[derive(Default, Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum RowRange {
     #[default]
     All,
@@ -45,6 +47,7 @@ pub enum RowRange {
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum ColRange {
     Col(String),
     ColRange(String, String),

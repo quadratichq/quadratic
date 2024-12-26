@@ -312,6 +312,7 @@ impl GridController {
     pub fn clear_borders_a1_operations(&self, selection: &A1Selection) -> Vec<Operation> {
         let mut borders: BordersUpdates = BordersUpdates::default();
         selection.ranges.iter().for_each(|range| match range {
+            CellRefRange::Table { .. } => todo!(),
             CellRefRange::Sheet { range } => {
                 let (x1, y1, x2, y2) = range.to_contiguous2d_coords();
                 borders.top.get_or_insert_default().set_rect(
@@ -374,6 +375,7 @@ impl GridController {
                 CellRefRange::Sheet { range } => {
                     self.a1_border_style_range(border_selection, style, range, &mut borders, false);
                 }
+                CellRefRange::Table { .. } => todo!(),
             });
             if sheet.borders.is_toggle_borders(&borders) {
                 style = None;
@@ -391,6 +393,7 @@ impl GridController {
                     clear_neighbors,
                 );
             }
+            CellRefRange::Table { .. } => todo!(),
         });
 
         if !borders.is_empty() {

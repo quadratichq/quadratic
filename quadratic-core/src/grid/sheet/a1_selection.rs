@@ -48,7 +48,7 @@ impl Sheet {
             |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
 
         for range in selection.ranges.iter() {
-            let rect = self.cell_ref_range_to_rect(*range);
+            let rect = self.cell_ref_range_to_rect(range.clone());
             for x in rect.x_range() {
                 for y in rect.y_range() {
                     if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
@@ -183,6 +183,7 @@ impl Sheet {
     /// on the sheet.
     pub fn cell_ref_range_to_rect(&self, cell_ref_range: CellRefRange) -> Rect {
         match cell_ref_range {
+            CellRefRange::Table { .. } => todo!(),
             CellRefRange::Sheet { range } => {
                 let start = range.start;
                 let end = range.end;
@@ -248,7 +249,7 @@ impl Sheet {
         selection
             .ranges
             .iter()
-            .map(|&range| self.cell_ref_range_to_rect(range))
+            .map(|range| self.cell_ref_range_to_rect(range.clone()))
             .collect()
     }
 
@@ -279,7 +280,7 @@ impl Sheet {
             ranges: selection
                 .ranges
                 .iter()
-                .map(|&range| self.finitize_cell_ref_range(range))
+                .map(|range| self.finitize_cell_ref_range(range.clone()))
                 .collect(),
         }
     }

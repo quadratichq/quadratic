@@ -128,7 +128,7 @@ impl GridController {
         }
 
         selection.ranges.iter().for_each(|range| {
-            transaction.cells_accessed.add(sheet.id, *range);
+            transaction.cells_accessed.add(sheet.id, range.clone());
         });
 
         let response = if let Some(rect) = rects.first() {
@@ -143,6 +143,7 @@ impl GridController {
                             || !(range.start.row.coord == range.end.row.coord
                                 || range.start.col.coord == range.end.col.coord)
                     }
+                    CellRefRange::Table { .. } => todo!(),
                 }
             } else {
                 false

@@ -16,8 +16,8 @@ use crate::{
         table_formats::TableFormats,
         CellsAccessed, CodeRun, ColumnData, DataTable, DataTableKind, SheetId,
     },
-    ArraySize, Axis, CellRefCoord, CellRefRange, CellRefRangeEnd, Pos, RefRangeBounds, RunError,
-    RunErrorMsg, Value,
+    ArraySize, Axis, CellRefCoord, CellRefRange, CellRefRangeEnd, ColRange, Pos, RefRangeBounds,
+    RowRange, RowRangeEntry, RunError, RunErrorMsg, TableRef, Value,
 };
 
 use super::{
@@ -33,7 +33,47 @@ fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
     }
 }
 
-fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellRefRange {
+fn import_row_range_entry(range: current::RowRangeEntrySchema) -> RowRangeEntry {
+    RowRangeEntry {
+        start: import_cell_ref_coord(range.start),
+        end: import_cell_ref_coord(range.end),
+    }
+}
+
+fn import_row_range(range: current::RowRangeSchema) -> RowRange {
+    match range {
+        current::RowRangeSchema::All => RowRange::All,
+        current::RowRangeSchema::CurrentRow => RowRange::CurrentRow,
+        current::RowRangeSchema::Rows(ranges) => {
+            RowRange::Rows(ranges.into_iter().map(import_row_range_entry).collect())
+        }
+    }
+}
+
+fn import_col_range(range: current::ColRangeSchema) -> ColRange {
+    match range {
+        current::ColRangeSchema::Col(col) => ColRange::Col(col),
+        current::ColRangeSchema::ColRange(col1, col2) => ColRange::ColRange(col1, col2),
+        current::ColRangeSchema::ColumnToEnd(col) => ColRange::ColumnToEnd(col),
+    }
+}
+
+fn import_col_ranges(ranges: Vec<current::ColRangeSchema>) -> Vec<ColRange> {
+    ranges.into_iter().map(import_col_range).collect()
+}
+
+pub(crate) fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
+    TableRef {
+        table_name: table_ref.table_name,
+        data: table_ref.data,
+        headers: table_ref.headers,
+        totals: table_ref.totals,
+        row_ranges: import_row_range(table_ref.row_ranges),
+        col_ranges: import_col_ranges(table_ref.col_ranges),
+    }
+}
+
+pub(crate) fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellRefRange {
     match range {
         current::CellRefRangeSchema::Sheet(ref_range_bounds) => CellRefRange::Sheet {
             range: RefRangeBounds {
@@ -46,6 +86,9 @@ fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellRefRange {
                     row: import_cell_ref_coord(ref_range_bounds.end.row),
                 },
             },
+        },
+        current::CellRefRangeSchema::Table(table_ref) => CellRefRange::Table {
+            range: import_table_ref(table_ref),
         },
     }
 }
@@ -158,7 +201,36 @@ fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
     }
 }
 
-fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRangeSchema {
+fn export_row_range_entry(range: RowRangeEntry) -> current::RowRangeEntrySchema {
+    current::RowRangeEntrySchema {
+        start: export_cell_ref_coord(range.start),
+        end: export_cell_ref_coord(range.end),
+    }
+}
+
+fn export_row_range(range: RowRange) -> current::RowRangeSchema {
+    match range {
+        RowRange::All => current::RowRangeSchema::All,
+        RowRange::CurrentRow => current::RowRangeSchema::CurrentRow,
+        RowRange::Rows(ranges) => {
+            current::RowRangeSchema::Rows(ranges.into_iter().map(export_row_range_entry).collect())
+        }
+    }
+}
+
+fn export_col_range(range: ColRange) -> current::ColRangeSchema {
+    match range {
+        ColRange::Col(col) => current::ColRangeSchema::Col(col),
+        ColRange::ColRange(col1, col2) => current::ColRangeSchema::ColRange(col1, col2),
+        ColRange::ColumnToEnd(col) => current::ColRangeSchema::ColumnToEnd(col),
+    }
+}
+
+fn export_col_ranges(ranges: Vec<ColRange>) -> Vec<current::ColRangeSchema> {
+    ranges.into_iter().map(export_col_range).collect()
+}
+
+pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRangeSchema {
     match range {
         CellRefRange::Sheet { range } => {
             current::CellRefRangeSchema::Sheet(current::RefRangeBoundsSchema {
@@ -170,6 +242,16 @@ fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRangeSchema {
                     col: export_cell_ref_coord(range.end.col),
                     row: export_cell_ref_coord(range.end.row),
                 },
+            })
+        }
+        CellRefRange::Table { range } => {
+            current::CellRefRangeSchema::Table(current::TableRefSchema {
+                table_name: range.table_name,
+                data: range.data,
+                headers: range.headers,
+                totals: range.totals,
+                row_ranges: export_row_range(range.row_ranges),
+                col_ranges: export_col_ranges(range.col_ranges),
             })
         }
     }

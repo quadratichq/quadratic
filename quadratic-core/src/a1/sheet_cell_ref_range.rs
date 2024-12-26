@@ -4,7 +4,7 @@ use crate::grid::SheetId;
 
 use super::{A1Error, CellRefRange, SheetNameIdMap};
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SheetCellRefRange {
     pub sheet: SheetId,
     pub cells: CellRefRange,

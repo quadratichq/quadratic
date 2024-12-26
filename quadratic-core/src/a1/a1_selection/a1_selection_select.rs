@@ -6,12 +6,8 @@ impl A1Selection {
     /// Selects the entire sheet.
     pub fn select_all(&mut self, append: bool) {
         if append {
-            if let Some(last) = self.ranges.last_mut() {
-                match last {
-                    CellRefRange::Sheet { range } => {
-                        range.end = RefRangeBounds::ALL.end;
-                    }
-                }
+            if let Some(CellRefRange::Sheet { range: last }) = self.ranges.last_mut() {
+                last.end = RefRangeBounds::ALL.end;
             }
         } else {
             self.ranges.clear();
@@ -27,9 +23,10 @@ impl A1Selection {
             let mut ranges = vec![];
             self.ranges.iter().for_each(|range| {
                 if !range.has_column_range(col) {
-                    ranges.push(*range);
+                    ranges.push(range.clone());
                 } else {
                     match range {
+                        CellRefRange::Table { .. } => todo!(),
                         CellRefRange::Sheet { mut range } => {
                             if range.start.col() == range.end.col() {
                                 // if the range is a single column, then we
@@ -110,16 +107,12 @@ impl A1Selection {
 
     /// Extends the last column range or creates a new one.
     pub fn extend_column(&mut self, col: i64, top: i64) {
-        if let Some(last) = self.ranges.last_mut() {
-            match last {
-                CellRefRange::Sheet { range } => {
-                    if range.is_column_range() {
-                        range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
-                    } else {
-                        range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
-                        self.cursor.y = range.start.row();
-                    }
-                }
+        if let Some(CellRefRange::Sheet { range }) = self.ranges.last_mut() {
+            if range.is_column_range() {
+                range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
+            } else {
+                range.end = CellRefRangeEnd::new_relative_xy(col, UNBOUNDED);
+                self.cursor.y = range.start.row();
             }
         } else {
             self.ranges.push(CellRefRange::new_relative_column(col));
@@ -136,9 +129,10 @@ impl A1Selection {
             let mut ranges = vec![];
             self.ranges.iter().for_each(|range| {
                 if !range.has_row_range(row) {
-                    ranges.push(*range);
+                    ranges.push(range.clone());
                 } else {
                     match range {
+                        CellRefRange::Table { .. } => todo!(),
                         CellRefRange::Sheet { mut range } => {
                             if range.start.row() == range.end.row() {
                                 // if the range is a single row, then we
@@ -252,18 +246,14 @@ impl A1Selection {
 
     /// Extends the last row range or creates a new one.
     pub fn extend_row(&mut self, row: i64, left: i64) {
-        if let Some(last) = self.ranges.last_mut() {
-            match last {
-                CellRefRange::Sheet { range } => {
-                    if range.is_row_range() {
-                        self.cursor.x = range.start.col();
-                    }
-                    range.end = CellRefRangeEnd {
-                        col: CellRefCoord::UNBOUNDED,
-                        row: CellRefCoord::new_rel(row),
-                    };
-                }
+        if let Some(CellRefRange::Sheet { range }) = self.ranges.last_mut() {
+            if range.is_row_range() {
+                self.cursor.x = range.start.col();
             }
+            range.end = CellRefRangeEnd {
+                col: CellRefCoord::UNBOUNDED,
+                row: CellRefCoord::new_rel(row),
+            };
         } else {
             self.ranges.push(CellRefRange::new_relative_row(row));
             self.cursor.x = left;
@@ -338,6 +328,7 @@ impl A1Selection {
         };
         if let Some(last) = self.ranges.last_mut() {
             match last {
+                CellRefRange::Table { .. } => todo!(),
                 CellRefRange::Sheet { range } => {
                     range.end = CellRefRangeEnd::new_relative_xy(column, row);
                     if range.start.row.is_unbounded() {
@@ -362,6 +353,7 @@ impl A1Selection {
         };
         let last = match last {
             CellRefRange::Sheet { range } => *range,
+            CellRefRange::Table { .. } => todo!(),
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
@@ -380,6 +372,7 @@ impl A1Selection {
         };
         let last = match last {
             CellRefRange::Sheet { range } => *range,
+            CellRefRange::Table { .. } => todo!(),
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {

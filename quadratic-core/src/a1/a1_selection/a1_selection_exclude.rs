@@ -98,6 +98,7 @@ impl A1Selection {
             CellRefRange::Sheet { range } => {
                 ranges.extend(A1Selection::find_excluded_rects(range, exclude_rect));
             }
+            CellRefRange::Table { .. } => todo!(),
         }
 
         ranges
@@ -164,6 +165,7 @@ impl A1Selection {
                     }
                     None
                 }
+                CellRefRange::Table { .. } => todo!(),
             }) {
                 self.cursor = cursor;
             } else {

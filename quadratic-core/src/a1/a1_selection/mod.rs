@@ -219,7 +219,7 @@ impl A1Selection {
 
         let last_range = ranges
             .last()
-            .copied()
+            .clone()
             .ok_or_else(|| A1Error::InvalidRange(a1.to_string()))?;
 
         Ok(Self {
@@ -242,7 +242,13 @@ impl A1Selection {
         let sheet = self.sheet_id;
         self.ranges
             .iter()
-            .map(|&cells| SheetCellRefRange { sheet, cells }.to_string(default_sheet_id, sheet_map))
+            .map(|cells| {
+                SheetCellRefRange {
+                    sheet,
+                    cells: cells.clone(),
+                }
+                .to_string(default_sheet_id, sheet_map)
+            })
             .collect::<Vec<_>>()
             .join(",")
     }
@@ -275,8 +281,10 @@ impl A1Selection {
                                 });
                             }
                         }
+                        CellRefRange::Table { .. } => todo!(),
                     });
             }
+            CellRefRange::Table { .. } => todo!(),
         });
         if ranges.is_empty() {
             None
@@ -322,8 +330,10 @@ impl A1Selection {
                     CellRefRange::Sheet { range: other_range } => {
                         range.intersection(other_range).is_some()
                     }
+                    CellRefRange::Table { .. } => todo!(),
                 })
             }
+            CellRefRange::Table { .. } => todo!(),
         })
     }
 
@@ -373,6 +383,7 @@ fn cursor_pos_from_last_range(last_range: &CellRefRange) -> Pos {
             let y = range.start.row();
             Pos { x, y }
         }
+        CellRefRange::Table { .. } => todo!(),
     }
 }
 

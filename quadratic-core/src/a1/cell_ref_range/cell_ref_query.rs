@@ -7,6 +7,7 @@ impl CellRefRange {
     pub fn contains_only_column(&self, column: i64) -> bool {
         match self {
             Self::Sheet { range } => range.start.col() == column && range.end.col() == column,
+            Self::Table { .. } => false,
         }
     }
 
@@ -14,6 +15,7 @@ impl CellRefRange {
     pub fn contains_only_row(&self, row: i64) -> bool {
         match self {
             Self::Sheet { range } => range.start.row() == row && range.end.row() == row,
+            Self::Table { .. } => false,
         }
     }
 
@@ -29,6 +31,7 @@ impl CellRefRange {
                     return false;
                 }
             }
+            Self::Table { .. } => return false,
         }
         true
     }
@@ -45,6 +48,7 @@ impl CellRefRange {
                     return false;
                 }
             }
+            Self::Table { .. } => return false,
         }
         true
     }
@@ -60,6 +64,7 @@ impl CellRefRange {
                     range.start.is_pos(p1) && range.end.is_pos(p1)
                 }
             }
+            Self::Table { .. } => todo!(),
         }
     }
 }

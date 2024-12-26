@@ -1,5 +1,7 @@
 //! Display TableRef as a string.
 
+use std::fmt;
+
 use crate::UNBOUNDED;
 
 use super::*;
@@ -87,6 +89,12 @@ impl TableRef {
         entries.extend(self.col_ranges_to_string());
 
         format!("{}[{}]", self.table_name.to_string(), entries.join(","))
+    }
+}
+
+impl fmt::Display for TableRef {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.to_string(), f)
     }
 }
 

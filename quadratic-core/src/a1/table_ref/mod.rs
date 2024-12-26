@@ -71,6 +71,7 @@ use ts_rs::TS;
 use super::A1Error;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
+#[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct TableRef {
     pub table_name: String,
     pub data: bool,

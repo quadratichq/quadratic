@@ -491,7 +491,7 @@ impl Sheet {
     ) -> Vec<i64> {
         let mut rows_set = HashSet::<i64>::new();
         selection.ranges.iter().for_each(|range| {
-            let rect = self.cell_ref_range_to_rect(*range);
+            let rect = self.cell_ref_range_to_rect(range.clone());
             let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
             rows_set.extend(rows);
         });

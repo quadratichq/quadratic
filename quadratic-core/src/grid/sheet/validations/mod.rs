@@ -121,7 +121,7 @@ impl Validations {
             v.selection.ranges.iter().for_each(|range| {
                 if !range.is_finite() {
                     displays.push(ValidationDisplay {
-                        range: *range,
+                        range: range.clone(),
                         checkbox: v.rule.is_logical(),
                         list: v.rule.is_list(),
                     });
@@ -154,8 +154,7 @@ impl Validations {
         })
     }
 
-    /// Returns validations that intersect with a rect. Note: this only checks
-    /// Selection.rects; it ignore Selection.all, rows, and columns.
+    /// Returns validations that intersect with a rect.
     pub fn in_rect(&self, rect: Rect) -> Vec<&Validation> {
         self.validations
             .iter()

@@ -83,6 +83,7 @@ impl<T: Default + Clone + PartialEq + Debug> Contiguous2D<T> {
                 };
                 c.set_rect(start_col, start_row, end_col, end_row, value.clone());
             }
+            CellRefRange::Table { .. } => todo!(),
         });
         c
     }

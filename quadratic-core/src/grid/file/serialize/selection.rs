@@ -4,31 +4,10 @@ use crate::{
     grid::SheetId, A1Selection, CellRefCoord, CellRefRange, CellRefRangeEnd, Pos, RefRangeBounds,
 };
 
-use super::current;
-
-fn import_cell_ref_coord(coord: current::CellRefCoordSchema) -> CellRefCoord {
-    CellRefCoord {
-        coord: coord.coord,
-        is_absolute: coord.is_absolute,
-    }
-}
-
-fn import_cell_ref_range(range: current::CellRefRangeSchema) -> CellRefRange {
-    match range {
-        current::CellRefRangeSchema::Sheet(range) => CellRefRange::Sheet {
-            range: RefRangeBounds {
-                start: CellRefRangeEnd {
-                    col: import_cell_ref_coord(range.start.col),
-                    row: import_cell_ref_coord(range.start.row),
-                },
-                end: CellRefRangeEnd {
-                    col: import_cell_ref_coord(range.end.col),
-                    row: import_cell_ref_coord(range.end.row),
-                },
-            },
-        },
-    }
-}
+use super::{
+    current,
+    data_table::{export_cell_ref_range, import_cell_ref_range},
+};
 
 pub fn import_selection(selection: current::A1SelectionSchema) -> A1Selection {
     A1Selection {
@@ -43,30 +22,6 @@ pub fn import_selection(selection: current::A1SelectionSchema) -> A1Selection {
             .into_iter()
             .map(import_cell_ref_range)
             .collect(),
-    }
-}
-
-fn export_cell_ref_coord(coord: CellRefCoord) -> current::CellRefCoordSchema {
-    current::CellRefCoordSchema {
-        coord: coord.coord,
-        is_absolute: coord.is_absolute,
-    }
-}
-
-fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRangeSchema {
-    match range {
-        CellRefRange::Sheet { range } => {
-            current::CellRefRangeSchema::Sheet(current::RefRangeBoundsSchema {
-                start: current::CellRefRangeEndSchema {
-                    col: export_cell_ref_coord(range.start.col),
-                    row: export_cell_ref_coord(range.start.row),
-                },
-                end: current::CellRefRangeEndSchema {
-                    col: export_cell_ref_coord(range.end.col),
-                    row: export_cell_ref_coord(range.end.row),
-                },
-            })
-        }
     }
 }
 
