@@ -1,3 +1,5 @@
+//! Display TableRef as a string.
+
 use crate::UNBOUNDED;
 
 use super::*;
