@@ -1,29 +1,26 @@
-name: Build and Publish Images to ECR - Preview
+name: Build, Publish & Deploy Images - Staging
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}-publish-images
+  group: pr-${{ github.event.pull_request.number }}-build-images
   cancel-in-progress: true
 
 jobs:
-  publish_images:
+  build_images:
     permissions:
       contents: read
-
-    timeout-minutes: 30
-
     runs-on: ${{ matrix.runner }}
-
+    timeout-minutes: 30
     strategy:
       matrix:
         include:
-          - service: api
-            runner: blacksmith-2vcpu-ubuntu-2204
           - service: client
             runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
+          - service: api
+            runner: blacksmith-2vcpu-ubuntu-2204
           - service: connection
             runner: blacksmith-2vcpu-ubuntu-2204
           - service: files
@@ -31,7 +28,6 @@ jobs:
           - service: multiplayer
             runner: blacksmith-2vcpu-ubuntu-2204
       fail-fast: true
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -99,3 +95,39 @@ jobs:
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+
+  deploy_images:
+    needs: build_images
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    env:
+      STACK_NAME: pr-${{ github.event.pull_request.number }}
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Get EC2 Instance ID
+        id: get-instance
+        run: |
+          INSTANCE_ID=$(aws cloudformation describe-stack-resources \
+            --stack-name ${{ env.STACK_NAME }} \
+            --logical-resource-id EC2Instance \
+            --query 'StackResources[0].PhysicalResourceId' \
+            --output text)
+          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+
+      - name: Wait for instance to be ready
+        run: |
+          aws ec2 wait instance-status-ok \
+            --instance-ids ${{ steps.get-instance.outputs.instance_id }}
+
+      - name: Run deployment script on EC2
+        run: |
+          aws ssm send-command \
+            --instance-ids ${{ steps.get-instance.outputs.instance_id }} \
+            --document-name "AWS-RunShellScript" \
+            --parameters commands=["cd /quadratic-selfhost && ./login.sh && ./start.sh"] \
+            --comment "Deploying new images after build"

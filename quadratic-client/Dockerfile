@@ -1,4 +1,6 @@
-## Builder 1 - Build wasm (core)
+###########################################################################################
+# Builder 1 - Build wasm (core)
+###########################################################################################
 FROM node:18 AS wasm-builder
 
 # Install rustup
@@ -30,8 +32,9 @@ COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.t
 RUN echo 'Building wasm...' && npm run build --workspace=quadratic-core
 
 
-
-## Builder 2 - Build TS/Rust types
+###########################################################################################
+# Builder 2 - Build TS/Rust types
+###########################################################################################
 FROM node:18 AS ts-rust-types-builder
 
 # Install rustup
@@ -63,8 +66,9 @@ COPY ./quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.t
 RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadratic-core
 
 
-
-## Builder 3 - Build rust client
+###########################################################################################
+# Builder 3 - Build rust client
+###########################################################################################
 FROM node:18 AS rust-client-builder
 
 # Install rustup
@@ -99,9 +103,10 @@ ENV GIT_COMMIT=$GIT_COMMIT
 RUN echo 'Building rust-client...' && npm run build --workspace=quadratic-rust-client
 
 
-
-## Builder 4 - Combine all builder files and build the client
-FROM node:18 AS final-build
+###########################################################################################
+# Builder 4 - Combine all builder files and build the client
+###########################################################################################
+FROM node:18 AS vite-build
 
 # Install python
 RUN apt-get update && apt-get install -y --no-install-recommends python-is-python3 python3-pip
@@ -152,10 +157,12 @@ ENV VITE_ORY_HOST=VITE_ORY_HOST_VAL
 RUN echo 'Building front-end...' && npm run build --workspace=quadratic-client
 
 
-
-## Runner - Serve the client with nginx
+###########################################################################################
+# Runner - Serve the client with nginx
+###########################################################################################
 FROM nginx:stable-alpine
-COPY --from=final-build /quadratic/build /usr/share/nginx/html
+
+COPY --from=vite-build /quadratic/build /usr/share/nginx/html
 
 EXPOSE 80 443 3000
 

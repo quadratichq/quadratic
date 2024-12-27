@@ -4,8 +4,8 @@
 PROFILE=$(cat PROFILE)
 
 start() {
-  docker compose $PROFILE down -v --remove-orphans
-  docker compose $PROFILE up -d
+  docker compose $PROFILE --env-file .env.docker down -v --remove-orphans
+  docker compose $PROFILE --env-file .env.docker up -d
   docker system prune -f
 }
 

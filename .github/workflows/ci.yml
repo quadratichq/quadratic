@@ -17,7 +17,7 @@ concurrency:
 jobs:
   test_core:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -75,7 +75,7 @@ jobs:
 
   test_multiplayer:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -134,7 +134,7 @@ jobs:
 
   test_connection:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -256,7 +256,7 @@ jobs:
 
   lint:
     runs-on: blacksmith-2vcpu-ubuntu-2204
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -287,6 +287,7 @@ jobs:
 
   check-version-increment:
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
     # If we are merging into main, but not pushed on main
     if: github.base_ref == 'main' && github.ref != 'refs/heads/main'
     steps:
@@ -322,6 +323,7 @@ jobs:
 
   check-versions-match:
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 10
 
     steps:
       - name: Checkout current branch

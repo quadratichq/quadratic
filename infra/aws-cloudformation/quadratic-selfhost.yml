@@ -1,10 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Quadratic Preview - Deployment Template
+Description: Quadratic Preview - DockerDeployment Template
 
 Parameters:
-  LicenseKey:
-    Type: String
-    Description: Your license key for Quadratic. Get one here https://selfhost.quadratichq.com/
   ImageTag:
     Type: String
     Description: Image tag to use for all services
@@ -47,7 +44,9 @@ Resources:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
 
   # IAM Instance Profile for the EC2 instance
   EC2InstanceProfile:
@@ -68,7 +67,7 @@ Resources:
         - Key: Name
           Value: !Sub "${ImageTag}"
       InstanceType: m6a.large
-      ImageId: ami-0aa830d419bb978e9 # quadratic-preview-base-ami
+      ImageId: ami-094c4f62c0fffae5e # quadratic-selfhost-base-ami
       IamInstanceProfile: !Ref EC2InstanceProfile
       SecurityGroups:
         - !Ref SecurityGroup
@@ -82,9 +81,18 @@ Resources:
           #!/bin/bash
 
           # Append environment variables to .env file
-          cat << EOF >> /quadratic-selfhost/.env
+          cat << EOF >> /quadratic-selfhost/.env.docker
 
-          #AWS
+          AWS_S3_REGION=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_REGION" --with-decryption --query "Parameter.Value" --output text)
+          AWS_S3_ACCESS_KEY_ID=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_ACCESS_KEY_ID" --with-decryption --query "Parameter.Value" --output text)
+          AWS_S3_SECRET_ACCESS_KEY=$(aws ssm get-parameter --name "/quadratic-development/AWS_S3_SECRET_ACCESS_KEY" --with-decryption --query "Parameter.Value" --output text)
+
+          # AI API Keys
+          OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          ANTHROPIC_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/ANTHROPIC_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          EXA_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/EXA_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+
+          # aws ecr
           ECR_URL=${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
           IMAGE_TAG=${ImageTag}
           EOF
@@ -100,77 +108,7 @@ Resources:
           ./login.sh
 
           # Run Quadratic initialization script
-          ./init.sh "${LicenseKey}" "${ImageTag}.quadratic-selfhost.com"
-
-  # # IAM Role for the EventBridge rule
-  # EventBridgeRole:
-  #   Type: AWS::IAM::Role
-  #   DeletionPolicy: Delete
-  #   UpdateReplacePolicy: Delete
-  #   Properties:
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Ref ImageTag
-  #     AssumeRolePolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: events.amazonaws.com
-  #           Action: sts:AssumeRole
-  #     Policies:
-  #       - PolicyName: InvokeSsmAutomation
-  #         PolicyDocument:
-  #           Version: 2012-10-17
-  #           Statement:
-  #             - Effect: Allow
-  #               Action:
-  #                 - ssm:SendCommand
-  #               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:*"
-
-  # EcrPushRule:
-  #   Type: AWS::Events::Rule
-  #   DeletionPolicy: Delete
-  #   UpdateReplacePolicy: Delete
-  #   Properties:
-  #     Description: Rule to detect ECR image pushes
-  #     EventPattern:
-  #       source:
-  #         - aws.ecr
-  #       detail-type:
-  #         - ECR Image Action
-  #       detail:
-  #         action-type:
-  #           - PUSH
-  #         repository-name:
-  #           - quadratic-client-development
-  #           - quadratic-api-development
-  #           - quadratic-multiplayer-development
-  #           - quadratic-files-development
-  #           - quadratic-connection-development
-  #         image-tag:
-  #           - !Ref ImageTag
-  #     State: ENABLED
-  #     Targets:
-  #       - Arn: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:automation-definition/AWS-RunShellScript"
-  #         Id: TriggerScriptOnInstance
-  #         RoleArn: !GetAtt EventBridgeRole.Arn
-  #         InputTransformer:
-  #           InputPathsMap:
-  #             imageTag: $.detail.image-tag
-  #             repository: $.detail.repository-name
-  #           InputTemplate: !Sub |
-  #             {
-  #               "InstanceIds": ["${EC2Instance.InstanceId}"],
-  #               "DocumentName": "AWS-RunShellScript",
-  #               "Parameters": {
-  #                 "commands": [
-  #                   "cd /quadratic-selfhost",
-  #                   "./login.sh",
-  #                   "./start.sh"
-  #                 ]
-  #               }
-  #             }
+          ./init.sh "$(aws ssm get-parameter --name "/quadratic-development/QUADRATIC_LICENSE_KEY" --with-decryption --query "Parameter.Value" --output text)" "${ImageTag}.quadratic-selfhost.com"
 
   # Global Accelerator
   GlobalAccelerator:

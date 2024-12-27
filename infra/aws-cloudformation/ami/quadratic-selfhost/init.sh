@@ -45,7 +45,7 @@ get_host() {
 parse_profile() {
   # automatically export all variables
   set -a
-  [[ -f ".env" ]] && source .env
+  [[ -f ".env.docker" ]] && source .env.docker
   # disable auto export
   set +a
 
@@ -121,15 +121,13 @@ echo $HOST > HOST
 # rm ../init.sh
 
 # adding .bak for compatibility with both GNU (Linux) and BSD (MacOS) sed
-sed -i.bak "s/#LICENSE_KEY#/$LICENSE_KEY/g" ".env"
-sed -i.bak "s/#HOST#/$HOST/g" ".env"
+sed -i.bak "s/#LICENSE_KEY#/$LICENSE_KEY/g" ".env.docker"
+sed -i.bak "s/#HOST#/$HOST/g" ".env.docker"
 sed -i.bak "s/#HOST#/$HOST/g" "docker/ory-auth/config/kratos.yml"
 sed -i.bak "s/#HOST#/$HOST/g" "docker/caddy/config/Caddyfile"
-sed -i.bak "s/#HOST#/$HOST/g" "docker/nginx/conf.d/default.conf"
 
-rm .env.bak
+rm .env.docker.bak
 rm docker/ory-auth/config/kratos.yml.bak
 rm docker/caddy/config/Caddyfile.bak
-rm docker/nginx/conf.d/default.conf.bak
 
 sh start.sh

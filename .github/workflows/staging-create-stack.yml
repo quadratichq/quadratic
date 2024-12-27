@@ -1,31 +1,24 @@
-name: Deploy to AWS CloudFormation - Preview
+name: Create Stack - Staging
 
 on:
   pull_request:
     types: [opened, reopened]
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}-deploy-cloudformation
+  group: pr-${{ github.event.pull_request.number }}-stack
 
 jobs:
-  deploy_cloudformation:
+  create_stack:
+    name: Create Stack - Staging
     permissions:
       contents: read
-      id-token: write
       pull-requests: write
-
     runs-on: blacksmith-2vcpu-ubuntu-2204
-
+    timeout-minutes: 30
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Generate Build Metadata
-        id: build-metadata
-        run: |
-          echo "GIT_SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -34,79 +27,81 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Check and Delete Stack if in ROLLBACK or DELETE
+      - name: Delete Stack if Exists
         id: check-stack
         run: |
           if aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} 2>/dev/null; then
             STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --query 'Stacks[0].StackStatus' --output text)
             echo "Current stack status: $STACK_STATUS"
             
-            if [ "$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" = "ROLLBACK_FAILED" ] || \
-                [ "$STACK_STATUS" = "DELETE_FAILED" ] || [ "$STACK_STATUS" = "DELETE_IN_PROGRESS" ]; then
-              echo "Stack is in $STACK_STATUS state. Deleting..."
-              aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+            echo "Stack exists. Attempting deletion..."
+            if aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}; then
               echo "Waiting for stack deletion to complete..."
-              aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
-              echo "deleted=true" >> $GITHUB_OUTPUT
+              if aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}; then
+                echo "Stack deleted successfully"
+                echo "deleted=true" >> $GITHUB_OUTPUT
+              else
+                echo "::error::Stack deletion wait timed out"
+                exit 1
+              fi
             else
-              echo "Stack exists but is not in ROLLBACK or DELETE state"
-              echo "deleted=false" >> $GITHUB_OUTPUT
+              echo "::error::Failed to initiate stack deletion"
+              exit 1
             fi
           else
             echo "Stack does not exist"
             echo "deleted=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Deploy CloudFormation Stack
-        id: deploy-stack
+      - name: Create Stack
+        id: create-stack
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: ${{ env.STACK_NAME }}
-          template: infra/aws-cloudformation/preview-deployment-template.yml
+          template: infra/aws-cloudformation/quadratic-selfhost.yml
           parameter-overrides: >-
-            LicenseKey=${{ secrets.QUADRATIC_LICENSE_KEY }},
             ImageTag=pr-${{ github.event.pull_request.number }}
           capabilities: CAPABILITY_IAM
           no-fail-on-empty-changeset: "1"
           disable-rollback: false
           termination-protection: false
 
-      - name: Verify Stack Deployment
+      - name: Verify Stack Creation
         if: success()
         run: |
           STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --query 'Stacks[0].StackStatus' --output text)
           echo "Final stack status: $STACK_STATUS"
           if [ "$STACK_STATUS" != "CREATE_COMPLETE" ] && [ "$STACK_STATUS" != "UPDATE_COMPLETE" ]; then
-            echo "Stack deployment did not complete successfully. Status: $STACK_STATUS"
+            echo "Stack creation did not complete successfully. Status: $STACK_STATUS"
             exit 1
           fi
 
       - name: Find Comment
         uses: peter-evans/find-comment@v3
-        id: preview-comment
+        id: staging-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Preview Deployment"
+          body-includes: "Staging Deployment"
 
       - name: Create or update comment on build success
-        if: success() && steps.deploy-stack.outputs.WebsiteURL != ''
+        if: success() && steps.create-stack.outputs.WebsiteURL != ''
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-comment.outputs.comment-id }}
+          comment-id: ${{ steps.staging-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Preview Deployment
-            Preview URL: https://${{ steps.deploy-stack.outputs.WebsiteURL }}
+            ## Staging Deployment
+            Staging URL: https://${{ steps.create-stack.outputs.WebsiteURL }}
           edit-mode: replace
 
       - name: Create or update comment on build failure
         if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.preview-comment.outputs.comment-id }}
+          comment-id: ${{ steps.staging-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Preview Deployment
-            The preview deployment encountered an error. Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+            ## Staging Deployment
+            The staging deployment encountered an error. Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
