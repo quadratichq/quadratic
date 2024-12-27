@@ -1,4 +1,4 @@
-name: Create Stack - Staging
+name: Create Stack
 
 on:
   pull_request:

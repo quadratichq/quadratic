@@ -1,4 +1,4 @@
-name: Delete Stack - Staging
+name: Delete Stack
 
 on:
   pull_request:

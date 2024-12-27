@@ -1,4 +1,4 @@
-name: Build, Publish & Deploy Images - Staging
+name: Build & Deploy Images
 
 on:
   pull_request:
@@ -99,8 +99,10 @@ jobs:
   deploy_images:
     needs: build_images
     runs-on: blacksmith-2vcpu-ubuntu-2204
+    timeout-minutes: 30
     env:
       STACK_NAME: pr-${{ github.event.pull_request.number }}
+      MAX_ATTEMPTS: 20
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -108,6 +110,50 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Wait for stack deployment
+        id: check-stack
+        run: |
+          ATTEMPTS=0
+          while [ $ATTEMPTS -lt ${{ env.MAX_ATTEMPTS }} ]; do
+            if ! STATUS=$(aws cloudformation describe-stacks \
+              --stack-name ${{ env.STACK_NAME }} \
+              --query 'Stacks[0].StackStatus' \
+              --output text 2>&1); then
+              echo "Error getting stack status: $STATUS"
+              echo "Stack might not exist yet. Waiting..."
+              sleep 30
+              ATTEMPTS=$((ATTEMPTS + 1))
+              continue
+            fi
+            
+            echo "Current stack status: $STATUS"
+            
+            # Fail if stack is in a failed or rollback state
+            if [[ $STATUS == *FAILED* ]] || [[ $STATUS == *ROLLBACK* ]]; then
+              echo "::error::Stack is in a failed or rollback state: $STATUS"
+              exit 1
+            fi
+            
+            # Continue if stack is ready
+            if [[ $STATUS == "CREATE_COMPLETE" ]] || [[ $STATUS == "UPDATE_COMPLETE" ]]; then
+              echo "::notice::Stack is ready with status: $STATUS"
+              break
+            fi
+            
+            # Wait and check again if stack is still being created/updated
+            if [[ $STATUS == *IN_PROGRESS* ]]; then
+              echo "Stack operation in progress. Waiting 30 seconds..."
+              sleep 30
+              ATTEMPTS=$((ATTEMPTS + 1))
+              continue
+            fi
+          done
+
+          if [ $ATTEMPTS -eq ${{ env.MAX_ATTEMPTS }} ]; then
+            echo "::error::Timeout waiting for stack to be ready"
+            exit 1
+          fi
 
       - name: Get EC2 Instance ID
         id: get-instance
@@ -117,6 +163,10 @@ jobs:
             --logical-resource-id EC2Instance \
             --query 'StackResources[0].PhysicalResourceId' \
             --output text)
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "::error::Failed to get EC2 instance ID"
+            exit 1
+          fi
           echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
 
       - name: Wait for instance to be ready
@@ -125,9 +175,18 @@ jobs:
             --instance-ids ${{ steps.get-instance.outputs.instance_id }}
 
       - name: Run deployment script on EC2
+        id: deploy
         run: |
-          aws ssm send-command \
+          COMMAND_ID=$(aws ssm send-command \
             --instance-ids ${{ steps.get-instance.outputs.instance_id }} \
             --document-name "AWS-RunShellScript" \
             --parameters commands=["cd /quadratic-selfhost && ./login.sh && ./start.sh"] \
-            --comment "Deploying new images after build"
+            --comment "Deploying new images after build" \
+            --query 'Command.CommandId' \
+            --output text)
+
+          # Wait for command completion
+          echo "Waiting for deployment command to complete..."
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id ${{ steps.get-instance.outputs.instance_id }}
