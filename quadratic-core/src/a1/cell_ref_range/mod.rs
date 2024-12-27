@@ -3,7 +3,10 @@ use std::{fmt, str::FromStr};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::{Pos, Rect, RefRangeBounds};
+use crate::{
+    grid::{SheetId, TableMap},
+    Pos, Rect, RefRangeBounds,
+};
 
 use super::{A1Error, TableRef, UNBOUNDED};
 
@@ -113,10 +116,10 @@ impl CellRefRange {
         }
     }
 
-    pub fn might_intersect_rect(&self, rect: Rect) -> bool {
+    pub fn might_intersect_rect(&self, rect: Rect, table_map: &TableMap) -> bool {
         match self {
             Self::Sheet { range } => range.might_intersect_rect(rect),
-            Self::Table { .. } => todo!(),
+            Self::Table { range } => range.intersect_rect(rect, table_map),
         }
     }
 
@@ -137,28 +140,28 @@ impl CellRefRange {
     pub fn is_column_range(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_column_range(),
-            Self::Table { .. } => todo!(),
+            Self::Table { .. } => false,
         }
     }
 
     pub fn has_column_range(&self, col: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_column_range(col),
-            Self::Table { .. } => todo!(),
+            Self::Table { .. } => false,
         }
     }
 
     pub fn is_row_range(&self) -> bool {
         match self {
             Self::Sheet { range } => range.is_row_range(),
-            Self::Table { .. } => todo!(),
+            Self::Table { .. } => false,
         }
     }
 
     pub fn has_row_range(&self, row: i64) -> bool {
         match self {
             Self::Sheet { range } => range.has_row_range(row),
-            Self::Table { .. } => todo!(),
+            Self::Table { .. } => false,
         }
     }
 
@@ -183,10 +186,16 @@ impl CellRefRange {
         }
     }
 
-    pub fn selected_columns(&self, from: i64, to: i64) -> Vec<i64> {
+    pub fn selected_columns(
+        &self,
+        from: i64,
+        to: i64,
+        sheet_id: SheetId,
+        table_map: &TableMap,
+    ) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_columns(from, to),
-            Self::Table { .. } => todo!(),
+            Self::Table { range } => range.selected_cols(from, to, sheet_id, table_map),
         }
     }
 
@@ -197,10 +206,16 @@ impl CellRefRange {
         }
     }
 
-    pub fn selected_rows(&self, from: i64, to: i64) -> Vec<i64> {
+    pub fn selected_rows(
+        &self,
+        from: i64,
+        to: i64,
+        sheet_id: SheetId,
+        table_map: &TableMap,
+    ) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows(from, to),
-            Self::Table { .. } => todo!(),
+            Self::Table { range } => range.selected_rows(from, to, sheet_id, table_map),
         }
     }
 
@@ -359,100 +374,116 @@ mod tests {
 
     #[test]
     fn test_selected_columns() {
-        assert_eq!(CellRefRange::test_a1("A1").selected_columns(1, 10), vec![1]);
-        assert_eq!(CellRefRange::test_a1("A").selected_columns(1, 10), vec![1]);
+        let sheet_id = SheetId::test();
+        let table_map = TableMap::default();
         assert_eq!(
-            CellRefRange::test_a1("A:B").selected_columns(1, 10),
+            CellRefRange::test_a1("A1").selected_columns(1, 10, sheet_id, &table_map),
+            vec![1]
+        );
+        assert_eq!(
+            CellRefRange::test_a1("A").selected_columns(1, 10, sheet_id, &table_map),
+            vec![1]
+        );
+        assert_eq!(
+            CellRefRange::test_a1("A:B").selected_columns(1, 10, sheet_id, &table_map),
             vec![1, 2]
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:B2").selected_columns(1, 10),
+            CellRefRange::test_a1("A1:B2").selected_columns(1, 10, sheet_id, &table_map),
             vec![1, 2]
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:D1").selected_columns(1, 10),
+            CellRefRange::test_a1("A1:D1").selected_columns(1, 10, sheet_id, &table_map),
             vec![1, 2, 3, 4]
         );
         // same as A1:D
         assert_eq!(
-            CellRefRange::test_a1("1:D").selected_columns(1, 10),
+            CellRefRange::test_a1("1:D").selected_columns(1, 10, sheet_id, &table_map),
             vec![1, 2, 3, 4]
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:C3").selected_columns(1, 10),
+            CellRefRange::test_a1("A1:C3").selected_columns(1, 10, sheet_id, &table_map),
             vec![1, 2, 3]
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:").selected_columns(1, 10),
+            CellRefRange::test_a1("A1:").selected_columns(1, 10, sheet_id, &table_map),
             vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         );
         assert_eq!(
-            CellRefRange::test_a1("*").selected_columns(2, 5),
+            CellRefRange::test_a1("*").selected_columns(2, 5, sheet_id, &table_map),
             vec![2, 3, 4, 5]
         );
         // same as A1:D
         assert_eq!(
-            CellRefRange::test_a1(":D").selected_columns(2, 5),
+            CellRefRange::test_a1(":D").selected_columns(2, 5, sheet_id, &table_map),
             vec![2, 3, 4]
         );
         assert_eq!(
-            CellRefRange::test_a1("10").selected_columns(2, 5),
+            CellRefRange::test_a1("10").selected_columns(2, 5, sheet_id, &table_map),
             vec![2, 3, 4, 5]
         );
         // same as A1:E
         assert_eq!(
-            CellRefRange::test_a1("4:E").selected_columns(2, 5),
+            CellRefRange::test_a1("4:E").selected_columns(2, 5, sheet_id, &table_map),
             vec![2, 3, 4, 5]
         );
     }
 
     #[test]
     fn test_selected_rows() {
-        assert_eq!(CellRefRange::test_a1("A1").selected_rows(1, 10), vec![1]);
-        assert_eq!(CellRefRange::test_a1("1").selected_rows(1, 10), vec![1]);
+        let sheet_id = SheetId::test();
+        let table_map = TableMap::default();
         assert_eq!(
-            CellRefRange::test_a1("1:3").selected_rows(1, 10),
+            CellRefRange::test_a1("A1").selected_rows(1, 10, sheet_id, &table_map),
+            vec![1]
+        );
+        assert_eq!(
+            CellRefRange::test_a1("1").selected_rows(1, 10, sheet_id, &table_map),
+            vec![1]
+        );
+        assert_eq!(
+            CellRefRange::test_a1("1:3").selected_rows(1, 10, sheet_id, &table_map),
             vec![1, 2, 3]
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:B2").selected_rows(1, 10),
+            CellRefRange::test_a1("A1:B2").selected_rows(1, 10, sheet_id, &table_map),
             vec![1, 2]
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:A4").selected_rows(1, 10),
+            CellRefRange::test_a1("A1:A4").selected_rows(1, 10, sheet_id, &table_map),
             vec![1, 2, 3, 4]
         );
         assert_eq!(
-            CellRefRange::test_a1("1:4").selected_rows(1, 10),
+            CellRefRange::test_a1("1:4").selected_rows(1, 10, sheet_id, &table_map),
             vec![1, 2, 3, 4]
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:C3").selected_rows(1, 10),
+            CellRefRange::test_a1("A1:C3").selected_rows(1, 10, sheet_id, &table_map),
             vec![1, 2, 3]
         );
         assert_eq!(
-            CellRefRange::test_a1("A1:").selected_rows(1, 10),
+            CellRefRange::test_a1("A1:").selected_rows(1, 10, sheet_id, &table_map),
             vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         );
         // same as A1:4
         assert_eq!(
-            CellRefRange::test_a1(":4").selected_rows(2, 10),
+            CellRefRange::test_a1(":4").selected_rows(2, 10, sheet_id, &table_map),
             vec![2, 3, 4]
         );
         assert_eq!(
-            CellRefRange::test_a1("*").selected_rows(2, 5),
+            CellRefRange::test_a1("*").selected_rows(2, 5, sheet_id, &table_map),
             vec![2, 3, 4, 5]
         );
         assert_eq!(
-            CellRefRange::test_a1("A").selected_rows(2, 5),
+            CellRefRange::test_a1("A").selected_rows(2, 5, sheet_id, &table_map),
             vec![2, 3, 4, 5]
         );
         assert_eq!(
-            CellRefRange::test_a1("C:E5").selected_rows(1, 10),
+            CellRefRange::test_a1("C:E5").selected_rows(1, 10, sheet_id, &table_map),
             vec![1, 2, 3, 4, 5]
         );
         assert_eq!(
-            CellRefRange::test_a1("E5:C").selected_rows(1, 10),
+            CellRefRange::test_a1("E5:C").selected_rows(1, 10, sheet_id, &table_map),
             vec![5, 6, 7, 8, 9, 10]
         );
     }

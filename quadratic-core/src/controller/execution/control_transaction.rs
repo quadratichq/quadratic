@@ -211,6 +211,11 @@ impl GridController {
             if let Some(selection) = transaction.update_selection {
                 crate::wasm_bindings::js::jsSetCursor(selection);
             }
+
+            // send updated TableMap to client
+            if !transaction.code_cells.is_empty() || !transaction.offsets_modified.is_empty() {
+                self.send_table_map();
+            }
         }
     }
 

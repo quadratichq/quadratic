@@ -91,6 +91,8 @@ impl GridController {
                             sheet.borders.send_sheet_borders(*sheet_id);
                         }
                     });
+
+                    grid.send_table_map();
                 }
                 Ok(grid)
             }

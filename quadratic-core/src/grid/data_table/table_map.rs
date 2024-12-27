@@ -2,21 +2,30 @@
 //! JsSelection to properly return positions w/o needing to call into core.
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use super::*;
-use crate::Rect;
+use crate::grid::SheetId;
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableMapEntry {
-    sheet_id: String,
-    table_name: String,
-    column_names: Vec<String>,
-    bounds: Rect,
+    pub sheet_id: SheetId,
+    pub table_name: String,
+    pub column_names: Vec<String>,
+    pub bounds: Rect,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-pub struct TableMap(Vec<TableMapEntry>);
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+pub struct TableMap {
+    pub tables: Vec<TableMapEntry>,
+}
+
+impl TableMap {
+    pub fn table(&self, table_name: &str) -> Option<&TableMapEntry> {
+        self.tables
+            .iter()
+            .find(|table| &table.table_name == table_name)
+    }
+}
 
 impl Grid {
     pub fn table_map(&self) -> TableMap {
@@ -26,7 +35,7 @@ impl Grid {
             sheet.data_tables.iter().for_each(|(pos, table)| {
                 if !table.has_error() && !table.spill_error {
                     tables.push(TableMapEntry {
-                        sheet_id: sheet_id.to_string(),
+                        sheet_id,
                         table_name: table.name.clone(),
                         column_names: table.columns_map(),
                         bounds: table.output_rect(*pos, true),
@@ -34,6 +43,6 @@ impl Grid {
                 }
             });
         }
-        TableMap(tables)
+        TableMap { tables }
     }
 }

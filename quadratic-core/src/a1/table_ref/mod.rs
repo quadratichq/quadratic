@@ -60,6 +60,7 @@
 
 pub mod display;
 pub mod parse;
+pub mod query;
 mod table_ref_range;
 mod tokenize;
 
@@ -77,7 +78,7 @@ pub struct TableRef {
     pub data: bool,
     pub headers: bool,
     pub totals: bool,
-    pub row_ranges: RowRange,
+    pub row_range: RowRange,
     pub col_ranges: Vec<ColRange>,
 }
 
@@ -88,7 +89,7 @@ impl TableRef {
             data: true,
             headers: false,
             totals: false,
-            row_ranges: RowRange::All,
+            row_range: RowRange::All,
             col_ranges: vec![],
         }
     }
@@ -109,7 +110,7 @@ mod tests {
                 data: true,
                 headers: false,
                 totals: false,
-                row_ranges: RowRange::All,
+                row_range: RowRange::All,
                 col_ranges: vec![],
             }
         );

@@ -41,7 +41,7 @@ impl TableRef {
                 data: true,
                 headers: false,
                 totals: false,
-                row_ranges: RowRange::All,
+                row_range: RowRange::All,
                 col_ranges: vec![],
             });
         }
@@ -112,7 +112,7 @@ impl TableRef {
             data: data.unwrap_or(true),
             headers,
             totals,
-            row_ranges: row_ranges.unwrap_or(RowRange::All),
+            row_range: row_ranges.unwrap_or(RowRange::All),
             col_ranges: column_ranges,
         })
     }
@@ -194,7 +194,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
-                    row_ranges: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
+                    row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
                     col_ranges: vec![ColRange::Col("Column 1".to_string())],
                 },
             ),
@@ -205,7 +205,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
-                    row_ranges: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
+                    row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
                     col_ranges: vec![ColRange::Col("Column 2".to_string())],
                 },
             ),
@@ -216,7 +216,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
-                    row_ranges: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
+                    row_range: RowRange::Rows(vec![RowRangeEntry::new_rel(12, 15)]),
                     col_ranges: vec![ColRange::Col("Column 3".to_string())],
                 },
             ),

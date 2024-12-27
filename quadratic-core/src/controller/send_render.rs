@@ -346,6 +346,15 @@ impl GridController {
             transaction.operations.len() as i32,
         );
     }
+
+    pub fn send_table_map(&self) {
+        if cfg!(target_family = "wasm") || cfg!(test) {
+            let table_map = self.grid().table_map();
+            if let Ok(table_map) = serde_json::to_string(&table_map) {
+                crate::wasm_bindings::js::jsTableMap(table_map);
+            }
+        }
+    }
 }
 
 #[cfg(test)]

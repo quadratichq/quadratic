@@ -108,12 +108,12 @@ export class SheetCursor {
 
   // Returns the columns that are selected via ranges [c1_start, c1_end, c2_start, c2_end, ...].
   getSelectedColumnRanges(from: number, to: number): number[] {
-    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to));
+    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to, sheets.sheet.id, sheets.tableMap));
   }
 
   // Returns the rows that are selected via ranges [r1_start, r1_end, r2_start, r2_end, ...].
   getSelectedRowRanges(from: number, to: number): number[] {
-    return Array.from(this.jsSelection.getSelectedRowRanges(from, to));
+    return Array.from(this.jsSelection.getSelectedRowRanges(from, to, sheets.sheet.id, sheets.tableMap));
   }
 
   // Returns the bottom-right cell for the selection.
@@ -130,14 +130,14 @@ export class SheetCursor {
   // Returns rectangle in case of single finite range selection having more than one cell
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangle(): Rectangle | undefined {
-    const rect = this.jsSelection.getSingleRectangle();
+    const rect = this.jsSelection.getSingleRectangle(sheets.sheet.id, sheets.tableMap);
     return rect ? rectToRectangle(rect) : undefined;
   }
 
   // Returns rectangle in case of single finite range selection, otherwise returns a rectangle that represents the cursor
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangleOrCursor(): Rectangle | undefined {
-    const rect = this.jsSelection.getSingleRectangleOrCursor();
+    const rect = this.jsSelection.getSingleRectangleOrCursor(sheets.sheet.id, sheets.tableMap);
     return rect ? rectToRectangle(rect) : undefined;
   }
 
@@ -228,7 +228,7 @@ export class SheetCursor {
   }
 
   isMultiCursor(): boolean {
-    return this.jsSelection.isMultiCursor();
+    return this.jsSelection.isMultiCursor(sheets.sheet.id, sheets.tableMap);
   }
 
   isMultiRange(): boolean {
@@ -268,10 +268,6 @@ export class SheetCursor {
   rangeCount(): number {
     return this.getFiniteRanges().length + this.getInfiniteRanges().length;
   }
-
-  // getRanges(): CellRefRange[] {
-  //   return this.getFiniteRanges().concat(this.getInfiniteRanges());
-  // }
 
   getFiniteRanges(): CellRefRange[] {
     const ranges = this.jsSelection.getFiniteRanges();

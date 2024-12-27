@@ -45,12 +45,11 @@ use quadratic_core::grid::sheet::validations::validation_rules::ValidationRule;
 use quadratic_core::grid::sort::DataTableSort;
 use quadratic_core::grid::sort::SortDirection;
 use quadratic_core::grid::JsCellsAccessed;
-use quadratic_core::grid::TableMap;
-use quadratic_core::grid::TableMapEntry;
 use quadratic_core::grid::{
     CellAlign, CellVerticalAlign, CellWrap, GridBounds, NumericFormat, NumericFormatKind, SheetId,
 };
 use quadratic_core::grid::{CodeCellLanguage, ConnectionKind};
+use quadratic_core::js_selection::JsCoordinate;
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::small_timestamp::SmallTimestamp;
@@ -61,8 +60,7 @@ use quadratic_core::CellRefCoord;
 use quadratic_core::CellRefRangeEnd;
 use quadratic_core::RefRangeBounds;
 use quadratic_core::{
-    ArraySize, Axis, CellRefRange, JsCoordinate, Pos, Rect, RunError, RunErrorMsg, SheetPos,
-    SheetRect, Span,
+    ArraySize, Axis, CellRefRange, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Span,
 };
 use ts_rs::TS;
 
@@ -152,8 +150,6 @@ fn main() {
         DataTableSort,
         SmallTimestamp,
         Span,
-        TableMapEntry,
-        TableMap,
         TextCase,
         TextMatch,
         TransactionName,

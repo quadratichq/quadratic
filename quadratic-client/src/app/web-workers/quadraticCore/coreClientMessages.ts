@@ -1175,6 +1175,11 @@ export interface CoreClientFiniteRectFromSelection {
   rect?: Rectangle;
 }
 
+export interface CoreClientTableMap {
+  type: 'coreClientTableMap';
+  tableMap: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1334,4 +1339,5 @@ export type CoreClientMessage =
   | CoreClientFindNextRowForRect
   | CoreClientMoveCodeCellVertically
   | CoreClientMoveCodeCellHorizontally
-  | CoreClientFiniteRectFromSelection;
+  | CoreClientFiniteRectFromSelection
+  | CoreClientTableMap;

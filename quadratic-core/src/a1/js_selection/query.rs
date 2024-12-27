@@ -1,5 +1,7 @@
 use wasm_bindgen::prelude::*;
 
+use crate::grid::TableMap;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -41,17 +43,19 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "getLargestRectangle")]
     pub fn get_largest_rectangle(&self) -> Result<Rect, String> {
-        Ok(self.selection.largest_rect_finite())
+        Ok(self.selection.largest_rect_finite(&self.table_map))
     }
 
     #[wasm_bindgen(js_name = "getSingleRectangle")]
     pub fn get_single_rectangle(&self) -> Result<Option<Rect>, String> {
-        Ok(self.selection.single_rect())
+        Ok(self.selection.single_rect(self.sheet_id, &self.table_map))
     }
 
     #[wasm_bindgen(js_name = "getSingleRectangleOrCursor")]
     pub fn get_single_rectangle_or_cursor(&self) -> Result<Option<Rect>, String> {
-        Ok(self.selection.single_rect_or_cursor())
+        Ok(self
+            .selection
+            .single_rect_or_cursor(self.sheet_id, &self.table_map))
     }
 
     #[wasm_bindgen(js_name = "contains")]
@@ -142,7 +146,7 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "getSelectedColumnRanges")]
     pub fn get_selected_column_ranges(&self, from: u32, to: u32) -> Vec<u32> {
         self.selection
-            .selected_column_ranges(from as i64, to as i64)
+            .selected_column_ranges(from as i64, to as i64, self.sheet_id, &self.table_map)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -151,7 +155,7 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "getSelectedRowRanges")]
     pub fn get_selected_row_ranges(&self, from: u32, to: u32) -> Vec<u32> {
         self.selection
-            .selected_row_ranges(from as i64, to as i64)
+            .selected_row_ranges(from as i64, to as i64, self.sheet_id, &self.table_map)
             .iter()
             .map(|c| *c as u32)
             .collect()
@@ -168,8 +172,16 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "isMultiCursor")]
-    pub fn is_multi_cursor(&self) -> bool {
-        self.selection.is_multi_cursor()
+    pub fn is_multi_cursor(&self, sheet_id: String, table_map: String) -> bool {
+        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+            dbgjs!("Unable to parse sheet_id in isMultiCursor");
+            return false;
+        };
+        let Ok(table_map) = serde_json::from_str::<TableMap>(&table_map) else {
+            dbgjs!("Unable to parse table_map in isMultiCursor");
+            return false;
+        };
+        self.selection.is_multi_cursor(sheet_id, &table_map)
     }
 
     #[wasm_bindgen(js_name = "toA1String")]

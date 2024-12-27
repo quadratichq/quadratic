@@ -140,6 +140,8 @@ interface EventTypes {
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
   codeEditorCodeCell: (codeCell?: CodeCell) => void;
+
+  tableMap: (tableMap: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

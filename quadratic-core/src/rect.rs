@@ -313,6 +313,20 @@ impl Rect {
         row >= self.min.y && row <= self.max.y
     }
 
+    /// Returns intersection of a range of columns with the rectangle
+    pub fn cols_range(&self, from: i64, to: i64) -> Vec<i64> {
+        (self.min.x..=self.max.x)
+            .filter(|x| *x >= from && *x <= to)
+            .collect()
+    }
+
+    /// Returns intersection of a range of rows with the rectangle
+    pub fn rows_range(&self, from: i64, to: i64) -> Vec<i64> {
+        (self.min.y..=self.max.y)
+            .filter(|y| *y >= from && *y <= to)
+            .collect()
+    }
+
     #[cfg(test)]
     /// Creates a rectangle from a string like "A1:B2".
     pub fn test_a1(s: &str) -> Self {
@@ -690,5 +704,23 @@ mod test {
         // Test non-sequential coordinates (should be normalized)
         let rect = Rect::new(5, 5, 2, 3); // will be normalized to (2,3) to (5,5)
         assert_eq!(rect.a1_string(), "B3:E5");
+    }
+
+    #[test]
+    fn test_cols_range() {
+        let rect = Rect::test_a1("B1:D4");
+        assert_eq!(rect.cols_range(1, 2), vec![2]);
+        assert_eq!(rect.cols_range(1, 5), vec![2, 3, 4]);
+        assert_eq!(rect.cols_range(3, 4), vec![3, 4]);
+        assert_eq!(rect.cols_range(6, 10), Vec::<i64>::new());
+    }
+
+    #[test]
+    fn test_rows_range() {
+        let rect = Rect::test_a1("B1:D4");
+        assert_eq!(rect.rows_range(1, 2), vec![2]);
+        assert_eq!(rect.rows_range(1, 5), vec![2, 3, 4]);
+        assert_eq!(rect.rows_range(3, 4), vec![3, 4]);
+        assert_eq!(rect.rows_range(6, 10), Vec::<i64>::new());
     }
 }

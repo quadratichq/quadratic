@@ -5,7 +5,10 @@ use std::str::FromStr;
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::SheetId, Pos, Rect, SheetRect};
+use crate::{
+    grid::{SheetId, TableMap},
+    Pos, Rect, SheetRect,
+};
 
 use super::{A1Selection, SheetNameIdMap};
 
@@ -24,6 +27,14 @@ pub struct JsCoordinate {
 #[wasm_bindgen]
 pub struct JsSelection {
     selection: A1Selection,
+    sheet_id: SheetId,
+    table_map: TableMap,
+}
+
+impl JsSelection {
+    pub fn table_map(&self) -> &TableMap {
+        &self.table_map
+    }
 }
 
 impl From<Pos> for JsCoordinate {
@@ -42,6 +53,7 @@ impl JsSelection {
         self.selection.exclude_cells(
             Pos::new(x0 as i64, y0 as i64),
             Some(Pos::new(x1 as i64, y1 as i64)),
+            &self.table_map,
         );
     }
 }

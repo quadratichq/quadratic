@@ -11,9 +11,10 @@ impl GridController {
     pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
         let mut dependent_cells = HashSet::new();
 
+        let table_map = self.grid.table_map();
         self.grid.sheets().iter().for_each(|sheet| {
             sheet.iter_code_runs().for_each(|(pos, code_run)| {
-                if code_run.cells_accessed.intersects(sheet_rect) {
+                if code_run.cells_accessed.intersects(sheet_rect, &table_map) {
                     dependent_cells.insert(pos.to_sheet_pos(sheet.id));
                 }
             });

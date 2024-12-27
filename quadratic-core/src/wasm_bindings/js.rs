@@ -136,6 +136,8 @@ extern "C" {
     pub fn jsSendViewportBuffer(buffer: SharedArrayBuffer);
 
     pub fn jsClientMessage(message: String, error: bool);
+
+    pub fn jsTableMap(table_map: String);
 }
 
 #[cfg(test)]
@@ -669,4 +671,13 @@ pub fn jsClientMessage(message: String, error: bool) {
         "jsClientMessage",
         format!("{},{}", message, error),
     ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsTableMap(table_map: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsTableMap", table_map));
 }

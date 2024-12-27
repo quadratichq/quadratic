@@ -12,7 +12,7 @@ impl TableRef {
         self.data
             && !self.headers
             && !self.totals
-            && self.row_ranges == RowRange::All
+            && self.row_range == RowRange::All
             && self.col_ranges.is_empty()
     }
 
@@ -36,7 +36,7 @@ impl TableRef {
 
     /// Returns the string representation of the row range.
     fn row_range_to_string(&self) -> Vec<String> {
-        match &self.row_ranges {
+        match &self.row_range {
             RowRange::All => vec![],
             RowRange::CurrentRow => vec!["[#THIS ROW]".to_string()],
             RowRange::Rows(rows) => rows

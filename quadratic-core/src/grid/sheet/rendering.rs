@@ -242,9 +242,13 @@ impl Sheet {
                 }
             });
 
+        // need a sheet-specific table map to get validations (since
+        // validation.selection may have a reference to table w/in the sheet)
+        let table_map = self.table_map();
+
         // Populate validations for cells that are not yet in the render_cells
         self.validations
-            .in_rect(rect)
+            .in_rect(rect, &table_map)
             .iter()
             .rev() // we need to reverse to ensure that later rules overwrite earlier ones
             .for_each(|validation| {

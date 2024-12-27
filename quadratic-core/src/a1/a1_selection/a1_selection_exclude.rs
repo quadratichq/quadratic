@@ -6,7 +6,7 @@
 //! excluded rect. The one range may turn into between 0 and 4 ranges: the
 //! remaining Top, Bottom, Left, and Right rects (calculated in that order).
 
-use crate::{CellRefCoord, CellRefRangeEnd, Pos, Rect, RefRangeBounds};
+use crate::{grid::TableMap, CellRefCoord, CellRefRangeEnd, Pos, Rect, RefRangeBounds};
 
 use super::{A1Selection, CellRefRange};
 
@@ -105,7 +105,7 @@ impl A1Selection {
     }
 
     /// Excludes the given cells from the selection.
-    pub fn exclude_cells(&mut self, p1: Pos, p2: Option<Pos>) {
+    pub fn exclude_cells(&mut self, p1: Pos, p2: Option<Pos>, table_map: &TableMap) {
         // normalize p1 and p2
         let (p1, p2) = if let Some(p2) = p2 {
             (
@@ -129,7 +129,7 @@ impl A1Selection {
                 && (p2.is_none() || p2.is_some_and(|p2| !range.is_pos_range(p2, Some(p1))))
             {
                 if let Some(p2) = p2 {
-                    if range.might_intersect_rect(Rect { min: p1, max: p2 }) {
+                    if range.might_intersect_rect(Rect { min: p1, max: p2 }, table_map) {
                         ranges.extend(A1Selection::remove_rect(range, p1, p2));
                     } else {
                         ranges.push(range);
@@ -385,16 +385,17 @@ mod test {
 
     #[test]
     fn test_exclude_cells() {
-        // let mut selection = A1Selection::test("A1,B2:C3");
-        // selection.exclude_cells(Pos { x: 2, y: 2 }, Some(Pos { x: 3, y: 3 }));
-        // assert_eq!(selection.ranges, vec![CellRefRange::test("A1")]);
+        let mut selection = A1Selection::test_a1("A1,B2:C3");
+        let table_map = TableMap::default();
+        selection.exclude_cells(Pos { x: 2, y: 2 }, Some(Pos { x: 3, y: 3 }), &table_map);
+        assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A1")]);
 
         let mut selection = A1Selection::test_a1("B2:C3");
-        selection.exclude_cells(pos![B2], Some(pos![C3]));
+        selection.exclude_cells(pos![B2], Some(pos![C3]), &table_map);
         assert_eq!(selection.cursor, Pos { x: 2, y: 2 });
 
         selection = A1Selection::test_a1("A1:C3");
-        selection.exclude_cells(pos![B2], None);
+        selection.exclude_cells(pos![B2], None, &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -408,14 +409,16 @@ mod test {
     #[test]
     fn test_exclude_cells_from_top_left() {
         let mut selection = A1Selection::test_a1("A1:C3");
-        selection.exclude_cells(pos![A1], Some(pos![C2]));
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![A1], Some(pos![C2]), &table_map);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("A3:C3")]);
     }
 
     #[test]
     fn test_exclude_cells_multiple() {
         let mut selection = A1Selection::test_a1("A1:C3,E5:F7");
-        selection.exclude_cells("B2".into(), None);
+        let table_map = TableMap::default();
+        selection.exclude_cells("B2".into(), None, &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -426,7 +429,7 @@ mod test {
                 CellRefRange::test_a1("E5:F7"),
             ]
         );
-        selection.exclude_cells(pos![A2], Some(pos![C3]));
+        selection.exclude_cells(pos![A2], Some(pos![C3]), &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -439,15 +442,16 @@ mod test {
     #[test]
     fn test_exclude_cells_column() {
         let mut selection = A1Selection::test_a1("C");
-        selection.exclude_cells(pos![C1], None);
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![C1], None, &table_map);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("C2:C")]);
 
         let mut selection = A1Selection::test_a1("C");
-        selection.exclude_cells(pos![C1], Some(pos![D5]));
+        selection.exclude_cells(pos![C1], Some(pos![D5]), &table_map);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("C6:C")]);
 
         let mut selection = A1Selection::test_a1("C");
-        selection.exclude_cells(pos![C2], Some(pos![E5]));
+        selection.exclude_cells(pos![C2], Some(pos![E5]), &table_map);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("C1"), CellRefRange::test_a1("C6:C")]
@@ -457,7 +461,8 @@ mod test {
     #[test]
     fn test_exclude_cells_column_range() {
         let mut selection = A1Selection::test_a1("C:E");
-        selection.exclude_cells(pos![C1], None);
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![C1], None, &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -467,7 +472,7 @@ mod test {
         );
 
         let mut selection = A1Selection::test_a1("C:F");
-        selection.exclude_cells(pos![D2], Some(pos![E3]));
+        selection.exclude_cells(pos![D2], Some(pos![E3]), &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -482,11 +487,12 @@ mod test {
     #[test]
     fn test_exclude_cells_row() {
         let mut selection = A1Selection::test_a1("1");
-        selection.exclude_cells(pos![A1], None);
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![A1], None, &table_map);
         assert_eq!(selection.ranges, vec![CellRefRange::test_a1("B1:1")]);
 
         let mut selection = A1Selection::test_a1("2");
-        selection.exclude_cells(pos![B1], Some(pos![C5]));
+        selection.exclude_cells(pos![B1], Some(pos![C5]), &table_map);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("A2"), CellRefRange::test_a1("D2:2")]
@@ -496,7 +502,8 @@ mod test {
     #[test]
     fn test_exclude_cells_rows() {
         let mut selection = A1Selection::test_a1("2:5");
-        selection.exclude_cells(pos![B2], None);
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![B2], None, &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -507,7 +514,7 @@ mod test {
         );
 
         let mut selection = A1Selection::test_a1("2:5");
-        selection.exclude_cells(pos![B3], Some(pos![C4]));
+        selection.exclude_cells(pos![B3], Some(pos![C4]), &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -519,7 +526,7 @@ mod test {
         );
 
         let mut selection = A1Selection::test_a1("2:5");
-        selection.exclude_cells(pos![B3], Some(pos![C5]));
+        selection.exclude_cells(pos![B3], Some(pos![C5]), &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -533,7 +540,8 @@ mod test {
     #[test]
     fn test_exclude_cells_column_single_middle() {
         let mut selection = A1Selection::test_a1("C");
-        selection.exclude_cells(pos![C4], None);
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![C4], None, &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -546,7 +554,8 @@ mod test {
     #[test]
     fn test_exclude_cells_rows_single_middle() {
         let mut selection = A1Selection::test_a1("2");
-        selection.exclude_cells(pos![D2], None);
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![D2], None, &table_map);
         assert_eq!(
             selection.ranges,
             vec![
@@ -559,7 +568,8 @@ mod test {
     #[test]
     fn test_top_right_cell_failure() {
         let mut selection = A1Selection::test_a1("B7:C8");
-        selection.exclude_cells(pos![C7], None);
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![C7], None, &table_map);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("B8:C8"), CellRefRange::test_a1("B7")]
@@ -569,7 +579,8 @@ mod test {
     #[test]
     fn test_bottom_right_cell_failure() {
         let mut selection = A1Selection::test_a1("B7:C8");
-        selection.exclude_cells(pos![C8], None);
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![C8], None, &table_map);
         assert_eq!(
             selection.ranges,
             vec![CellRefRange::test_a1("B7:C7"), CellRefRange::test_a1("B8")]
@@ -579,7 +590,8 @@ mod test {
     #[test]
     fn test_3x3_exclude_middle() {
         let mut selection = A1Selection::test_a1("A1:C3");
-        selection.exclude_cells(pos![B2], None);
+        let table_map = TableMap::default();
+        selection.exclude_cells(pos![B2], None, &table_map);
         assert_eq!(
             selection.ranges,
             vec![

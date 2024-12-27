@@ -34,6 +34,7 @@ declare var self: WorkerGlobalScope &
     sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
+    sendTableMap: (tableMap: string) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
@@ -285,4 +286,8 @@ export const jsClientMessage = (message: string, error: boolean) => {
 
 export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
   self.sendViewportBuffer(buffer);
+};
+
+export const jsTableMap = (tableMap: string) => {
+  self.sendTableMap(tableMap);
 };
