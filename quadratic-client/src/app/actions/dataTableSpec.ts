@@ -161,7 +161,7 @@ export const dataTableSpec: DataTableSpec = {
       const table = getTable();
       if (table) {
         const selection = newSingleSelection(sheets.sheet.id, table.x, table.y);
-        quadraticCore.deleteCellValues(selection.save(), sheets.getCursorPosition());
+        quadraticCore.deleteCellValues(selection, sheets.getCursorPosition());
       }
     },
   },

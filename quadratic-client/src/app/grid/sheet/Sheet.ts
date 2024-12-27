@@ -54,7 +54,7 @@ export class Sheet {
   // Returns all validations that intersect with the given point.
   getValidation(x: number, y: number): Validation[] | undefined {
     return this.validations.filter((v) => {
-      const selection = stringToSelection(v.selection.toString(), this.id, sheets.getSheetIdNameMap());
+      const selection = stringToSelection(v.selection.toString(), this.id, sheets.getSheetIdNameMap(), sheets.tableMap);
       return selection.contains(x, y);
     });
   }

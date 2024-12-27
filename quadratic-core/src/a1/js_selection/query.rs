@@ -31,11 +31,6 @@ impl JsSelection {
         }
     }
 
-    #[wasm_bindgen(js_name = "getSelectionEnd")]
-    pub fn get_selection_end(&self) -> JsCoordinate {
-        self.selection.last_selection_end().into()
-    }
-
     #[wasm_bindgen(js_name = "getBottomRightCell")]
     pub fn get_bottom_right_cell(&self) -> JsCoordinate {
         self.selection.bottom_right_cell().into()

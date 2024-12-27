@@ -45,7 +45,7 @@ export class SheetCursor {
   boxCells: boolean;
 
   constructor(sheet: Sheet) {
-    this.jsSelection = new JsSelection(sheet.id);
+    this.jsSelection = new JsSelection(sheet.id, sheets.tableMap);
     this.boxCells = false;
   }
 
@@ -70,7 +70,7 @@ export class SheetCursor {
   }
 
   load(selectionString: string): void {
-    this.jsSelection = JsSelection.load(selectionString);
+    this.jsSelection.load(selectionString);
     multiplayer.sendSelection(this.save());
     pixiApp.cursor.dirty = true;
   }
@@ -101,19 +101,14 @@ export class SheetCursor {
     return this.jsSelection.getCursor();
   }
 
-  // Returns the last selection's end cell.
-  get selectionEnd(): JsCoordinate {
-    return this.jsSelection.getSelectionEnd();
-  }
-
   // Returns the columns that are selected via ranges [c1_start, c1_end, c2_start, c2_end, ...].
   getSelectedColumnRanges(from: number, to: number): number[] {
-    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to, sheets.sheet.id, sheets.tableMap));
+    return Array.from(this.jsSelection.getSelectedColumnRanges(from, to));
   }
 
   // Returns the rows that are selected via ranges [r1_start, r1_end, r2_start, r2_end, ...].
   getSelectedRowRanges(from: number, to: number): number[] {
-    return Array.from(this.jsSelection.getSelectedRowRanges(from, to, sheets.sheet.id, sheets.tableMap));
+    return Array.from(this.jsSelection.getSelectedRowRanges(from, to));
   }
 
   // Returns the bottom-right cell for the selection.
@@ -130,14 +125,14 @@ export class SheetCursor {
   // Returns rectangle in case of single finite range selection having more than one cell
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangle(): Rectangle | undefined {
-    const rect = this.jsSelection.getSingleRectangle(sheets.sheet.id, sheets.tableMap);
+    const rect = this.jsSelection.getSingleRectangle();
     return rect ? rectToRectangle(rect) : undefined;
   }
 
   // Returns rectangle in case of single finite range selection, otherwise returns a rectangle that represents the cursor
   // Returns undefined if there are multiple ranges or infinite range selection
   getSingleRectangleOrCursor(): Rectangle | undefined {
-    const rect = this.jsSelection.getSingleRectangleOrCursor(sheets.sheet.id, sheets.tableMap);
+    const rect = this.jsSelection.getSingleRectangleOrCursor();
     return rect ? rectToRectangle(rect) : undefined;
   }
 

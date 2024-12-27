@@ -134,7 +134,8 @@ impl A1Selection {
                     };
                     Pos { x, y }
                 }
-                CellRefRange::Table { .. } => todo!(),
+                // todo: not sure how autofill in tables will work
+                CellRefRange::Table { .. } => self.cursor,
             }
         } else {
             self.cursor

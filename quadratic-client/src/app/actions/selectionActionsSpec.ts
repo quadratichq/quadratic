@@ -101,9 +101,10 @@ export const selectionActionsSpec: SelectionActionSpec = {
   [Action.MoveCursorLeftWithSelection]: {
     label: 'Move cursor left with selection',
     run: () => {
-      const cursor = sheets.sheet.cursor;
-      const selectionEnd = cursor.selectionEnd;
-      cursor.selectTo(selectionEnd.x - 1, selectionEnd.y, false);
+      // const cursor = sheets.sheet.cursor;
+      console.warn('todo moveCursorLeftWithSelection');
+      // const selectionEnd = cursor.selectionEnd;
+      // cursor.selectTo(selectionEnd.x - 1, selectionEnd.y, false);
     },
   },
   [Action.MoveCursorRight]: {
@@ -125,9 +126,10 @@ export const selectionActionsSpec: SelectionActionSpec = {
   [Action.MoveCursorRightWithSelection]: {
     label: 'Move cursor right with selection',
     run: () => {
-      const cursor = sheets.sheet.cursor;
-      const selectionEnd = cursor.selectionEnd;
-      cursor.selectTo(selectionEnd.x + 1, selectionEnd.y, false);
+      console.warn('todo moveCursorRightWithSelection');
+      // const cursor = sheets.sheet.cursor;
+      // const selectionEnd = cursor.selectionEnd;
+      // cursor.selectTo(selectionEnd.x + 1, selectionEnd.y, false);
     },
   },
   [Action.GotoA1]: {

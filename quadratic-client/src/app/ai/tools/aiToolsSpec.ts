@@ -118,7 +118,12 @@ To clear the values of a cell, set the value to an empty string.\n
     action: async (args) => {
       const { top_left_position, cell_values } = args;
       try {
-        const selection = stringToSelection(top_left_position, sheets.current, sheets.getSheetIdNameMap());
+        const selection = stringToSelection(
+          top_left_position,
+          sheets.current,
+          sheets.getSheetIdNameMap(),
+          sheets.tableMap
+        );
         if (!selection.isSingleSelection()) {
           return 'Invalid code cell position, this should be a single cell, not a range';
         }
@@ -183,7 +188,12 @@ Always refer to the data from cell by its position in a1 notation from respectiv
     action: async (args) => {
       let { code_cell_language, code_string, code_cell_position, output_width, output_height } = args;
       try {
-        const selection = stringToSelection(code_cell_position, sheets.current, sheets.getSheetIdNameMap());
+        const selection = stringToSelection(
+          code_cell_position,
+          sheets.current,
+          sheets.getSheetIdNameMap(),
+          sheets.tableMap
+        );
         if (!selection.isSingleSelection()) {
           return 'Invalid code cell position, this should be a single cell, not a range';
         }
@@ -256,8 +266,13 @@ Target location is the top left corner of the target location on the currently o
     action: async (args) => {
       const { source_selection_rect, target_top_left_position } = args;
       try {
-        const sourceSelection = stringToSelection(source_selection_rect, sheets.current, sheets.getSheetIdNameMap());
-        const sourceRect = sourceSelection.getSingleRectangle(sheets.current, sheets.tableMap);
+        const sourceSelection = stringToSelection(
+          source_selection_rect,
+          sheets.current,
+          sheets.getSheetIdNameMap(),
+          sheets.tableMap
+        );
+        const sourceRect = sourceSelection.getSingleRectangle();
         if (!sourceRect) {
           return 'Invalid source selection, this should be a single rectangle, not a range';
         }
@@ -275,7 +290,12 @@ Target location is the top left corner of the target location on the currently o
           },
         };
 
-        const targetSelection = stringToSelection(target_top_left_position, sheets.current, sheets.getSheetIdNameMap());
+        const targetSelection = stringToSelection(
+          target_top_left_position,
+          sheets.current,
+          sheets.getSheetIdNameMap(),
+          sheets.tableMap
+        );
         if (!targetSelection.isSingleSelection()) {
           return 'Invalid code cell position, this should be a single cell, not a range';
         }
@@ -317,7 +337,12 @@ delete_cells functions requires a string representation (in a1 notation) of a se
     action: async (args) => {
       const { selection } = args;
       try {
-        const sourceSelection = stringToSelection(selection, sheets.current, sheets.getSheetIdNameMap());
+        const sourceSelection = stringToSelection(
+          selection,
+          sheets.current,
+          sheets.getSheetIdNameMap(),
+          sheets.tableMap
+        );
 
         quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());
 
