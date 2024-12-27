@@ -717,7 +717,7 @@ mod test {
 
     #[test]
     fn test_rows_range() {
-        let rect = Rect::test_a1("B1:D4");
+        let rect = Rect::test_a1("A2:D4");
         assert_eq!(rect.rows_range(1, 2), vec![2]);
         assert_eq!(rect.rows_range(1, 5), vec![2, 3, 4]);
         assert_eq!(rect.rows_range(3, 4), vec![3, 4]);
