@@ -229,3 +229,34 @@ jobs:
           aws ssm wait command-executed \
             --command-id "$COMMAND_ID" \
             --instance-id ${{ steps.get-instance.outputs.instance_id }}
+
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        id: staging-build-deploy-images-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Staging Build & Deploy Images"
+
+      - name: Create or update comment on deployment success
+        if: success()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging Build & Deploy Images
+            Staging images built and deployed successfully.
+            Last deployed at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          edit-mode: replace
+
+      - name: Create or update comment on deployment failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.staging-build-deploy-images-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging Build & Deploy Images
+            The staging build & deploy images encountered an error. Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
