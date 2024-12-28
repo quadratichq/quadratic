@@ -25,10 +25,6 @@ jobs:
       - name: Check for build:dev label
         id: check-dev
         run: |
-          # Debug: Print all labels
-          echo "Labels: ${{ toJSON(github.event.pull_request.labels) }}"
-          echo "DEV: ${{ contains(github.event.pull_request.labels.*.name, 'build:dev') }}"
-
           if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:dev') }} == true ]]; then
             echo "DEV=true" >> $GITHUB_OUTPUT
           else
