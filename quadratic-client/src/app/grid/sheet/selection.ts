@@ -7,7 +7,7 @@ import {
 
 export const getSingleSelection = (sheetId: string, x: number, y: number): string => {
   try {
-    return newSingleSelection(sheetId, x, y);
+    return newSingleSelection(sheetId, x, y).save();
   } catch (e) {
     console.error('Failed to get single selection', e);
     throw new Error(`Failed to get single selection`);

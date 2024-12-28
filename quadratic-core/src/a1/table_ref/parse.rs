@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use super::{tokenize::Token, ColRange, RowRange, RowRangeEntry, TableRef};
-use crate::A1Error;
+use crate::{grid::TableMap, A1Error};
 
 lazy_static! {
     static ref TABLE_NAME_PATTERN: Regex =
@@ -23,7 +23,8 @@ impl TableRef {
     }
 
     /// Parse a table reference given a list of table_names.
-    pub fn parse(s: &str, table_names: &[String]) -> Result<Self, A1Error> {
+    pub fn parse(s: &str, table_map: &TableMap) -> Result<Self, A1Error> {
+        let table_names = table_map.table_names();
         let (table_name, remaining) = Self::parse_table_name(s)?;
         let table_name = if let Some(name) = table_names
             .iter()
@@ -121,6 +122,8 @@ impl TableRef {
 #[cfg(test)]
 #[serial_test::parallel]
 mod tests {
+    use crate::Rect;
+
     use super::*;
 
     #[test]
@@ -132,8 +135,8 @@ mod tests {
 
     #[test]
     fn test_simple_table_ref() {
-        let names = vec!["Table1".to_string()];
-        let table_ref = TableRef::parse("Table1", &names).unwrap();
+        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1", &table_map).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert!(table_ref.data);
         assert!(!table_ref.headers);
@@ -142,15 +145,15 @@ mod tests {
 
     #[test]
     fn test_table_name_case_insensitive() {
-        let names = vec!["Table1".to_string()];
-        let table_ref = TableRef::parse("table1", &names).unwrap();
+        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("table1", &table_map).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
     }
 
     #[test]
     fn test_table_name_not_found() {
-        let names = vec!["Table1".to_string()];
-        let result = TableRef::parse("Table2", &names);
+        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
+        let result = TableRef::parse("Table2", &table_map);
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
@@ -160,8 +163,8 @@ mod tests {
 
     #[test]
     fn test_table_with_column() {
-        let names = vec!["Table1".to_string()];
-        let table_ref = TableRef::parse("Table1[Column Name]", &names).unwrap();
+        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[Column Name]", &table_map).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert_eq!(table_ref.col_ranges.len(), 1);
         assert_eq!(
@@ -172,19 +175,19 @@ mod tests {
 
     #[test]
     fn test_table_with_headers() {
-        let names = vec!["Table1".to_string()];
-        let table_ref = TableRef::parse("Table1[[#HEADERS]]", &names).unwrap();
+        let table_map = TableMap::test(&[("Table1", Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[[#HEADERS]]", &table_map).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
         assert!(table_ref.headers);
     }
 
     #[test]
     fn test_table_with_row_range() {
-        let names = vec![
-            "Table1".to_string(),
-            "Table2".to_string(),
-            "Table3".to_string(),
-        ];
+        let table_map = TableMap::test(&[
+            ("Table1", Rect::test_a1("A1:B2")),
+            ("Table2", Rect::test_a1("C3:D4")),
+            ("Table3", Rect::test_a1("E5:F6")),
+        ]);
 
         let variations = [
             (
@@ -223,7 +226,7 @@ mod tests {
         ];
 
         for (s, expected) in variations.iter() {
-            let table_ref = TableRef::parse(s, &names).unwrap();
+            let table_ref = TableRef::parse(s, &table_map).unwrap();
             assert_eq!(table_ref, *expected, "{}", s);
         }
     }

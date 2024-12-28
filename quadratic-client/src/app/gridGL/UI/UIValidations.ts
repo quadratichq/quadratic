@@ -12,7 +12,7 @@ import { getRangeRectangleFromCellRefRange } from '@/app/gridGL/helpers/selectio
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CellRefRange } from '@/app/quadratic-core-types';
-import { A1SelectionValueToSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { A1SelectionToJsSelection } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { ValidationUIType, validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Container, Point } from 'pixi.js';
@@ -52,10 +52,14 @@ export class UIValidations extends Container<SpecialSprite> {
       const type = validationUIType(v);
       if (v.selection.sheet_id.id !== sheets.sheet.id || !type) continue;
 
-      const jsSelection = A1SelectionValueToSelection(v.selection);
-      const infiniteRangesStringified = jsSelection.getInfiniteRanges();
-      const infiniteRanges: CellRefRange[] = JSON.parse(infiniteRangesStringified);
-      infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
+      try {
+        const jsSelection = A1SelectionToJsSelection(v.selection, sheets.tableMap);
+        const infiniteRangesStringified = jsSelection.getInfiniteRanges();
+        const infiniteRanges: CellRefRange[] = JSON.parse(infiniteRangesStringified);
+        infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
+      } catch (e) {
+        console.log('UIValidations.ts: Error drawing infinite range', e);
+      }
     }
   }
 

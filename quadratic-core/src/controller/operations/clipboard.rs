@@ -438,6 +438,8 @@ impl GridController {
                 let delta_x = insert_at.x - clipboard.origin.x;
                 let delta_y = insert_at.y - clipboard.origin.y;
 
+                let table_map = self.grid().table_map();
+
                 // loop through the clipboard and replace cell references in formulas
                 for (x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                     for (&y, cell) in col.iter_mut() {
@@ -452,7 +454,7 @@ impl GridController {
                                         },
                                     );
                                 } else {
-                                    code_cell.update_cell_references(delta_x, delta_y);
+                                    code_cell.update_cell_references(delta_x, delta_y, &table_map);
                                 }
                             }
                             _ => { /* noop */ }

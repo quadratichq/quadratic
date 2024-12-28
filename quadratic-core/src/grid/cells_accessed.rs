@@ -32,7 +32,10 @@ impl Serialize for CellsAccessed {
         for (sheet_id, ranges) in &self.cells {
             map.serialize_entry(
                 &sheet_id.to_string(),
-                &ranges.iter().map(|r| r.to_string()).collect::<Vec<_>>(),
+                &ranges
+                    .iter()
+                    .map(|r| serde_json::to_string(r).unwrap())
+                    .collect::<Vec<_>>(),
             )?;
         }
         map.end()
@@ -49,8 +52,10 @@ impl<'de> Deserialize<'de> for CellsAccessed {
 
         for (sheet_id_str, ranges) in js_cells {
             if let Ok(sheet_id) = SheetId::from_str(&sheet_id_str) {
-                let ranges: HashSet<CellRefRange> =
-                    ranges.into_iter().filter_map(|r| r.parse().ok()).collect();
+                let ranges: HashSet<CellRefRange> = ranges
+                    .into_iter()
+                    .filter_map(|r| serde_json::from_str(&r).ok())
+                    .collect();
                 if !ranges.is_empty() {
                     cells.insert(sheet_id, ranges);
                 }

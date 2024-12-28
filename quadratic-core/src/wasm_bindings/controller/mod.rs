@@ -45,6 +45,9 @@ impl GridController {
                 if initialize {
                     grid.send_viewport_buffer();
 
+                    // table map needs to be sent before SheetInfo
+                    grid.send_table_map();
+
                     // first recalculate all bounds in sheets
                     let mut html = vec![];
                     let sheets_info = grid
@@ -91,8 +94,6 @@ impl GridController {
                             sheet.borders.send_sheet_borders(*sheet_id);
                         }
                     });
-
-                    grid.send_table_map();
                 }
                 Ok(grid)
             }

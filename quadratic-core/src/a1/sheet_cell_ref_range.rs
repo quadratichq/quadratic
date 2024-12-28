@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::grid::SheetId;
+use crate::grid::{SheetId, TableMap};
 
 use super::{A1Error, CellRefRange, SheetNameIdMap};
 
@@ -14,14 +14,15 @@ impl SheetCellRefRange {
     /// Parses a selection from a comma-separated list of ranges.
     ///
     /// Ranges without an explicit sheet use `default_sheet_id`.
-    pub fn from_str(
+    pub fn parse(
         a1: &str,
         default_sheet_id: &SheetId,
         sheet_map: &SheetNameIdMap,
+        table_map: &TableMap,
     ) -> Result<Self, A1Error> {
         let (sheet, cells_str) =
             super::parse_optional_sheet_name_to_id(a1, default_sheet_id, sheet_map)?;
-        let cells = cells_str.parse()?;
+        let cells = CellRefRange::parse(cells_str, table_map)?;
         Ok(Self { sheet, cells })
     }
 

@@ -6,7 +6,9 @@ use ts_rs::TS;
 
 use super::{CellRefRange, SheetCellRefRange};
 use crate::{
-    grid::SheetId, selection::OldSelection, A1Error, Pos, SheetNameIdMap, SheetPos, SheetRect,
+    grid::{SheetId, TableMap},
+    selection::OldSelection,
+    A1Error, Pos, SheetNameIdMap, SheetPos, SheetRect,
 };
 
 pub mod a1_selection_exclude;
@@ -177,10 +179,11 @@ impl A1Selection {
     ///
     /// Returns an error if ranges refer to different sheets. Ranges without an
     /// explicit sheet use `default_sheet_id`.
-    pub fn from_str(
+    pub fn parse(
         a1: &str,
         default_sheet_id: &SheetId,
         sheet_map: &SheetNameIdMap,
+        table_map: &TableMap,
     ) -> Result<Self, A1Error> {
         let mut sheet = None;
         let mut ranges = vec![];
@@ -210,7 +213,8 @@ impl A1Selection {
         }
 
         for segment in segments {
-            let range = SheetCellRefRange::from_str(segment.trim(), default_sheet_id, sheet_map)?;
+            let range =
+                SheetCellRefRange::parse(segment.trim(), default_sheet_id, sheet_map, table_map)?;
             if *sheet.get_or_insert(range.sheet) != range.sheet {
                 return Err(A1Error::TooManySheets(a1.to_string()));
             }
@@ -358,13 +362,21 @@ impl A1Selection {
     /// Returns a test selection from the A1-string with SheetId::test().
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        Self::from_str(a1, &SheetId::TEST, &std::collections::HashMap::new()).unwrap()
+        let table_map = TableMap::default();
+        Self::parse(
+            a1,
+            &SheetId::TEST,
+            &std::collections::HashMap::new(),
+            &table_map,
+        )
+        .unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
     #[cfg(test)]
     pub fn test_a1_sheet_id(a1: &str, sheet_id: &SheetId) -> Self {
-        Self::from_str(a1, sheet_id, &std::collections::HashMap::new()).unwrap()
+        let table_map = TableMap::default();
+        Self::parse(a1, sheet_id, &std::collections::HashMap::new(), &table_map).unwrap()
     }
 
     /// Returns an A1-style string describing the selection with default
@@ -412,8 +424,9 @@ mod tests {
     #[test]
     fn test_from_a1() {
         let sheet_id = SheetId::test();
+        let table_map = TableMap::default();
         assert_eq!(
-            A1Selection::from_str("A1", &sheet_id, &HashMap::new()),
+            A1Selection::parse("A1", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_xy(1, 1, sheet_id)),
         );
     }
@@ -421,8 +434,9 @@ mod tests {
     #[test]
     fn test_from_a1_all() {
         let sheet_id = SheetId::test();
+        let table_map = TableMap::default();
         assert_eq!(
-            A1Selection::from_str("*", &sheet_id, &HashMap::new()),
+            A1Selection::parse("*", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_range(CellRefRange::ALL, sheet_id)),
         );
     }
@@ -430,8 +444,9 @@ mod tests {
     #[test]
     fn test_from_a1_columns() {
         let sheet_id = SheetId::test();
+        let table_map = TableMap::default();
         assert_eq!(
-            A1Selection::from_str("A:C", &sheet_id, &HashMap::new()),
+            A1Selection::parse("A:C", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_column_ranges(&[1..=3], sheet_id)),
         );
     }
@@ -439,8 +454,9 @@ mod tests {
     #[test]
     fn test_from_a1_rows() {
         let sheet_id = SheetId::test();
+        let table_map = TableMap::default();
         assert_eq!(
-            A1Selection::from_str("1:3", &sheet_id, &HashMap::new()),
+            A1Selection::parse("1:3", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_row_ranges(&[1..=3], sheet_id)),
         );
     }
@@ -448,20 +464,21 @@ mod tests {
     #[test]
     fn test_from_a1_rect() {
         let sheet_id = SheetId::test();
+        let table_map = TableMap::default();
         let d1a5 = RefRangeBounds::new_relative(4, 1, 1, 5);
         assert_eq!(
-            A1Selection::from_str("A1:B2", &sheet_id, &HashMap::new()),
+            A1Selection::parse("A1:B2", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id))),
         );
         assert_eq!(
-            A1Selection::from_str("D1:A5", &sheet_id, &HashMap::new()),
+            A1Selection::parse("D1:A5", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_range(
                 CellRefRange::Sheet { range: d1a5 },
                 sheet_id,
             )),
         );
         assert_eq!(
-            A1Selection::from_str("A1:B2,D1:A5", &sheet_id, &HashMap::new()),
+            A1Selection::parse("A1:B2,D1:A5", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_ranges(
                 [
                     CellRefRange::new_relative_rect(Rect::new(1, 1, 2, 2)),
@@ -476,9 +493,14 @@ mod tests {
     #[test]
     fn test_from_a1_everything() {
         let sheet_id = SheetId::test();
-        let selection =
-            A1Selection::from_str("A1,B1:D2,E:G,2:3,5:7,F6:G8,4", &sheet_id, &HashMap::new())
-                .unwrap();
+        let table_map = TableMap::default();
+        let selection = A1Selection::parse(
+            "A1,B1:D2,E:G,2:3,5:7,F6:G8,4",
+            &sheet_id,
+            &HashMap::new(),
+            &table_map,
+        )
+        .unwrap();
 
         assert_eq!(selection.sheet_id, sheet_id);
         assert_eq!(selection.cursor, pos![A4]);
@@ -499,8 +521,9 @@ mod tests {
     #[test]
     fn test_row_to_a1() {
         let sheet_id = SheetId::test();
+        let table_map = TableMap::default();
         assert_eq!(
-            A1Selection::from_str("1", &sheet_id, &HashMap::new()),
+            A1Selection::parse("1", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_range(
                 CellRefRange::new_relative_row(1),
                 sheet_id,
@@ -508,12 +531,12 @@ mod tests {
         );
 
         assert_eq!(
-            A1Selection::from_str("1:3", &sheet_id, &HashMap::new()),
+            A1Selection::parse("1:3", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_row_ranges(&[1..=3], sheet_id)),
         );
 
         assert_eq!(
-            A1Selection::from_str("1:", &sheet_id, &HashMap::new()),
+            A1Selection::parse("1:", &sheet_id, &HashMap::new(), &table_map),
             Ok(A1Selection::from_range(
                 CellRefRange::Sheet {
                     range: RefRangeBounds::ALL
@@ -527,6 +550,7 @@ mod tests {
     fn test_from_a1_sheets() {
         let sheet_id = SheetId::new();
         let sheet_id2 = SheetId::new();
+        let table_map = TableMap::default();
         let map = HashMap::from([
             (sheet_id, "Sheet1".to_string()),
             (sheet_id2, "Second".to_string()),
@@ -536,7 +560,7 @@ mod tests {
             .map(|(&id, name)| (crate::util::case_fold(name), id))
             .collect();
         assert_eq!(
-            A1Selection::from_str("'Second'!A1", &sheet_id, &rev_map),
+            A1Selection::parse("'Second'!A1", &sheet_id, &rev_map, &table_map),
             Ok(A1Selection::from_xy(1, 1, sheet_id2)),
         );
     }
@@ -630,14 +654,17 @@ mod tests {
     #[test]
     fn test_extra_comma() {
         let sheet_id = SheetId::test();
-        let selection = A1Selection::from_str("1,", &sheet_id, &HashMap::new()).unwrap();
-        assert_eq!(selection.to_string(Some(sheet_id), &HashMap::new()), "A1:1");
+        let table_map = TableMap::default();
+        let selection = A1Selection::parse("1,", &sheet_id, &HashMap::new(), &table_map).unwrap();
+        assert_eq!(selection.to_string(Some(sheet_id), &HashMap::new()), "A1:1",);
     }
 
     #[test]
     fn test_multiple_one_sized_rects() {
         let sheet_id = SheetId::test();
-        let selection = A1Selection::from_str("A1,B1,C1", &sheet_id, &HashMap::new()).unwrap();
+        let table_map = TableMap::default();
+        let selection =
+            A1Selection::parse("A1,B1,C1", &sheet_id, &HashMap::new(), &table_map).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &HashMap::new()),
             "A1,B1,C1",
@@ -647,6 +674,7 @@ mod tests {
     #[test]
     fn test_different_sheet() {
         let sheet_id = SheetId::test();
+        let table_map = TableMap::default();
         let sheet_second = SheetId::new();
         let map = HashMap::from([
             ("First".to_string(), sheet_id),
@@ -656,8 +684,13 @@ mod tests {
             .iter()
             .map(|(name, &id)| (crate::util::case_fold(name), id))
             .collect();
-        let selection =
-            A1Selection::from_str("second!A1,second!B1,second!C1", &sheet_id, &rev_map).unwrap();
+        let selection = A1Selection::parse(
+            "second!A1,second!B1,second!C1",
+            &sheet_id,
+            &rev_map,
+            &table_map,
+        )
+        .unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &map),
             "Second!A1,Second!B1,Second!C1",

@@ -30,6 +30,7 @@ impl GridController {
         let mut last_match_end = 0;
 
         let sheet_map = self.grid.sheet_name_id_map();
+        let table_map = self.grid.table_map();
         for cap in HANDLEBARS_REGEX.captures_iter(code) {
             let Some(whole_match) = cap.get(0) else {
                 continue;
@@ -38,7 +39,7 @@ impl GridController {
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-            let selection = A1Selection::from_str(content, &default_sheet_id, &sheet_map)?;
+            let selection = A1Selection::parse(content, &default_sheet_id, &sheet_map, &table_map)?;
 
             let Some(pos) = selection.try_to_pos() else {
                 return Err(A1Error::WrongCellCount(

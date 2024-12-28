@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { A1Selection } from '@/app/quadratic-core-types';
 import {
-  A1SelectionValueToSelection,
+  A1SelectionToJsSelection,
   JsSelection,
   stringToSelection,
 } from '@/app/quadratic-rust-client/quadratic_rust_client';
@@ -69,7 +69,12 @@ export const SheetRange = (props: Props) => {
   const updateValue = useCallback(
     (value: string) => {
       try {
-        const jsSelection = stringToSelection(value, a1SheetId, onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap());
+        const jsSelection = stringToSelection(
+          value,
+          a1SheetId,
+          onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap(),
+          sheets.tableMap
+        );
         onChangeRange(jsSelection);
         setRangeError(undefined);
       } catch (e: any) {
@@ -97,7 +102,7 @@ export const SheetRange = (props: Props) => {
   useEffect(() => {
     if (ref.current) {
       ref.current.value = initial
-        ? A1SelectionValueToSelection(initial).toA1String(a1SheetId, sheets.getSheetIdNameMap())
+        ? A1SelectionToJsSelection(initial, sheets.tableMap).toA1String(a1SheetId, sheets.getSheetIdNameMap())
         : '';
     }
   }, [changeCursor, a1SheetId, initial]);
@@ -108,7 +113,8 @@ export const SheetRange = (props: Props) => {
       const selection = stringToSelection(
         ref.current.value,
         a1SheetId,
-        onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap()
+        onlyCurrentSheet ? '{}' : sheets.getSheetIdNameMap(),
+        sheets.tableMap
       );
       if (selection) {
         sheets.changeSelection(selection, true);

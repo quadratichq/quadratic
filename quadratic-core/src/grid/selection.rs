@@ -9,7 +9,8 @@ impl GridController {
         default_sheet_id: &SheetId,
     ) -> Result<A1Selection, A1Error> {
         let sheet_map = self.grid().sheet_name_id_map();
-        A1Selection::from_str(a1, default_sheet_id, &sheet_map)
+        let table_map = self.grid().table_map();
+        A1Selection::parse(a1, default_sheet_id, &sheet_map, &table_map)
     }
 }
 

@@ -107,11 +107,12 @@ impl ValidationDisplaySheet {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use crate::grid::sheet::validations::validation_rules::{
-        validation_list::{ValidationList, ValidationListSource},
-        validation_logical::ValidationLogical,
+    use crate::grid::{
+        sheet::validations::validation_rules::{
+            validation_list::{ValidationList, ValidationListSource},
+            validation_logical::ValidationLogical,
+        },
+        TableMap,
     };
 
     use super::*;
@@ -123,7 +124,7 @@ mod tests {
 
         let v = ValidationDisplaySheet {
             displays: vec![ValidationDisplay {
-                range: CellRefRange::from_str("A1").unwrap(),
+                range: CellRefRange::parse("A1", &TableMap::default()).unwrap(),
                 checkbox: true,
                 list: false,
             }],
@@ -134,7 +135,7 @@ mod tests {
     #[test]
     fn validation_display_is_empty() {
         let v = ValidationDisplay {
-            range: CellRefRange::from_str("A1").unwrap(),
+            range: CellRefRange::parse("A1", &TableMap::default()).unwrap(),
             checkbox: false,
             list: false,
         };

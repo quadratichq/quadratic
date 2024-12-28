@@ -1,11 +1,11 @@
-use std::str::FromStr;
-
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::grid::CodeCellLanguage;
 use crate::CellRefRange;
+
+use super::TableMap;
 
 const Q_CELLS_A1_REGEX: &str = r#"\bq\.cells\s*\(\s*(['"`])([^'"`]+)(['"`])"#;
 
@@ -27,7 +27,7 @@ impl CodeCellValue {
 
     /// Updates the cell references in the code by translating them by the given
     /// delta. Updates only relative cell references.
-    pub fn update_cell_references(&mut self, delta_x: i64, delta_y: i64) {
+    pub fn update_cell_references(&mut self, delta_x: i64, delta_y: i64, table_map: &TableMap) {
         if delta_x == 0 && delta_y == 0 {
             return;
         }
@@ -52,7 +52,7 @@ impl CodeCellValue {
                     return full_match.to_string();
                 }
 
-                match CellRefRange::from_str(cell_ref_str) {
+                match CellRefRange::parse(cell_ref_str, table_map) {
                     Ok(mut cell_ref_range) => {
                         cell_ref_range.translate_in_place(delta_x, delta_y);
                         // Replace only the first argument, keep the rest unchanged
@@ -73,6 +73,7 @@ impl CodeCellValue {
         column: Option<i64>,
         row: Option<i64>,
         delta: i64,
+        table_map: &TableMap,
     ) {
         if delta == 0 {
             return;
@@ -98,7 +99,7 @@ impl CodeCellValue {
                     return full_match.to_string();
                 }
 
-                match CellRefRange::from_str(cell_ref_str) {
+                match CellRefRange::parse(cell_ref_str, table_map) {
                     Ok(mut cell_ref_range) => {
                         // adjust the range by delta
                         cell_ref_range.adjust_column_row_in_place(column, row, delta);
@@ -120,12 +121,13 @@ mod tests {
 
     #[test]
     fn test_update_cell_references() {
+        let table_map = TableMap::default();
         // Basic single reference
         let mut code = CodeCellValue {
             language: CodeCellLanguage::Python,
             code: "q.cells('A1:B2')".to_string(),
         };
-        code.update_cell_references(1, 1);
+        code.update_cell_references(1, 1, &table_map);
         assert_eq!(code.code, "q.cells('B2:C3')", "Basic reference failed");
 
         // Multiple references in one line
@@ -133,7 +135,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "x = q.cells('A1:B2') + q.cells('C3:D4')".to_string(),
         };
-        code.update_cell_references(1, 1);
+        code.update_cell_references(1, 1, &table_map);
         assert_eq!(
             code.code, "x = q.cells('B2:C3') + q.cells('D4:E5')",
             "Multiple references failed"
@@ -144,7 +146,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("A1:B2"); q.cells('C3:D4'); q.cells(`E5:F6`);"#.to_string(),
         };
-        code.update_cell_references(1, 1);
+        code.update_cell_references(1, 1, &table_map);
         assert_eq!(
             code.code, r#"q.cells("B2:C3"); q.cells('D4:E5'); q.cells(`F6:G7`);"#,
             "Quote types failed"
@@ -155,7 +157,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: r#"q.cells("A1:B2'); q.cells('C3:D4")"#.to_string(),
         };
-        code.update_cell_references(1, 1);
+        code.update_cell_references(1, 1, &table_map);
         assert_eq!(
             code.code, r#"q.cells("A1:B2'); q.cells('C3:D4")"#,
             "Mismatched quotes failed"
@@ -166,7 +168,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells('A1:B2')".to_string(),
         };
-        code.update_cell_references(0, 0);
+        code.update_cell_references(0, 0, &table_map);
         assert_eq!(code.code, "q.cells('A1:B2')", "Zero delta failed");
 
         // Negative delta
@@ -174,7 +176,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells('C3:D4')".to_string(),
         };
-        code.update_cell_references(-1, -1);
+        code.update_cell_references(-1, -1, &table_map);
         assert_eq!(code.code, "q.cells('B2:C3')", "Negative delta failed");
 
         // Whitespace variations
@@ -182,7 +184,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells  (  'A1:B2'  )".to_string(),
         };
-        code.update_cell_references(1, 1);
+        code.update_cell_references(1, 1, &table_map);
         assert_eq!(
             code.code, "q.cells('B2:C3'  )",
             "Whitespace variations failed"
@@ -193,7 +195,7 @@ mod tests {
             language: CodeCellLanguage::Formula,
             code: "A1".to_string(),
         };
-        code.update_cell_references(1, 1);
+        code.update_cell_references(1, 1, &table_map);
         assert_eq!(code.code, "A1", "Non Python/JS failed");
 
         // Python first_row_header=True
@@ -201,7 +203,7 @@ mod tests {
             language: CodeCellLanguage::Python,
             code: "q.cells('A1:B2', first_row_header=True)".to_string(),
         };
-        code.update_cell_references(1, 1);
+        code.update_cell_references(1, 1, &table_map);
         assert_eq!(
             code.code, "q.cells('B2:C3', first_row_header=True)",
             "first_row_header=True failed"

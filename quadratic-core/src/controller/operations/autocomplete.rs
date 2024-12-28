@@ -639,13 +639,18 @@ impl GridController {
         });
 
         // gather ComputeCode operations for any code cells
+        let table_map = self.grid().table_map();
         let compute_code_ops = final_range
             .iter()
             .enumerate()
             .filter_map(|(i, Pos { x, y })| {
                 if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
                     if let Some(original_pos) = original_pos {
-                        code_cell.update_cell_references(x - original_pos.x, y - original_pos.y);
+                        code_cell.update_cell_references(
+                            x - original_pos.x,
+                            y - original_pos.y,
+                            &table_map,
+                        );
                         original_pos.x = x;
                         original_pos.y = y;
                     }

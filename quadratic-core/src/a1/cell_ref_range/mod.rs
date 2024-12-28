@@ -39,16 +39,6 @@ impl fmt::Display for CellRefRange {
     }
 }
 
-impl FromStr for CellRefRange {
-    type Err = A1Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self::Sheet {
-            range: RefRangeBounds::from_str(s)?,
-        })
-    }
-}
-
 impl CellRefRange {
     pub const ALL: Self = Self::Sheet {
         range: RefRangeBounds::ALL,
@@ -56,6 +46,17 @@ impl CellRefRange {
 }
 
 impl CellRefRange {
+    pub fn parse(s: &str, table_map: &TableMap) -> Result<Self, A1Error> {
+        // first try table parsing
+        if let Ok(range) = TableRef::parse(s, &table_map) {
+            return Ok(Self::Table { range });
+        }
+        // then try sheet parsing
+        Ok(Self::Sheet {
+            range: RefRangeBounds::from_str(s)?,
+        })
+    }
+
     pub fn new_relative_all_from(pos: Pos) -> Self {
         Self::Sheet {
             range: RefRangeBounds::new_relative_all_from(pos),
@@ -293,7 +294,8 @@ mod tests {
             if matches!(cell_ref_range, CellRefRange::Table { .. }) {
                 return Ok(());
             }
-            assert_eq!(cell_ref_range, cell_ref_range.to_string().parse().unwrap());
+            let table_map = TableMap::default();
+            assert_eq!(cell_ref_range, CellRefRange::parse(&cell_ref_range.to_string(), &table_map).unwrap());
         }
     }
 

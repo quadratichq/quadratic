@@ -120,7 +120,10 @@ impl GridController {
                                 }
                                 _ => {
                                     let mut new_code = code.clone();
-                                    new_code.adjust_code_cell_column_row(column, row, delta);
+                                    let table_map = self.grid.table_map();
+                                    new_code.adjust_code_cell_column_row(
+                                        column, row, delta, &table_map,
+                                    );
                                     new_code.code
                                 }
                             };

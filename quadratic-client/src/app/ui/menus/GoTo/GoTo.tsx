@@ -27,7 +27,7 @@ export const GoTo = () => {
     }
     try {
       const map = sheets.getSheetIdNameMap();
-      const selection = stringToSelection(value, sheets.current, map);
+      const selection = stringToSelection(value, sheets.current, map, sheets.tableMap);
       return (
         <span>
           <span className="font-bold">{selection.toA1String(sheets.current, map)}</span>
@@ -60,7 +60,7 @@ export const GoTo = () => {
     } else {
       try {
         const map = sheets.getSheetIdNameMap();
-        const selection = stringToSelection(value, sheets.sheet.id, map);
+        const selection = stringToSelection(value, sheets.sheet.id, map, sheets.tableMap);
         sheets.changeSelection(selection);
       } catch (_) {
         // nothing to do if we can't parse the input

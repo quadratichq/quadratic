@@ -306,4 +306,8 @@ export class SheetCursor {
   selectTable(table: string, append: boolean) {
     this.jsSelection.selectTable(table, append);
   }
+
+  get selectionEnd(): JsCoordinate {
+    return this.jsSelection.bottomRightCell();
+  }
 }

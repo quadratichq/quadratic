@@ -38,7 +38,8 @@ export const SetCodeCellValue = ({ args, loading }: SetCodeCellValueProps) => {
             const selection = stringToSelection(
               toolArgs.data.code_cell_position,
               sheets.current,
-              sheets.getSheetIdNameMap()
+              sheets.getSheetIdNameMap(),
+              sheets.tableMap
             );
             const { x, y } = selection.getCursor();
             setCodeCellPos({ x, y });
