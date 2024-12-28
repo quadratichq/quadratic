@@ -236,6 +236,11 @@ jobs:
             --command-id "$COMMAND_ID" \
             --instance-id ${{ steps.get-instance.outputs.instance_id }}
 
+      - name: Generate Deploy Metadata
+        id: deploy-metadata
+        run: |
+          echo "DEPLOY_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
       - name: Find Build & Deploy Images Comment
         uses: peter-evans/find-comment@v3
         id: staging-build-deploy-images-comment
@@ -253,7 +258,7 @@ jobs:
           body: |
             ## Staging Build & Deploy Images
             Staging images built and deployed successfully.
-            Last deployed at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            Last deployed at: ${{ steps.deploy-metadata.outputs.DEPLOY_TIME }}
           edit-mode: replace
 
       - name: Create or update comment on deployment failure
