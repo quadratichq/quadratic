@@ -12,6 +12,7 @@ jobs:
     name: Create Stack - Staging
     permissions:
       contents: read
+      issues: write
       pull-requests: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 30

@@ -10,6 +10,7 @@ concurrency:
 
 jobs:
   build_images:
+    name: Build Images - Staging
     if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
@@ -136,7 +137,12 @@ jobs:
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
 
   deploy_images:
+    name: Deploy Images - Staging
     needs: build_images
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     runs-on: blacksmith-2vcpu-ubuntu-2204
     timeout-minutes: 30
     env:
