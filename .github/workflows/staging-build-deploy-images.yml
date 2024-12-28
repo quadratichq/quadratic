@@ -12,11 +12,21 @@ jobs:
   build_images:
     permissions:
       contents: read
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
       matrix:
-        service: [client, api, multiplayer, files, connection]
+        include:
+          - service: client
+            runner: blacksmith-8vcpu-ubuntu-2204
+          - service: api
+            runner: blacksmith-2vcpu-ubuntu-2204
+          - service: connection
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: files
+            runner: blacksmith-4vcpu-ubuntu-2204
+          - service: multiplayer
+            runner: blacksmith-4vcpu-ubuntu-2204
       fail-fast: true
     steps:
       - name: Checkout code
