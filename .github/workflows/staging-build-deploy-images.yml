@@ -6,14 +6,11 @@ on:
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-build-images
-  cancel-in-progress: true
+  cancel-in-progress: ${{ (github.event.action != 'labeled' && github.event.action !=  'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && startsWith(github.event.label.name, 'build:')) }}
 
 jobs:
   build_images:
-    if: |
-      github.event.action != 'labeled' && github.event.action != 'unlabeled' ||
-      ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && 
-      (startsWith(github.event.label.name, 'build:')))
+    if: (github.event.action != 'labeled' && github.event.action != 'unlabeled') || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && (startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
     runs-on: ${{ matrix.runner }}
