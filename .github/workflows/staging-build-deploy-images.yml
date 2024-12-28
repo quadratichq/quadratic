@@ -10,6 +10,10 @@ concurrency:
 
 jobs:
   build_images:
+    if: |
+      github.event.action != 'labeled' && github.event.action != 'unlabeled' ||
+      ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && 
+      (startsWith(github.event.label.name, 'build:')))
     permissions:
       contents: read
     runs-on: ${{ matrix.runner }}
