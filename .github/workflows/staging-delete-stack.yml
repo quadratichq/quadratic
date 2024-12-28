@@ -44,19 +44,32 @@ jobs:
 
       - name: Find Comment
         uses: peter-evans/find-comment@v3
-        id: staging-comment
+        id: staging-delete-stack-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Staging Deployment"
+          body-includes: "Staging - Stack"
 
-      - name: Update comment
-        if: steps.staging-comment.outputs.comment-id != ''
+      - name: Update comment on delete stack success
+        if: success() && steps.staging-delete-stack-comment.outputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v3
         with:
-          comment-id: ${{ steps.staging-comment.outputs.comment-id }}
+          comment-id: ${{ steps.staging-delete-stack-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging Deployment
-            Stack deleted.
+            ## Staging - Stack
+            ✅ Stack deleted.
+          edit-mode: replace
+
+      - name: Update comment on delete stack failure
+        if: failure() && steps.staging-delete-stack-comment.outputs.comment-id != ''
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.staging-delete-stack-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Staging - Stack
+            ❌ Stack deletion encountered an error.\
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
