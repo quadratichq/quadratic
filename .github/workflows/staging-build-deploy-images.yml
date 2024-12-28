@@ -33,12 +33,21 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check for build:dev label
-        id: check-dev
+        id: build-dev
         run: |
           if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:dev') }} == true ]]; then
             echo "DEV=true" >> $GITHUB_OUTPUT
           else
             echo "DEV=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for build:cache:disabled label
+        id: build-cache
+        run: |
+          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:cache:disabled') }} == true ]]; then
+            echo "CACHE_DISABLED=true" >> $GITHUB_OUTPUT
+          else
+            echo "CACHE_DISABLED=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Generate Build Metadata
@@ -87,8 +96,27 @@ jobs:
             image=moby/buildkit:latest
             network=host
 
-      - name: Build and push
-        # uses: useblacksmith/build-push-action@v1
+      - name: Build and push (with cache)
+        if: steps.build-cache.outputs.CACHE_DISABLED == 'false'
+        uses: useblacksmith/build-push-action@v1
+        with:
+          context: .
+          file: quadratic-${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.create-ecr.outputs.ECR_URL }}:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+            BUILD_TIME=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+            BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
+            PR_NUMBER=${{ github.event.pull_request.number }}
+            DEV=${{ steps.build-dev.outputs.DEV }}
+          labels: |
+            org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
+            org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
+
+      - name: Build and push (without cache)
+        if: steps.build-cache.outputs.CACHE_DISABLED == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -101,7 +129,7 @@ jobs:
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
-            DEV=${{ steps.check-dev.outputs.DEV }}
+            DEV=${{ steps.build-dev.outputs.DEV }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
