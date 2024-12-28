@@ -83,7 +83,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           comment-author: "github-actions[bot]"
-          body-includes: "Staging Stack"
+          body-includes: "Staging - Create Stack"
 
       - name: Create or update comment on create stack success
         if: success()
@@ -92,9 +92,10 @@ jobs:
           comment-id: ${{ steps.staging-create-stack-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging Stack
-            Staging stack created successfully.
-            URL: https://${{ steps.create-stack.outputs.WebsiteURL }}
+            ## Staging - Create Stack
+            ✅ Staging stack created successfully.
+
+            🔗 URL: https://${{ steps.create-stack.outputs.WebsiteURL }}
           edit-mode: replace
 
       - name: Create or update comment on create stack failure
@@ -104,6 +105,8 @@ jobs:
           comment-id: ${{ steps.staging-create-stack-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ## Staging Stack
-            The staging stack encountered an error. Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+            ## Staging - Create Stack 
+            ❌ The staging stack creation encountered an error.
+
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
           edit-mode: replace
