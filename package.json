@@ -59,12 +59,13 @@
     "copy:esbuild": "cp -f node_modules/esbuild-wasm/esbuild.wasm quadratic-client/public/",
     "gen:pyright:initialization": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
-    "docker:base": "ECR_OR_BUILD=build docker compose --profile base --env-file .env.docker up",
-    "docker:dev": "ECR_OR_BUILD=build docker compose --profile dev --env-file .env.docker up -d && docker attach quadratic-dev",
-    "docker:build": "ECR_OR_BUILD=build docker compose --profile all --env-file .env.docker up",
-    "docker:ecr": "ECR_OR_BUILD=ecr docker compose --profile all --env-file .env.docker up",
-    "docker:down": "ECR_OR_BUILD=build docker compose --profile all --env-file .env.docker down",
-    "docker:clean": "npm run docker:down && docker system prune -af"
+    "docker:base": "ECR_OR_BUILD=build DEV=false docker compose --profile base --env-file .env.docker up",
+    "docker:dev": "ECR_OR_BUILD=build DEV=true docker compose --profile dev --env-file .env.docker up -d && docker attach quadratic-dev",
+    "docker:build": "ECR_OR_BUILD=build DEV=false docker compose --profile all --env-file .env.docker up",
+    "docker:build:dev": "ECR_OR_BUILD=build DEV=true docker compose --profile all --env-file .env.docker up",
+    "docker:ecr": "ECR_OR_BUILD=ecr DEV=false docker compose --profile all --env-file .env.docker up",
+    "docker:down": "ECR_OR_BUILD=build DEV=false docker compose --profile all --env-file .env.docker down",
+    "docker:clean": "npm run docker:down && docker builder prune -af && docker system prune -af --volumes"
   },
   "dependencies": {
     "@ory/kratos-client": "^1.2.1",

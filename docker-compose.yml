@@ -3,8 +3,8 @@ services:
 
   redis:
     image: redis/redis-stack:latest
-    restart: always
     container_name: redis
+    restart: always
     ports:
       - "6379:6379"
       - "8001:8001"
@@ -20,8 +20,8 @@ services:
 
   postgres:
     image: postgres:15
-    restart: always
     container_name: postgres
+    restart: always
     ports:
       - "5432:5432"
     environment:
@@ -76,6 +76,7 @@ services:
     extends:
       file: docker-compose.${ECR_OR_BUILD}.yml
       service: quadratic-client
+    container_name: client
     environment:
       VITE_DEBUG: 1
       VITE_QUADRATIC_API_URL: ${QUADRATIC_API_URL_EXTERNAL}
@@ -94,12 +95,12 @@ services:
       interval: 10s
       timeout: 5s
     restart: "always"
-    depends_on:
-      quadratic-api:
-        condition: service_started
     volumes:
       - ./docker/client:/client
       - ./docker/client/config/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      quadratic-api:
+        condition: service_started
     profiles:
       - quadratic-client
       - frontend
@@ -113,6 +114,7 @@ services:
     extends:
       file: docker-compose.${ECR_OR_BUILD}.yml
       service: quadratic-api
+    container_name: api
     environment:
       CORS: "*"
       DATABASE_URL: ${DATABASE_DSN}
@@ -155,6 +157,7 @@ services:
     extends:
       file: docker-compose.${ECR_OR_BUILD}.yml
       service: quadratic-multiplayer
+    container_name: multiplayer
     environment:
       RUST_LOG: ${RUST_LOG}
       HOST: ${QUADRATIC_MULTIPLAYER_HOST}
@@ -176,6 +179,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      quadratic-client:
+        condition: service_healthy
       quadratic-api:
         condition: service_started
     profiles:
@@ -191,6 +196,7 @@ services:
     extends:
       file: docker-compose.${ECR_OR_BUILD}.yml
       service: quadratic-files
+    container_name: files
     environment:
       RUST_LOG: ${RUST_LOG}
       HOST: ${QUADRATIC_FILES_HOST}
@@ -218,13 +224,15 @@ services:
     restart: "always"
     ports:
       - "3002:3002"
+    volumes:
+      - ./docker/file-storage:/file-storage
     depends_on:
       redis:
         condition: service_healthy
+      quadratic-client:
+        condition: service_healthy
       quadratic-api:
         condition: service_started
-    volumes:
-      - ./docker/file-storage:/file-storage
     profiles:
       - quadratic-files
       - backend
@@ -238,6 +246,7 @@ services:
     extends:
       file: docker-compose.${ECR_OR_BUILD}.yml
       service: quadratic-connection
+    container_name: connection
     environment:
       RUST_LOG: ${RUST_LOG}
       HOST: ${QUADRATIC_CONNECTION_HOST}
@@ -251,6 +260,9 @@ services:
     restart: "always"
     ports:
       - "3003:3003"
+    depends_on:
+      quadratic-client:
+        condition: service_healthy
     profiles:
       - quadratic-connection
       - backend
@@ -264,7 +276,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: quadratic-dev
+    container_name: dev
     environment:
       # common
       ENVIRONMENT: ${ENVIRONMENT}
@@ -342,6 +354,7 @@ services:
 
   ory-auth:
     image: oryd/kratos:v1.2.0
+    container_name: ory-auth
     ports:
       - "4433:4433" # public
       - "4434:4434" # admin
@@ -366,6 +379,7 @@ services:
 
   ory-auth-migrate:
     image: oryd/kratos:v1.2.0
+    container_name: ory-auth-migrate
     command: migrate -c /etc/config/kratos/kratos.yml sql -e --yes
     volumes:
       - ./docker/ory-auth/config:/etc/config/kratos
@@ -385,6 +399,7 @@ services:
 
   ory-auth-node:
     image: oryd/kratos-selfservice-ui-node:v1.2.0
+    container_name: ory-auth-node
     ports:
       - "4455:4455"
     environment:
@@ -406,6 +421,7 @@ services:
 
   ory-auth-mail:
     image: oryd/mailslurper:latest-smtps
+    container_name: ory-auth-mail
     ports:
       - "1025:1025"
       - "4436:4436"

@@ -7,6 +7,8 @@ services:
     build:
       context: .
       dockerfile: quadratic-client/Dockerfile
+      args:
+        DEV: ${DEV}
 
   quadratic-api:
     build:

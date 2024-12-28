@@ -2,7 +2,7 @@ name: Build & Deploy Images
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}-build-images
@@ -12,25 +12,24 @@ jobs:
   build_images:
     permissions:
       contents: read
-    runs-on: ${{ matrix.runner }}
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     timeout-minutes: 30
     strategy:
       matrix:
-        include:
-          - service: client
-            runner: blacksmith-4vcpu-ubuntu-2204 # no speed benefit of 4vcpu, 2vcpu runs out of memory
-          - service: api
-            runner: blacksmith-2vcpu-ubuntu-2204
-          - service: connection
-            runner: blacksmith-2vcpu-ubuntu-2204
-          - service: files
-            runner: blacksmith-2vcpu-ubuntu-2204
-          - service: multiplayer
-            runner: blacksmith-2vcpu-ubuntu-2204
+        service: [client, api, multiplayer, files, connection]
       fail-fast: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Check for build:dev label
+        id: check-dev
+        run: |
+          if [[ ${{ contains(github.event.pull_request.labels.*.name, 'build:dev') }} == true ]]; then
+            echo "DEV=true" >> $GITHUB_OUTPUT
+          else
+            echo "DEV=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Generate Build Metadata
         id: build-metadata
@@ -92,6 +91,7 @@ jobs:
             GIT_SHA_SHORT=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
             BRANCH_NAME=${{ steps.build-metadata.outputs.BRANCH_NAME }}
             PR_NUMBER=${{ github.event.pull_request.number }}
+            DEV=${{ steps.check-dev.outputs.DEV }}
           labels: |
             org.opencontainers.image.created=${{ steps.build-metadata.outputs.BUILD_TIME }}
             org.opencontainers.image.revision=${{ steps.build-metadata.outputs.GIT_SHA_SHORT }}
