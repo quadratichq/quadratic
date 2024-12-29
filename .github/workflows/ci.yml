@@ -61,7 +61,6 @@ jobs:
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
-          cd quadratic-core
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
@@ -75,7 +74,7 @@ jobs:
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-core
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -121,27 +120,27 @@ jobs:
           cd quadratic-multiplayer
           npm run docker:test
 
-      - name: Generate coverage for quadratic-multiplayer
-        env:
-          RUSTC_BOOTSTRAP: 1
-        run: |
-          cd quadratic-multiplayer
-          grcov $(find . -name "grcov-*.profraw" -print) \
-            --branch \
-            --ignore-not-existing \
-            --binary-path ../target/debug/ \
-            -s . \
-            -t lcov \
-            --ignore "/*" \
-            --ignore "./src/wasm_bindings/*" \
-            --ignore "./src/bin/*" \
-            --ignore "./docker/*" \
-            -o lcov.info
+      # - name: Generate coverage for quadratic-multiplayer
+      #   env:
+      #     RUSTC_BOOTSTRAP: 1
+      #   run: |
+      #     cd quadratic-multiplayer
+      #     grcov $(find . -name "grcov-*.profraw" -print) \
+      #       --branch \
+      #       --ignore-not-existing \
+      #       --binary-path ../target/debug/ \
+      #       -s . \
+      #       -t lcov \
+      #       --ignore "/*" \
+      #       --ignore "./src/wasm_bindings/*" \
+      #       --ignore "./src/bin/*" \
+      #       --ignore "./docker/*" \
+      #       -o lcov.info
 
-      - name: Upload coverage reports to Codecov quadratic-multiplayer
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      # - name: Upload coverage reports to Codecov quadratic-multiplayer
+      #   uses: codecov/codecov-action@v3
+      #   env:
+      #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test_connection:
     runs-on: blacksmith-2vcpu-ubuntu-2204

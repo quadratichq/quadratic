@@ -483,7 +483,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./docker/mysql-connection/data:/var/lib/mysql
+      - mysql-connection:/var/lib/mysql
       - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
       - quadratic-connection
@@ -541,6 +541,9 @@ services:
 volumes:
   docker:
     name: docker
+  mysql-connection:
+    name: mysql-connection
+    driver: local
 
 networks:
   host:
