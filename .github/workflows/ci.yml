@@ -128,7 +128,7 @@ jobs:
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
-            --binary-path ../target/debug/ \ 
+            --binary-path ../target/debug/ \
             -s . \
             -t lcov \
             --ignore "/*" \
@@ -204,6 +204,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: wasm32-unknown-unknown
           override: true
 
       - uses: useblacksmith/rust-cache@v3
@@ -301,6 +302,7 @@ jobs:
         with:
           toolchain: stable
           components: clippy
+          target: wasm32-unknown-unknown
           override: true
 
       - uses: useblacksmith/rust-cache@v3
