@@ -62,7 +62,7 @@ jobs:
           RUSTC_BOOTSTRAP: 1
         run: |
           cd quadratic-core
-          grcov $(find . -name "grcov-*.profraw" -print) \
+          grcov $(find . ../quadratic-rust-client ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
             --binary-path ../target/debug/ \
@@ -126,7 +126,7 @@ jobs:
           RUSTC_BOOTSTRAP: 1
         run: |
           cd quadratic-multiplayer
-          grcov $(find . -name "grcov-*.profraw" -print) \
+          grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
             --binary-path ../target/debug/ \
@@ -183,14 +183,14 @@ jobs:
           CARGO_BUILD_JOBS: 4
         run: |
           cd quadratic-connection
-          npm run test:docker:ci
+          npm run docker:test
 
       - name: Generate coverage for quadratic-connection
         env:
           RUSTC_BOOTSTRAP: 1
         run: |
           cd quadratic-connection
-          grcov $(find . -name "grcov-*.profraw" -print) \
+          grcov $(find . ../quadratic-rust-shared -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
             --binary-path ../target/debug/ \
