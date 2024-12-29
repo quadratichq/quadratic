@@ -132,7 +132,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[dockercompose]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "ms-azuretools.vscode-docker"
   },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

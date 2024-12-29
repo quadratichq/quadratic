@@ -12,7 +12,7 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: "5s"
     volumes:
-      - ./docker/redis/data:/data
+      - redis-data:/data
     profiles:
       - base
       - dev
@@ -35,7 +35,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./docker/postgres/data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
       - ./docker/postgres/scripts:/docker-entrypoint-initdb.d
     profiles:
       - base
@@ -338,11 +338,13 @@ services:
     volumes:
       - quadratic-dev-cache:/root/.cache
       - quadratic-dev-cargo:/root/.cargo
+      - quadratic-dev-node_modules:/quadratic/node_modules
+      - quadratic-dev-target:/quadratic/target
       - ./:/quadratic
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
       ory-auth:
         condition: service_started
@@ -469,7 +471,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./docker/postgres-connection/data:/var/lib/postgresql/data
+      - postgres-connection-data:/var/lib/postgresql/data
       - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
     profiles:
       - quadratic-connection
@@ -493,7 +495,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - mysql-connection:/var/lib/mysql
+      - mysql-connection-data:/var/lib/mysql
       - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
       - quadratic-connection
@@ -512,7 +514,7 @@ services:
       MSSQL_SA_PASSWORD: yourStrong(!)Password
       MSSQL_PID: Express
     volumes:
-      - ./docker/mssql-connection/data:/var/opt/mssql
+      - mssql-connection-data:/var/opt/mssql
       - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
     healthcheck:
       test:
@@ -537,26 +539,39 @@ services:
       start_period: 30s
       retries: 5
     command: >
-      bash -c "
-      /opt/mssql/bin/sqlservr &
-      sleep 10 &&
-      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/create_db.sql -C -N -t 30 &&
-      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/seed_db.sql -C -N -t 30 &&
-      tail -f /dev/null"
+      bash -c " /opt/mssql/bin/sqlservr & sleep 10 && /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/create_db.sql -C -N -t 30 && /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password' -i /docker-entrypoint-initdb.d/seed_db.sql -C -N -t 30 && tail -f /dev/null"
     profiles:
       - quadratic-connection
       - quadratic-connection-db
       - quadratic-connection-db-mssql
 
 volumes:
+  redis-data:
+    name: redis-data
+    driver: local
+  postgres-data:
+    name: postgres-data
+    driver: local
   quadratic-dev-cache:
     name: quadratic-dev-cache
     driver: local
   quadratic-dev-cargo:
     name: quadratic-dev-cargo
     driver: local
-  mysql-connection:
+  quadratic-dev-node_modules:
+    name: quadratic-dev-node_modules
+    driver: local
+  quadratic-dev-target:
+    name: quadratic-dev-target
+    driver: local
+  postgres-connection-data:
+    name: postgres-connection-data
+    driver: local
+  mysql-connection-data:
     name: mysql-connection
+    driver: local
+  mssql-connection-data:
+    name: mssql-connection-data
     driver: local
 
 networks:
